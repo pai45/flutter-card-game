@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -509,6 +510,7 @@ class SecureGameStorage {
 
   static const _deckKey = 'pd_deck_slots_v1';
   static const _tutorialKey = 'pd_tutorial_seen_v1';
+  static const _ownedCardsKey = 'pd_owned_cards_v1';
 
   final FlutterSecureStorage _storage;
 
@@ -545,6 +547,20 @@ class SecureGameStorage {
   }
 
   Future<void> resetTutorial() => _storage.delete(key: _tutorialKey);
+
+  Future<List<String>> loadOwnedCards() async {
+    try {
+      final raw = await _storage.read(key: _ownedCardsKey);
+      if (raw == null || raw.isEmpty) return const [];
+      return List<String>.from(jsonDecode(raw) as List);
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<void> saveOwnedCards(List<String> cardIds) async {
+    await _storage.write(key: _ownedCardsKey, value: jsonEncode(cardIds));
+  }
 }
 
 const defaultDeckSlots = [
@@ -557,6 +573,164 @@ const defaultDeckSlots = [
   ),
 ];
 
+const tutorialKeys = [
+  'home',
+  'deck-builder',
+  'toss',
+  'scenario',
+  'play',
+  'round-result',
+  'match-end',
+  'penalty',
+  'final',
+];
+
+class TutorialStepData {
+  const TutorialStepData({required this.title, required this.body});
+
+  final String title;
+  final String body;
+}
+
+const homeTutorialSteps = [
+  TutorialStepData(
+    title: 'Welcome, Operator',
+    body:
+        'PITCH/DUEL is a 4-round card duel. Each round, play one player card and one action card. Stats, scenario, and luck decide the outcome.',
+  ),
+  TutorialStepData(
+    title: "You're pre-loaded",
+    body:
+        'Your default loadout is ready: 2 attackers, 2 defenders, 6 actions. Play now or customize in Deck Builder.',
+  ),
+  TutorialStepData(
+    title: 'How a match flows',
+    body:
+        '1. Coin toss (round 1 only)\n2. Scenario reveals + role assigned\n3. Pick a player & action card\n4. See the outcome -> next round\n\nTap PLAY MATCH when ready.',
+  ),
+];
+
+const deckTutorialSteps = [
+  TutorialStepData(
+    title: 'Build a 5-a-side',
+    body: 'Shape the pitch with 2 ATK, 2 DEF, and 6 actions.',
+  ),
+  TutorialStepData(
+    title: 'Edit, Save, Play',
+    body:
+        'Tap Edit to change the deck, save it, then play when the squad is ready.',
+  ),
+];
+
+const tossTutorialSteps = [
+  TutorialStepData(
+    title: 'Coin Toss',
+    body:
+        'Pick HEADS or TAILS. The winner chooses attack or defense for round 1.',
+  ),
+  TutorialStepData(
+    title: 'Roles Alternate',
+    body:
+        'This is the only toss. After round 1, roles flip automatically each round.',
+  ),
+];
+
+const scenarioTutorialSteps = [
+  TutorialStepData(
+    title: 'Scenario Briefing',
+    body:
+        'Each round has a football situation: counter attack, set piece, box defense, and more.',
+  ),
+  TutorialStepData(
+    title: 'Bonus Stats',
+    body:
+        'ATK +X and DEF +X are added this round. Bigger attack bonus favors the attacker.',
+  ),
+  TutorialStepData(
+    title: 'Your Role',
+    body: 'The banner shows your role. Pick cards around attack or defense.',
+  ),
+];
+
+const playTutorialSteps = [
+  TutorialStepData(
+    title: 'Pick Your Player',
+    body:
+        'Choose one player. OVR is base power. Used players are locked for the match.',
+  ),
+  TutorialStepData(
+    title: 'Pick an Action',
+    body:
+        'Pick one action. Options match your role: ATK when attacking, DEF when defending, SPC anytime.',
+  ),
+  TutorialStepData(
+    title: 'Risky Cards',
+    body:
+        'Warning cards boost power but can cause fouls or red cards. Red cards remove a player.',
+  ),
+  TutorialStepData(
+    title: 'Read the Preview',
+    body:
+        'EST shows rating + action + scenario bonus. CPU power is hidden, and luck still matters.',
+  ),
+];
+
+const resultTutorialSteps = [
+  TutorialStepData(
+    title: 'Round Resolved',
+    body: 'The label shows: GOAL, SAVED, MISSED, FOUL, or RED CARD.',
+  ),
+  TutorialStepData(
+    title: 'Used Cards',
+    body:
+        'Round cards appear side-by-side. Used players are marked USED and cannot replay.',
+  ),
+  TutorialStepData(
+    title: 'Next Round',
+    body: 'Tap NEXT ROUND. Roles switch each round, so attack becomes defense.',
+  ),
+];
+
+const matchEndTutorialSteps = [
+  TutorialStepData(
+    title: 'Full Time',
+    body: 'After 4 rounds, the banner shows VICTORY, DEFEAT, or DEADLOCK.',
+  ),
+  TutorialStepData(
+    title: 'Round Log',
+    body: 'The log recaps each scenario and outcome.',
+  ),
+  TutorialStepData(
+    title: 'Tied? Penalties!',
+    body: 'A draw goes to a penalty shootout.',
+  ),
+];
+
+const penaltyTutorialSteps = [
+  TutorialStepData(
+    title: 'Sudden Death',
+    body:
+        'Tied match: penalty shootout. Kicks alternate until someone leads after equal attempts.',
+  ),
+  TutorialStepData(
+    title: 'How It Works',
+    body:
+        'Tap TAKE KICK on your turn. CPU kicks auto-fire. Each kick has about a 65-75% score chance.',
+  ),
+];
+
+const finalTutorialSteps = [
+  TutorialStepData(
+    title: 'Match Archive',
+    body: 'Final scoreline, plus penalties if needed, appears here.',
+  ),
+  TutorialStepData(title: 'MVP', body: 'MVP goes to your goal scorer.'),
+  TutorialStepData(
+    title: 'What Next?',
+    body: 'REMATCH uses the same deck. HOME exits. DECK opens squad tuning.',
+  ),
+];
+
 class GameState {
   const GameState({
     required this.loading,
@@ -565,6 +739,7 @@ class GameState {
     required this.deckAttackers,
     required this.deckDefenders,
     required this.deckActions,
+    required this.ownedCardIds,
     required this.tutorialSeen,
     required this.phase,
     required this.currentRound,
@@ -600,6 +775,7 @@ class GameState {
     deckAttackers: cardsByIds(attackers, defaultDeckSlots.first.attackers),
     deckDefenders: cardsByIds(defenders, defaultDeckSlots.first.defenders),
     deckActions: actionCardsByIds(defaultDeckSlots.first.actions),
+    ownedCardIds: const [],
     tutorialSeen: const {},
     phase: MatchPhase.idle,
     currentRound: 0,
@@ -634,6 +810,7 @@ class GameState {
   final List<PlayerCard> deckAttackers;
   final List<PlayerCard> deckDefenders;
   final List<ActionCard> deckActions;
+  final List<String> ownedCardIds;
   final Set<String> tutorialSeen;
   final MatchPhase phase;
   final int currentRound;
@@ -673,6 +850,7 @@ class GameState {
     List<PlayerCard>? deckAttackers,
     List<PlayerCard>? deckDefenders,
     List<ActionCard>? deckActions,
+    List<String>? ownedCardIds,
     Set<String>? tutorialSeen,
     MatchPhase? phase,
     int? currentRound,
@@ -706,6 +884,7 @@ class GameState {
     deckAttackers: deckAttackers ?? this.deckAttackers,
     deckDefenders: deckDefenders ?? this.deckDefenders,
     deckActions: deckActions ?? this.deckActions,
+    ownedCardIds: ownedCardIds ?? this.ownedCardIds,
     tutorialSeen: tutorialSeen ?? this.tutorialSeen,
     phase: phase ?? this.phase,
     currentRound: currentRound ?? this.currentRound,
@@ -769,6 +948,18 @@ class DeckCreated extends GameEvent {}
 
 class TutorialReset extends GameEvent {}
 
+class TutorialSeenMarked extends GameEvent {
+  TutorialSeenMarked(this.keyName);
+  final String keyName;
+}
+
+class TutorialsSkippedAll extends GameEvent {}
+
+class OwnedCardAdded extends GameEvent {
+  OwnedCardAdded(this.cardId);
+  final String cardId;
+}
+
 class MatchReset extends GameEvent {}
 
 class MatchStarted extends GameEvent {}
@@ -816,6 +1007,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<DeckApplied>(_onDeckApplied);
     on<DeckCreated>(_onDeckCreated);
     on<TutorialReset>(_onTutorialReset);
+    on<TutorialSeenMarked>(_onTutorialSeenMarked);
+    on<TutorialsSkippedAll>(_onTutorialsSkippedAll);
+    on<OwnedCardAdded>(_onOwnedCardAdded);
     on<MatchReset>((_, emit) => emit(_resetMatch(state)));
     on<MatchStarted>(_onMatchStarted);
     on<TossChoiceChanged>(
@@ -869,6 +1063,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       const Duration(seconds: 2),
       onTimeout: () => <String>{},
     );
+    final owned = await _storage.loadOwnedCards().timeout(
+      const Duration(seconds: 2),
+      onTimeout: () => <String>[],
+    );
     emit(
       state.copyWith(
         loading: false,
@@ -877,9 +1075,19 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         deckAttackers: cardsByIds(attackers, active.attackers),
         deckDefenders: cardsByIds(defenders, active.defenders),
         deckActions: actionCardsByIds(active.actions),
+        ownedCardIds: owned,
         tutorialSeen: seen,
       ),
     );
+  }
+
+  Future<void> _onOwnedCardAdded(
+    OwnedCardAdded event,
+    Emitter<GameState> emit,
+  ) async {
+    final owned = [...state.ownedCardIds, event.cardId];
+    emit(state.copyWith(ownedCardIds: owned));
+    await _storage.saveOwnedCards(owned);
   }
 
   Future<void> _onDeckSaved(DeckSaved event, Emitter<GameState> emit) async {
@@ -945,6 +1153,24 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   ) async {
     await _storage.resetTutorial();
     emit(state.copyWith(tutorialSeen: {}));
+  }
+
+  Future<void> _onTutorialSeenMarked(
+    TutorialSeenMarked event,
+    Emitter<GameState> emit,
+  ) async {
+    final seen = {...state.tutorialSeen, event.keyName};
+    emit(state.copyWith(tutorialSeen: seen));
+    await _storage.saveTutorialSeen(seen);
+  }
+
+  Future<void> _onTutorialsSkippedAll(
+    TutorialsSkippedAll event,
+    Emitter<GameState> emit,
+  ) async {
+    final seen = tutorialKeys.toSet();
+    emit(state.copyWith(tutorialSeen: seen));
+    await _storage.saveTutorialSeen(seen);
   }
 
   void _onMatchStarted(MatchStarted event, Emitter<GameState> emit) {
@@ -1178,6 +1404,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     deckAttackers: old.deckAttackers,
     deckDefenders: old.deckDefenders,
     deckActions: old.deckActions,
+    ownedCardIds: old.ownedCardIds,
     tutorialSeen: old.tutorialSeen,
   );
 
@@ -1405,6 +1632,11 @@ class HomeScreen extends StatelessWidget {
                           TextButton(
                             onPressed: () {
                               context.read<GameBloc>().add(TutorialReset());
+                              showTutorialNow(
+                                context,
+                                keyName: 'home',
+                                steps: homeTutorialSteps,
+                              );
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Tutorial reset')),
                               );
@@ -1430,6 +1662,7 @@ class HomeScreen extends StatelessWidget {
                   alignment: Alignment.bottomCenter,
                   child: DailyDropButton(),
                 ),
+                const TutorialTip(keyName: 'home', steps: homeTutorialSteps),
               ],
             ),
           ),
@@ -1635,6 +1868,7 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen>
             title: 'Deck Builder',
             subtitle: editing ? 'Editing / unsaved' : active.name,
             onBack: () => widget.onNavigate(AppSection.home),
+            showShop: false,
             rightSlot: TextButton(
               onPressed: editing
                   ? null
@@ -1643,167 +1877,184 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen>
             ),
           ),
           body: CyberBackground(
-            child: Column(
+            child: Stack(
               children: [
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 118),
-                    children: [
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 430),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            SizedBox(
-                              height: 42,
-                              child: ListView.separated(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: state.deckSlots.length,
-                                separatorBuilder: (_, _) =>
-                                    const SizedBox(width: 8),
-                                itemBuilder: (_, index) {
-                                  final slot = state.deckSlots[index];
-                                  final activeSlot =
-                                      slot.id == state.activeDeckId;
-                                  return DeckPill(
-                                    label: slot.name,
-                                    meta:
-                                        'P ${slot.attackers.length + slot.defenders.length}/4 / ACT ${slot.actions.length}/6',
-                                    selected: activeSlot,
-                                    onTap: editing
-                                        ? null
-                                        : () => context.read<GameBloc>().add(
-                                            DeckApplied(slot.id),
-                                          ),
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            FiveSideDeckPanel(
-                              deckName: active.name,
-                              valid: valid,
-                              attackers: selectedAttackerCards,
-                              defenders: selectedDefenderCards,
-                              actions: selectedActionCards,
-                              actionAtk: actionAtk,
-                              actionDef: actionDef,
-                              actionSpc: actionSpc,
-                              onAttackTap: () {
-                                if (editing) _tabs.animateTo(0);
-                              },
-                              onDefenseTap: () {
-                                if (editing) _tabs.animateTo(1);
-                              },
-                              onActionTap: () {
-                                if (editing) _tabs.animateTo(2);
-                              },
-                            ),
-                            if (editing) ...[
-                              const SizedBox(height: 12),
-                              _DeckTabBar(controller: _tabs, state: this),
-                              const SizedBox(height: 12),
-                              SizedBox(
-                                height: 330,
-                                child: TabBarView(
-                                  controller: _tabs,
-                                  children: [
-                                    SelectionWrap<PlayerCard>(
-                                      cards: attackers,
-                                      selectedIds: selectedAttackers,
-                                      enabled: editing,
-                                      builder: (card, selected, disabled) =>
-                                          CyberPlayerCardTile(
-                                            card: card,
-                                            selected: selected,
-                                            disabled: disabled,
-                                            size: VisualCardSize.sm,
-                                          ),
-                                      onToggle: (card) => _toggle(
-                                        selectedAttackers,
-                                        card.id,
-                                        2,
-                                      ),
-                                      isDisabled: (card) =>
-                                          selectedAttackers.length >= 2 &&
-                                          !selectedAttackers.contains(card.id),
-                                    ),
-                                    SelectionWrap<PlayerCard>(
-                                      cards: defenders,
-                                      selectedIds: selectedDefenders,
-                                      enabled: editing,
-                                      builder: (card, selected, disabled) =>
-                                          CyberPlayerCardTile(
-                                            card: card,
-                                            selected: selected,
-                                            disabled: disabled,
-                                            size: VisualCardSize.sm,
-                                          ),
-                                      onToggle: (card) => _toggle(
-                                        selectedDefenders,
-                                        card.id,
-                                        2,
-                                      ),
-                                      isDisabled: (card) =>
-                                          selectedDefenders.length >= 2 &&
-                                          !selectedDefenders.contains(card.id),
-                                    ),
-                                    SelectionWrap<ActionCard>(
-                                      cards: actionCards,
-                                      selectedIds: selectedActions,
-                                      enabled: editing,
-                                      builder: (card, selected, disabled) =>
-                                          CyberActionCardTile(
-                                            card: card,
-                                            selected: selected,
-                                            disabled: disabled,
-                                            size: VisualCardSize.sm,
-                                          ),
-                                      onToggle: (card) =>
-                                          _toggle(selectedActions, card.id, 6),
-                                      isDisabled: (card) =>
-                                          selectedActions.length >= 6 &&
-                                          !selectedActions.contains(card.id),
-                                    ),
-                                  ],
+                Column(
+                  children: [
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.fromLTRB(12, 12, 12, 118),
+                        children: [
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 430),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                SizedBox(
+                                  height: 58,
+                                  child: ListView.separated(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: state.deckSlots.length,
+                                    separatorBuilder: (_, _) =>
+                                        const SizedBox(width: 8),
+                                    itemBuilder: (_, index) {
+                                      final slot = state.deckSlots[index];
+                                      final activeSlot =
+                                          slot.id == state.activeDeckId;
+                                      return DeckPill(
+                                        label: slot.name,
+                                        meta:
+                                            'P ${slot.attackers.length + slot.defenders.length}/4 / ACT ${slot.actions.length}/6',
+                                        selected: activeSlot,
+                                        onTap: editing
+                                            ? null
+                                            : () => context
+                                                  .read<GameBloc>()
+                                                  .add(DeckApplied(slot.id)),
+                                      );
+                                    },
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ],
-                        ),
+                                const SizedBox(height: 10),
+                                FiveSideDeckPanel(
+                                  deckName: active.name,
+                                  valid: valid,
+                                  attackers: selectedAttackerCards,
+                                  defenders: selectedDefenderCards,
+                                  actions: selectedActionCards,
+                                  actionAtk: actionAtk,
+                                  actionDef: actionDef,
+                                  actionSpc: actionSpc,
+                                  onAttackTap: () {
+                                    if (editing) _tabs.animateTo(0);
+                                  },
+                                  onDefenseTap: () {
+                                    if (editing) _tabs.animateTo(1);
+                                  },
+                                  onActionTap: () {
+                                    if (editing) _tabs.animateTo(2);
+                                  },
+                                ),
+                                if (editing) ...[
+                                  const SizedBox(height: 12),
+                                  _DeckTabBar(controller: _tabs, state: this),
+                                  const SizedBox(height: 12),
+                                  SizedBox(
+                                    height: 330,
+                                    child: TabBarView(
+                                      controller: _tabs,
+                                      children: [
+                                        SelectionWrap<PlayerCard>(
+                                          cards: attackers,
+                                          selectedIds: selectedAttackers,
+                                          enabled: editing,
+                                          builder: (card, selected, disabled) =>
+                                              CyberPlayerCardTile(
+                                                card: card,
+                                                selected: selected,
+                                                disabled: disabled,
+                                                size: VisualCardSize.sm,
+                                              ),
+                                          onToggle: (card) => _toggle(
+                                            selectedAttackers,
+                                            card.id,
+                                            2,
+                                          ),
+                                          isDisabled: (card) =>
+                                              selectedAttackers.length >= 2 &&
+                                              !selectedAttackers.contains(
+                                                card.id,
+                                              ),
+                                        ),
+                                        SelectionWrap<PlayerCard>(
+                                          cards: defenders,
+                                          selectedIds: selectedDefenders,
+                                          enabled: editing,
+                                          builder: (card, selected, disabled) =>
+                                              CyberPlayerCardTile(
+                                                card: card,
+                                                selected: selected,
+                                                disabled: disabled,
+                                                size: VisualCardSize.sm,
+                                              ),
+                                          onToggle: (card) => _toggle(
+                                            selectedDefenders,
+                                            card.id,
+                                            2,
+                                          ),
+                                          isDisabled: (card) =>
+                                              selectedDefenders.length >= 2 &&
+                                              !selectedDefenders.contains(
+                                                card.id,
+                                              ),
+                                        ),
+                                        SelectionWrap<ActionCard>(
+                                          cards: actionCards,
+                                          selectedIds: selectedActions,
+                                          enabled: editing,
+                                          builder: (card, selected, disabled) =>
+                                              CyberActionCardTile(
+                                                card: card,
+                                                selected: selected,
+                                                disabled: disabled,
+                                                size: VisualCardSize.sm,
+                                              ),
+                                          onToggle: (card) => _toggle(
+                                            selectedActions,
+                                            card.id,
+                                            6,
+                                          ),
+                                          isDisabled: (card) =>
+                                              selectedActions.length >= 6 &&
+                                              !selectedActions.contains(
+                                                card.id,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    BottomActionBar(
+                      primaryLabel: 'PLAY',
+                      primaryEnabled: valid,
+                      primaryOnTap: () {
+                        final slot = StoredDeckSlot(
+                          id: state.activeDeckId,
+                          name: active.name,
+                          attackers: selectedAttackers,
+                          defenders: selectedDefenders,
+                          actions: selectedActions,
+                        );
+                        context.read<GameBloc>().add(DeckSaved(slot));
+                        context.read<GameBloc>().add(MatchStarted());
+                        widget.onNavigate(AppSection.match);
+                      },
+                      secondaryLabel: editing ? 'SAVE' : 'EDIT',
+                      secondaryOnTap: () {
+                        if (editing) {
+                          final slot = StoredDeckSlot(
+                            id: state.activeDeckId,
+                            name: active.name,
+                            attackers: selectedAttackers,
+                            defenders: selectedDefenders,
+                            actions: selectedActions,
+                          );
+                          context.read<GameBloc>().add(DeckSaved(slot));
+                        }
+                        setState(() => editing = !editing);
+                      },
+                    ),
+                  ],
                 ),
-                BottomActionBar(
-                  primaryLabel: 'PLAY',
-                  primaryEnabled: valid,
-                  primaryOnTap: () {
-                    final slot = StoredDeckSlot(
-                      id: state.activeDeckId,
-                      name: active.name,
-                      attackers: selectedAttackers,
-                      defenders: selectedDefenders,
-                      actions: selectedActions,
-                    );
-                    context.read<GameBloc>().add(DeckSaved(slot));
-                    context.read<GameBloc>().add(MatchStarted());
-                    widget.onNavigate(AppSection.match);
-                  },
-                  secondaryLabel: editing ? 'SAVE' : 'EDIT',
-                  secondaryOnTap: () {
-                    if (editing) {
-                      final slot = StoredDeckSlot(
-                        id: state.activeDeckId,
-                        name: active.name,
-                        attackers: selectedAttackers,
-                        defenders: selectedDefenders,
-                        actions: selectedActions,
-                      );
-                      context.read<GameBloc>().add(DeckSaved(slot));
-                    }
-                    setState(() => editing = !editing);
-                  },
+                const TutorialTip(
+                  keyName: 'deck-builder',
+                  steps: deckTutorialSteps,
                 ),
               ],
             ),
@@ -1929,8 +2180,27 @@ class _MatchScreenState extends State<MatchScreen> {
     );
   }
 
-  void _quit(BuildContext context) {
-    context.read<GameBloc>().add(MatchReset());
+  Future<void> _quit(BuildContext context) async {
+    final gameBloc = context.read<GameBloc>();
+    final phase = gameBloc.state.phase;
+    final matchInProgress =
+        phase != MatchPhase.idle &&
+        phase != MatchPhase.finalResult &&
+        phase != MatchPhase.matchEnd;
+
+    if (matchInProgress) {
+      final confirmed = await showCyberConfirmDialog(
+        context,
+        title: 'Quit Match?',
+        message: 'Your current match progress will be lost.',
+        confirmLabel: 'Quit',
+        cancelLabel: 'Keep Playing',
+        destructive: true,
+      );
+      if (!mounted || !confirmed) return;
+    }
+
+    gameBloc.add(MatchReset());
     widget.onNavigate(AppSection.home);
   }
 }
@@ -1948,6 +2218,8 @@ class TossPhase extends StatelessWidget {
       subtitle: '// Coin Toss Protocol',
       state: state,
       onQuit: onQuit,
+      tutorialKey: 'toss',
+      tutorialSteps: tossTutorialSteps,
       children: [
         const SizedBox(height: 18),
         Icon(
@@ -2014,6 +2286,8 @@ class TossResultPhase extends StatelessWidget {
       subtitle: '// Coin Toss Result',
       state: state,
       onQuit: onQuit,
+      tutorialKey: 'toss',
+      tutorialSteps: tossTutorialSteps,
       children: [
         InfoPanel(
           icon: Icons.toll,
@@ -2068,6 +2342,8 @@ class ScenarioPhase extends StatelessWidget {
       subtitle: '// Scenario Briefing',
       state: state,
       onQuit: onQuit,
+      tutorialKey: 'scenario',
+      tutorialSteps: scenarioTutorialSteps,
       children: [
         InfoPanel(
           icon: scenario.icon,
@@ -2122,6 +2398,8 @@ class PlayPhase extends StatelessWidget {
       subtitle: state.currentScenario?.title ?? '// Play Protocol',
       state: state,
       onQuit: onQuit,
+      tutorialKey: 'play',
+      tutorialSteps: playTutorialSteps,
       children: [
         RoleStrip(attacking: state.playerAttacking),
         SelectedMovePanel(
@@ -2196,6 +2474,8 @@ class RoundResultPhase extends StatelessWidget {
       subtitle: '// Resolution Log',
       state: state,
       onQuit: onQuit,
+      tutorialKey: 'round-result',
+      tutorialSteps: resultTutorialSteps,
       children: [
         Icon(outcomeIcon(result.outcome), size: 72, color: Cyber.cyan),
         Text(
@@ -2260,6 +2540,8 @@ class MatchEndPhase extends StatelessWidget {
       subtitle: '// Match Archive',
       state: state,
       onQuit: onQuit,
+      tutorialKey: 'match-end',
+      tutorialSteps: matchEndTutorialSteps,
       children: [
         InfoPanel(
           icon: tied ? Icons.balance : Icons.emoji_events,
@@ -2296,6 +2578,8 @@ class PenaltyPhase extends StatelessWidget {
       onQuit: onQuit,
       scoreLabel:
           'PEN ${state.penaltyPlayerScore}-${state.penaltyOpponentScore}',
+      tutorialKey: 'penalty',
+      tutorialSteps: penaltyTutorialSteps,
       children: [
         InfoPanel(
           icon: Icons.adjust,
@@ -2374,43 +2658,223 @@ class FinalResultPhase extends StatelessWidget {
         },
         icon: const Icon(Icons.close),
       ),
-      child: PhaseList(
+      child: Stack(
         children: [
-          ScoreboardPanel(state: state, label: 'FINAL'),
-          InfoPanel(
-            icon: won ? Icons.emoji_events : Icons.sentiment_dissatisfied,
-            title: won ? 'Match Won' : 'Match Lost',
-            body:
-                'Regular score ${state.playerScore}-${state.opponentScore}${state.penaltyKicks.isNotEmpty ? '\nPenalties ${state.penaltyPlayerScore}-${state.penaltyOpponentScore}' : ''}',
-          ),
-          if (mvp != null) CyberPlayerCardTile(card: mvp, selected: true),
-          Text('Round Log', style: Theme.of(context).textTheme.titleLarge),
-          for (final round in state.roundResults)
-            ListTile(
-              leading: CircleAvatar(child: Text('${round.round}')),
-              title: Text(
-                '${round.scenario.title}: ${outcomeLabel(round.outcome)}',
+          PhaseList(
+            children: [
+              ScoreboardPanel(state: state, label: 'FINAL'),
+              InfoPanel(
+                icon: won ? Icons.emoji_events : Icons.sentiment_dissatisfied,
+                title: won ? 'Match Won' : 'Match Lost',
+                body:
+                    'Regular score ${state.playerScore}-${state.opponentScore}${state.penaltyKicks.isNotEmpty ? '\nPenalties ${state.penaltyPlayerScore}-${state.penaltyOpponentScore}' : ''}',
               ),
-              subtitle: Text(
-                round.playerAttacking ? 'You attacked' : 'You defended',
+              if (mvp != null) CyberPlayerCardTile(card: mvp, selected: true),
+              Text('Round Log', style: Theme.of(context).textTheme.titleLarge),
+              for (final round in state.roundResults)
+                ListTile(
+                  leading: CircleAvatar(child: Text('${round.round}')),
+                  title: Text(
+                    '${round.scenario.title}: ${outcomeLabel(round.outcome)}',
+                  ),
+                  subtitle: Text(
+                    round.playerAttacking ? 'You attacked' : 'You defended',
+                  ),
+                ),
+              FilledButton.icon(
+                onPressed: () {
+                  context.read<GameBloc>().add(MatchStarted());
+                },
+                icon: const Icon(Icons.refresh),
+                label: const Text('Rematch'),
               ),
-            ),
-          FilledButton.icon(
-            onPressed: () {
-              context.read<GameBloc>().add(MatchStarted());
-            },
-            icon: const Icon(Icons.refresh),
-            label: const Text('Rematch'),
+              OutlinedButton.icon(
+                onPressed: () {
+                  context.read<GameBloc>().add(MatchReset());
+                  onNavigate(AppSection.home);
+                },
+                icon: const Icon(Icons.home),
+                label: const Text('Home'),
+              ),
+            ],
           ),
-          OutlinedButton.icon(
-            onPressed: () {
-              context.read<GameBloc>().add(MatchReset());
-              onNavigate(AppSection.home);
-            },
-            icon: const Icon(Icons.home),
-            label: const Text('Home'),
-          ),
+          const TutorialTip(keyName: 'final', steps: finalTutorialSteps),
         ],
+      ),
+    );
+  }
+}
+
+Future<bool> showCyberConfirmDialog(
+  BuildContext context, {
+  required String title,
+  required String message,
+  String confirmLabel = 'Confirm',
+  String cancelLabel = 'Cancel',
+  bool destructive = false,
+}) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    barrierColor: Colors.black.withValues(alpha: 0.8),
+    builder: (context) => BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+      child: CyberConfirmDialog(
+        title: title,
+        message: message,
+        confirmLabel: confirmLabel,
+        cancelLabel: cancelLabel,
+        destructive: destructive,
+      ),
+    ),
+  );
+  return confirmed ?? false;
+}
+
+class CyberConfirmDialog extends StatelessWidget {
+  const CyberConfirmDialog({
+    required this.title,
+    required this.message,
+    required this.confirmLabel,
+    required this.cancelLabel,
+    required this.destructive,
+    super.key,
+  });
+
+  final String title;
+  final String message;
+  final String confirmLabel;
+  final String cancelLabel;
+  final bool destructive;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = destructive ? Cyber.red : Cyber.cyan;
+    return Dialog(
+      elevation: 0,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+      backgroundColor: Colors.transparent,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 320),
+        child: CyberPanel(
+          accent: destructive ? Cyber.magenta : Cyber.cyan,
+          padding: EdgeInsets.zero,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          color: accent,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          destructive ? 'WARNING' : 'CONFIRM',
+                          style: TextStyle(
+                            color: accent,
+                            fontFamily: 'Orbitron',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 2.8,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      title.toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'Orbitron',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      message,
+                      style: const TextStyle(
+                        color: Color(0xff9aa8bb),
+                        fontFamily: 'Onest',
+                        fontSize: 12,
+                        height: 1.45,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const HudLine(),
+              SizedBox(
+                height: 48,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _CyberDialogAction(
+                        label: cancelLabel,
+                        color: Cyber.muted,
+                        onTap: () => Navigator.of(context).pop(false),
+                      ),
+                    ),
+                    Container(width: 1, color: const Color(0xff1e2538)),
+                    Expanded(
+                      child: _CyberDialogAction(
+                        label: '$confirmLabel >',
+                        color: accent,
+                        onTap: () => Navigator.of(context).pop(true),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CyberDialogAction extends StatelessWidget {
+  const _CyberDialogAction({
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        splashColor: color.withValues(alpha: 0.12),
+        highlightColor: color.withValues(alpha: 0.08),
+        child: Center(
+          child: Text(
+            label.toUpperCase(),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: color,
+              fontFamily: 'Orbitron',
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 2.2,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -2458,12 +2922,14 @@ class GameScaffold extends StatelessWidget {
     required this.child,
     this.subtitle,
     this.leading,
+    this.showShop = true,
     super.key,
   });
 
   final String title;
   final String? subtitle;
   final Widget? leading;
+  final bool showShop;
   final Widget child;
 
   @override
@@ -2474,6 +2940,7 @@ class GameScaffold extends StatelessWidget {
         subtitle: subtitle,
         onBack: leading == null ? null : () => Navigator.maybePop(context),
         leftSlot: leading,
+        showShop: showShop,
       ),
       body: CyberBackground(child: child),
     );
@@ -2487,6 +2954,7 @@ class ReactHeaderBar extends StatelessWidget implements PreferredSizeWidget {
     this.onBack,
     this.leftSlot,
     this.rightSlot,
+    this.showShop = true,
     super.key,
   });
 
@@ -2495,6 +2963,7 @@ class ReactHeaderBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onBack;
   final Widget? leftSlot;
   final Widget? rightSlot;
+  final bool showShop;
 
   @override
   Size get preferredSize => const Size.fromHeight(66);
@@ -2569,6 +3038,10 @@ class ReactHeaderBar extends StatelessWidget implements PreferredSizeWidget {
                 ],
               ),
             ),
+            if (showShop) ...[
+              HeaderShopButton(onTap: () => showShopDialog(context)),
+              const SizedBox(width: 8),
+            ],
             ?rightSlot,
           ],
         ),
@@ -2576,6 +3049,826 @@ class ReactHeaderBar extends StatelessWidget implements PreferredSizeWidget {
       bottom: const PreferredSize(
         preferredSize: Size.fromHeight(2),
         child: HudLine(),
+      ),
+    );
+  }
+}
+
+class HeaderShopButton extends StatelessWidget {
+  const HeaderShopButton({required this.onTap, super.key});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 30),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: Cyber.cyan.withValues(alpha: 0.08),
+          border: Border.all(color: Cyber.cyan.withValues(alpha: 0.4)),
+          boxShadow: [
+            BoxShadow(
+              color: Cyber.cyan.withValues(alpha: 0.08),
+              blurRadius: 12,
+              spreadRadius: -6,
+            ),
+          ],
+        ),
+        child: const Text(
+          'SHOP',
+          style: TextStyle(
+            color: Cyber.cyan,
+            fontFamily: 'Onest',
+            fontSize: 9,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.6,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class ShopPackOption {
+  const ShopPackOption({
+    required this.id,
+    required this.name,
+    required this.coins,
+    required this.gradient,
+  });
+
+  final String id;
+  final String name;
+  final int coins;
+  final LinearGradient gradient;
+}
+
+const shopPacks = [
+  ShopPackOption(
+    id: 'bronze',
+    name: 'Bronze Pack',
+    coins: 10,
+    gradient: LinearGradient(
+      colors: [Color(0xff855332), Color(0xffc07a45), Color(0xff3a2519)],
+    ),
+  ),
+  ShopPackOption(
+    id: 'silver',
+    name: 'Silver Pack',
+    coins: 50,
+    gradient: LinearGradient(
+      colors: [Color(0xff657080), Color(0xffd9e2ef), Color(0xff485160)],
+    ),
+  ),
+  ShopPackOption(
+    id: 'gold',
+    name: 'Gold Pack',
+    coins: 250,
+    gradient: LinearGradient(
+      colors: [Color(0xff9b6418), Color(0xffffd23d), Color(0xff7a4108)],
+    ),
+  ),
+  ShopPackOption(
+    id: 'platinum',
+    name: 'Platinum Pack',
+    coins: 1000,
+    gradient: LinearGradient(
+      colors: [
+        Color(0xff25365a),
+        Color(0xffc9f7ff),
+        Color(0xffba6eff),
+        Color(0xff10182e),
+      ],
+    ),
+  ),
+];
+
+void showShopDialog(BuildContext context) {
+  showDialog<void>(
+    context: context,
+    barrierColor: Colors.black.withValues(alpha: 0.78),
+    builder: (_) => BlocProvider.value(
+      value: context.read<GameBloc>(),
+      child: const ShopDialog(),
+    ),
+  );
+}
+
+void showTutorialNow(
+  BuildContext context, {
+  required String keyName,
+  required List<TutorialStepData> steps,
+}) {
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    barrierColor: Colors.black.withValues(alpha: 0.85),
+    builder: (_) => BlocProvider.value(
+      value: context.read<GameBloc>(),
+      child: TutorialDialog(keyName: keyName, steps: steps, force: true),
+    ),
+  );
+}
+
+class ShopDialog extends StatefulWidget {
+  const ShopDialog({super.key});
+
+  @override
+  State<ShopDialog> createState() => _ShopDialogState();
+}
+
+class _ShopDialogState extends State<ShopDialog> {
+  final Random _random = Random();
+  ShopPackOption? openingPack;
+  PlayerCard? revealedCard;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog.fullscreen(
+      backgroundColor: Colors.transparent,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: RadialGradient(
+                  center: const Alignment(0, -0.55),
+                  radius: 0.75,
+                  colors: [
+                    Cyber.cyan.withValues(alpha: 0.18),
+                    const Color(0xe603050a),
+                    const Color(0xf003050a),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 430, minHeight: 420),
+              child: CyberPanel(
+                padding: const EdgeInsets.all(18),
+                child: Stack(
+                  children: [
+                    if (openingPack == null)
+                      _ShopPackPicker(onOpen: _openPack)
+                    else
+                      _ShopOpeningStage(
+                        pack: openingPack!,
+                        card: revealedCard!,
+                        onBack: () => setState(() {
+                          openingPack = null;
+                          revealedCard = null;
+                        }),
+                      ),
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close, color: Cyber.cyan),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openPack(ShopPackOption pack) {
+    final card = _pickPackCard(pack.id);
+    context.read<GameBloc>().add(OwnedCardAdded(card.id));
+    setState(() {
+      openingPack = pack;
+      revealedCard = card;
+    });
+  }
+
+  PlayerCard _pickPackCard(String packId) {
+    final allCards = [...attackers, ...defenders];
+    final silver = allCards
+        .where((card) => card.tier == CardTier.silver)
+        .toList();
+    final gold = allCards.where((card) => card.tier == CardTier.gold).toList();
+    final purple = allCards
+        .where((card) => card.tier == CardTier.purple)
+        .toList();
+    final roll = _random.nextDouble();
+    var pool = allCards;
+    if (packId == 'bronze') {
+      pool = roll < 0.72
+          ? silver
+          : roll < 0.94
+          ? gold
+          : purple;
+    }
+    if (packId == 'silver') {
+      pool = roll < 0.45
+          ? silver
+          : roll < 0.86
+          ? gold
+          : purple;
+    }
+    if (packId == 'gold') {
+      pool = roll < 0.20
+          ? silver
+          : roll < 0.72
+          ? gold
+          : purple;
+    }
+    if (packId == 'platinum') {
+      pool = roll < 0.12 ? gold : purple;
+    }
+    return pool[_random.nextInt(pool.length)];
+  }
+}
+
+class _ShopPackPicker extends StatelessWidget {
+  const _ShopPackPicker({required this.onOpen});
+
+  final ValueChanged<ShopPackOption> onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 42, bottom: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'CARD SHOP',
+                        style: TextStyle(
+                          color: Cyber.cyan.withValues(alpha: 0.62),
+                          fontFamily: 'Onest',
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 2.2,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      const Text(
+                        'CHOOSE PACK',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'Orbitron',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.style, color: Cyber.cyan, size: 34),
+              ],
+            ),
+          ),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.05,
+            ),
+            itemCount: shopPacks.length,
+            itemBuilder: (_, index) {
+              final pack = shopPacks[index];
+              return ShopPackCard(pack: pack, onTap: () => onOpen(pack));
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ShopPackCard extends StatelessWidget {
+  const ShopPackCard({required this.pack, required this.onTap, super.key});
+
+  final ShopPackOption pack;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipPath(
+        clipper: CyberClipper(),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: pack.gradient,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.16),
+                  ),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black38, blurRadius: 26),
+                  ],
+                ),
+              ),
+            ),
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.white.withValues(alpha: 0.2),
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.24),
+                    ],
+                    stops: const [0, 0.42, 1],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              right: 12,
+              top: 12,
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Cyber.bg.withValues(alpha: 0.38),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.28),
+                  ),
+                ),
+                child: const Icon(Icons.style, color: Colors.white, size: 24),
+              ),
+            ),
+            Positioned(
+              left: 14,
+              right: 14,
+              bottom: 34,
+              child: Text(
+                pack.name.toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'Orbitron',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.1,
+                ),
+              ),
+            ),
+            Positioned(
+              left: 14,
+              right: 14,
+              bottom: 15,
+              child: Text(
+                '${pack.coins} COINS',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.78),
+                  fontFamily: 'Onest',
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.8,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ShopOpeningStage extends StatelessWidget {
+  const _ShopOpeningStage({
+    required this.pack,
+    required this.card,
+    required this.onBack,
+  });
+
+  final ShopPackOption pack;
+  final PlayerCard card;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 560,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          const _PackBurst(),
+          Positioned(top: 58, child: ShopPackVisual(pack: pack)),
+          Positioned(
+            top: 32,
+            child: Column(
+              children: [
+                Text(
+                  '${pack.name} Opened'.toUpperCase(),
+                  style: TextStyle(
+                    color: Cyber.cyan.withValues(alpha: 0.72),
+                    fontFamily: 'Onest',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 2.6,
+                  ),
+                ),
+                const SizedBox(height: 192),
+                CyberPlayerCardTile(
+                  card: card,
+                  selected: true,
+                  size: VisualCardSize.md,
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  card.name.toUpperCase(),
+                  style: const TextStyle(
+                    color: Cyber.cyan,
+                    fontFamily: 'Orbitron',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'ADDED TO YOUR CARDS',
+                  style: TextStyle(
+                    color: Cyber.lime,
+                    fontFamily: 'Onest',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 2.1,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextButton(
+                  onPressed: onBack,
+                  child: const Text('CHOOSE ANOTHER PACK'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ShopPackVisual extends StatelessWidget {
+  const ShopPackVisual({required this.pack, super.key});
+
+  final ShopPackOption pack;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 198,
+      height: 282,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: pack.gradient,
+                border: Border.all(
+                  color: Cyber.amber.withValues(alpha: 0.86),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Cyber.amber.withValues(alpha: 0.42),
+                    blurRadius: 28,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: CustomPaint(painter: CardStripePainter(color: Colors.white)),
+          ),
+          Center(
+            child: Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.72),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white.withValues(alpha: 0.88)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.42),
+                    blurRadius: 20,
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.style, color: Cyber.bg, size: 34),
+            ),
+          ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white.withValues(alpha: 0.26),
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.22),
+                  ],
+                  stops: const [0, 0.18, 1],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class TutorialTip extends StatefulWidget {
+  const TutorialTip({
+    required this.keyName,
+    required this.steps,
+    this.forceToken = 0,
+    super.key,
+  });
+
+  final String keyName;
+  final List<TutorialStepData> steps;
+  final int forceToken;
+
+  @override
+  State<TutorialTip> createState() => _TutorialTipState();
+}
+
+class _TutorialTipState extends State<TutorialTip> {
+  bool _scheduled = false;
+  int _lastForceToken = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _lastForceToken = widget.forceToken;
+    _maybeSchedule();
+  }
+
+  @override
+  void didUpdateWidget(covariant TutorialTip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final forced = widget.forceToken != _lastForceToken;
+    if (forced) {
+      _lastForceToken = widget.forceToken;
+      _scheduled = false;
+      _schedule(force: true);
+      return;
+    }
+    _maybeSchedule();
+  }
+
+  void _maybeSchedule() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _scheduled) return;
+      final seen = context.read<GameBloc>().state.tutorialSeen;
+      if (!seen.contains(widget.keyName)) {
+        _schedule();
+      }
+    });
+  }
+
+  void _schedule({bool force = false}) {
+    if (_scheduled || widget.steps.isEmpty) return;
+    _scheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        barrierColor: Colors.black.withValues(alpha: 0.85),
+        builder: (_) => BlocProvider.value(
+          value: context.read<GameBloc>(),
+          child: TutorialDialog(
+            keyName: widget.keyName,
+            steps: widget.steps,
+            force: force,
+          ),
+        ),
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
+}
+
+class TutorialDialog extends StatefulWidget {
+  const TutorialDialog({
+    required this.keyName,
+    required this.steps,
+    this.force = false,
+    super.key,
+  });
+
+  final String keyName;
+  final List<TutorialStepData> steps;
+  final bool force;
+
+  @override
+  State<TutorialDialog> createState() => _TutorialDialogState();
+}
+
+class _TutorialDialogState extends State<TutorialDialog> {
+  int index = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final step = widget.steps[index];
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+      child: CyberPanel(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Cyber.cyan,
+                    shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(color: Cyber.cyan, blurRadius: 8)],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '▸ ONBOARDING · ${(index + 1).toString().padLeft(2, '0')}/${widget.steps.length.toString().padLeft(2, '0')}',
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Cyber.cyan,
+                      fontFamily: 'Onest',
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.8,
+                    ),
+                  ),
+                ),
+                TextButton(onPressed: _skipAll, child: const Text('SKIP ALL')),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              step.title.toUpperCase(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontFamily: 'Orbitron',
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.7,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              step.body,
+              style: const TextStyle(
+                color: Color(0xffd1d5db),
+                fontFamily: 'Onest',
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                height: 1.45,
+              ),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                for (var i = 0; i < widget.steps.length; i++)
+                  Expanded(
+                    child: Container(
+                      height: 4,
+                      margin: EdgeInsets.only(
+                        right: i == widget.steps.length - 1 ? 0 : 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: i == index
+                            ? Cyber.cyan
+                            : i < index
+                            ? Cyber.cyan.withValues(alpha: 0.42)
+                            : const Color(0xff1e2538),
+                        boxShadow: i == index
+                            ? [
+                                BoxShadow(
+                                  color: Cyber.cyan.withValues(alpha: 0.7),
+                                  blurRadius: 8,
+                                ),
+                              ]
+                            : null,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            const HudLine(),
+            Row(
+              children: [
+                if (index > 0)
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => setState(() => index--),
+                      child: const Text('◄ BACK'),
+                    ),
+                  ),
+                Expanded(
+                  child: TextButton(
+                    onPressed: _next,
+                    child: Text(
+                      index < widget.steps.length - 1 ? 'NEXT ▸' : 'GOT IT ▸',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _next() {
+    if (index < widget.steps.length - 1) {
+      setState(() => index++);
+      return;
+    }
+    context.read<GameBloc>().add(TutorialSeenMarked(widget.keyName));
+    Navigator.pop(context);
+  }
+
+  void _skipAll() {
+    context.read<GameBloc>().add(TutorialsSkippedAll());
+    Navigator.pop(context);
+  }
+}
+
+class _PackBurst extends StatelessWidget {
+  const _PackBurst();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 310,
+      height: 310,
+      child: Stack(
+        children: [
+          for (var i = 0; i < 12; i++)
+            Positioned.fill(
+              child: Transform.rotate(
+                angle: i * pi / 6,
+                child: Align(
+                  alignment: const Alignment(0, -0.38),
+                  child: Container(
+                    width: 3,
+                    height: 126,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Cyber.amber.withValues(alpha: 0.95),
+                          Colors.transparent,
+                        ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Cyber.amber.withValues(alpha: 0.5),
+                          blurRadius: 12,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -2679,6 +3972,8 @@ class MatchPhaseScaffold extends StatelessWidget {
     required this.children,
     required this.onQuit,
     this.scoreLabel,
+    this.tutorialKey,
+    this.tutorialSteps = const [],
     super.key,
   });
 
@@ -2688,6 +3983,8 @@ class MatchPhaseScaffold extends StatelessWidget {
   final List<Widget> children;
   final VoidCallback onQuit;
   final String? scoreLabel;
+  final String? tutorialKey;
+  final List<TutorialStepData> tutorialSteps;
 
   @override
   Widget build(BuildContext context) {
@@ -2698,17 +3995,23 @@ class MatchPhaseScaffold extends StatelessWidget {
         onPressed: onQuit,
         icon: const Icon(Icons.close, color: Cyber.cyan),
       ),
-      child: Column(
+      child: Stack(
         children: [
-          ScoreboardPanel(state: state, label: scoreLabel),
-          Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemBuilder: (_, index) => children[index],
-              separatorBuilder: (_, _) => const SizedBox(height: 14),
-              itemCount: children.length,
-            ),
+          Column(
+            children: [
+              ScoreboardPanel(state: state, label: scoreLabel),
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemBuilder: (_, index) => children[index],
+                  separatorBuilder: (_, _) => const SizedBox(height: 14),
+                  itemCount: children.length,
+                ),
+              ),
+            ],
           ),
+          if (tutorialKey != null)
+            TutorialTip(keyName: tutorialKey!, steps: tutorialSteps),
         ],
       ),
     );
@@ -2872,6 +4175,7 @@ class SectionLabel extends StatelessWidget {
         fontSize: 10,
         fontWeight: FontWeight.w900,
         letterSpacing: 2,
+        fontFeatures: const [FontFeature.tabularFigures()],
       ),
     );
   }
@@ -3040,7 +4344,7 @@ class DeckPill extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           gradient: selected
               ? const LinearGradient(colors: [Cyber.lime, Cyber.cyan])
@@ -3705,8 +5009,9 @@ class ScoreboardPanel extends StatelessWidget {
                 style: const TextStyle(
                   color: Cyber.muted,
                   fontSize: 10,
-                  fontFamily: 'Orbitron',
-                  fontWeight: FontWeight.w800,
+                  fontFamily: 'Onest',
+                  fontWeight: FontWeight.w700,
+                  fontFeatures: [FontFeature.tabularFigures()],
                 ),
               ),
               Text(
@@ -3761,9 +5066,10 @@ class _HudIdentity extends StatelessWidget {
             label,
             style: TextStyle(
               color: color,
-              fontFamily: 'Orbitron',
+              fontFamily: 'Onest',
               fontWeight: FontWeight.w900,
               fontSize: 11,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
           Text(
@@ -4175,9 +5481,10 @@ class CyberChip extends StatelessWidget {
         label.toUpperCase(),
         style: TextStyle(
           color: color,
-          fontFamily: 'Orbitron',
+          fontFamily: 'Onest',
           fontSize: 10,
           fontWeight: FontWeight.w900,
+          fontFeatures: const [FontFeature.tabularFigures()],
         ),
       ),
     );
