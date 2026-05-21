@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter run *)",
+      "Bash(flutter pub *)",
+      "Bash(flutter analyze *)",
+      "Bash(dart analyze *)",
+      "Bash(grep -v \"^$\")",
+      "Bash(ls \"C:\\\\Users\\\\priya\\\\Downloads\\\\Football Card Duel Game\\\\\" -Recurse -Include \"*.jsx\", \"*.js\", \"*.tsx\", \"*.ts\" | Select-Object -First 20)",
+      "Read(//c/Users/priya/Downloads/**)",
+      "Bash(flutter devices *)",
+      "PowerShell(Start-Process -FilePath \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\emulator\\\\emulator.exe\" -ArgumentList \"-avd Pixel_10_Pro -no-snapshot-load\" -WindowStyle Normal)",
+      "Bash(curl -s \"http://127.0.0.1:62122/KO7Es6DQIAA=/getVM\")",
+      "Bash(curl -s -X POST http://127.0.0.1:62122/KO7Es6DQIAA=/ -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"id\":\"1\",\"method\":\"callServiceExtension\",\"params\":{\"isolateId\":\"isolates/8990888901353923\",\"method\":\"ext.flutter.reassemble\"}}')",
+      "Bash(curl -s \"http://127.0.0.1:62122/KO7Es6DQIAA=/callServiceExtension?method=ext.flutter.reassemble&isolateId=isolates%2F8990888901353923\")",
+      "PowerShell(python --version 2>&1)",
+      "PowerShell(dart --version 2>&1)",
+      "Bash(dart run *)"
+    ]
+  }
+}

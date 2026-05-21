@@ -1,0 +1,1276 @@
+import 'dart:math';
+
+import 'package:flutter/material.dart';
+
+import '../blocs/game/game_state.dart';
+import '../config/theme.dart';
+import '../config/tutorial_steps.dart';
+import '../models/cards.dart';
+import '../models/match.dart';
+import '../screens/match_history/match_history_pages.dart';
+import '../utils/label_helpers.dart';
+import 'cyber/cyber_widgets.dart';
+import 'game_scaffold.dart';
+import 'info_widgets.dart';
+import 'tutorial.dart';
+
+class PhaseList extends StatelessWidget {
+  const PhaseList({required this.children, super.key});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemBuilder: (_, index) => children[index],
+      separatorBuilder: (_, _) => const SizedBox(height: 14),
+      itemCount: children.length,
+    );
+  }
+}
+
+class MatchPhaseScaffold extends StatelessWidget {
+  const MatchPhaseScaffold({
+    required this.title,
+    required this.subtitle,
+    required this.state,
+    required this.children,
+    required this.onQuit,
+    this.scoreLabel,
+    this.tutorialKey,
+    this.tutorialSteps = const [],
+    this.bottomAction,
+    super.key,
+  });
+
+  final String title;
+  final String subtitle;
+  final GameState state;
+  final List<Widget> children;
+  final VoidCallback onQuit;
+  final String? scoreLabel;
+  final String? tutorialKey;
+  final List<TutorialStepData> tutorialSteps;
+  final Widget? bottomAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return GameScaffold(
+      title: title,
+      subtitle: subtitle,
+      showShop: false,
+      leading: IconButton(
+        onPressed: onQuit,
+        icon: const Icon(Icons.close, color: Cyber.cyan),
+      ),
+      child: Stack(
+        children: [
+          Column(
+            children: [
+              ScoreboardPanel(state: state, label: scoreLabel),
+              Expanded(
+                child: ListView.separated(
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    16,
+                    16,
+                    bottomAction == null ? 16 : 128,
+                  ),
+                  itemBuilder: (_, index) => children[index],
+                  separatorBuilder: (_, _) => const SizedBox(height: 14),
+                  itemCount: children.length,
+                ),
+              ),
+            ],
+          ),
+          if (tutorialKey != null)
+            TutorialTip(keyName: tutorialKey!, steps: tutorialSteps),
+          if (bottomAction != null)
+            Positioned(left: 16, right: 16, bottom: 32, child: bottomAction!),
+        ],
+      ),
+    );
+  }
+}
+
+class RoleStrip extends StatelessWidget {
+  const RoleStrip({required this.attacking, super.key});
+
+  final bool attacking;
+
+  @override
+  Widget build(BuildContext context) {
+    return CyberPanel(
+      accent: attacking ? Cyber.lime : Cyber.cyan,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: [
+          Icon(
+            attacking ? Icons.sports_soccer : Icons.shield,
+            color: attacking ? Cyber.lime : Cyber.cyan,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'YOU // ${attacking ? 'ATTACKING' : 'DEFENDING'}',
+              style: TextStyle(
+                color: attacking ? Cyber.lime : Cyber.cyan,
+                fontFamily: 'Orbitron',
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.3,
+              ),
+            ),
+          ),
+          const HiddenCard(),
+          const SizedBox(width: 8),
+          const HiddenCard(),
+        ],
+      ),
+    );
+  }
+}
+
+class HiddenCard extends StatelessWidget {
+  const HiddenCard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 38,
+      height: 50,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(colors: [Cyber.red, Cyber.panel]),
+        border: Border.all(color: Cyber.red.withValues(alpha: 0.5)),
+      ),
+      child: const Icon(Icons.style, color: Cyber.red, size: 16),
+    );
+  }
+}
+
+class SelectedMovePanel extends StatelessWidget {
+  const SelectedMovePanel({
+    required this.attacking,
+    required this.player,
+    required this.action,
+    required this.estimate,
+    super.key,
+  });
+
+  final bool attacking;
+  final PlayerCard? player;
+  final ActionCard? action;
+  final int? estimate;
+
+  @override
+  Widget build(BuildContext context) {
+    final playerRoleLabel = attacking ? 'ATKR' : 'DEFR';
+    final selectionTitle = attacking ? 'ATTACKER' : 'DEFENDER';
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 380;
+        final playerFrameWidth = compact ? 118.0 : 132.0;
+        final playerFrameHeight = compact ? 152.0 : 164.0;
+        final actionFrameWidth = compact ? 104.0 : 116.0;
+        final actionFrameHeight = compact ? 138.0 : 150.0;
+        final gap = compact ? 12.0 : 18.0;
+
+        return Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Color(0xff121a29), Color(0xff0a0f19)],
+            ),
+            border: Border.all(
+              color: estimate == null
+                  ? Cyber.line
+                  : Cyber.cyan.withValues(alpha: 0.6),
+            ),
+            boxShadow: estimate == null
+                ? null
+                : [
+                    BoxShadow(
+                      color: Cyber.cyan.withValues(alpha: 0.14),
+                      blurRadius: 20,
+                    ),
+                  ],
+          ),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(painter: _SelectionArenaPainter()),
+                ),
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                top: 0,
+                child: Container(
+                  height: 3,
+                  color: Cyber.cyan.withValues(alpha: 0.7),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '01 / SELECT $selectionTitle',
+                            style: Cyber.label(
+                              compact ? 14 : 15,
+                              color: Colors.white,
+                              weight: FontWeight.w800,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: _MoveArenaSlot(
+                            label: playerRoleLabel,
+                            value: player?.name ?? 'PLAYER PENDING',
+                            accent: Cyber.cyan,
+                            frameWidth: playerFrameWidth,
+                            frameHeight: playerFrameHeight,
+                            child: player == null
+                                ? const _PendingSelectionBox(
+                                    icon: Icons.person_search,
+                                    label: 'PICK PLAYER',
+                                    accent: Cyber.cyan,
+                                  )
+                                : CyberPlayerCardTile(
+                                    card: player!,
+                                    selected: true,
+                                    size: VisualCardSize.sm,
+                                  ),
+                          ),
+                        ),
+                        SizedBox(width: gap),
+                        _ArenaCenterColumn(estimate: estimate),
+                        SizedBox(width: gap),
+                        Expanded(
+                          child: _MoveArenaSlot(
+                            label: 'ACTION',
+                            value: action?.title ?? 'ACTION PENDING',
+                            accent: Cyber.magenta,
+                            frameWidth: actionFrameWidth,
+                            frameHeight: actionFrameHeight,
+                            child: action == null
+                                ? const _PendingSelectionBox(
+                                    icon: Icons.grid_view_rounded,
+                                    label: 'PICK ACTION',
+                                    accent: Cyber.magenta,
+                                  )
+                                : CyberActionCardTile(
+                                    card: action!,
+                                    selected: true,
+                                    size: VisualCardSize.sm,
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SelectionArenaPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final minor = Paint()
+      ..color = Colors.white.withValues(alpha: 0.035)
+      ..strokeWidth = 1;
+    final major = Paint()
+      ..color = Cyber.cyan.withValues(alpha: 0.06)
+      ..strokeWidth = 1;
+
+    for (double x = 0; x <= size.width; x += 32) {
+      canvas.drawLine(
+        Offset(x, 0),
+        Offset(x, size.height),
+        (x % 96 == 0) ? major : minor,
+      );
+    }
+    for (double y = 0; y <= size.height; y += 28) {
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(size.width, y),
+        (y % 84 == 0) ? major : minor,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _MoveArenaSlot extends StatelessWidget {
+  const _MoveArenaSlot({
+    required this.label,
+    required this.value,
+    required this.accent,
+    required this.frameWidth,
+    required this.frameHeight,
+    required this.child,
+  });
+
+  final String label;
+  final String value;
+  final Color accent;
+  final double frameWidth;
+  final double frameHeight;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Center(
+          child: Text(
+            label,
+            style: Cyber.label(11, color: accent, letterSpacing: 1.4),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Center(
+          child: Container(
+            width: frameWidth,
+            height: frameHeight,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xaa0b1019),
+              border: Border.all(color: accent.withValues(alpha: 0.55)),
+              boxShadow: [
+                BoxShadow(
+                  color: accent.withValues(alpha: 0.08),
+                  blurRadius: 16,
+                ),
+              ],
+            ),
+            child: Center(child: child),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.08),
+            border: Border.all(color: accent.withValues(alpha: 0.5)),
+          ),
+          child: Text(
+            value.toUpperCase(),
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.9),
+              fontFamily: Cyber.displayFont,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PendingSelectionBox extends StatelessWidget {
+  const _PendingSelectionBox({
+    required this.icon,
+    required this.label,
+    required this.accent,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 88,
+      height: 122,
+      decoration: BoxDecoration(
+        color: Colors.transparent,
+        border: Border.all(color: accent.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: accent.withValues(alpha: 0.72), size: 28),
+          const SizedBox(height: 10),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.65),
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ArenaCenterColumn extends StatelessWidget {
+  const _ArenaCenterColumn({required this.estimate});
+
+  final int? estimate;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 64,
+      child: Column(
+        children: [
+          const SizedBox(height: 44),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: Cyber.bg,
+              border: Border.all(color: Cyber.gold),
+              boxShadow: [
+                BoxShadow(
+                  color: Cyber.gold.withValues(alpha: 0.12),
+                  blurRadius: 10,
+                ),
+              ],
+            ),
+            child: Text('VS', style: Cyber.display(18, color: Cyber.gold)),
+          ),
+          const SizedBox(height: 12),
+          if (estimate != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+              decoration: BoxDecoration(
+                color: Cyber.gold.withValues(alpha: 0.08),
+                border: Border.all(color: Cyber.gold.withValues(alpha: 0.4)),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'POWER',
+                    textAlign: TextAlign.center,
+                    style: Cyber.label(
+                      9,
+                      color: Cyber.gold.withValues(alpha: 0.8),
+                      weight: FontWeight.w700,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${estimate!}-${estimate! + 20}',
+                    textAlign: TextAlign.center,
+                    style: Cyber.display(
+                      14,
+                      color: Cyber.gold,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class LoadoutStatusPanel extends StatelessWidget {
+  const LoadoutStatusPanel({required this.state, super.key});
+
+  final GameState state;
+
+  @override
+  Widget build(BuildContext context) {
+    return CyberPanel(
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '> LOADOUT STATUS',
+            style: TextStyle(
+              color: Cyber.cyan.withValues(alpha: 0.68),
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 2,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: MiniStat(
+                  'ATK',
+                  '${state.deckAttackers.length}/2',
+                  state.deckAttackers.length == 2,
+                ),
+              ),
+              Expanded(
+                child: MiniStat(
+                  'DEF',
+                  '${state.deckDefenders.length}/2',
+                  state.deckDefenders.length == 2,
+                ),
+              ),
+              Expanded(
+                child: MiniStat(
+                  'ACT',
+                  '${state.deckActions.length}/6',
+                  state.deckActions.length == 6,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class MatchHistoryPanel extends StatelessWidget {
+  const MatchHistoryPanel({required this.history, super.key});
+
+  final List<MatchHistoryEntry> history;
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = history.take(3).toList();
+    return CyberPanel(
+      accent: Cyber.cyan,
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'MATCH HISTORY',
+                  style: TextStyle(
+                    color: Cyber.cyan.withValues(alpha: 0.68),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => showMatchHistoryArchive(context, history),
+                child: Text(history.isEmpty ? 'OPEN' : 'VIEW ALL'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            history.isEmpty
+                ? 'No completed matches yet. Finish a match and it will land here.'
+                : 'Tap any result to inspect the scoreline, deck, and round log.',
+            style: const TextStyle(
+              color: Cyber.muted,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (preview.isEmpty)
+            GestureDetector(
+              onTap: () => showMatchHistoryArchive(context, history),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Cyber.bg.withValues(alpha: 0.38),
+                  border: Border.all(color: Cyber.line),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.history, color: Cyber.cyan),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Archive terminal ready. Your next finished match will appear here.',
+                        style: TextStyle(
+                          color: Color(0xffd1d5db),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            for (var i = 0; i < preview.length; i++) ...[
+              MatchHistoryTile(
+                entry: preview[i],
+                onTap: () => showMatchHistoryDetail(context, preview[i]),
+              ),
+              if (i < preview.length - 1) const SizedBox(height: 10),
+            ],
+        ],
+      ),
+    );
+  }
+}
+
+class MatchHistoryTile extends StatelessWidget {
+  const MatchHistoryTile({required this.entry, required this.onTap, super.key});
+
+  final MatchHistoryEntry entry;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = switch (entry.resultLabel) {
+      'Victory' => Cyber.success,
+      'Defeat' => Cyber.danger,
+      _ => Cyber.amber,
+    };
+    final resultIcon = switch (entry.resultLabel) {
+      'Victory' => Icons.emoji_events,
+      'Defeat' => Icons.sentiment_dissatisfied,
+      _ => Icons.balance,
+    };
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 72,
+        decoration: BoxDecoration(
+          color: accent.withValues(alpha: 0.05),
+          border: Border(
+            left: BorderSide(color: accent, width: 3),
+            top: BorderSide(color: accent.withValues(alpha: 0.22)),
+            right: BorderSide(color: accent.withValues(alpha: 0.22)),
+            bottom: BorderSide(color: accent.withValues(alpha: 0.22)),
+          ),
+        ),
+        child: Row(
+          children: [
+            // Result accent sidebar
+            Container(
+              width: 56,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.09),
+                border: Border(
+                  right: BorderSide(color: accent.withValues(alpha: 0.2)),
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(resultIcon, color: accent, size: 20),
+                  const SizedBox(height: 3),
+                  Text(
+                    entry.resultLabel[0].toUpperCase(),
+                    style: TextStyle(
+                      color: accent,
+                      fontFamily: 'Orbitron',
+                      fontWeight: FontWeight.w900,
+                      fontSize: 11,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Main content
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            entry.deckName.toUpperCase(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontFamily: 'Orbitron',
+                              fontSize: 12,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 0.7,
+                            ),
+                          ),
+                        ),
+                        // Score
+                        Row(
+                          children: [
+                            Text(
+                              '${entry.playerScore}',
+                              style: Cyber.display(18, color: Cyber.cyan),
+                            ),
+                            Text(
+                              ' – ',
+                              style: TextStyle(
+                                color: Cyber.muted,
+                                fontFamily: 'Orbitron',
+                                fontWeight: FontWeight.w900,
+                                fontSize: 14,
+                              ),
+                            ),
+                            Text(
+                              '${entry.opponentScore}',
+                              style: Cyber.display(18, color: Cyber.danger),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Row(
+                      children: [
+                        Text(
+                          historyTimestampLabel(entry.timestampIso),
+                          style: const TextStyle(
+                            color: Cyber.muted,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        if (entry.penaltyPlayerScore != null) ...[
+                          const SizedBox(width: 7),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Cyber.violet.withValues(alpha: 0.14),
+                              border: Border.all(
+                                color: Cyber.violet.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: Text(
+                              'PEN ${entry.penaltyPlayerScore}–${entry.penaltyOpponentScore}',
+                              style: const TextStyle(
+                                color: Cyber.violet,
+                                fontSize: 9,
+                                fontFamily: 'Orbitron',
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ],
+                        const Spacer(),
+                        const Icon(
+                          Icons.chevron_right,
+                          color: Cyber.cyan,
+                          size: 16,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class SelectionWrap<T> extends StatelessWidget {
+  const SelectionWrap({
+    required this.cards,
+    required this.selectedIds,
+    required this.enabled,
+    required this.builder,
+    required this.onToggle,
+    required this.isDisabled,
+    super.key,
+  });
+
+  final List<T> cards;
+  final List<String> selectedIds;
+  final bool enabled;
+  final Widget Function(T card, bool selected, bool disabled) builder;
+  final ValueChanged<T> onToggle;
+  final bool Function(T card) isDisabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        children: [
+          for (final card in cards)
+            GestureDetector(
+              onTap: enabled ? () => onToggle(card) : null,
+              child: builder(
+                card,
+                selectedIds.contains(switch (card) {
+                  PlayerCard c => c.id,
+                  ActionCard c => c.id,
+                  _ => '',
+                }),
+                isDisabled(card),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class BottomActionBar extends StatelessWidget {
+  const BottomActionBar({
+    required this.primaryLabel,
+    required this.primaryEnabled,
+    required this.primaryOnTap,
+    required this.secondaryLabel,
+    required this.secondaryOnTap,
+    super.key,
+  });
+
+  final String primaryLabel;
+  final bool primaryEnabled;
+  final VoidCallback primaryOnTap;
+  final String secondaryLabel;
+  final VoidCallback secondaryOnTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+        decoration: BoxDecoration(
+          color: Cyber.panel.withValues(alpha: 0.96),
+          border: const Border(top: BorderSide(color: Color(0xff1e2538))),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: CyberCtaButton(
+                label: secondaryLabel,
+                onPressed: secondaryOnTap,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: CyberCtaButton(
+                label: primaryLabel,
+                primary: true,
+                onPressed: primaryEnabled ? primaryOnTap : null,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class InfoPanel extends StatelessWidget {
+  const InfoPanel({
+    required this.icon,
+    required this.title,
+    required this.body,
+    super.key,
+  });
+
+  final IconData icon;
+  final String title;
+  final String body;
+
+  @override
+  Widget build(BuildContext context) {
+    return CyberPanel(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              border: Border.all(color: Cyber.cyan.withValues(alpha: 0.55)),
+              gradient: RadialGradient(
+                colors: [Cyber.cyan.withValues(alpha: 0.25), Cyber.panel2],
+              ),
+            ),
+            child: Icon(icon, size: 28, color: Cyber.cyan),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title.toUpperCase(),
+                  style: const TextStyle(
+                    fontFamily: 'Orbitron',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    color: Cyber.cyan,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(body, style: const TextStyle(color: Cyber.muted)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ScoreboardPanel extends StatelessWidget {
+  const ScoreboardPanel({required this.state, this.label, super.key});
+
+  final GameState state;
+  final String? label;
+
+  @override
+  Widget build(BuildContext context) {
+    final inMatch =
+        label == null && state.currentRound >= 1 && state.currentRound <= 4;
+    return Container(
+      decoration: BoxDecoration(
+        // Glass HUD: rgba(13,17,26,0.85).
+        color: Cyber.bg.withValues(alpha: 0.85),
+        border: Border(
+          top: BorderSide(color: Cyber.cyan.withValues(alpha: 0.28)),
+          bottom: BorderSide(color: Cyber.danger.withValues(alpha: 0.32)),
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: _HudIdentity(
+              label: '[P1] YOU',
+              score: state.playerScore,
+              color: Cyber.cyan,
+              alignRight: false,
+            ),
+          ),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label ?? 'RD ${max(1, state.currentRound)} / 4',
+                style: const TextStyle(
+                  color: Cyber.cyan,
+                  fontSize: 10,
+                  fontFamily: 'Onest',
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.5,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+              ),
+              Text('VS', style: Cyber.display(16, color: Colors.white)),
+              if (inMatch) ...[
+                const SizedBox(height: 4),
+                _RoleBadge(attacking: state.playerAttacking),
+              ],
+            ],
+          ),
+          Expanded(
+            child: _HudIdentity(
+              label: 'CPU [E1]',
+              score: state.opponentScore,
+              color: Cyber.danger,
+              alignRight: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoleBadge extends StatelessWidget {
+  const _RoleBadge({required this.attacking});
+  final bool attacking;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = attacking ? Cyber.danger : Cyber.cyan;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        border: Border.all(color: color.withValues(alpha: 0.6)),
+      ),
+      child: Text(
+        attacking ? ' ATTACKING' : ' DEFENDING',
+        style: TextStyle(
+          color: color,
+          fontFamily: Cyber.bodyFont,
+          fontSize: 8,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1,
+        ),
+      ),
+    );
+  }
+}
+
+class _HudIdentity extends StatefulWidget {
+  const _HudIdentity({
+    required this.label,
+    required this.score,
+    required this.color,
+    required this.alignRight,
+  });
+
+  final String label;
+  final int score;
+  final Color color;
+  final bool alignRight;
+
+  @override
+  State<_HudIdentity> createState() => _HudIdentityState();
+}
+
+class _HudIdentityState extends State<_HudIdentity>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _bounce = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 360),
+  );
+
+  @override
+  void didUpdateWidget(_HudIdentity old) {
+    super.didUpdateWidget(old);
+    if (old.score != widget.score) _bounce.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _bounce.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: widget.alignRight
+          ? Alignment.centerRight
+          : Alignment.centerLeft,
+      child: Column(
+        crossAxisAlignment: widget.alignRight
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            widget.label,
+            style: TextStyle(
+              color: widget.color,
+              fontFamily: 'Onest',
+              fontWeight: FontWeight.w900,
+              fontSize: 11,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+          AnimatedBuilder(
+            animation: _bounce,
+            builder: (context, child) {
+              final scale = 1 + sin(_bounce.value * pi) * 0.3;
+              return Transform.scale(
+                scale: scale,
+                alignment: widget.alignRight
+                    ? Alignment.centerRight
+                    : Alignment.centerLeft,
+                child: child,
+              );
+            },
+            child: Text(
+              '${widget.score}',
+              style: Cyber.display(36, color: Cyber.gold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class CardList<T> extends StatelessWidget {
+  const CardList({
+    required this.cards,
+    required this.selectedIds,
+    required this.builder,
+    required this.onToggle,
+    required this.enabled,
+    super.key,
+  });
+
+  final List<T> cards;
+  final List<String> selectedIds;
+  final Widget Function(T card, bool selected) builder;
+  final ValueChanged<T> onToggle;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: cards.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 10),
+      itemBuilder: (_, index) {
+        final card = cards[index];
+        final id = switch (card) {
+          PlayerCard c => c.id,
+          ActionCard c => c.id,
+          _ => '',
+        };
+        return Opacity(
+          opacity: enabled ? 1 : 0.72,
+          child: InkWell(
+            onTap: enabled ? () => onToggle(card) : null,
+            child: builder(card, selectedIds.contains(id)),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class PlayerCardTile extends StatelessWidget {
+  const PlayerCardTile({
+    required this.card,
+    required this.selected,
+    this.onTap,
+    super.key,
+  });
+
+  final PlayerCard card;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: selected ? Theme.of(context).colorScheme.primaryContainer : null,
+      child: ListTile(
+        onTap: onTap,
+        leading: CircleAvatar(
+          backgroundColor: tierColor(card.tier),
+          child: Icon(card.icon, color: Colors.black),
+        ),
+        title: Text(
+          card.name,
+          style: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+        subtitle: Text(
+          '${card.countryCode} - ${card.trait} - ${card.position}',
+        ),
+        trailing: Text(
+          '${card.rating}',
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+        ),
+      ),
+    );
+  }
+}
+
+class ActionCardTile extends StatelessWidget {
+  const ActionCardTile({
+    required this.card,
+    required this.selected,
+    this.onTap,
+    super.key,
+  });
+
+  final ActionCard card;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: selected ? Theme.of(context).colorScheme.secondaryContainer : null,
+      child: ListTile(
+        onTap: onTap,
+        leading: CircleAvatar(child: Icon(card.icon)),
+        title: Text(
+          card.title,
+          style: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+        subtitle: Text(
+          '${card.category.name.toUpperCase()} - ${card.effect}${card.risky ? ' - Risky' : ''}',
+        ),
+        trailing: Text(
+          '+${card.power}',
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+        ),
+      ),
+    );
+  }
+}
+
+class ChoiceButton extends StatelessWidget {
+  const ChoiceButton({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    super.key,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: onTap,
+      style: OutlinedButton.styleFrom(
+        backgroundColor: selected
+            ? Cyber.cyan.withValues(alpha: 0.18)
+            : Cyber.panel,
+        foregroundColor: selected ? Cyber.cyan : Cyber.muted,
+        side: BorderSide(color: selected ? Cyber.cyan : Cyber.line),
+      ),
+      child: Text(label),
+    );
+  }
+}

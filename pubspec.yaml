@@ -34,6 +34,7 @@ dependencies:
   flutter_bloc: ^9.1.1
   flutter_secure_storage: ^9.2.4
   flutter_svg: ^2.0.10
+  shared_preferences: ^2.3.3
 
   cupertino_icons: ^1.0.8
 
@@ -72,6 +73,8 @@ flutter:
           weight: 700
         - asset: assets/fonts/Onest-VariableFont_wght.ttf
           weight: 800
+        - asset: assets/fonts/Onest-VariableFont_wght.ttf
+          weight: 900
     - family: Orbitron
       fonts:
         - asset: assets/fonts/Orbitron-VariableFont_wght.ttf
