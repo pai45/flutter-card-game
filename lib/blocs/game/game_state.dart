@@ -4,6 +4,56 @@ import '../../models/deck.dart';
 import '../../models/match.dart';
 import '../../utils/card_helpers.dart';
 
+class PackRevealData {
+  const PackRevealData({
+    required this.cards,
+    required this.headline,
+    required this.statusLabel,
+    required this.ctaLabel,
+    required this.summaryLabel,
+    this.detailLabel,
+  });
+
+  factory PackRevealData.starter(List<PlayerCard> cards) => PackRevealData(
+    cards: cards,
+    headline: 'STARTER\nPACK',
+    statusLabel: 'UNLOCKED',
+    ctaLabel: 'ENTER THE GAME',
+    summaryLabel: '${cards.length} CARDS ADDED TO YOUR COLLECTION',
+  );
+
+  factory PackRevealData.shop({
+    required String packName,
+    required List<PlayerCard> cards,
+    required int refund,
+    required int newCardCount,
+  }) {
+    final summaryLabel = refund > 0 || newCardCount < cards.length
+        ? '${cards.length} CARDS REVEALED'
+        : '${cards.length} CARDS ADDED TO YOUR COLLECTION';
+    final detailLabel = refund > 0
+        ? '$newCardCount NEW CARDS | +${_formatPackCount(refund)} COIN REFUND'
+        : newCardCount < cards.length
+        ? '$newCardCount NEW CARDS ADDED'
+        : null;
+    return PackRevealData(
+      cards: cards,
+      headline: packName.toUpperCase().replaceAll(' ', '\n'),
+      statusLabel: 'PURCHASED',
+      ctaLabel: 'CONTINUE',
+      summaryLabel: summaryLabel,
+      detailLabel: detailLabel,
+    );
+  }
+
+  final List<PlayerCard> cards;
+  final String headline;
+  final String statusLabel;
+  final String ctaLabel;
+  final String summaryLabel;
+  final String? detailLabel;
+}
+
 class GameState {
   const GameState({
     required this.loading,
@@ -18,8 +68,7 @@ class GameState {
     required this.equippedCardBackId,
     required this.matchHistory,
     required this.tutorialSeen,
-    required this.starterPackCards,
-    required this.starterPackPending,
+    required this.pendingPackReveal,
     required this.phase,
     required this.currentRound,
     required this.playerScore,
@@ -64,8 +113,7 @@ class GameState {
     equippedCardBackId: 'default',
     matchHistory: const [],
     tutorialSeen: const {},
-    starterPackCards: const [],
-    starterPackPending: false,
+    pendingPackReveal: null,
     phase: MatchPhase.idle,
     currentRound: 0,
     playerScore: 0,
@@ -109,8 +157,7 @@ class GameState {
   final String equippedCardBackId;
   final List<MatchHistoryEntry> matchHistory;
   final Set<String> tutorialSeen;
-  final List<PlayerCard> starterPackCards;
-  final bool starterPackPending;
+  final PackRevealData? pendingPackReveal;
   final MatchPhase phase;
   final int currentRound;
   final int playerScore;
@@ -159,8 +206,7 @@ class GameState {
     String? equippedCardBackId,
     List<MatchHistoryEntry>? matchHistory,
     Set<String>? tutorialSeen,
-    List<PlayerCard>? starterPackCards,
-    bool? starterPackPending,
+    Object? pendingPackReveal = _sentinel,
     MatchPhase? phase,
     int? currentRound,
     int? playerScore,
@@ -203,8 +249,9 @@ class GameState {
     equippedCardBackId: equippedCardBackId ?? this.equippedCardBackId,
     matchHistory: matchHistory ?? this.matchHistory,
     tutorialSeen: tutorialSeen ?? this.tutorialSeen,
-    starterPackCards: starterPackCards ?? this.starterPackCards,
-    starterPackPending: starterPackPending ?? this.starterPackPending,
+    pendingPackReveal: pendingPackReveal == _sentinel
+        ? this.pendingPackReveal
+        : pendingPackReveal as PackRevealData?,
     phase: phase ?? this.phase,
     currentRound: currentRound ?? this.currentRound,
     playerScore: playerScore ?? this.playerScore,
@@ -253,6 +300,19 @@ class GameState {
         ? this.penaltyWinner
         : penaltyWinner as String?,
   );
+}
+
+String _formatPackCount(int value) {
+  final raw = value.toString();
+  final buffer = StringBuffer();
+  for (int i = 0; i < raw.length; i++) {
+    final fromEnd = raw.length - i;
+    buffer.write(raw[i]);
+    if (fromEnd > 1 && fromEnd % 3 == 1) {
+      buffer.write(',');
+    }
+  }
+  return buffer.toString();
 }
 
 const _sentinel = Object();

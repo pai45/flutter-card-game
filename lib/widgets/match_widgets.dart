@@ -646,6 +646,51 @@ class MatchHistoryPanel extends StatelessWidget {
   }
 }
 
+class MatchHistoryHeaderButton extends StatelessWidget {
+  const MatchHistoryHeaderButton({required this.history, super.key});
+
+  final List<MatchHistoryEntry> history;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => showMatchHistoryArchive(context, history),
+          child: Container(
+            height: 42,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: Cyber.bg.withValues(alpha: 0.42),
+              border: Border.all(color: Cyber.line),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.history, color: Cyber.cyan, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  'HISTORY',
+                  style: TextStyle(
+                    color: history.isEmpty ? Cyber.muted : Cyber.cyan,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class MatchHistoryTile extends StatelessWidget {
   const MatchHistoryTile({required this.entry, required this.onTap, super.key});
 

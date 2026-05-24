@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'dart:ui' show lerpDouble;
 
@@ -109,6 +110,9 @@ class _CardUnpackState extends State<CardUnpackAnimation>
   AnimationController? _idleCtrl;      // stage 10 – 2000 ms repeat
   AnimationController? _tapCtrl;       // stage 10 tap pulse – 1200 ms repeat
   AnimationController? _dismissCtrl;   // dismiss – 300 ms
+
+  int _countdown = 3;
+  Timer? _countdownTimer;
 
   // ── Derived animations ──
   late Animation<Offset> _packSlide;
@@ -451,7 +455,19 @@ class _CardUnpackState extends State<CardUnpackAnimation>
     );
     _tapCtrl!.repeat(reverse: true);
 
-    setState(() => _stage = _Stage.idle);
+    setState(() {
+      _stage = _Stage.idle;
+      _countdown = 3;
+    });
+
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) { timer.cancel(); return; }
+      setState(() => _countdown--);
+      if (_countdown <= 0) {
+        timer.cancel();
+        _onTap();
+      }
+    });
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -459,6 +475,8 @@ class _CardUnpackState extends State<CardUnpackAnimation>
   // ─────────────────────────────────────────────────────────────────────────
   void _onTap() {
     if (_stage != _Stage.idle) return;
+    _countdownTimer?.cancel();
+    _countdownTimer = null;
     setState(() => _stage = _Stage.dismissing);
     _idleCtrl?.stop();
     _tapCtrl?.stop();
@@ -495,6 +513,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
     _idleCtrl?.dispose();
     _tapCtrl?.dispose();
     _dismissCtrl?.dispose();
+    _countdownTimer?.cancel();
     super.dispose();
   }
 
@@ -981,14 +1000,13 @@ class _CardUnpackState extends State<CardUnpackAnimation>
           opacity: _tapPulse.value.clamp(0.0, 1.0),
           child: child,
         ),
-        child: const Center(
+        child: Center(
           child: Text(
-            'TAP TO CONTINUE',
-            style: TextStyle(
+            '$_countdown',
+            style: const TextStyle(
               color: _kMuted,
-              fontSize: 11,
-              letterSpacing: 2,
-              fontWeight: FontWeight.w600,
+              fontSize: 36,
+              fontWeight: FontWeight.w900,
               decoration: TextDecoration.none,
             ),
           ),

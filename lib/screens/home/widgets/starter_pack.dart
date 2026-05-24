@@ -69,7 +69,7 @@ class StarterPackHomePanel extends StatelessWidget {
                   builder: (_) => StarterPackRevealDialog(cards: cards),
                 );
                 if (!context.mounted) return;
-                context.read<GameBloc>().add(StarterPackSeen());
+                context.read<GameBloc>().add(PackRevealSeen());
               },
               child: const Text('CLAIM CARDS'),
             ),

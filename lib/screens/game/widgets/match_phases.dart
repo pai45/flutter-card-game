@@ -17,130 +17,277 @@ import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../../widgets/match_widgets.dart';
 
-class TossPhase extends StatelessWidget {
-  const TossPhase({required this.state, required this.onQuit, super.key});
+// ── Toss-phase local colour constants ────────────────────────────────────────
+const Color _kTossCyan  = Color(0xFF5CDFFF);
+const Color _kTossRed   = Color(0xFFFF4D4D);
+const Color _kTossBg    = Color(0xFF0D111A);
+const Color _kTossMuted = Color(0xFF8FA3B8);
 
+// ─────────────────────────────────────────────────────────────────────────────
+// TossPhase  –  full HUD redesign
+// ─────────────────────────────────────────────────────────────────────────────
+class TossPhase extends StatefulWidget {
+  const TossPhase({required this.state, required this.onQuit, super.key});
   final GameState state;
   final VoidCallback onQuit;
 
   @override
+  State<TossPhase> createState() => _TossPhaseState();
+}
+
+class _TossPhaseState extends State<TossPhase> with TickerProviderStateMixin {
+  late final AnimationController _entry;
+  late final Animation<double> _headerAnim;
+  late final Animation<double> _scoreAnim;
+  late final Animation<double> _coinAnim;
+  late final Animation<double> _buttonsAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _entry = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 950),
+    );
+    _headerAnim  = CurvedAnimation(parent: _entry,
+        curve: const Interval(0.00, 0.40, curve: Curves.easeOut));
+    _scoreAnim   = CurvedAnimation(parent: _entry,
+        curve: const Interval(0.20, 0.55, curve: Curves.easeOut));
+    _coinAnim    = CurvedAnimation(parent: _entry,
+        curve: const Interval(0.35, 0.80, curve: Curves.easeOutBack));
+    _buttonsAnim = CurvedAnimation(parent: _entry,
+        curve: const Interval(0.62, 1.00, curve: Curves.easeOut));
+    _entry.forward();
+  }
+
+  @override
+  void dispose() {
+    _entry.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return MatchPhaseScaffold(
-      title: 'Round ${max(1, state.currentRound)}',
-      subtitle: '// Coin Toss Protocol',
-      state: state,
-      onQuit: onQuit,
-      tutorialKey: 'toss',
-      tutorialSteps: tossTutorialSteps,
-      bottomAction: CyberCtaButton(
-        label: 'Flip Coin',
-        primary: true,
-        onPressed: state.tossChoice == null
-            ? null
-            : () => context.read<GameBloc>().add(TossResolved()),
-      ),
-      children: [
-        const SizedBox(height: 18),
-        Icon(
-          Icons.toll,
-          size: 92,
-          color: Cyber.cyan,
-          shadows: [Shadow(color: Cyber.cyan, blurRadius: 18)],
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          '> INITIATING TOSS',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Cyber.cyan,
-            fontFamily: 'Orbitron',
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.7,
+    final round = max(1, widget.state.currentRound);
+    return Scaffold(
+      backgroundColor: _kTossBg,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _GridPainter(1.0),
+              child: const SizedBox.expand(),
+            ),
           ),
-        ),
-        const SizedBox(height: 18),
-        Row(
-          children: [
-            Expanded(
-              child: ChoiceButton(
-                label: 'Heads',
-                selected: state.tossChoice == 'heads',
-                onTap: () =>
-                    context.read<GameBloc>().add(TossChoiceChanged('heads')),
+          SafeArea(
+            child: AnimatedBuilder(
+              animation: _entry,
+              builder: (context, _) => Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Opacity(
+                    opacity: _headerAnim.value.clamp(0.0, 1.0),
+                    child: _TossHudHeader(
+                        round: round, onQuit: widget.onQuit),
+                  ),
+                  Opacity(
+                    opacity: _scoreAnim.value.clamp(0.0, 1.0),
+                    child: _TossScoreBar(state: widget.state),
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: Transform.scale(
+                        scale: _coinAnim.value.clamp(0.0, 1.05),
+                        child: const _HolographicCoin(),
+                      ),
+                    ),
+                  ),
+                  Opacity(
+                    opacity: _buttonsAnim.value.clamp(0.0, 1.0),
+                    child: const _HudSectionLabel(
+                        label: 'INITIATING COIN TOSS'),
+                  ),
+                  const SizedBox(height: 6),
+                  Opacity(
+                    opacity: _buttonsAnim.value.clamp(0.0, 1.0),
+                    child: const _HudSectionLabel(label: 'PICK YOUR CALL'),
+                  ),
+                  const SizedBox(height: 10),
+                  Opacity(
+                    opacity: _buttonsAnim.value.clamp(0.0, 1.0),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _CallButton(
+                              label: 'HEADS',
+                              selected:
+                                  widget.state.tossChoice == 'heads',
+                              onTap: () => context
+                                  .read<GameBloc>()
+                                  .add(TossChoiceChanged('heads')),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _CallButton(
+                              label: 'TAILS',
+                              selected:
+                                  widget.state.tossChoice == 'tails',
+                              onTap: () => context
+                                  .read<GameBloc>()
+                                  .add(TossChoiceChanged('tails')),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Opacity(
+                    opacity: _buttonsAnim.value.clamp(0.0, 1.0),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                      child: _TossCta(
+                        label: 'FLIP COIN',
+                        enabled: widget.state.tossChoice != null,
+                        onPressed: () => context
+                            .read<GameBloc>()
+                            .add(TossResolved()),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ChoiceButton(
-                label: 'Tails',
-                selected: state.tossChoice == 'tails',
-                onTap: () =>
-                    context.read<GameBloc>().add(TossChoiceChanged('tails')),
-              ),
-            ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// TossResultPhase  –  HUD redesign
+// ─────────────────────────────────────────────────────────────────────────────
 class TossResultPhase extends StatelessWidget {
-  const TossResultPhase({required this.state, required this.onQuit, super.key});
-
+  const TossResultPhase(
+      {required this.state, required this.onQuit, super.key});
   final GameState state;
   final VoidCallback onQuit;
 
   @override
   Widget build(BuildContext context) {
-    return MatchPhaseScaffold(
-      title: 'Round ${max(1, state.currentRound)}',
-      subtitle: '// Coin Toss Result',
-      state: state,
-      onQuit: onQuit,
-      tutorialKey: 'toss',
-      tutorialSteps: tossTutorialSteps,
-      bottomAction: state.playerWonToss == true
-          ? Row(
+    final round = max(1, state.currentRound);
+    final won   = state.playerWonToss == true;
+    return Scaffold(
+      backgroundColor: _kTossBg,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _GridPainter(1.0),
+              child: const SizedBox.expand(),
+            ),
+          ),
+          SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                _TossHudHeader(round: round, onQuit: onQuit),
+                _TossScoreBar(state: state),
                 Expanded(
-                  child: CyberCtaButton(
-                    label: 'Attack',
-                    primary: true,
-                    onPressed: () =>
-                        context.read<GameBloc>().add(RoleChosen(true)),
+                  child: Center(
+                    child: _CoinFlipReveal(
+                        result: state.tossResult ?? ''),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: CyberCtaButton(
-                    label: 'Defend',
-                    primary: true,
-                    onPressed: () =>
-                        context.read<GameBloc>().add(RoleChosen(false)),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                          color: _kTossCyan.withValues(alpha: 0.40),
+                          width: 1),
+                      color: _kTossCyan.withValues(alpha: 0.05),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'IT LANDED '
+                          '${(state.tossResult ?? '').toUpperCase()}',
+                          textAlign: TextAlign.center,
+                          style: Cyber.display(22,
+                              color: _kTossCyan, letterSpacing: 2),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          won
+                              ? 'YOU WON THE TOSS — PICK YOUR ROLE'
+                              : 'CPU WON THE TOSS — SELECTING ROLE',
+                          textAlign: TextAlign.center,
+                          style: Cyber.body(12, color: _kTossMuted),
+                        ),
+                      ],
+                    ),
                   ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  child: won
+                      ? Row(
+                          children: [
+                            Expanded(
+                              child: _TossCta(
+                                label: 'ATTACK',
+                                enabled: true,
+                                onPressed: () => context
+                                    .read<GameBloc>()
+                                    .add(RoleChosen(true)),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _TossCta(
+                                label: 'DEFEND',
+                                enabled: true,
+                                fillColor: Cyber.panel,
+                                textColor: _kTossCyan,
+                                onPressed: () => context
+                                    .read<GameBloc>()
+                                    .add(RoleChosen(false)),
+                              ),
+                            ),
+                          ],
+                        )
+                      : const Center(
+                          child: SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: CircularProgressIndicator(
+                              color: _kTossCyan,
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        ),
                 ),
               ],
-            )
-          : null,
-      children: [
-        const SizedBox(height: 8),
-        Center(child: _CoinFlipReveal(result: state.tossResult ?? '')),
-        const SizedBox(height: 8),
-        InfoPanel(
-          icon: Icons.toll,
-          title: 'It landed ${state.tossResult?.toUpperCase()}',
-          body: state.playerWonToss == true
-              ? 'You won the toss. Pick your opening role.'
-              : 'CPU won the toss and is choosing a role.',
-        ),
-        if (state.playerWonToss != true)
-          const Center(child: CircularProgressIndicator()),
-      ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// _CoinFlipReveal  –  3-D flip, glow burst, result flash
+// ─────────────────────────────────────────────────────────────────────────────
 class _CoinFlipReveal extends StatefulWidget {
   const _CoinFlipReveal({required this.result});
   final String result;
@@ -150,64 +297,886 @@ class _CoinFlipReveal extends StatefulWidget {
 }
 
 class _CoinFlipRevealState extends State<_CoinFlipReveal>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1200),
-  )..forward();
+    with TickerProviderStateMixin {
+  late final AnimationController _flip;
+  late final AnimationController _glow;
+  late final Animation<double> _angle;
+  late final Animation<double> _settle;
+  late final Animation<double> _glowPulse;
+  bool _showFlash = false;
 
   @override
   void initState() {
     super.initState();
     playSound(SoundEffect.coinFlip);
+
+    _flip = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1500));
+    _angle = Tween<double>(begin: 0, end: pi * 6).animate(
+      CurvedAnimation(parent: _flip, curve: Curves.easeOut),
+    );
+    _settle = Tween<double>(begin: 0.70, end: 1.0).animate(
+      CurvedAnimation(
+          parent: _flip,
+          curve: const Interval(0.6, 1.0, curve: Curves.easeOutBack)),
+    );
+
+    _glow = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 300));
+    _glowPulse = Tween<double>(begin: 0.4, end: 1.0).animate(
+      CurvedAnimation(parent: _glow, curve: Curves.easeOut),
+    );
+
+    _flip.forward().then((_) {
+      if (!mounted) return;
+      setState(() => _showFlash = true);
+      _glow.forward();
+      Future.delayed(const Duration(milliseconds: 180), () {
+        if (mounted) setState(() => _showFlash = false);
+      });
+    });
   }
 
   @override
   void dispose() {
-    _c.dispose();
+    _flip.dispose();
+    _glow.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: _c,
-      builder: (context, _) {
-        final t = Curves.easeOut.transform(_c.value);
-        final angle = t * pi * 8; // four full flips
-        final settle = 0.7 + 0.3 * Curves.easeOutBack.transform(_c.value);
-        return Transform.scale(
-          scale: settle.clamp(0.0, 1.2),
-          child: Transform(
+      animation: Listenable.merge([_flip, _glow]),
+      builder: (_, _) {
+        final glowBlur  = 24.0 + _glowPulse.value * 40.0;
+        final glowAlpha = 0.35 + _glowPulse.value * 0.45;
+        return SizedBox(
+          width: 180,
+          height: 180,
+          child: Stack(
             alignment: Alignment.center,
-            transform: Matrix4.identity()
-              ..setEntry(3, 2, 0.001)
-              ..rotateY(angle),
-            child: Container(
-              width: 78,
-              height: 78,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xff8fe9ff), Cyber.cyan, Color(0xff1a4a5e)],
-                ),
-                border: Border.all(color: Cyber.cyan, width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: Cyber.cyan.withValues(alpha: 0.45),
-                    blurRadius: 22,
+            children: [
+              if (_showFlash)
+                Container(
+                  width: 180,
+                  height: 180,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.22),
                   ),
-                ],
+                ),
+              Transform.scale(
+                scale: _settle.value.clamp(0.0, 1.10),
+                child: Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.identity()
+                    ..setEntry(3, 2, 0.001)
+                    ..rotateY(_angle.value),
+                  child: Container(
+                    width: 130,
+                    height: 130,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const RadialGradient(
+                        colors: [Color(0xff1a3545), _kTossBg],
+                      ),
+                      border: Border.all(color: _kTossCyan, width: 2.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _kTossCyan.withValues(alpha: glowAlpha),
+                          blurRadius: glowBlur,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        widget.result == 'heads' ? 'H' : 'T',
+                        style:
+                            Cyber.display(52, color: _kTossCyan),
+                      ),
+                    ),
+                  ),
+                ),
               ),
-              child: const Icon(Icons.toll, color: Cyber.bg, size: 38),
-            ),
+            ],
           ),
         );
       },
     );
   }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Sub-widgets
+// ══════════════════════════════════════════════════════════════════════════════
+
+class _TossHudHeader extends StatelessWidget {
+  const _TossHudHeader({required this.round, required this.onQuit});
+  final int round;
+  final VoidCallback onQuit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 4, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                onPressed: onQuit,
+                icon: const Icon(Icons.close,
+                    color: _kTossCyan, size: 28),
+              ),
+              const SizedBox(width: 2),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('ROUND $round',
+                      style: Cyber.display(28,
+                          color: Colors.white, letterSpacing: 1.5)),
+                  Text('COIN TOSS PROTOCOL',
+                      style: Cyber.label(11,
+                          color: _kTossCyan.withValues(alpha: 0.75),
+                          letterSpacing: 2)),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          CustomPaint(
+            painter: _HudBracketLinePainter(),
+            child: const SizedBox(height: 10),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TossScoreBar extends StatelessWidget {
+  const _TossScoreBar({required this.state});
+  final GameState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final round = max(1, state.currentRound);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Player
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('[P1] YOU',
+                        style: Cyber.label(11,
+                            color: _kTossCyan, letterSpacing: 1.5)),
+                    Text('${state.playerScore}',
+                        style: Cyber.display(36,
+                            color: _kTossCyan, letterSpacing: 0)),
+                  ],
+                ),
+              ),
+              // Centre
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text('RD $round / 4',
+                      style: Cyber.label(10,
+                          color: _kTossMuted, letterSpacing: 1)),
+                  const SizedBox(height: 2),
+                  Text('VS',
+                      style: Cyber.display(22,
+                          color: Colors.white, letterSpacing: 2)),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: _kTossCyan, width: 1),
+                    ),
+                    child: Text('ATTACKING',
+                        style: Cyber.label(9,
+                            color: _kTossCyan, letterSpacing: 1.5)),
+                  ),
+                ],
+              ),
+              // CPU
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('CPU [E1]',
+                        style: Cyber.label(11,
+                            color: _kTossRed, letterSpacing: 1.5)),
+                    Text('${state.opponentScore}',
+                        style: Cyber.display(36,
+                            color: _kTossRed, letterSpacing: 0)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          CustomPaint(
+            painter: _ScoreBarDividerPainter(),
+            child: const SizedBox(height: 8),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Holographic coin  –  idle float + ring rotation
+// ─────────────────────────────────────────────────────────────────────────────
+class _HolographicCoin extends StatefulWidget {
+  const _HolographicCoin();
+
+  @override
+  State<_HolographicCoin> createState() => _HolographicCoinState();
+}
+
+class _HolographicCoinState extends State<_HolographicCoin>
+    with TickerProviderStateMixin {
+  late final AnimationController _float;
+  late final AnimationController _ring;
+  late final Animation<double> _floatAnim;
+  late final Animation<double> _ringAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _float = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 3000))
+      ..repeat(reverse: true);
+    _floatAnim = Tween<double>(begin: -4, end: 4).animate(
+      CurvedAnimation(parent: _float, curve: Curves.easeInOut),
+    );
+    _ring = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 20000))
+      ..repeat();
+    _ringAnim =
+        Tween<double>(begin: 0, end: 2 * pi).animate(_ring);
+  }
+
+  @override
+  void dispose() {
+    _float.dispose();
+    _ring.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: Listenable.merge([_float, _ring]),
+      builder: (_, _) => SizedBox(
+        width: 240,
+        height: 240,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Soft radial background glow
+            Container(
+              width: 240,
+              height: 240,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    _kTossCyan.withValues(alpha: 0.10),
+                    _kTossCyan.withValues(alpha: 0.04),
+                    Colors.transparent,
+                  ],
+                  stops: const [0, 0.5, 1],
+                ),
+              ),
+            ),
+            // Outer radar ring — slow clockwise
+            Transform.rotate(
+              angle: _ringAnim.value,
+              child: CustomPaint(
+                size: const Size(220, 220),
+                painter: const _RadarRingPainter(outer: true),
+              ),
+            ),
+            // Mid ring — slow counter-rotation
+            Transform.rotate(
+              angle: -_ringAnim.value * 0.5,
+              child: CustomPaint(
+                size: const Size(168, 168),
+                painter: const _RadarRingPainter(outer: false),
+              ),
+            ),
+            // Float group: inner coin + projection beam + base
+            Transform.translate(
+              offset: Offset(0, _floatAnim.value),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 108,
+                    height: 108,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const RadialGradient(
+                        colors: [Color(0xff1a3040), _kTossBg],
+                      ),
+                      border: Border.all(color: _kTossCyan, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _kTossCyan.withValues(alpha: 0.35),
+                          blurRadius: 20,
+                          spreadRadius: 1,
+                        ),
+                        BoxShadow(
+                          color: _kTossCyan.withValues(alpha: 0.12),
+                          blurRadius: 6,
+                          spreadRadius: -2,
+                        ),
+                      ],
+                    ),
+                    child: const CustomPaint(
+                        painter: _CoinFacePainter()),
+                  ),
+                  Container(
+                    width: 2,
+                    height: 14,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          _kTossCyan.withValues(alpha: 0.55),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                  Container(
+                    width: 72,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      gradient: RadialGradient(
+                        colors: [
+                          _kTossCyan.withValues(alpha: 0.28),
+                          _kTossCyan.withValues(alpha: 0.10),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HudSectionLabel extends StatelessWidget {
+  const _HudSectionLabel({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+                height: 1,
+                color: _kTossCyan.withValues(alpha: 0.28)),
+          ),
+          const SizedBox(width: 8),
+          Text('< $label >',
+              style: Cyber.label(11,
+                  color: _kTossCyan.withValues(alpha: 0.85),
+                  letterSpacing: 2)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Container(
+                height: 1,
+                color: _kTossCyan.withValues(alpha: 0.28)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Heads / Tails choice card
+// ─────────────────────────────────────────────────────────────────────────────
+class _CallButton extends StatefulWidget {
+  const _CallButton(
+      {required this.label,
+      required this.selected,
+      required this.onTap});
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  State<_CallButton> createState() => _CallButtonState();
+}
+
+class _CallButtonState extends State<_CallButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _press;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _press = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 130));
+    _scale = Tween<double>(begin: 1.0, end: 0.96).animate(
+      CurvedAnimation(parent: _press, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _press.dispose();
+    super.dispose();
+  }
+
+  void _onTap() {
+    _press.forward().then((_) {
+      _press.reverse();
+      widget.onTap();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sel = widget.selected;
+    return AnimatedBuilder(
+      animation: _press,
+      builder: (_, _) => Transform.scale(
+        scale: _scale.value,
+        child: GestureDetector(
+          onTap: _onTap,
+          child: Container(
+            height: 92,
+            decoration: BoxDecoration(
+              color: sel
+                  ? _kTossCyan.withValues(alpha: 0.10)
+                  : Cyber.panel,
+              border: Border.all(
+                color: sel
+                    ? _kTossCyan
+                    : _kTossCyan.withValues(alpha: 0.28),
+                width: sel ? 1.5 : 1.0,
+              ),
+              boxShadow: sel
+                  ? [
+                      BoxShadow(
+                        color: _kTossCyan.withValues(alpha: 0.22),
+                        blurRadius: 16,
+                      ),
+                    ]
+                  : const [],
+            ),
+            child: Stack(
+              children: [
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: SizedBox(
+                    height: 18,
+                    child: CustomPaint(painter: _HatchPainter()),
+                  ),
+                ),
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CustomPaint(
+                        size: const Size(38, 38),
+                        painter: _CoinIconPainter(
+                          isHeads: widget.label == 'HEADS',
+                          selected: sel,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(widget.label,
+                          style: Cyber.label(13,
+                              color: sel
+                                  ? _kTossCyan
+                                  : _kTossMuted,
+                              letterSpacing: 2)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Primary / secondary CTA button with angular clip
+// ─────────────────────────────────────────────────────────────────────────────
+class _TossCta extends StatefulWidget {
+  const _TossCta({
+    required this.label,
+    required this.enabled,
+    required this.onPressed,
+    this.fillColor = _kTossCyan,
+    this.textColor = _kTossBg,
+  });
+  final String label;
+  final bool enabled;
+  final VoidCallback onPressed;
+  final Color fillColor;
+  final Color textColor;
+
+  @override
+  State<_TossCta> createState() => _TossCtaState();
+}
+
+class _TossCtaState extends State<_TossCta>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _press;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _press = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 110));
+    _scale = Tween<double>(begin: 1.0, end: 0.96).animate(
+      CurvedAnimation(parent: _press, curve: Curves.easeIn),
+    );
+  }
+
+  @override
+  void dispose() {
+    _press.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _press,
+      builder: (_, _) => Opacity(
+        opacity: widget.enabled ? 1.0 : 0.38,
+        child: Transform.scale(
+          scale: _scale.value,
+          child: GestureDetector(
+            onTapDown: widget.enabled ? (_) => _press.forward() : null,
+            onTapUp: widget.enabled
+                ? (_) {
+                    _press.reverse();
+                    widget.onPressed();
+                  }
+                : null,
+            onTapCancel: () => _press.reverse(),
+            child: ClipPath(
+              clipper: const _AngularClipper(),
+              child: Container(
+                width: double.infinity,
+                height: 52,
+                color: widget.fillColor,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Positioned(
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: 36,
+                      child: CustomPaint(
+                          painter: _ButtonDecorationPainter()),
+                    ),
+                    Text(widget.label,
+                        style: Cyber.display(15,
+                            color: widget.textColor,
+                            letterSpacing: 3)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Painters & clippers
+// ══════════════════════════════════════════════════════════════════════════════
+
+
+class _HudBracketLinePainter extends CustomPainter {
+  const _HudBracketLinePainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = _kTossCyan.withValues(alpha: 0.50)
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+    canvas.drawPath(
+      Path()
+        ..moveTo(0, size.height / 2)
+        ..lineTo(size.width - 18, size.height / 2)
+        ..lineTo(size.width, 0),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_HudBracketLinePainter _) => false;
+}
+
+class _ScoreBarDividerPainter extends CustomPainter {
+  const _ScoreBarDividerPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = _kTossCyan.withValues(alpha: 0.35)
+      ..strokeWidth = 1.0
+      ..style = PaintingStyle.stroke;
+    final mid = size.height / 2;
+    canvas.drawPath(
+      Path()
+        ..moveTo(8, 0)
+        ..lineTo(0, mid)
+        ..lineTo(8, size.height)
+        ..lineTo(size.width - 8, size.height)
+        ..lineTo(size.width, mid)
+        ..lineTo(size.width - 8, 0)
+        ..close(),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_ScoreBarDividerPainter _) => false;
+}
+
+class _RadarRingPainter extends CustomPainter {
+  const _RadarRingPainter({required this.outer});
+  final bool outer;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..color = _kTossCyan.withValues(alpha: outer ? 0.20 : 0.30)
+        ..strokeWidth = outer ? 1.0 : 1.5
+        ..style = PaintingStyle.stroke,
+    );
+
+    final tickPaint = Paint()
+      ..color = _kTossCyan.withValues(alpha: outer ? 0.35 : 0.55)
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+    final count = outer ? 36 : 8;
+    for (int i = 0; i < count; i++) {
+      final angle   = (i / count) * 2 * pi;
+      final tickLen = outer ? (i % 4 == 0 ? 8.0 : 4.0) : 10.0;
+      canvas.drawLine(
+        Offset(center.dx + cos(angle) * (radius - tickLen),
+            center.dy + sin(angle) * (radius - tickLen)),
+        Offset(center.dx + cos(angle) * radius,
+            center.dy + sin(angle) * radius),
+        tickPaint,
+      );
+    }
+
+    if (!outer) {
+      // Cardinal bracket marks at N / E / S / W
+      final bp = Paint()
+        ..color = _kTossCyan.withValues(alpha: 0.60)
+        ..strokeWidth = 2.0
+        ..style = PaintingStyle.stroke;
+      for (int i = 0; i < 4; i++) {
+        final a  = i * (pi / 2);
+        final bx = center.dx + cos(a) * (radius + 5);
+        final by = center.dy + sin(a) * (radius + 5);
+        canvas.drawLine(Offset(bx - sin(a) * 8, by + cos(a) * 8),
+            Offset(bx + sin(a) * 8, by - cos(a) * 8), bp);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_RadarRingPainter old) => old.outer != outer;
+}
+
+class _CoinFacePainter extends CustomPainter {
+  const _CoinFacePainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 * 0.58;
+    final stroke = Paint()
+      ..color = _kTossCyan.withValues(alpha: 0.70)
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      pi, pi, true,
+      Paint()
+        ..color = _kTossCyan.withValues(alpha: 0.22)
+        ..style = PaintingStyle.fill,
+    );
+    canvas.drawLine(Offset(center.dx - radius, center.dy),
+        Offset(center.dx + radius, center.dy), stroke);
+    canvas.drawCircle(center, radius, stroke);
+    canvas.drawCircle(center, 3,
+        Paint()
+          ..color = _kTossCyan.withValues(alpha: 0.90)
+          ..style = PaintingStyle.fill);
+  }
+
+  @override
+  bool shouldRepaint(_CoinFacePainter _) => false;
+}
+
+class _CoinIconPainter extends CustomPainter {
+  const _CoinIconPainter(
+      {required this.isHeads, required this.selected});
+  final bool isHeads;
+  final bool selected;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 2;
+    final alpha  = selected ? 0.9 : 0.45;
+    final stroke = Paint()
+      ..color = _kTossCyan.withValues(alpha: alpha)
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+
+    canvas.drawCircle(center, radius, stroke);
+
+    if (isHeads) {
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius - 1),
+        pi, pi, true,
+        Paint()
+          ..color = _kTossCyan.withValues(alpha: selected ? 0.28 : 0.12)
+          ..style = PaintingStyle.fill,
+      );
+      canvas.drawLine(
+          Offset(center.dx - radius + 2, center.dy),
+          Offset(center.dx + radius - 2, center.dy), stroke);
+    } else {
+      const segs = 12;
+      for (int i = 0; i < segs; i += 2) {
+        final a1 = (i / segs) * 2 * pi;
+        final a2 = ((i + 0.7) / segs) * 2 * pi;
+        canvas.drawArc(
+          Rect.fromCircle(center: center, radius: radius - 6),
+          a1, a2 - a1, false,
+          Paint()
+            ..color = _kTossCyan.withValues(alpha: alpha)
+            ..strokeWidth = 1.5
+            ..style = PaintingStyle.stroke,
+        );
+      }
+      canvas.drawCircle(center, 3,
+          Paint()
+            ..color = _kTossCyan.withValues(alpha: alpha)
+            ..style = PaintingStyle.fill);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_CoinIconPainter old) =>
+      old.selected != selected || old.isHeads != isHeads;
+}
+
+class _HatchPainter extends CustomPainter {
+  const _HatchPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = _kTossCyan.withValues(alpha: 0.11)
+      ..strokeWidth = 1.0;
+    const spacing = 8.0;
+    for (double x = -size.height; x < size.width + size.height;
+        x += spacing) {
+      canvas.drawLine(
+          Offset(x, size.height), Offset(x + size.height, 0), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_HatchPainter _) => false;
+}
+
+class _AngularClipper extends CustomClipper<Path> {
+  const _AngularClipper();
+  static const _n = 10.0;
+
+  @override
+  Path getClip(Size size) => Path()
+    ..moveTo(_n, 0)
+    ..lineTo(size.width - _n, 0)
+    ..lineTo(size.width, _n)
+    ..lineTo(size.width, size.height - _n)
+    ..lineTo(size.width - _n, size.height)
+    ..lineTo(_n, size.height)
+    ..lineTo(0, size.height - _n)
+    ..lineTo(0, _n)
+    ..close();
+
+  @override
+  bool shouldReclip(_AngularClipper _) => false;
+}
+
+class _ButtonDecorationPainter extends CustomPainter {
+  const _ButtonDecorationPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.22)
+      ..strokeWidth = 1.5;
+    const spacing = 6.0;
+    for (double x = 0; x < size.width + size.height; x += spacing) {
+      canvas.drawLine(Offset(x, size.height), Offset(x - size.height, 0),
+          paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_ButtonDecorationPainter _) => false;
 }
 
 class ScenarioPhase extends StatelessWidget {
@@ -256,11 +1225,16 @@ class PlayPhase extends StatelessWidget {
     final playerPool = state.playerAttacking
         ? state.deckAttackers
         : state.deckDefenders;
+    final roleLabel = state.playerAttacking ? 'ATTACKER' : 'DEFENDER';
+    final sectionLabel = state.playerAttacking
+        ? 'ATTACKERS IN YOUR DECK'
+        : 'DEFENDERS IN YOUR DECK';
+    final pickPlayerLabel = state.playerAttacking
+        ? 'PICK ATTACKER'
+        : 'PICK DEFENDER';
+    final lockLabel = state.playerAttacking ? 'LOCK ATTACK' : 'LOCK DEFENSE';
     final hasCompleteSelection =
         state.selectedPlayerCard != null && state.selectedActionCard != null;
-    final availablePlayers = playerPool
-        .where((card) => !state.redCardedCards.contains(card.id))
-        .toList();
     final availableActions = state.deckActions
         .where(
           (card) => state.playerAttacking
@@ -286,56 +1260,503 @@ class PlayPhase extends StatelessWidget {
       onQuit: onQuit,
       tutorialKey: 'play',
       tutorialSteps: playTutorialSteps,
-      bottomAction: hasCompleteSelection
-          ? CyberCtaButton(
-              label: 'Execute Move',
-              primary: true,
-              onPressed: () => context.read<GameBloc>().add(MovePlayed()),
-            )
-          : null,
+      bottomAction: BottomLockButton(
+        enabled: hasCompleteSelection,
+        label: state.selectedPlayerCard == null
+            ? pickPlayerLabel
+            : state.selectedActionCard == null
+            ? 'PICK ACTION'
+            : lockLabel,
+        helper: state.selectedPlayerCard == null
+            ? 'Select one ${roleLabel.toLowerCase()} to continue'
+            : state.selectedActionCard == null
+            ? 'Select one action card to continue'
+            : 'Power preview ${estimate ?? '--'} ready',
+        onPressed: hasCompleteSelection
+            ? () => context.read<GameBloc>().add(MovePlayed())
+            : null,
+      ),
       children: [
-        RoleStrip(attacking: state.playerAttacking),
-        SelectedMovePanel(
+        ScenarioPanel(
+          scenario: state.currentScenario,
           attacking: state.playerAttacking,
+          bonus: scenarioBonus,
+        ),
+        PowerPreviewBar(
           player: state.selectedPlayerCard,
           action: state.selectedActionCard,
-          estimate: estimate,
+          bonus: scenarioBonus,
+          total: estimate,
+          attacking: state.playerAttacking,
         ),
-        SectionLabel(
-          label: state.playerAttacking
-              ? 'Roster // Finishers'
-              : 'Roster // Stoppers',
+        DefenderDeckGrid(
+          title: sectionLabel,
+          cards: playerPool,
+          selectedId: state.selectedPlayerCard?.id,
+          redCardedIds: state.redCardedCards,
+          attacking: state.playerAttacking,
+          onSelect: (card) => context.read<GameBloc>().add(PlayerSelected(card)),
         ),
+        ActionCardRail(
+          cards: availableActions,
+          selectedId: state.selectedActionCard?.id,
+          onSelect: (card) => context.read<GameBloc>().add(ActionSelected(card)),
+        ),
+      ],
+    );
+  }
+}
+
+class ScenarioPanel extends StatelessWidget {
+  const ScenarioPanel({
+    required this.scenario,
+    required this.attacking,
+    required this.bonus,
+    super.key,
+  });
+
+  final ScenarioCard? scenario;
+  final bool attacking;
+  final int bonus;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = attacking
+        ? '${(scenario?.title ?? 'Final Third').toUpperCase()} // FINISHERS'
+        : 'NO STER // STOPPERS';
+    final description = attacking
+        ? scenario?.description ?? 'Break the line before the defense resets.'
+        : 'Stop the attack before the final shot.';
+    return AngularBorderContainer(
+      accent: Cyber.cyan,
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          _ScenarioCrest(icon: attacking ? Icons.bolt : Icons.security),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Cyber.display(22, color: Cyber.cyan, letterSpacing: 1.2),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  description,
+                  style: Cyber.body(14, color: Colors.white, weight: FontWeight.w800),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _InfoChip(
+                      label: attacking ? 'ATK BONUS' : 'DEF BONUS',
+                      value: '+$bonus',
+                      accent: Cyber.cyan,
+                    ),
+                    const _InfoChip(label: 'RISK', value: 'LOW', accent: Cyber.magenta),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          const _TacticalMiniDiagram(),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScenarioCrest extends StatelessWidget {
+  const _ScenarioCrest({required this.icon});
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 82,
+      height: 82,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Cyber.cyan.withValues(alpha: 0.26),
+            Cyber.cyan.withValues(alpha: 0.04),
+          ],
+        ),
+        border: Border.all(color: Cyber.cyan),
+        boxShadow: [BoxShadow(color: Cyber.cyan.withValues(alpha: 0.22), blurRadius: 20)],
+      ),
+      child: Icon(icon, color: Cyber.cyan, size: 42),
+    );
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  const _InfoChip({
+    required this.label,
+    required this.value,
+    required this.accent,
+  });
+
+  final String label;
+  final String value;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.08),
+        border: Border.all(color: accent.withValues(alpha: 0.65)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label, style: Cyber.label(10, color: accent, letterSpacing: 1)),
+          const SizedBox(width: 10),
+          Text(value, style: Cyber.display(16, color: Colors.white)),
+        ],
+      ),
+    );
+  }
+}
+
+class _TacticalMiniDiagram extends StatelessWidget {
+  const _TacticalMiniDiagram();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: const Size(58, 70),
+      painter: _TacticalDiagramPainter(),
+    );
+  }
+}
+
+class _TacticalDiagramPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final line = Paint()
+      ..color = Cyber.cyan.withValues(alpha: 0.18)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final hot = Paint()
+      ..color = Cyber.magenta.withValues(alpha: 0.7)
+      ..style = PaintingStyle.fill;
+    canvas.drawRect(Offset.zero & size, line);
+    canvas.drawLine(Offset(0, size.height * .35), Offset(size.width, size.height * .35), line);
+    canvas.drawCircle(Offset(size.width * .5, size.height * .35), 10, line);
+    canvas.drawCircle(Offset(size.width * .68, size.height * .62), 3, hot);
+    canvas.drawCircle(Offset(size.width * .34, size.height * .72), 3, hot);
+    canvas.drawLine(
+      Offset(size.width * .34, size.height * .72),
+      Offset(size.width * .68, size.height * .62),
+      line,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class PowerPreviewBar extends StatelessWidget {
+  const PowerPreviewBar({
+    required this.player,
+    required this.action,
+    required this.bonus,
+    required this.total,
+    required this.attacking,
+    super.key,
+  });
+
+  final PlayerCard? player;
+  final ActionCard? action;
+  final int bonus;
+  final int? total;
+  final bool attacking;
+
+  @override
+  Widget build(BuildContext context) {
+    return AngularBorderContainer(
+      accent: Cyber.line,
+      glow: false,
+      padding: const EdgeInsets.fromLTRB(12, 9, 12, 12),
+      child: Column(
+        children: [
+          Text(
+            attacking ? 'ATK POWER PREVIEW' : 'DEF POWER PREVIEW',
+            style: Cyber.label(11, color: Cyber.cyan, letterSpacing: 1.2),
+          ),
+          const SizedBox(height: 10),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(attacking ? Icons.sports_soccer : Icons.shield,
+                    color: Cyber.cyan, size: 18),
+                const SizedBox(width: 10),
+                _PowerText(
+                  player == null ? '--' : '${player!.rating}',
+                  color: Cyber.cyan,
+                ),
+                const _PowerSymbol('+'),
+                Icon(action?.icon ?? Icons.grid_view,
+                    color: Cyber.magenta, size: 18),
+                const SizedBox(width: 10),
+                _PowerText(
+                  action == null ? '--' : '${action!.power}',
+                  color: Cyber.magenta,
+                ),
+                const _PowerSymbol('+'),
+                Text('BONUS', style: Cyber.label(11, color: Cyber.cyan)),
+                const SizedBox(width: 8),
+                _PowerText('+$bonus', color: Cyber.success),
+                const _PowerSymbol('='),
+                _PowerText(total == null ? '--' : '$total', color: Cyber.gold),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PowerText extends StatelessWidget {
+  const _PowerText(this.text, {required this.color});
+
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(text, style: Cyber.display(19, color: color));
+  }
+}
+
+class _PowerSymbol extends StatelessWidget {
+  const _PowerSymbol(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Text(text, style: Cyber.display(18, color: Cyber.cyan)),
+    );
+  }
+}
+
+class DefenderDeckGrid extends StatelessWidget {
+  const DefenderDeckGrid({
+    required this.title,
+    required this.cards,
+    required this.selectedId,
+    required this.redCardedIds,
+    required this.attacking,
+    required this.onSelect,
+    super.key,
+  });
+
+  final String title;
+  final List<PlayerCard> cards;
+  final String? selectedId;
+  final List<String> redCardedIds;
+  final bool attacking;
+  final ValueChanged<PlayerCard> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _PlaySectionHeading(title),
+        const SizedBox(height: 12),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: cards.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 14,
+            mainAxisSpacing: 14,
+            childAspectRatio: 0.66,
+          ),
+          itemBuilder: (context, index) {
+            final card = cards[index];
+            final disabled = redCardedIds.contains(card.id);
+            return Center(
+              child: CyberPlayerCardTile(
+                card: card,
+                selected: selectedId == card.id,
+                disabled: disabled,
+                size: VisualCardSize.md,
+                onTap: disabled ? null : () => onSelect(card),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _PlaySectionHeading extends StatelessWidget {
+  const _PlaySectionHeading(this.title);
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(title, style: Cyber.label(16, color: Cyber.cyan, letterSpacing: 1.1));
+  }
+}
+
+class ActionCardRail extends StatelessWidget {
+  const ActionCardRail({
+    required this.cards,
+    required this.selectedId,
+    required this.onSelect,
+    super.key,
+  });
+
+  final List<ActionCard> cards;
+  final String? selectedId;
+  final ValueChanged<ActionCard> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _PlaySectionHeading('ACTIONS IN YOUR DECK'),
+        const SizedBox(height: 12),
         SizedBox(
-          height: 162,
+          height: 136,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            itemCount: availablePlayers.length,
+            itemCount: cards.length,
             separatorBuilder: (_, _) => const SizedBox(width: 12),
-            itemBuilder: (_, index) {
-              final card = availablePlayers[index];
-              return CyberPlayerCardTile(
+            itemBuilder: (context, index) {
+              final card = cards[index];
+              return CyberActionCardTile(
                 card: card,
-                selected: state.selectedPlayerCard?.id == card.id,
-                onTap: () => context.read<GameBloc>().add(PlayerSelected(card)),
+                selected: selectedId == card.id,
+                size: VisualCardSize.md,
+                onTap: () => onSelect(card),
               );
             },
           ),
         ),
-        const SectionLabel(label: 'Action Grid'),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
+      ],
+    );
+  }
+}
+
+class BottomLockButton extends StatelessWidget {
+  const BottomLockButton({
+    required this.enabled,
+    required this.label,
+    required this.helper,
+    required this.onPressed,
+    super.key,
+  });
+
+  final bool enabled;
+  final String label;
+  final String helper;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: AngularBorderContainer(
+        accent: enabled ? Cyber.cyan : Cyber.muted,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            for (final card in availableActions)
-              CyberActionCardTile(
-                card: card,
-                selected: state.selectedActionCard?.id == card.id,
-                onTap: () => context.read<GameBloc>().add(ActionSelected(card)),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: Cyber.display(
+                25,
+                color: enabled ? Cyber.cyan : Cyber.muted,
+                letterSpacing: 1.2,
               ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              helper,
+              textAlign: TextAlign.center,
+              style: Cyber.body(12, color: enabled ? Colors.white70 : Cyber.muted),
+            ),
           ],
         ),
-      ],
+      ),
+    );
+  }
+}
+
+class AngularBorderContainer extends StatelessWidget {
+  const AngularBorderContainer({
+    required this.child,
+    this.accent = Cyber.cyan,
+    this.padding = EdgeInsets.zero,
+    this.margin = EdgeInsets.zero,
+    this.height,
+    this.glow = true,
+    super.key,
+  });
+
+  final Widget child;
+  final Color accent;
+  final EdgeInsetsGeometry padding;
+  final EdgeInsetsGeometry margin;
+  final double? height;
+  final bool glow;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: margin,
+      height: height,
+      decoration: BoxDecoration(
+        boxShadow: glow
+            ? [BoxShadow(color: accent.withValues(alpha: 0.16), blurRadius: 18)]
+            : null,
+      ),
+      child: ClipPath(
+        clipper: CyberClipper(),
+        child: Container(
+          padding: padding,
+          decoration: BoxDecoration(
+            color: const Color(0xff101827).withValues(alpha: 0.88),
+            border: Border.all(color: accent.withValues(alpha: 0.75), width: 1.2),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                accent.withValues(alpha: 0.08),
+                const Color(0xff0d111a).withValues(alpha: 0.95),
+                const Color(0xff101827).withValues(alpha: 0.9),
+              ],
+            ),
+          ),
+          child: child,
+        ),
+      ),
     );
   }
 }

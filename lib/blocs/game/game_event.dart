@@ -50,11 +50,13 @@ class CardPurchased extends GameEvent {
 class PackOpened extends GameEvent {
   PackOpened({
     required this.packId,
+    required this.packName,
     required this.rolledCardIds,
     required this.refund,
   });
 
   final String packId;
+  final String packName;
   final List<String> rolledCardIds;
   final int refund;
 }
@@ -69,7 +71,7 @@ class CardBackEquipped extends GameEvent {
   final String cardBackId;
 }
 
-class StarterPackSeen extends GameEvent {}
+class PackRevealSeen extends GameEvent {}
 
 class MatchReset extends GameEvent {}
 

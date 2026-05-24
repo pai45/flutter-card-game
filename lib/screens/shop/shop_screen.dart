@@ -550,64 +550,16 @@ class _PackTile extends StatelessWidget {
     bloc.add(
       PackOpened(
         packId: pack.id,
+        packName: pack.name,
         rolledCardIds: cards.map((c) => c.id).toList(),
         refund: refund,
       ),
     );
-    _showSnack(
-      context,
-      refund > 0
-          ? '${pack.name} opened. ${_formatInt(refund)} duplicate refund.'
-          : '${pack.name} opened.',
-    );
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        fullscreenDialog: true,
-        builder: (_) => _PackRevealSequence(cards: cards),
-      ),
-    );
+    _showSnack(context, refund > 0 ? '${pack.name} opened.' : '${pack.name} ready.');
   }
 }
 
 // ─── Card-by-card reveal sequence ────────────────────────────────────────────
-class _PackRevealSequence extends StatefulWidget {
-  const _PackRevealSequence({required this.cards});
-  final List<PlayerCard> cards;
-
-  @override
-  State<_PackRevealSequence> createState() => _PackRevealSequenceState();
-}
-
-class _PackRevealSequenceState extends State<_PackRevealSequence> {
-  int _index = 0;
-
-  void _advance() {
-    if (_index < widget.cards.length - 1) {
-      setState(() => _index++);
-    } else {
-      Navigator.of(context).pop();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final card = widget.cards[_index];
-    return CardUnpackAnimation(
-      key: ValueKey(_index),
-      playerName: card.shortName,
-      position: card.position,
-      rating: card.rating,
-      rarity: _rarityString(card.rarity),
-      onComplete: _advance,
-      frontFace: CyberPlayerCardTile(
-        card: card,
-        selected: true,
-        size: VisualCardSize.md,
-      ),
-    );
-  }
-}
-
 // ─── Animated pack design widget ─────────────────────────────────────────────
 class PackDesignWidget extends StatefulWidget {
   const PackDesignWidget({
@@ -1853,9 +1805,14 @@ List<PlayerCard> _rollPack(ShopPack pack, List<String> ownedIds) {
     rarities.add(_rollRarity(pack.id, random));
   }
   _applyGuarantees(pack.id, rarities);
+  final seenIds = <String>{...ownedIds};
   return [
     for (final CardRarity rarity in rarities)
-      _pickCardByRarity(rarity, random, ownedIds),
+      () {
+        final card = _pickCardByRarity(rarity, random, seenIds.toList());
+        seenIds.add(card.id);
+        return card;
+      }(),
   ];
 }
 

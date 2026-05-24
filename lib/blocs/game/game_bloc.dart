@@ -30,11 +30,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<PackOpened>(_onPackOpened);
     on<CardBackPurchased>(_onCardBackPurchased);
     on<CardBackEquipped>(_onCardBackEquipped);
-    on<StarterPackSeen>(
-      (_, emit) => emit(
-        state.copyWith(starterPackPending: false, starterPackCards: const []),
-      ),
-    );
+    on<PackRevealSeen>((_, emit) => emit(state.copyWith(pendingPackReveal: null)));
     on<MatchReset>((_, emit) => emit(_resetMatch(state)));
     on<MatchStarted>(_onMatchStarted);
     on<TossChoiceChanged>(
@@ -134,17 +130,16 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       developer.log('GameLoaded: Loaded wallet');
 
       var ownedCards = {...owned, ...wallet.ownedCardIds}.toList();
-      var starterPackCards = const <PlayerCard>[];
-      var starterPackPending = false;
+      PackRevealData? pendingPackReveal;
 
       if (!starterPackClaimed) {
         developer.log('GameLoaded: Building starter pack');
-        starterPackCards = _buildStarterPack();
+        final starterPackCards = _buildStarterPack();
         ownedCards = {
           ...ownedCards,
           ...starterPackCards.map((card) => card.id),
         }.toList();
-        starterPackPending = true;
+        pendingPackReveal = PackRevealData.starter(starterPackCards);
         await _storage.saveOwnedCards(ownedCards);
         await _storage.saveStarterPackClaimed();
         developer.log('GameLoaded: Starter pack built and saved');
@@ -167,8 +162,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           equippedCardBackId: wallet.equippedCardBackId,
           matchHistory: history,
           tutorialSeen: seen,
-          starterPackCards: starterPackCards,
-          starterPackPending: starterPackPending,
+          pendingPackReveal: pendingPackReveal,
         ),
       );
       developer.log('GameLoaded: Complete');
@@ -222,9 +216,24 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     PackOpened event,
     Emitter<GameState> emit,
   ) async {
+    final rolledCards = cardsByIds(allPlayerCards, event.rolledCardIds);
+    final newCardCount = rolledCards
+        .where((card) => !state.ownedCardIds.contains(card.id))
+        .length;
     final owned = {...state.ownedCardIds, ...event.rolledCardIds}.toList();
     final coins = state.coins + event.refund;
-    emit(state.copyWith(ownedCardIds: owned, coins: coins));
+    emit(
+      state.copyWith(
+        ownedCardIds: owned,
+        coins: coins,
+        pendingPackReveal: PackRevealData.shop(
+          packName: event.packName,
+          cards: rolledCards,
+          refund: event.refund,
+          newCardCount: newCardCount,
+        ),
+      ),
+    );
     await _storage.saveOwnedCards(owned);
     await _saveWallet(coins: coins, ownedCardIds: owned);
   }
@@ -690,8 +699,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     equippedCardBackId: old.equippedCardBackId,
     matchHistory: old.matchHistory,
     tutorialSeen: old.tutorialSeen,
-    starterPackCards: old.starterPackCards,
-    starterPackPending: old.starterPackPending,
+    pendingPackReveal: old.pendingPackReveal,
   );
 
   Future<void> _saveWallet({

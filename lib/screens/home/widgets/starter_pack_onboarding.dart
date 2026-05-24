@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../blocs/game/game_bloc.dart';
 import '../../../blocs/game/game_event.dart';
+import '../../../blocs/game/game_state.dart';
 import '../../../config/enums.dart';
 import '../../../config/theme.dart';
 import '../../../models/cards.dart';
@@ -19,18 +20,16 @@ String _cardRarity(PlayerCard card) => switch (card.rarity) {
 
 enum _Phase { intro, reveal, summary }
 
-class StarterPackOnboardingScreen extends StatefulWidget {
-  const StarterPackOnboardingScreen({required this.cards, super.key});
+class PackOnboardingScreen extends StatefulWidget {
+  const PackOnboardingScreen({required this.reveal, super.key});
 
-  final List<PlayerCard> cards;
+  final PackRevealData reveal;
 
   @override
-  State<StarterPackOnboardingScreen> createState() =>
-      _StarterPackOnboardingScreenState();
+  State<PackOnboardingScreen> createState() => _PackOnboardingScreenState();
 }
 
-class _StarterPackOnboardingScreenState
-    extends State<StarterPackOnboardingScreen>
+class _PackOnboardingScreenState extends State<PackOnboardingScreen>
     with TickerProviderStateMixin {
   _Phase _phase = _Phase.intro;
   int _cardIndex = 0;
@@ -65,7 +64,7 @@ class _StarterPackOnboardingScreenState
     );
 
     _slotCtrl = List.generate(
-      widget.cards.length,
+      widget.reveal.cards.length,
       (_) => AnimationController(
         vsync: this,
         duration: const Duration(milliseconds: 320),
@@ -73,7 +72,7 @@ class _StarterPackOnboardingScreenState
     );
 
     _summaryCtrl = List.generate(
-      widget.cards.length,
+      widget.reveal.cards.length,
       (_) => AnimationController(
         vsync: this,
         duration: const Duration(milliseconds: 420),
@@ -86,7 +85,7 @@ class _StarterPackOnboardingScreenState
     );
 
     // Stagger slot reveals starting at 700ms
-    for (int i = 0; i < widget.cards.length; i++) {
+    for (int i = 0; i < widget.reveal.cards.length; i++) {
       final idx = i;
       Future.delayed(Duration(milliseconds: 720 + idx * 130), () {
         if (mounted) _slotCtrl[idx].forward();
@@ -107,7 +106,7 @@ class _StarterPackOnboardingScreenState
 
   void _onCardComplete() {
     if (!mounted) return;
-    if (_cardIndex < widget.cards.length - 1) {
+    if (_cardIndex < widget.reveal.cards.length - 1) {
       setState(() => _cardIndex++);
     } else {
       setState(() => _phase = _Phase.summary);
@@ -121,7 +120,7 @@ class _StarterPackOnboardingScreenState
 
   void _enterGame() {
     _summaryExit.forward().then((_) {
-      if (mounted) context.read<GameBloc>().add(StarterPackSeen());
+      if (mounted) context.read<GameBloc>().add(PackRevealSeen());
     });
   }
 
@@ -200,7 +199,7 @@ class _StarterPackOnboardingScreenState
                         ),
                         const SizedBox(height: 18),
 
-                        // Big STARTER PACK title
+                        // Big pack title
                         Opacity(
                           opacity: _iv(td, 0.12, 0.65),
                           child: Transform.translate(
@@ -211,10 +210,10 @@ class _StarterPackOnboardingScreenState
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ).createShader(b),
-                              child: const Text(
-                                'STARTER\nPACK',
+                              child: Text(
+                                widget.reveal.headline,
                                 textAlign: TextAlign.center,
-                                style: TextStyle(
+                                style: const TextStyle(
                                   color: Colors.white,
                                   fontFamily: 'Orbitron',
                                   fontSize: 52,
@@ -228,13 +227,13 @@ class _StarterPackOnboardingScreenState
                         ),
                         const SizedBox(height: 10),
 
-                        // UNLOCKED amber label
+                        // Status label
                         Opacity(
                           opacity: _iv(td, 0.32, 0.72),
                           child: Transform.translate(
                             offset: Offset(0, 20 * (1 - _iv(td, 0.32, 0.72))),
                             child: Text(
-                              'UNLOCKED',
+                              widget.reveal.statusLabel,
                               style: TextStyle(
                                 color: Cyber.amber,
                                 fontFamily: 'Orbitron',
@@ -253,7 +252,7 @@ class _StarterPackOnboardingScreenState
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              for (int i = 0; i < widget.cards.length; i++) ...[
+                              for (int i = 0; i < widget.reveal.cards.length; i++) ...[
                                 AnimatedBuilder(
                                   animation: _slotCtrl[i],
                                   builder: (_, _) {
@@ -267,7 +266,7 @@ class _StarterPackOnboardingScreenState
                                     );
                                   },
                                 ),
-                                if (i < widget.cards.length - 1)
+                                if (i < widget.reveal.cards.length - 1)
                                   const SizedBox(width: 8),
                               ],
                             ],
@@ -314,7 +313,7 @@ class _StarterPackOnboardingScreenState
 
   // ── Card reveal ────────────────────────────────────────────────────────────
   Widget _buildReveal(BuildContext context) {
-    final card = widget.cards[_cardIndex];
+    final card = widget.reveal.cards[_cardIndex];
     return Stack(
       key: ValueKey('reveal_$_cardIndex'),
       fit: StackFit.expand,
@@ -326,10 +325,13 @@ class _StarterPackOnboardingScreenState
           rating: card.rating,
           rarity: _cardRarity(card),
           onComplete: _onCardComplete,
-          frontFace: CyberPlayerCardTile(
-            card: card,
-            selected: false,
-            size: VisualCardSize.md,
+          frontFace: Transform.scale(
+            scale: 1.5,
+            child: CyberPlayerCardTile(
+              card: card,
+              selected: false,
+              size: VisualCardSize.md,
+            ),
           ),
         ),
         // Progress indicator overlay at top
@@ -339,7 +341,7 @@ class _StarterPackOnboardingScreenState
           right: 0,
           child: _ProgressDots(
             current: _cardIndex + 1,
-            total: widget.cards.length,
+            total: widget.reveal.cards.length,
           ),
         ),
       ],
@@ -401,7 +403,7 @@ class _StarterPackOnboardingScreenState
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    '${widget.cards.length} CARDS ADDED TO YOUR COLLECTION',
+                    widget.reveal.summaryLabel,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Cyber.muted,
@@ -410,6 +412,19 @@ class _StarterPackOnboardingScreenState
                       fontWeight: FontWeight.w700,
                     ),
                   ),
+                  if (widget.reveal.detailLabel != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.reveal.detailLabel!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Cyber.cyan.withValues(alpha: 0.85),
+                        fontSize: 10,
+                        letterSpacing: 1.6,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 30),
 
                   // Cards in a wrap
@@ -418,7 +433,7 @@ class _StarterPackOnboardingScreenState
                     spacing: 10,
                     runSpacing: 10,
                     children: [
-                      for (int i = 0; i < widget.cards.length; i++)
+                      for (int i = 0; i < widget.reveal.cards.length; i++)
                         AnimatedBuilder(
                           animation: _summaryCtrl[i],
                           builder: (_, _) {
@@ -428,7 +443,7 @@ class _StarterPackOnboardingScreenState
                               child: Transform.scale(
                                 scale: Curves.easeOutBack.transform(t),
                                 child: CyberPlayerCardTile(
-                                  card: widget.cards[i],
+                                  card: widget.reveal.cards[i],
                                   selected: false,
                                   size: VisualCardSize.sm,
                                 ),
@@ -450,9 +465,9 @@ class _StarterPackOnboardingScreenState
                         foregroundColor: Cyber.bg,
                         minimumSize: const Size.fromHeight(52),
                       ),
-                      child: const Text(
-                        'ENTER THE GAME',
-                        style: TextStyle(
+                      child: Text(
+                        widget.reveal.ctaLabel,
+                        style: const TextStyle(
                           fontFamily: 'Orbitron',
                           fontWeight: FontWeight.w900,
                           letterSpacing: 2,

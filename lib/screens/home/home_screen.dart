@@ -26,6 +26,7 @@ class HomeScreen extends StatelessWidget {
           appBar: ReactHeaderBar(
             title: 'Pitch Duel',
             subtitle: '// Main Terminal',
+            rightSlot: MatchHistoryHeaderButton(history: state.matchHistory),
           ),
           body: CyberBackground(
             animated: true,
@@ -89,8 +90,6 @@ class HomeScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 24),
-                          MatchHistoryPanel(history: state.matchHistory),
-                          const SizedBox(height: 16),
                           TextButton(
                             onPressed: () {
                               context.read<GameBloc>().add(TutorialReset());

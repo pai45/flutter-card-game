@@ -146,10 +146,11 @@ class _AppShellState extends State<AppShell> {
               ),
             );
           }
-          if (state.starterPackPending && state.starterPackCards.isNotEmpty) {
-            return StarterPackOnboardingScreen(
+          final packReveal = state.pendingPackReveal;
+          if (packReveal != null && packReveal.cards.isNotEmpty) {
+            return PackOnboardingScreen(
               key: const ValueKey('onboarding'),
-              cards: state.starterPackCards,
+              reveal: packReveal,
             );
           }
           return switch (section) {
