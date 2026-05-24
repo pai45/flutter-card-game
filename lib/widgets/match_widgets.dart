@@ -58,31 +58,55 @@ class MatchPhaseScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return GameScaffold(
       title: title,
-      subtitle: subtitle,
+      subtitle: null,
       showShop: false,
+      compactHeader: true,
+      titleUnderlay:
+          scoreLabel == null &&
+              state.currentRound >= 1 &&
+              state.currentRound <= 4
+          ? _RoundProgressMeter(currentRound: state.currentRound)
+          : null,
+      rightSlot: _MatchHeaderScore(
+        label: scoreLabel,
+        playerScore: state.playerScore,
+        opponentScore: state.opponentScore,
+      ),
       leading: IconButton(
         onPressed: onQuit,
         icon: const Icon(Icons.close, color: Cyber.cyan),
       ),
       child: Stack(
         children: [
-          Column(
-            children: [
-              ScoreboardPanel(state: state, label: scoreLabel),
-              Expanded(
-                child: ListView.separated(
-                  padding: EdgeInsets.fromLTRB(
-                    16,
-                    16,
-                    16,
-                    bottomAction == null ? 16 : 128,
-                  ),
-                  itemBuilder: (_, index) => children[index],
-                  separatorBuilder: (_, _) => const SizedBox(height: 14),
-                  itemCount: children.length,
+          ListView.separated(
+            padding: EdgeInsets.fromLTRB(
+              16,
+              16,
+              16,
+              bottomAction == null ? 16 : 128,
+            ),
+            itemBuilder: (_, index) => children[index],
+            separatorBuilder: (_, _) => const SizedBox(height: 14),
+            itemCount: children.length,
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 0,
+            child: IgnorePointer(
+              child: Container(
+                height: 1,
+                decoration: BoxDecoration(
+                  color: Cyber.cyan.withValues(alpha: 0.16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Cyber.cyan.withValues(alpha: 0.12),
+                      blurRadius: 12,
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
           if (tutorialKey != null)
             TutorialTip(keyName: tutorialKey!, steps: tutorialSteps),
@@ -94,6 +118,186 @@ class MatchPhaseScaffold extends StatelessWidget {
   }
 }
 
+class _RoundProgressMeter extends StatelessWidget {
+  const _RoundProgressMeter({required this.currentRound});
+
+  final int currentRound;
+
+  @override
+  Widget build(BuildContext context) {
+    final activeRound = currentRound.clamp(1, 4);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(4, (index) {
+        final active = index < activeRound;
+        return Container(
+          width: index == 0 ? 23 : 21,
+          height: 3,
+          margin: EdgeInsets.only(right: index == 3 ? 0 : 4),
+          decoration: BoxDecoration(
+            color: active ? Cyber.cyan : Cyber.cyan.withValues(alpha: 0.12),
+            boxShadow: active
+                ? [
+                    BoxShadow(
+                      color: Cyber.cyan.withValues(alpha: 0.32),
+                      blurRadius: 8,
+                    ),
+                  ]
+                : null,
+          ),
+        );
+      }),
+    );
+  }
+}
+
+class _MatchHeaderScore extends StatelessWidget {
+  const _MatchHeaderScore({
+    required this.playerScore,
+    required this.opponentScore,
+    this.label,
+  });
+
+  final int playerScore;
+  final int opponentScore;
+  final String? label;
+
+  @override
+  Widget build(BuildContext context) {
+    if (label != null) {
+      return ConstrainedBox(
+        constraints: const BoxConstraints(minWidth: 88),
+        child: Align(
+          alignment: Alignment.centerRight,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            decoration: BoxDecoration(
+              color: Cyber.danger.withValues(alpha: 0.1),
+              border: Border.all(color: Cyber.danger.withValues(alpha: 0.45)),
+              boxShadow: [
+                BoxShadow(
+                  color: Cyber.danger.withValues(alpha: 0.16),
+                  blurRadius: 12,
+                ),
+              ],
+            ),
+            child: Text(
+              label!,
+              maxLines: 1,
+              overflow: TextOverflow.fade,
+              softWrap: false,
+              style: const TextStyle(
+                color: Colors.white,
+                fontFamily: Cyber.displayFont,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.8,
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 92),
+      child: Align(
+        alignment: Alignment.centerRight,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(7, 4, 7, 5),
+          decoration: BoxDecoration(
+            color: const Color(0xff050816).withValues(alpha: 0.72),
+            border: Border.all(color: Cyber.cyan.withValues(alpha: 0.26)),
+            boxShadow: [
+              BoxShadow(
+                color: Cyber.cyan.withValues(alpha: 0.12),
+                blurRadius: 14,
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _ScoreDigit(score: playerScore, color: Cyber.cyan),
+              const SizedBox(width: 5),
+              const _ScoreDivider(),
+              const SizedBox(width: 5),
+              _ScoreDigit(score: opponentScore, color: Cyber.danger),
+              const SizedBox(width: 6),
+              Container(
+                width: 5,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Cyber.lime,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Cyber.lime.withValues(alpha: 0.55),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ScoreDigit extends StatelessWidget {
+  const _ScoreDigit({required this.score, required this.color});
+
+  final int score;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 24,
+      height: 24,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.16),
+        border: Border.all(color: color.withValues(alpha: 0.64)),
+        boxShadow: [
+          BoxShadow(color: color.withValues(alpha: 0.22), blurRadius: 10),
+        ],
+      ),
+      child: Text(
+        '$score',
+        maxLines: 1,
+        style: TextStyle(
+          color: color,
+          fontFamily: Cyber.displayFont,
+          fontSize: 15,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.5,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
+      ),
+    );
+  }
+}
+
+class _ScoreDivider extends StatelessWidget {
+  const _ScoreDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(width: 3, height: 3, color: Colors.white70),
+        const SizedBox(height: 4),
+        Container(width: 3, height: 3, color: Colors.white70),
+      ],
+    );
+  }
+}
+
 class RoleStrip extends StatelessWidget {
   const RoleStrip({required this.attacking, super.key});
 
@@ -101,21 +305,19 @@ class RoleStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final accent = attacking ? Cyber.cyan : Cyber.violet;
     return CyberPanel(
-      accent: attacking ? Cyber.lime : Cyber.cyan,
+      accent: accent,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
-          Icon(
-            attacking ? Icons.sports_soccer : Icons.shield,
-            color: attacking ? Cyber.lime : Cyber.cyan,
-          ),
+          Icon(attacking ? Icons.sports_soccer : Icons.shield, color: accent),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               'YOU // ${attacking ? 'ATTACKING' : 'DEFENDING'}',
               style: TextStyle(
-                color: attacking ? Cyber.lime : Cyber.cyan,
+                color: accent,
                 fontFamily: 'Orbitron',
                 fontWeight: FontWeight.w900,
                 letterSpacing: 1.3,
@@ -166,6 +368,7 @@ class SelectedMovePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final playerRoleLabel = attacking ? 'ATKR' : 'DEFR';
     final selectionTitle = attacking ? 'ATTACKER' : 'DEFENDER';
+    final roleAccent = attacking ? Cyber.cyan : Cyber.violet;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -186,13 +389,13 @@ class SelectedMovePanel extends StatelessWidget {
             border: Border.all(
               color: estimate == null
                   ? Cyber.line
-                  : Cyber.cyan.withValues(alpha: 0.6),
+                  : roleAccent.withValues(alpha: 0.6),
             ),
             boxShadow: estimate == null
                 ? null
                 : [
                     BoxShadow(
-                      color: Cyber.cyan.withValues(alpha: 0.14),
+                      color: roleAccent.withValues(alpha: 0.14),
                       blurRadius: 20,
                     ),
                   ],
@@ -201,7 +404,9 @@ class SelectedMovePanel extends StatelessWidget {
             children: [
               Positioned.fill(
                 child: IgnorePointer(
-                  child: CustomPaint(painter: _SelectionArenaPainter()),
+                  child: CustomPaint(
+                    painter: _SelectionArenaPainter(roleAccent),
+                  ),
                 ),
               ),
               Positioned(
@@ -210,7 +415,7 @@ class SelectedMovePanel extends StatelessWidget {
                 top: 0,
                 child: Container(
                   height: 3,
-                  color: Cyber.cyan.withValues(alpha: 0.7),
+                  color: roleAccent.withValues(alpha: 0.7),
                 ),
               ),
               Padding(
@@ -241,18 +446,19 @@ class SelectedMovePanel extends StatelessWidget {
                           child: _MoveArenaSlot(
                             label: playerRoleLabel,
                             value: player?.name ?? 'PLAYER PENDING',
-                            accent: Cyber.cyan,
+                            accent: roleAccent,
                             frameWidth: playerFrameWidth,
                             frameHeight: playerFrameHeight,
                             child: player == null
-                                ? const _PendingSelectionBox(
+                                ? _PendingSelectionBox(
                                     icon: Icons.person_search,
                                     label: 'PICK PLAYER',
-                                    accent: Cyber.cyan,
+                                    accent: roleAccent,
                                   )
                                 : CyberPlayerCardTile(
                                     card: player!,
                                     selected: true,
+                                    selectedAccent: roleAccent,
                                     size: VisualCardSize.sm,
                                   ),
                           ),
@@ -264,18 +470,19 @@ class SelectedMovePanel extends StatelessWidget {
                           child: _MoveArenaSlot(
                             label: 'ACTION',
                             value: action?.title ?? 'ACTION PENDING',
-                            accent: Cyber.magenta,
+                            accent: roleAccent,
                             frameWidth: actionFrameWidth,
                             frameHeight: actionFrameHeight,
                             child: action == null
-                                ? const _PendingSelectionBox(
+                                ? _PendingSelectionBox(
                                     icon: Icons.grid_view_rounded,
                                     label: 'PICK ACTION',
-                                    accent: Cyber.magenta,
+                                    accent: roleAccent,
                                   )
                                 : CyberActionCardTile(
                                     card: action!,
                                     selected: true,
+                                    selectedAccent: roleAccent,
                                     size: VisualCardSize.sm,
                                   ),
                           ),
@@ -294,13 +501,17 @@ class SelectedMovePanel extends StatelessWidget {
 }
 
 class _SelectionArenaPainter extends CustomPainter {
+  const _SelectionArenaPainter(this.accent);
+
+  final Color accent;
+
   @override
   void paint(Canvas canvas, Size size) {
     final minor = Paint()
       ..color = Colors.white.withValues(alpha: 0.035)
       ..strokeWidth = 1;
     final major = Paint()
-      ..color = Cyber.cyan.withValues(alpha: 0.06)
+      ..color = accent.withValues(alpha: 0.06)
       ..strokeWidth = 1;
 
     for (double x = 0; x <= size.width; x += 32) {
@@ -320,7 +531,8 @@ class _SelectionArenaPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _SelectionArenaPainter oldDelegate) =>
+      oldDelegate.accent != accent;
 }
 
 class _MoveArenaSlot extends StatelessWidget {
@@ -1076,7 +1288,7 @@ class _RoleBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = attacking ? Cyber.danger : Cyber.cyan;
+    final color = attacking ? Cyber.cyan : Cyber.violet;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(

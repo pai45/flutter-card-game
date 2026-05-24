@@ -9,6 +9,9 @@ class GameScaffold extends StatelessWidget {
     required this.child,
     this.subtitle,
     this.leading,
+    this.rightSlot,
+    this.titleUnderlay,
+    this.compactHeader = false,
     this.showShop = false,
     super.key,
   });
@@ -16,6 +19,9 @@ class GameScaffold extends StatelessWidget {
   final String title;
   final String? subtitle;
   final Widget? leading;
+  final Widget? rightSlot;
+  final Widget? titleUnderlay;
+  final bool compactHeader;
   final bool showShop;
   final Widget child;
 
@@ -27,13 +33,15 @@ class GameScaffold extends StatelessWidget {
         subtitle: subtitle,
         onBack: leading == null ? null : () => Navigator.maybePop(context),
         leftSlot: leading,
+        rightSlot: rightSlot,
+        titleUnderlay: titleUnderlay,
+        compact: compactHeader,
         showShop: showShop,
       ),
       body: CyberBackground(child: child),
     );
   }
 }
-
 
 class ReactHeaderBar extends StatelessWidget implements PreferredSizeWidget {
   const ReactHeaderBar({
@@ -42,6 +50,8 @@ class ReactHeaderBar extends StatelessWidget implements PreferredSizeWidget {
     this.onBack,
     this.leftSlot,
     this.rightSlot,
+    this.titleUnderlay,
+    this.compact = false,
     this.showShop = false,
     super.key,
   });
@@ -51,20 +61,26 @@ class ReactHeaderBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onBack;
   final Widget? leftSlot;
   final Widget? rightSlot;
+  final Widget? titleUnderlay;
+  final bool compact;
   final bool showShop;
 
   @override
-  Size get preferredSize => const Size.fromHeight(66);
+  Size get preferredSize => Size.fromHeight(compact ? 56 : 66);
 
   @override
   Widget build(BuildContext context) {
+    final barHeight = compact ? 54.0 : 64.0;
     return AppBar(
       automaticallyImplyLeading: false,
-      toolbarHeight: 64,
+      toolbarHeight: barHeight,
       titleSpacing: 0,
       title: Container(
-        height: 64,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        height: barHeight,
+        padding: EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: compact ? 6 : 8,
+        ),
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [Color(0xff0b1120), Color(0xff070b14)],
@@ -113,7 +129,10 @@ class ReactHeaderBar extends StatelessWidget implements PreferredSizeWidget {
                       ),
                     ],
                   ),
-                  if (subtitle != null)
+                  if (titleUnderlay != null) ...[
+                    const SizedBox(height: 5),
+                    titleUnderlay!,
+                  ] else if (subtitle != null)
                     Text(
                       subtitle!,
                       overflow: TextOverflow.ellipsis,
@@ -137,4 +156,3 @@ class ReactHeaderBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 }
-

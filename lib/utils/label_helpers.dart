@@ -19,7 +19,7 @@ Color tierColor(CardTier tier) => switch (tier) {
 
 Color actionColor(ActionCategory category) => switch (category) {
   ActionCategory.attack => Cyber.lime,
-  ActionCategory.defense => Cyber.cyan,
+  ActionCategory.defense => Cyber.violet,
   ActionCategory.special => Cyber.magenta,
 };
 

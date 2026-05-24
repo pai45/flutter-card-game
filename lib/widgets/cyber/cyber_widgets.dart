@@ -159,7 +159,6 @@ class _CyberDialogAction extends StatelessWidget {
   }
 }
 
-
 Future<bool> showCyberConfirmDialog(
   BuildContext context, {
   required String title,
@@ -184,7 +183,6 @@ Future<bool> showCyberConfirmDialog(
   );
   return confirmed ?? false;
 }
-
 
 class PackBurst extends StatelessWidget {
   const PackBurst({super.key});
@@ -231,9 +229,12 @@ class PackBurst extends StatelessWidget {
   }
 }
 
-
 class CyberBackground extends StatefulWidget {
-  const CyberBackground({required this.child, this.animated = false, super.key});
+  const CyberBackground({
+    required this.child,
+    this.animated = false,
+    super.key,
+  });
 
   final Widget child;
 
@@ -422,7 +423,6 @@ class CyberCtaButton extends StatelessWidget {
   }
 }
 
-
 class CyberPanel extends StatelessWidget {
   const CyberPanel({
     required this.child,
@@ -475,8 +475,7 @@ class CyberClipper extends CustomClipper<Path> {
   bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
 
-
-enum VisualCardSize { sm, md }
+enum VisualCardSize { sm, md, lg }
 
 // Full-luminance grayscale matrix for disabled/suspended cards.
 const List<double> _grayscaleMatrix = <double>[
@@ -498,6 +497,7 @@ class PremiumCardShell extends StatefulWidget {
     required this.selected,
     required this.disabled,
     required this.accent,
+    required this.selectedAccent,
     required this.builder,
     this.onTap,
     this.disabledLabel = 'IN DECK',
@@ -509,6 +509,7 @@ class PremiumCardShell extends StatefulWidget {
   final bool selected;
   final bool disabled;
   final Color accent;
+  final Color selectedAccent;
   final Widget Function(bool hovered) builder;
   final VoidCallback? onTap;
   final String disabledLabel;
@@ -593,7 +594,11 @@ class _PremiumCardShellState extends State<PremiumCardShell>
               card = Stack(
                 children: [
                   card,
-                  Positioned(right: 7, bottom: 7, child: _GlowDot(_pulse.value)),
+                  Positioned(
+                    right: 7,
+                    bottom: 7,
+                    child: _GlowDot(_pulse.value, color: widget.selectedAccent),
+                  ),
                 ],
               );
             }
@@ -607,19 +612,25 @@ class _PremiumCardShellState extends State<PremiumCardShell>
                     boxShadow: widget.selected
                         ? [
                             BoxShadow(
-                              color: Cyber.cyan.withValues(alpha: glowA),
+                              color: widget.selectedAccent.withValues(
+                                alpha: glowA,
+                              ),
                               blurRadius: 22,
                               spreadRadius: ring,
                             ),
                             BoxShadow(
-                              color: Cyber.cyan.withValues(alpha: 0.18),
+                              color: widget.selectedAccent.withValues(
+                                alpha: 0.18,
+                              ),
                               blurRadius: 28,
                             ),
                           ]
                         : (hot
                               ? [
                                   BoxShadow(
-                                    color: widget.accent.withValues(alpha: 0.28),
+                                    color: widget.accent.withValues(
+                                      alpha: 0.28,
+                                    ),
                                     blurRadius: 16,
                                   ),
                                 ]
@@ -637,8 +648,9 @@ class _PremiumCardShellState extends State<PremiumCardShell>
 }
 
 class _GlowDot extends StatelessWidget {
-  const _GlowDot(this.t);
+  const _GlowDot(this.t, {required this.color});
   final double t;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -646,11 +658,11 @@ class _GlowDot extends StatelessWidget {
       width: 9,
       height: 9,
       decoration: BoxDecoration(
-        color: Cyber.cyan,
+        color: color,
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: Cyber.cyan.withValues(alpha: 0.6 + 0.4 * t),
+            color: color.withValues(alpha: 0.6 + 0.4 * t),
             blurRadius: 8 + 4 * t,
             spreadRadius: 1,
           ),
@@ -698,6 +710,7 @@ class CyberPlayerCardTile extends StatelessWidget {
     required this.selected,
     this.disabled = false,
     this.size = VisualCardSize.sm,
+    this.selectedAccent = Cyber.cyan,
     this.onTap,
     super.key,
   });
@@ -706,6 +719,7 @@ class CyberPlayerCardTile extends StatelessWidget {
   final bool selected;
   final bool disabled;
   final VisualCardSize size;
+  final Color selectedAccent;
   final VoidCallback? onTap;
 
   @override
@@ -717,20 +731,22 @@ class CyberPlayerCardTile extends StatelessWidget {
       PlayerRole.goalkeeper => Cyber.gold,
     };
     final small = size == VisualCardSize.sm;
-    final width = small ? 96.0 : 128.0;
-    final height = small ? 144.0 : 192.0;
+    final large = size == VisualCardSize.lg;
+    final width = small ? 96.0 : (large ? 144.0 : 128.0);
+    final height = small ? 144.0 : (large ? 216.0 : 192.0);
     return PremiumCardShell(
       width: width,
       height: height,
       selected: selected,
       disabled: disabled,
       accent: tier,
+      selectedAccent: selectedAccent,
       onTap: onTap,
       builder: (hovered) {
         return DecoratedBox(
           decoration: BoxDecoration(
             border: Border.all(
-              color: selected ? Cyber.cyan : tier.withValues(alpha: 0.55),
+              color: selected ? selectedAccent : tier.withValues(alpha: 0.55),
               width: selected ? 1.5 : 1,
             ),
             // Holographic foil: angle shifts on hover (135deg -> ~200deg).
@@ -776,7 +792,7 @@ class CyberPlayerCardTile extends StatelessWidget {
                     child: Center(
                       child: Icon(
                         card.icon,
-                        size: small ? 42 : 64,
+                        size: small ? 42 : (large ? 72 : 64),
                         color: const Color(0xff111827),
                       ),
                     ),
@@ -786,8 +802,8 @@ class CyberPlayerCardTile extends StatelessWidget {
                   top: 0,
                   right: 0,
                   child: Container(
-                    width: small ? 36 : 44,
-                    height: small ? 30 : 36,
+                    width: small ? 36 : (large ? 48 : 44),
+                    height: small ? 30 : (large ? 40 : 36),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(colors: [Colors.white, tier]),
                       border: const Border(
@@ -803,7 +819,7 @@ class CyberPlayerCardTile extends StatelessWidget {
                           style: TextStyle(
                             color: Cyber.bg,
                             fontFamily: 'Orbitron',
-                            fontSize: small ? 12 : 15,
+                            fontSize: small ? 12 : (large ? 17 : 15),
                             fontWeight: FontWeight.w900,
                             height: 0.9,
                           ),
@@ -838,7 +854,7 @@ class CyberPlayerCardTile extends StatelessWidget {
                           style: TextStyle(
                             color: posColor,
                             fontFamily: 'Orbitron',
-                            fontSize: small ? 6 : 7,
+                            fontSize: small ? 6 : (large ? 8 : 7),
                             fontWeight: FontWeight.w900,
                           ),
                         ),
@@ -846,7 +862,7 @@ class CyberPlayerCardTile extends StatelessWidget {
                           card.countryCode,
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.7),
-                            fontSize: small ? 5 : 6,
+                            fontSize: small ? 5 : (large ? 7 : 6),
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -870,7 +886,7 @@ class CyberPlayerCardTile extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.9),
-                        fontSize: small ? 7 : 9,
+                        fontSize: small ? 7 : (large ? 10 : 9),
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -896,7 +912,7 @@ class CyberPlayerCardTile extends StatelessWidget {
                       style: TextStyle(
                         fontFamily: 'Orbitron',
                         fontWeight: FontWeight.w900,
-                        fontSize: small ? 9 : 12,
+                        fontSize: small ? 9 : (large ? 13 : 12),
                       ),
                     ),
                   ),
@@ -916,6 +932,7 @@ class CyberActionCardTile extends StatelessWidget {
     required this.selected,
     this.disabled = false,
     this.size = VisualCardSize.sm,
+    this.selectedAccent = Cyber.cyan,
     this.onTap,
     super.key,
   });
@@ -924,6 +941,7 @@ class CyberActionCardTile extends StatelessWidget {
   final bool selected;
   final bool disabled;
   final VisualCardSize size;
+  final Color selectedAccent;
   final VoidCallback? onTap;
 
   @override
@@ -931,32 +949,36 @@ class CyberActionCardTile extends StatelessWidget {
     final color = actionColor(card.category);
     final catAccent = switch (card.category) {
       ActionCategory.attack => Cyber.danger,
-      ActionCategory.defense => Cyber.cyan,
+      ActionCategory.defense => Cyber.violet,
       ActionCategory.special => Cyber.gold,
     };
     final catColors = switch (card.category) {
       ActionCategory.attack => const [Color(0xff1a1520), Color(0xff200d0d)],
-      ActionCategory.defense => const [Color(0xff0d1520), Color(0xff0d1a20)],
+      ActionCategory.defense => const [Color(0xff151020), Color(0xff1d0d2b)],
       ActionCategory.special => const [Color(0xff0d1520), Color(0xff1a1520)],
     };
     final powerColor = card.power >= 15
         ? Cyber.gold
         : (card.power >= 5 ? Cyber.cyan : Cyber.muted);
     final small = size == VisualCardSize.sm;
+    final large = size == VisualCardSize.lg;
     return PremiumCardShell(
-      width: small ? 80 : 96,
-      height: small ? 96 : 128,
+      width: small ? 80 : (large ? 112 : 96),
+      height: small ? 96 : (large ? 148 : 128),
       selected: selected,
       disabled: disabled,
       accent: card.risky ? Cyber.magenta : catAccent,
+      selectedAccent: selectedAccent,
       onTap: onTap,
       builder: (hovered) {
         return DecoratedBox(
           decoration: BoxDecoration(
             border: Border.all(
               color: selected
-                  ? Cyber.cyan
-                  : (card.risky ? Cyber.magenta : catAccent.withValues(alpha: 0.55)),
+                  ? selectedAccent
+                  : (card.risky
+                        ? Cyber.magenta
+                        : catAccent.withValues(alpha: 0.55)),
               width: selected ? 1.5 : 1,
             ),
             gradient: LinearGradient(
@@ -1010,7 +1032,7 @@ class CyberActionCardTile extends StatelessWidget {
                       style: TextStyle(
                         color: powerColor,
                         fontFamily: Cyber.displayFont,
-                        fontSize: small ? 14 : 16,
+                        fontSize: small ? 14 : (large ? 18 : 16),
                         fontWeight: FontWeight.w900,
                         height: 1,
                       ),
@@ -1022,7 +1044,11 @@ class CyberActionCardTile extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(card.icon, color: color, size: small ? 20 : 24),
+                      Icon(
+                        card.icon,
+                        color: color,
+                        size: small ? 20 : (large ? 28 : 24),
+                      ),
                       Text(
                         card.title.toUpperCase(),
                         maxLines: 2,
@@ -1052,11 +1078,7 @@ class CyberActionCardTile extends StatelessWidget {
                   const Positioned(
                     bottom: 3,
                     left: 3,
-                    child: Icon(
-                      Icons.dangerous,
-                      color: Cyber.danger,
-                      size: 13,
-                    ),
+                    child: Icon(Icons.dangerous, color: Cyber.danger, size: 13),
                   ),
               ],
             ),
@@ -1118,4 +1140,3 @@ class CardStripePainter extends CustomPainter {
   bool shouldRepaint(covariant CardStripePainter oldDelegate) =>
       oldDelegate.color != color;
 }
-
