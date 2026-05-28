@@ -13,6 +13,7 @@ import '../../../models/match.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../../widgets/match_widgets.dart';
+import 'match_phases.dart' show CountdownRing;
 
 class PenaltyPhase extends StatefulWidget {
   const PenaltyPhase({required this.state, required this.onQuit, super.key});
@@ -25,9 +26,10 @@ class PenaltyPhase extends StatefulWidget {
 }
 
 class _PenaltyPhaseState extends State<PenaltyPhase>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _revealCtrl;
   late Animation<double> _revealScale;
+  late final AnimationController _scanner;
 
   @override
   void initState() {
@@ -40,6 +42,10 @@ class _PenaltyPhaseState extends State<PenaltyPhase>
       parent: _revealCtrl,
       curve: Curves.easeOutBack,
     );
+    _scanner = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat();
     if (widget.state.penaltyKickPhase == 'result') _revealCtrl.value = 1;
   }
 
@@ -62,6 +68,7 @@ class _PenaltyPhaseState extends State<PenaltyPhase>
   @override
   void dispose() {
     _revealCtrl.dispose();
+    _scanner.dispose();
     super.dispose();
   }
 
@@ -97,16 +104,8 @@ class _PenaltyPhaseState extends State<PenaltyPhase>
       children: [
         // Progress + history row
         _PenaltyHeader(state: s, kickLabel: kickLabel),
-        // Instructions
-        CyberPanel(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Text(
-            playerTaking
-                ? 'Pick your shoot direction. The keeper will dive - outsmart them.'
-                : 'Pick your dive direction. Try to read the opponent\'s shot.',
-            style: const TextStyle(color: Cyber.muted, fontSize: 13, height: 1.4),
-          ),
-        ),
+        // Scenario-style action panel — TAKE THE SHOT / GO FOR THE SAVE.
+        _PenaltyActionPanel(playerTaking: playerTaking),
         // Direction buttons
         _DirectionButtons(
           playerTaking: playerTaking,
@@ -136,11 +135,7 @@ class _PenaltyPhaseState extends State<PenaltyPhase>
               primary: true,
               onPressed: () => context.read<GameBloc>().add(MatchFinished()),
             )
-          : CyberCtaButton(
-              label: 'Next Kick',
-              primary: false,
-              onPressed: () => context.read<GameBloc>().add(PenaltyNextKick()),
-            ),
+          : null,
       children: [
         // Animated result reveal with goal/save flash + shake on a save.
         AnimatedBuilder(
@@ -167,12 +162,309 @@ class _PenaltyPhaseState extends State<PenaltyPhase>
             child: _KickResultCard(kick: kick),
           ),
         ),
-        // Direction breakdown
-        _DirectionBreakdown(kick: kick),
+        // YOU vs CPU table — user always on the left, CPU on the right.
+        _KickTable(kick: kick),
         // Kick history row
         _PenaltyHistoryRow(kicks: s.penaltyKicks),
-        // Shootout-over banner or next kick
-        if (s.penaltyPhaseOver) _WinnerBanner(winner: s.penaltyWinner),
+        // Shootout-over banner OR auto-advance countdown.
+        if (s.penaltyPhaseOver)
+          _WinnerBanner(winner: s.penaltyWinner)
+        else
+          _NextKickCountdown(
+            key: ValueKey('kick-countdown-${s.penaltyKicks.length}'),
+            scanner: _scanner,
+            seconds: 3,
+            onComplete: () =>
+                context.read<GameBloc>().add(PenaltyNextKick()),
+          ),
+      ],
+    );
+  }
+}
+
+// ─── Scenario-style action panel for the choose screen ──────────────────────
+
+class _PenaltyActionPanel extends StatelessWidget {
+  const _PenaltyActionPanel({required this.playerTaking});
+
+  final bool playerTaking;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color accent = playerTaking ? Cyber.cyan : Cyber.amber;
+    final IconData icon = playerTaking ? Icons.sports_soccer : Icons.pan_tool;
+    final String title = playerTaking ? 'TAKE THE SHOT' : 'GO FOR THE SAVE';
+    final String description = playerTaking
+        ? 'Pick a direction. The keeper will dive — outsmart them.'
+        : 'Read the shooter. Dive the right way to make the save.';
+    final String status =
+        playerTaking ? 'YOUR TURN TO SHOOT' : 'OPPONENT SHOOTING';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.06),
+        border: Border.all(color: accent.withValues(alpha: 0.6), width: 1.2),
+        boxShadow: [
+          BoxShadow(color: accent.withValues(alpha: 0.18), blurRadius: 18),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 54,
+            height: 54,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: accent.withValues(alpha: 0.12),
+              border: Border.all(color: accent.withValues(alpha: 0.7)),
+            ),
+            child: Icon(icon, color: accent, size: 28),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: Cyber.display(24, color: accent, letterSpacing: 1.6)
+                .copyWith(
+                  shadows: [
+                    Shadow(
+                      color: accent.withValues(alpha: 0.6),
+                      blurRadius: 18,
+                    ),
+                  ],
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            description,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12.5,
+              height: 1.4,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.10),
+              border: Border.all(color: accent.withValues(alpha: 0.55)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: accent, size: 14),
+                const SizedBox(width: 8),
+                Text(
+                  status,
+                  style: TextStyle(
+                    color: accent,
+                    fontFamily: 'Orbitron',
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── YOU vs CPU result table ─────────────────────────────────────────────────
+
+class _KickTable extends StatelessWidget {
+  const _KickTable({required this.kick});
+  final PenaltyKick kick;
+
+  String _dirLabel(PenaltyDirection d) => switch (d) {
+    PenaltyDirection.left => 'LEFT',
+    PenaltyDirection.center => 'CENTER',
+    PenaltyDirection.right => 'RIGHT',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    // User is always on the LEFT, CPU on the RIGHT — regardless of who shot.
+    final bool userShot = kick.byPlayer;
+    final PenaltyDirection userDir =
+        userShot ? kick.shootDirection : kick.diveDirection;
+    final PenaltyDirection cpuDir =
+        userShot ? kick.diveDirection : kick.shootDirection;
+    final String userAction = userShot ? 'SHOT' : 'DIVED';
+    final String cpuAction = userShot ? 'DIVED' : 'SHOT';
+    final IconData userIcon =
+        userShot ? Icons.sports_soccer : Icons.pan_tool;
+    final IconData cpuIcon =
+        userShot ? Icons.pan_tool : Icons.sports_soccer;
+
+    return CyberPanel(
+      padding: EdgeInsets.zero,
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            Expanded(
+              child: _KickTableCell(
+                heading: 'YOU',
+                headingColor: Cyber.cyan,
+                action: userAction,
+                direction: _dirLabel(userDir),
+                icon: userIcon,
+              ),
+            ),
+            const VerticalDivider(
+              color: Cyber.line,
+              thickness: 1,
+              width: 1,
+            ),
+            Expanded(
+              child: _KickTableCell(
+                heading: 'CPU',
+                headingColor: Cyber.amber,
+                action: cpuAction,
+                direction: _dirLabel(cpuDir),
+                icon: cpuIcon,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _KickTableCell extends StatelessWidget {
+  const _KickTableCell({
+    required this.heading,
+    required this.headingColor,
+    required this.action,
+    required this.direction,
+    required this.icon,
+  });
+
+  final String heading;
+  final Color headingColor;
+  final String action;
+  final String direction;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            heading,
+            style: TextStyle(
+              color: headingColor,
+              fontFamily: 'Orbitron',
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 2,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Icon(icon, color: headingColor, size: 26),
+          const SizedBox(height: 8),
+          Text(
+            action,
+            style: const TextStyle(
+              color: Cyber.muted,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            direction,
+            style: const TextStyle(
+              color: Colors.white,
+              fontFamily: 'Orbitron',
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Auto-advance countdown that replaces the "Next Kick" button ────────────
+
+class _NextKickCountdown extends StatefulWidget {
+  const _NextKickCountdown({
+    required this.scanner,
+    required this.seconds,
+    required this.onComplete,
+    super.key,
+  });
+
+  final Animation<double> scanner;
+  final int seconds;
+  final VoidCallback onComplete;
+
+  @override
+  State<_NextKickCountdown> createState() => _NextKickCountdownState();
+}
+
+class _NextKickCountdownState extends State<_NextKickCountdown> {
+  late int _seconds = widget.seconds;
+  bool _fired = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tick();
+  }
+
+  Future<void> _tick() async {
+    for (var i = widget.seconds; i > 0; i--) {
+      await Future<void>.delayed(const Duration(seconds: 1));
+      if (!mounted || _fired) return;
+      setState(() => _seconds = i - 1);
+    }
+    if (!mounted || _fired) return;
+    _fired = true;
+    widget.onComplete();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(height: 4),
+        CountdownRing(
+          seconds: _seconds,
+          scanner: widget.scanner,
+          accent: Cyber.cyan,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Next kick in...',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Cyber.cyan.withValues(alpha: 0.7),
+            fontFamily: 'Orbitron',
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.6,
+          ),
+        ),
       ],
     );
   }
@@ -395,78 +687,6 @@ class _KickResultCard extends StatelessWidget {
               color: color.withValues(alpha: 0.7),
               fontSize: 13,
               fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DirectionBreakdown extends StatelessWidget {
-  const _DirectionBreakdown({required this.kick});
-  final PenaltyKick kick;
-
-  String _dirLabel(PenaltyDirection d) => switch (d) {
-    PenaltyDirection.left => 'LEFT',
-    PenaltyDirection.center => 'CENTER',
-    PenaltyDirection.right => 'RIGHT',
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    final shootLabel = kick.byPlayer ? 'You shot' : 'Opponent shot';
-    final diveLabel = kick.byPlayer ? 'Keeper dived' : 'You dived';
-    final match = kick.shootDirection == kick.diveDirection;
-
-    return CyberPanel(
-      padding: const EdgeInsets.all(14),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  shootLabel,
-                  style: const TextStyle(color: Cyber.muted, fontSize: 11),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _dirLabel(kick.shootDirection),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontFamily: 'Orbitron',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Icon(
-            match ? Icons.compare_arrows : Icons.close,
-            color: match ? Cyber.red : Cyber.lime,
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  diveLabel,
-                  style: const TextStyle(color: Cyber.muted, fontSize: 11),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _dirLabel(kick.diveDirection),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontFamily: 'Orbitron',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
             ),
           ),
         ],

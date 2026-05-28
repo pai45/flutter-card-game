@@ -26,7 +26,8 @@ class _DailyDropButtonState extends State<DailyDropButton>
     with TickerProviderStateMixin {
   late final AnimationController _shimmer;
   late final AnimationController _glow;
-  // Eased position: only sweeps during 8–62% of the cycle so it pauses off-screen
+  // Eased position: sweeps during ~10–52% of the cycle, then pauses off-screen
+  // before the next sweep — gives the shimmer a clear "flash, rest" rhythm.
   late final Animation<double> _shimmerPos;
   late final Animation<double> _glowPulse;
   final Random _random = Random();
@@ -36,11 +37,11 @@ class _DailyDropButtonState extends State<DailyDropButton>
     super.initState();
     _shimmer = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2400),
+      duration: const Duration(milliseconds: 2800),
     )..repeat();
     _shimmerPos = CurvedAnimation(
       parent: _shimmer,
-      curve: const Interval(0.08, 0.62, curve: Curves.easeInOut),
+      curve: const Interval(0.10, 0.52, curve: Curves.easeInOutCubic),
     );
 
     _glow = AnimationController(
@@ -124,79 +125,13 @@ class _DailyDropButtonState extends State<DailyDropButton>
                       ),
                       child: const SizedBox(width: double.infinity, height: 76),
                     ),
-                    // Shimmer bands
+                    // Single clean diagonal shimmer band — painted directly so
+                    // the bright core stays sharp on the saturated gradient.
                     Positioned.fill(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final travel = constraints.maxWidth + 260;
-                          final dx = -180.0 + shimmerT * travel;
-                          return Stack(
-                            children: [
-                              // Trailing warm halo — wider, amber-tinted, slightly behind
-                              Transform.translate(
-                                offset: Offset(dx - 48, 0),
-                                child: Transform.rotate(
-                                  angle: -0.32,
-                                  child: Container(
-                                    width: 210,
-                                    height: constraints.maxHeight * 2.1,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          Colors.white.withValues(alpha: 0),
-                                          Cyber.amber.withValues(alpha: 0.10),
-                                          Colors.white.withValues(alpha: 0.14),
-                                          Cyber.amber.withValues(alpha: 0.10),
-                                          Colors.white.withValues(alpha: 0),
-                                        ],
-                                        stops: const [0, 0.25, 0.5, 0.75, 1],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              // Leading bright core band
-                              Transform.translate(
-                                offset: Offset(dx, 0),
-                                child: Transform.rotate(
-                                  angle: -0.32,
-                                  child: Container(
-                                    width: 100,
-                                    height: constraints.maxHeight * 2.1,
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          Colors.white.withValues(alpha: 0),
-                                          Colors.white.withValues(alpha: 0.24),
-                                          Colors.white.withValues(alpha: 0.68),
-                                          Colors.white.withValues(alpha: 0.24),
-                                          Colors.white.withValues(alpha: 0),
-                                        ],
-                                        stops: const [0, 0.22, 0.5, 0.78, 1],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              // Soft diagonal wash that rides with the bands
-                              Positioned.fill(
-                                child: DecoratedBox(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment(-1 + shimmerT * 2, -1),
-                                      end: Alignment(0.2 + shimmerT * 2, 1),
-                                      colors: [
-                                        Colors.white.withValues(alpha: 0),
-                                        Colors.white.withValues(alpha: 0.07),
-                                        Colors.white.withValues(alpha: 0),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
-                        },
+                      child: IgnorePointer(
+                        child: CustomPaint(
+                          painter: _ShimmerBandPainter(t: shimmerT),
+                        ),
                       ),
                     ),
                     // Top-edge inner highlight
@@ -258,4 +193,60 @@ class _DailyDropButtonState extends State<DailyDropButton>
       },
     );
   }
+}
+
+/// Draws one diagonal white band that sweeps across the CTA. Drawing it on a
+/// single canvas avoids the multi-layer blending issues the previous Stack-of-
+/// Transforms approach had and keeps the bright core sharp against the
+/// saturated amber → magenta gradient underneath.
+class _ShimmerBandPainter extends CustomPainter {
+  const _ShimmerBandPainter({required this.t});
+
+  /// Eased position of the band centre — 0 = off-screen left, 1 = off-screen
+  /// right. Outside (0, 1) we skip painting entirely so the button is plain
+  /// during the rest portion of the cycle.
+  final double t;
+
+  static const double _angle = -0.38;
+  static const double _bandWidth = 70.0;
+  static const double _pad = 110.0;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (t <= 0 || t >= 1) return;
+
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
+
+    final centerX = -_pad + t * (size.width + _pad * 2);
+    canvas.translate(centerX, size.height / 2);
+    canvas.rotate(_angle);
+
+    final rect = Rect.fromCenter(
+      center: Offset.zero,
+      width: _bandWidth * 3,
+      height: size.height * 2.8,
+    );
+    final paint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+        colors: [
+          Colors.white.withValues(alpha: 0),
+          Colors.white.withValues(alpha: 0.08),
+          Colors.white.withValues(alpha: 0.55),
+          Colors.white.withValues(alpha: 0.95),
+          Colors.white.withValues(alpha: 0.55),
+          Colors.white.withValues(alpha: 0.08),
+          Colors.white.withValues(alpha: 0),
+        ],
+        stops: const [0, 0.28, 0.44, 0.5, 0.56, 0.72, 1],
+      ).createShader(rect);
+    canvas.drawRect(rect, paint);
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_ShimmerBandPainter old) => old.t != t;
 }

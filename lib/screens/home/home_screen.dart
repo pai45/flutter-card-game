@@ -10,7 +10,9 @@ import '../../config/tutorial_steps.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
 import '../../widgets/match_widgets.dart';
+import '../../widgets/player_level_badge.dart';
 import '../../widgets/tutorial.dart';
+import '../../screens/match_history/match_history_pages.dart';
 import 'widgets/daily_drop.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -26,7 +28,7 @@ class HomeScreen extends StatelessWidget {
           appBar: ReactHeaderBar(
             title: 'Pitch Duel',
             subtitle: '// Main Terminal',
-            rightSlot: MatchHistoryHeaderButton(history: state.matchHistory),
+            rightSlot: PlayerLevelBadge(progression: state.progression),
           ),
           body: CyberBackground(
             animated: true,
@@ -112,8 +114,11 @@ class HomeScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          const SizedBox(width: 160, child: HudLine()),
+                          const SizedBox(height: 32),
+                          CyberCtaButton(
+                            label: 'Match History',
+                            onPressed: () => showMatchHistoryArchive(context, state.matchHistory),
+                          ),
                         ],
                       ),
                     ),

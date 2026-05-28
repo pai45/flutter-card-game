@@ -805,7 +805,7 @@ class MatchHistoryPanel extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             history.isEmpty
-                ? 'No completed matches yet. Finish a match and it will land here.'
+                ? 'No matches played yet — go win some glory.'
                 : 'Tap any result to inspect the scoreline, deck, and round log.',
             style: const TextStyle(
               color: Cyber.muted,
@@ -1050,6 +1050,34 @@ class MatchHistoryTile extends StatelessWidget {
                             ),
                           ),
                         ],
+                        if (entry.xpEarned != null) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: (entry.xpEarned! >= 0 ? Cyber.cyan : const Color(0xFFFF4D6A))
+                                  .withValues(alpha: 0.14),
+                              border: Border.all(
+                                color: (entry.xpEarned! >= 0 ? Cyber.cyan : const Color(0xFFFF4D6A))
+                                    .withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: Text(
+                              entry.xpEarned! >= 0
+                                  ? '+${entry.xpEarned} XP'
+                                  : '${entry.xpEarned} XP',
+                              style: TextStyle(
+                                color: entry.xpEarned! >= 0 ? Cyber.cyan : const Color(0xFFFF4D6A),
+                                fontSize: 9,
+                                fontFamily: 'Orbitron',
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ],
                         const Spacer(),
                         const Icon(
                           Icons.chevron_right,
@@ -1120,6 +1148,8 @@ class BottomActionBar extends StatelessWidget {
     required this.primaryOnTap,
     required this.secondaryLabel,
     required this.secondaryOnTap,
+    this.tertiaryLabel,
+    this.tertiaryOnTap,
     super.key,
   });
 
@@ -1128,6 +1158,8 @@ class BottomActionBar extends StatelessWidget {
   final VoidCallback primaryOnTap;
   final String secondaryLabel;
   final VoidCallback secondaryOnTap;
+  final String? tertiaryLabel;
+  final VoidCallback? tertiaryOnTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1139,21 +1171,63 @@ class BottomActionBar extends StatelessWidget {
           color: Cyber.panel.withValues(alpha: 0.96),
           border: const Border(top: BorderSide(color: Color(0xff1e2538))),
         ),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: CyberCtaButton(
-                label: secondaryLabel,
-                onPressed: secondaryOnTap,
+            if (tertiaryLabel != null && tertiaryOnTap != null) ...[
+              GestureDetector(
+                onTap: tertiaryOnTap,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 9),
+                  decoration: BoxDecoration(
+                    color: Colors.transparent,
+                    border: Border.all(
+                      color: Cyber.violet.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.grid_view_rounded,
+                        color: Cyber.violet,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        tertiaryLabel!.toUpperCase(),
+                        style: const TextStyle(
+                          color: Cyber.violet,
+                          fontFamily: 'Orbitron',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: CyberCtaButton(
-                label: primaryLabel,
-                primary: true,
-                onPressed: primaryEnabled ? primaryOnTap : null,
-              ),
+              const SizedBox(height: 8),
+            ],
+            Row(
+              children: [
+                Expanded(
+                  child: CyberCtaButton(
+                    label: secondaryLabel,
+                    onPressed: secondaryOnTap,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: CyberCtaButton(
+                    label: primaryLabel,
+                    primary: true,
+                    onPressed: primaryEnabled ? primaryOnTap : null,
+                  ),
+                ),
+              ],
             ),
           ],
         ),

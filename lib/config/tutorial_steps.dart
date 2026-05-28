@@ -1,3 +1,7 @@
+import 'package:flutter/material.dart';
+
+import 'theme.dart';
+
 const tutorialKeys = [
   'home',
   'deck-builder',
@@ -11,147 +15,162 @@ const tutorialKeys = [
 ];
 
 class TutorialStepData {
-  const TutorialStepData({required this.title, required this.body});
+  const TutorialStepData({
+    required this.title,
+    required this.body,
+    this.icon = Icons.info_outline,
+    this.accent = Cyber.cyan,
+    this.hint,
+  });
 
   final String title;
   final String body;
+  final IconData icon;
+  final Color accent;
+  final String? hint;
 }
 
 const homeTutorialSteps = [
   TutorialStepData(
-    title: 'Welcome, Operator',
+    title: 'Welcome to PITCH/DUEL',
     body:
-        'PITCH/DUEL is a 4-round card duel. Each round, play one player card and one action card. Stats, scenario, and luck decide the outcome.',
+        'A fast 4-round card duel. Stats, scenarios and a touch of luck decide each round — outscore the CPU.',
+    icon: Icons.sports_soccer,
+    accent: Cyber.cyan,
+    hint: '4 ROUNDS  ·  1 MOVE EACH',
   ),
   TutorialStepData(
-    title: "You're pre-loaded",
+    title: "You're ready to play",
     body:
-        'Your default loadout is ready: 2 attackers, 2 defenders, 6 actions. Play now or customize in Deck Builder.',
-  ),
-  TutorialStepData(
-    title: 'How a match flows',
-    body:
-        '1. Coin toss (round 1 only)\n2. Scenario reveals + role assigned\n3. Pick a player & action card\n4. See the outcome -> next round\n\nTap PLAY MATCH when ready.',
+        'Your starter deck is set. Tap PLAY MATCH to jump in, or open HOW TO PLAY anytime for the full guide.',
+    icon: Icons.play_arrow,
+    accent: Cyber.lime,
+    hint: 'PLAY NOW  ·  HOW TO PLAY FOR DETAILS',
   ),
 ];
 
 const deckTutorialSteps = [
   TutorialStepData(
-    title: 'Build a 5-a-side',
-    body: 'Shape the pitch with 2 ATK, 2 DEF, and 6 actions.',
+    title: 'Build Your Squad',
+    body: 'Pick 2 attackers, 2 defenders, and 6 action cards. Tap players to add/remove. Lock formation when ready.',
+    icon: Icons.style,
+    hint: '2 ATK  +  2 DEF  +  6 ACTION = READY',
   ),
   TutorialStepData(
-    title: 'Edit, Save, Play',
+    title: 'Edit & Play',
     body:
-        'Tap Edit to change the deck, save it, then play when the squad is ready.',
+        'Tap SAVE to lock the deck. Tap PLAY MATCH when ready. Tap EDIT later to adjust.',
+    icon: Icons.play_arrow,
+    hint: 'SAVE → PLAY MATCH',
   ),
 ];
 
 const tossTutorialSteps = [
   TutorialStepData(
-    title: 'Coin Toss',
+    title: 'Win the Toss',
     body:
-        'Pick HEADS or TAILS. The winner chooses attack or defense for round 1.',
+        'Pick HEADS or TAILS. The winner chooses to ATTACK or DEFEND for round 1.',
+    icon: Icons.toll,
+    hint: 'HEADS = ATTACK FIRST  ·  TAILS = DEFEND FIRST',
   ),
   TutorialStepData(
-    title: 'Roles Alternate',
+    title: 'Then Roles Flip',
     body:
-        'This is the only toss. After round 1, roles flip automatically each round.',
+        'This is the only toss. After round 1, roles automatically alternate: attack → defense → attack.',
+    icon: Icons.swap_horiz,
+    hint: 'R1: YOUR CHOICE  ·  R2-R4: AUTO FLIP',
   ),
 ];
 
 const scenarioTutorialSteps = [
   TutorialStepData(
-    title: 'Scenario Briefing',
+    title: 'Scenario & Bonus Stats',
     body:
-        'Each round has a football situation: counter attack, set piece, box defense, and more.',
+        'Each round gets a scenario (counter attack, set piece, etc). Stats show ATK/DEF bonuses this round.',
+    hint: 'SCENARIO  ·  ATK BONUS  ·  DEF BONUS',
   ),
   TutorialStepData(
-    title: 'Bonus Stats',
-    body:
-        'ATK +X and DEF +X are added this round. Bigger attack bonus favors the attacker.',
-  ),
-  TutorialStepData(
-    title: 'Your Role',
-    body: 'The banner shows your role. Pick cards around attack or defense.',
+    title: 'Your Role This Round',
+    body: 'The banner shows ATTACKER or DEFENDER. Pick cards that match your role.',
+    hint: 'ATTACK ↔ DEFENSE (alternates each round)',
   ),
 ];
 
 const playTutorialSteps = [
   TutorialStepData(
-    title: 'Pick Your Player',
+    title: 'Pick Player + Action',
     body:
-        'Choose one player. OVR is base power. Used players are locked for the match.',
+        'Tap a player (OVR = base power). Then pick 1 action card matching your role. Tap yellow actions for risky high-reward moves.',
+    icon: Icons.touch_app,
+    hint: 'PLAYER  +  ACTION  →  TAP TO LOCK',
   ),
   TutorialStepData(
-    title: 'Pick an Action',
+    title: 'Power Preview & Luck',
     body:
-        'Pick one action. Options match your role: ATK when attacking, DEF when defending, SPC anytime.',
-  ),
-  TutorialStepData(
-    title: 'Risky Cards',
-    body:
-        'Warning cards boost power but can cause fouls or red cards. Red cards remove a player.',
-  ),
-  TutorialStepData(
-    title: 'Read the Preview',
-    body:
-        'EST shows rating + action + scenario bonus. CPU power is hidden, and luck still matters.',
+        'EST shows your total power (player + action + bonus). CPU power is hidden. A luck roll decides close rounds.',
+    icon: Icons.stars,
+    hint: 'HIGHER POWER WINS  ·  LUCK CAN FLIP IT',
   ),
 ];
 
 const resultTutorialSteps = [
   TutorialStepData(
-    title: 'Round Resolved',
-    body: 'The label shows: GOAL, SAVED, MISSED, FOUL, or RED CARD.',
+    title: 'Round Result',
+    body: 'The outcome shows: GOAL, SAVED, MISSED, FOUL, or RED CARD. Used players appear marked and are locked for the match.',
+    icon: Icons.sports_soccer,
+    hint: 'GOAL ✓  ·  SAVED ✓  ·  MISSED ✗  ·  FOUL ⚠️  ·  RED CARD 🔴',
   ),
   TutorialStepData(
-    title: 'Used Cards',
-    body:
-        'Round cards appear side-by-side. Used players are marked USED and cannot replay.',
-  ),
-  TutorialStepData(
-    title: 'Next Round',
-    body: 'Tap NEXT ROUND. Roles switch each round, so attack becomes defense.',
+    title: 'Next Round Begins',
+    body: 'Tap NEXT ROUND to continue. Roles automatically flip: attack ↔ defense. Repeat for 4 rounds.',
+    icon: Icons.arrow_forward,
+    hint: 'ROUND 2 → ROLE SWITCHES → REPEAT 3 MORE TIMES',
   ),
 ];
 
 const matchEndTutorialSteps = [
   TutorialStepData(
-    title: 'Full Time',
-    body: 'After 4 rounds, the banner shows VICTORY, DEFEAT, or DEADLOCK.',
+    title: 'Match Result',
+    body: 'After 4 rounds, you see VICTORY, DEFEAT, or DEADLOCK. The log shows each round\'s scenario and outcome.',
+    icon: Icons.emoji_events,
+    hint: 'DEADLOCK = TIE  →  PENALTIES BEGIN',
   ),
   TutorialStepData(
-    title: 'Round Log',
-    body: 'The log recaps each scenario and outcome.',
-  ),
-  TutorialStepData(
-    title: 'Tied? Penalties!',
-    body: 'A draw goes to a penalty shootout.',
+    title: 'Penalty Shootout (If Tied)',
+    body: 'A draw triggers a penalty shootout: best of 5 kicks, then sudden death if still tied.',
+    icon: Icons.sports_soccer,
+    hint: 'FIRST TO LEAD AFTER EQUAL KICKS WINS',
   ),
 ];
 
 const penaltyTutorialSteps = [
   TutorialStepData(
-    title: 'Sudden Death',
+    title: 'Penalty Shootout',
     body:
-        'Tied match: penalty shootout. Kicks alternate until someone leads after equal attempts.',
+        'Tap TAKE KICK on your turn. CPU auto-kicks. Each kick has ~70% chance to score. First to lead after equal attempts wins.',
+    icon: Icons.sports_soccer,
+    hint: 'YOUR TURN → TAP KICK  ·  CPU AUTO-KICKS',
   ),
   TutorialStepData(
-    title: 'How It Works',
+    title: 'Sudden Death Rules',
     body:
-        'Tap TAKE KICK on your turn. CPU kicks auto-fire. Each kick has about a 65-75% score chance.',
+        'After 5 kicks each, if tied, continue sudden death: next goal wins. Best of 5 first, then sudden death.',
+    icon: Icons.whatshot,
+    hint: 'BEST OF 5 → SUDDEN DEATH → NEXT GOAL WINS',
   ),
 ];
 
 const finalTutorialSteps = [
   TutorialStepData(
-    title: 'Match Archive',
-    body: 'Final scoreline, plus penalties if needed, appears here.',
+    title: 'Final Score & MVP',
+    body: 'Final scoreline appears with MVP (your goal scorer). Penalties shown if applicable.',
+    icon: Icons.emoji_events,
+    hint: 'FINAL SCORE  ·  MVP AWARDED',
   ),
-  TutorialStepData(title: 'MVP', body: 'MVP goes to your goal scorer.'),
   TutorialStepData(
-    title: 'What Next?',
-    body: 'REMATCH uses the same deck. HOME exits. DECK opens squad tuning.',
+    title: 'What\'s Next?',
+    body: 'REMATCH plays again with the same deck. HOME exits to menu. DECK tunes your squad.',
+    icon: Icons.home,
+    hint: 'REMATCH  ·  HOME  ·  DECK (TAP ICON)',
   ),
 ];

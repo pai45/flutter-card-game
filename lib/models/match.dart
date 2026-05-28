@@ -41,6 +41,7 @@ class MatchHistoryEntry {
     required this.penaltyPlayerScore,
     required this.penaltyOpponentScore,
     required this.rounds,
+    this.xpEarned,
   });
 
   final String id;
@@ -52,6 +53,7 @@ class MatchHistoryEntry {
   final int? penaltyPlayerScore;
   final int? penaltyOpponentScore;
   final List<MatchHistoryRound> rounds;
+  final int? xpEarned;
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -63,6 +65,7 @@ class MatchHistoryEntry {
     'penaltyPlayerScore': penaltyPlayerScore,
     'penaltyOpponentScore': penaltyOpponentScore,
     'rounds': rounds.map((round) => round.toJson()).toList(),
+    'xpEarned': xpEarned,
   };
 
   static MatchHistoryEntry fromJson(Map<String, dynamic> json) =>
@@ -81,6 +84,7 @@ class MatchHistoryEntry {
                   MatchHistoryRound.fromJson(Map<String, dynamic>.from(item)),
             )
             .toList(),
+        xpEarned: json['xpEarned'] as int?,
       );
 }
 

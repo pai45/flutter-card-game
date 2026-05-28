@@ -457,17 +457,30 @@ class CyberPanel extends StatelessWidget {
   }
 }
 
+class RectangleClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    return Path()
+      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
+      ..close();
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+}
+
 class CyberClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     const cut = 12.0;
     return Path()
-      ..moveTo(cut, 0)
+      ..moveTo(0, 0)
       ..lineTo(size.width, 0)
       ..lineTo(size.width, size.height - cut)
       ..lineTo(size.width - cut, size.height)
-      ..lineTo(0, size.height)
-      ..lineTo(0, cut)
+      ..lineTo(cut, size.height)
+      ..lineTo(0, size.height - cut)
+      ..lineTo(0, 0)
       ..close();
   }
 
@@ -560,8 +573,8 @@ class _PremiumCardShellState extends State<PremiumCardShell>
           animation: Listenable.merge([_pulse, _shake]),
           builder: (context, _) {
             final hot = _hovered && !widget.disabled;
-            final lift = widget.selected ? -6.0 : (hot ? -3.0 : 0.0);
-            final scale = widget.selected ? 1.04 : (hot ? 1.02 : 1.0);
+            final lift = hot ? -3.0 : 0.0;
+            final scale = hot ? 1.02 : 1.0;
             final shakeX = _shake.isAnimating
                 ? sin(_shake.value * pi * 6) * 4 * (1 - _shake.value)
                 : 0.0;
@@ -704,6 +717,47 @@ class _SuspendedBanner extends StatelessWidget {
   }
 }
 
+class _CardIconFallback extends StatelessWidget {
+  const _CardIconFallback({
+    required this.card,
+    required this.tier,
+    required this.small,
+    required this.large,
+  });
+
+  final PlayerCard card;
+  final Color tier;
+  final bool small;
+  final bool large;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xfff7f7f4),
+            Colors.white,
+            tier,
+            const Color(0xff111827),
+            Cyber.red,
+          ],
+          stops: const [0, 0.40, 0.54, 0.72, 1],
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          card.icon,
+          size: small ? 42 : (large ? 72 : 64),
+          color: const Color(0xff111827),
+        ),
+      ),
+    );
+  }
+}
+
 class CyberPlayerCardTile extends StatelessWidget {
   const CyberPlayerCardTile({
     required this.card,
@@ -774,29 +828,25 @@ class CyberPlayerCardTile extends StatelessWidget {
                   right: 4,
                   top: 4,
                   bottom: height * 0.24,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          const Color(0xfff7f7f4),
-                          Colors.white,
-                          tier,
-                          const Color(0xff111827),
-                          Cyber.red,
-                        ],
-                        stops: const [0, 0.40, 0.54, 0.72, 1],
-                      ),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        card.icon,
-                        size: small ? 42 : (large ? 72 : 64),
-                        color: const Color(0xff111827),
-                      ),
-                    ),
-                  ),
+                  child: card.hasPortrait
+                      ? Image.asset(
+                          card.resolvedPortraitAsset!,
+                          fit: BoxFit.cover,
+                          alignment: Alignment.topCenter,
+                          // ignore: prefer_void_to_null
+                          errorBuilder: (_, ___, ____) => _CardIconFallback(
+                            card: card,
+                            tier: tier,
+                            small: small,
+                            large: large,
+                          ),
+                        )
+                      : _CardIconFallback(
+                          card: card,
+                          tier: tier,
+                          small: small,
+                          large: large,
+                        ),
                 ),
                 Positioned(
                   top: 0,
@@ -926,11 +976,12 @@ class CyberPlayerCardTile extends StatelessWidget {
   }
 }
 
-class CyberActionCardTile extends StatelessWidget {
+class CyberActionCardTile extends StatefulWidget {
   const CyberActionCardTile({
     required this.card,
     required this.selected,
     this.disabled = false,
+    this.disabledLabel = 'IN DECK',
     this.size = VisualCardSize.sm,
     this.selectedAccent = Cyber.cyan,
     this.onTap,
@@ -940,147 +991,221 @@ class CyberActionCardTile extends StatelessWidget {
   final ActionCard card;
   final bool selected;
   final bool disabled;
+  final String disabledLabel;
   final VisualCardSize size;
   final Color selectedAccent;
   final VoidCallback? onTap;
 
   @override
+  State<CyberActionCardTile> createState() => _CyberActionCardTileState();
+}
+
+class _CyberActionCardTileState extends State<CyberActionCardTile>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _tapController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tapController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+  }
+
+  @override
+  void didUpdateWidget(CyberActionCardTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selected && !oldWidget.selected) {
+      _tapController.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _tapController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final color = actionColor(card.category);
-    final catAccent = switch (card.category) {
+    final color = actionColor(widget.card.category);
+    final catAccent = switch (widget.card.category) {
       ActionCategory.attack => Cyber.danger,
       ActionCategory.defense => Cyber.violet,
       ActionCategory.special => Cyber.gold,
     };
-    final catColors = switch (card.category) {
+    final catColors = switch (widget.card.category) {
       ActionCategory.attack => const [Color(0xff1a1520), Color(0xff200d0d)],
       ActionCategory.defense => const [Color(0xff151020), Color(0xff1d0d2b)],
       ActionCategory.special => const [Color(0xff0d1520), Color(0xff1a1520)],
     };
-    final powerColor = card.power >= 15
+    final powerColor = widget.card.power >= 15
         ? Cyber.gold
-        : (card.power >= 5 ? Cyber.cyan : Cyber.muted);
-    final small = size == VisualCardSize.sm;
-    final large = size == VisualCardSize.lg;
-    return PremiumCardShell(
-      width: small ? 80 : (large ? 112 : 96),
-      height: small ? 96 : (large ? 148 : 128),
-      selected: selected,
-      disabled: disabled,
-      accent: card.risky ? Cyber.magenta : catAccent,
-      selectedAccent: selectedAccent,
-      onTap: onTap,
-      builder: (hovered) {
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: selected
-                  ? selectedAccent
-                  : (card.risky
-                        ? Cyber.magenta
-                        : catAccent.withValues(alpha: 0.55)),
-              width: selected ? 1.5 : 1,
-            ),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: catColors,
-              transform: GradientRotation(hovered ? 1.13 : 0),
-            ),
-          ),
-          child: ClipPath(
-            clipper: CyberClipper(),
-            child: Stack(
-              children: [
-                // Top accent line (category color).
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(height: 2, color: catAccent),
-                ),
-                Positioned(
-                  top: 2,
-                  left: 0,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 2,
+        : (widget.card.power >= 5 ? Cyber.cyan : Cyber.muted);
+    final small = widget.size == VisualCardSize.sm;
+    final large = widget.size == VisualCardSize.lg;
+
+    final scaleAnim = Tween<double>(begin: 1.0, end: 1.12).animate(
+      CurvedAnimation(parent: _tapController, curve: Curves.easeOutBack),
+    );
+    final rotateAnim = Tween<double>(begin: 0, end: 0.08).animate(
+      CurvedAnimation(parent: _tapController, curve: Curves.easeOutBack),
+    );
+    final glowAnim = Tween<double>(begin: 0, end: 1.0).animate(
+      CurvedAnimation(parent: _tapController, curve: Curves.easeOut),
+    );
+
+    return AnimatedBuilder(
+      animation: Listenable.merge([_tapController, scaleAnim, rotateAnim, glowAnim]),
+      builder: (_, __) {
+        return Transform.scale(
+          scale: scaleAnim.value,
+          child: Transform.rotate(
+            angle: rotateAnim.value,
+            child: PremiumCardShell(
+              width: small ? 80 : (large ? 112 : 96),
+              height: small ? 96 : (large ? 148 : 128),
+              selected: widget.selected,
+              disabled: widget.disabled,
+              disabledLabel: widget.disabledLabel,
+              accent: widget.card.risky ? Cyber.magenta : catAccent,
+              selectedAccent: widget.selectedAccent,
+              onTap: widget.onTap,
+              builder: (hovered) {
+                return DecoratedBox(
+                  decoration: BoxDecoration(
+                    boxShadow: widget.selected
+                        ? [
+                            BoxShadow(
+                              color: catAccent.withValues(
+                                alpha: 0.3 * glowAnim.value,
+                              ),
+                              blurRadius: 24 * glowAnim.value,
+                              spreadRadius: 4 * glowAnim.value,
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: widget.selected
+                            ? widget.selectedAccent
+                            : (widget.card.risky
+                                  ? Cyber.magenta
+                                  : catAccent.withValues(alpha: 0.55)),
+                        width: widget.selected ? 1.5 : 1,
+                      ),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: catColors,
+                        transform: GradientRotation(hovered ? 1.13 : 0),
+                      ),
                     ),
-                    color: catAccent,
-                    child: Text(
-                      actionCode(card.category),
-                      style: const TextStyle(
-                        color: Cyber.bg,
-                        fontSize: 8,
-                        fontWeight: FontWeight.w900,
+                    child: ClipPath(
+                      clipper: RectangleClipper(),
+                      child: Stack(
+                        children: [
+                          // Top accent line (category color).
+                          Positioned(
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            child: Container(height: 2, color: catAccent),
+                          ),
+                          Positioned(
+                            top: 2,
+                            left: 0,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 2,
+                              ),
+                              color: catAccent,
+                              child: Text(
+                                actionCode(widget.card.category),
+                                style: const TextStyle(
+                                  color: Cyber.bg,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 2,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 1,
+                              ),
+                              color: Colors.black.withValues(alpha: 0.45),
+                              child: Text(
+                                '+${widget.card.power}',
+                                style: TextStyle(
+                                  color: powerColor,
+                                  fontFamily: Cyber.displayFont,
+                                  fontSize: small ? 14 : (large ? 18 : 16),
+                                  fontWeight: FontWeight.w900,
+                                  height: 1,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(8, 22, 8, 8),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Icon(
+                                  widget.card.icon,
+                                  color: color,
+                                  size: small ? 20 : (large ? 28 : 24),
+                                ),
+                                Text(
+                                  widget.card.title.toUpperCase(),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontFamily: 'Orbitron',
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 9,
+                                  ),
+                                ),
+                                Text(
+                                  widget.card.effect,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: color.withValues(alpha: 0.76),
+                                    fontSize: 7,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (widget.card.risky)
+                            const Positioned(
+                              bottom: 3,
+                              left: 3,
+                              child: Icon(
+                                Icons.dangerous,
+                                color: Cyber.danger,
+                                size: 13,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),
-                ),
-                Positioned(
-                  top: 2,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 1,
-                    ),
-                    color: Colors.black.withValues(alpha: 0.45),
-                    child: Text(
-                      '+${card.power}',
-                      style: TextStyle(
-                        color: powerColor,
-                        fontFamily: Cyber.displayFont,
-                        fontSize: small ? 14 : (large ? 18 : 16),
-                        fontWeight: FontWeight.w900,
-                        height: 1,
-                      ),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 22, 8, 8),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Icon(
-                        card.icon,
-                        color: color,
-                        size: small ? 20 : (large ? 28 : 24),
-                      ),
-                      Text(
-                        card.title.toUpperCase(),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontFamily: 'Orbitron',
-                          fontWeight: FontWeight.w900,
-                          fontSize: 9,
-                        ),
-                      ),
-                      Text(
-                        card.effect,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: color.withValues(alpha: 0.76),
-                          fontSize: 7,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (card.risky)
-                  const Positioned(
-                    bottom: 3,
-                    left: 3,
-                    child: Icon(Icons.dangerous, color: Cyber.danger, size: 13),
-                  ),
-              ],
+                );
+              },
             ),
           ),
         );

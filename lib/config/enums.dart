@@ -1,4 +1,4 @@
-enum AppSection { home, deck, howToPlay, match, game, shop }
+enum AppSection { home, deck, howToPlay, match, game, shop, allCards }
 
 enum DeckPickerLane { attacker, defender, action }
 

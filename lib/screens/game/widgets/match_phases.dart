@@ -111,13 +111,6 @@ class _TossPhaseState extends State<TossPhase> with TickerProviderStateMixin {
                   ),
                   Opacity(
                     opacity: _buttonsAnim.value.clamp(0.0, 1.0),
-                    child: const _HudSectionLabel(
-                      label: 'INITIATING COIN TOSS',
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Opacity(
-                    opacity: _buttonsAnim.value.clamp(0.0, 1.0),
                     child: const _HudSectionLabel(label: 'PICK YOUR CALL'),
                   ),
                   const SizedBox(height: 10),
@@ -1311,7 +1304,8 @@ class ScenarioPhase extends StatelessWidget {
   }
 }
 
-Color _roleAccent(bool attacking) => attacking ? Cyber.cyan : Cyber.violet;
+Color _roleAccent(bool attacking) =>
+    attacking ? Cyber.cyan : const Color(0xFFA855F7);
 
 class ScenarioBriefingSection extends StatefulWidget {
   const ScenarioBriefingSection({
@@ -1863,6 +1857,165 @@ class _ScenarioGridPainter extends CustomPainter {
       oldDelegate.accent != accent;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Match-phase entrance animators
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Slides any child up from below + fades it in. Used for section headings
+/// and the top informational panels so the page composes itself in a sweep
+/// rather than appearing all at once.
+class _SlideUpFadeIn extends StatefulWidget {
+  const _SlideUpFadeIn({
+    required this.child,
+    this.delay = Duration.zero,
+    this.offset = 30.0,
+  });
+
+  final Widget child;
+  final Duration delay;
+  final double offset;
+
+  @override
+  State<_SlideUpFadeIn> createState() => _SlideUpFadeInState();
+}
+
+class _SlideUpFadeInState extends State<_SlideUpFadeIn>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+  late final Animation<double> _t;
+  Timer? _kickoff;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 480),
+    );
+    _t = CurvedAnimation(parent: _c, curve: Curves.easeOutCubic);
+    if (widget.delay == Duration.zero) {
+      _c.forward();
+    } else {
+      _kickoff = Timer(widget.delay, () {
+        if (mounted) _c.forward();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _kickoff?.cancel();
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _t,
+      builder: (_, child) => Opacity(
+        opacity: _t.value.clamp(0.0, 1.0),
+        child: Transform.translate(
+          offset: Offset(0, widget.offset * (1 - _t.value)),
+          child: child,
+        ),
+      ),
+      child: widget.child,
+    );
+  }
+}
+
+/// Animates a card as if it is being dealt onto a table: it travels up from
+/// off-screen with a touch of tilt, then settles in place with a small
+/// over-shoot scale bounce. Per-card stagger is keyed off [index].
+class _DealtCard extends StatefulWidget {
+  const _DealtCard({
+    required this.index,
+    required this.child,
+    this.initialDelay = const Duration(milliseconds: 220),
+    this.staggerMs = 75,
+    this.flyDistance = 260.0,
+    this.duration = const Duration(milliseconds: 540),
+    super.key,
+  });
+
+  final int index;
+  final Widget child;
+  final Duration initialDelay;
+  final int staggerMs;
+  final double flyDistance;
+  final Duration duration;
+
+  @override
+  State<_DealtCard> createState() => _DealtCardState();
+}
+
+class _DealtCardState extends State<_DealtCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+  late final Animation<double> _slide;
+  late final Animation<double> _settle;
+  late final Animation<double> _opacity;
+  late final Animation<double> _tilt;
+  Timer? _kickoff;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(vsync: this, duration: widget.duration);
+    _slide = CurvedAnimation(parent: _c, curve: Curves.easeOutCubic);
+    _settle = Tween<double>(begin: 0.92, end: 1.0).animate(
+      CurvedAnimation(parent: _c, curve: Curves.easeOutBack),
+    );
+    _opacity = CurvedAnimation(
+      parent: _c,
+      curve: const Interval(0.0, 0.45, curve: Curves.easeIn),
+    );
+    _tilt = CurvedAnimation(parent: _c, curve: Curves.easeOutCubic);
+
+    final delay =
+        widget.initialDelay +
+        Duration(milliseconds: widget.index * widget.staggerMs);
+    _kickoff = Timer(delay, () {
+      if (mounted) _c.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _kickoff?.cancel();
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (_, child) {
+        const tiltAmount = 0.07;
+        final tiltAngle =
+            (widget.index.isEven ? -tiltAmount : tiltAmount) *
+            (1 - _tilt.value);
+        return Opacity(
+          opacity: _opacity.value.clamp(0.0, 1.0),
+          child: Transform.translate(
+            offset: Offset(0, widget.flyDistance * (1 - _slide.value)),
+            child: Transform.rotate(
+              angle: tiltAngle,
+              child: Transform.scale(
+                scale: _settle.value.clamp(0.5, 1.2),
+                child: child,
+              ),
+            ),
+          ),
+        );
+      },
+      child: widget.child,
+    );
+  }
+}
+
 class PlayPhase extends StatelessWidget {
   const PlayPhase({required this.state, required this.onQuit, super.key});
 
@@ -1916,19 +2069,24 @@ class PlayPhase extends StatelessWidget {
             )
           : null,
       children: [
-        ScenarioPanel(
-          scenario: state.currentScenario,
-          attacking: state.playerAttacking,
-          bonus: scenarioBonus,
-          accent: roleAccent,
+        _SlideUpFadeIn(
+          child: ScenarioPanel(
+            scenario: state.currentScenario,
+            attacking: state.playerAttacking,
+            bonus: scenarioBonus,
+            accent: roleAccent,
+          ),
         ),
-        PowerPreviewBar(
-          player: state.selectedPlayerCard,
-          action: state.selectedActionCard,
-          bonus: scenarioBonus,
-          total: estimate,
-          attacking: state.playerAttacking,
-          accent: roleAccent,
+        _SlideUpFadeIn(
+          delay: const Duration(milliseconds: 90),
+          child: PowerPreviewBar(
+            player: state.selectedPlayerCard,
+            action: state.selectedActionCard,
+            bonus: scenarioBonus,
+            total: estimate,
+            attacking: state.playerAttacking,
+            accent: roleAccent,
+          ),
         ),
         DefenderDeckGrid(
           title: sectionLabel,
@@ -1943,6 +2101,7 @@ class PlayPhase extends StatelessWidget {
         ActionCardRail(
           cards: availableActions,
           selectedId: state.selectedActionCard?.id,
+          usedIds: state.usedActionCards,
           accent: roleAccent,
           onSelect: (card) =>
               context.read<GameBloc>().add(ActionSelected(card)),
@@ -1971,90 +2130,37 @@ class ScenarioPanel extends StatelessWidget {
     final title = attacking
         ? '${(scenario?.title ?? 'Final Third').toUpperCase()} // FINISHERS'
         : 'NO STER // STOPPERS';
-    final description = attacking
-        ? scenario?.description ?? 'Break the line before the defense resets.'
-        : 'Stop the attack before the final shot.';
     return AngularBorderContainer(
       accent: accent,
-      padding: const EdgeInsets.all(16),
-      child: Row(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _ScenarioCrest(
-            icon: attacking ? Icons.bolt : Icons.security,
-            accent: accent,
+          Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Cyber.display(20, color: accent, letterSpacing: 1.2),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Cyber.display(22, color: accent, letterSpacing: 1.2),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  description,
-                  style: Cyber.body(
-                    14,
-                    color: Colors.white,
-                    weight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _InfoChip(
-                      label: attacking ? 'ATK BONUS' : 'DEF BONUS',
-                      value: '+$bonus',
-                      accent: accent,
-                    ),
-                    const _InfoChip(
-                      label: 'RISK',
-                      value: 'LOW',
-                      accent: Cyber.magenta,
-                    ),
-                  ],
-                ),
-              ],
-            ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _InfoChip(
+                label: attacking ? 'ATK BONUS' : 'DEF BONUS',
+                value: '+$bonus',
+                accent: accent,
+              ),
+              const _InfoChip(
+                label: 'RISK',
+                value: 'LOW',
+                accent: Cyber.magenta,
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          const _TacticalMiniDiagram(),
         ],
       ),
-    );
-  }
-}
-
-class _ScenarioCrest extends StatelessWidget {
-  const _ScenarioCrest({required this.icon, required this.accent});
-
-  final IconData icon;
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 82,
-      height: 82,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            accent.withValues(alpha: 0.26),
-            accent.withValues(alpha: 0.04),
-          ],
-        ),
-        border: Border.all(color: accent),
-        boxShadow: [
-          BoxShadow(color: accent.withValues(alpha: 0.22), blurRadius: 20),
-        ],
-      ),
-      child: Icon(icon, color: accent, size: 42),
     );
   }
 }
@@ -2090,47 +2196,6 @@ class _InfoChip extends StatelessWidget {
   }
 }
 
-class _TacticalMiniDiagram extends StatelessWidget {
-  const _TacticalMiniDiagram();
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(58, 70),
-      painter: _TacticalDiagramPainter(),
-    );
-  }
-}
-
-class _TacticalDiagramPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final line = Paint()
-      ..color = Cyber.cyan.withValues(alpha: 0.18)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-    final hot = Paint()
-      ..color = Cyber.magenta.withValues(alpha: 0.7)
-      ..style = PaintingStyle.fill;
-    canvas.drawRect(Offset.zero & size, line);
-    canvas.drawLine(
-      Offset(0, size.height * .35),
-      Offset(size.width, size.height * .35),
-      line,
-    );
-    canvas.drawCircle(Offset(size.width * .5, size.height * .35), 10, line);
-    canvas.drawCircle(Offset(size.width * .68, size.height * .62), 3, hot);
-    canvas.drawCircle(Offset(size.width * .34, size.height * .72), 3, hot);
-    canvas.drawLine(
-      Offset(size.width * .34, size.height * .72),
-      Offset(size.width * .68, size.height * .62),
-      line,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
 
 class PowerPreviewBar extends StatelessWidget {
   const PowerPreviewBar({
@@ -2257,7 +2322,11 @@ class DefenderDeckGrid extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 18),
-        _PlaySectionHeading(title, color: accent),
+        _SlideUpFadeIn(
+          delay: const Duration(milliseconds: 180),
+          offset: 18,
+          child: _PlaySectionHeading(title, color: accent),
+        ),
         const SizedBox(height: 12),
         GridView.builder(
           shrinkWrap: true,
@@ -2272,14 +2341,19 @@ class DefenderDeckGrid extends StatelessWidget {
           itemBuilder: (context, index) {
             final card = cards[index];
             final disabled = redCardedIds.contains(card.id);
-            return Center(
-              child: CyberPlayerCardTile(
-                card: card,
-                selected: selectedId == card.id,
-                disabled: disabled,
-                size: VisualCardSize.lg,
-                selectedAccent: accent,
-                onTap: disabled ? null : () => onSelect(card),
+            return _DealtCard(
+              key: ValueKey('deck-${card.id}'),
+              index: index,
+              initialDelay: const Duration(milliseconds: 260),
+              child: Center(
+                child: CyberPlayerCardTile(
+                  card: card,
+                  selected: selectedId == card.id,
+                  disabled: disabled,
+                  size: VisualCardSize.lg,
+                  selectedAccent: accent,
+                  onTap: disabled ? null : () => onSelect(card),
+                ),
               ),
             );
           },
@@ -2310,6 +2384,7 @@ class ActionCardRail extends StatelessWidget {
     required this.selectedId,
     required this.accent,
     required this.onSelect,
+    this.usedIds = const [],
     super.key,
   });
 
@@ -2317,13 +2392,21 @@ class ActionCardRail extends StatelessWidget {
   final String? selectedId;
   final Color accent;
   final ValueChanged<ActionCard> onSelect;
+  final List<String> usedIds;
 
   @override
   Widget build(BuildContext context) {
+    // Estimated time the deck grid's last card finishes landing so the action
+    // rail enters as the deck visibly settles.
+    const railBaseDelay = Duration(milliseconds: 620);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _PlaySectionHeading('ACTIONS IN YOUR DECK', color: accent),
+        _SlideUpFadeIn(
+          delay: railBaseDelay,
+          offset: 18,
+          child: _PlaySectionHeading('ACTIONS IN YOUR DECK', color: accent),
+        ),
         const SizedBox(height: 12),
         SizedBox(
           height: 158,
@@ -2333,12 +2416,24 @@ class ActionCardRail extends StatelessWidget {
             separatorBuilder: (_, _) => const SizedBox(width: 12),
             itemBuilder: (context, index) {
               final card = cards[index];
-              return CyberActionCardTile(
-                card: card,
-                selected: selectedId == card.id,
-                size: VisualCardSize.lg,
-                selectedAccent: accent,
-                onTap: () => onSelect(card),
+              final used = usedIds.contains(card.id);
+              return _DealtCard(
+                key: ValueKey('action-${card.id}'),
+                index: index,
+                initialDelay:
+                    railBaseDelay + const Duration(milliseconds: 80),
+                staggerMs: 65,
+                flyDistance: 200,
+                duration: const Duration(milliseconds: 480),
+                child: CyberActionCardTile(
+                  card: card,
+                  selected: selectedId == card.id,
+                  disabled: used,
+                  disabledLabel: 'USED',
+                  size: VisualCardSize.lg,
+                  selectedAccent: accent,
+                  onTap: used ? null : () => onSelect(card),
+                ),
               );
             },
           ),
@@ -2944,83 +3039,197 @@ class _NextRoundCountdownState extends State<_NextRoundCountdown> {
   }
 }
 
-class MatchEndPhase extends StatelessWidget {
+class MatchEndPhase extends StatefulWidget {
   const MatchEndPhase({required this.state, required this.onQuit, super.key});
 
   final GameState state;
   final VoidCallback onQuit;
 
   @override
+  State<MatchEndPhase> createState() => _MatchEndPhaseState();
+}
+
+class _MatchEndPhaseState extends State<MatchEndPhase>
+    with TickerProviderStateMixin {
+  static const int _penaltyCountdownSeconds = 5;
+  late int _seconds;
+  late final AnimationController _scanner;
+  late final AnimationController _bannerCtrl;
+  late final AnimationController _scoreCtrl;
+  late final AnimationController _shakeCtrl;
+  bool _fired = false;
+
+  bool get _tied =>
+      widget.state.playerScore == widget.state.opponentScore;
+
+  @override
+  void initState() {
+    super.initState();
+    _seconds = _penaltyCountdownSeconds;
+    _scanner = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat();
+
+    _bannerCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _scoreCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _shakeCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+
+    _bannerCtrl.forward();
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) _scoreCtrl.forward();
+    });
+
+    final won = widget.state.playerScore > widget.state.opponentScore;
+    if (!won && !_tied) {
+      Future.delayed(const Duration(milliseconds: 1200), () {
+        if (mounted) _shakeCtrl.forward();
+      });
+    }
+
+    if (_tied) _tick();
+  }
+
+  Future<void> _tick() async {
+    for (var i = _penaltyCountdownSeconds; i > 0; i--) {
+      await Future<void>.delayed(const Duration(seconds: 1));
+      if (!mounted || _fired) return;
+      setState(() => _seconds = i - 1);
+    }
+    if (!mounted || _fired) return;
+    _fired = true;
+    context.read<GameBloc>().add(PenaltyStarted());
+  }
+
+  @override
+  void dispose() {
+    _scanner.dispose();
+    _bannerCtrl.dispose();
+    _scoreCtrl.dispose();
+    _shakeCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final tied = state.playerScore == state.opponentScore;
-    final won = state.playerScore > state.opponentScore;
+    final tied = _tied;
+    final won = widget.state.playerScore > widget.state.opponentScore;
     final title = tied ? 'DEADLOCK' : (won ? 'VICTORY' : 'DEFEAT');
     final accent = tied ? Cyber.amber : (won ? Cyber.success : Cyber.danger);
     return MatchPhaseScaffold(
       title: 'Full Time',
       subtitle: '// Match Archive',
-      state: state,
-      onQuit: onQuit,
+      state: widget.state,
+      onQuit: widget.onQuit,
       tutorialKey: 'match-end',
       tutorialSteps: matchEndTutorialSteps,
-      bottomAction: CyberCtaButton(
-        label: tied ? 'Penalty Shootout' : 'Finish Match',
-        primary: true,
-        onPressed: () => context.read<GameBloc>().add(
-          tied ? PenaltyStarted() : MatchFinished(),
-        ),
-      ),
+      bottomAction: tied
+          ? null
+          : CyberCtaButton(
+              label: 'Finish Match',
+              primary: true,
+              onPressed: () =>
+                  context.read<GameBloc>().add(MatchFinished()),
+            ),
       children: [
         const SizedBox(height: 8),
-        // Outcome banner.
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            color: accent.withValues(alpha: 0.12),
-            border: Border.all(color: accent, width: 1.5),
-            boxShadow: [
-              BoxShadow(color: accent.withValues(alpha: 0.3), blurRadius: 24),
-            ],
+        // Outcome banner with animation.
+        ScaleTransition(
+          scale: Tween<double>(begin: 0, end: 1).animate(
+            CurvedAnimation(parent: _bannerCtrl, curve: Curves.easeOutBack),
           ),
-          child: Column(
-            children: [
-              Icon(
-                tied
-                    ? Icons.balance
-                    : (won ? Icons.emoji_events : Icons.sentiment_dissatisfied),
-                color: accent,
-                size: 36,
+          child: SlideTransition(
+            position: Tween<Offset>(begin: const Offset(0, -0.3), end: Offset.zero).animate(
+              CurvedAnimation(parent: _bannerCtrl, curve: Curves.easeOutBack),
+            ),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: 0.12),
+                border: Border.all(color: accent, width: 1.5),
+                boxShadow: [
+                  BoxShadow(color: accent.withValues(alpha: 0.3), blurRadius: 24),
+                ],
               ),
-              const SizedBox(height: 6),
-              Text(
-                title,
-                style: Cyber.display(40, color: accent, letterSpacing: 4),
+              child: Column(
+                children: [
+                  ScaleTransition(
+                    scale: Tween<double>(begin: 0, end: 1).animate(
+                      CurvedAnimation(parent: _bannerCtrl, curve: Curves.elasticOut),
+                    ),
+                    child: Icon(
+                      tied
+                          ? Icons.balance
+                          : (won ? Icons.emoji_events : Icons.sentiment_dissatisfied),
+                      color: accent,
+                      size: 36,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    title,
+                    style: Cyber.display(40, color: accent, letterSpacing: 4),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
         const SizedBox(height: 4),
-        // Giant scoreline.
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              '${state.playerScore}',
-              style: Cyber.display(72, color: Cyber.cyan),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text('-', style: Cyber.display(48, color: Cyber.muted)),
-            ),
-            Text(
-              '${state.opponentScore}',
-              style: Cyber.display(72, color: Cyber.danger),
-            ),
-          ],
+        // Giant scoreline with bounce animation and shake for defeat.
+        AnimatedBuilder(
+          animation: Listenable.merge([_scoreCtrl, _shakeCtrl]),
+          builder: (_, __) {
+            final scoreScale = Tween<double>(begin: 0.5, end: 1).animate(
+              CurvedAnimation(parent: _scoreCtrl, curve: Curves.easeOutBack),
+            ).value;
+
+            final shakeOffset = won || tied
+                ? 0.0
+                : Tween<double>(begin: -8, end: 8).animate(
+                    CurvedAnimation(parent: _shakeCtrl, curve: Curves.elasticInOut),
+                  ).value;
+
+            return Transform.translate(
+              offset: Offset(shakeOffset, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Transform.scale(
+                    scale: scoreScale,
+                    child: Text(
+                      '${widget.state.playerScore}',
+                      style: Cyber.display(72, color: Cyber.cyan),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text('-', style: Cyber.display(48, color: Cyber.muted)),
+                  ),
+                  Transform.scale(
+                    scale: scoreScale,
+                    child: Text(
+                      '${widget.state.opponentScore}',
+                      style: Cyber.display(72, color: Cyber.danger),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
-        if (tied)
+        if (tied) ...[
           const Padding(
             padding: EdgeInsets.only(top: 4),
             child: Text(
@@ -3029,6 +3238,28 @@ class MatchEndPhase extends StatelessWidget {
               style: TextStyle(color: Cyber.muted, fontSize: 12),
             ),
           ),
+          const SizedBox(height: 14),
+          Center(
+            child: CountdownRing(
+              seconds: _seconds,
+              scanner: _scanner,
+              accent: accent,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Center(
+            child: Text(
+              'Penalty shootout starting...',
+              textAlign: TextAlign.center,
+              style: Cyber.body(
+                12,
+                color: accent.withValues(alpha: 0.7),
+                weight: FontWeight.w700,
+                letterSpacing: 0.4,
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

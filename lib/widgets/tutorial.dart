@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../blocs/game/game_bloc.dart';
 import '../blocs/game/game_event.dart';
-import '../config/theme.dart';
 import '../config/tutorial_steps.dart';
 import 'cyber/cyber_widgets.dart';
 
@@ -109,23 +108,26 @@ class _TutorialDialogState extends State<TutorialDialog> {
   @override
   Widget build(BuildContext context) {
     final step = widget.steps[index];
+    final accent = step.accent;
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24),
       child: CyberPanel(
+        accent: accent,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // Header: dot + onboarding label + skip all.
             Row(
               children: [
                 Container(
                   width: 8,
                   height: 8,
-                  decoration: const BoxDecoration(
-                    color: Cyber.cyan,
+                  decoration: BoxDecoration(
+                    color: accent,
                     shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(color: Cyber.cyan, blurRadius: 8)],
+                    boxShadow: [BoxShadow(color: accent, blurRadius: 8)],
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -133,8 +135,8 @@ class _TutorialDialogState extends State<TutorialDialog> {
                   child: Text(
                     '> ONBOARDING - ${(index + 1).toString().padLeft(2, '0')}/${widget.steps.length.toString().padLeft(2, '0')}',
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Cyber.cyan,
+                    style: TextStyle(
+                      color: accent,
                       fontFamily: 'Onest',
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
@@ -146,27 +148,91 @@ class _TutorialDialogState extends State<TutorialDialog> {
               ],
             ),
             const SizedBox(height: 14),
-            Text(
-              step.title.toUpperCase(),
-              style: const TextStyle(
-                color: Colors.white,
-                fontFamily: 'Orbitron',
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.7,
-              ),
+            // Icon avatar + step badge + title.
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    border: Border.all(color: accent.withValues(alpha: 0.5)),
+                  ),
+                  child: Icon(step.icon, color: accent, size: 26),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        color: accent.withValues(alpha: 0.18),
+                        child: Text(
+                          'STEP ${(index + 1).toString().padLeft(2, '0')}',
+                          style: TextStyle(
+                            color: accent,
+                            fontFamily: 'Orbitron',
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.8,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        step.title.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'Orbitron',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.8,
+                          height: 1.15,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 14),
             Text(
               step.body,
               style: const TextStyle(
                 color: Color(0xffd1d5db),
                 fontFamily: 'Onest',
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
                 height: 1.45,
               ),
             ),
+            if (step.hint != null) ...[
+              const SizedBox(height: 14),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 7,
+                ),
+                color: accent.withValues(alpha: 0.08),
+                child: Text(
+                  step.hint!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: accent.withValues(alpha: 0.9),
+                    fontFamily: 'Orbitron',
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.3,
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 18),
             Row(
               children: [
@@ -179,14 +245,14 @@ class _TutorialDialogState extends State<TutorialDialog> {
                       ),
                       decoration: BoxDecoration(
                         color: i == index
-                            ? Cyber.cyan
+                            ? accent
                             : i < index
-                            ? Cyber.cyan.withValues(alpha: 0.42)
+                            ? accent.withValues(alpha: 0.42)
                             : const Color(0xff1e2538),
                         boxShadow: i == index
                             ? [
                                 BoxShadow(
-                                  color: Cyber.cyan.withValues(alpha: 0.7),
+                                  color: accent.withValues(alpha: 0.7),
                                   blurRadius: 8,
                                 ),
                               ]

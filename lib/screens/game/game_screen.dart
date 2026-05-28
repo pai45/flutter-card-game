@@ -10,6 +10,7 @@ import '../../blocs/game/game_state.dart';
 import '../../config/enums.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
+import '../deck/all_cards_screen.dart';
 import '../deck/deck_builder_screen.dart';
 import '../home/home_screen.dart';
 import '../how_to_play/how_to_play_screen.dart';
@@ -36,7 +37,8 @@ class _GameTabContentState extends State<GameTabContent> {
                section == AppSection.home ||
                section == AppSection.deck ||
                section == AppSection.howToPlay ||
-               section == AppSection.match) {
+               section == AppSection.match ||
+               section == AppSection.allCards) {
       setState(() => _gameSection = section == AppSection.game ? AppSection.home : section);
     }
   }
@@ -48,6 +50,7 @@ class _GameTabContentState extends State<GameTabContent> {
       AppSection.deck => DeckBuilderScreen(onNavigate: _navigateGame),
       AppSection.howToPlay => HowToPlayScreen(onNavigate: _navigateGame),
       AppSection.match => MatchScreen(onNavigate: _navigateGame),
+      AppSection.allCards => AllCardsScreen(onNavigate: _navigateGame),
       _ => HomeScreen(onNavigate: _navigateGame),
     };
   }

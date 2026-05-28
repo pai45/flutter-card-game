@@ -8,6 +8,7 @@ import '../../config/tutorial_steps.dart';
 import '../../models/cards.dart';
 import '../../models/deck.dart';
 import '../../models/match.dart';
+import '../../models/progression.dart';
 import '../../services/secure_storage_service.dart';
 import '../../utils/card_helpers.dart';
 import '../../utils/label_helpers.dart';
@@ -117,6 +118,12 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       );
       developer.log('GameLoaded: Loaded history');
 
+      final progression = await _storage.loadProgression().timeout(
+        const Duration(seconds: 2),
+        onTimeout: PlayerProgression.initial,
+      );
+      developer.log('GameLoaded: Loaded progression (level ${progression.playerLevel})');
+
       final starterPackClaimed = await _storage.loadStarterPackClaimed().timeout(
         const Duration(seconds: 2),
         onTimeout: () => false,
@@ -163,6 +170,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           matchHistory: history,
           tutorialSeen: seen,
           pendingPackReveal: pendingPackReveal,
+          progression: progression,
         ),
       );
       developer.log('GameLoaded: Complete');
@@ -615,6 +623,16 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     MatchFinished event,
     Emitter<GameState> emit,
   ) async {
+    final wentToPenalties = state.penaltyKicks.isNotEmpty;
+    final resultLabel = _resultLabelForState(state);
+    final xpDelta = calculateMatchXP(
+      resultLabel: resultLabel,
+      playerScore: state.playerScore,
+      opponentScore: state.opponentScore,
+      wentToPenalties: wentToPenalties,
+    );
+    final (:updated, :levelsGained) = state.progression.applyXP(xpDelta);
+
     final activeDeck = state.deckSlots
         .where((slot) => slot.id == state.activeDeckId)
         .firstOrNull;
@@ -622,7 +640,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       id: 'match-${DateTime.now().microsecondsSinceEpoch}',
       deckName: activeDeck?.name ?? 'Unknown Deck',
       timestampIso: DateTime.now().toIso8601String(),
-      resultLabel: _resultLabelForState(state),
+      resultLabel: resultLabel,
       playerScore: state.playerScore,
       opponentScore: state.opponentScore,
       penaltyPlayerScore: state.penaltyKicks.isEmpty
@@ -641,10 +659,19 @@ class GameBloc extends Bloc<GameEvent, GameState> {
             ),
           )
           .toList(),
+      xpEarned: xpDelta,
     );
     final history = [historyEntry, ...state.matchHistory].take(12).toList();
-    emit(state.copyWith(phase: MatchPhase.finalResult, matchHistory: history));
+    emit(state.copyWith(
+      phase: MatchPhase.finalResult,
+      matchHistory: history,
+      progression: updated,
+      previousProgression: state.progression,
+      pendingLevelUps: levelsGained,
+      lastMatchXP: xpDelta,
+    ));
     await _storage.saveMatchHistory(history);
+    await _storage.saveProgression(updated);
   }
 
   RoundOutcome _resolveRound(
@@ -700,6 +727,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     matchHistory: old.matchHistory,
     tutorialSeen: old.tutorialSeen,
     pendingPackReveal: old.pendingPackReveal,
+    progression: old.progression,
   );
 
   Future<void> _saveWallet({

@@ -240,6 +240,8 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
                                     onSelectAction: _assignActionToActiveSlot,
                                   ),
                                 ],
+                                const SizedBox(height: 8),
+                                MatchHistoryPanel(history: state.matchHistory),
                               ],
                             ),
                           ),
@@ -276,6 +278,9 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
                           }
                         });
                       },
+                      tertiaryLabel: 'All Cards',
+                      tertiaryOnTap: () =>
+                          widget.onNavigate(AppSection.allCards),
                     ),
                   ],
                 ),
@@ -920,13 +925,13 @@ class FiveSideDeckPanel extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 2),
           SizedBox(
             height: 88,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: 6,
-              separatorBuilder: (_, _) => const SizedBox(width: 7),
+              separatorBuilder: (_, _) => const SizedBox(width: 12),
               itemBuilder: (_, index) {
                 final card = index < actions.length ? actions[index] : null;
                 if (card == null) {
@@ -980,7 +985,7 @@ class FiveSidePitch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 320,
+      height: 420,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topCenter,
@@ -993,8 +998,8 @@ class FiveSidePitch extends StatelessWidget {
         children: [
           Positioned.fill(child: CustomPaint(painter: PitchPainter())),
           Positioned(
-            left: 28,
-            top: 18,
+            left: 12,
+            top: 10,
             child: FormationSlot(
               label: 'LS',
               card: attackers.firstOrNull,
@@ -1003,8 +1008,8 @@ class FiveSidePitch extends StatelessWidget {
             ),
           ),
           Positioned(
-            right: 28,
-            top: 18,
+            right: 12,
+            top: 10,
             child: FormationSlot(
               label: 'RS',
               card: attackers.length > 1 ? attackers[1] : null,
@@ -1013,8 +1018,8 @@ class FiveSidePitch extends StatelessWidget {
             ),
           ),
           Positioned(
-            left: 28,
-            top: 132,
+            left: 12,
+            top: 175,
             child: FormationSlot(
               label: 'LCB',
               card: defenders.firstOrNull,
@@ -1023,8 +1028,8 @@ class FiveSidePitch extends StatelessWidget {
             ),
           ),
           Positioned(
-            right: 28,
-            top: 132,
+            right: 12,
+            top: 175,
             child: FormationSlot(
               label: 'RCB',
               card: defenders.length > 1 ? defenders[1] : null,
@@ -1040,7 +1045,7 @@ class FiveSidePitch extends StatelessWidget {
 }
 
 
-class FormationSlot extends StatelessWidget {
+class FormationSlot extends StatefulWidget {
   const FormationSlot({
     required this.label,
     required this.card,
@@ -1055,29 +1060,65 @@ class FormationSlot extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<FormationSlot> createState() => _FormationSlotState();
+}
+
+class _FormationSlotState extends State<FormationSlot>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _swapController;
+
+  @override
+  void initState() {
+    super.initState();
+    _swapController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+  }
+
+  @override
+  void didUpdateWidget(FormationSlot oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.card?.id != widget.card?.id && widget.card != null) {
+      _swapController.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _swapController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (card != null) {
-      return CyberPlayerCardTile(
-        card: card!,
-        selected: highlighted,
-        onTap: onTap,
-        size: VisualCardSize.sm,
+    if (widget.card != null) {
+      return ScaleTransition(
+        scale: Tween<double>(begin: 0.85, end: 1.0).animate(
+          CurvedAnimation(parent: _swapController, curve: Curves.easeOutBack),
+        ),
+        child: CyberPlayerCardTile(
+          card: widget.card!,
+          selected: widget.highlighted,
+          onTap: widget.onTap,
+          size: VisualCardSize.md,
+        ),
       );
     }
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Container(
         width: 84,
         height: 118,
         decoration: BoxDecoration(
           color: Cyber.bg.withValues(alpha: 0.58),
           border: Border.all(
-            color: highlighted
+            color: widget.highlighted
                 ? Cyber.lime.withValues(alpha: 0.85)
                 : Cyber.cyan.withValues(alpha: 0.45),
-            width: highlighted ? 2 : 1,
+            width: widget.highlighted ? 2 : 1,
           ),
-          boxShadow: highlighted
+          boxShadow: widget.highlighted
               ? [
                   BoxShadow(
                     color: Cyber.lime.withValues(alpha: 0.24),
@@ -1090,15 +1131,15 @@ class FormationSlot extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              label.contains('S') ? Icons.sports_soccer : Icons.shield,
-              color: highlighted ? Cyber.lime : Cyber.cyan,
+              widget.label.contains('S') ? Icons.sports_soccer : Icons.shield,
+              color: widget.highlighted ? Cyber.lime : Cyber.cyan,
               size: 28,
             ),
             const SizedBox(height: 6),
             Text(
-              label,
+              widget.label,
               style: TextStyle(
-                color: highlighted ? Cyber.lime : Cyber.cyan,
+                color: widget.highlighted ? Cyber.lime : Cyber.cyan,
                 fontFamily: 'Orbitron',
                 fontWeight: FontWeight.w900,
                 fontSize: 12,

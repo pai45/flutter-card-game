@@ -2,6 +2,7 @@ import '../../config/enums.dart';
 import '../../models/cards.dart';
 import '../../models/deck.dart';
 import '../../models/match.dart';
+import '../../models/progression.dart';
 import '../../utils/card_helpers.dart';
 
 class PackRevealData {
@@ -98,6 +99,10 @@ class GameState {
     required this.penaltyKickPhase,
     required this.penaltySuddenDeath,
     required this.penaltyWinner,
+    required this.progression,
+    required this.previousProgression,
+    required this.pendingLevelUps,
+    required this.lastMatchXP,
   });
 
   factory GameState.initial() => GameState(
@@ -143,6 +148,10 @@ class GameState {
     penaltyKickPhase: 'choose',
     penaltySuddenDeath: false,
     penaltyWinner: null,
+    progression: PlayerProgression.initial(),
+    previousProgression: null,
+    pendingLevelUps: const [],
+    lastMatchXP: null,
   );
 
   final bool loading;
@@ -187,6 +196,12 @@ class GameState {
   final String penaltyKickPhase; // 'choose' | 'result'
   final bool penaltySuddenDeath;
   final String? penaltyWinner; // 'player' | 'opponent'
+  final PlayerProgression progression;
+  final PlayerProgression? previousProgression;
+  final List<int> pendingLevelUps;
+  final int? lastMatchXP;
+
+  bool get hasLevelUp => pendingLevelUps.isNotEmpty;
 
   bool get deckReady =>
       deckAttackers.length == 2 &&
@@ -236,6 +251,10 @@ class GameState {
     String? penaltyKickPhase,
     bool? penaltySuddenDeath,
     Object? penaltyWinner = _sentinel,
+    PlayerProgression? progression,
+    Object? previousProgression = _sentinel,
+    List<int>? pendingLevelUps,
+    Object? lastMatchXP = _sentinel,
   }) => GameState(
     loading: loading ?? this.loading,
     deckSlots: deckSlots ?? this.deckSlots,
@@ -299,6 +318,14 @@ class GameState {
     penaltyWinner: penaltyWinner == _sentinel
         ? this.penaltyWinner
         : penaltyWinner as String?,
+    progression: progression ?? this.progression,
+    previousProgression: previousProgression == _sentinel
+        ? this.previousProgression
+        : previousProgression as PlayerProgression?,
+    pendingLevelUps: pendingLevelUps ?? this.pendingLevelUps,
+    lastMatchXP: lastMatchXP == _sentinel
+        ? this.lastMatchXP
+        : lastMatchXP as int?,
   );
 }
 

@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/deck.dart';
 import '../models/match.dart';
+import '../models/progression.dart';
 
 class WalletSnapshot {
   const WalletSnapshot({
@@ -52,6 +53,7 @@ class SecureGameStorage {
   static const _ownedCardsKey = 'pd_owned_cards_v1';
   static const _historyKey = 'pd_match_history_v1';
   static const _starterPackClaimedKey = 'pd_starter_pack_claimed_v1';
+  static const _progressionKey = 'pd_progression_v1';
   static const _walletKey = 'pitch_duel_wallet';
 
   final FlutterSecureStorage _storage;
@@ -156,5 +158,24 @@ class SecureGameStorage {
   Future<void> saveWallet(WalletSnapshot wallet) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_walletKey, jsonEncode(wallet.toJson()));
+  }
+
+  Future<PlayerProgression> loadProgression() async {
+    try {
+      final raw = await _storage.read(key: _progressionKey);
+      if (raw == null || raw.isEmpty) return PlayerProgression.initial();
+      return PlayerProgression.fromJson(
+        Map<String, dynamic>.from(jsonDecode(raw) as Map),
+      );
+    } catch (_) {
+      return PlayerProgression.initial();
+    }
+  }
+
+  Future<void> saveProgression(PlayerProgression progression) async {
+    await _storage.write(
+      key: _progressionKey,
+      value: jsonEncode(progression.toJson()),
+    );
   }
 }
