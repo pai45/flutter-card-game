@@ -70,6 +70,7 @@ class GameState {
     required this.matchHistory,
     required this.tutorialSeen,
     required this.pendingPackReveal,
+    required this.starterPackClaimed,
     required this.phase,
     required this.currentRound,
     required this.playerScore,
@@ -119,6 +120,7 @@ class GameState {
     matchHistory: const [],
     tutorialSeen: const {},
     pendingPackReveal: null,
+    starterPackClaimed: false,
     phase: MatchPhase.idle,
     currentRound: 0,
     playerScore: 0,
@@ -167,6 +169,7 @@ class GameState {
   final List<MatchHistoryEntry> matchHistory;
   final Set<String> tutorialSeen;
   final PackRevealData? pendingPackReveal;
+  final bool starterPackClaimed;
   final MatchPhase phase;
   final int currentRound;
   final int playerScore;
@@ -222,6 +225,7 @@ class GameState {
     List<MatchHistoryEntry>? matchHistory,
     Set<String>? tutorialSeen,
     Object? pendingPackReveal = _sentinel,
+    bool? starterPackClaimed,
     MatchPhase? phase,
     int? currentRound,
     int? playerScore,
@@ -271,6 +275,7 @@ class GameState {
     pendingPackReveal: pendingPackReveal == _sentinel
         ? this.pendingPackReveal
         : pendingPackReveal as PackRevealData?,
+    starterPackClaimed: starterPackClaimed ?? this.starterPackClaimed,
     phase: phase ?? this.phase,
     currentRound: currentRound ?? this.currentRound,
     playerScore: playerScore ?? this.playerScore,

@@ -1964,9 +1964,10 @@ class _DealtCardState extends State<_DealtCard>
     super.initState();
     _c = AnimationController(vsync: this, duration: widget.duration);
     _slide = CurvedAnimation(parent: _c, curve: Curves.easeOutCubic);
-    _settle = Tween<double>(begin: 0.92, end: 1.0).animate(
-      CurvedAnimation(parent: _c, curve: Curves.easeOutBack),
-    );
+    _settle = Tween<double>(
+      begin: 0.92,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _c, curve: Curves.easeOutBack));
     _opacity = CurvedAnimation(
       parent: _c,
       curve: const Interval(0.0, 0.45, curve: Curves.easeIn),
@@ -2196,7 +2197,6 @@ class _InfoChip extends StatelessWidget {
   }
 }
 
-
 class PowerPreviewBar extends StatelessWidget {
   const PowerPreviewBar({
     required this.player,
@@ -2420,8 +2420,7 @@ class ActionCardRail extends StatelessWidget {
               return _DealtCard(
                 key: ValueKey('action-${card.id}'),
                 index: index,
-                initialDelay:
-                    railBaseDelay + const Duration(milliseconds: 80),
+                initialDelay: railBaseDelay + const Duration(milliseconds: 80),
                 staggerMs: 65,
                 flyDistance: 200,
                 duration: const Duration(milliseconds: 480),
@@ -3059,8 +3058,7 @@ class _MatchEndPhaseState extends State<MatchEndPhase>
   late final AnimationController _shakeCtrl;
   bool _fired = false;
 
-  bool get _tied =>
-      widget.state.playerScore == widget.state.opponentScore;
+  bool get _tied => widget.state.playerScore == widget.state.opponentScore;
 
   @override
   void initState() {
@@ -3137,8 +3135,7 @@ class _MatchEndPhaseState extends State<MatchEndPhase>
           : CyberCtaButton(
               label: 'Finish Match',
               primary: true,
-              onPressed: () =>
-                  context.read<GameBloc>().add(MatchFinished()),
+              onPressed: () => context.read<GameBloc>().add(MatchFinished()),
             ),
       children: [
         const SizedBox(height: 8),
@@ -3148,9 +3145,16 @@ class _MatchEndPhaseState extends State<MatchEndPhase>
             CurvedAnimation(parent: _bannerCtrl, curve: Curves.easeOutBack),
           ),
           child: SlideTransition(
-            position: Tween<Offset>(begin: const Offset(0, -0.3), end: Offset.zero).animate(
-              CurvedAnimation(parent: _bannerCtrl, curve: Curves.easeOutBack),
-            ),
+            position:
+                Tween<Offset>(
+                  begin: const Offset(0, -0.3),
+                  end: Offset.zero,
+                ).animate(
+                  CurvedAnimation(
+                    parent: _bannerCtrl,
+                    curve: Curves.easeOutBack,
+                  ),
+                ),
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 14),
@@ -3158,19 +3162,27 @@ class _MatchEndPhaseState extends State<MatchEndPhase>
                 color: accent.withValues(alpha: 0.12),
                 border: Border.all(color: accent, width: 1.5),
                 boxShadow: [
-                  BoxShadow(color: accent.withValues(alpha: 0.3), blurRadius: 24),
+                  BoxShadow(
+                    color: accent.withValues(alpha: 0.3),
+                    blurRadius: 24,
+                  ),
                 ],
               ),
               child: Column(
                 children: [
                   ScaleTransition(
                     scale: Tween<double>(begin: 0, end: 1).animate(
-                      CurvedAnimation(parent: _bannerCtrl, curve: Curves.elasticOut),
+                      CurvedAnimation(
+                        parent: _bannerCtrl,
+                        curve: Curves.elasticOut,
+                      ),
                     ),
                     child: Icon(
                       tied
                           ? Icons.balance
-                          : (won ? Icons.emoji_events : Icons.sentiment_dissatisfied),
+                          : (won
+                                ? Icons.emoji_events
+                                : Icons.sentiment_dissatisfied),
                       color: accent,
                       size: 36,
                     ),
@@ -3189,16 +3201,26 @@ class _MatchEndPhaseState extends State<MatchEndPhase>
         // Giant scoreline with bounce animation and shake for defeat.
         AnimatedBuilder(
           animation: Listenable.merge([_scoreCtrl, _shakeCtrl]),
-          builder: (_, __) {
-            final scoreScale = Tween<double>(begin: 0.5, end: 1).animate(
-              CurvedAnimation(parent: _scoreCtrl, curve: Curves.easeOutBack),
-            ).value;
+          builder: (_, _) {
+            final scoreScale = Tween<double>(begin: 0.5, end: 1)
+                .animate(
+                  CurvedAnimation(
+                    parent: _scoreCtrl,
+                    curve: Curves.easeOutBack,
+                  ),
+                )
+                .value;
 
             final shakeOffset = won || tied
                 ? 0.0
-                : Tween<double>(begin: -8, end: 8).animate(
-                    CurvedAnimation(parent: _shakeCtrl, curve: Curves.elasticInOut),
-                  ).value;
+                : Tween<double>(begin: -8, end: 8)
+                      .animate(
+                        CurvedAnimation(
+                          parent: _shakeCtrl,
+                          curve: Curves.elasticInOut,
+                        ),
+                      )
+                      .value;
 
             return Transform.translate(
               offset: Offset(shakeOffset, 0),
@@ -3215,7 +3237,10 @@ class _MatchEndPhaseState extends State<MatchEndPhase>
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text('-', style: Cyber.display(48, color: Cyber.muted)),
+                    child: Text(
+                      '-',
+                      style: Cyber.display(48, color: Cyber.muted),
+                    ),
                   ),
                   Transform.scale(
                     scale: scoreScale,

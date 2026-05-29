@@ -8,8 +8,8 @@ import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../config/tutorial_steps.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/game_scaffold.dart';
-import '../../widgets/match_widgets.dart';
 import '../../widgets/player_level_badge.dart';
 import '../../widgets/tutorial.dart';
 import '../../screens/match_history/match_history_pages.dart';
@@ -61,18 +61,25 @@ class HomeScreen extends StatelessWidget {
                             color: state.deckReady ? Cyber.lime : Cyber.amber,
                           ),
                           const SizedBox(height: 28),
-                          CyberCtaButton(
-                            label: 'Play Match',
-                            primary: true,
-                            onPressed: state.deckReady
-                                ? () {
+                          state.deckReady
+                              ? HudCtaButton(
+                                  label: 'PLAY MATCH',
+                                  onTap: () {
                                     context.read<GameBloc>().add(
                                       MatchStarted(),
                                     );
                                     onNavigate(AppSection.match);
-                                  }
-                                : null,
-                          ),
+                                  },
+                                )
+                              : Opacity(
+                                  opacity: 0.45,
+                                  child: IgnorePointer(
+                                    child: HudCtaButton(
+                                      label: 'PLAY MATCH',
+                                      onTap: () {},
+                                    ),
+                                  ),
+                                ),
                           const SizedBox(height: 12),
                           CyberCtaButton(
                             label: 'Deck Builder',
@@ -117,7 +124,10 @@ class HomeScreen extends StatelessWidget {
                           const SizedBox(height: 32),
                           CyberCtaButton(
                             label: 'Match History',
-                            onPressed: () => showMatchHistoryArchive(context, state.matchHistory),
+                            onPressed: () => showMatchHistoryArchive(
+                              context,
+                              state.matchHistory,
+                            ),
                           ),
                         ],
                       ),
@@ -134,9 +144,7 @@ class HomeScreen extends StatelessWidget {
               ],
             ),
           ),
-          bottomNavigationBar: _LandingBottomNavigation(
-            onNavigate: onNavigate,
-          ),
+          bottomNavigationBar: _LandingBottomNavigation(onNavigate: onNavigate),
         );
       },
     );

@@ -61,6 +61,8 @@ class PackOpened extends GameEvent {
   final int refund;
 }
 
+class StarterPackClaimed extends GameEvent {}
+
 class CardBackPurchased extends GameEvent {
   CardBackPurchased(this.cardBackId);
   final String cardBackId;

@@ -427,7 +427,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Stage 10: Idle levitation + tap prompt
+  // Stage 10: Idle levitation + auto-advance after 1.5 seconds
   // ─────────────────────────────────────────────────────────────────────────
   void _startStage10() {
     _idleCtrl = AnimationController(
@@ -460,13 +460,9 @@ class _CardUnpackState extends State<CardUnpackAnimation>
       _countdown = 3;
     });
 
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) { timer.cancel(); return; }
-      setState(() => _countdown--);
-      if (_countdown <= 0) {
-        timer.cancel();
-        _onTap();
-      }
+    _countdownTimer = Timer(const Duration(milliseconds: 1500), () {
+      if (!mounted) return;
+      _onTap();
     });
   }
 
@@ -986,10 +982,10 @@ class _CardUnpackState extends State<CardUnpackAnimation>
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Tap-to-continue label
+  // Tap-to-continue label (show only 3)
   // ─────────────────────────────────────────────────────────────────────────
   Widget _buildTapLabel() {
-    if (_tapCtrl == null) return const SizedBox.shrink();
+    if (_tapCtrl == null || _countdown != 3) return const SizedBox.shrink();
     return Positioned(
       bottom: 64,
       left: 0,
@@ -1002,7 +998,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
         ),
         child: Center(
           child: Text(
-            '$_countdown',
+            '3',
             style: const TextStyle(
               color: _kMuted,
               fontSize: 36,

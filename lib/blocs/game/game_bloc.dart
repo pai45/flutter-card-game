@@ -29,6 +29,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<CoinsSpent>(_onCoinsSpent);
     on<CardPurchased>(_onCardPurchased);
     on<PackOpened>(_onPackOpened);
+    on<StarterPackClaimed>(_onStarterPackClaimed);
     on<CardBackPurchased>(_onCardBackPurchased);
     on<CardBackEquipped>(_onCardBackEquipped);
     on<PackRevealSeen>((_, emit) => emit(state.copyWith(pendingPackReveal: null)));
@@ -170,6 +171,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           matchHistory: history,
           tutorialSeen: seen,
           pendingPackReveal: pendingPackReveal,
+          starterPackClaimed: starterPackClaimed,
           progression: progression,
         ),
       );
@@ -244,6 +246,14 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     );
     await _storage.saveOwnedCards(owned);
     await _saveWallet(coins: coins, ownedCardIds: owned);
+  }
+
+  Future<void> _onStarterPackClaimed(
+    StarterPackClaimed event,
+    Emitter<GameState> emit,
+  ) async {
+    emit(state.copyWith(starterPackClaimed: true));
+    await _storage.saveStarterPackClaimed();
   }
 
   Future<void> _onCardBackPurchased(

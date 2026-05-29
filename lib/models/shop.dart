@@ -118,6 +118,15 @@ const coinTiers = [
 
 const shopPacks = [
   ShopPack(
+    id: 'starter',
+    name: 'Starter Pack',
+    coinPrice: 0,
+    inrPrice: 0,
+    cardCount: 5,
+    guarantee: 'FREE UNLOCK / GUARANTEED RARE',
+    accent: Color(0xff5cdfff),
+  ),
+  ShopPack(
     id: 'bronze',
     name: 'Bronze Pack',
     coinPrice: 2000,

@@ -943,17 +943,32 @@ class _PackTile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  _ShopButton(
-                    label: _formatInt(pack.coinPrice),
-                    filled: false,
-                    icon: CoinIcon(size: 14),
-                    onTap: () => _buyWithCoins(context),
-                  ),
-                  const SizedBox(height: 6),
-                  _ShopButton(
-                    label: '₹${_formatInt(pack.inrPrice)}',
-                    filled: true,
-                    onTap: () => _buyWithInr(context),
+                  BlocBuilder<GameBloc, GameState>(
+                    builder: (context, state) {
+                      final isStarterPack = pack.id == 'starter';
+                      final isDisabled = isStarterPack && state.starterPackClaimed;
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Opacity(
+                            opacity: isDisabled ? 0.5 : 1.0,
+                            child: _ShopButton(
+                              label: isStarterPack ? (isDisabled ? 'CLAIMED' : 'FREE') : _formatInt(pack.coinPrice),
+                              filled: false,
+                              icon: isStarterPack ? null : CoinIcon(size: 14),
+                              onTap: isDisabled ? () {} : () => _buyWithCoins(context),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          if (!isStarterPack)
+                            _ShopButton(
+                              label: '₹${_formatInt(pack.inrPrice)}',
+                              filled: true,
+                              onTap: () => _buyWithInr(context),
+                            ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
@@ -980,6 +995,10 @@ class _PackTile extends StatelessWidget {
 
   void _buyWithCoins(BuildContext context) {
     final GameBloc bloc = context.read<GameBloc>();
+    if (pack.id == 'starter' && bloc.state.starterPackClaimed) {
+      _showSnack(context, 'Starter Pack already claimed!', false);
+      return;
+    }
     if (bloc.state.coins < pack.coinPrice) {
       _showSnack(context, 'Not enough coins — top up in the Coins tab.', false);
       return;
@@ -1016,6 +1035,9 @@ class _PackTile extends StatelessWidget {
         refund: refund,
       ),
     );
+    if (pack.id == 'starter') {
+      bloc.add(StarterPackClaimed());
+    }
     final Color packAccent = pack.gradientAccent ? _magenta : pack.accent;
     Navigator.of(context).push(
       MaterialPageRoute<void>(

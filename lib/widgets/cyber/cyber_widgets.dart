@@ -834,7 +834,7 @@ class CyberPlayerCardTile extends StatelessWidget {
                           fit: BoxFit.cover,
                           alignment: Alignment.topCenter,
                           // ignore: prefer_void_to_null
-                          errorBuilder: (_, ___, ____) => _CardIconFallback(
+                          errorBuilder: (_, _, _) => _CardIconFallback(
                             card: card,
                             tier: tier,
                             small: small,
@@ -1052,13 +1052,19 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
     final rotateAnim = Tween<double>(begin: 0, end: 0.08).animate(
       CurvedAnimation(parent: _tapController, curve: Curves.easeOutBack),
     );
-    final glowAnim = Tween<double>(begin: 0, end: 1.0).animate(
-      CurvedAnimation(parent: _tapController, curve: Curves.easeOut),
-    );
+    final glowAnim = Tween<double>(
+      begin: 0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _tapController, curve: Curves.easeOut));
 
     return AnimatedBuilder(
-      animation: Listenable.merge([_tapController, scaleAnim, rotateAnim, glowAnim]),
-      builder: (_, __) {
+      animation: Listenable.merge([
+        _tapController,
+        scaleAnim,
+        rotateAnim,
+        glowAnim,
+      ]),
+      builder: (_, _) {
         return Transform.scale(
           scale: scaleAnim.value,
           child: Transform.rotate(
