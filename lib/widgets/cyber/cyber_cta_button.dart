@@ -6,6 +6,13 @@ import '../../config/theme.dart';
 /// matching the primary CTA gradient elsewhere in the app.
 const Color _accentBlue = Color(0xff5cb4ff);
 
+/// Bright blue fill gradient (top-lit) for the inverted CTA treatment.
+const Color _fillTop = Color(0xFF6FC4FF);
+const Color _fillBottom = Color(0xFF2E90F5);
+
+/// Dark ink used for the icon, divider and label sitting on the bright fill.
+const Color _ink = Color(0xFF0C1422);
+
 /// Angular HUD silhouette: a strong chamfer on the top-left and bottom-right
 /// corners, with smaller angular accents on the top-right and bottom-left.
 class _HudButtonClipper extends CustomClipper<Path> {
@@ -67,8 +74,8 @@ class _HudBorderPainter extends CustomPainter {
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          Cyber.cyan.withValues(alpha: 0.85 + 0.15 * glow),
-          _accentBlue.withValues(alpha: 0.85),
+          Colors.white.withValues(alpha: 0.80 + 0.15 * glow),
+          _accentBlue.withValues(alpha: 0.90),
         ],
       ).createShader(Offset.zero & size);
     canvas.drawPath(path, borderPaint);
@@ -175,22 +182,19 @@ class _HudCtaButtonState extends State<HudCtaButton>
                   ),
                   child: Stack(
                     children: [
-                      // Dark translucent interior with a subtle vertical fade.
-                      Positioned.fill(
+                      // Bright blue interior with a subtle top-lit fade.
+                      const Positioned.fill(
                         child: DecoratedBox(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
-                              colors: [
-                                const Color(0xFF0D111A).withValues(alpha: 0.96),
-                                const Color(0xFF132038).withValues(alpha: 0.96),
-                              ],
+                              colors: [_fillTop, _fillBottom],
                             ),
                           ),
                         ),
                       ),
-                      // Lower-center light streak / lens flare.
+                      // Lower-center white light streak / lens flare.
                       Positioned.fill(
                         child: IgnorePointer(
                           child: Align(
@@ -203,8 +207,8 @@ class _HudCtaButtonState extends State<HudCtaButton>
                                 gradient: RadialGradient(
                                   radius: 0.9,
                                   colors: [
-                                    Cyber.cyan
-                                        .withValues(alpha: 0.26 + 0.18 * glow),
+                                    Colors.white
+                                        .withValues(alpha: 0.28 + 0.20 * glow),
                                     Colors.transparent,
                                   ],
                                 ),
@@ -220,12 +224,12 @@ class _HudCtaButtonState extends State<HudCtaButton>
                           children: [
                             Icon(
                               widget.icon,
-                              color: Cyber.cyan,
+                              color: _ink,
                               size: 26,
                               shadows: [
                                 Shadow(
-                                  color: Cyber.cyan.withValues(alpha: 0.85),
-                                  blurRadius: 12,
+                                  color: Colors.white.withValues(alpha: 0.30),
+                                  blurRadius: 6,
                                 ),
                               ],
                             ),
@@ -233,22 +237,24 @@ class _HudCtaButtonState extends State<HudCtaButton>
                             Container(
                               width: 1.4,
                               height: widget.height * 0.42,
-                              color: Cyber.cyan.withValues(alpha: 0.35),
+                              color: _ink.withValues(alpha: 0.30),
                             ),
                             Expanded(
                               child: Center(
                                 child: Text(
                                   widget.label,
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: _ink,
                                     fontSize: 20,
-                                    fontWeight: FontWeight.bold,
+                                    fontWeight: FontWeight.w800,
                                     letterSpacing: 3,
                                     shadows: [
                                       Shadow(
-                                        color: Cyber.cyan,
-                                        blurRadius: 12,
+                                        color: Colors.white.withValues(
+                                          alpha: 0.30,
+                                        ),
+                                        blurRadius: 4,
                                       ),
                                     ],
                                   ),

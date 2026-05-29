@@ -8,7 +8,9 @@ import '../../config/tutorial_steps.dart';
 import '../../models/cards.dart';
 import '../../models/deck.dart';
 import '../../models/match.dart';
+import '../../models/packs.dart';
 import '../../models/progression.dart';
+import '../../models/shop.dart';
 import '../../services/secure_storage_service.dart';
 import '../../utils/card_helpers.dart';
 import '../../utils/label_helpers.dart';
@@ -28,11 +30,17 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<CoinsAdded>(_onCoinsAdded);
     on<CoinsSpent>(_onCoinsSpent);
     on<CardPurchased>(_onCardPurchased);
+    on<DirectCardPurchased>(_onDirectCardPurchased);
     on<PackOpened>(_onPackOpened);
     on<StarterPackClaimed>(_onStarterPackClaimed);
+    on<StarterPackOpened>(_onStarterPackOpened);
+    on<DailyDropClaimed>(_onDailyDropClaimed);
+    on<ShopPackPurchased>(_onShopPackPurchased);
     on<CardBackPurchased>(_onCardBackPurchased);
     on<CardBackEquipped>(_onCardBackEquipped);
-    on<PackRevealSeen>((_, emit) => emit(state.copyWith(pendingPackReveal: null)));
+    on<PackRevealSeen>(
+      (_, emit) => emit(state.copyWith(pendingPackReveal: null)),
+    );
     on<MatchReset>((_, emit) => emit(_resetMatch(state)));
     on<MatchStarted>(_onMatchStarted);
     on<TossChoiceChanged>(
@@ -67,9 +75,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       ),
     );
     on<PenaltyDirectionSelected>(
-      (event, emit) => emit(
-        state.copyWith(penaltyPlayerDirection: event.direction),
-      ),
+      (event, emit) =>
+          emit(state.copyWith(penaltyPlayerDirection: event.direction)),
     );
     on<PenaltyKickConfirmed>(_onPenaltyKickConfirmed);
     on<PenaltyNextKick>(
@@ -92,14 +99,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
 
       final slots = await _storage.loadDecks().timeout(
         const Duration(seconds: 2),
-        onTimeout: () => defaultDeckSlots,
+        onTimeout: () => <StoredDeckSlot>[],
       );
       developer.log('GameLoaded: Loaded decks');
-
-      final safeSlots = slots.isEmpty
-          ? defaultDeckSlots
-          : slots.map(_hydratedSlot).toList();
-      final active = safeSlots.first;
 
       final seen = await _storage.loadTutorialSeen().timeout(
         const Duration(seconds: 2),
@@ -123,13 +125,16 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         const Duration(seconds: 2),
         onTimeout: PlayerProgression.initial,
       );
-      developer.log('GameLoaded: Loaded progression (level ${progression.playerLevel})');
-
-      final starterPackClaimed = await _storage.loadStarterPackClaimed().timeout(
-        const Duration(seconds: 2),
-        onTimeout: () => false,
+      developer.log(
+        'GameLoaded: Loaded progression (level ${progression.playerLevel})',
       );
-      developer.log('GameLoaded: Loaded starter pack status: $starterPackClaimed');
+
+      final starterPackClaimed = await _storage
+          .loadStarterPackClaimed()
+          .timeout(const Duration(seconds: 2), onTimeout: () => false);
+      developer.log(
+        'GameLoaded: Loaded starter pack status: $starterPackClaimed',
+      );
 
       final wallet = await _storage.loadWallet().timeout(
         const Duration(seconds: 2),
@@ -137,21 +142,86 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       );
       developer.log('GameLoaded: Loaded wallet');
 
-      var ownedCards = {...owned, ...wallet.ownedCardIds}.toList();
+      var ownedPlayerIds = _validPlayerIds({...owned, ...wallet.ownedCardIds});
+      var ownedActionIds = _validActionIds(wallet.ownedActionCardIds);
+      var safeSlots = slots.map(_hydratedSlot).toList();
+      for (final slot in safeSlots) {
+        ownedPlayerIds = _validPlayerIds({
+          ...ownedPlayerIds,
+          ...slot.attackers,
+          ...slot.defenders,
+        });
+        ownedActionIds = _validActionIds({...ownedActionIds, ...slot.actions});
+      }
+
+      var migratedProgression = progression;
+      var migratedStarterClaimed = starterPackClaimed;
+      var coins = wallet.coins;
+      final dailyDropLastClaimedAt = wallet.dailyDropLastClaimedAtMillis == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(
+              wallet.dailyDropLastClaimedAtMillis!,
+            );
       PackRevealData? pendingPackReveal;
 
-      if (!starterPackClaimed) {
+      final activeBeforeStarter = safeSlots.firstOrNull;
+      final needsStarterDeck =
+          !migratedStarterClaimed ||
+          activeBeforeStarter == null ||
+          !_isLegalSlot(activeBeforeStarter);
+
+      if (needsStarterDeck) {
         developer.log('GameLoaded: Building starter pack');
-        final starterPackCards = _buildStarterPack();
-        ownedCards = {
-          ...ownedCards,
-          ...starterPackCards.map((card) => card.id),
-        }.toList();
-        pendingPackReveal = PackRevealData.starter(starterPackCards);
-        await _storage.saveOwnedCards(ownedCards);
+        final starterResult = buildStarterPack(
+          attackers,
+          defenders,
+          actionCards,
+        );
+        final applied = _applyPackSnapshot(
+          result: starterResult,
+          ownedPlayerIds: ownedPlayerIds,
+          ownedActionIds: ownedActionIds,
+          progression: migratedProgression,
+        );
+        ownedPlayerIds = applied.ownedPlayerIds;
+        ownedActionIds = applied.ownedActionIds;
+        migratedProgression = applied.progression;
+        migratedStarterClaimed = true;
+        final starterSlot = _starterDeckSlot(
+          starterResult,
+          id: activeBeforeStarter?.id ?? defaultDeckSlots.first.id,
+          name: activeBeforeStarter?.name ?? 'Starter Squad',
+        );
+        safeSlots = safeSlots.isEmpty
+            ? [starterSlot]
+            : [starterSlot, ...safeSlots.skip(1)];
+        pendingPackReveal = PackRevealData.starter(
+          result: starterResult,
+          levelsGained: applied.levelsGained,
+        );
+        await _storage.saveDecks(safeSlots);
+        await _storage.saveOwnedCards(ownedPlayerIds);
         await _storage.saveStarterPackClaimed();
+        await _storage.saveProgression(migratedProgression);
         developer.log('GameLoaded: Starter pack built and saved');
+      } else if (safeSlots.isEmpty) {
+        safeSlots = defaultDeckSlots.map(_hydratedSlot).toList();
       }
+
+      final active = safeSlots.first;
+      await _storage.saveOwnedCards(ownedPlayerIds);
+      await _storage.saveWallet(
+        WalletSnapshot(
+          coins: coins,
+          ownedCardIds: ownedPlayerIds,
+          ownedActionCardIds: ownedActionIds,
+          ownedCardBackIds: wallet.ownedCardBackIds.contains('default')
+              ? wallet.ownedCardBackIds
+              : ['default', ...wallet.ownedCardBackIds],
+          equippedCardBackId: wallet.equippedCardBackId,
+          dailyDropLastClaimedAtMillis: wallet.dailyDropLastClaimedAtMillis,
+        ),
+      );
 
       developer.log('GameLoaded: Emitting state');
       emit(
@@ -162,8 +232,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           deckAttackers: cardsByIds(attackers, active.attackers),
           deckDefenders: cardsByIds(defenders, active.defenders),
           deckActions: actionCardsByIds(active.actions),
-          coins: wallet.coins,
-          ownedCardIds: ownedCards,
+          coins: coins,
+          ownedCardIds: ownedPlayerIds,
+          ownedActionCardIds: ownedActionIds,
           ownedCardBackIds: wallet.ownedCardBackIds.contains('default')
               ? wallet.ownedCardBackIds
               : ['default', ...wallet.ownedCardBackIds],
@@ -171,8 +242,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           matchHistory: history,
           tutorialSeen: seen,
           pendingPackReveal: pendingPackReveal,
-          starterPackClaimed: starterPackClaimed,
-          progression: progression,
+          starterPackClaimed: migratedStarterClaimed,
+          dailyDropLastClaimedAt: dailyDropLastClaimedAt,
+          progression: migratedProgression,
         ),
       );
       developer.log('GameLoaded: Complete');
@@ -192,19 +264,13 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _saveWallet(ownedCardIds: owned);
   }
 
-  Future<void> _onCoinsAdded(
-    CoinsAdded event,
-    Emitter<GameState> emit,
-  ) async {
+  Future<void> _onCoinsAdded(CoinsAdded event, Emitter<GameState> emit) async {
     final coins = state.coins + event.amount;
     emit(state.copyWith(coins: coins));
     await _saveWallet(coins: coins);
   }
 
-  Future<void> _onCoinsSpent(
-    CoinsSpent event,
-    Emitter<GameState> emit,
-  ) async {
+  Future<void> _onCoinsSpent(CoinsSpent event, Emitter<GameState> emit) async {
     if (state.coins < event.amount) return;
     final coins = state.coins - event.amount;
     emit(state.copyWith(coins: coins));
@@ -215,37 +281,51 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     CardPurchased event,
     Emitter<GameState> emit,
   ) async {
-    if (state.ownedCardIds.contains(event.cardId)) return;
-    final owned = {...state.ownedCardIds, event.cardId}.toList();
-    emit(state.copyWith(ownedCardIds: owned));
-    await _storage.saveOwnedCards(owned);
-    await _saveWallet(ownedCardIds: owned);
+    await _purchaseDirectCard(
+      cardId: event.cardId,
+      price: 0,
+      spendCoins: false,
+      emit: emit,
+    );
   }
 
-  Future<void> _onPackOpened(
-    PackOpened event,
+  Future<void> _onDirectCardPurchased(
+    DirectCardPurchased event,
     Emitter<GameState> emit,
   ) async {
+    await _purchaseDirectCard(
+      cardId: event.cardId,
+      price: event.price,
+      spendCoins: event.spendCoins,
+      emit: emit,
+    );
+  }
+
+  Future<void> _onPackOpened(PackOpened event, Emitter<GameState> emit) async {
     final rolledCards = cardsByIds(allPlayerCards, event.rolledCardIds);
+    final result = PackResult(
+      playerCards: rolledCards,
+      actionCards: const [],
+      xpGained: rolledCards.fold<int>(
+        0,
+        (sum, card) => sum + playerCardXp(card),
+      ),
+    );
     final newCardCount = rolledCards
         .where((card) => !state.ownedCardIds.contains(card.id))
         .length;
-    final owned = {...state.ownedCardIds, ...event.rolledCardIds}.toList();
-    final coins = state.coins + event.refund;
-    emit(
-      state.copyWith(
-        ownedCardIds: owned,
-        coins: coins,
-        pendingPackReveal: PackRevealData.shop(
-          packName: event.packName,
-          cards: rolledCards,
-          refund: event.refund,
-          newCardCount: newCardCount,
-        ),
+    await _unlockPack(
+      result: result,
+      emit: emit,
+      coinDelta: event.refund,
+      revealBuilder: (levels) => PackRevealData.shop(
+        packName: event.packName,
+        result: result,
+        refund: event.refund,
+        newCardCount: newCardCount,
+        levelsGained: levels,
       ),
     );
-    await _storage.saveOwnedCards(owned);
-    await _saveWallet(coins: coins, ownedCardIds: owned);
   }
 
   Future<void> _onStarterPackClaimed(
@@ -254,6 +334,96 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   ) async {
     emit(state.copyWith(starterPackClaimed: true));
     await _storage.saveStarterPackClaimed();
+  }
+
+  Future<void> _onStarterPackOpened(
+    StarterPackOpened event,
+    Emitter<GameState> emit,
+  ) async {
+    if (state.starterPackClaimed) return;
+    final result = buildStarterPack(attackers, defenders, actionCards);
+    final slot = _starterDeckSlot(
+      result,
+      id: state.activeDeckId,
+      name: state.deckSlots.firstOrNull?.name ?? 'Starter Squad',
+    );
+    await _unlockPack(
+      result: result,
+      emit: emit,
+      starterClaimed: true,
+      equippedSlot: slot,
+      revealBuilder: (levels) =>
+          PackRevealData.starter(result: result, levelsGained: levels),
+    );
+    await _storage.saveStarterPackClaimed();
+  }
+
+  Future<void> _onDailyDropClaimed(
+    DailyDropClaimed event,
+    Emitter<GameState> emit,
+  ) async {
+    if (!dailyDropStatus(state.dailyDropLastClaimedAt).ready) return;
+    final result = rollDailyDrop(
+      [...attackers, ...defenders],
+      actionCards,
+      random: _random,
+    );
+    final claimedAt = DateTime.now();
+    await _unlockPack(
+      result: result,
+      emit: emit,
+      dailyDropLastClaimedAt: claimedAt,
+      revealBuilder: (levels) =>
+          PackRevealData.daily(result: result, levelsGained: levels),
+    );
+  }
+
+  Future<void> _onShopPackPurchased(
+    ShopPackPurchased event,
+    Emitter<GameState> emit,
+  ) async {
+    final pack = getProgressionPack(event.packId);
+    if (pack == null) return;
+    if (event.spendCoins && state.coins < pack.price) return;
+    if (pack.id == starterPackId && state.starterPackClaimed) return;
+
+    final result = pack.id == starterPackId
+        ? buildStarterPack(attackers, defenders, actionCards)
+        : rollPack(
+            pack,
+            [...attackers, ...defenders],
+            actionCards,
+            random: _random,
+          );
+    final newCardCount =
+        result.playerCards
+            .where((card) => !state.ownedCardIds.contains(card.id))
+            .length +
+        result.actionCards
+            .where((card) => !state.ownedActionCardIds.contains(card.id))
+            .length;
+
+    await _unlockPack(
+      result: result,
+      emit: emit,
+      coinDelta: event.spendCoins ? -pack.price : 0,
+      starterClaimed: pack.id == starterPackId ? true : null,
+      equippedSlot: pack.id == starterPackId
+          ? _starterDeckSlot(
+              result,
+              id: state.activeDeckId,
+              name: state.deckSlots.firstOrNull?.name ?? 'Starter Squad',
+            )
+          : null,
+      revealBuilder: (levels) => PackRevealData.shop(
+        packName: pack.name,
+        result: result,
+        refund: 0,
+        newCardCount: newCardCount,
+        levelsGained: levels,
+      ),
+    );
+    if (pack.id == starterPackId) await _storage.saveStarterPackClaimed();
   }
 
   Future<void> _onCardBackPurchased(
@@ -359,16 +529,21 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   }
 
   void _onMatchStarted(MatchStarted event, Emitter<GameState> emit) {
-    final oppAttackers = [...attackers]..shuffle(_random);
-    final oppDefenders = [...defenders]..shuffle(_random);
-    final oppActions = [...actionCards]..shuffle(_random);
+    if (!state.deckReady) return;
+    final opponent = generateOpponentDeck(
+      state.progression.playerLevel,
+      attackers,
+      defenders,
+      actionCards,
+      random: _random,
+    );
     emit(
       _resetMatch(state).copyWith(
         phase: MatchPhase.toss,
         currentRound: 1,
-        opponentAttackers: oppAttackers.take(2).toList(),
-        opponentDefenders: oppDefenders.take(2).toList(),
-        opponentActions: oppActions.take(6).toList(),
+        opponentAttackers: opponent.attackers,
+        opponentDefenders: opponent.defenders,
+        opponentActions: opponent.actions,
       ),
     );
   }
@@ -426,15 +601,15 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final fallback = state.playerAttacking
         ? state.opponentDefenders.first
         : state.opponentAttackers.first;
-    // Smarter pick: 70% of the time take the strongest available player,
-    // otherwise a random one (keeps it unpredictable).
     final PlayerCard oppPlayer;
     if (oppPlayers.isEmpty) {
       oppPlayer = fallback;
-    } else if (_random.nextDouble() < 0.7) {
-      oppPlayer = oppPlayers.reduce((a, b) => a.rating >= b.rating ? a : b);
     } else {
-      oppPlayer = oppPlayers[_random.nextInt(oppPlayers.length)];
+      oppPlayer = chooseOpponentPlayer(
+        oppPlayers,
+        state.progression.playerLevel,
+        random: _random,
+      );
     }
 
     // Action choice respects the opponent's role and the scenario.
@@ -456,11 +631,15 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         ? scenario.defenseBonus > 8
         : scenario.attackBonus > 8;
     final ActionCard oppAction;
-    if (scenarioFavorsOpp || _random.nextDouble() < 0.5) {
-      // Lean into a strong scenario (or half the time) with the top action.
+    if (scenarioFavorsOpp &&
+        _random.nextDouble() < cpuSmartness(state.progression.playerLevel)) {
       oppAction = actionPool.reduce((a, b) => a.power >= b.power ? a : b);
     } else {
-      oppAction = actionPool[_random.nextInt(actionPool.length)];
+      oppAction = chooseOpponentAction(
+        actionPool,
+        state.progression.playerLevel,
+        random: _random,
+      );
     }
 
     final attackerCard = state.playerAttacking ? playerCard : oppPlayer;
@@ -623,7 +802,11 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     var playerLeft = 0;
     var opponentLeft = 0;
     for (var i = done; i < 6; i++) {
-      if (i.isEven) { playerLeft++; } else { opponentLeft++; }
+      if (i.isEven) {
+        playerLeft++;
+      } else {
+        opponentLeft++;
+      }
     }
     return playerScore > opponentScore + opponentLeft ||
         opponentScore > playerScore + playerLeft;
@@ -642,6 +825,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       wentToPenalties: wentToPenalties,
     );
     final (:updated, :levelsGained) = state.progression.applyXP(xpDelta);
+    final coins = state.coins + coinsForResult(resultLabel);
 
     final activeDeck = state.deckSlots
         .where((slot) => slot.id == state.activeDeckId)
@@ -672,16 +856,20 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       xpEarned: xpDelta,
     );
     final history = [historyEntry, ...state.matchHistory].take(12).toList();
-    emit(state.copyWith(
-      phase: MatchPhase.finalResult,
-      matchHistory: history,
-      progression: updated,
-      previousProgression: state.progression,
-      pendingLevelUps: levelsGained,
-      lastMatchXP: xpDelta,
-    ));
+    emit(
+      state.copyWith(
+        phase: MatchPhase.finalResult,
+        matchHistory: history,
+        coins: coins,
+        progression: updated,
+        previousProgression: state.progression,
+        pendingLevelUps: levelsGained,
+        lastMatchXP: xpDelta,
+      ),
+    );
     await _storage.saveMatchHistory(history);
     await _storage.saveProgression(updated);
+    await _saveWallet(coins: coins);
   }
 
   RoundOutcome _resolveRound(
@@ -723,6 +911,125 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     return RoundOutcome.goal;
   }
 
+  Future<void> _purchaseDirectCard({
+    required String cardId,
+    required int price,
+    required bool spendCoins,
+    required Emitter<GameState> emit,
+  }) async {
+    final playerCard = allPlayerCards
+        .where((card) => card.id == cardId)
+        .firstOrNull;
+    final actionCard = actionCards
+        .where((card) => card.id == cardId)
+        .firstOrNull;
+    if (playerCard == null && actionCard == null) return;
+    if (playerCard != null && state.ownedCardIds.contains(cardId)) return;
+    if (actionCard != null && state.ownedActionCardIds.contains(cardId)) return;
+    if (spendCoins && state.coins < price) return;
+
+    final result = playerCard != null
+        ? singlePlayerUnlock(playerCard)
+        : singleActionUnlock(actionCard!);
+    await _unlockPack(
+      result: result,
+      emit: emit,
+      coinDelta: spendCoins ? -price : 0,
+      revealBuilder: (levels) =>
+          PackRevealData.direct(result: result, levelsGained: levels),
+    );
+  }
+
+  Future<void> _unlockPack({
+    required PackResult result,
+    required Emitter<GameState> emit,
+    required PackRevealData Function(List<int> levelsGained) revealBuilder,
+    int coinDelta = 0,
+    DateTime? dailyDropLastClaimedAt,
+    bool? starterClaimed,
+    StoredDeckSlot? equippedSlot,
+  }) async {
+    final applied = _applyPackSnapshot(
+      result: result,
+      ownedPlayerIds: state.ownedCardIds,
+      ownedActionIds: state.ownedActionCardIds,
+      progression: state.progression,
+    );
+    final coins = max(0, state.coins + coinDelta);
+    final slots = equippedSlot == null
+        ? state.deckSlots
+        : _replaceActiveSlot(state.deckSlots, equippedSlot);
+    final activeSlot =
+        equippedSlot ??
+        slots.where((slot) => slot.id == state.activeDeckId).firstOrNull ??
+        slots.firstOrNull;
+
+    emit(
+      state.copyWith(
+        deckSlots: slots,
+        activeDeckId: activeSlot?.id ?? state.activeDeckId,
+        deckAttackers: activeSlot == null
+            ? state.deckAttackers
+            : cardsByIds(attackers, activeSlot.attackers),
+        deckDefenders: activeSlot == null
+            ? state.deckDefenders
+            : cardsByIds(defenders, activeSlot.defenders),
+        deckActions: activeSlot == null
+            ? state.deckActions
+            : actionCardsByIds(activeSlot.actions),
+        coins: coins,
+        ownedCardIds: applied.ownedPlayerIds,
+        ownedActionCardIds: applied.ownedActionIds,
+        pendingPackReveal: revealBuilder(applied.levelsGained),
+        starterPackClaimed: starterClaimed ?? state.starterPackClaimed,
+        dailyDropLastClaimedAt: dailyDropLastClaimedAt ?? state.dailyDropLastClaimedAt,
+        progression: applied.progression,
+        previousProgression: state.progression,
+        pendingLevelUps: applied.levelsGained,
+        lastMatchXP: result.xpGained,
+      ),
+    );
+
+    await _storage.saveOwnedCards(applied.ownedPlayerIds);
+    if (equippedSlot != null) await _storage.saveDecks(slots);
+    await _storage.saveProgression(applied.progression);
+    await _saveWallet(
+      coins: coins,
+      ownedCardIds: applied.ownedPlayerIds,
+      ownedActionCardIds: applied.ownedActionIds,
+      dailyDropLastClaimedAt: dailyDropLastClaimedAt,
+    );
+  }
+
+  ({
+    List<String> ownedPlayerIds,
+    List<String> ownedActionIds,
+    PlayerProgression progression,
+    List<int> levelsGained,
+  })
+  _applyPackSnapshot({
+    required PackResult result,
+    required List<String> ownedPlayerIds,
+    required List<String> ownedActionIds,
+    required PlayerProgression progression,
+  }) {
+    final nextPlayers = _validPlayerIds({
+      ...ownedPlayerIds,
+      ...result.playerCards.map((card) => card.id),
+    });
+    final nextActions = _validActionIds({
+      ...ownedActionIds,
+      ...result.actionCards.map((card) => card.id),
+    });
+    final (:updated, :levelsGained) = progression.applyXP(result.xpGained);
+    return (
+      ownedPlayerIds: nextPlayers,
+      ownedActionIds: nextActions,
+      progression: updated,
+      levelsGained: levelsGained,
+    );
+  }
+
   GameState _resetMatch(GameState old) => GameState.initial().copyWith(
     loading: false,
     deckSlots: old.deckSlots,
@@ -732,27 +1039,89 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     deckActions: old.deckActions,
     coins: old.coins,
     ownedCardIds: old.ownedCardIds,
+    ownedActionCardIds: old.ownedActionCardIds,
     ownedCardBackIds: old.ownedCardBackIds,
     equippedCardBackId: old.equippedCardBackId,
     matchHistory: old.matchHistory,
     tutorialSeen: old.tutorialSeen,
     pendingPackReveal: old.pendingPackReveal,
+    starterPackClaimed: old.starterPackClaimed,
+    dailyDropLastClaimedAt: old.dailyDropLastClaimedAt,
     progression: old.progression,
   );
 
   Future<void> _saveWallet({
     int? coins,
     List<String>? ownedCardIds,
+    List<String>? ownedActionCardIds,
     List<String>? ownedCardBackIds,
     String? equippedCardBackId,
+    DateTime? dailyDropLastClaimedAt,
   }) => _storage.saveWallet(
     WalletSnapshot(
       coins: coins ?? state.coins,
       ownedCardIds: ownedCardIds ?? state.ownedCardIds,
+      ownedActionCardIds: ownedActionCardIds ?? state.ownedActionCardIds,
       ownedCardBackIds: ownedCardBackIds ?? state.ownedCardBackIds,
       equippedCardBackId: equippedCardBackId ?? state.equippedCardBackId,
+      dailyDropLastClaimedAtMillis:
+          (dailyDropLastClaimedAt ?? state.dailyDropLastClaimedAt)
+              ?.millisecondsSinceEpoch,
     ),
   );
+
+  List<String> _validPlayerIds(Iterable<String> ids) => ids
+      .where((id) => allPlayerCards.any((card) => card.id == id))
+      .toSet()
+      .toList();
+
+  List<String> _validActionIds(Iterable<String> ids) => ids
+      .where((id) => actionCards.any((card) => card.id == id))
+      .toSet()
+      .toList();
+
+  bool _isLegalSlot(StoredDeckSlot slot) =>
+      slot.attackers.length == 2 &&
+      slot.defenders.length == 2 &&
+      slot.actions.length == 6;
+
+  StoredDeckSlot _starterDeckSlot(
+    PackResult result, {
+    required String id,
+    required String name,
+  }) => StoredDeckSlot(
+    id: id,
+    name: name,
+    attackers: result.playerCards
+        .where((card) => card.role == PlayerRole.attacker)
+        .map((card) => card.id)
+        .take(2)
+        .toList(),
+    defenders: result.playerCards
+        .where((card) => card.role == PlayerRole.defender)
+        .map((card) => card.id)
+        .take(2)
+        .toList(),
+    actions: result.actionCards.map((card) => card.id).take(6).toList(),
+  );
+
+  List<StoredDeckSlot> _replaceActiveSlot(
+    List<StoredDeckSlot> slots,
+    StoredDeckSlot replacement,
+  ) {
+    if (slots.isEmpty) return [replacement];
+    var replaced = false;
+    final next = <StoredDeckSlot>[];
+    for (final slot in slots) {
+      if (slot.id == replacement.id) {
+        next.add(replacement);
+        replaced = true;
+      } else {
+        next.add(slot);
+      }
+    }
+    return replaced ? next : [replacement, ...slots];
+  }
 
   StoredDeckSlot _hydratedSlot(StoredDeckSlot slot) => StoredDeckSlot(
     id: slot.id,
@@ -779,7 +1148,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     ];
   }
 
-  PlayerCard _pickCardForPack(List<PlayerCard> source, {Set<String>? excludeIds}) {
+  PlayerCard _pickCardForPack(
+    List<PlayerCard> source, {
+    Set<String>? excludeIds,
+  }) {
     final available = excludeIds == null
         ? source
         : source.where((card) => !excludeIds.contains(card.id)).toList();
@@ -791,7 +1163,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       CardTier.silver: poolSource
           .where((card) => card.tier == CardTier.silver)
           .toList(),
-      CardTier.gold: poolSource.where((card) => card.tier == CardTier.gold).toList(),
+      CardTier.gold: poolSource
+          .where((card) => card.tier == CardTier.gold)
+          .toList(),
       CardTier.platinum: poolSource
           .where((card) => card.tier == CardTier.platinum)
           .toList(),

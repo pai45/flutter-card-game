@@ -26,9 +26,11 @@ class ShopPack {
     required this.name,
     required this.coinPrice,
     required this.inrPrice,
-    required this.cardCount,
+    required this.playerCount,
+    required this.actionCount,
     required this.guarantee,
     required this.accent,
+    required this.odds,
     this.gradientAccent = false,
   });
 
@@ -36,10 +38,14 @@ class ShopPack {
   final String name;
   final int coinPrice;
   final int inrPrice;
-  final int cardCount;
+  final int playerCount;
+  final int actionCount;
   final String guarantee;
   final Color accent;
+  final Map<CardRarity, int> odds;
   final bool gradientAccent;
+
+  int get cardCount => playerCount + actionCount;
 }
 
 class CardBackItem {
@@ -59,10 +65,7 @@ class CardBackItem {
 }
 
 class ShopPackResult {
-  const ShopPackResult({
-    required this.cardIds,
-    required this.refund,
-  });
+  const ShopPackResult({required this.cardIds, required this.refund});
 
   final List<String> cardIds;
   final int refund;
@@ -122,45 +125,64 @@ const shopPacks = [
     name: 'Starter Pack',
     coinPrice: 0,
     inrPrice: 0,
-    cardCount: 5,
-    guarantee: 'FREE UNLOCK / GUARANTEED RARE',
+    playerCount: 5,
+    actionCount: 6,
+    guarantee: 'FREE SQUAD / 5 PLAYERS + 6 ACTIONS',
     accent: Color(0xff5cdfff),
+    odds: {
+      CardRarity.common: 70,
+      CardRarity.rare: 25,
+      CardRarity.epic: 5,
+      CardRarity.legendary: 0,
+    },
   ),
   ShopPack(
     id: 'bronze',
     name: 'Bronze Pack',
-    coinPrice: 2000,
+    coinPrice: 150,
     inrPrice: 50,
-    cardCount: 5,
-    guarantee: 'ALL COMMON / 5% RARE UPGRADE',
+    playerCount: 1,
+    actionCount: 2,
+    guarantee: '3 CARDS / MOSTLY COMMONS',
     accent: Color(0xffcd7f32),
-  ),
-  ShopPack(
-    id: 'silver',
-    name: 'Silver Pack',
-    coinPrice: 8000,
-    inrPrice: 150,
-    cardCount: 5,
-    guarantee: '1 RARE GUARANTEED / 10% EPIC',
-    accent: Color(0xffc0c0c0),
+    odds: {
+      CardRarity.common: 65,
+      CardRarity.rare: 28,
+      CardRarity.epic: 6,
+      CardRarity.legendary: 1,
+    },
   ),
   ShopPack(
     id: 'gold',
     name: 'Gold Pack',
-    coinPrice: 20000,
+    coinPrice: 400,
     inrPrice: 400,
-    cardCount: 5,
-    guarantee: '1 EPIC GUARANTEED / 15% LEGENDARY',
+    playerCount: 2,
+    actionCount: 2,
+    guarantee: '4 CARDS / RARE OR EPIC SHOT',
     accent: Color(0xffffd700),
+    odds: {
+      CardRarity.common: 35,
+      CardRarity.rare: 45,
+      CardRarity.epic: 16,
+      CardRarity.legendary: 4,
+    },
   ),
   ShopPack(
-    id: 'icon',
-    name: 'Icon Pack',
-    coinPrice: 50000,
+    id: 'elite',
+    name: 'Elite Pack',
+    coinPrice: 900,
     inrPrice: 1000,
-    cardCount: 5,
-    guarantee: '1 LEGENDARY + 2 EPICS MINIMUM',
+    playerCount: 2,
+    actionCount: 3,
+    guarantee: '5 HIGH-END CARDS / BEST ODDS',
     accent: Color(0xffff3df7),
+    odds: {
+      CardRarity.common: 10,
+      CardRarity.rare: 40,
+      CardRarity.epic: 35,
+      CardRarity.legendary: 15,
+    },
     gradientAccent: true,
   ),
 ];

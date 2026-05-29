@@ -6,19 +6,18 @@ import '../../../blocs/game/game_event.dart';
 import '../../../blocs/game/game_state.dart';
 import '../../../config/enums.dart';
 import '../../../config/theme.dart';
-import '../../../models/cards.dart';
 import '../../../utils/label_helpers.dart';
 import '../../../widgets/card_unpack_animation.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 
-String _cardRarity(PlayerCard card) => switch (card.rarity) {
+String _itemRarity(PackRevealItem item) => switch (item.rarity) {
   CardRarity.common => 'common',
   CardRarity.rare => 'rare',
   CardRarity.epic => 'epic',
   CardRarity.legendary => 'legendary',
 };
 
-enum _Phase { intro, reveal, summary }
+enum _Phase { intro, reveal, actions, summary }
 
 class PackOnboardingScreen extends StatefulWidget {
   const PackOnboardingScreen({required this.reveal, super.key});
@@ -64,7 +63,7 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
     );
 
     _slotCtrl = List.generate(
-      widget.reveal.cards.length,
+      widget.reveal.animatedItems.length,
       (_) => AnimationController(
         vsync: this,
         duration: const Duration(milliseconds: 320),
@@ -72,7 +71,7 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
     );
 
     _summaryCtrl = List.generate(
-      widget.reveal.cards.length,
+      widget.reveal.items.length,
       (_) => AnimationController(
         vsync: this,
         duration: const Duration(milliseconds: 420),
@@ -85,7 +84,7 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
     );
 
     // Stagger slot reveals starting at 700ms
-    for (int i = 0; i < widget.reveal.cards.length; i++) {
+    for (int i = 0; i < widget.reveal.animatedItems.length; i++) {
       final idx = i;
       Future.delayed(Duration(milliseconds: 720 + idx * 130), () {
         if (mounted) _slotCtrl[idx].forward();
@@ -106,15 +105,22 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
 
   void _onCardComplete() {
     if (!mounted) return;
-    if (_cardIndex < widget.reveal.cards.length - 1) {
+    if (_cardIndex < widget.reveal.animatedItems.length - 1) {
       setState(() => _cardIndex++);
+    } else if (widget.reveal.groupActionCards &&
+        widget.reveal.groupedActionItems.isNotEmpty) {
+      setState(() => _phase = _Phase.actions);
     } else {
-      setState(() => _phase = _Phase.summary);
-      for (int i = 0; i < _summaryCtrl.length; i++) {
-        Future.delayed(Duration(milliseconds: 80 + 120 * i), () {
-          if (mounted) _summaryCtrl[i].forward();
-        });
-      }
+      _showSummary();
+    }
+  }
+
+  void _showSummary() {
+    setState(() => _phase = _Phase.summary);
+    for (int i = 0; i < _summaryCtrl.length; i++) {
+      Future.delayed(Duration(milliseconds: 80 + 120 * i), () {
+        if (mounted) _summaryCtrl[i].forward();
+      });
     }
   }
 
@@ -129,8 +135,12 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
     _bgPulse.dispose();
     _titleDrop.dispose();
     _exitFlash.dispose();
-    for (final c in _slotCtrl) { c.dispose(); }
-    for (final c in _summaryCtrl) { c.dispose(); }
+    for (final c in _slotCtrl) {
+      c.dispose();
+    }
+    for (final c in _summaryCtrl) {
+      c.dispose();
+    }
     _summaryExit.dispose();
     super.dispose();
   }
@@ -142,6 +152,7 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
   Widget build(BuildContext context) => switch (_phase) {
     _Phase.intro => _buildIntro(context),
     _Phase.reveal => _buildReveal(context),
+    _Phase.actions => _buildActions(context),
     _Phase.summary => _buildSummary(context),
   };
 
@@ -160,7 +171,9 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
             const ColoredBox(color: Color(0xFF0D111A)),
 
             // Subtle grid
-            CustomPaint(painter: _GridPainter(opacity: 0.05 + 0.025 * _bgPulse.value)),
+            CustomPaint(
+              painter: _GridPainter(opacity: 0.05 + 0.025 * _bgPulse.value),
+            ),
 
             // Radial cyan glow
             CustomPaint(
@@ -246,13 +259,19 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                         ),
                         const SizedBox(height: 36),
 
-                        // 5 mystery card slots
+                        // Mystery slots for the animated player-card sequence.
                         Opacity(
                           opacity: _iv(td, 0.5, 0.88),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          child: Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 8,
+                            runSpacing: 8,
                             children: [
-                              for (int i = 0; i < widget.reveal.cards.length; i++) ...[
+                              for (
+                                int i = 0;
+                                i < widget.reveal.animatedItems.length;
+                                i++
+                              ) ...[
                                 AnimatedBuilder(
                                   animation: _slotCtrl[i],
                                   builder: (_, _) {
@@ -266,8 +285,6 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                                     );
                                   },
                                 ),
-                                if (i < widget.reveal.cards.length - 1)
-                                  const SizedBox(width: 8),
                               ],
                             ],
                           ),
@@ -313,26 +330,23 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
 
   // ── Card reveal ────────────────────────────────────────────────────────────
   Widget _buildReveal(BuildContext context) {
-    final card = widget.reveal.cards[_cardIndex];
+    final animatedItems = widget.reveal.animatedItems;
+    final item = animatedItems[_cardIndex];
     return Stack(
       key: ValueKey('reveal_$_cardIndex'),
       fit: StackFit.expand,
       children: [
         CardUnpackAnimation(
           key: ValueKey('unpack_$_cardIndex'),
-          playerName: card.name,
-          position: playerRoleLabel(card),
-          rating: card.rating,
-          rarity: _cardRarity(card),
+          playerName: item.shortName,
+          position: item.isPlayer
+              ? playerRoleLabel(item.playerCard!)
+              : item.actionCard!.category.name.toUpperCase(),
+          rating: item.rating,
+          rarity: _itemRarity(item),
           onComplete: _onCardComplete,
-          frontFace: Transform.scale(
-            scale: 1.5,
-            child: CyberPlayerCardTile(
-              card: card,
-              selected: false,
-              size: VisualCardSize.md,
-            ),
-          ),
+          showTapCountdown: false,
+          frontFace: Transform.scale(scale: 1.5, child: _RevealItemFace(item)),
         ),
         // Progress indicator overlay at top
         Positioned(
@@ -341,7 +355,7 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
           right: 0,
           child: _ProgressDots(
             current: _cardIndex + 1,
-            total: widget.reveal.cards.length,
+            total: animatedItems.length,
           ),
         ),
       ],
@@ -349,6 +363,88 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
   }
 
   // ── Summary ────────────────────────────────────────────────────────────────
+  Widget _buildActions(BuildContext context) {
+    final actions = widget.reveal.groupedActionItems;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const ColoredBox(color: Color(0xFF0D111A)),
+        CustomPaint(painter: const _GridPainter(opacity: 0.05)),
+        CustomPaint(
+          painter: _RadialGlowPainter(color: Cyber.cyan, opacity: 0.055),
+        ),
+        SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 30, 24, 40),
+            child: Column(
+              children: [
+                Text(
+                  'ACTION CARDS',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Cyber.cyan,
+                    fontFamily: 'Orbitron',
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2.2,
+                    shadows: [
+                      Shadow(
+                        color: Cyber.cyan.withValues(alpha: 0.5),
+                        blurRadius: 20,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${actions.length} ACTIONS UNLOCKED TOGETHER',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Cyber.muted,
+                    fontSize: 10,
+                    letterSpacing: 1.8,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 28),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    for (final item in actions)
+                      _RevealItemFace(item, size: VisualCardSize.sm),
+                  ],
+                ),
+                const SizedBox(height: 36),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _showSummary,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Cyber.cyan,
+                      foregroundColor: Cyber.bg,
+                      minimumSize: const Size.fromHeight(52),
+                    ),
+                    child: const Text(
+                      'CONTINUE',
+                      style: TextStyle(
+                        fontFamily: 'Orbitron',
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildSummary(BuildContext context) {
     return AnimatedBuilder(
       animation: _summaryExit,
@@ -425,6 +521,33 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                       ),
                     ),
                   ],
+                  if (widget.reveal.xpGained > 0) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      '+${widget.reveal.xpGained} XP',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Cyber.lime.withValues(alpha: 0.9),
+                        fontSize: 12,
+                        fontFamily: 'Orbitron',
+                        letterSpacing: 1.6,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                  if (widget.reveal.levelsGained.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      'LEVEL ${widget.reveal.levelsGained.last} REACHED',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Cyber.gold.withValues(alpha: 0.9),
+                        fontSize: 10,
+                        letterSpacing: 1.8,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 30),
 
                   // Cards in a wrap
@@ -433,7 +556,7 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                     spacing: 10,
                     runSpacing: 10,
                     children: [
-                      for (int i = 0; i < widget.reveal.cards.length; i++)
+                      for (int i = 0; i < widget.reveal.items.length; i++)
                         AnimatedBuilder(
                           animation: _summaryCtrl[i],
                           builder: (_, _) {
@@ -442,9 +565,8 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                               opacity: t,
                               child: Transform.scale(
                                 scale: Curves.easeOutBack.transform(t),
-                                child: CyberPlayerCardTile(
-                                  card: widget.reveal.cards[i],
-                                  selected: false,
+                                child: _RevealItemFace(
+                                  widget.reveal.items[i],
                                   size: VisualCardSize.sm,
                                 ),
                               ),
@@ -521,6 +643,26 @@ class _MysterySlot extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _RevealItemFace extends StatelessWidget {
+  const _RevealItemFace(this.item, {this.size = VisualCardSize.md});
+
+  final PackRevealItem item;
+  final VisualCardSize size;
+
+  @override
+  Widget build(BuildContext context) {
+    final player = item.playerCard;
+    if (player != null) {
+      return CyberPlayerCardTile(card: player, selected: false, size: size);
+    }
+    return CyberActionCardTile(
+      card: item.actionCard!,
+      selected: false,
+      size: size,
     );
   }
 }
@@ -610,7 +752,10 @@ class _RadialGlowPainter extends CustomPainter {
       r,
       Paint()
         ..shader = RadialGradient(
-          colors: [color.withValues(alpha: opacity), Colors.transparent],
+          colors: [
+            color.withValues(alpha: opacity),
+            Colors.transparent,
+          ],
         ).createShader(Rect.fromCircle(center: center, radius: r)),
     );
   }

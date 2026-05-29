@@ -147,7 +147,7 @@ class _AppShellState extends State<AppShell> {
             );
           }
           final packReveal = state.pendingPackReveal;
-          if (packReveal != null && packReveal.cards.isNotEmpty) {
+          if (packReveal != null && packReveal.items.isNotEmpty) {
             return PackOnboardingScreen(
               key: const ValueKey('onboarding'),
               reveal: packReveal,

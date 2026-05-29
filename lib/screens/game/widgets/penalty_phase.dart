@@ -174,8 +174,7 @@ class _PenaltyPhaseState extends State<PenaltyPhase>
             key: ValueKey('kick-countdown-${s.penaltyKicks.length}'),
             scanner: _scanner,
             seconds: 3,
-            onComplete: () =>
-                context.read<GameBloc>().add(PenaltyNextKick()),
+            onComplete: () => context.read<GameBloc>().add(PenaltyNextKick()),
           ),
       ],
     );
@@ -197,8 +196,9 @@ class _PenaltyActionPanel extends StatelessWidget {
     final String description = playerTaking
         ? 'Pick a direction. The keeper will dive — outsmart them.'
         : 'Read the shooter. Dive the right way to make the save.';
-    final String status =
-        playerTaking ? 'YOUR TURN TO SHOOT' : 'OPPONENT SHOOTING';
+    final String status = playerTaking
+        ? 'YOUR TURN TO SHOOT'
+        : 'OPPONENT SHOOTING';
 
     return Container(
       width: double.infinity,
@@ -296,16 +296,16 @@ class _KickTable extends StatelessWidget {
   Widget build(BuildContext context) {
     // User is always on the LEFT, CPU on the RIGHT — regardless of who shot.
     final bool userShot = kick.byPlayer;
-    final PenaltyDirection userDir =
-        userShot ? kick.shootDirection : kick.diveDirection;
-    final PenaltyDirection cpuDir =
-        userShot ? kick.diveDirection : kick.shootDirection;
+    final PenaltyDirection userDir = userShot
+        ? kick.shootDirection
+        : kick.diveDirection;
+    final PenaltyDirection cpuDir = userShot
+        ? kick.diveDirection
+        : kick.shootDirection;
     final String userAction = userShot ? 'SHOT' : 'DIVED';
     final String cpuAction = userShot ? 'DIVED' : 'SHOT';
-    final IconData userIcon =
-        userShot ? Icons.sports_soccer : Icons.pan_tool;
-    final IconData cpuIcon =
-        userShot ? Icons.pan_tool : Icons.sports_soccer;
+    final IconData userIcon = userShot ? Icons.sports_soccer : Icons.pan_tool;
+    final IconData cpuIcon = userShot ? Icons.pan_tool : Icons.sports_soccer;
 
     return CyberPanel(
       padding: EdgeInsets.zero,
@@ -321,11 +321,7 @@ class _KickTable extends StatelessWidget {
                 icon: userIcon,
               ),
             ),
-            const VerticalDivider(
-              color: Cyber.line,
-              thickness: 1,
-              width: 1,
-            ),
+            const VerticalDivider(color: Cyber.line, thickness: 1, width: 1),
             Expanded(
               child: _KickTableCell(
                 heading: 'CPU',
@@ -510,28 +506,126 @@ class _PenaltyHistoryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: kicks.map((k) {
-        final color = k.byPlayer
-            ? (k.scored ? Cyber.lime : Cyber.red)
-            : (k.scored ? Cyber.red : Cyber.lime);
-        return Container(
-          width: 28,
-          height: 28,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.15),
-            border: Border.all(color: color.withValues(alpha: 0.5)),
+    final playerKicks = kicks.where((kick) => kick.byPlayer).toList();
+    final opponentKicks = kicks.where((kick) => !kick.byPlayer).toList();
+    final slotCount = max(5, max(playerKicks.length, opponentKicks.length));
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: _PenaltySideHistory(
+            label: 'YOU',
+            kicks: playerKicks,
+            slotCount: slotCount,
+            alignEnd: false,
           ),
-          child: Icon(
-            k.scored ? Icons.sports_soccer : Icons.pan_tool,
-            size: 14,
-            color: color,
+        ),
+        Container(
+          width: 1,
+          height: 54,
+          margin: const EdgeInsets.symmetric(horizontal: 10),
+          color: Cyber.line.withValues(alpha: 0.75),
+        ),
+        Expanded(
+          child: _PenaltySideHistory(
+            label: 'CPU',
+            kicks: opponentKicks,
+            slotCount: slotCount,
+            alignEnd: true,
           ),
-        );
-      }).toList(),
+        ),
+      ],
+    );
+  }
+}
+
+class _PenaltySideHistory extends StatelessWidget {
+  const _PenaltySideHistory({
+    required this.label,
+    required this.kicks,
+    required this.slotCount,
+    required this.alignEnd,
+  });
+
+  final String label;
+  final List<PenaltyKick> kicks;
+  final int slotCount;
+  final bool alignEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    final children = <Widget>[
+      for (var index = 0; index < slotCount; index++)
+        _PenaltyAttemptIcon(kick: index < kicks.length ? kicks[index] : null),
+    ];
+
+    return Column(
+      crossAxisAlignment: alignEnd
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: alignEnd ? Cyber.amber : Cyber.cyan,
+            fontFamily: 'Orbitron',
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.5,
+          ),
+        ),
+        const SizedBox(height: 7),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          alignment: alignEnd ? WrapAlignment.end : WrapAlignment.start,
+          children: children,
+        ),
+      ],
+    );
+  }
+}
+
+class _PenaltyAttemptIcon extends StatelessWidget {
+  const _PenaltyAttemptIcon({required this.kick});
+
+  final PenaltyKick? kick;
+
+  @override
+  Widget build(BuildContext context) {
+    final currentKick = kick;
+    final bool pending = currentKick == null;
+    final bool playerKick = currentKick?.byPlayer ?? true;
+    final bool scored = currentKick?.scored ?? false;
+    final color = pending
+        ? Cyber.muted
+        : playerKick
+        ? (scored ? Cyber.lime : Cyber.red)
+        : (scored ? Cyber.red : Cyber.lime);
+    final icon = pending
+        ? Icons.sports_soccer_outlined
+        : scored
+        ? Icons.sports_soccer
+        : Icons.pan_tool;
+
+    return Container(
+      width: 30,
+      height: 30,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: pending ? Colors.transparent : color.withValues(alpha: 0.16),
+        border: Border.all(
+          color: color.withValues(alpha: pending ? 0.35 : 0.7),
+          width: pending ? 1 : 1.3,
+        ),
+      ),
+      child: Icon(
+        icon,
+        size: 15,
+        color: color.withValues(alpha: pending ? 0.45 : 1),
+      ),
     );
   }
 }
@@ -598,9 +692,7 @@ class _DirectionButton extends StatelessWidget {
         duration: const Duration(milliseconds: 140),
         height: 96,
         decoration: BoxDecoration(
-          color: selected
-              ? Cyber.cyan.withValues(alpha: 0.12)
-              : Cyber.panel,
+          color: selected ? Cyber.cyan.withValues(alpha: 0.12) : Cyber.panel,
           border: Border.all(
             color: selected ? Cyber.cyan : Cyber.line,
             width: selected ? 2 : 1,
@@ -618,11 +710,7 @@ class _DirectionButton extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              size: 26,
-              color: selected ? Cyber.cyan : Colors.white54,
-            ),
+            Icon(icon, size: 26, color: selected ? Cyber.cyan : Colors.white54),
             const SizedBox(height: 8),
             Text(
               label,

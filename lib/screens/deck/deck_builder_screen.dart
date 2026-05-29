@@ -97,10 +97,12 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
             selectedActionCards.length == 6 &&
             (actionAtk == 0 || actionDef == 0);
         final focusedPlayer = switch (activeLane) {
-          DeckPickerLane.attacker =>
-            selectedAttackerCards.elementAtOrNull(activeSlotIndex),
-          DeckPickerLane.defender =>
-            selectedDefenderCards.elementAtOrNull(activeSlotIndex),
+          DeckPickerLane.attacker => selectedAttackerCards.elementAtOrNull(
+            activeSlotIndex,
+          ),
+          DeckPickerLane.defender => selectedDefenderCards.elementAtOrNull(
+            activeSlotIndex,
+          ),
           DeckPickerLane.action => null,
         };
         final focusedAction = activeLane == DeckPickerLane.action
@@ -211,24 +213,34 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
                                     onFilterChanged: (filter) =>
                                         setState(() => actionFilter = filter),
                                     onClear: _clearActiveSlot,
-                                    onLaneTap: (lane) => _focusSlot(
-                                      lane,
-                                      _bestSlotIndex(lane),
-                                    ),
+                                    onLaneTap: (lane) =>
+                                        _focusSlot(lane, _bestSlotIndex(lane)),
                                     onSlotTap: (index) =>
                                         _focusSlot(activeLane, index),
                                     playerOptions:
                                         activeLane == DeckPickerLane.attacker
                                         ? attackers
-                                        : defenders,
+                                              .where(
+                                                (card) => state.ownedCardIds
+                                                    .contains(card.id),
+                                              )
+                                              .toList()
+                                        : defenders
+                                              .where(
+                                                (card) => state.ownedCardIds
+                                                    .contains(card.id),
+                                              )
+                                              .toList(),
                                     actionOptions:
                                         activeLane == DeckPickerLane.action
                                         ? actionCards
                                               .where(
                                                 (card) =>
-                                                    actionFilter == null ||
-                                                    card.category ==
-                                                        actionFilter,
+                                                    state.ownedActionCardIds
+                                                        .contains(card.id) &&
+                                                    (actionFilter == null ||
+                                                        card.category ==
+                                                            actionFilter),
                                               )
                                               .toList()
                                         : const [],
@@ -432,7 +444,6 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
   }
 }
 
-
 class DeckFocusedSelectionPanel extends StatelessWidget {
   const DeckFocusedSelectionPanel({
     required this.lane,
@@ -629,7 +640,6 @@ class DeckFocusedSelectionPanel extends StatelessWidget {
   }
 }
 
-
 class _LaneTab extends StatelessWidget {
   const _LaneTab({
     required this.lane,
@@ -679,7 +689,6 @@ class _LaneTab extends StatelessWidget {
   }
 }
 
-
 class _SlotChip extends StatelessWidget {
   const _SlotChip({
     required this.label,
@@ -716,7 +725,6 @@ class _SlotChip extends StatelessWidget {
     );
   }
 }
-
 
 class DeckPill extends StatelessWidget {
   const DeckPill({
@@ -783,7 +791,6 @@ class DeckPill extends StatelessWidget {
   }
 }
 
-
 class DeckActionWarningPanel extends StatelessWidget {
   const DeckActionWarningPanel({super.key});
 
@@ -813,7 +820,6 @@ class DeckActionWarningPanel extends StatelessWidget {
     );
   }
 }
-
 
 class FiveSideDeckPanel extends StatelessWidget {
   const FiveSideDeckPanel({
@@ -961,7 +967,6 @@ class FiveSideDeckPanel extends StatelessWidget {
   }
 }
 
-
 class FiveSidePitch extends StatelessWidget {
   const FiveSidePitch({
     required this.attackers,
@@ -1043,7 +1048,6 @@ class FiveSidePitch extends StatelessWidget {
     );
   }
 }
-
 
 class FormationSlot extends StatefulWidget {
   const FormationSlot({
@@ -1149,11 +1153,7 @@ class _FormationSlotState extends State<FormationSlot>
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.add_circle_outline,
-                  color: Cyber.muted,
-                  size: 10,
-                ),
+                Icon(Icons.add_circle_outline, color: Cyber.muted, size: 10),
                 const SizedBox(width: 3),
                 const Text(
                   'ADD',
@@ -1167,7 +1167,6 @@ class _FormationSlotState extends State<FormationSlot>
     );
   }
 }
-
 
 class KeeperCore extends StatelessWidget {
   const KeeperCore({super.key});
@@ -1208,7 +1207,6 @@ class KeeperCore extends StatelessWidget {
     );
   }
 }
-
 
 class EmptyActionSlot extends StatelessWidget {
   const EmptyActionSlot({
@@ -1266,7 +1264,6 @@ class EmptyActionSlot extends StatelessWidget {
     );
   }
 }
-
 
 class PitchPainter extends CustomPainter {
   const PitchPainter();

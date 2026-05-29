@@ -47,6 +47,18 @@ class CardPurchased extends GameEvent {
   final String cardId;
 }
 
+class DirectCardPurchased extends GameEvent {
+  DirectCardPurchased({
+    required this.cardId,
+    required this.price,
+    this.spendCoins = true,
+  });
+
+  final String cardId;
+  final int price;
+  final bool spendCoins;
+}
+
 class PackOpened extends GameEvent {
   PackOpened({
     required this.packId,
@@ -62,6 +74,17 @@ class PackOpened extends GameEvent {
 }
 
 class StarterPackClaimed extends GameEvent {}
+
+class StarterPackOpened extends GameEvent {}
+
+class DailyDropClaimed extends GameEvent {}
+
+class ShopPackPurchased extends GameEvent {
+  ShopPackPurchased(this.packId, {this.spendCoins = true});
+
+  final String packId;
+  final bool spendCoins;
+}
 
 class CardBackPurchased extends GameEvent {
   CardBackPurchased(this.cardBackId);

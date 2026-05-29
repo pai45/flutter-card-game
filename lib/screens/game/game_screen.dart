@@ -34,12 +34,16 @@ class _GameTabContentState extends State<GameTabContent> {
     if (section == AppSection.shop) {
       widget.onNavigate(AppSection.shop);
     } else if (section == AppSection.game ||
-               section == AppSection.home ||
-               section == AppSection.deck ||
-               section == AppSection.howToPlay ||
-               section == AppSection.match ||
-               section == AppSection.allCards) {
-      setState(() => _gameSection = section == AppSection.game ? AppSection.home : section);
+        section == AppSection.home ||
+        section == AppSection.deck ||
+        section == AppSection.howToPlay ||
+        section == AppSection.match ||
+        section == AppSection.allCards) {
+      setState(
+        () => _gameSection = section == AppSection.game
+            ? AppSection.home
+            : section,
+      );
     }
   }
 
@@ -55,7 +59,6 @@ class _GameTabContentState extends State<GameTabContent> {
     };
   }
 }
-
 
 class MatchScreen extends StatefulWidget {
   const MatchScreen({required this.onNavigate, super.key});
@@ -114,50 +117,52 @@ class _MatchScreenState extends State<MatchScreen> {
                   state: state,
                   onQuit: () => _quit(context),
                 ),
-          MatchPhase.tossResult => TossResultPhase(
-            state: state,
-            onQuit: () => _quit(context),
-          ),
-          MatchPhase.scenario => ScenarioPhase(
-            state: state,
-            onQuit: () => _quit(context),
-          ),
-          MatchPhase.play => PlayPhase(
-            state: state,
-            onQuit: () => _quit(context),
-          ),
-          MatchPhase.roundResult => RoundResultPhase(
-            state: state,
-            onQuit: () => _quit(context),
-          ),
-          MatchPhase.matchEnd => MatchEndPhase(
-            state: state,
-            onQuit: () => _quit(context),
-          ),
-          MatchPhase.penalty => PenaltyPhase(
-            state: state,
-            onQuit: () => _quit(context),
-          ),
-          MatchPhase.finalResult => FinalResultPhase(
-            state: state,
-            onNavigate: widget.onNavigate,
-          ),
-          MatchPhase.idle => GameScaffold(
-            title: 'Match',
-            subtitle: '// Match Terminal',
-            leading: IconButton(
-              onPressed: () => _quit(context),
-              icon: const Icon(Icons.close),
-            ),
-            child: Center(
-              child: CyberCtaButton(
-                label: 'Start Match',
-                primary: true,
-                onPressed: () => context.read<GameBloc>().add(MatchStarted()),
-              ),
-            ),
-          ),
-        };
+                MatchPhase.tossResult => TossResultPhase(
+                  state: state,
+                  onQuit: () => _quit(context),
+                ),
+                MatchPhase.scenario => ScenarioPhase(
+                  state: state,
+                  onQuit: () => _quit(context),
+                ),
+                MatchPhase.play => PlayPhase(
+                  state: state,
+                  onQuit: () => _quit(context),
+                ),
+                MatchPhase.roundResult => RoundResultPhase(
+                  state: state,
+                  onQuit: () => _quit(context),
+                ),
+                MatchPhase.matchEnd => MatchEndPhase(
+                  state: state,
+                  onQuit: () => _quit(context),
+                ),
+                MatchPhase.penalty => PenaltyPhase(
+                  state: state,
+                  onQuit: () => _quit(context),
+                ),
+                MatchPhase.finalResult => FinalResultPhase(
+                  state: state,
+                  onNavigate: widget.onNavigate,
+                ),
+                MatchPhase.idle => GameScaffold(
+                  title: 'Match',
+                  subtitle: '// Match Terminal',
+                  leading: IconButton(
+                    onPressed: () => _quit(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                  child: Center(
+                    child: CyberCtaButton(
+                      label: state.deckReady ? 'Start Match' : 'Deck Required',
+                      primary: true,
+                      onPressed: state.deckReady
+                          ? () => context.read<GameBloc>().add(MatchStarted())
+                          : null,
+                    ),
+                  ),
+                ),
+              };
 
         final reduceMotion = MediaQuery.of(context).disableAnimations;
         return AnimatedSwitcher(
@@ -212,4 +217,3 @@ class _MatchScreenState extends State<MatchScreen> {
     widget.onNavigate(AppSection.home);
   }
 }
-

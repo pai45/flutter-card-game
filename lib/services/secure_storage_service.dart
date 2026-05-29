@@ -11,36 +11,48 @@ class WalletSnapshot {
   const WalletSnapshot({
     required this.coins,
     required this.ownedCardIds,
+    required this.ownedActionCardIds,
     required this.ownedCardBackIds,
     required this.equippedCardBackId,
+    required this.dailyDropLastClaimedAtMillis,
   });
 
   factory WalletSnapshot.initial() => const WalletSnapshot(
-    coins: 5000,
+    coins: 0,
     ownedCardIds: [],
+    ownedActionCardIds: [],
     ownedCardBackIds: ['default'],
     equippedCardBackId: 'default',
+    dailyDropLastClaimedAtMillis: null,
   );
 
   factory WalletSnapshot.fromJson(Map<String, dynamic> json) => WalletSnapshot(
-    coins: json['coins'] as int? ?? 5000,
+    coins: json['coins'] as int? ?? 0,
     ownedCardIds: List<String>.from(json['ownedCardIds'] as List? ?? const []),
+    ownedActionCardIds: List<String>.from(
+      json['ownedActionCardIds'] as List? ?? const [],
+    ),
     ownedCardBackIds: List<String>.from(
       json['ownedCardBackIds'] as List? ?? const ['default'],
     ),
     equippedCardBackId: json['equippedCardBackId'] as String? ?? 'default',
+    dailyDropLastClaimedAtMillis: json['dailyDropLastClaimedAtMillis'] as int?,
   );
 
   final int coins;
   final List<String> ownedCardIds;
+  final List<String> ownedActionCardIds;
   final List<String> ownedCardBackIds;
   final String equippedCardBackId;
+  final int? dailyDropLastClaimedAtMillis;
 
   Map<String, dynamic> toJson() => {
     'coins': coins,
     'ownedCardIds': ownedCardIds,
+    'ownedActionCardIds': ownedActionCardIds,
     'ownedCardBackIds': ownedCardBackIds,
     'equippedCardBackId': equippedCardBackId,
+    'dailyDropLastClaimedAtMillis': dailyDropLastClaimedAtMillis,
   };
 }
 
@@ -61,11 +73,11 @@ class SecureGameStorage {
   Future<List<StoredDeckSlot>> loadDecks() async {
     try {
       final raw = await _storage.read(key: _deckKey);
-      if (raw == null || raw.isEmpty) return defaultDeckSlots;
+      if (raw == null || raw.isEmpty) return const [];
       final data = jsonDecode(raw) as List;
       return data.map((item) => StoredDeckSlot.fromJson(item)).toList();
     } catch (_) {
-      return defaultDeckSlots;
+      return const [];
     }
   }
 

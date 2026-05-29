@@ -76,6 +76,7 @@ class CardUnpackAnimation extends StatefulWidget {
     required this.rating,
     required this.rarity,
     required this.onComplete,
+    this.showTapCountdown = true,
     this.frontFace, // optional: override the built-in card design
   });
 
@@ -84,6 +85,9 @@ class CardUnpackAnimation extends StatefulWidget {
   final int rating;
   final String rarity;
   final VoidCallback onComplete;
+
+  final bool showTapCountdown;
+
   /// If provided, displayed as the card front face instead of the built-in design.
   final Widget? frontFace;
 
@@ -101,15 +105,15 @@ class _CardUnpackState extends State<CardUnpackAnimation>
   AnimationController? _packEntryCtrl; // stage 1 – 400 ms
   AnimationController? _packPulseCtrl; // stage 2 – 400 ms
   AnimationController? _packShakeCtrl; // stage 3 – 300 ms
-  AnimationController? _flashCtrl;     // stage 4 – 150 ms
-  AnimationController? _cardFlipCtrl;  // stage 5 – 600 ms
-  AnimationController? _cardSettleCtrl;// stage 6 – 450 ms
-  AnimationController? _particleCtrl;  // stage 7 – 750 ms
-  AnimationController? _rarityDropCtrl;// stage 8 – 300 ms
-  AnimationController? _shimmerCtrl;   // stage 8 legendary shimmer
-  AnimationController? _idleCtrl;      // stage 10 – 2000 ms repeat
-  AnimationController? _tapCtrl;       // stage 10 tap pulse – 1200 ms repeat
-  AnimationController? _dismissCtrl;   // dismiss – 300 ms
+  AnimationController? _flashCtrl; // stage 4 – 150 ms
+  AnimationController? _cardFlipCtrl; // stage 5 – 600 ms
+  AnimationController? _cardSettleCtrl; // stage 6 – 450 ms
+  AnimationController? _particleCtrl; // stage 7 – 750 ms
+  AnimationController? _rarityDropCtrl; // stage 8 – 300 ms
+  AnimationController? _shimmerCtrl; // stage 8 legendary shimmer
+  AnimationController? _idleCtrl; // stage 10 – 2000 ms repeat
+  AnimationController? _tapCtrl; // stage 10 tap pulse – 1200 ms repeat
+  AnimationController? _dismissCtrl; // dismiss – 300 ms
 
   int _countdown = 3;
   Timer? _countdownTimer;
@@ -172,8 +176,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
 
     _legendaryParticles = widget.rarity == 'legendary'
         ? List.generate(12, (i) {
-            final angle =
-                (i / 12) * 2 * pi + (_rng.nextDouble() - 0.5) * 0.3;
+            final angle = (i / 12) * 2 * pi + (_rng.nextDouble() - 0.5) * 0.3;
             return _Particle(
               angle: angle,
               speed: 60 + _rng.nextDouble() * 80,
@@ -193,13 +196,10 @@ class _CardUnpackState extends State<CardUnpackAnimation>
       vsync: this,
       duration: const Duration(milliseconds: 400),
     );
-    _packSlide = Tween<Offset>(
-      begin: const Offset(0, 1.5),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _packEntryCtrl!,
-      curve: Curves.easeOutBack,
-    ));
+    _packSlide = Tween<Offset>(begin: const Offset(0, 1.5), end: Offset.zero)
+        .animate(
+          CurvedAnimation(parent: _packEntryCtrl!, curve: Curves.easeOutBack),
+        );
     _packEntryCtrl!.forward().then((_) => _startStage2());
     setState(() => _stage = _Stage.packEntry);
   }
@@ -212,13 +212,13 @@ class _CardUnpackState extends State<CardUnpackAnimation>
       vsync: this,
       duration: const Duration(milliseconds: 400),
     );
-    _packPulseScale = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.05), weight: 0.5),
-      TweenSequenceItem(tween: Tween(begin: 1.05, end: 1.0), weight: 0.5),
-    ]).animate(CurvedAnimation(
-      parent: _packPulseCtrl!,
-      curve: Curves.easeInOut,
-    ));
+    _packPulseScale =
+        TweenSequence<double>([
+          TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.05), weight: 0.5),
+          TweenSequenceItem(tween: Tween(begin: 1.05, end: 1.0), weight: 0.5),
+        ]).animate(
+          CurvedAnimation(parent: _packPulseCtrl!, curve: Curves.easeInOut),
+        );
     _packPulseCtrl!.forward().then((_) => _startStage3());
     setState(() => _stage = _Stage.packPulse);
   }
@@ -287,9 +287,10 @@ class _CardUnpackState extends State<CardUnpackAnimation>
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-    _cardFlipAngle = Tween<double>(begin: 0, end: pi).animate(
-      CurvedAnimation(parent: _cardFlipCtrl!, curve: Curves.easeInOut),
-    );
+    _cardFlipAngle = Tween<double>(
+      begin: 0,
+      end: pi,
+    ).animate(CurvedAnimation(parent: _cardFlipCtrl!, curve: Curves.easeInOut));
     _cardFlipCtrl!.forward().then((_) => _startStage6());
     setState(() => _stage = _Stage.cardFlip);
   }
@@ -314,18 +315,24 @@ class _CardUnpackState extends State<CardUnpackAnimation>
     );
     _cardSettleScale = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween(begin: 1.0, end: 1.15)
-            .chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween(
+          begin: 1.0,
+          end: 1.15,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 200 / 450,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: 1.15, end: 0.95)
-            .chain(CurveTween(curve: Curves.easeIn)),
+        tween: Tween(
+          begin: 1.15,
+          end: 0.95,
+        ).chain(CurveTween(curve: Curves.easeIn)),
         weight: 150 / 450,
       ),
       TweenSequenceItem(
-        tween: Tween(begin: 0.95, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeOut)),
+        tween: Tween(
+          begin: 0.95,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeOut)),
         weight: 100 / 450,
       ),
     ]).animate(_cardSettleCtrl!);
@@ -356,12 +363,10 @@ class _CardUnpackState extends State<CardUnpackAnimation>
     _rarityDropOpacity = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _rarityDropCtrl!, curve: Curves.easeOutBack),
     );
-    _rarityDropSlide = Tween<Offset>(
-      begin: const Offset(0, -0.5),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _rarityDropCtrl!, curve: Curves.easeOutBack),
-    );
+    _rarityDropSlide =
+        Tween<Offset>(begin: const Offset(0, -0.5), end: Offset.zero).animate(
+          CurvedAnimation(parent: _rarityDropCtrl!, curve: Curves.easeOutBack),
+        );
     setState(() => _stage = _Stage.rarityDrop);
     _rarityDropCtrl!.forward().then((_) {
       if (widget.rarity == 'legendary') {
@@ -405,9 +410,10 @@ class _CardUnpackState extends State<CardUnpackAnimation>
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
-    final anim = IntTween(begin: 0, end: widget.rating).animate(
-      CurvedAnimation(parent: _ratingCtrl!, curve: Curves.easeOut),
-    );
+    final anim = IntTween(
+      begin: 0,
+      end: widget.rating,
+    ).animate(CurvedAnimation(parent: _ratingCtrl!, curve: Curves.easeOut));
     anim.addListener(() {
       if (anim.value != _displayRating) {
         setState(() {
@@ -434,9 +440,10 @@ class _CardUnpackState extends State<CardUnpackAnimation>
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     );
-    _idleLevitate = Tween<double>(begin: 0, end: -8).animate(
-      CurvedAnimation(parent: _idleCtrl!, curve: Curves.easeInOut),
-    );
+    _idleLevitate = Tween<double>(
+      begin: 0,
+      end: -8,
+    ).animate(CurvedAnimation(parent: _idleCtrl!, curve: Curves.easeInOut));
     _idleCtrl!.addListener(() {
       final t = _idleCtrl!.value;
       setState(() {
@@ -450,9 +457,10 @@ class _CardUnpackState extends State<CardUnpackAnimation>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     );
-    _tapPulse = Tween<double>(begin: 1.0, end: 0.4).animate(
-      CurvedAnimation(parent: _tapCtrl!, curve: Curves.easeInOut),
-    );
+    _tapPulse = Tween<double>(
+      begin: 1.0,
+      end: 0.4,
+    ).animate(CurvedAnimation(parent: _tapCtrl!, curve: Curves.easeInOut));
     _tapCtrl!.repeat(reverse: true);
 
     setState(() {
@@ -481,12 +489,14 @@ class _CardUnpackState extends State<CardUnpackAnimation>
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
-    _dismissScale = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(parent: _dismissCtrl!, curve: Curves.easeIn),
-    );
-    _dismissFade = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(parent: _dismissCtrl!, curve: Curves.easeIn),
-    );
+    _dismissScale = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(parent: _dismissCtrl!, curve: Curves.easeIn));
+    _dismissFade = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(parent: _dismissCtrl!, curve: Curves.easeIn));
     _dismissCtrl!.addListener(() => setState(() {}));
     _dismissCtrl!.forward().then((_) => widget.onComplete());
   }
@@ -519,8 +529,9 @@ class _CardUnpackState extends State<CardUnpackAnimation>
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final dismissFadeVal =
-        (_dismissCtrl != null) ? _dismissFade.value.clamp(0.0, 1.0) : 1.0;
+    final dismissFadeVal = (_dismissCtrl != null)
+        ? _dismissFade.value.clamp(0.0, 1.0)
+        : 1.0;
 
     return GestureDetector(
       onTap: _onTap,
@@ -707,7 +718,10 @@ class _CardUnpackState extends State<CardUnpackAnimation>
     }
 
     // Stages 7-10 (rarity drop, rating, idle, dismiss)
-    Widget card = _cardWithGlow(_buildCardFront(countingRating: _stage == _Stage.ratingCount), glowColor);
+    Widget card = _cardWithGlow(
+      _buildCardFront(countingRating: _stage == _Stage.ratingCount),
+      glowColor,
+    );
 
     if (_stage == _Stage.idle && _idleCtrl != null) {
       card = AnimatedBuilder(
@@ -787,7 +801,9 @@ class _CardUnpackState extends State<CardUnpackAnimation>
     };
 
     final displayRating = countingRating ? _displayRating : widget.rating;
-    final ratingTextColor = (_ratingFlash && countingRating) ? baseColor : _kWhite;
+    final ratingTextColor = (_ratingFlash && countingRating)
+        ? baseColor
+        : _kWhite;
 
     return Container(
       width: 200,
@@ -985,6 +1001,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
   // Tap-to-continue label (show only 3)
   // ─────────────────────────────────────────────────────────────────────────
   Widget _buildTapLabel() {
+    if (!widget.showTapCountdown) return const SizedBox.shrink();
     if (_tapCtrl == null || _countdown != 3) return const SizedBox.shrink();
     return Positioned(
       bottom: 64,
@@ -992,10 +1009,8 @@ class _CardUnpackState extends State<CardUnpackAnimation>
       right: 0,
       child: AnimatedBuilder(
         animation: _tapCtrl!,
-        builder: (_, child) => Opacity(
-          opacity: _tapPulse.value.clamp(0.0, 1.0),
-          child: child,
-        ),
+        builder: (_, child) =>
+            Opacity(opacity: _tapPulse.value.clamp(0.0, 1.0), child: child),
         child: Center(
           child: Text(
             '3',

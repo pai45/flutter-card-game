@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../blocs/game/game_bloc.dart';
+import '../../blocs/game/game_state.dart';
 import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../models/cards.dart';
@@ -34,48 +37,58 @@ class _AllCardsScreenState extends State<AllCardsScreen>
     super.dispose();
   }
 
-  List<PlayerCard> get _players {
-    final all = [...attackers, ...defenders];
+  List<PlayerCard> _players(GameState state) {
+    final all = [
+      ...attackers,
+      ...defenders,
+    ].where((card) => state.ownedCardIds.contains(card.id)).toList();
     if (_roleFilter == null) return all;
     return all.where((c) => c.role == _roleFilter).toList();
   }
 
-  List<ActionCard> get _actions {
-    if (_actionFilter == null) return actionCards;
-    return actionCards.where((c) => c.category == _actionFilter).toList();
+  List<ActionCard> _actions(GameState state) {
+    final owned = actionCards
+        .where((card) => state.ownedActionCardIds.contains(card.id))
+        .toList();
+    if (_actionFilter == null) return owned;
+    return owned.where((c) => c.category == _actionFilter).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    return GameScaffold(
-      title: 'All Cards',
-      subtitle: '// Your Collection',
-      leading: IconButton(
-        onPressed: () => widget.onNavigate(AppSection.deck),
-        icon: const Icon(Icons.arrow_back),
-      ),
-      child: Column(
-        children: [
-          _TabBar(controller: _tab),
-          Expanded(
-            child: TabBarView(
-              controller: _tab,
-              children: [
-                _PlayersTab(
-                  cards: _players,
-                  filter: _roleFilter,
-                  onFilter: (r) => setState(() => _roleFilter = r),
-                ),
-                _ActionsTab(
-                  cards: _actions,
-                  filter: _actionFilter,
-                  onFilter: (c) => setState(() => _actionFilter = c),
-                ),
-              ],
-            ),
+    return BlocBuilder<GameBloc, GameState>(
+      builder: (context, state) {
+        return GameScaffold(
+          title: 'All Cards',
+          subtitle: '// Your Collection',
+          leading: IconButton(
+            onPressed: () => widget.onNavigate(AppSection.deck),
+            icon: const Icon(Icons.arrow_back),
           ),
-        ],
-      ),
+          child: Column(
+            children: [
+              _TabBar(controller: _tab),
+              Expanded(
+                child: TabBarView(
+                  controller: _tab,
+                  children: [
+                    _PlayersTab(
+                      cards: _players(state),
+                      filter: _roleFilter,
+                      onFilter: (r) => setState(() => _roleFilter = r),
+                    ),
+                    _ActionsTab(
+                      cards: _actions(state),
+                      filter: _actionFilter,
+                      onFilter: (c) => setState(() => _actionFilter = c),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -259,9 +272,7 @@ class _FilterRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          ...chips.expand(
-            (chip) => [chip, const SizedBox(width: 6)],
-          ),
+          ...chips.expand((chip) => [chip, const SizedBox(width: 6)]),
           const Spacer(),
           Text(
             '$count cards',
@@ -709,7 +720,8 @@ class _ActionCardDetailOverlayState extends State<_ActionCardDetailOverlay>
                                 children: [
                                   _StatBadge(
                                     label: 'PWR',
-                                    value: '${card.power > 0 ? '+' : ''}${card.power}',
+                                    value:
+                                        '${card.power > 0 ? '+' : ''}${card.power}',
                                     color: accent,
                                   ),
                                   if (card.risky) ...[
@@ -770,7 +782,9 @@ class _RarityHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 7),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        border: Border(bottom: BorderSide(color: color.withValues(alpha: 0.35))),
+        border: Border(
+          bottom: BorderSide(color: color.withValues(alpha: 0.35)),
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,

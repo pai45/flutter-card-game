@@ -3,20 +3,7 @@ import 'package:flutter/material.dart';
 import '../config/enums.dart';
 
 class PlayerCard {
-  const PlayerCard({
-    required this.id,
-    required this.name,
-    required this.shortName,
-    required this.country,
-    required this.countryCode,
-    required this.position,
-    required this.role,
-    required this.rating,
-    required this.trait,
-    required this.tier,
-    required this.icon,
-    this.portraitAsset,
-  });
+  const PlayerCard({required this.id, required this.name, required this.shortName, required this.country, required this.countryCode, required this.position, required this.role, required this.rating, required this.trait, required this.tier, required this.icon, this.portraitAsset});
 
   final String id;
   final String name;
@@ -31,17 +18,16 @@ class PlayerCard {
   final IconData icon;
   final String? portraitAsset;
 
-  String? get resolvedPortraitAsset =>
-      portraitAsset ?? playerPortraitAssets[shortName];
+  String? get resolvedPortraitAsset => portraitAsset ?? playerPortraitAssets[shortName];
 
   bool get hasPortrait => resolvedPortraitAsset != null;
 
   bool get isGoalkeeper => role == PlayerRole.goalkeeper;
 
   CardRarity get rarity {
-    if (rating >= 91) return CardRarity.legendary;
-    if (rating >= 85) return CardRarity.epic;
-    if (rating >= 78) return CardRarity.rare;
+    if (rating >= 90) return CardRarity.legendary;
+    if (rating >= 83) return CardRarity.epic;
+    if (rating >= 75) return CardRarity.rare;
     return CardRarity.common;
   }
 }
@@ -275,15 +261,7 @@ const Map<String, String> playerPortraitAssets = {
 };
 
 class ActionCard {
-  const ActionCard({
-    required this.id,
-    required this.title,
-    required this.category,
-    required this.effect,
-    required this.power,
-    required this.risky,
-    required this.icon,
-  });
+  const ActionCard({required this.id, required this.title, required this.category, required this.effect, required this.power, required this.risky, required this.icon});
 
   final String id;
   final String title;
@@ -292,17 +270,17 @@ class ActionCard {
   final int power;
   final bool risky;
   final IconData icon;
+
+  CardRarity get rarity {
+    if (power >= 20) return CardRarity.legendary;
+    if (power >= 14) return CardRarity.epic;
+    if (power >= 8) return CardRarity.rare;
+    return CardRarity.common;
+  }
 }
 
 class ScenarioCard {
-  const ScenarioCard({
-    required this.id,
-    required this.title,
-    required this.description,
-    required this.attackBonus,
-    required this.defenseBonus,
-    required this.icon,
-  });
+  const ScenarioCard({required this.id, required this.title, required this.description, required this.attackBonus, required this.defenseBonus, required this.icon});
 
   final String id;
   final String title;
@@ -540,207 +518,30 @@ const goalkeepers = [
 const allPlayerCards = [...attackers, ...defenders, ...goalkeepers];
 
 const actionCards = [
-  ActionCard(
-    id: 'act1',
-    title: 'Through Ball',
-    category: ActionCategory.attack,
-    effect: '+15 Attack Power',
-    power: 15,
-    risky: false,
-    icon: Icons.trending_up,
-  ),
-  ActionCard(
-    id: 'act2',
-    title: 'Power Shot',
-    category: ActionCategory.attack,
-    effect: '+20 Attack, -5 Accuracy',
-    power: 20,
-    risky: false,
-    icon: Icons.sports_soccer,
-  ),
-  ActionCard(
-    id: 'act3',
-    title: 'Skill Move',
-    category: ActionCategory.attack,
-    effect: '+12 Attack, Bypass Trait',
-    power: 12,
-    risky: false,
-    icon: Icons.auto_awesome,
-  ),
-  ActionCard(
-    id: 'act4',
-    title: 'Cut Inside',
-    category: ActionCategory.attack,
-    effect: '+10 Attack, +5 Scenario',
-    power: 10,
-    risky: false,
-    icon: Icons.turn_right,
-  ),
-  ActionCard(
-    id: 'act5',
-    title: 'Long Shot',
-    category: ActionCategory.attack,
-    effect: '+25 Attack, High Risk',
-    power: 25,
-    risky: true,
-    icon: Icons.my_location,
-  ),
-  ActionCard(
-    id: 'act6',
-    title: 'Quick Break',
-    category: ActionCategory.attack,
-    effect: '+18 Counter Bonus',
-    power: 18,
-    risky: false,
-    icon: Icons.flash_on,
-  ),
-  ActionCard(
-    id: 'act7',
-    title: 'Slide Tackle',
-    category: ActionCategory.defense,
-    effect: '+15 Defense Power',
-    power: 15,
-    risky: false,
-    icon: Icons.swipe_down,
-  ),
-  ActionCard(
-    id: 'act8',
-    title: 'Press High',
-    category: ActionCategory.defense,
-    effect: '+12 Defense, Disrupt',
-    power: 12,
-    risky: false,
-    icon: Icons.compress,
-  ),
-  ActionCard(
-    id: 'act9',
-    title: 'Block Lane',
-    category: ActionCategory.defense,
-    effect: '+10 Defense, +5 Position',
-    power: 10,
-    risky: false,
-    icon: Icons.block,
-  ),
-  ActionCard(
-    id: 'act10',
-    title: 'Tight Marking',
-    category: ActionCategory.defense,
-    effect: '+14 Defense Power',
-    power: 14,
-    risky: false,
-    icon: Icons.person_pin_circle,
-  ),
-  ActionCard(
-    id: 'act11',
-    title: 'Intercept',
-    category: ActionCategory.defense,
-    effect: '+18 Defense, Read Play',
-    power: 18,
-    risky: false,
-    icon: Icons.call_split,
-  ),
-  ActionCard(
-    id: 'act12',
-    title: 'Last-Ditch Tackle',
-    category: ActionCategory.defense,
-    effect: '+22 Defense, Foul Risk',
-    power: 22,
-    risky: true,
-    icon: Icons.warning,
-  ),
-  ActionCard(
-    id: 'act13',
-    title: 'All In',
-    category: ActionCategory.special,
-    effect: '+30 Power, Red Card Risk',
-    power: 30,
-    risky: true,
-    icon: Icons.local_fire_department,
-  ),
-  ActionCard(
-    id: 'act14',
-    title: 'Tactical Foul',
-    category: ActionCategory.special,
-    effect: 'Stop Play, Yellow Risk',
-    power: 8,
-    risky: true,
-    icon: Icons.flag,
-  ),
-  ActionCard(
-    id: 'act15',
-    title: 'Mind Game',
-    category: ActionCategory.special,
-    effect: '-10 Opponent Power',
-    power: 10,
-    risky: false,
-    icon: Icons.psychology,
-  ),
-  ActionCard(
-    id: 'act16',
-    title: 'Fast Recovery',
-    category: ActionCategory.special,
-    effect: '+8 All Stats',
-    power: 8,
-    risky: false,
-    icon: Icons.healing,
-  ),
+  ActionCard(id: 'act1', title: 'Through Ball', category: ActionCategory.attack, effect: '+15 Attack Power', power: 15, risky: false, icon: Icons.trending_up),
+  ActionCard(id: 'act2', title: 'Power Shot', category: ActionCategory.attack, effect: '+20 Attack, -5 Accuracy', power: 20, risky: false, icon: Icons.sports_soccer),
+  ActionCard(id: 'act3', title: 'Skill Move', category: ActionCategory.attack, effect: '+12 Attack, Bypass Trait', power: 12, risky: false, icon: Icons.auto_awesome),
+  ActionCard(id: 'act4', title: 'Cut Inside', category: ActionCategory.attack, effect: '+10 Attack, +5 Scenario', power: 10, risky: false, icon: Icons.turn_right),
+  ActionCard(id: 'act5', title: 'Long Shot', category: ActionCategory.attack, effect: '+25 Attack, High Risk', power: 25, risky: true, icon: Icons.my_location),
+  ActionCard(id: 'act6', title: 'Quick Break', category: ActionCategory.attack, effect: '+18 Counter Bonus', power: 18, risky: false, icon: Icons.flash_on),
+  ActionCard(id: 'act7', title: 'Slide Tackle', category: ActionCategory.defense, effect: '+15 Defense Power', power: 15, risky: false, icon: Icons.swipe_down),
+  ActionCard(id: 'act8', title: 'Press High', category: ActionCategory.defense, effect: '+12 Defense, Disrupt', power: 12, risky: false, icon: Icons.compress),
+  ActionCard(id: 'act9', title: 'Block Lane', category: ActionCategory.defense, effect: '+10 Defense, +5 Position', power: 10, risky: false, icon: Icons.block),
+  ActionCard(id: 'act10', title: 'Tight Marking', category: ActionCategory.defense, effect: '+14 Defense Power', power: 14, risky: false, icon: Icons.person_pin_circle),
+  ActionCard(id: 'act11', title: 'Intercept', category: ActionCategory.defense, effect: '+18 Defense, Read Play', power: 18, risky: false, icon: Icons.call_split),
+  ActionCard(id: 'act12', title: 'Last-Ditch Tackle', category: ActionCategory.defense, effect: '+22 Defense, Foul Risk', power: 22, risky: true, icon: Icons.warning),
+  ActionCard(id: 'act13', title: 'All In', category: ActionCategory.special, effect: '+30 Power, Red Card Risk', power: 30, risky: true, icon: Icons.local_fire_department),
+  ActionCard(id: 'act14', title: 'Tactical Foul', category: ActionCategory.special, effect: 'Stop Play, Yellow Risk', power: 8, risky: true, icon: Icons.flag),
+  ActionCard(id: 'act15', title: 'Mind Game', category: ActionCategory.special, effect: '-10 Opponent Power', power: 10, risky: false, icon: Icons.psychology),
+  ActionCard(id: 'act16', title: 'Fast Recovery', category: ActionCategory.special, effect: '+8 All Stats', power: 8, risky: false, icon: Icons.healing),
 ];
 
 const scenarios = [
-  ScenarioCard(
-    id: 'sc1',
-    title: 'Counter Attack',
-    description: 'Quick transition, spaces open up',
-    attackBonus: 8,
-    defenseBonus: 3,
-    icon: Icons.run_circle,
-  ),
-  ScenarioCard(
-    id: 'sc2',
-    title: '1v1 Final Third',
-    description: 'Face to face with the last defender',
-    attackBonus: 5,
-    defenseBonus: 5,
-    icon: Icons.adjust,
-  ),
-  ScenarioCard(
-    id: 'sc3',
-    title: 'Set Piece Chance',
-    description: 'Free kick from a dangerous position',
-    attackBonus: 6,
-    defenseBonus: 6,
-    icon: Icons.sports,
-  ),
-  ScenarioCard(
-    id: 'sc4',
-    title: 'Last Minute Pressure',
-    description: 'Everything on the line, final push',
-    attackBonus: 10,
-    defenseBonus: 2,
-    icon: Icons.timer,
-  ),
-  ScenarioCard(
-    id: 'sc5',
-    title: 'Box Defense',
-    description: 'Packed defense, tight spaces',
-    attackBonus: 2,
-    defenseBonus: 10,
-    icon: Icons.grid_view,
-  ),
-  ScenarioCard(
-    id: 'sc6',
-    title: 'Wide Break',
-    description: 'Overlapping run down the flank',
-    attackBonus: 7,
-    defenseBonus: 4,
-    icon: Icons.open_in_full,
-  ),
-  ScenarioCard(
-    id: 'sc7',
-    title: 'Penalty Box Chaos',
-    description: 'Scramble in the box, anything goes',
-    attackBonus: 8,
-    defenseBonus: 8,
-    icon: Icons.shuffle,
-  ),
+  ScenarioCard(id: 'sc1', title: 'Counter Attack', description: 'Quick transition, spaces open up', attackBonus: 8, defenseBonus: 3, icon: Icons.run_circle),
+  ScenarioCard(id: 'sc2', title: '1v1 Final Third', description: 'Face to face with the last defender', attackBonus: 5, defenseBonus: 5, icon: Icons.adjust),
+  ScenarioCard(id: 'sc3', title: 'Set Piece Chance', description: 'Free kick from a dangerous position', attackBonus: 6, defenseBonus: 6, icon: Icons.sports),
+  ScenarioCard(id: 'sc4', title: 'Last Minute Pressure', description: 'Everything on the line, final push', attackBonus: 10, defenseBonus: 2, icon: Icons.timer),
+  ScenarioCard(id: 'sc5', title: 'Box Defense', description: 'Packed defense, tight spaces', attackBonus: 2, defenseBonus: 10, icon: Icons.grid_view),
+  ScenarioCard(id: 'sc6', title: 'Wide Break', description: 'Overlapping run down the flank', attackBonus: 7, defenseBonus: 4, icon: Icons.open_in_full),
+  ScenarioCard(id: 'sc7', title: 'Penalty Box Chaos', description: 'Scramble in the box, anything goes', attackBonus: 8, defenseBonus: 8, icon: Icons.shuffle),
 ];

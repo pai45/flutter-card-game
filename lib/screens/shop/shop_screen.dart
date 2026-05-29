@@ -50,6 +50,15 @@ Color _tierAccent(String id) => switch (id) {
   _ => (common: '—', rare: '25%', epic: '50%+', legendary: '25%+'),
 };
 
+({String common, String rare, String epic, String legendary})
+_progressionPackOdds(String packId) => switch (packId) {
+  'starter' => (common: '70', rare: '25', epic: '5', legendary: '0'),
+  'bronze' => (common: '65', rare: '28', epic: '6', legendary: '1'),
+  'gold' => (common: '35', rare: '45', epic: '16', legendary: '4'),
+  'elite' => (common: '10', rare: '40', epic: '35', legendary: '15'),
+  _ => (common: '-', rare: '-', epic: '-', legendary: '-'),
+};
+
 class ShopScreen extends StatefulWidget {
   const ShopScreen({required this.onNavigate, super.key});
 
@@ -233,10 +242,7 @@ class _ShopHeader extends StatelessWidget {
                   fontSize: 24,
                   letterSpacing: 1.8,
                   shadows: [
-                    Shadow(
-                      color: _cyan.withValues(alpha: 0.7),
-                      blurRadius: 14,
-                    ),
+                    Shadow(color: _cyan.withValues(alpha: 0.7), blurRadius: 14),
                   ],
                 ),
               ),
@@ -372,8 +378,7 @@ class _ShopTabs extends StatelessWidget {
                 animation: indicatorAnimation,
                 builder: (BuildContext context, Widget? child) {
                   return Positioned(
-                    left:
-                        tabWidth * indicatorAnimation.value + tabWidth * 0.18,
+                    left: tabWidth * indicatorAnimation.value + tabWidth * 0.18,
                     bottom: 0,
                     width: tabWidth * 0.64,
                     height: 3,
@@ -596,7 +601,10 @@ class _CoinTierTile extends StatelessWidget {
                     if (!context.mounted || !confirmed) return;
                     context.read<GameBloc>().add(CoinsAdded(tier.coins));
                     onPurchased(tier.coins);
-                    _showSnack(context, '+${_formatInt(tier.coins)} coins added');
+                    _showSnack(
+                      context,
+                      '+${_formatInt(tier.coins)} coins added',
+                    );
                   },
                 ),
               ],
@@ -822,16 +830,13 @@ class _PackTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color accent = pack.gradientAccent ? _magenta : pack.accent;
-    final odds = _packOdds(pack.id);
+    final odds = _progressionPackOdds(pack.id);
     final Widget inner = Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            accent.withValues(alpha: 0.10),
-            _bg.withValues(alpha: 0.95),
-          ],
+          colors: [accent.withValues(alpha: 0.10), _bg.withValues(alpha: 0.95)],
         ),
         border: Border.all(color: accent.withValues(alpha: 0.55), width: 1.2),
         boxShadow: [
@@ -914,17 +919,11 @@ class _PackTile extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: accent.withValues(alpha: 0.10),
-                      border: Border.all(
-                        color: accent.withValues(alpha: 0.6),
-                      ),
+                      border: Border.all(color: accent.withValues(alpha: 0.6)),
                     ),
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.verified,
-                          color: accent,
-                          size: 11,
-                        ),
+                        Icon(Icons.verified, color: accent, size: 11),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
@@ -946,17 +945,22 @@ class _PackTile extends StatelessWidget {
                   BlocBuilder<GameBloc, GameState>(
                     builder: (context, state) {
                       final isStarterPack = pack.id == 'starter';
-                      final isDisabled = isStarterPack && state.starterPackClaimed;
+                      final isDisabled =
+                          isStarterPack && state.starterPackClaimed;
                       return Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Opacity(
                             opacity: isDisabled ? 0.5 : 1.0,
                             child: _ShopButton(
-                              label: isStarterPack ? (isDisabled ? 'CLAIMED' : 'FREE') : _formatInt(pack.coinPrice),
+                              label: isStarterPack
+                                  ? (isDisabled ? 'CLAIMED' : 'FREE')
+                                  : _formatInt(pack.coinPrice),
                               filled: false,
                               icon: isStarterPack ? null : CoinIcon(size: 14),
-                              onTap: isDisabled ? () {} : () => _buyWithCoins(context),
+                              onTap: isDisabled
+                                  ? () {}
+                                  : () => _buyWithCoins(context),
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -1003,8 +1007,7 @@ class _PackTile extends StatelessWidget {
       _showSnack(context, 'Not enough coins — top up in the Coins tab.', false);
       return;
     }
-    bloc.add(CoinsSpent(pack.coinPrice));
-    _openPack(context);
+    bloc.add(ShopPackPurchased(pack.id));
   }
 
   Future<void> _buyWithInr(BuildContext context) async {
@@ -1015,44 +1018,11 @@ class _PackTile extends StatelessWidget {
       preview: PackDesignWidget(pack: pack, width: 110, height: 158),
     );
     if (!context.mounted || !confirmed) return;
-    _openPack(context);
+    context.read<GameBloc>().add(ShopPackPurchased(pack.id, spendCoins: false));
   }
 
   void _openPack(BuildContext context) {
-    final GameBloc bloc = context.read<GameBloc>();
-    final List<PlayerCard> cards = _rollPack(pack, bloc.state.ownedCardIds);
-    int refund = 0;
-    for (final PlayerCard card in cards) {
-      if (bloc.state.ownedCardIds.contains(card.id)) {
-        refund += duplicateRefund(card.rarity);
-      }
-    }
-    bloc.add(
-      PackOpened(
-        packId: pack.id,
-        packName: pack.name,
-        rolledCardIds: cards.map((c) => c.id).toList(),
-        refund: refund,
-      ),
-    );
-    if (pack.id == 'starter') {
-      bloc.add(StarterPackClaimed());
-    }
-    final Color packAccent = pack.gradientAccent ? _magenta : pack.accent;
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        fullscreenDialog: true,
-        builder: (_) => _PackRevealSequenceScreen(
-          cards: cards,
-          packName: pack.name,
-          packAccent: packAccent,
-          onComplete: () => _showSnack(
-            context,
-            refund > 0 ? '${pack.name} opened. +$refund coins!' : '${pack.name} added to collection.',
-          ),
-        ),
-      ),
-    );
+    context.read<GameBloc>().add(ShopPackPurchased(pack.id));
   }
 }
 
@@ -1144,7 +1114,7 @@ class _PackDesignPainter extends CustomPainter {
     // Background gradient
     final bgColors = switch (packId) {
       'bronze' => _bronzeBg,
-      'silver' => _silverBg,
+      'starter' => _silverBg,
       'gold' => _goldBg,
       _ => _iconBg,
     };
@@ -1160,7 +1130,7 @@ class _PackDesignPainter extends CustomPainter {
     switch (packId) {
       case 'bronze':
         _paintBronze(canvas, size);
-      case 'silver':
+      case 'starter':
         _paintSilver(canvas, size);
       case 'gold':
         _paintGold(canvas, size);
@@ -1305,10 +1275,10 @@ class _PackDesignPainter extends CustomPainter {
 
   void _drawLabel(Canvas canvas, Size size) {
     final label = switch (packId) {
+      'starter' => 'STARTER',
       'bronze' => 'BRONZE',
-      'silver' => 'SILVER',
       'gold' => 'GOLD',
-      _ => 'ICON',
+      _ => 'ELITE',
     };
     final tp = TextPainter(
       text: TextSpan(
@@ -1589,11 +1559,9 @@ class _PurchasableCardTile extends StatelessWidget {
       _showSnack(context, 'Not enough coins — top up in the Coins tab.', false);
       return;
     }
-    bloc.add(CoinsSpent(price));
-    bloc.add(CardPurchased(card.id));
+    bloc.add(DirectCardPurchased(cardId: card.id, price: price));
     onPurchased();
     _showSnack(context, '${card.shortName} added to your cards.');
-    _revealCard(context);
   }
 
   Future<void> _buyWithInr(BuildContext context) async {
@@ -1608,10 +1576,11 @@ class _PurchasableCardTile extends StatelessWidget {
       ),
     );
     if (!context.mounted || !confirmed) return;
-    context.read<GameBloc>().add(CardPurchased(card.id));
+    context.read<GameBloc>().add(
+      DirectCardPurchased(cardId: card.id, price: 0, spendCoins: false),
+    );
     onPurchased();
     _showSnack(context, '${card.shortName} added to your cards.');
-    _revealCard(context);
   }
 
   void _revealCard(BuildContext context) {
@@ -1927,10 +1896,7 @@ class _CoinStackArt extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(
-                colors: [
-                  accent.withValues(alpha: 0.45),
-                  Colors.transparent,
-                ],
+                colors: [accent.withValues(alpha: 0.45), Colors.transparent],
               ),
             ),
           ),
