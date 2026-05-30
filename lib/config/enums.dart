@@ -1,6 +1,6 @@
 enum AppSection { home, deck, howToPlay, match, game, shop, allCards }
 
-enum DeckPickerLane { attacker, defender, action }
+enum DeckPickerLane { attacker, defender, keeper, action }
 
 enum CardTier { bronze, silver, gold, platinum }
 

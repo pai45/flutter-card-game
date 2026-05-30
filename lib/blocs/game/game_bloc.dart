@@ -231,6 +231,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           deckAttackers: cardsByIds(attackers, active.attackers),
           deckDefenders: cardsByIds(defenders, active.defenders),
           deckActions: actionCardsByIds(active.actions),
+          deckKeeper: _keeperOf(active),
           coins: coins,
           ownedCardIds: ownedPlayerIds,
           ownedActionCardIds: ownedActionIds,
@@ -458,6 +459,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         deckAttackers: cardsByIds(attackers, cleaned.attackers),
         deckDefenders: cardsByIds(defenders, cleaned.defenders),
         deckActions: actionCardsByIds(cleaned.actions),
+        deckKeeper: _keeperOf(cleaned),
       ),
     );
   }
@@ -473,6 +475,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         deckAttackers: cardsByIds(attackers, slot.attackers),
         deckDefenders: cardsByIds(defenders, slot.defenders),
         deckActions: actionCardsByIds(slot.actions),
+        deckKeeper: _keeperOf(slot),
       ),
     );
   }
@@ -497,6 +500,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         deckAttackers: const [],
         deckDefenders: const [],
         deckActions: const [],
+        deckKeeper: null,
       ),
     );
   }
@@ -976,6 +980,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         deckActions: activeSlot == null
             ? state.deckActions
             : actionCardsByIds(activeSlot.actions),
+        deckKeeper: activeSlot == null
+            ? state.deckKeeper
+            : _keeperOf(activeSlot),
         coins: coins,
         ownedCardIds: applied.ownedPlayerIds,
         ownedActionCardIds: applied.ownedActionIds,
@@ -1037,6 +1044,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     deckAttackers: old.deckAttackers,
     deckDefenders: old.deckDefenders,
     deckActions: old.deckActions,
+    deckKeeper: old.deckKeeper,
     coins: old.coins,
     ownedCardIds: old.ownedCardIds,
     ownedActionCardIds: old.ownedActionCardIds,
@@ -1083,7 +1091,13 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   bool _isLegalSlot(StoredDeckSlot slot) =>
       slot.attackers.length == 2 &&
       slot.defenders.length == 2 &&
-      slot.actions.length == 6;
+      slot.actions.length == 6 &&
+      slot.keeper != null &&
+      goalkeepers.any((card) => card.id == slot.keeper);
+
+  PlayerCard? _keeperOf(StoredDeckSlot slot) => slot.keeper == null
+      ? null
+      : goalkeepers.where((card) => card.id == slot.keeper).firstOrNull;
 
   StoredDeckSlot _starterDeckSlot(
     PackResult result, {
@@ -1103,6 +1117,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         .take(2)
         .toList(),
     actions: result.actionCards.map((card) => card.id).take(6).toList(),
+    keeper: result.playerCards
+        .where((card) => card.role == PlayerRole.goalkeeper)
+        .map((card) => card.id)
+        .firstOrNull,
   );
 
   List<StoredDeckSlot> _replaceActiveSlot(
@@ -1135,59 +1153,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     actions: slot.actions
         .where((id) => actionCards.any((card) => card.id == id))
         .toList(),
+    keeper: goalkeepers.any((card) => card.id == slot.keeper)
+        ? slot.keeper
+        : null,
   );
-
-  List<PlayerCard> _buildStarterPack() {
-    final usedIds = <String>{};
-    return [
-      _pickCardForPack(attackers, excludeIds: usedIds),
-      _pickCardForPack(attackers, excludeIds: usedIds),
-      _pickCardForPack(defenders, excludeIds: usedIds),
-      _pickCardForPack(defenders, excludeIds: usedIds),
-      _pickCardForPack(goalkeepers, excludeIds: usedIds),
-    ];
-  }
-
-  PlayerCard _pickCardForPack(
-    List<PlayerCard> source, {
-    Set<String>? excludeIds,
-  }) {
-    final available = excludeIds == null
-        ? source
-        : source.where((card) => !excludeIds.contains(card.id)).toList();
-    final poolSource = available.isEmpty ? source : available;
-    final byTier = {
-      CardTier.bronze: poolSource
-          .where((card) => card.tier == CardTier.bronze)
-          .toList(),
-      CardTier.silver: poolSource
-          .where((card) => card.tier == CardTier.silver)
-          .toList(),
-      CardTier.gold: poolSource
-          .where((card) => card.tier == CardTier.gold)
-          .toList(),
-      CardTier.platinum: poolSource
-          .where((card) => card.tier == CardTier.platinum)
-          .toList(),
-    };
-    final roll = _random.nextDouble();
-    final tier = roll < 0.50
-        ? CardTier.bronze
-        : roll < 0.80
-        ? CardTier.silver
-        : roll < 0.95
-        ? CardTier.gold
-        : CardTier.platinum;
-    final pool = byTier[tier];
-    if (pool != null && pool.isNotEmpty) {
-      final card = pool[_random.nextInt(pool.length)];
-      excludeIds?.add(card.id);
-      return card;
-    }
-    final card = poolSource[_random.nextInt(poolSource.length)];
-    excludeIds?.add(card.id);
-    return card;
-  }
 
   String _resultLabelForState(GameState state) {
     if (state.playerScore > state.opponentScore) return 'Victory';

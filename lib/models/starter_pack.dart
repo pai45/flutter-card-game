@@ -102,8 +102,8 @@ T _drawByRarity<T>(
 
 // ─── Starter pack ────────────────────────────────────────────────────────────
 
-/// A new user's starter pack: 2 strikers, 2 defenders, 1 keeper and 5 action
-/// cards (split 3-2 between attack and defense).
+/// A new user's starter pack: 2 strikers, 2 defenders, 1 keeper and a set of
+/// action cards split between attack and defense.
 class StarterPack {
   const StarterPack({
     required this.strikers,
@@ -116,8 +116,8 @@ class StarterPack {
   final List<PlayerCard> strikers; // 2
   final List<PlayerCard> defenders; // 2
   final PlayerCard keeper; // 1
-  final List<ActionCard> attackActions; // 2 or 3
-  final List<ActionCard> defenseActions; // 3 or 2
+  final List<ActionCard> attackActions;
+  final List<ActionCard> defenseActions;
 
   List<PlayerCard> get players => [...strikers, ...defenders, keeper];
   List<ActionCard> get actions => [...attackActions, ...defenseActions];
@@ -145,14 +145,16 @@ const starterPackActionCount = 5;
 /// Rolls a random starter pack from the supplied pools.
 ///
 /// Every card is chosen via [rollPackRarity] (silver 50% / gold 35% / epic 10%
-/// / legendary 5%) with no duplicates inside the pack. The 5 action cards are
-/// split 3-2 between attack and defense, with the direction of the split
-/// (3 attack + 2 defense, or vice-versa) chosen at random.
+/// / legendary 5%) with no duplicates inside the pack. The [actionCount] action
+/// cards are split as evenly as possible between attack and defense; when the
+/// count is odd the heavier side (e.g. 3 attack + 2 defense, or vice-versa) is
+/// chosen at random.
 StarterPack rollStarterPack({
   required List<PlayerCard> strikerPool,
   required List<PlayerCard> defenderPool,
   required List<PlayerCard> keeperPool,
   required List<ActionCard> actionPool,
+  int actionCount = starterPackActionCount,
   Random? random,
 }) {
   final rng = random ?? Random();
@@ -174,9 +176,10 @@ StarterPack rollStarterPack({
     rng,
   );
 
-  // 5 action cards, 3-2 split with a randomly chosen heavier side.
-  final attackCount = rng.nextBool() ? 3 : 2;
-  final defenseCount = starterPackActionCount - attackCount;
+  // Split as evenly as possible; an odd remainder goes to a random side.
+  final half = actionCount ~/ 2;
+  final attackCount = half + (actionCount.isOdd && rng.nextBool() ? 1 : 0);
+  final defenseCount = actionCount - attackCount;
   final attackPool = actionPool
       .where((card) => card.category == ActionCategory.attack)
       .toList();
@@ -203,11 +206,15 @@ StarterPack rollStarterPack({
 }
 
 /// Rolls a starter pack from the game's built-in card pools.
-StarterPack rollDefaultStarterPack({Random? random}) => rollStarterPack(
+StarterPack rollDefaultStarterPack({
+  int actionCount = starterPackActionCount,
+  Random? random,
+}) => rollStarterPack(
   strikerPool: attackers,
   defenderPool: defenders,
   keeperPool: goalkeepers,
   actionPool: actionCards,
+  actionCount: actionCount,
   random: random,
 );
 

@@ -28,6 +28,7 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
   late List<String?> selectedAttackers;
   late List<String?> selectedDefenders;
   late List<String?> selectedActions;
+  String? selectedKeeper;
   bool editing = false;
   DeckPickerLane activeLane = DeckPickerLane.attacker;
   int activeSlotIndex = 0;
@@ -51,13 +52,15 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
   bool get valid =>
       selectedAttackers.every((id) => id != null) &&
       selectedDefenders.every((id) => id != null) &&
-      selectedActions.every((id) => id != null);
+      selectedActions.every((id) => id != null) &&
+      selectedKeeper != null;
 
   int _bestSlotIndex(DeckPickerLane lane) {
     final list = switch (lane) {
       DeckPickerLane.attacker => selectedAttackers,
       DeckPickerLane.defender => selectedDefenders,
       DeckPickerLane.action => selectedActions,
+      DeckPickerLane.keeper => [selectedKeeper],
     };
     final idx = list.indexOf(null);
     return idx == -1 ? 0 : idx;
@@ -84,6 +87,10 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
         final selectedActionCards = actionCardsByIds(
           selectedActions.whereType<String>().toList(),
         );
+        final selectedKeeperCard = cardsByIds(
+          goalkeepers,
+          [selectedKeeper].whereType<String>().toList(),
+        ).firstOrNull;
         final actionAtk = selectedActionCards
             .where((card) => card.category == ActionCategory.attack)
             .length;
@@ -103,6 +110,7 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
           DeckPickerLane.defender => selectedDefenderCards.elementAtOrNull(
             activeSlotIndex,
           ),
+          DeckPickerLane.keeper => selectedKeeperCard,
           DeckPickerLane.action => null,
         };
         final focusedAction = activeLane == DeckPickerLane.action
@@ -125,6 +133,7 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
                         selectedAttackers = List<String?>.filled(2, null);
                         selectedDefenders = List<String?>.filled(2, null);
                         selectedActions = List<String?>.filled(6, null);
+                        selectedKeeper = null;
                         activeLane = DeckPickerLane.attacker;
                         activeSlotIndex = 0;
                         actionFilter = null;
@@ -162,7 +171,7 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
                                       return DeckPill(
                                         label: slot.name,
                                         meta:
-                                            'P ${slot.attackers.length + slot.defenders.length}/4 · ACT ${slot.actions.length}/6',
+                                            'P ${slot.attackers.length + slot.defenders.length}/4 · GK ${slot.keeper != null ? 1 : 0}/1 · ACT ${slot.actions.length}/6',
                                         selected: activeSlot,
                                         onTap: editing
                                             ? null
@@ -179,6 +188,7 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
                                   valid: valid,
                                   attackers: selectedAttackerCards,
                                   defenders: selectedDefenderCards,
+                                  keeper: selectedKeeperCard,
                                   actions: selectedActionCards,
                                   actionAtk: actionAtk,
                                   actionDef: actionDef,
@@ -194,6 +204,8 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
                                     DeckPickerLane.defender,
                                     index,
                                   ),
+                                  onKeeperTap: () =>
+                                      _focusSlot(DeckPickerLane.keeper, 0),
                                   onActionTap: (index) =>
                                       _focusSlot(DeckPickerLane.action, index),
                                 ),
@@ -217,20 +229,30 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
                                         _focusSlot(lane, _bestSlotIndex(lane)),
                                     onSlotTap: (index) =>
                                         _focusSlot(activeLane, index),
-                                    playerOptions:
-                                        activeLane == DeckPickerLane.attacker
-                                        ? attackers
-                                              .where(
-                                                (card) => state.ownedCardIds
-                                                    .contains(card.id),
-                                              )
-                                              .toList()
-                                        : defenders
-                                              .where(
-                                                (card) => state.ownedCardIds
-                                                    .contains(card.id),
-                                              )
-                                              .toList(),
+                                    playerOptions: <PlayerCard>[
+                                      ...switch (activeLane) {
+                                        DeckPickerLane.attacker => attackers
+                                            .where(
+                                              (card) => state.ownedCardIds
+                                                  .contains(card.id),
+                                            )
+                                            .toList(),
+                                        DeckPickerLane.defender => defenders
+                                            .where(
+                                              (card) => state.ownedCardIds
+                                                  .contains(card.id),
+                                            )
+                                            .toList(),
+                                        DeckPickerLane.keeper => goalkeepers
+                                            .where(
+                                              (card) => state.ownedCardIds
+                                                  .contains(card.id),
+                                            )
+                                            .toList(),
+                                        DeckPickerLane.action =>
+                                          const <PlayerCard>[],
+                                      },
+                                    ],
                                     actionOptions:
                                         activeLane == DeckPickerLane.action
                                         ? actionCards
@@ -326,6 +348,7 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
       (index) =>
           index < state.deckActions.length ? state.deckActions[index].id : null,
     );
+    selectedKeeper = state.deckKeeper?.id;
   }
 
   StoredDeckSlot _buildStoredSlot(String name, String id) => StoredDeckSlot(
@@ -334,6 +357,7 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
     attackers: selectedAttackers.whereType<String>().toList(),
     defenders: selectedDefenders.whereType<String>().toList(),
     actions: selectedActions.whereType<String>().toList(),
+    keeper: selectedKeeper,
   );
 
   void _focusSlot(DeckPickerLane lane, int index) {
@@ -357,7 +381,11 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
   }
 
   bool _isPlayerCardLocked(String id) {
-    if (activeLane == DeckPickerLane.action) return true;
+    // The keeper lane has a single slot, so a card can never clash there.
+    if (activeLane == DeckPickerLane.action ||
+        activeLane == DeckPickerLane.keeper) {
+      return false;
+    }
     final activeList = activeLane == DeckPickerLane.attacker
         ? selectedAttackers
         : selectedDefenders;
@@ -372,6 +400,13 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
 
   void _assignPlayerToActiveSlot(PlayerCard card) {
     if (!editing || activeLane == DeckPickerLane.action) return;
+    if (activeLane == DeckPickerLane.keeper) {
+      setState(() {
+        selectedKeeper = card.id;
+        _advanceFocus();
+      });
+      return;
+    }
     setState(() {
       final activeList = activeLane == DeckPickerLane.attacker
           ? [...selectedAttackers]
@@ -416,6 +451,9 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
         case DeckPickerLane.defender:
           selectedDefenders[activeSlotIndex] = null;
           break;
+        case DeckPickerLane.keeper:
+          selectedKeeper = null;
+          break;
         case DeckPickerLane.action:
           selectedActions[activeSlotIndex] = null;
           break;
@@ -435,6 +473,11 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
     if (nextDefender != -1) {
       activeLane = DeckPickerLane.defender;
       activeSlotIndex = nextDefender;
+      return;
+    }
+    if (selectedKeeper == null) {
+      activeLane = DeckPickerLane.keeper;
+      activeSlotIndex = 0;
       return;
     }
     if (nextAction != -1) {
@@ -485,15 +528,18 @@ class DeckFocusedSelectionPanel extends StatelessWidget {
     final accent = switch (lane) {
       DeckPickerLane.attacker => Cyber.lime,
       DeckPickerLane.defender => Cyber.cyan,
+      DeckPickerLane.keeper => Cyber.gold,
       DeckPickerLane.action => Cyber.magenta,
     };
     final slotCount = switch (lane) {
       DeckPickerLane.attacker || DeckPickerLane.defender => 2,
+      DeckPickerLane.keeper => 1,
       DeckPickerLane.action => 6,
     };
     final slotLabels = switch (lane) {
       DeckPickerLane.attacker => ['LS', 'RS'],
       DeckPickerLane.defender => ['LCB', 'RCB'],
+      DeckPickerLane.keeper => ['GK'],
       DeckPickerLane.action => ['1', '2', '3', '4', '5', '6'],
     };
 
@@ -558,6 +604,7 @@ class DeckFocusedSelectionPanel extends StatelessWidget {
                   switch (lane) {
                     DeckPickerLane.attacker => Icons.sports_soccer,
                     DeckPickerLane.defender => Icons.shield,
+                    DeckPickerLane.keeper => Icons.back_hand,
                     DeckPickerLane.action => Icons.style,
                   },
                   color: accent,
@@ -656,11 +703,13 @@ class _LaneTab extends StatelessWidget {
     final color = switch (lane) {
       DeckPickerLane.attacker => Cyber.lime,
       DeckPickerLane.defender => Cyber.cyan,
+      DeckPickerLane.keeper => Cyber.gold,
       DeckPickerLane.action => Cyber.magenta,
     };
     final label = switch (lane) {
       DeckPickerLane.attacker => 'ATTACK',
       DeckPickerLane.defender => 'DEFEND',
+      DeckPickerLane.keeper => 'KEEPER',
       DeckPickerLane.action => 'ACTION',
     };
     return GestureDetector(
@@ -827,6 +876,7 @@ class FiveSideDeckPanel extends StatelessWidget {
     required this.valid,
     required this.attackers,
     required this.defenders,
+    required this.keeper,
     required this.actions,
     required this.actionAtk,
     required this.actionDef,
@@ -836,6 +886,7 @@ class FiveSideDeckPanel extends StatelessWidget {
     required this.editing,
     required this.onAttackTap,
     required this.onDefenseTap,
+    required this.onKeeperTap,
     required this.onActionTap,
     super.key,
   });
@@ -844,6 +895,7 @@ class FiveSideDeckPanel extends StatelessWidget {
   final bool valid;
   final List<PlayerCard> attackers;
   final List<PlayerCard> defenders;
+  final PlayerCard? keeper;
   final List<ActionCard> actions;
   final int actionAtk;
   final int actionDef;
@@ -853,6 +905,7 @@ class FiveSideDeckPanel extends StatelessWidget {
   final bool editing;
   final ValueChanged<int> onAttackTap;
   final ValueChanged<int> onDefenseTap;
+  final VoidCallback onKeeperTap;
   final ValueChanged<int> onActionTap;
 
   @override
@@ -899,6 +952,7 @@ class FiveSideDeckPanel extends StatelessWidget {
           FiveSidePitch(
             attackers: attackers,
             defenders: defenders,
+            keeper: keeper,
             editing: editing,
             focusedAttackerIndex: focusedLane == DeckPickerLane.attacker
                 ? focusedIndex
@@ -906,8 +960,10 @@ class FiveSideDeckPanel extends StatelessWidget {
             focusedDefenderIndex: focusedLane == DeckPickerLane.defender
                 ? focusedIndex
                 : null,
+            keeperFocused: focusedLane == DeckPickerLane.keeper,
             onAttackTap: onAttackTap,
             onDefenseTap: onDefenseTap,
+            onKeeperTap: onKeeperTap,
           ),
           const SizedBox(height: 10),
           Row(
@@ -971,21 +1027,27 @@ class FiveSidePitch extends StatelessWidget {
   const FiveSidePitch({
     required this.attackers,
     required this.defenders,
+    required this.keeper,
     required this.editing,
     required this.focusedAttackerIndex,
     required this.focusedDefenderIndex,
+    required this.keeperFocused,
     required this.onAttackTap,
     required this.onDefenseTap,
+    required this.onKeeperTap,
     super.key,
   });
 
   final List<PlayerCard> attackers;
   final List<PlayerCard> defenders;
+  final PlayerCard? keeper;
   final bool editing;
   final int? focusedAttackerIndex;
   final int? focusedDefenderIndex;
+  final bool keeperFocused;
   final ValueChanged<int> onAttackTap;
   final ValueChanged<int> onDefenseTap;
+  final VoidCallback onKeeperTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1042,7 +1104,19 @@ class FiveSidePitch extends StatelessWidget {
               onTap: () => onDefenseTap(1),
             ),
           ),
-          const Positioned(left: 0, right: 0, bottom: 16, child: KeeperCore()),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 16,
+            child: Center(
+              child: FormationSlot(
+                label: 'GK',
+                card: keeper,
+                highlighted: editing && keeperFocused,
+                onTap: onKeeperTap,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -1135,7 +1209,11 @@ class _FormationSlotState extends State<FormationSlot>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              widget.label.contains('S') ? Icons.sports_soccer : Icons.shield,
+              widget.label == 'GK'
+                  ? Icons.back_hand
+                  : (widget.label.contains('S')
+                        ? Icons.sports_soccer
+                        : Icons.shield),
               color: widget.highlighted ? Cyber.lime : Cyber.cyan,
               size: 28,
             ),

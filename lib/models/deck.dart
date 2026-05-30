@@ -5,6 +5,7 @@ class StoredDeckSlot {
     required this.attackers,
     required this.defenders,
     required this.actions,
+    this.keeper,
   });
 
   final String id;
@@ -13,12 +14,16 @@ class StoredDeckSlot {
   final List<String> defenders;
   final List<String> actions;
 
+  /// Card id of the deck's goalkeeper, or null if none is assigned yet.
+  final String? keeper;
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
     'attackers': attackers,
     'defenders': defenders,
     'actions': actions,
+    'keeper': keeper,
   };
 
   static StoredDeckSlot fromJson(Map<String, dynamic> json) => StoredDeckSlot(
@@ -27,6 +32,8 @@ class StoredDeckSlot {
     attackers: List<String>.from(json['attackers'] as List),
     defenders: List<String>.from(json['defenders'] as List),
     actions: List<String>.from(json['actions'] as List),
+    // Older saved decks predate the keeper slot, so it may be absent.
+    keeper: json['keeper'] as String?,
   );
 }
 
@@ -37,5 +44,6 @@ const defaultDeckSlots = [
     attackers: ['fra-kylian-mbappe', 'eng-harry-kane'],
     defenders: ['ned-virgil-van-dijk', 'esp-rodri'],
     actions: ['act1', 'act2', 'act6', 'act7', 'act8', 'act15'],
+    keeper: 'bra-alisson-becker',
   ),
 ];

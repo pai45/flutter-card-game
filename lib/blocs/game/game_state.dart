@@ -146,6 +146,7 @@ class GameState {
     required this.deckAttackers,
     required this.deckDefenders,
     required this.deckActions,
+    required this.deckKeeper,
     required this.coins,
     required this.ownedCardIds,
     required this.ownedActionCardIds,
@@ -198,6 +199,10 @@ class GameState {
     deckAttackers: cardsByIds(attackers, defaultDeckSlots.first.attackers),
     deckDefenders: cardsByIds(defenders, defaultDeckSlots.first.defenders),
     deckActions: actionCardsByIds(defaultDeckSlots.first.actions),
+    deckKeeper: cardsByIds(
+      goalkeepers,
+      [defaultDeckSlots.first.keeper].whereType<String>().toList(),
+    ).firstOrNull,
     coins: 0,
     ownedCardIds: const [],
     ownedActionCardIds: const [],
@@ -249,6 +254,7 @@ class GameState {
   final List<PlayerCard> deckAttackers;
   final List<PlayerCard> deckDefenders;
   final List<ActionCard> deckActions;
+  final PlayerCard? deckKeeper;
   final int coins;
   final List<String> ownedCardIds;
   final List<String> ownedActionCardIds;
@@ -299,9 +305,11 @@ class GameState {
       deckAttackers.length == 2 &&
       deckDefenders.length == 2 &&
       deckActions.length == 6 &&
+      deckKeeper != null &&
       deckAttackers.every((card) => ownedCardIds.contains(card.id)) &&
       deckDefenders.every((card) => ownedCardIds.contains(card.id)) &&
-      deckActions.every((card) => ownedActionCardIds.contains(card.id));
+      deckActions.every((card) => ownedActionCardIds.contains(card.id)) &&
+      ownedCardIds.contains(deckKeeper!.id);
 
   GameState copyWith({
     bool? loading,
@@ -310,6 +318,7 @@ class GameState {
     List<PlayerCard>? deckAttackers,
     List<PlayerCard>? deckDefenders,
     List<ActionCard>? deckActions,
+    Object? deckKeeper = _sentinel,
     int? coins,
     List<String>? ownedCardIds,
     List<String>? ownedActionCardIds,
@@ -360,6 +369,9 @@ class GameState {
     deckAttackers: deckAttackers ?? this.deckAttackers,
     deckDefenders: deckDefenders ?? this.deckDefenders,
     deckActions: deckActions ?? this.deckActions,
+    deckKeeper: deckKeeper == _sentinel
+        ? this.deckKeeper
+        : deckKeeper as PlayerCard?,
     coins: coins ?? this.coins,
     ownedCardIds: ownedCardIds ?? this.ownedCardIds,
     ownedActionCardIds: ownedActionCardIds ?? this.ownedActionCardIds,

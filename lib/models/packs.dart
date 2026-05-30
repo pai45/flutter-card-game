@@ -3,6 +3,12 @@ import 'dart:math';
 import '../config/enums.dart';
 import 'cards.dart';
 import 'progression.dart';
+import 'starter_pack.dart';
+
+/// Number of action cards bundled into the auto-built starter deck. The deck
+/// format requires 6, so the starter pack rolls 6 here even though a freshly
+/// rolled [StarterPack] defaults to 5.
+const starterDeckActionCount = 6;
 
 class CardPack {
   const CardPack({
@@ -111,15 +117,29 @@ const kDailyDropOdds = {
 CardPack? getProgressionPack(String id) =>
     kProgressionPacks.where((pack) => pack.id == id).firstOrNull;
 
+/// Builds a new user's starter pack: a random, rarity-weighted roll of
+/// 2 strikers, 2 defenders, 1 keeper and [starterDeckActionCount] action cards.
+///
+/// Rarity follows the pack odds (silver 50% / gold 35% / epic 10% /
+/// legendary 5%) — see [rollStarterPack]. [keeperPool] defaults to the game's
+/// goalkeepers so the existing call sites (which pass attackers/defenders/
+/// actions positionally) keep working.
 PackResult buildStarterPack(
   List<PlayerCard> attackerPool,
   List<PlayerCard> defenderPool,
-  List<ActionCard> actionPool,
-) {
-  final starterAttackers = attackerPool.take(3).toList();
-  final starterDefenders = defenderPool.take(2).toList();
-  final starterActions = actionPool.take(6).toList();
-  return _finalize([...starterAttackers, ...starterDefenders], starterActions);
+  List<ActionCard> actionPool, {
+  List<PlayerCard> keeperPool = goalkeepers,
+  Random? random,
+}) {
+  final pack = rollStarterPack(
+    strikerPool: attackerPool,
+    defenderPool: defenderPool,
+    keeperPool: keeperPool,
+    actionPool: actionPool,
+    actionCount: starterDeckActionCount,
+    random: random,
+  );
+  return _finalize(pack.players, pack.actions);
 }
 
 PackResult rollPack(
