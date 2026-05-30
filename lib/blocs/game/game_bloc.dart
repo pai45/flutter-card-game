@@ -10,7 +10,6 @@ import '../../models/deck.dart';
 import '../../models/match.dart';
 import '../../models/packs.dart';
 import '../../models/progression.dart';
-import '../../models/shop.dart';
 import '../../services/secure_storage_service.dart';
 import '../../utils/card_helpers.dart';
 import '../../utils/label_helpers.dart';
@@ -982,7 +981,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         ownedActionCardIds: applied.ownedActionIds,
         pendingPackReveal: revealBuilder(applied.levelsGained),
         starterPackClaimed: starterClaimed ?? state.starterPackClaimed,
-        dailyDropLastClaimedAt: dailyDropLastClaimedAt ?? state.dailyDropLastClaimedAt,
+        dailyDropLastClaimedAt:
+            dailyDropLastClaimedAt ?? state.dailyDropLastClaimedAt,
         progression: applied.progression,
         previousProgression: state.progression,
         pendingLevelUps: applied.levelsGained,
