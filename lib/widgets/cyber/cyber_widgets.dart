@@ -372,12 +372,14 @@ class CyberCtaButton extends StatelessWidget {
     required this.label,
     required this.onPressed,
     this.primary = false,
+    this.clip = true,
     super.key,
   });
 
   final String label;
   final VoidCallback? onPressed;
   final bool primary;
+  final bool clip;
 
   @override
   Widget build(BuildContext context) {
@@ -385,39 +387,37 @@ class CyberCtaButton extends StatelessWidget {
     final bg = primary
         ? const LinearGradient(colors: [Cyber.cyan, Color(0xff5cb4ff)])
         : LinearGradient(colors: [Cyber.panel2, Cyber.panel]);
+    final inner = Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 56),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        gradient: bg,
+        border: Border.all(color: primary ? Cyber.cyan : Cyber.line),
+        boxShadow: [
+          BoxShadow(
+            color: (primary ? Cyber.cyan : Cyber.bg).withValues(alpha: 0.3),
+            blurRadius: 18,
+          ),
+        ],
+      ),
+      child: Text(
+        label.toUpperCase(),
+        style: TextStyle(
+          color: primary ? Cyber.bg : Cyber.cyan,
+          fontFamily: 'Orbitron',
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1.2,
+        ),
+      ),
+    );
     return Opacity(
       opacity: enabled ? 1 : 0.45,
       child: GestureDetector(
         onTap: onPressed,
-        child: ClipPath(
-          clipper: CyberClipper(),
-          child: Container(
-            width: double.infinity,
-            constraints: const BoxConstraints(minHeight: 56),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              gradient: bg,
-              border: Border.all(color: primary ? Cyber.cyan : Cyber.line),
-              boxShadow: [
-                BoxShadow(
-                  color: (primary ? Cyber.cyan : Cyber.bg).withValues(
-                    alpha: 0.3,
-                  ),
-                  blurRadius: 18,
-                ),
-              ],
-            ),
-            child: Text(
-              label.toUpperCase(),
-              style: TextStyle(
-                color: primary ? Cyber.bg : Cyber.cyan,
-                fontFamily: 'Orbitron',
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.2,
-              ),
-            ),
-          ),
-        ),
+        child: clip
+            ? ClipPath(clipper: CyberClipper(), child: inner)
+            : inner,
       ),
     );
   }
@@ -758,7 +758,7 @@ class _CardIconFallback extends StatelessWidget {
   }
 }
 
-class CyberPlayerCardTile extends StatelessWidget {
+class CyberPlayerCardTile extends StatefulWidget {
   const CyberPlayerCardTile({
     required this.card,
     required this.selected,
@@ -777,7 +777,49 @@ class CyberPlayerCardTile extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
+  State<CyberPlayerCardTile> createState() => _CyberPlayerCardTileState();
+}
+
+class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _tapController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tapController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    if (widget.selected) {
+      _tapController.value = 1;
+    }
+  }
+
+  @override
+  void didUpdateWidget(CyberPlayerCardTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selected && !oldWidget.selected) {
+      _tapController.forward(from: 0);
+    } else if (!widget.selected && oldWidget.selected) {
+      _tapController.reverse();
+    }
+  }
+
+  @override
+  void dispose() {
+    _tapController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final card = widget.card;
+    final selected = widget.selected;
+    final disabled = widget.disabled;
+    final size = widget.size;
+    final selectedAccent = widget.selectedAccent;
+    final onTap = widget.onTap;
     final tier = tierColor(card.tier);
     final posColor = switch (card.role) {
       PlayerRole.attacker => Cyber.cyan,
@@ -788,15 +830,29 @@ class CyberPlayerCardTile extends StatelessWidget {
     final large = size == VisualCardSize.lg;
     final width = small ? 96.0 : (large ? 144.0 : 128.0);
     final height = small ? 144.0 : (large ? 216.0 : 192.0);
-    return PremiumCardShell(
-      width: width,
-      height: height,
-      selected: selected,
-      disabled: disabled,
-      accent: tier,
-      selectedAccent: selectedAccent,
-      onTap: onTap,
-      builder: (hovered) {
+
+    final scaleAnim = Tween<double>(begin: 1.0, end: 1.08).animate(
+      CurvedAnimation(parent: _tapController, curve: Curves.easeOutBack),
+    );
+    final rotateAnim = Tween<double>(begin: 0, end: 0.06).animate(
+      CurvedAnimation(parent: _tapController, curve: Curves.easeOutBack),
+    );
+
+    return AnimatedBuilder(
+      animation: _tapController,
+      builder: (_, child) => Transform.scale(
+        scale: scaleAnim.value,
+        child: Transform.rotate(angle: rotateAnim.value, child: child),
+      ),
+      child: PremiumCardShell(
+        width: width,
+        height: height,
+        selected: selected,
+        disabled: disabled,
+        accent: tier,
+        selectedAccent: selectedAccent,
+        onTap: onTap,
+        builder: (hovered) {
         return DecoratedBox(
           decoration: BoxDecoration(
             border: Border.all(
@@ -972,6 +1028,7 @@ class CyberPlayerCardTile extends StatelessWidget {
           ),
         );
       },
+      ),
     );
   }
 }
@@ -1011,6 +1068,9 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
+    if (widget.selected) {
+      _tapController.value = 1;
+    }
   }
 
   @override
@@ -1018,6 +1078,8 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
     super.didUpdateWidget(oldWidget);
     if (widget.selected && !oldWidget.selected) {
       _tapController.forward(from: 0);
+    } else if (!widget.selected && oldWidget.selected) {
+      _tapController.reverse();
     }
   }
 

@@ -81,11 +81,6 @@ class HomeScreen extends StatelessWidget {
                                   ),
                                 ),
                           const SizedBox(height: 12),
-                          CyberCtaButton(
-                            label: 'Deck Builder',
-                            onPressed: () => onNavigate(AppSection.deck),
-                          ),
-                          const SizedBox(height: 12),
                           TextButton(
                             onPressed: () => onNavigate(AppSection.howToPlay),
                             child: const Text(
@@ -122,12 +117,28 @@ class HomeScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 32),
-                          CyberCtaButton(
-                            label: 'Match History',
-                            onPressed: () => showMatchHistoryArchive(
-                              context,
-                              state.matchHistory,
-                            ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: CyberCtaButton(
+                                  label: 'Deck Builder',
+                                  clip: false,
+                                  onPressed: () =>
+                                      onNavigate(AppSection.deck),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: CyberCtaButton(
+                                  label: 'Match History',
+                                  clip: false,
+                                  onPressed: () => showMatchHistoryArchive(
+                                    context,
+                                    state.matchHistory,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),

@@ -2131,9 +2131,11 @@ class ScenarioPanel extends StatelessWidget {
     final title = attacking
         ? '${(scenario?.title ?? 'Final Third').toUpperCase()} // FINISHERS'
         : 'NO STER // STOPPERS';
-    return AngularBorderContainer(
-      accent: accent,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    // Border + tinted fill removed: the scenario header now reads as plain
+    // text/chips on the background. Dropping the 12px vertical padding also
+    // nudges the whole header up a little.
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

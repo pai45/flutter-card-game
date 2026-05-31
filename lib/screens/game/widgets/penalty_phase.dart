@@ -508,7 +508,7 @@ class _PenaltyHistoryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final playerKicks = kicks.where((kick) => kick.byPlayer).toList();
     final opponentKicks = kicks.where((kick) => !kick.byPlayer).toList();
-    final slotCount = max(5, max(playerKicks.length, opponentKicks.length));
+    final slotCount = max(3, max(playerKicks.length, opponentKicks.length));
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -605,9 +605,7 @@ class _PenaltyAttemptIcon extends StatelessWidget {
         : (scored ? Cyber.red : Cyber.lime);
     final icon = pending
         ? Icons.sports_soccer_outlined
-        : scored
-        ? Icons.sports_soccer
-        : Icons.pan_tool;
+        : Icons.sports_soccer;
 
     return Container(
       width: 30,

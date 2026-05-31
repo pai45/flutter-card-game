@@ -543,13 +543,12 @@ class _CardUnpackState extends State<CardUnpackAnimation>
             // 1 ── Dark background
             Positioned.fill(child: Container(color: _kBg)),
 
-            // 2 ── Subtle radial glow background
+            // 2 ── Animated sci-fi cyberpunk backdrop (drifting grid + scanline
+            //      sweep + vignette + rarity glow). Stays subtle on purpose.
             Positioned.fill(
-              child: CustomPaint(
-                painter: _BackgroundPainter(
-                  glowColor: _rarityGlow(widget.rarity),
-                  pulseOpacity: _bgPulseOpacity,
-                ),
+              child: _CyberRevealBackground(
+                glowColor: _rarityGlow(widget.rarity),
+                pulseOpacity: _bgPulseOpacity,
               ),
             ),
 
@@ -1028,10 +1027,13 @@ class _CardUnpackState extends State<CardUnpackAnimation>
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// Background painter – radial glow
+// Animated sci-fi cyberpunk reveal backdrop
+// Subtle by design: a drifting perspective grid, a slow scanline sweep, an edge
+// vignette, and the rarity-tinted radial glow. Self-manages its own ticker so
+// the host widget's build stays simple.
 // ═════════════════════════════════════════════════════════════════════════════
-class _BackgroundPainter extends CustomPainter {
-  const _BackgroundPainter({
+class _CyberRevealBackground extends StatefulWidget {
+  const _CyberRevealBackground({
     required this.glowColor,
     required this.pulseOpacity,
   });
@@ -1040,17 +1042,108 @@ class _BackgroundPainter extends CustomPainter {
   final double pulseOpacity;
 
   @override
+  State<_CyberRevealBackground> createState() => _CyberRevealBackgroundState();
+}
+
+class _CyberRevealBackgroundState extends State<_CyberRevealBackground>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 12),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RepaintBoundary(
+      child: CustomPaint(
+        painter: _BackgroundPainter(
+          progress: _ctrl,
+          glowColor: widget.glowColor,
+          pulseOpacity: widget.pulseOpacity,
+        ),
+      ),
+    );
+  }
+}
+
+class _BackgroundPainter extends CustomPainter {
+  _BackgroundPainter({
+    required this.progress,
+    required this.glowColor,
+    required this.pulseOpacity,
+  }) : super(repaint: progress);
+
+  final Animation<double> progress;
+  final Color glowColor;
+  final double pulseOpacity;
+
+  @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width * 0.7;
-    final paint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          glowColor.withValues(alpha: pulseOpacity),
-          Colors.transparent,
-        ],
-      ).createShader(Rect.fromCircle(center: center, radius: radius));
-    canvas.drawCircle(center, radius, paint);
+    final t = progress.value;
+    final w = size.width;
+    final h = size.height;
+
+    // 1) Rarity-tinted radial glow — keeps the existing centre pulse.
+    final center = Offset(w / 2, h * 0.46);
+    final radius = w * 0.7;
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [
+            glowColor.withValues(alpha: pulseOpacity),
+            Colors.transparent,
+          ],
+        ).createShader(Rect.fromCircle(center: center, radius: radius)),
+    );
+
+    // 2) Drifting grid — horizontals scroll downward for a sense of motion.
+    final gridPaint = Paint()
+      ..color = _kCyan.withValues(alpha: 0.05)
+      ..strokeWidth = 1;
+    const spacing = 46.0;
+    final drift = (t * spacing) % spacing;
+    for (double x = 0; x <= w; x += spacing) {
+      canvas.drawLine(Offset(x, 0), Offset(x, h), gridPaint);
+    }
+    for (double y = -spacing + drift; y <= h; y += spacing) {
+      canvas.drawLine(Offset(0, y), Offset(w, y), gridPaint);
+    }
+
+    // 3) Slow scanline sweep — a soft bright band travelling top→bottom.
+    final sweepY = (t % 1.0) * (h + 120) - 60;
+    final sweepRect = Rect.fromLTWH(0, sweepY - 60, w, 120);
+    canvas.drawRect(
+      sweepRect,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.transparent,
+            _kCyan.withValues(alpha: 0.06),
+            Colors.transparent,
+          ],
+        ).createShader(sweepRect),
+    );
+
+    // 4) Edge vignette — darkens the corners to focus the card.
+    final full = Rect.fromLTWH(0, 0, w, h);
+    canvas.drawRect(
+      full,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [Colors.transparent, _kBg.withValues(alpha: 0.55)],
+          stops: const [0.55, 1.0],
+        ).createShader(full),
+    );
   }
 
   @override
