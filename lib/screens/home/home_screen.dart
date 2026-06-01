@@ -10,6 +10,7 @@ import '../../config/tutorial_steps.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/game_scaffold.dart';
+import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/player_level_badge.dart';
 import '../../widgets/tutorial.dart';
 import '../../screens/match_history/match_history_pages.dart';
@@ -155,64 +156,13 @@ class HomeScreen extends StatelessWidget {
               ],
             ),
           ),
-          bottomNavigationBar: _LandingBottomNavigation(onNavigate: onNavigate),
+          bottomNavigationBar: LandingBottomNavigation(
+            selectedIndex: 0,
+            onNavigate: onNavigate,
+          ),
         );
       },
     );
   }
 }
 
-class _LandingBottomNavigation extends StatelessWidget {
-  const _LandingBottomNavigation({required this.onNavigate});
-
-  final ValueChanged<AppSection> onNavigate;
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xff10192b), Color(0xff070b14)],
-          ),
-          border: Border.all(color: Cyber.line),
-          boxShadow: [
-            BoxShadow(
-              color: Cyber.cyan.withValues(alpha: 0.12),
-              blurRadius: 20,
-              spreadRadius: -6,
-            ),
-          ],
-        ),
-        child: NavigationBar(
-          selectedIndex: 0,
-          backgroundColor: Colors.transparent,
-          indicatorColor: Cyber.cyan.withValues(alpha: 0.14),
-          height: 72,
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          onDestinationSelected: (index) {
-            if (index == 1) {
-              onNavigate(AppSection.shop);
-            }
-          },
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.sports_esports_outlined),
-              selectedIcon: Icon(Icons.sports_esports),
-              label: 'Game',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.storefront_outlined),
-              selectedIcon: Icon(Icons.storefront),
-              label: 'Shop',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}

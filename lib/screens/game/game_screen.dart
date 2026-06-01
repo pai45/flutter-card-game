@@ -14,6 +14,7 @@ import '../deck/all_cards_screen.dart';
 import '../deck/deck_builder_screen.dart';
 import '../home/home_screen.dart';
 import '../how_to_play/how_to_play_screen.dart';
+import '../leaderboard/leaderboard_screen.dart';
 import 'widgets/final_result_phase.dart';
 import 'widgets/match_phases.dart';
 import 'widgets/penalty_phase.dart';
@@ -38,7 +39,8 @@ class _GameTabContentState extends State<GameTabContent> {
         section == AppSection.deck ||
         section == AppSection.howToPlay ||
         section == AppSection.match ||
-        section == AppSection.allCards) {
+        section == AppSection.allCards ||
+        section == AppSection.leaderboard) {
       setState(
         () => _gameSection = section == AppSection.game
             ? AppSection.home
@@ -55,6 +57,7 @@ class _GameTabContentState extends State<GameTabContent> {
       AppSection.howToPlay => HowToPlayScreen(onNavigate: _navigateGame),
       AppSection.match => MatchScreen(onNavigate: _navigateGame),
       AppSection.allCards => AllCardsScreen(onNavigate: _navigateGame),
+      AppSection.leaderboard => LeaderboardScreen(onNavigate: _navigateGame),
       _ => HomeScreen(onNavigate: _navigateGame),
     };
   }
