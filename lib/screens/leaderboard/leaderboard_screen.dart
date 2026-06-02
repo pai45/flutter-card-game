@@ -392,9 +392,6 @@ class _CoinPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: Cyber.bg.withValues(alpha: 0.7),
         border: Border.all(color: Cyber.gold.withValues(alpha: 0.5)),
-        boxShadow: [
-          BoxShadow(color: Cyber.gold.withValues(alpha: 0.16), blurRadius: 14),
-        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1053,6 +1050,7 @@ class _UserSummaryCard extends StatelessWidget {
 
     return CyberPanel(
       accent: accent,
+      glow: true,
       padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1192,7 +1190,7 @@ class _UserSummaryCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          _ProgressBar(pct: pct, accent: accent),
+          CyberProgressBar(value: pct, accent: accent),
           const SizedBox(height: 14),
           Row(
             children: [
@@ -1203,47 +1201,6 @@ class _UserSummaryCard extends StatelessWidget {
                 ),
               ],
             ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProgressBar extends StatelessWidget {
-  const _ProgressBar({required this.pct, required this.accent});
-
-  final double pct;
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(2),
-      child: Stack(
-        children: [
-          Container(height: 7, color: Cyber.bg.withValues(alpha: 0.7)),
-          TweenAnimationBuilder<double>(
-            tween: Tween<double>(begin: 0, end: pct),
-            duration: const Duration(milliseconds: 700),
-            curve: Curves.easeOutCubic,
-            builder: (context, value, _) => FractionallySizedBox(
-              widthFactor: value,
-              child: Container(
-                height: 7,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [accent.withValues(alpha: 0.7), accent],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: accent.withValues(alpha: 0.6),
-                      blurRadius: 8,
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ),
         ],
       ),
@@ -1388,13 +1345,11 @@ class _PodiumCard extends StatelessWidget {
             color: color.withValues(alpha: champion ? 0.95 : 0.55),
             width: champion ? 1.8 : 1,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: champion ? 0.4 : 0.2),
-              blurRadius: champion ? 22 : 14,
-              spreadRadius: champion ? 1 : -2,
-            ),
-          ],
+          // Only the champion (focal) podium glows; silver/bronze rely on the
+          // gradient + border so the eye lands on #1 first.
+          boxShadow: champion
+              ? Cyber.glow(color, alpha: 0.4, blur: 22, spread: 1)
+              : null,
         ),
         child: FittedBox(
           fit: BoxFit.scaleDown,

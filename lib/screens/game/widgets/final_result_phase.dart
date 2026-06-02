@@ -429,38 +429,13 @@ class _XpProgressPanel extends StatelessWidget {
           const SizedBox(height: 12),
 
           // XP bar
-          Container(
+          CyberProgressBar(
+            value: barFillRatio,
+            accent: accentColor,
             height: 6,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(3),
-            ),
-            child: Stack(
-              children: [
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: accentColor.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-                FractionallySizedBox(
-                  widthFactor: barFillRatio,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: accentColor,
-                      borderRadius: BorderRadius.circular(3),
-                      boxShadow: [
-                        BoxShadow(
-                          color: accentColor.withValues(alpha: 0.6),
-                          blurRadius: 8,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            radius: 3,
+            animate: false,
+            trackColor: accentColor.withValues(alpha: 0.15),
           ),
           const SizedBox(height: 8),
 

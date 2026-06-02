@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -26,13 +28,13 @@ class HomeScreen extends StatelessWidget {
     return BlocBuilder<GameBloc, GameState>(
       builder: (context, state) {
         return Scaffold(
+          backgroundColor: Cyber.bg,
           appBar: ReactHeaderBar(
             title: 'Pitch Duel',
-            subtitle: '// Main Terminal',
+            subtitle: '// Match Lobby',
             rightSlot: PlayerLevelBadge(progression: state.progression),
           ),
-          body: CyberBackground(
-            animated: true,
+          body: _HomeArenaBackground(
             child: Stack(
               children: [
                 Center(
@@ -124,8 +126,7 @@ class HomeScreen extends StatelessWidget {
                                 child: CyberCtaButton(
                                   label: 'Deck Builder',
                                   clip: false,
-                                  onPressed: () =>
-                                      onNavigate(AppSection.deck),
+                                  onPressed: () => onNavigate(AppSection.deck),
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -166,3 +167,194 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
+class _HomeArenaBackground extends StatefulWidget {
+  const _HomeArenaBackground({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_HomeArenaBackground> createState() => _HomeArenaBackgroundState();
+}
+
+class _HomeArenaBackgroundState extends State<_HomeArenaBackground>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 18),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xff020812), Color(0xff071522), Color(0xff02050b)],
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                final phase = _controller.value * math.pi * 2;
+                return Transform.translate(
+                  offset: Offset(math.sin(phase) * 8, math.cos(phase) * 6),
+                  child: Transform.scale(
+                    scale: 1.05 + 0.008 * math.sin(phase * 2),
+                    child: child,
+                  ),
+                );
+              },
+              child: Opacity(
+                opacity: 0.2,
+                child: Image.asset(
+                  'assets/backgrounds/home_stadium.png',
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, _) => CustomPaint(
+                painter: _ArenaMotionPainter(progress: _controller.value),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Cyber.bg.withValues(alpha: 0.32),
+                    Colors.transparent,
+                    Cyber.bg.withValues(alpha: 0.62),
+                  ],
+                  stops: const [0.0, 0.48, 1.0],
+                ),
+              ),
+            ),
+          ),
+          widget.child,
+        ],
+      ),
+    );
+  }
+}
+
+class _ArenaMotionPainter extends CustomPainter {
+  const _ArenaMotionPainter({required this.progress});
+
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+
+    final rect = Offset.zero & size;
+    final phase = progress * math.pi * 2;
+
+    final pulse = 0.5 + 0.5 * math.sin(phase * 2);
+    final fieldGlow = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(0, 0.72),
+        radius: 0.88,
+        colors: [
+          Cyber.cyan.withValues(alpha: 0.08 + pulse * 0.035),
+          Cyber.lime.withValues(alpha: 0.025),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.28, 1.0],
+      ).createShader(rect);
+    canvas.drawRect(rect, fieldGlow);
+
+    _drawBeam(
+      canvas,
+      size,
+      start: Offset(size.width * 0.08, size.height * 0.72),
+      end: Offset(size.width * (0.42 + math.sin(phase) * 0.06), 0),
+      width: size.width * 0.42,
+      opacity: 0.026 + pulse * 0.016,
+    );
+    _drawBeam(
+      canvas,
+      size,
+      start: Offset(size.width * 0.92, size.height * 0.72),
+      end: Offset(size.width * (0.58 + math.cos(phase) * 0.06), 0),
+      width: size.width * 0.42,
+      opacity: 0.026 + (1 - pulse) * 0.016,
+    );
+
+    final streakPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.055)
+      ..strokeWidth = 1.2
+      ..strokeCap = StrokeCap.round;
+
+    for (var i = 0; i < 14; i++) {
+      final seed = i * 37.0;
+      final x = ((seed * 19) % size.width) + math.sin(phase + i) * 18;
+      final travel = (progress + i * 0.071) % 1.0;
+      final y = size.height * (0.96 - travel * 0.82);
+      final length = 12.0 + (i % 4) * 5.0;
+      final opacity = 0.025 + 0.03 * math.sin(phase + i).abs();
+      streakPaint.color = Cyber.cyan.withValues(alpha: opacity);
+      canvas.drawLine(
+        Offset(x, y),
+        Offset(x + length * 0.42, y - length),
+        streakPaint,
+      );
+    }
+  }
+
+  void _drawBeam(
+    Canvas canvas,
+    Size size, {
+    required Offset start,
+    required Offset end,
+    required double width,
+    required double opacity,
+  }) {
+    final path = Path()
+      ..moveTo(start.dx - width * 0.5, start.dy)
+      ..lineTo(start.dx + width * 0.5, start.dy)
+      ..lineTo(end.dx + width * 0.08, end.dy)
+      ..lineTo(end.dx - width * 0.08, end.dy)
+      ..close();
+
+    final paint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.bottomCenter,
+        end: Alignment.topCenter,
+        colors: [
+          Cyber.cyan.withValues(alpha: opacity),
+          Cyber.cyan.withValues(alpha: opacity * 0.35),
+          Colors.transparent,
+        ],
+      ).createShader(Offset.zero & size)
+      ..blendMode = BlendMode.plus;
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _ArenaMotionPainter oldDelegate) =>
+      oldDelegate.progress != progress;
+}

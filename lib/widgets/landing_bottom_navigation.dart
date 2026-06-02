@@ -55,13 +55,6 @@ class LandingBottomNavigation extends StatelessWidget {
             colors: [Color(0xff10192b), Color(0xff070b14)],
           ),
           border: Border.all(color: Cyber.line),
-          boxShadow: [
-            BoxShadow(
-              color: Cyber.cyan.withValues(alpha: 0.12),
-              blurRadius: 20,
-              spreadRadius: -6,
-            ),
-          ],
         ),
         child: Row(
           children: [

@@ -38,6 +38,26 @@ class Cyber {
     stops: const [0, 0.42, 1],
   );
 
+  /// Neon glow for INTERACTIVE, ACTIVE or PRIMARY elements only.
+  ///
+  /// Design rule: a glow means "this is live / selected / primary / matters".
+  /// Static surfaces and secondary chrome must NOT glow — they get their depth
+  /// from fills, borders and [panelGradient]. Keeping glow scarce is what stops
+  /// the UI from reading as a uniformly-styled (AI-generated) template, and
+  /// restores visual hierarchy. Use this single source so glow stays consistent.
+  static List<BoxShadow> glow(
+    Color color, {
+    double alpha = 0.3,
+    double blur = 16,
+    double spread = -2,
+  }) => [
+    BoxShadow(
+      color: color.withValues(alpha: alpha),
+      blurRadius: blur,
+      spreadRadius: spread,
+    ),
+  ];
+
   // Display type scale (Bebas-Neue-style). 48 match-end, 36 outcome,
   // 24 phase titles, 18 card names.
   static TextStyle display(

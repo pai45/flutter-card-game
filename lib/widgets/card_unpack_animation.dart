@@ -935,7 +935,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
   Widget _buildRarityTitle(Size size) {
     final (label, color, ls) = switch (widget.rarity) {
       'rare' => ('RARE FIND', _kCyan, 2.0),
-      'epic' => ('EPIC PULL', _kPurple, 2.0),
+      'epic' => ('EPIC', _kPurple, 2.0),
       'legendary' => ('LEGENDARY', _kGold, 6.0),
       _ => ('COMMON CARD', _kMuted, 2.0),
     };

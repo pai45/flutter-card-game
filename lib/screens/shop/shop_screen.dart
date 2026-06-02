@@ -279,9 +279,6 @@ class _CurrencyPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: _bg.withValues(alpha: 0.7),
         border: Border.all(color: _cyan.withValues(alpha: 0.5)),
-        boxShadow: [
-          BoxShadow(color: _cyan.withValues(alpha: 0.18), blurRadius: 14),
-        ],
       ),
       child: Row(
         children: [
@@ -491,6 +488,8 @@ class _CoinTierTile extends StatelessWidget {
           color: accent.withValues(alpha: premium ? 0.95 : 0.55),
           width: premium ? 1.8 : 1.0,
         ),
+        // Only premium (champion/legendary) tiers glow; standard tiers rely on
+        // the gradient + border so the premium tiers stand out.
         boxShadow: premium
             ? [
                 BoxShadow(
@@ -499,12 +498,7 @@ class _CoinTierTile extends StatelessWidget {
                   spreadRadius: 1,
                 ),
               ]
-            : [
-                BoxShadow(
-                  color: accent.withValues(alpha: 0.18),
-                  blurRadius: 14,
-                ),
-              ],
+            : null,
       ),
       child: Stack(
         clipBehavior: Clip.none,
@@ -839,9 +833,6 @@ class _PackTile extends StatelessWidget {
           colors: [accent.withValues(alpha: 0.10), _bg.withValues(alpha: 0.95)],
         ),
         border: Border.all(color: accent.withValues(alpha: 0.55), width: 1.2),
-        boxShadow: [
-          BoxShadow(color: accent.withValues(alpha: 0.22), blurRadius: 18),
-        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

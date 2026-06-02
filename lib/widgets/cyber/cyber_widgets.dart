@@ -367,6 +367,128 @@ class HudLine extends StatelessWidget {
   }
 }
 
+/// A polished progress / meter bar shared by every XP, rank and power meter so
+/// the "gradient flow" reads identically across the app. The fill ramps from a
+/// soft translucent accent to full colour over ~70% of its width and finishes
+/// on a bright leading edge, paired with a tight, subtle glow and a glossy top
+/// sheen for a clean finish.
+class CyberProgressBar extends StatelessWidget {
+  const CyberProgressBar({
+    required this.value,
+    this.accent = Cyber.cyan,
+    this.height = 7,
+    this.radius = 2,
+    this.animate = true,
+    this.trackColor,
+    this.trackBorderColor,
+    super.key,
+  });
+
+  /// Fill fraction, 0..1.
+  final double value;
+  final Color accent;
+  final double height;
+  final double radius;
+
+  /// When true the fill grows from 0 to [value] on first build. Leave false
+  /// when the caller already animates [value] itself.
+  final bool animate;
+  final Color? trackColor;
+  final Color? trackBorderColor;
+
+  Widget _bar(double v) {
+    final r = BorderRadius.circular(radius);
+    return SizedBox(
+      height: height,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: trackColor ?? Cyber.bg.withValues(alpha: 0.7),
+                borderRadius: r,
+                border: trackBorderColor == null
+                    ? null
+                    : Border.all(color: trackBorderColor!),
+              ),
+            ),
+          ),
+          FractionallySizedBox(
+            alignment: Alignment.centerLeft,
+            widthFactor: v,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: r,
+                boxShadow: [
+                  BoxShadow(
+                    color: accent.withValues(alpha: 0.3),
+                    blurRadius: 6,
+                    spreadRadius: -1,
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: r,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // The flow: soft fade-in, full colour by ~70%, bright tip.
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                          colors: [
+                            accent.withValues(alpha: 0.45),
+                            accent.withValues(alpha: 0.95),
+                            accent,
+                          ],
+                          stops: const [0.0, 0.7, 1.0],
+                        ),
+                      ),
+                    ),
+                    // Glossy top sheen.
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: height * 0.5,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.white.withValues(alpha: 0.22),
+                              Colors.white.withValues(alpha: 0.0),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final target = value.clamp(0.0, 1.0).toDouble();
+    if (!animate) return _bar(target);
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: target),
+      duration: const Duration(milliseconds: 700),
+      curve: Curves.easeOutCubic,
+      builder: (context, v, _) => _bar(v),
+    );
+  }
+}
+
 class CyberCtaButton extends StatelessWidget {
   const CyberCtaButton({
     required this.label,
@@ -428,12 +550,18 @@ class CyberPanel extends StatelessWidget {
     required this.child,
     this.accent = Cyber.cyan,
     this.padding = const EdgeInsets.all(16),
+    this.glow = false,
     super.key,
   });
 
   final Widget child;
   final Color accent;
   final EdgeInsetsGeometry padding;
+
+  /// Whether this is a focal / active surface that should glow. Off by default:
+  /// most panels are plain surfaces and rely on the gradient + border for depth.
+  /// Reserve [glow] for the panel the user should look at first on a screen.
+  final bool glow;
 
   @override
   Widget build(BuildContext context) {
@@ -443,13 +571,9 @@ class CyberPanel extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: Cyber.panelGradient(accent),
           border: Border.all(color: accent.withValues(alpha: 0.5)),
-          boxShadow: [
-            BoxShadow(
-              color: accent.withValues(alpha: 0.18),
-              blurRadius: 18,
-              spreadRadius: 1,
-            ),
-          ],
+          boxShadow: glow
+              ? Cyber.glow(accent, alpha: 0.18, blur: 18, spread: 1)
+              : null,
         ),
         child: Padding(padding: padding, child: child),
       ),

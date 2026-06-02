@@ -2918,30 +2918,14 @@ class _PowerBar extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: Container(
+          child: CyberProgressBar(
+            value: fill,
+            accent: color,
             height: 14,
-            decoration: BoxDecoration(
-              color: Cyber.bg2,
-              border: Border.all(color: Cyber.borderSubtle),
-            ),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: FractionallySizedBox(
-                widthFactor: fill,
-                heightFactor: 1,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: color,
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.5),
-                        blurRadius: 10,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            radius: 0,
+            animate: false,
+            trackColor: Cyber.bg2,
+            trackBorderColor: Cyber.borderSubtle,
           ),
         ),
         const SizedBox(width: 8),

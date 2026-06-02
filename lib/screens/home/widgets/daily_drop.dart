@@ -129,12 +129,18 @@ class _DailyDropButtonState extends State<DailyDropButton>
                                       Color(0xff0b1120),
                                     ],
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: accent.withValues(alpha: glowAlpha),
-                                blurRadius: glowBlur,
-                              ),
-                            ],
+                            // Only glow when a drop is claimable; a dormant /
+                            // already-claimed button is calm chrome.
+                            boxShadow: ready
+                                ? [
+                                    BoxShadow(
+                                      color: accent.withValues(
+                                        alpha: glowAlpha,
+                                      ),
+                                      blurRadius: glowBlur,
+                                    ),
+                                  ]
+                                : null,
                           ),
                           child: const SizedBox(
                             width: double.infinity,

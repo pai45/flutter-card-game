@@ -96,15 +96,7 @@ class MatchPhaseScaffold extends StatelessWidget {
             child: IgnorePointer(
               child: Container(
                 height: 1,
-                decoration: BoxDecoration(
-                  color: Cyber.cyan.withValues(alpha: 0.16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Cyber.cyan.withValues(alpha: 0.12),
-                      blurRadius: 12,
-                    ),
-                  ],
-                ),
+                color: Cyber.cyan.withValues(alpha: 0.16),
               ),
             ),
           ),
@@ -174,12 +166,6 @@ class _MatchHeaderScore extends StatelessWidget {
             decoration: BoxDecoration(
               color: Cyber.danger.withValues(alpha: 0.1),
               border: Border.all(color: Cyber.danger.withValues(alpha: 0.45)),
-              boxShadow: [
-                BoxShadow(
-                  color: Cyber.danger.withValues(alpha: 0.16),
-                  blurRadius: 12,
-                ),
-              ],
             ),
             child: Text(
               label!,
@@ -209,12 +195,6 @@ class _MatchHeaderScore extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xff050816).withValues(alpha: 0.72),
             border: Border.all(color: Cyber.cyan.withValues(alpha: 0.26)),
-            boxShadow: [
-              BoxShadow(
-                color: Cyber.cyan.withValues(alpha: 0.12),
-                blurRadius: 14,
-              ),
-            ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -262,9 +242,6 @@ class _ScoreDigit extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.16),
         border: Border.all(color: color.withValues(alpha: 0.64)),
-        boxShadow: [
-          BoxShadow(color: color.withValues(alpha: 0.22), blurRadius: 10),
-        ],
       ),
       child: Text(
         '$score',
@@ -573,12 +550,6 @@ class _MoveArenaSlot extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xaa0b1019),
               border: Border.all(color: accent.withValues(alpha: 0.55)),
-              boxShadow: [
-                BoxShadow(
-                  color: accent.withValues(alpha: 0.08),
-                  blurRadius: 16,
-                ),
-              ],
             ),
             child: Center(child: child),
           ),
@@ -667,12 +638,6 @@ class _ArenaCenterColumn extends StatelessWidget {
             decoration: BoxDecoration(
               color: Cyber.bg,
               border: Border.all(color: Cyber.gold),
-              boxShadow: [
-                BoxShadow(
-                  color: Cyber.gold.withValues(alpha: 0.12),
-                  blurRadius: 10,
-                ),
-              ],
             ),
             child: Text('VS', style: Cyber.display(18, color: Cyber.gold)),
           ),

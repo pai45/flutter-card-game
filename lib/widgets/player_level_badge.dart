@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../config/theme.dart';
 import '../models/progression.dart';
+import 'cyber/cyber_widgets.dart';
 
 class PlayerLevelBadge extends StatefulWidget {
   const PlayerLevelBadge({
@@ -187,35 +188,13 @@ class _XpMeter extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
+        CyberProgressBar(
+          value: progress,
           height: 5,
-          child: Stack(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: Cyber.cyan.withValues(alpha: 0.15),
-                  border: Border.all(
-                    color: Cyber.cyan.withValues(alpha: 0.16),
-                  ),
-                ),
-              ),
-              FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: progress,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Cyber.cyan,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Cyber.cyan.withValues(alpha: 0.6),
-                        blurRadius: 8,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+          radius: 0,
+          animate: false,
+          trackColor: Cyber.cyan.withValues(alpha: 0.15),
+          trackBorderColor: Cyber.cyan.withValues(alpha: 0.16),
         ),
         const SizedBox(height: 5),
         Text(

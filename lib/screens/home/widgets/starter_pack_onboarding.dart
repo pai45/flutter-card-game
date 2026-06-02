@@ -624,13 +624,6 @@ class _MysterySlot extends StatelessWidget {
       decoration: BoxDecoration(
         color: Cyber.panel.withValues(alpha: 0.5),
         border: Border.all(color: Cyber.cyan.withValues(alpha: 0.45), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Cyber.cyan.withValues(alpha: 0.15),
-            blurRadius: 8,
-            spreadRadius: 0,
-          ),
-        ],
       ),
       child: Center(
         child: Text(
