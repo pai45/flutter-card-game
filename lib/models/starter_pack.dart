@@ -5,11 +5,10 @@ import 'cards.dart';
 
 /// Unified four-tier rarity scale used when rolling a starter pack.
 ///
-/// The game's [PlayerCard]s are authored with [CardTier] (bronze/silver/gold/
-/// platinum) and an implicit [CardRarity] derived from rating, neither of which
-/// matches the silver/gold/epic/legendary odds we want for pack drops. This
-/// enum is the single scale the roller reasons about; [packRarityForRating] /
-/// [packRarityForPower] project existing cards onto it.
+/// The game's cards are authored with [CardTier] (bronze/silver/gold/platinum),
+/// which does not by itself match the silver/gold/epic/legendary odds we want
+/// for pack drops. This enum is the single scale the roller reasons about;
+/// [packRarityForRating] / [packRarityForPower] project existing cards onto it.
 enum PackRarity { silver, gold, epic, legendary }
 
 extension PackRarityInfo on PackRarity {
@@ -40,9 +39,9 @@ const _rarityByDropOrder = [
 
 /// Maps a player's overall rating onto the pack-rarity scale.
 PackRarity packRarityForRating(int rating) {
-  if (rating >= 92) return PackRarity.legendary;
-  if (rating >= 90) return PackRarity.epic;
-  if (rating >= 87) return PackRarity.gold;
+  if (rating >= 90) return PackRarity.legendary;
+  if (rating >= 86) return PackRarity.epic;
+  if (rating >= 80) return PackRarity.gold;
   return PackRarity.silver;
 }
 

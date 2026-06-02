@@ -42,7 +42,7 @@ class ShopPack {
   final int actionCount;
   final String guarantee;
   final Color accent;
-  final Map<CardRarity, int> odds;
+  final Map<CardTier, int> odds;
   final bool gradientAccent;
 
   int get cardCount => playerCount + actionCount;
@@ -130,10 +130,10 @@ const shopPacks = [
     guarantee: 'FREE SQUAD / 5 PLAYERS + 6 ACTIONS',
     accent: Color(0xff5cdfff),
     odds: {
-      CardRarity.common: 70,
-      CardRarity.rare: 25,
-      CardRarity.epic: 5,
-      CardRarity.legendary: 0,
+      CardTier.bronze: 70,
+      CardTier.silver: 25,
+      CardTier.gold: 5,
+      CardTier.platinum: 0,
     },
   ),
   ShopPack(
@@ -143,13 +143,13 @@ const shopPacks = [
     inrPrice: 50,
     playerCount: 1,
     actionCount: 2,
-    guarantee: '3 CARDS / MOSTLY COMMONS',
+    guarantee: '3 CARDS / MOSTLY BRONZE',
     accent: Color(0xffcd7f32),
     odds: {
-      CardRarity.common: 65,
-      CardRarity.rare: 28,
-      CardRarity.epic: 6,
-      CardRarity.legendary: 1,
+      CardTier.bronze: 65,
+      CardTier.silver: 28,
+      CardTier.gold: 6,
+      CardTier.platinum: 1,
     },
   ),
   ShopPack(
@@ -159,13 +159,13 @@ const shopPacks = [
     inrPrice: 400,
     playerCount: 2,
     actionCount: 2,
-    guarantee: '4 CARDS / RARE OR EPIC SHOT',
+    guarantee: '4 CARDS / SILVER OR GOLD SHOT',
     accent: Color(0xffffd700),
     odds: {
-      CardRarity.common: 35,
-      CardRarity.rare: 45,
-      CardRarity.epic: 16,
-      CardRarity.legendary: 4,
+      CardTier.bronze: 35,
+      CardTier.silver: 45,
+      CardTier.gold: 16,
+      CardTier.platinum: 4,
     },
   ),
   ShopPack(
@@ -178,10 +178,10 @@ const shopPacks = [
     guarantee: '5 HIGH-END CARDS / BEST ODDS',
     accent: Color(0xffff3df7),
     odds: {
-      CardRarity.common: 10,
-      CardRarity.rare: 40,
-      CardRarity.epic: 35,
-      CardRarity.legendary: 15,
+      CardTier.bronze: 10,
+      CardTier.silver: 40,
+      CardTier.gold: 35,
+      CardTier.platinum: 15,
     },
     gradientAccent: true,
   ),
@@ -274,16 +274,16 @@ const cardBacks = [
   ),
 ];
 
-int duplicateRefund(CardRarity rarity) => switch (rarity) {
-  CardRarity.common => 100,
-  CardRarity.rare => 500,
-  CardRarity.epic => 2000,
-  CardRarity.legendary => 8000,
+int duplicateRefund(CardTier tier) => switch (tier) {
+  CardTier.bronze => 100,
+  CardTier.silver => 500,
+  CardTier.gold => 2000,
+  CardTier.platinum => 8000,
 };
 
-int rarityMultiplier(CardRarity rarity) => switch (rarity) {
-  CardRarity.common => 1,
-  CardRarity.rare => 3,
-  CardRarity.epic => 8,
-  CardRarity.legendary => 20,
+int tierMultiplier(CardTier tier) => switch (tier) {
+  CardTier.bronze => 1,
+  CardTier.silver => 3,
+  CardTier.gold => 8,
+  CardTier.platinum => 20,
 };

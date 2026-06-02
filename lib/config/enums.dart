@@ -4,8 +4,6 @@ enum DeckPickerLane { attacker, defender, keeper, action }
 
 enum CardTier { bronze, silver, gold, platinum }
 
-enum CardRarity { common, rare, epic, legendary }
-
 enum PenaltyDirection { left, center, right }
 
 enum PlayerRole { attacker, defender, goalkeeper }

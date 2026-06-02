@@ -1,0 +1,181 @@
+name,country,country_code,position,role,rating,tier
+Lionel Messi,Argentina,ARG,RW/CAM,Attacker,92,Platinum
+Vinícius Júnior,Brazil,BRA,LW,Attacker,93,Platinum
+Neymar,Brazil,BRA,LW/SS,Attacker,90,Platinum
+Kylian Mbappé,France,FRA,ST/LW,Attacker,94,Platinum
+Harry Kane,England,ENG,ST,Attacker,92,Platinum
+Jude Bellingham,England,ENG,CAM/CM,Attacker,92,Platinum
+Cristiano Ronaldo,Portugal,POR,ST,Attacker,90,Platinum
+Kevin De Bruyne,Belgium,BEL,CAM/CM,Attacker,91,Platinum
+Luka Modrić,Croatia,CRO,CM,Attacker,90,Platinum
+Federico Valverde,Uruguay,URU,CM/RW,Attacker,91,Platinum
+Son Heung-min,South Korea,KOR,LW/ST,Attacker,90,Platinum
+Rodri,Spain,ESP,CDM,Defender,93,Platinum
+Virgil van Dijk,Netherlands,NED,CB,Defender,92,Platinum
+Lautaro Martínez,Argentina,ARG,ST,Attacker,88,Gold
+Julián Álvarez,Argentina,ARG,ST/SS,Attacker,88,Gold
+Raphinha,Brazil,BRA,RW,Attacker,89,Gold
+Bruno Guimarães,Brazil,BRA,CM,Attacker,87,Gold
+Ousmane Dembélé,France,FRA,RW,Attacker,89,Gold
+Michael Olise,France,FRA,CAM/RW,Attacker,88,Gold
+Bukayo Saka,England,ENG,RW,Attacker,89,Gold
+Phil Foden,England,ENG,CAM/LW,Attacker,88,Gold
+Rafael Leão,Portugal,POR,LW,Attacker,87,Gold
+Bruno Fernandes,Portugal,POR,CAM,Attacker,88,Gold
+Bernardo Silva,Portugal,POR,RW/CAM,Attacker,88,Gold
+Lamine Yamal,Spain,ESP,RW,Attacker,89,Gold
+Nico Williams,Spain,ESP,LW,Attacker,87,Gold
+Pedri González,Spain,ESP,CM/CAM,Attacker,89,Gold
+Jamal Musiala,Germany,GER,CAM/LW,Attacker,88,Gold
+Florian Wirtz,Germany,GER,CAM,Attacker,89,Gold
+Frenkie de Jong,Netherlands,NED,CM,Attacker,87,Gold
+Cody Gakpo,Netherlands,NED,LW/ST,Attacker,87,Gold
+Romelu Lukaku,Belgium,BEL,ST,Attacker,86,Gold
+Darwin Núñez,Uruguay,URU,ST,Attacker,86,Gold
+Luis Díaz,Colombia,COL,LW,Attacker,88,Gold
+James Rodríguez,Colombia,COL,CAM,Attacker,86,Gold
+Christian Pulisic,USA,USA,LW/RW,Attacker,87,Gold
+Jonathan David,Canada,CAN,ST,Attacker,87,Gold
+Kaoru Mitoma,Japan,JPN,LW,Attacker,87,Gold
+Takefusa Kubo,Japan,JPN,RW/CAM,Attacker,86,Gold
+Lee Kang-in,South Korea,KOR,CAM/RW,Attacker,86,Gold
+Cristian Romero,Argentina,ARG,CB,Defender,88,Gold
+Casemiro,Brazil,BRA,CDM,Defender,87,Gold
+Marquinhos,Brazil,BRA,CB,Defender,88,Gold
+Aurélien Tchouaméni,France,FRA,CDM,Defender,88,Gold
+William Saliba,France,FRA,CB,Defender,89,Gold
+Declan Rice,England,ENG,CDM/CM,Defender,89,Gold
+Nuno Mendes,Portugal,POR,LB,Defender,88,Gold
+Rúben Dias,Portugal,POR,CB,Defender,89,Gold
+Joshua Kimmich,Germany,GER,CDM/RB,Defender,88,Gold
+Antonio Rüdiger,Germany,GER,CB,Defender,88,Gold
+Joško Gvardiol,Croatia,CRO,CB/LB,Defender,88,Gold
+Ronald Araújo,Uruguay,URU,CB/RB,Defender,87,Gold
+Alphonso Davies,Canada,CAN,LB/LW,Defender,88,Gold
+Kim Min-jae,South Korea,KOR,CB,Defender,87,Gold
+Emiliano Martínez,Argentina,ARG,GK,Goalkeeper,89,Gold
+Alisson Becker,Brazil,BRA,GK,Goalkeeper,89,Gold
+Mike Maignan,France,FRA,GK,Goalkeeper,88,Gold
+Thibaut Courtois,Belgium,BEL,GK,Goalkeeper,89,Gold
+Rodrigo De Paul,Argentina,ARG,CM,Attacker,83,Silver
+Enzo Fernández,Argentina,ARG,CM,Attacker,84,Silver
+Alexis Mac Allister,Argentina,ARG,CM,Attacker,85,Silver
+Matheus Cunha,Brazil,BRA,ST/SS,Attacker,84,Silver
+Marcus Rashford,England,ENG,LW/ST,Attacker,84,Silver
+Cole Palmer,England,ENG,CAM/RW,Attacker,85,Silver
+Vitinha,Portugal,POR,CM,Attacker,84,Silver
+Mikel Oyarzabal,Spain,ESP,ST/SS,Attacker,83,Silver
+Kai Havertz,Germany,GER,ST/CAM,Attacker,84,Silver
+Leroy Sané,Germany,GER,RW/LW,Attacker,84,Silver
+Xavi Simons,Netherlands,NED,CAM/RW,Attacker,84,Silver
+Memphis Depay,Netherlands,NED,ST/SS,Attacker,82,Silver
+Ryan Gravenberch,Netherlands,NED,CM,Attacker,84,Silver
+Tijjani Reijnders,Netherlands,NED,CM/CAM,Attacker,83,Silver
+Jérémy Doku,Belgium,BEL,LW/RW,Attacker,83,Silver
+Leandro Trossard,Belgium,BEL,LW/SS,Attacker,82,Silver
+Youri Tielemans,Belgium,BEL,CM,Attacker,82,Silver
+Mateo Kovačić,Croatia,CRO,CM,Attacker,83,Silver
+Ivan Perišić,Croatia,CRO,LW/LWB,Attacker,81,Silver
+Andrej Kramarić,Croatia,CRO,ST/SS,Attacker,80,Silver
+Rodrigo Bentancur,Uruguay,URU,CM,Attacker,82,Silver
+Giorgian De Arrascaeta,Uruguay,URU,CAM,Attacker,82,Silver
+Jhon Arias,Colombia,COL,RW/CAM,Attacker,81,Silver
+Jhon Durán,Colombia,COL,ST,Attacker,82,Silver
+Luis Sinisterra,Colombia,COL,LW,Attacker,81,Silver
+Weston McKennie,USA,USA,CM,Attacker,82,Silver
+Folarin Balogun,USA,USA,ST,Attacker,82,Silver
+Santiago Giménez,Mexico,MEX,ST,Attacker,83,Silver
+Raúl Jiménez,Mexico,MEX,ST,Attacker,80,Silver
+Hirving Lozano,Mexico,MEX,LW/RW,Attacker,82,Silver
+Tajon Buchanan,Canada,CAN,RW/RWB,Attacker,81,Silver
+Ismaël Koné,Canada,CAN,CM,Attacker,80,Silver
+Cyle Larin,Canada,CAN,ST,Attacker,80,Silver
+Takumi Minamino,Japan,JPN,CAM/LW,Attacker,81,Silver
+Daichi Kamada,Japan,JPN,CAM,Attacker,82,Silver
+Ritsu Doan,Japan,JPN,RW,Attacker,82,Silver
+Hwang Hee-chan,South Korea,KOR,ST/LW,Attacker,82,Silver
+Hwang In-beom,South Korea,KOR,CM,Attacker,81,Silver
+Lisandro Martínez,Argentina,ARG,CB,Defender,85,Silver
+Gabriel Magalhães,Brazil,BRA,CB,Defender,85,Silver
+Dayot Upamecano,France,FRA,CB,Defender,84,Silver
+Jules Koundé,France,FRA,RB/CB,Defender,84,Silver
+Theo Hernández,France,FRA,LB,Defender,84,Silver
+N'Golo Kanté,France,FRA,CDM,Defender,84,Silver
+John Stones,England,ENG,CB,Defender,84,Silver
+Reece James,England,ENG,RB,Defender,83,Silver
+João Neves,Portugal,POR,CM/CDM,Defender,85,Silver
+João Cancelo,Portugal,POR,RB/LB,Defender,83,Silver
+Dean Huijsen,Spain,ESP,CB,Defender,83,Silver
+Dani Carvajal,Spain,ESP,RB,Defender,84,Silver
+Martin Zubimendi,Spain,ESP,CDM,Defender,84,Silver
+Leon Goretzka,Germany,GER,CM,Defender,82,Silver
+Jonathan Tah,Germany,GER,CB,Defender,83,Silver
+Denzel Dumfries,Netherlands,NED,RB/RWB,Defender,83,Silver
+Micky van de Ven,Netherlands,NED,CB/LB,Defender,84,Silver
+Amadou Onana,Belgium,BEL,CDM,Defender,83,Silver
+Marcelo Brozović,Croatia,CRO,CDM,Defender,83,Silver
+Josip Stanišić,Croatia,CRO,RB/CB,Defender,82,Silver
+José María Giménez,Uruguay,URU,CB,Defender,83,Silver
+Manuel Ugarte,Uruguay,URU,CDM,Defender,82,Silver
+Jefferson Lerma,Colombia,COL,CDM,Defender,81,Silver
+Daniel Muñoz,Colombia,COL,RB,Defender,82,Silver
+Davinson Sánchez,Colombia,COL,CB,Defender,81,Silver
+Tyler Adams,USA,USA,CDM,Defender,82,Silver
+Antonee Robinson,USA,USA,LB,Defender,83,Silver
+Edson Álvarez,Mexico,MEX,CDM/CB,Defender,82,Silver
+Stephen Eustáquio,Canada,CAN,CM/CDM,Defender,81,Silver
+Wataru Endo,Japan,JPN,CDM,Defender,82,Silver
+Takehiro Tomiyasu,Japan,JPN,CB/RB,Defender,82,Silver
+Ko Itakura,Japan,JPN,CB,Defender,81,Silver
+Harry Souttar,Australia,AUS,CB,Defender,80,Silver
+Jackson Irvine,Australia,AUS,CM,Defender,80,Silver
+Ederson Moraes,Brazil,BRA,GK,Goalkeeper,85,Silver
+Jordan Pickford,England,ENG,GK,Goalkeeper,84,Silver
+Diogo Costa,Portugal,POR,GK,Goalkeeper,84,Silver
+Unai Simón,Spain,ESP,GK,Goalkeeper,83,Silver
+Dominik Livaković,Croatia,CRO,GK,Goalkeeper,82,Silver
+Mathew Ryan,Australia,AUS,GK,Goalkeeper,81,Silver
+Lovro Majer,Croatia,CRO,CAM,Attacker,78,Bronze
+Ante Budimir,Croatia,CRO,ST,Attacker,77,Bronze
+Facundo Pellistri,Uruguay,URU,RW,Attacker,77,Bronze
+Maximiliano Araújo,Uruguay,URU,LW/LB,Attacker,76,Bronze
+Richard Ríos,Colombia,COL,CM,Attacker,78,Bronze
+Tim Weah,USA,USA,RW/RWB,Attacker,77,Bronze
+Gio Reyna,USA,USA,CAM/RW,Attacker,77,Bronze
+Yunus Musah,USA,USA,CM,Attacker,77,Bronze
+Luis Chávez,Mexico,MEX,CM,Attacker,76,Bronze
+Riley McGree,Australia,AUS,CAM/LW,Attacker,76,Bronze
+Martin Boyle,Australia,AUS,RW,Attacker,76,Bronze
+Mitchell Duke,Australia,AUS,ST,Attacker,75,Bronze
+Oh Hyeon-gyu,South Korea,KOR,ST,Attacker,77,Bronze
+Lee Jae-sung,South Korea,KOR,CAM,Attacker,77,Bronze
+Nestory Irankunda,Australia,AUS,RW,Attacker,76,Bronze
+Nahuel Molina,Argentina,ARG,RB,Defender,79,Bronze
+David Raum,Germany,GER,LB,Defender,78,Bronze
+Pau Cubarsí,Spain,ESP,CB,Defender,79,Bronze
+Timothy Castagne,Belgium,BEL,RB/LB,Defender,77,Bronze
+Arthur Theate,Belgium,BEL,CB/LB,Defender,77,Bronze
+Axel Witsel,Belgium,BEL,CDM/CB,Defender,76,Bronze
+Chris Richards,USA,USA,CB,Defender,78,Bronze
+Johan Vásquez,Mexico,MEX,CB,Defender,77,Bronze
+César Montes,Mexico,MEX,CB,Defender,77,Bronze
+Jorge Sánchez,Mexico,MEX,RB,Defender,76,Bronze
+Jesús Gallardo,Mexico,MEX,LB,Defender,76,Bronze
+Alistair Johnston,Canada,CAN,RB,Defender,77,Bronze
+Moïse Bombito,Canada,CAN,CB,Defender,77,Bronze
+Derek Cornelius,Canada,CAN,CB,Defender,76,Bronze
+Hidemasa Morita,Japan,JPN,CM,Defender,78,Bronze
+Paik Seung-ho,South Korea,KOR,CM/CDM,Defender,76,Bronze
+Seol Young-woo,South Korea,KOR,RB/LB,Defender,76,Bronze
+Aziz Behich,Australia,AUS,LB/LWB,Defender,76,Bronze
+Lewis Miller,Australia,AUS,RB/RWB,Defender,75,Bronze
+Alessandro Circati,Australia,AUS,CB,Defender,77,Bronze
+Oliver Baumann,Germany,GER,GK,Goalkeeper,78,Bronze
+Bart Verbruggen,Netherlands,NED,GK,Goalkeeper,79,Bronze
+Sergio Rochet,Uruguay,URU,GK,Goalkeeper,77,Bronze
+Camilo Vargas,Colombia,COL,GK,Goalkeeper,77,Bronze
+Matt Turner,USA,USA,GK,Goalkeeper,77,Bronze
+Luis Malagón,Mexico,MEX,GK,Goalkeeper,77,Bronze
+Dayne St. Clair,Canada,CAN,GK,Goalkeeper,76,Bronze
+Zion Suzuki,Japan,JPN,GK,Goalkeeper,78,Bronze
+Kim Seung-gyu,South Korea,KOR,GK,Goalkeeper,77,Bronze

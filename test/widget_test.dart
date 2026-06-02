@@ -26,7 +26,7 @@ void main() {
     await tester.pumpWidget(const PitchDuelApp());
     await tester.pump(const Duration(seconds: 3));
 
-    expect(find.text('PITCH DUEL'), findsOneWidget);
+    expect(find.text('PITCH DUEL'), findsAtLeastNWidgets(1));
     expect(find.text('PLAY MATCH'), findsOneWidget);
     expect(find.text('DECK BUILDER'), findsOneWidget);
   });

@@ -7,14 +7,15 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('packRarity mapping', () {
     test('rating bands map to the right rarity', () {
-      expect(packRarityForRating(93), PackRarity.legendary);
-      expect(packRarityForRating(92), PackRarity.legendary);
-      expect(packRarityForRating(91), PackRarity.epic);
-      expect(packRarityForRating(90), PackRarity.epic);
-      expect(packRarityForRating(89), PackRarity.gold);
-      expect(packRarityForRating(87), PackRarity.gold);
-      expect(packRarityForRating(86), PackRarity.silver);
-      expect(packRarityForRating(80), PackRarity.silver);
+      // Platinum 90-94, gold 86-89, silver 80-85, bronze 75-79.
+      expect(packRarityForRating(94), PackRarity.legendary);
+      expect(packRarityForRating(90), PackRarity.legendary);
+      expect(packRarityForRating(89), PackRarity.epic);
+      expect(packRarityForRating(86), PackRarity.epic);
+      expect(packRarityForRating(85), PackRarity.gold);
+      expect(packRarityForRating(80), PackRarity.gold);
+      expect(packRarityForRating(79), PackRarity.silver);
+      expect(packRarityForRating(75), PackRarity.silver);
     });
 
     test('action power bands map to the right rarity', () {

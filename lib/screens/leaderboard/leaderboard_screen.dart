@@ -281,16 +281,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                                 ),
                         ),
                       ),
-                      if (entries.isNotEmpty && !hidePinnedChrome) ...[
-                        if (!compact)
-                          _AroundMeButton(accent: accent, onTap: _scrollToUser),
-                        _StickyUserCard(
-                          user: user,
-                          type: _type,
-                          accent: accent,
-                          compact: compact,
-                        ),
-                      ],
+                      if (entries.isNotEmpty && !hidePinnedChrome && !compact)
+                        _AroundMeButton(accent: accent, onTap: _scrollToUser),
                     ],
                   );
                 },
@@ -1756,120 +1748,6 @@ class _AroundMeButton extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-// ─── Sticky user position ────────────────────────────────────────────────────
-
-class _StickyUserCard extends StatelessWidget {
-  const _StickyUserCard({
-    required this.user,
-    required this.type,
-    required this.accent,
-    required this.compact,
-  });
-
-  final LeaderboardEntry user;
-  final LeaderboardType type;
-  final Color accent;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    final meta = _scoreMeta(type);
-    return Container(
-      margin: EdgeInsets.fromLTRB(16, 0, 16, compact ? 4 : 6),
-      padding: EdgeInsets.symmetric(
-        horizontal: compact ? 10 : 12,
-        vertical: compact ? 8 : 10,
-      ),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [accent.withValues(alpha: 0.22), Cyber.panel],
-        ),
-        border: Border.all(color: accent, width: 1.4),
-        boxShadow: [
-          BoxShadow(
-            color: accent.withValues(alpha: 0.32),
-            blurRadius: 18,
-            spreadRadius: -2,
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 30,
-            child: Text(
-              '#${user.rank}',
-              style: TextStyle(
-                color: accent,
-                fontFamily: Cyber.displayFont,
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          _Avatar(name: user.name, size: 36, highlight: true),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Row(
-              children: [
-                Flexible(
-                  child: Text(
-                    user.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontFamily: Cyber.bodyFont,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                const _Tag(label: 'YOU', color: Cyber.cyan),
-              ],
-            ),
-          ),
-          _MovementBadge(movement: user.movement, isNew: user.isNew),
-          const SizedBox(width: 8),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 82),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    _formatInt(user.score),
-                    maxLines: 1,
-                    style: TextStyle(
-                      color: accent,
-                      fontFamily: Cyber.displayFont,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                ),
-                Text(
-                  meta.unit,
-                  style: TextStyle(
-                    color: accent.withValues(alpha: 0.7),
-                    fontFamily: Cyber.displayFont,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

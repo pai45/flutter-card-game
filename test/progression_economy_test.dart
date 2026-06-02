@@ -26,8 +26,9 @@ void main() {
 
   test('card XP, daily countdown, and match coins use prompt formulas', () {
     expect(playerCardXp(attackers.first), attackers.first.rating);
-    expect(actionCardXp(actionCards.first), 45);
-    expect(actionCardXp(actionCards.last), 38);
+    // actionCards.first is act1 bronze (power 9); .last is act16 platinum (power 10).
+    expect(actionCardXp(actionCards.first), 39);
+    expect(actionCardXp(actionCards.last), 40);
     expect(coinsForResult('Victory'), 50);
     expect(coinsForResult('Draw'), 25);
     expect(coinsForResult('Defeat'), 10);

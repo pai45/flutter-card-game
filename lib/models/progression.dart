@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import '../config/enums.dart';
 import 'cards.dart';
 
 // Cumulative XP required to reach level L. L1 = 0, L2 = 100, L3 = 300.
@@ -47,20 +46,6 @@ LevelProgress levelProgress(int totalXp) {
     toNextLevel: next - xp,
     pct: span == 0 ? 0 : (into / span).clamp(0.0, 1.0),
   );
-}
-
-CardRarity playerRarity(int rating) {
-  if (rating >= 90) return CardRarity.legendary;
-  if (rating >= 83) return CardRarity.epic;
-  if (rating >= 75) return CardRarity.rare;
-  return CardRarity.common;
-}
-
-CardRarity actionRarity(int power) {
-  if (power >= 20) return CardRarity.legendary;
-  if (power >= 14) return CardRarity.epic;
-  if (power >= 8) return CardRarity.rare;
-  return CardRarity.common;
 }
 
 int playerCardXp(PlayerCard card) => card.rating;

@@ -43,7 +43,14 @@ const defaultDeckSlots = [
     name: 'World Icons',
     attackers: ['fra-kylian-mbappe', 'eng-harry-kane'],
     defenders: ['ned-virgil-van-dijk', 'esp-rodri'],
-    actions: ['act1', 'act2', 'act6', 'act7', 'act8', 'act15'],
+    actions: [
+      'act1-gold',
+      'act2-gold',
+      'act6-gold',
+      'act7-gold',
+      'act8-gold',
+      'act15-gold',
+    ],
     keeper: 'bra-alisson-becker',
   ),
 ];

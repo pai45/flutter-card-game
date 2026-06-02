@@ -4,18 +4,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/game/game_bloc.dart';
 import '../../../blocs/game/game_event.dart';
 import '../../../blocs/game/game_state.dart';
-import '../../../config/enums.dart';
 import '../../../config/theme.dart';
 import '../../../utils/label_helpers.dart';
 import '../../../widgets/card_unpack_animation.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 
-String _itemRarity(PackRevealItem item) => switch (item.rarity) {
-  CardRarity.common => 'common',
-  CardRarity.rare => 'rare',
-  CardRarity.epic => 'epic',
-  CardRarity.legendary => 'legendary',
-};
+String _itemRarity(PackRevealItem item) => item.tier.name;
 
 enum _Phase { intro, reveal, actions, summary }
 

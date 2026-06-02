@@ -39,31 +39,95 @@ class HomeScreen extends StatelessWidget {
               children: [
                 Center(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 144),
+                    padding: const EdgeInsets.fromLTRB(24, 22, 24, 144),
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 360),
+                      constraints: const BoxConstraints(maxWidth: 380),
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Icon(
-                            Icons.sports_soccer,
-                            size: 58,
-                            color: Cyber.cyan,
-                            shadows: [
-                              Shadow(
-                                color: Cyber.cyan.withValues(alpha: 0.55),
-                                blurRadius: 18,
+                          const _LobbyStatusBar(),
+                          const SizedBox(height: 18),
+                          // Asymmetric HUD hero: logo emblem + identity block.
+                          Row(
+                            children: [
+                              const _HeroEmblem(size: 92),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'PITCH DUEL',
+                                      style: Cyber.display(26, letterSpacing: 1.4)
+                                          .copyWith(
+                                            shadows: [
+                                              Shadow(
+                                                color: Cyber.cyan.withValues(
+                                                  alpha: 0.45,
+                                                ),
+                                                blurRadius: 14,
+                                              ),
+                                            ],
+                                          ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      'TACTICAL CARD DUEL',
+                                      style: TextStyle(
+                                        color: Cyber.muted,
+                                        fontFamily: Cyber.displayFont,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 2.4,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: CyberChip(
+                                        label: state.deckReady
+                                            ? 'DECK ONLINE'
+                                            : 'DEFAULT LOADOUT',
+                                        color: state.deckReady
+                                            ? Cyber.lime
+                                            : Cyber.amber,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 14),
-                          CyberChip(
-                            label: state.deckReady
-                                ? 'DECK ONLINE'
-                                : 'DEFAULT LOADOUT',
-                            color: state.deckReady ? Cyber.lime : Cyber.amber,
+                          const SizedBox(height: 20),
+                          // Greeble telemetry — real profile data (no glow).
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _HudStat(
+                                  label: 'LEVEL',
+                                  value: '${state.progression.playerLevel}',
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _HudStat(
+                                  label: 'TOTAL XP',
+                                  value: _grp(state.progression.totalXP),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _HudStat(
+                                  label: 'COINS',
+                                  value: _grp(state.coins),
+                                  accent: Cyber.gold,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 24),
+                          // PLAY MATCH — hero CTA, unchanged.
                           state.deckReady
                               ? HudCtaButton(
                                   label: 'PLAY MATCH',
@@ -83,43 +147,7 @@ class HomeScreen extends StatelessWidget {
                                     ),
                                   ),
                                 ),
-                          const SizedBox(height: 12),
-                          TextButton(
-                            onPressed: () => onNavigate(AppSection.howToPlay),
-                            child: const Text(
-                              'HOW TO PLAY',
-                              style: TextStyle(
-                                color: Cyber.cyan,
-                                fontFamily: 'Orbitron',
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 1.4,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          TextButton(
-                            onPressed: () {
-                              context.read<GameBloc>().add(TutorialReset());
-                              showTutorialNow(
-                                context,
-                                keyName: 'home',
-                                steps: homeTutorialSteps,
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Tutorial reset')),
-                              );
-                            },
-                            child: Text(
-                              'REPLAY WALKTHROUGH',
-                              style: TextStyle(
-                                color: Cyber.cyan.withValues(alpha: 0.55),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 2.2,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 32),
+                          const SizedBox(height: 14),
                           Row(
                             children: [
                               Expanded(
@@ -139,6 +167,38 @@ class HomeScreen extends StatelessWidget {
                                     state.matchHistory,
                                   ),
                                 ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          // Secondary links (preserved): how-to-play + replay.
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 14,
+                            runSpacing: 6,
+                            children: [
+                              _HudLink(
+                                label: 'HOW TO PLAY',
+                                onTap: () => onNavigate(AppSection.howToPlay),
+                              ),
+                              Container(width: 3, height: 3, color: Cyber.muted),
+                              _HudLink(
+                                label: 'REPLAY WALKTHROUGH',
+                                faint: true,
+                                onTap: () {
+                                  context.read<GameBloc>().add(TutorialReset());
+                                  showTutorialNow(
+                                    context,
+                                    keyName: 'home',
+                                    steps: homeTutorialSteps,
+                                  );
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Tutorial reset'),
+                                    ),
+                                  );
+                                },
                               ),
                             ],
                           ),
@@ -163,6 +223,242 @@ class HomeScreen extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+/// Groups an integer with thousands separators ("3870" -> "3,870").
+String _grp(int value) {
+  final s = value.abs().toString();
+  final b = StringBuffer();
+  for (var i = 0; i < s.length; i++) {
+    if (i > 0 && (s.length - i) % 3 == 0) b.write(',');
+    b.write(s[i]);
+  }
+  return '${value < 0 ? '-' : ''}$b';
+}
+
+/// Greeble status strip above the hero: a live "ONLINE" indicator and a system
+/// version readout, split by a thin HUD line.
+class _LobbyStatusBar extends StatelessWidget {
+  const _LobbyStatusBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 7,
+          height: 7,
+          decoration: BoxDecoration(
+            color: Cyber.success,
+            shape: BoxShape.circle,
+            // Live indicator — glow is intentional here.
+            boxShadow: Cyber.glow(Cyber.success, alpha: 0.6, blur: 8, spread: 0),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          'ONLINE',
+          style: TextStyle(
+            color: Cyber.success,
+            fontFamily: Cyber.displayFont,
+            fontSize: 9,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 2,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(
+            height: 1,
+            color: Cyber.cyan.withValues(alpha: 0.16),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          'SYS://PITCH_DUEL v1.0.0',
+          style: TextStyle(
+            color: Cyber.muted,
+            fontFamily: Cyber.displayFont,
+            fontSize: 8.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.2,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The app logo framed by HUD corner brackets with a focal glow. Falls back to
+/// the legacy soccer icon until [_kAppLogoAsset] is present.
+class _HeroEmblem extends StatelessWidget {
+  const _HeroEmblem({this.size = 92});
+
+  static const String _kAppLogoAsset = 'assets/icons/app_logo.png';
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Stack(
+        children: [
+          Center(
+            child: Container(
+              width: size * 0.84,
+              height: size * 0.84,
+              decoration: BoxDecoration(
+                boxShadow: Cyber.glow(
+                  Cyber.cyan,
+                  alpha: 0.35,
+                  blur: 22,
+                  spread: -2,
+                ),
+              ),
+              child: Image.asset(
+                _kAppLogoAsset,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.medium,
+                // ignore: prefer_void_to_null
+                errorBuilder: (_, _, _) => Icon(
+                  Icons.sports_soccer,
+                  size: size * 0.7,
+                  color: Cyber.cyan,
+                  shadows: [
+                    Shadow(
+                      color: Cyber.cyan.withValues(alpha: 0.55),
+                      blurRadius: 18,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _CornerBracketsPainter(
+                Cyber.cyan.withValues(alpha: 0.7),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CornerBracketsPainter extends CustomPainter {
+  const _CornerBracketsPainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = color
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.square;
+    const len = 11.0;
+    final w = size.width;
+    final h = size.height;
+    canvas.drawLine(Offset.zero, const Offset(len, 0), p);
+    canvas.drawLine(Offset.zero, const Offset(0, len), p);
+    canvas.drawLine(Offset(w, 0), Offset(w - len, 0), p);
+    canvas.drawLine(Offset(w, 0), Offset(w, len), p);
+    canvas.drawLine(Offset(0, h), Offset(len, h), p);
+    canvas.drawLine(Offset(0, h), Offset(0, h - len), p);
+    canvas.drawLine(Offset(w, h), Offset(w - len, h), p);
+    canvas.drawLine(Offset(w, h), Offset(w, h - len), p);
+  }
+
+  @override
+  bool shouldRepaint(covariant _CornerBracketsPainter old) =>
+      old.color != color;
+}
+
+/// A compact telemetry cell (label + value). Secondary data — no glow.
+class _HudStat extends StatelessWidget {
+  const _HudStat({
+    required this.label,
+    required this.value,
+    this.accent = Cyber.cyan,
+  });
+
+  final String label;
+  final String value;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Cyber.bg.withValues(alpha: 0.5),
+        border: Border.all(color: accent.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: TextStyle(
+                color: Colors.white,
+                fontFamily: Cyber.displayFont,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Cyber.muted,
+              fontFamily: Cyber.displayFont,
+              fontSize: 7.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A flat HUD text link (no Material ripple). Used for the secondary actions.
+class _HudLink extends StatelessWidget {
+  const _HudLink({required this.label, required this.onTap, this.faint = false});
+
+  final String label;
+  final VoidCallback onTap;
+  final bool faint;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Text(
+        label,
+        style: TextStyle(
+          color: faint ? Cyber.cyan.withValues(alpha: 0.55) : Cyber.cyan,
+          fontFamily: Cyber.displayFont,
+          fontSize: faint ? 10 : 11,
+          fontWeight: faint ? FontWeight.w800 : FontWeight.w900,
+          letterSpacing: faint ? 2.2 : 1.4,
+        ),
+      ),
     );
   }
 }
@@ -254,6 +550,7 @@ class _HomeArenaBackgroundState extends State<_HomeArenaBackground>
               ),
             ),
           ),
+          const Positioned.fill(child: CyberTextureOverlay()),
           widget.child,
         ],
       ),

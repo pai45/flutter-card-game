@@ -428,18 +428,18 @@ class _PlayerCardDetailOverlayState extends State<_PlayerCardDetailOverlay>
     super.dispose();
   }
 
-  Color get _rarityColor => switch (widget.card.rarity) {
-    CardRarity.common => Cyber.muted,
-    CardRarity.rare => Cyber.cyan,
-    CardRarity.epic => Cyber.violet,
-    CardRarity.legendary => Cyber.gold,
+  Color get _rarityColor => switch (widget.card.tier) {
+    CardTier.bronze => Cyber.muted,
+    CardTier.silver => Cyber.cyan,
+    CardTier.gold => Cyber.violet,
+    CardTier.platinum => Cyber.gold,
   };
 
-  String get _rarityLabel => switch (widget.card.rarity) {
-    CardRarity.common => 'COMMON',
-    CardRarity.rare => 'RARE',
-    CardRarity.epic => 'EPIC',
-    CardRarity.legendary => 'LEGENDARY',
+  String get _rarityLabel => switch (widget.card.tier) {
+    CardTier.bronze => 'BRONZE',
+    CardTier.silver => 'SILVER',
+    CardTier.gold => 'GOLD',
+    CardTier.platinum => 'PLATINUM',
   };
 
   @override

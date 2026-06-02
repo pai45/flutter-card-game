@@ -11,13 +11,9 @@ import '../../models/cards.dart';
 import '../../models/shop.dart';
 import '../../widgets/card_unpack_animation.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/landing_bottom_navigation.dart';
 
-String _rarityString(CardRarity r) => switch (r) {
-  CardRarity.common => 'common',
-  CardRarity.rare => 'rare',
-  CardRarity.epic => 'epic',
-  CardRarity.legendary => 'legendary',
-};
+String _tierString(CardTier t) => t.name;
 
 const Color _bg = Color(0xff0d111a);
 const Color _surface = Color(0xff1e2538);
@@ -131,12 +127,12 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
           body: Stack(
             children: [
               const Positioned.fill(child: _AnimatedShopBackground()),
+              const Positioned.fill(child: CyberTextureOverlay()),
               SafeArea(
                 child: Column(
                   children: [
                     _ShopHeader(
                       coins: state.coins,
-                      onBack: () => widget.onNavigate(AppSection.game),
                       onCoinsTap: () => _setTab(0),
                     ),
                     _ShopTabs(
@@ -174,6 +170,10 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                 _CelebrationOverlay(amount: _celebrationCoins!),
             ],
           ),
+          bottomNavigationBar: LandingBottomNavigation(
+            selectedIndex: 1,
+            onNavigate: widget.onNavigate,
+          ),
         );
       },
     );
@@ -189,14 +189,9 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
 }
 
 class _ShopHeader extends StatelessWidget {
-  const _ShopHeader({
-    required this.coins,
-    required this.onBack,
-    required this.onCoinsTap,
-  });
+  const _ShopHeader({required this.coins, required this.onCoinsTap});
 
   final int coins;
-  final VoidCallback onBack;
   final VoidCallback onCoinsTap;
 
   @override
@@ -215,20 +210,6 @@ class _ShopHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _Pressable(
-            onTap: onBack,
-            child: Container(
-              width: 38,
-              height: 38,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: _surface.withValues(alpha: 0.55),
-                border: Border.all(color: _cyan.withValues(alpha: 0.35)),
-              ),
-              child: const Icon(Icons.arrow_back, color: _cyan, size: 18),
-            ),
-          ),
-          const SizedBox(width: 10),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
@@ -701,7 +682,7 @@ class _PackRevealSequenceScreenState extends State<_PackRevealSequenceScreen> {
         playerName: card.shortName,
         position: card.position,
         rating: card.rating,
-        rarity: _rarityString(card.rarity),
+        rarity: _tierString(card.tier),
         onComplete: _advanceCard,
         frontFace: CyberPlayerCardTile(
           card: card,
@@ -1373,10 +1354,10 @@ class _CardsTabState extends State<CardsTab> with TickerProviderStateMixin {
       return switch (_filter) {
         'Attackers' => card.role == PlayerRole.attacker,
         'Defenders' => card.role != PlayerRole.attacker,
-        'Common' => card.rarity == CardRarity.common,
-        'Rare' => card.rarity == CardRarity.rare,
-        'Epic' => card.rarity == CardRarity.epic,
-        'Legendary' => card.rarity == CardRarity.legendary,
+        'Bronze' => card.tier == CardTier.bronze,
+        'Silver' => card.tier == CardTier.silver,
+        'Gold' => card.tier == CardTier.gold,
+        'Platinum' => card.tier == CardTier.platinum,
         _ => true,
       };
     }).toList();
@@ -1417,11 +1398,11 @@ class _PurchasableCardTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final int coinPrice = _cardCoinPrice(card);
-    final Color rarityColor = switch (card.rarity) {
-      CardRarity.common => _secondary,
-      CardRarity.rare => _cyan,
-      CardRarity.epic => _violet,
-      CardRarity.legendary => _gold,
+    final Color rarityColor = switch (card.tier) {
+      CardTier.bronze => _secondary,
+      CardTier.silver => _cyan,
+      CardTier.gold => _violet,
+      CardTier.platinum => _gold,
     };
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0, end: shake ? 1 : 0),
@@ -1468,7 +1449,7 @@ class _PurchasableCardTile extends StatelessWidget {
                     ),
                   ),
                   child: Text(
-                    _rarityString(card.rarity).toUpperCase(),
+                    _tierString(card.tier).toUpperCase(),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: rarityColor,
@@ -1583,7 +1564,7 @@ class _PurchasableCardTile extends StatelessWidget {
           playerName: card.shortName,
           position: card.position,
           rating: card.rating,
-          rarity: _rarityString(card.rarity),
+          rarity: _tierString(card.tier),
           onComplete: nav.pop,
           frontFace: CyberPlayerCardTile(
             card: card,
@@ -2187,72 +2168,72 @@ void _showSnack(BuildContext context, String message, [bool success = true]) {
 
 List<PlayerCard> _rollPack(ShopPack pack, List<String> ownedIds) {
   final Random random = Random();
-  final List<CardRarity> rarities = <CardRarity>[];
+  final List<CardTier> tiers = <CardTier>[];
   for (int i = 0; i < pack.cardCount; i++) {
-    rarities.add(_rollRarity(pack.id, random));
+    tiers.add(_rollTier(pack.id, random));
   }
-  _applyGuarantees(pack.id, rarities);
+  _applyGuarantees(pack.id, tiers);
   final seenIds = <String>{...ownedIds};
   return [
-    for (final CardRarity rarity in rarities)
+    for (final CardTier tier in tiers)
       () {
-        final card = _pickCardByRarity(rarity, random, seenIds.toList());
+        final card = _pickCardByTier(tier, random, seenIds.toList());
         seenIds.add(card.id);
         return card;
       }(),
   ];
 }
 
-CardRarity _rollRarity(String packId, Random random) {
+CardTier _rollTier(String packId, Random random) {
   final double roll = random.nextDouble();
   return switch (packId) {
-    'bronze' => roll < 0.95 ? CardRarity.common : CardRarity.rare,
+    'bronze' => roll < 0.95 ? CardTier.bronze : CardTier.silver,
     'silver' =>
       roll < 0.60
-          ? CardRarity.common
+          ? CardTier.bronze
           : roll < 0.95
-          ? CardRarity.rare
-          : CardRarity.epic,
+          ? CardTier.silver
+          : CardTier.gold,
     'gold' =>
       roll < 0.30
-          ? CardRarity.common
+          ? CardTier.bronze
           : roll < 0.75
-          ? CardRarity.rare
+          ? CardTier.silver
           : roll < 0.95
-          ? CardRarity.epic
-          : CardRarity.legendary,
+          ? CardTier.gold
+          : CardTier.platinum,
     _ =>
       roll < 0.25
-          ? CardRarity.rare
+          ? CardTier.silver
           : roll < 0.75
-          ? CardRarity.epic
-          : CardRarity.legendary,
+          ? CardTier.gold
+          : CardTier.platinum,
   };
 }
 
-void _applyGuarantees(String packId, List<CardRarity> rarities) {
+void _applyGuarantees(String packId, List<CardTier> tiers) {
   if (packId == 'silver' &&
-      !rarities.any((CardRarity r) => r.index >= CardRarity.rare.index)) {
-    rarities[0] = CardRarity.rare;
+      !tiers.any((CardTier t) => t.index >= CardTier.silver.index)) {
+    tiers[0] = CardTier.silver;
   }
   if (packId == 'gold' &&
-      !rarities.any((CardRarity r) => r.index >= CardRarity.epic.index)) {
-    rarities[0] = CardRarity.epic;
+      !tiers.any((CardTier t) => t.index >= CardTier.gold.index)) {
+    tiers[0] = CardTier.gold;
   }
   if (packId == 'icon') {
-    rarities[0] = CardRarity.legendary;
-    rarities[1] = CardRarity.epic;
-    rarities[2] = CardRarity.epic;
+    tiers[0] = CardTier.platinum;
+    tiers[1] = CardTier.gold;
+    tiers[2] = CardTier.gold;
   }
 }
 
-PlayerCard _pickCardByRarity(
-  CardRarity rarity,
+PlayerCard _pickCardByTier(
+  CardTier tier,
   Random random,
   List<String> ownedIds,
 ) {
   final List<PlayerCard> pool = allPlayerCards
-      .where((PlayerCard card) => card.rarity == rarity)
+      .where((PlayerCard card) => card.tier == tier)
       .toList();
   final List<PlayerCard> unowned = pool
       .where((PlayerCard card) => !ownedIds.contains(card.id))
@@ -2263,7 +2244,7 @@ PlayerCard _pickCardByRarity(
 
 int _cardCoinPrice(PlayerCard card) {
   final int basePrice = (card.rating - 65) * 100;
-  return basePrice * rarityMultiplier(card.rarity);
+  return basePrice * tierMultiplier(card.tier);
 }
 
 int _cardInrPrice(PlayerCard card) {
@@ -2285,8 +2266,8 @@ const List<String> _filters = [
   'All',
   'Attackers',
   'Defenders',
-  'Common',
-  'Rare',
-  'Epic',
-  'Legendary',
+  'Bronze',
+  'Silver',
+  'Gold',
+  'Platinum',
 ];

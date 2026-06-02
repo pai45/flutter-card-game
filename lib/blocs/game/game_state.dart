@@ -18,7 +18,7 @@ class PackRevealItem {
   String get shortName => playerCard?.shortName ?? actionCard!.title;
   String get subtitle => playerCard?.position ?? actionCard!.category.name;
   int get rating => playerCard?.rating ?? actionCard!.power;
-  CardRarity get rarity => playerCard?.rarity ?? actionCard!.rarity;
+  CardTier get tier => playerCard?.tier ?? actionCard!.tier;
 }
 
 class PackRevealData {

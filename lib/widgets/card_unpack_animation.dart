@@ -8,31 +8,34 @@ import 'package:flutter/material.dart';
 const Color _kBg = Color(0xFF0D111A);
 const Color _kSurface = Color(0xFF1E2538);
 const Color _kCyan = Color(0xFF5CDFFF);
-const Color _kPurple = Color(0xFFA855F7);
 const Color _kGold = Color(0xFFFFD700);
 const Color _kWhite = Color(0xFFFFFFFF);
 const Color _kMuted = Color(0xFF94A3B8);
+const Color _kBronze = Color(0xFFCD7F32);
+const Color _kSilver = Color(0xFFCBD5E1);
 
-// ── Rarity helpers ────────────────────────────────────────────────────────────
+// ── Tier helpers ──────────────────────────────────────────────────────────────
+// Cards reveal by tier: bronze / silver / gold / platinum. Platinum is the
+// premium drop and inherits the old "legendary" treatment (cyan glow + shimmer).
 Color _rarityBase(String r) => switch (r) {
-  'rare' => _kCyan,
-  'epic' => _kPurple,
-  'legendary' => _kGold,
-  _ => _kWhite,
+  'silver' => _kSilver,
+  'gold' => _kGold,
+  'platinum' => _kCyan,
+  _ => _kBronze,
 };
 
 Color _rarityGlow(String r) => switch (r) {
-  'rare' => _kCyan.withValues(alpha: 0.6),
-  'epic' => _kPurple.withValues(alpha: 0.7),
-  'legendary' => _kGold.withValues(alpha: 0.85),
-  _ => _kWhite.withValues(alpha: 0.3),
+  'silver' => _kSilver.withValues(alpha: 0.6),
+  'gold' => _kGold.withValues(alpha: 0.75),
+  'platinum' => _kCyan.withValues(alpha: 0.85),
+  _ => _kBronze.withValues(alpha: 0.5),
 };
 
 List<Color> _rarityGradientColors(String r) => switch (r) {
-  'rare' => [const Color(0xFF0C4A6E), const Color(0xFF0369A1)],
-  'epic' => [const Color(0xFF3B0764), const Color(0xFF6B21A8)],
-  'legendary' => [const Color(0xFF78350F), const Color(0xFFB45309)],
-  _ => [const Color(0xFF1E2538), const Color(0xFF374151)],
+  'silver' => [const Color(0xFF334155), const Color(0xFF64748B)],
+  'gold' => [const Color(0xFF78350F), const Color(0xFFB45309)],
+  'platinum' => [const Color(0xFF0C4A6E), const Color(0xFF0369A1)],
+  _ => [const Color(0xFF3A2410), const Color(0xFF6B4321)],
 };
 
 // ── Particle ──────────────────────────────────────────────────────────────────
@@ -174,7 +177,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
       );
     });
 
-    _legendaryParticles = widget.rarity == 'legendary'
+    _legendaryParticles = widget.rarity == 'platinum'
         ? List.generate(12, (i) {
             final angle = (i / 12) * 2 * pi + (_rng.nextDouble() - 0.5) * 0.3;
             return _Particle(
@@ -369,7 +372,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
         );
     setState(() => _stage = _Stage.rarityDrop);
     _rarityDropCtrl!.forward().then((_) {
-      if (widget.rarity == 'legendary') {
+      if (widget.rarity == 'platinum') {
         _startShimmer();
       } else {
         _startStage9();
@@ -560,7 +563,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
                     particles: _particles,
                     legendaryParticles: _legendaryParticles,
                     animValue: _particleCtrl!.value,
-                    isLegendary: widget.rarity == 'legendary',
+                    isLegendary: widget.rarity == 'platinum',
                   ),
                 ),
               ),
@@ -793,10 +796,10 @@ class _CardUnpackState extends State<CardUnpackAnimation>
     const topFraction = 0.4;
 
     final (rarityLabel, rarityColor) = switch (widget.rarity) {
-      'rare' => ('RARE', _kCyan),
-      'epic' => ('EPIC', _kPurple),
-      'legendary' => ('LEGENDARY', _kGold),
-      _ => ('COMMON', _kMuted),
+      'silver' => ('SILVER', _kSilver),
+      'gold' => ('GOLD', _kGold),
+      'platinum' => ('PLATINUM', _kCyan),
+      _ => ('BRONZE', _kBronze),
     };
 
     final displayRating = countingRating ? _displayRating : widget.rating;
@@ -934,17 +937,17 @@ class _CardUnpackState extends State<CardUnpackAnimation>
   // ─────────────────────────────────────────────────────────────────────────
   Widget _buildRarityTitle(Size size) {
     final (label, color, ls) = switch (widget.rarity) {
-      'rare' => ('RARE FIND', _kCyan, 2.0),
-      'epic' => ('EPIC', _kPurple, 2.0),
-      'legendary' => ('LEGENDARY', _kGold, 6.0),
-      _ => ('COMMON CARD', _kMuted, 2.0),
+      'silver' => ('SILVER', _kSilver, 2.0),
+      'gold' => ('GOLD', _kGold, 2.0),
+      'platinum' => ('PLATINUM', _kCyan, 6.0),
+      _ => ('BRONZE', _kBronze, 2.0),
     };
 
     Widget text = Text(
       label,
       style: TextStyle(
         color: color,
-        fontSize: widget.rarity == 'legendary' ? 24 : 20,
+        fontSize: widget.rarity == 'platinum' ? 24 : 20,
         fontWeight: FontWeight.w900,
         letterSpacing: ls,
         decoration: TextDecoration.none,
@@ -952,7 +955,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
     );
 
     // Shimmer sweep for legendary
-    if (widget.rarity == 'legendary' && _shimmerCtrl != null) {
+    if (widget.rarity == 'platinum' && _shimmerCtrl != null) {
       text = AnimatedBuilder(
         animation: _shimmerCtrl!,
         builder: (_, child) {

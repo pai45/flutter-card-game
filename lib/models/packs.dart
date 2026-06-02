@@ -27,7 +27,7 @@ class CardPack {
   final int price;
   final int playerCount;
   final int actionCount;
-  final Map<CardRarity, int> odds;
+  final Map<CardTier, int> odds;
 
   int get cardCount => playerCount + actionCount;
 }
@@ -57,61 +57,61 @@ const kProgressionPacks = [
     playerCount: 5,
     actionCount: 6,
     odds: {
-      CardRarity.common: 70,
-      CardRarity.rare: 25,
-      CardRarity.epic: 5,
-      CardRarity.legendary: 0,
+      CardTier.bronze: 70,
+      CardTier.silver: 25,
+      CardTier.gold: 5,
+      CardTier.platinum: 0,
     },
   ),
   CardPack(
     id: 'bronze',
     name: 'Bronze Pack',
-    description: '3 cards. Mostly commons, slim shot at better.',
+    description: '3 cards. Mostly bronze, slim shot at better.',
     price: 150,
     playerCount: 1,
     actionCount: 2,
     odds: {
-      CardRarity.common: 65,
-      CardRarity.rare: 28,
-      CardRarity.epic: 6,
-      CardRarity.legendary: 1,
+      CardTier.bronze: 65,
+      CardTier.silver: 28,
+      CardTier.gold: 6,
+      CardTier.platinum: 1,
     },
   ),
   CardPack(
     id: 'gold',
     name: 'Gold Pack',
-    description: '4 cards with a good shot at a rare or epic.',
+    description: '4 cards with a good shot at a silver or gold.',
     price: 400,
     playerCount: 2,
     actionCount: 2,
     odds: {
-      CardRarity.common: 35,
-      CardRarity.rare: 45,
-      CardRarity.epic: 16,
-      CardRarity.legendary: 4,
+      CardTier.bronze: 35,
+      CardTier.silver: 45,
+      CardTier.gold: 16,
+      CardTier.platinum: 4,
     },
   ),
   CardPack(
     id: 'elite',
     name: 'Elite Pack',
-    description: '5 high-end cards. Best legendary odds.',
+    description: '5 high-end cards. Best platinum odds.',
     price: 900,
     playerCount: 2,
     actionCount: 3,
     odds: {
-      CardRarity.common: 10,
-      CardRarity.rare: 40,
-      CardRarity.epic: 35,
-      CardRarity.legendary: 15,
+      CardTier.bronze: 10,
+      CardTier.silver: 40,
+      CardTier.gold: 35,
+      CardTier.platinum: 15,
     },
   ),
 ];
 
 const kDailyDropOdds = {
-  CardRarity.common: 40,
-  CardRarity.rare: 40,
-  CardRarity.epic: 16,
-  CardRarity.legendary: 4,
+  CardTier.bronze: 40,
+  CardTier.silver: 40,
+  CardTier.gold: 16,
+  CardTier.platinum: 4,
 };
 
 CardPack? getProgressionPack(String id) =>
@@ -154,7 +154,7 @@ PackResult rollPack(
   for (var i = 0; i < pack.playerCount; i++) {
     final card = _rollFrom<PlayerCard>(
       playerPool,
-      (card) => playerRarity(card.rating),
+      (card) => card.tier,
       pack.odds,
       rng,
     );
@@ -163,7 +163,7 @@ PackResult rollPack(
   for (var i = 0; i < pack.actionCount; i++) {
     final card = _rollFrom<ActionCard>(
       actionPool,
-      (card) => actionRarity(card.power),
+      (card) => card.tier,
       pack.odds,
       rng,
     );
@@ -181,7 +181,7 @@ PackResult rollDailyDrop(
   if (rng.nextBool()) {
     final card = _rollFrom<PlayerCard>(
       playerPool,
-      (card) => playerRarity(card.rating),
+      (card) => card.tier,
       kDailyDropOdds,
       rng,
     );
@@ -189,7 +189,7 @@ PackResult rollDailyDrop(
   }
   final card = _rollFrom<ActionCard>(
     actionPool,
-    (card) => actionRarity(card.power),
+    (card) => card.tier,
     kDailyDropOdds,
     rng,
   );
@@ -207,32 +207,32 @@ PackResult _finalize(List<PlayerCard> players, List<ActionCard> actions) {
   return PackResult(playerCards: players, actionCards: actions, xpGained: xp);
 }
 
-CardRarity _pickWeighted(Map<CardRarity, int> odds, Random random) {
+CardTier _pickWeighted(Map<CardTier, int> odds, Random random) {
   final total = odds.values.fold<int>(0, (sum, weight) => sum + weight);
   var roll = random.nextDouble() * total;
   for (final entry in odds.entries) {
     roll -= entry.value;
     if (roll <= 0) return entry.key;
   }
-  return CardRarity.common;
+  return CardTier.bronze;
 }
 
 T? _rollFrom<T>(
   List<T> pool,
-  CardRarity Function(T item) rarityOf,
-  Map<CardRarity, int> odds,
+  CardTier Function(T item) tierOf,
+  Map<CardTier, int> odds,
   Random random,
 ) {
   if (pool.isEmpty) return null;
   final wanted = _pickWeighted(odds, random);
-  for (final rarity in [
+  for (final tier in [
     wanted,
-    CardRarity.legendary,
-    CardRarity.epic,
-    CardRarity.rare,
-    CardRarity.common,
+    CardTier.platinum,
+    CardTier.gold,
+    CardTier.silver,
+    CardTier.bronze,
   ]) {
-    final matches = pool.where((item) => rarityOf(item) == rarity).toList();
+    final matches = pool.where((item) => tierOf(item) == tier).toList();
     if (matches.isNotEmpty) return matches[random.nextInt(matches.length)];
   }
   return pool[random.nextInt(pool.length)];
