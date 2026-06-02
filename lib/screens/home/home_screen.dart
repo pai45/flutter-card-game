@@ -59,8 +59,11 @@ class HomeScreen extends StatelessWidget {
                                   children: [
                                     Text(
                                       'PITCH DUEL',
-                                      style: Cyber.display(26, letterSpacing: 1.4)
-                                          .copyWith(
+                                      style:
+                                          Cyber.display(
+                                            26,
+                                            letterSpacing: 1.4,
+                                          ).copyWith(
                                             shadows: [
                                               Shadow(
                                                 color: Cyber.cyan.withValues(
@@ -182,7 +185,11 @@ class HomeScreen extends StatelessWidget {
                                 label: 'HOW TO PLAY',
                                 onTap: () => onNavigate(AppSection.howToPlay),
                               ),
-                              Container(width: 3, height: 3, color: Cyber.muted),
+                              Container(
+                                width: 3,
+                                height: 3,
+                                color: Cyber.muted,
+                              ),
                               _HudLink(
                                 label: 'REPLAY WALKTHROUGH',
                                 faint: true,
@@ -254,7 +261,12 @@ class _LobbyStatusBar extends StatelessWidget {
             color: Cyber.success,
             shape: BoxShape.circle,
             // Live indicator — glow is intentional here.
-            boxShadow: Cyber.glow(Cyber.success, alpha: 0.6, blur: 8, spread: 0),
+            boxShadow: Cyber.glow(
+              Cyber.success,
+              alpha: 0.6,
+              blur: 8,
+              spread: 0,
+            ),
           ),
         ),
         const SizedBox(width: 8),
@@ -291,61 +303,101 @@ class _LobbyStatusBar extends StatelessWidget {
   }
 }
 
-/// The app logo framed by HUD corner brackets with a focal glow. Falls back to
-/// the legacy soccer icon until [_kAppLogoAsset] is present.
-class _HeroEmblem extends StatelessWidget {
+/// Animated soccer emblem framed by HUD corner brackets.
+class _HeroEmblem extends StatefulWidget {
   const _HeroEmblem({this.size = 92});
-
-  static const String _kAppLogoAsset = 'assets/icons/app_logo.png';
 
   final double size;
 
   @override
+  State<_HeroEmblem> createState() => _HeroEmblemState();
+}
+
+class _HeroEmblemState extends State<_HeroEmblem>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _spin;
+
+  @override
+  void initState() {
+    super.initState();
+    _spin = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3600),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _spin.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final size = widget.size;
     return SizedBox(
       width: size,
       height: size,
-      child: Stack(
-        children: [
-          Center(
-            child: Container(
-              width: size * 0.84,
-              height: size * 0.84,
-              decoration: BoxDecoration(
-                boxShadow: Cyber.glow(
-                  Cyber.cyan,
-                  alpha: 0.35,
-                  blur: 22,
-                  spread: -2,
+      child: AnimatedBuilder(
+        animation: _spin,
+        builder: (context, _) {
+          final phase = _spin.value * math.pi * 2;
+          final pulse = 0.5 + 0.5 * math.sin(phase * 2);
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: size * 0.9,
+                height: size * 0.9,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Cyber.bg.withValues(alpha: 0.5),
+                  border: Border.all(
+                    color: Cyber.cyan.withValues(alpha: 0.26 + pulse * 0.12),
+                  ),
+                  boxShadow: Cyber.glow(
+                    Cyber.cyan,
+                    alpha: 0.2 + pulse * 0.08,
+                    blur: 18 + pulse * 4,
+                    spread: -4,
+                  ),
                 ),
               ),
-              child: Image.asset(
-                _kAppLogoAsset,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.medium,
-                // ignore: prefer_void_to_null
-                errorBuilder: (_, _, _) => Icon(
+              SizedBox(
+                width: size * 0.74,
+                height: size * 0.74,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Cyber.lime.withValues(alpha: 0.18),
+                    ),
+                  ),
+                ),
+              ),
+              Transform.rotate(
+                angle: phase,
+                child: Icon(
                   Icons.sports_soccer,
-                  size: size * 0.7,
+                  size: size * 0.64,
                   color: Cyber.cyan,
                   shadows: [
                     Shadow(
-                      color: Cyber.cyan.withValues(alpha: 0.55),
-                      blurRadius: 18,
+                      color: Cyber.cyan.withValues(alpha: 0.62),
+                      blurRadius: 16 + pulse * 4,
                     ),
                   ],
                 ),
               ),
-            ),
-          ),
-          Positioned.fill(
-            child: CustomPaint(
-              painter: _CornerBracketsPainter(
-                Cyber.cyan.withValues(alpha: 0.7),
+              CustomPaint(
+                size: Size.square(size),
+                painter: _CornerBracketsPainter(
+                  Cyber.cyan.withValues(alpha: 0.62 + pulse * 0.14),
+                ),
               ),
-            ),
-          ),
-        ],
+            ],
+          );
+        },
       ),
     );
   }
@@ -438,7 +490,11 @@ class _HudStat extends StatelessWidget {
 
 /// A flat HUD text link (no Material ripple). Used for the secondary actions.
 class _HudLink extends StatelessWidget {
-  const _HudLink({required this.label, required this.onTap, this.faint = false});
+  const _HudLink({
+    required this.label,
+    required this.onTap,
+    this.faint = false,
+  });
 
   final String label;
   final VoidCallback onTap;

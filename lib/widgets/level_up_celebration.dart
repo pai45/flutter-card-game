@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../config/theme.dart';
+import '../utils/sound_effects.dart';
 
 class LevelUpCelebration extends StatefulWidget {
   const LevelUpCelebration({
@@ -70,6 +71,7 @@ class _LevelUpCelebrationState extends State<LevelUpCelebration>
   }
 
   void _startAnimation() {
+    playSound(SoundEffect.levelUp);
     _vignetteCtrl.forward();
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) _particleCtrl.forward();

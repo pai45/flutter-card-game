@@ -58,7 +58,7 @@ class _PenaltyPhaseState extends State<PenaltyPhase>
       final scored =
           widget.state.penaltyKicks.isNotEmpty &&
           widget.state.penaltyKicks.last.scored;
-      playSound(scored ? SoundEffect.goal : SoundEffect.cardSlam);
+      playSound(scored ? SoundEffect.goal : SoundEffect.save);
     } else if (old.state.penaltyKickPhase == 'result' &&
         widget.state.penaltyKickPhase == 'choose') {
       _revealCtrl.reset();

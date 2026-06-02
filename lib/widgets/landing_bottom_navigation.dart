@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../config/enums.dart';
 import '../config/theme.dart';
+import '../utils/sound_effects.dart';
 
 /// Premium dark bottom navigation shared by the landing surfaces (Game / Shop /
 /// Top). Each tab carries its own active accent — the Top tab glows gold to read
@@ -105,7 +106,10 @@ class _NavItem extends StatelessWidget {
     final Color color = active ? spec.accent : Cyber.muted;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: onTap,
+      onTap: () {
+        playSound(SoundEffect.uiTap);
+        onTap();
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOut,

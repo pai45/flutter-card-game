@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../config/theme.dart';
+import '../../utils/sound_effects.dart';
 
 /// Accent blue used alongside [Cyber.cyan] for this button's gradient glow,
 /// matching the primary CTA gradient elsewhere in the app.
@@ -144,6 +145,7 @@ class _HudCtaButtonState extends State<HudCtaButton>
         onTapCancel: () => setState(() => _pressed = false),
         onTap: () {
           HapticFeedback.mediumImpact();
+          playSound(SoundEffect.playMatch);
           widget.onTap();
         },
         child: AnimatedBuilder(

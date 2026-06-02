@@ -4,19 +4,34 @@ import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
 
-// ── Colour constants ─────────────────────────────────────────────────────────
-const Color _kBg = Color(0xFF0D111A);
+import '../config/theme.dart';
+import '../utils/sound_effects.dart';
+
+// ── Colour constants (shared app palette) ─────────────────────────────────────
+const Color _kBg = Cyber.bg;
 const Color _kSurface = Color(0xFF1E2538);
-const Color _kCyan = Color(0xFF5CDFFF);
-const Color _kGold = Color(0xFFFFD700);
-const Color _kWhite = Color(0xFFFFFFFF);
-const Color _kMuted = Color(0xFF94A3B8);
+const Color _kCyan = Cyber.cyan;
+const Color _kGold = Cyber.gold;
+const Color _kViolet = Cyber.violet;
+const Color _kWhite = Colors.white;
+const Color _kMuted = Cyber.muted;
 const Color _kBronze = Color(0xFFCD7F32);
 const Color _kSilver = Color(0xFFCBD5E1);
 
 // ── Tier helpers ──────────────────────────────────────────────────────────────
-// Cards reveal by tier: bronze / silver / gold / platinum. Platinum is the
-// premium drop and inherits the old "legendary" treatment (cyan glow + shimmer).
+// Cards reveal by tier: bronze / silver / gold / platinum, escalating in drama.
+// Platinum is the premium "walkout" drop — holographic cyan↔violet with the
+// fullest ray burst.
+
+/// 0 bronze · 1 silver · 2 gold · 3 platinum — how much reveal drama (rays,
+/// confetti, shockwave intensity) a pull earns.
+int _rarityRank(String r) => switch (r) {
+  'silver' => 1,
+  'gold' => 2,
+  'platinum' => 3,
+  _ => 0,
+};
+
 Color _rarityBase(String r) => switch (r) {
   'silver' => _kSilver,
   'gold' => _kGold,
@@ -24,18 +39,40 @@ Color _rarityBase(String r) => switch (r) {
   _ => _kBronze,
 };
 
-Color _rarityGlow(String r) => switch (r) {
-  'silver' => _kSilver.withValues(alpha: 0.6),
-  'gold' => _kGold.withValues(alpha: 0.75),
-  'platinum' => _kCyan.withValues(alpha: 0.85),
-  _ => _kBronze.withValues(alpha: 0.5),
+/// Hot secondary used for holographic beams / card shine on the top tiers.
+Color _raritySecondary(String r) => switch (r) {
+  'silver' => _kWhite,
+  'gold' => const Color(0xFFFFE9A8),
+  'platinum' => _kViolet,
+  _ => const Color(0xFFE8A45C),
 };
 
+Color _rarityGlow(String r) => switch (r) {
+  'silver' => _kSilver.withValues(alpha: 0.65),
+  'gold' => _kGold.withValues(alpha: 0.8),
+  'platinum' => _kCyan.withValues(alpha: 0.9),
+  _ => _kBronze.withValues(alpha: 0.55),
+};
+
+// Vibrant, metallic FIFA/Topps-style fills: a bright catch-light, the tier hue,
+// then a deep base. Gold is true gold (not brown); platinum is iridescent.
 List<Color> _rarityGradientColors(String r) => switch (r) {
-  'silver' => [const Color(0xFF334155), const Color(0xFF64748B)],
-  'gold' => [const Color(0xFF78350F), const Color(0xFFB45309)],
-  'platinum' => [const Color(0xFF0C4A6E), const Color(0xFF0369A1)],
-  _ => [const Color(0xFF3A2410), const Color(0xFF6B4321)],
+  'silver' => [
+    const Color(0xFFF1F5F9),
+    const Color(0xFFCBD5E1),
+    const Color(0xFF64748B),
+  ],
+  'gold' => [
+    const Color(0xFFFFE9A8),
+    const Color(0xFFFFD166),
+    const Color(0xFFB8860B),
+  ],
+  'platinum' => [const Color(0xFFB9F6FF), _kCyan, _kViolet],
+  _ => [
+    const Color(0xFFE8A45C),
+    const Color(0xFFCD7F32),
+    const Color(0xFF5C3A1A),
+  ],
 };
 
 // ── Particle ──────────────────────────────────────────────────────────────────
@@ -117,6 +154,12 @@ class _CardUnpackState extends State<CardUnpackAnimation>
   AnimationController? _idleCtrl; // stage 10 – 2000 ms repeat
   AnimationController? _tapCtrl; // stage 10 tap pulse – 1200 ms repeat
   AnimationController? _dismissCtrl; // dismiss – 300 ms
+  AnimationController? _beamCtrl; // rotating god-rays (silver+), from settle
+  AnimationController? _shockCtrl; // expanding shockwave ring on reveal
+  AnimationController? _sweepCtrl; // holographic shine sweep across the card
+  AnimationController? _ovrCtrl; // big OVR number count-up + slam
+  AnimationController? _ovrFadeCtrl; // OVR fade-out after the hold
+  Timer? _ovrHoldTimer; // keeps the OVR pop on screen briefly before fading
 
   int _countdown = 3;
   Timer? _countdownTimer;
@@ -163,9 +206,12 @@ class _CardUnpackState extends State<CardUnpackAnimation>
   // Particle initialisation
   // ─────────────────────────────────────────────────────────────────────────
   void _initParticles() {
+    final rank = _rarityRank(widget.rarity);
     final glowColor = _rarityBase(widget.rarity);
-    _particles = List.generate(24, (i) {
-      final angle = (i / 24) * 2 * pi + (_rng.nextDouble() - 0.5) * 0.3;
+    // More confetti the rarer the pull: bronze 18 → platinum 42.
+    final count = 18 + rank * 8;
+    _particles = List.generate(count, (i) {
+      final angle = (i / count) * 2 * pi + (_rng.nextDouble() - 0.5) * 0.3;
       final speed = 80 + _rng.nextDouble() * 100;
       final size = 2 + _rng.nextDouble() * 4;
       return _Particle(
@@ -177,18 +223,18 @@ class _CardUnpackState extends State<CardUnpackAnimation>
       );
     });
 
-    _legendaryParticles = widget.rarity == 'platinum'
-        ? List.generate(12, (i) {
-            final angle = (i / 12) * 2 * pi + (_rng.nextDouble() - 0.5) * 0.3;
-            return _Particle(
-              angle: angle,
-              speed: 60 + _rng.nextDouble() * 80,
-              size: 4 + _rng.nextDouble() * 6,
-              color: _kGold,
-              rotation: _rng.nextDouble() * pi,
-            );
-          })
-        : [];
+    // Gold + platinum earn a second confetti wave (gold/white shimmer).
+    final secondWave = rank >= 2 ? 12 + (rank - 2) * 8 : 0;
+    _legendaryParticles = List.generate(secondWave, (i) {
+      final angle = (i / secondWave) * 2 * pi + (_rng.nextDouble() - 0.5) * 0.3;
+      return _Particle(
+        angle: angle,
+        speed: 60 + _rng.nextDouble() * 80,
+        size: 4 + _rng.nextDouble() * 6,
+        color: i.isEven ? _kGold : _kWhite,
+        rotation: _rng.nextDouble() * pi,
+      );
+    });
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -275,6 +321,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
     // Swap pack → card at the white-out peak
     _flashCtrl!.addListener(() {
       if (_flashCtrl!.value >= 0.5 && !_showCard) {
+        playSound(SoundEffect.cardReveal);
         setState(() => _showCard = true);
       }
     });
@@ -310,6 +357,58 @@ class _CardUnpackState extends State<CardUnpackAnimation>
     );
     _particleCtrl!.addListener(() => setState(() {}));
     _particleCtrl!.forward();
+
+    final rank = _rarityRank(widget.rarity);
+
+    // Reveal shockwave ring — punches outward as the card pops in.
+    _shockCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    );
+    _shockCtrl!.forward().then((_) {
+      if (mounted) {
+        setState(() {
+          _shockCtrl?.dispose();
+          _shockCtrl = null;
+        });
+      }
+    });
+
+    // Rotating god-ray beams for silver and above (escalates with tier).
+    if (rank >= 1) {
+      _beamCtrl = AnimationController(
+        vsync: this,
+        duration: const Duration(seconds: 16),
+      )..repeat();
+    }
+
+    // Holographic shine sweep across the card; platinum keeps shimmering.
+    _sweepCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    if (rank >= 3) {
+      _sweepCtrl!.repeat();
+    } else {
+      _sweepCtrl!.forward().then((_) {
+        if (mounted) {
+          setState(() {
+            _sweepCtrl?.dispose();
+            _sweepCtrl = null;
+          });
+        }
+      });
+    }
+
+    // Big OVR number count-up + slam (only meaningful with a real card face).
+    // Once it lands, it lingers ~0.5 s before fading out instead of snapping off.
+    if (widget.frontFace != null) {
+      _ovrCtrl = AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 750),
+      );
+      _ovrCtrl!.forward().then((_) => _holdThenFadeOvr());
+    }
 
     // Stage 6 – settle scale
     _cardSettleCtrl = AnimationController(
@@ -353,6 +452,18 @@ class _CardUnpackState extends State<CardUnpackAnimation>
     });
     _cardSettleCtrl!.forward().then((_) => _startStage8());
     setState(() => _stage = _Stage.cardSettle);
+  }
+
+  // Hold the landed OVR number on screen for ~0.5 s, then fade it out.
+  void _holdThenFadeOvr() {
+    _ovrHoldTimer = Timer(const Duration(milliseconds: 500), () {
+      if (!mounted) return;
+      _ovrFadeCtrl = AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 260),
+      )..addListener(() => setState(() {}));
+      _ovrFadeCtrl!.forward();
+    });
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -522,6 +633,12 @@ class _CardUnpackState extends State<CardUnpackAnimation>
     _idleCtrl?.dispose();
     _tapCtrl?.dispose();
     _dismissCtrl?.dispose();
+    _beamCtrl?.dispose();
+    _shockCtrl?.dispose();
+    _sweepCtrl?.dispose();
+    _ovrCtrl?.dispose();
+    _ovrFadeCtrl?.dispose();
+    _ovrHoldTimer?.cancel();
     _countdownTimer?.cancel();
     super.dispose();
   }
@@ -555,6 +672,43 @@ class _CardUnpackState extends State<CardUnpackAnimation>
               ),
             ),
 
+            // 2b ── Rotating god-ray beams behind the card (silver and above).
+            if (_beamCtrl != null && _showCard)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: RepaintBoundary(
+                    child: AnimatedBuilder(
+                      animation: Listenable.merge([_beamCtrl!, _cardSettleCtrl]),
+                      builder: (_, ignored) => CustomPaint(
+                        painter: _RayBurstPainter(
+                          color: _rarityBase(widget.rarity),
+                          secondary: _raritySecondary(widget.rarity),
+                          rank: _rarityRank(widget.rarity),
+                          rotation: _beamCtrl!.value,
+                          intro: _cardSettleCtrl?.value ?? 1.0,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+            // 2c ── Reveal shockwave ring.
+            if (_shockCtrl != null && _showCard)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: AnimatedBuilder(
+                    animation: _shockCtrl!,
+                    builder: (_, ignored) => CustomPaint(
+                      painter: _ShockwavePainter(
+                        progress: _shockCtrl!.value,
+                        color: _rarityBase(widget.rarity),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
             // 3 ── Particles (only after stage 6 starts)
             if (_particleCtrl != null)
               Positioned.fill(
@@ -563,7 +717,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
                     particles: _particles,
                     legendaryParticles: _legendaryParticles,
                     animValue: _particleCtrl!.value,
-                    isLegendary: widget.rarity == 'platinum',
+                    isLegendary: _rarityRank(widget.rarity) >= 2,
                   ),
                 ),
               ),
@@ -573,6 +727,10 @@ class _CardUnpackState extends State<CardUnpackAnimation>
 
             // 5 ── Rarity title drop
             if (_rarityDropCtrl != null) _buildRarityTitle(size),
+
+            // 5b ── Big OVR number pop (FIFA-style) — counts up, slams, then
+            //       lingers ~0.5 s and fades (handled inside _buildOvrPop).
+            if (_ovrCtrl != null && widget.frontFace != null) _buildOvrPop(size),
 
             // 6 ── Flash overlay
             if (_stage == _Stage.flash && _flashCtrl != null)
@@ -751,6 +909,28 @@ class _CardUnpackState extends State<CardUnpackAnimation>
   }
 
   Widget _cardWithGlow(Widget child, Color glowColor) {
+    Widget inner = child;
+    // Topps-style holographic shine sweeping diagonally across the card face.
+    if (_sweepCtrl != null) {
+      inner = Stack(
+        children: [
+          child,
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AnimatedBuilder(
+                animation: _sweepCtrl!,
+                builder: (_, ignored) => CustomPaint(
+                  painter: _ShineSweepPainter(
+                    progress: _sweepCtrl!.value,
+                    color: _raritySecondary(widget.rarity),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.zero,
@@ -762,7 +942,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
           ),
         ],
       ),
-      child: child,
+      child: inner,
     );
   }
 
@@ -1000,6 +1180,74 @@ class _CardUnpackState extends State<CardUnpackAnimation>
   }
 
   // ─────────────────────────────────────────────────────────────────────────
+  // Big OVR number pop — counts 0 → rating, scales down from a big "slam".
+  // ─────────────────────────────────────────────────────────────────────────
+  Widget _buildOvrPop(Size size) {
+    final base = _rarityBase(widget.rarity);
+    return Positioned(
+      left: 0,
+      right: 0,
+      bottom: size.height * 0.2,
+      child: IgnorePointer(
+        child: AnimatedBuilder(
+          animation: Listenable.merge([_ovrCtrl, _ovrFadeCtrl]),
+          builder: (_, ignored) {
+            final t = Curves.easeOut.transform(_ovrCtrl!.value);
+            final value = (widget.rating * t).round();
+            final scale = lerpDouble(1.7, 1.0, t)!;
+            final glow = 1 - t;
+            final fadeOut = 1 - (_ovrFadeCtrl?.value ?? 0.0);
+            final opacity = ((t < 0.06 ? t / 0.06 : 1.0) * fadeOut).clamp(
+              0.0,
+              1.0,
+            );
+            return Opacity(
+              opacity: opacity,
+              child: Transform.scale(
+                scale: scale,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$value',
+                      style: TextStyle(
+                        color: _kWhite,
+                        fontFamily: 'Orbitron',
+                        fontWeight: FontWeight.w900,
+                        fontSize: 56,
+                        height: 1,
+                        decoration: TextDecoration.none,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                        shadows: [
+                          Shadow(
+                            color: base.withValues(alpha: 0.7 + 0.3 * glow),
+                            blurRadius: 18 + 26 * glow,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      'OVR',
+                      style: TextStyle(
+                        color: base,
+                        fontFamily: 'Orbitron',
+                        fontWeight: FontWeight.w900,
+                        fontSize: 14,
+                        letterSpacing: 6,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
   // Tap-to-continue label (show only 3)
   // ─────────────────────────────────────────────────────────────────────────
   Widget _buildTapLabel() {
@@ -1163,6 +1411,9 @@ class _CardBackPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Confine the diagonal pattern to the card; the line loop deliberately
+    // overshoots the bounds, so without this clip it bleeds across the screen.
+    canvas.clipRect(Offset.zero & size);
     final paint = Paint()
       ..color = lineColor
       ..strokeWidth = 1;
@@ -1231,4 +1482,140 @@ class _ParticlePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_ParticlePainter old) => old.animValue != animValue;
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// God-ray beam burst — rotating wedges of light behind the card. The number and
+// brightness of rays escalate with tier (none for bronze); platinum alternates
+// its two holographic hues.
+// ═════════════════════════════════════════════════════════════════════════════
+class _RayBurstPainter extends CustomPainter {
+  const _RayBurstPainter({
+    required this.color,
+    required this.secondary,
+    required this.rank,
+    required this.rotation,
+    required this.intro,
+  });
+
+  final Color color;
+  final Color secondary;
+  final int rank; // 0 bronze .. 3 platinum
+  final double rotation; // 0..1 slow spin
+  final double intro; // 0..1 fade/scale-in
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (rank < 1 || intro <= 0) return;
+    final center = Offset(size.width / 2, size.height * 0.46);
+    final rayCount = rank >= 3 ? 16 : (rank == 2 ? 12 : 8);
+    final maxLen = size.longestSide * (0.6 + 0.4 * intro);
+    final baseAlpha = (rank >= 3 ? 0.20 : (rank == 2 ? 0.16 : 0.09)) * intro;
+    final half = (pi / rayCount) * 0.55; // wedge half-angle (leaves gaps)
+
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(rotation * 2 * pi);
+    for (var i = 0; i < rayCount; i++) {
+      final a = (i / rayCount) * 2 * pi;
+      final rayColor = (rank >= 3 && i.isOdd) ? secondary : color;
+      final wedge = Path()
+        ..moveTo(0, 0)
+        ..lineTo(cos(a - half) * maxLen, sin(a - half) * maxLen)
+        ..lineTo(cos(a + half) * maxLen, sin(a + half) * maxLen)
+        ..close();
+      final paint = Paint()
+        ..blendMode = BlendMode.plus
+        ..shader = RadialGradient(
+          colors: [rayColor.withValues(alpha: baseAlpha), Colors.transparent],
+        ).createShader(
+          Rect.fromCircle(center: Offset.zero, radius: maxLen),
+        );
+      canvas.drawPath(wedge, paint);
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_RayBurstPainter old) =>
+      old.rotation != rotation ||
+      old.intro != intro ||
+      old.rank != rank ||
+      old.color != color ||
+      old.secondary != secondary;
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Shockwave ring — two expanding stroked circles that fade as the card reveals.
+// ═════════════════════════════════════════════════════════════════════════════
+class _ShockwavePainter extends CustomPainter {
+  const _ShockwavePainter({required this.progress, required this.color});
+
+  final double progress; // 0..1
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (progress <= 0 || progress >= 1) return;
+    final center = Offset(size.width / 2, size.height * 0.46);
+    final maxR = size.shortestSide * 0.85;
+    for (final delay in const [0.0, 0.16]) {
+      final raw = (progress - delay) / (1 - delay);
+      if (raw <= 0 || raw >= 1) continue;
+      final t = Curves.easeOut.transform(raw);
+      canvas.drawCircle(
+        center,
+        maxR * t,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3 * (1 - t) + 0.5
+          ..color = color.withValues(alpha: (1 - t) * 0.6),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_ShockwavePainter old) =>
+      old.progress != progress || old.color != color;
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Holographic shine — a diagonal highlight band that sweeps across the card.
+// ═════════════════════════════════════════════════════════════════════════════
+class _ShineSweepPainter extends CustomPainter {
+  const _ShineSweepPainter({required this.progress, required this.color});
+
+  final double progress; // 0..1 (loops for platinum)
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = progress % 1.0;
+    final rect = Offset.zero & size;
+    final paint = Paint()
+      ..blendMode = BlendMode.plus
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.transparent,
+          color.withValues(alpha: 0.0),
+          color.withValues(alpha: 0.45),
+          color.withValues(alpha: 0.0),
+          Colors.transparent,
+        ],
+        stops: [
+          (p - 0.18).clamp(0.0, 1.0),
+          (p - 0.09).clamp(0.0, 1.0),
+          p.clamp(0.0, 1.0),
+          (p + 0.09).clamp(0.0, 1.0),
+          (p + 0.18).clamp(0.0, 1.0),
+        ],
+      ).createShader(rect);
+    canvas.drawRect(rect, paint);
+  }
+
+  @override
+  bool shouldRepaint(_ShineSweepPainter old) =>
+      old.progress != progress || old.color != color;
 }

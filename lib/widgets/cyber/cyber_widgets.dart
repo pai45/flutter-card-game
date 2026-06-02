@@ -775,6 +775,39 @@ class CyberClipper extends CustomClipper<Path> {
   bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
 }
 
+/// Angular HUD silhouette shared by the primary CTA ([HudCtaButton]) and player
+/// cards: a strong chamfer on the top-left and bottom-right corners with smaller
+/// accent cuts on the top-right and bottom-left. Keeping one silhouette across
+/// buttons and cards makes them read as the same "HUD hardware" family.
+class HudChamferClipper extends CustomClipper<Path> {
+  const HudChamferClipper({required this.bigCut, required this.smallCut});
+
+  final double bigCut;
+  final double smallCut;
+
+  Path buildPath(Size size) {
+    final w = size.width;
+    final h = size.height;
+    return Path()
+      ..moveTo(bigCut, 0) // after the top-left chamfer
+      ..lineTo(w - smallCut, 0) // top edge
+      ..lineTo(w, smallCut) // top-right accent
+      ..lineTo(w, h - bigCut) // right edge
+      ..lineTo(w - bigCut, h) // bottom-right chamfer
+      ..lineTo(smallCut, h) // bottom edge
+      ..lineTo(0, h - smallCut) // bottom-left accent
+      ..lineTo(0, bigCut) // left edge
+      ..close();
+  }
+
+  @override
+  Path getClip(Size size) => buildPath(size);
+
+  @override
+  bool shouldReclip(covariant HudChamferClipper old) =>
+      old.bigCut != bigCut || old.smallCut != smallCut;
+}
+
 enum VisualCardSize { sm, md, lg }
 
 // Full-luminance grayscale matrix for disabled/suspended cards.
@@ -801,6 +834,8 @@ class PremiumCardShell extends StatefulWidget {
     required this.builder,
     this.onTap,
     this.disabledLabel = 'IN DECK',
+    this.clipper,
+    this.tapSound = SoundEffect.cardSelect,
     super.key,
   });
 
@@ -813,6 +848,15 @@ class PremiumCardShell extends StatefulWidget {
   final Widget Function(bool hovered) builder;
   final VoidCallback? onTap;
   final String disabledLabel;
+
+  /// Sound played on a valid tap. Action tiles override it per category
+  /// (attack/defense/special); the default is the generic card-select tick.
+  final SoundEffect tapSound;
+
+  /// Silhouette used to mask the disabled "SUSPENDED" banner so it matches the
+  /// card's clipped shape. Defaults to [CyberClipper] (bottom-corner chamfer);
+  /// the player card passes a [HudChamferClipper] to match its angular edge.
+  final CustomClipper<Path>? clipper;
 
   @override
   State<PremiumCardShell> createState() => _PremiumCardShellState();
@@ -842,7 +886,7 @@ class _PremiumCardShellState extends State<PremiumCardShell>
       _shake.forward(from: 0);
       return;
     }
-    playSound(SoundEffect.cardSelect);
+    playSound(widget.tapSound);
     widget.onTap?.call();
   }
 
@@ -884,7 +928,7 @@ class _PremiumCardShellState extends State<PremiumCardShell>
                   card,
                   Positioned.fill(
                     child: ClipPath(
-                      clipper: CyberClipper(),
+                      clipper: widget.clipper ?? CyberClipper(),
                       child: _SuspendedBanner(widget.disabledLabel),
                     ),
                   ),
@@ -1068,18 +1112,26 @@ class CyberPlayerCardTile extends StatefulWidget {
 }
 
 class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _tapController;
+    with TickerProviderStateMixin {
+  late final AnimationController _tapController = AnimationController(
+    duration: const Duration(milliseconds: 300),
+    vsync: this,
+  );
+
+  // Drives the CTA-style pulsing edge glow. It only runs while the card is
+  // selected, so the dozens of unselected cards in a grid stay idle and the
+  // glow stays scarce (per the design glow rule).
+  late final AnimationController _pulse = AnimationController(
+    duration: const Duration(milliseconds: 1500),
+    vsync: this,
+  );
 
   @override
   void initState() {
     super.initState();
-    _tapController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
     if (widget.selected) {
       _tapController.value = 1;
+      _pulse.repeat(reverse: true);
     }
   }
 
@@ -1088,14 +1140,19 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
     super.didUpdateWidget(oldWidget);
     if (widget.selected && !oldWidget.selected) {
       _tapController.forward(from: 0);
+      _pulse.repeat(reverse: true);
     } else if (!widget.selected && oldWidget.selected) {
       _tapController.reverse();
+      _pulse
+        ..stop()
+        ..value = 0;
     }
   }
 
   @override
   void dispose() {
     _tapController.dispose();
+    _pulse.dispose();
     super.dispose();
   }
 
@@ -1108,6 +1165,7 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
     final selectedAccent = widget.selectedAccent;
     final onTap = widget.onTap;
     final tier = tierColor(card.tier);
+    final rank = card.tier.index; // 0 bronze · 1 silver · 2 gold · 3 platinum
     final posColor = switch (card.role) {
       PlayerRole.attacker => Cyber.cyan,
       PlayerRole.defender => Cyber.violet,
@@ -1117,6 +1175,12 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
     final large = size == VisualCardSize.lg;
     final width = small ? 96.0 : (large ? 144.0 : 128.0);
     final height = small ? 144.0 : (large ? 216.0 : 192.0);
+
+    // Angular HUD silhouette shared with the Play Match CTA; cuts scale with
+    // the card so every size keeps the same proportion.
+    final bigCut = (width * 0.13).clamp(10.0, 19.0);
+    final smallCut = bigCut * 0.5;
+    final clipper = HudChamferClipper(bigCut: bigCut, smallCut: smallCut);
 
     final scaleAnim = Tween<double>(begin: 1.0, end: 1.08).animate(
       CurvedAnimation(parent: _tapController, curve: Curves.easeOutBack),
@@ -1138,31 +1202,28 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
         disabled: disabled,
         accent: tier,
         selectedAccent: selectedAccent,
+        clipper: clipper,
         onTap: onTap,
         builder: (hovered) {
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: selected ? selectedAccent : tier.withValues(alpha: 0.55),
-              width: selected ? 1.5 : 1,
-            ),
-            // Holographic foil: angle shifts on hover (135deg -> ~200deg).
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: const [
-                Color(0xff111827),
-                Color(0xff1a2540),
-                Color(0xff111827),
-              ],
-              stops: const [0, 0.5, 1],
-              transform: GradientRotation(hovered ? 1.13 : 0),
-            ),
-          ),
-          child: ClipPath(
-            clipper: CyberClipper(),
+          final content = ClipPath(
+            clipper: clipper,
             child: Stack(
               children: [
+                // Tier-graded foil fill — richer the higher the tier; the
+                // gradient angle shifts on hover for a holographic shimmer.
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: _foilColors(tier, rank),
+                        stops: _foilStops(rank),
+                        transform: GradientRotation(hovered ? 1.13 : 0),
+                      ),
+                    ),
+                  ),
+                ),
                 Positioned.fill(
                   child: CustomPaint(painter: CardStripePainter(color: tier)),
                 ),
@@ -1194,39 +1255,12 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
                 Positioned(
                   top: 0,
                   right: 0,
-                  child: Container(
-                    width: small ? 36 : (large ? 48 : 44),
-                    height: small ? 30 : (large ? 40 : 36),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: [Colors.white, tier]),
-                      border: const Border(
-                        left: BorderSide(color: Colors.black54, width: 2),
-                        bottom: BorderSide(color: Colors.black54, width: 2),
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '${card.rating}',
-                          style: TextStyle(
-                            color: Cyber.bg,
-                            fontFamily: 'Orbitron',
-                            fontSize: small ? 12 : (large ? 17 : 15),
-                            fontWeight: FontWeight.w900,
-                            height: 0.9,
-                          ),
-                        ),
-                        const Text(
-                          'OVR',
-                          style: TextStyle(
-                            color: Cyber.bg,
-                            fontSize: 5,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ],
-                    ),
+                  child: _OvrBadge(
+                    rating: card.rating,
+                    tier: tier,
+                    rank: rank,
+                    small: small,
+                    large: large,
                   ),
                 ),
                 Positioned(
@@ -1293,31 +1327,293 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
                   child: Container(
                     alignment: Alignment.center,
                     padding: const EdgeInsets.symmetric(horizontal: 6),
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
                         colors: [Color(0xff202836), Color(0xff121824)],
                       ),
-                    ),
-                    child: Text(
-                      card.shortName,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: 'Orbitron',
-                        fontWeight: FontWeight.w900,
-                        fontSize: small ? 9 : (large ? 13 : 12),
+                      // Tier-coloured nameplate edge — another always-on rarity
+                      // cue (no glow, so the rule stays intact).
+                      border: Border(
+                        left: BorderSide(
+                          color: tier.withValues(alpha: 0.9),
+                          width: 2,
+                        ),
                       ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _TierPips(rank: rank, color: tier, small: small),
+                        SizedBox(height: small ? 2 : 3),
+                        Text(
+                          card.shortName,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: 'Orbitron',
+                            fontWeight: FontWeight.w900,
+                            fontSize: small ? 9 : (large ? 13 : 12),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ],
             ),
-          ),
-        );
-      },
+          );
+
+          // Static rarity edge is always painted; the soft blurred glow only
+          // appears on hover (steady) or selection (pulsing) — glow stays scarce.
+          if (!selected) {
+            return CustomPaint(
+              foregroundPainter: _CardFramePainter(
+                tier: tier,
+                accent: tier,
+                rank: rank,
+                glow: hovered ? 0.6 : 0.0,
+                bigCut: bigCut,
+                smallCut: smallCut,
+              ),
+              child: content,
+            );
+          }
+          return AnimatedBuilder(
+            animation: _pulse,
+            child: content,
+            builder: (_, child) => CustomPaint(
+              foregroundPainter: _CardFramePainter(
+                tier: tier,
+                accent: selectedAccent,
+                rank: rank,
+                glow: 0.55 + 0.45 * _pulse.value,
+                bigCut: bigCut,
+                smallCut: smallCut,
+              ),
+              child: child,
+            ),
+          );
+        },
       ),
     );
   }
+}
+
+/// Foil fill colours for a player card, graded by tier rank (0 bronze ·
+/// 1 silver · 2 gold · 3 platinum). Higher tiers get a richer, lighter,
+/// more iridescent base so rarity reads even before the edge is seen.
+List<Color> _foilColors(Color tier, int rank) => switch (rank) {
+  3 => [
+    const Color(0xff0b1426),
+    tier.withValues(alpha: 0.22),
+    const Color(0xff141d3a),
+    Cyber.violet.withValues(alpha: 0.18),
+    const Color(0xff0b1426),
+  ],
+  2 => [
+    const Color(0xff1a1606),
+    tier.withValues(alpha: 0.16),
+    const Color(0xff14130a),
+    const Color(0xff0f1118),
+  ],
+  1 => [
+    const Color(0xff141a24),
+    tier.withValues(alpha: 0.12),
+    const Color(0xff10151f),
+    const Color(0xff0e1118),
+  ],
+  _ => [
+    const Color(0xff19120c),
+    tier.withValues(alpha: 0.10),
+    const Color(0xff120f0e),
+  ],
+};
+
+/// Gradient stops matching [_foilColors] for each tier rank.
+List<double> _foilStops(int rank) => switch (rank) {
+  3 => const [0, 0.30, 0.5, 0.72, 1],
+  2 => const [0, 0.34, 0.7, 1],
+  1 => const [0, 0.36, 0.7, 1],
+  _ => const [0, 0.5, 1],
+};
+
+/// A row of four pips with `rank + 1` filled — a language-free rarity gauge
+/// (1 = bronze … 4 = platinum) on the nameplate.
+class _TierPips extends StatelessWidget {
+  const _TierPips({required this.rank, required this.color, required this.small});
+
+  final int rank;
+  final Color color;
+  final bool small;
+
+  @override
+  Widget build(BuildContext context) {
+    final filled = rank + 1;
+    final d = small ? 4.0 : 5.0;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < 4; i++)
+          Container(
+            width: d,
+            height: d,
+            margin: EdgeInsets.only(right: i == 3 ? 0 : 2),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: i < filled ? color : Colors.transparent,
+              border: i < filled
+                  ? null
+                  : Border.all(color: color.withValues(alpha: 0.45)),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// The OVR plate, restyled as a CTA-style compartment: an angular chamfer, a
+/// metallic tier-graded face (brighter for gold/platinum), a hairline divider
+/// and tabular figures.
+class _OvrBadge extends StatelessWidget {
+  const _OvrBadge({
+    required this.rating,
+    required this.tier,
+    required this.rank,
+    required this.small,
+    required this.large,
+  });
+
+  final int rating;
+  final Color tier;
+  final int rank;
+  final bool small;
+  final bool large;
+
+  @override
+  Widget build(BuildContext context) {
+    final w = small ? 38.0 : (large ? 52.0 : 46.0);
+    final h = small ? 32.0 : (large ? 44.0 : 40.0);
+    final faceTop = Color.lerp(tier, Colors.white, rank >= 2 ? 0.6 : 0.3)!;
+    final faceBottom = Color.lerp(tier, Cyber.bg, rank >= 1 ? 0.18 : 0.45)!;
+    return ClipPath(
+      clipper: HudChamferClipper(bigCut: small ? 7 : 9, smallCut: 3),
+      child: Container(
+        width: w,
+        height: h,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [faceTop, faceBottom],
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              '$rating',
+              style: TextStyle(
+                color: Cyber.bg,
+                fontFamily: 'Orbitron',
+                fontSize: small ? 13 : (large ? 19 : 16),
+                fontWeight: FontWeight.w900,
+                height: 0.9,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+            Container(
+              width: w * 0.4,
+              height: 0.8,
+              margin: const EdgeInsets.symmetric(vertical: 1.5),
+              color: Cyber.bg.withValues(alpha: 0.4),
+            ),
+            Text(
+              'OVR',
+              style: TextStyle(
+                color: Cyber.bg,
+                fontFamily: 'Orbitron',
+                fontSize: small ? 5 : 6,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Paints the card's angular edge. The static edge encodes rarity (heavier and
+/// brighter — holographic for platinum — with tier rank) so bronze → platinum
+/// reads at a glance; the soft blurred glow is gated on [glow] (hover/selected),
+/// keeping the blurred glow scarce per the design rule.
+class _CardFramePainter extends CustomPainter {
+  const _CardFramePainter({
+    required this.tier,
+    required this.accent,
+    required this.rank,
+    required this.glow,
+    required this.bigCut,
+    required this.smallCut,
+  });
+
+  final Color tier;
+  final Color accent;
+  final int rank; // 0 bronze .. 3 platinum
+  final double glow; // 0 resting .. 1 fully lit
+  final double bigCut;
+  final double smallCut;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path =
+        HudChamferClipper(bigCut: bigCut, smallCut: smallCut).buildPath(size);
+
+    // Soft blurred glow — only when active (hover/selected).
+    if (glow > 0) {
+      final glowPaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5
+        ..color = accent.withValues(alpha: 0.22 + 0.45 * glow)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 5 + 7 * glow);
+      canvas.drawPath(path, glowPaint);
+    }
+
+    // Static rarity edge: thicker and brighter with tier rank.
+    final edgeWidth = 1.0 + rank * 0.45;
+    final a = (0.5 + rank * 0.12 + 0.3 * glow).clamp(0.0, 1.0);
+    final List<Color> edgeColors = rank >= 3
+        // Platinum: holographic white → cyan → violet rim (elite).
+        ? [
+            Colors.white.withValues(alpha: a),
+            tier.withValues(alpha: a),
+            Cyber.violet.withValues(alpha: a),
+          ]
+        : [
+            Color.lerp(tier, Colors.white, 0.15 + rank * 0.17)!
+                .withValues(alpha: a),
+            tier.withValues(alpha: a),
+          ];
+    final edgePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = edgeWidth
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: edgeColors,
+      ).createShader(Offset.zero & size);
+    canvas.drawPath(path, edgePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _CardFramePainter old) =>
+      old.glow != glow ||
+      old.rank != rank ||
+      old.tier != tier ||
+      old.accent != accent ||
+      old.bigCut != bigCut ||
+      old.smallCut != smallCut;
 }
 
 class CyberActionCardTile extends StatefulWidget {
@@ -1427,6 +1723,11 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
               accent: widget.card.risky ? Cyber.magenta : catAccent,
               selectedAccent: widget.selectedAccent,
               onTap: widget.onTap,
+              tapSound: switch (widget.card.category) {
+                ActionCategory.attack => SoundEffect.attack,
+                ActionCategory.defense => SoundEffect.defense,
+                ActionCategory.special => SoundEffect.special,
+              },
               builder: (hovered) {
                 return DecoratedBox(
                   decoration: BoxDecoration(

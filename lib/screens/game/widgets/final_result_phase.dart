@@ -9,6 +9,7 @@ import '../../../config/theme.dart';
 import '../../../config/tutorial_steps.dart';
 import '../../../models/match.dart';
 import '../../../utils/label_helpers.dart';
+import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../../widgets/game_scaffold.dart';
 import '../../../widgets/level_up_celebration.dart';
@@ -90,6 +91,13 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
       }
     });
     _seq.forward();
+
+    // Win/lose sting as the result screen appears.
+    final s = widget.state;
+    final won = s.penaltyKicks.isNotEmpty
+        ? s.penaltyWinner == 'player'
+        : s.playerScore > s.opponentScore;
+    playSound(won ? SoundEffect.matchWin : SoundEffect.matchLose);
   }
 
   @override

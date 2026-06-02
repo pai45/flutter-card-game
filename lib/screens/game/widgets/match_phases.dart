@@ -2645,13 +2645,12 @@ class _CinematicRoundResultState extends State<_CinematicRoundResult>
     }
     if (!_stamped && _c.value >= 0.80) {
       _stamped = true;
-      playSound(
-        widget.result.outcome == RoundOutcome.redCard
-            ? SoundEffect.redCard
-            : (widget.result.outcome == RoundOutcome.goal
-                  ? SoundEffect.goal
-                  : SoundEffect.cardSlam),
-      );
+      playSound(switch (widget.result.outcome) {
+        RoundOutcome.redCard => SoundEffect.redCard,
+        RoundOutcome.goal => SoundEffect.goal,
+        RoundOutcome.saved || RoundOutcome.blocked => SoundEffect.save,
+        _ => SoundEffect.cardSlam,
+      });
     }
   }
 

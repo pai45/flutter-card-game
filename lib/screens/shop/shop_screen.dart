@@ -9,6 +9,7 @@ import '../../blocs/game/game_state.dart';
 import '../../config/enums.dart';
 import '../../models/cards.dart';
 import '../../models/shop.dart';
+import '../../utils/sound_effects.dart';
 import '../../widgets/card_unpack_animation.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
@@ -637,6 +638,10 @@ class _PackRevealSequenceScreen extends StatefulWidget {
 class _PackRevealSequenceScreenState extends State<_PackRevealSequenceScreen> {
   int _currentIndex = 0;
 
+  // Reveal lowest-rated first so the best pull is the climactic last walkout.
+  late final List<PlayerCard> _order =
+      [...widget.cards]..sort((a, b) => a.rating.compareTo(b.rating));
+
   void _advanceCard() {
     if (_currentIndex < widget.cards.length - 1) {
       setState(() => _currentIndex++);
@@ -657,8 +662,8 @@ class _PackRevealSequenceScreenState extends State<_PackRevealSequenceScreen> {
   }
 
   Widget _buildCardReveal() {
-    final card = widget.cards[_currentIndex];
-    final totalCards = widget.cards.length;
+    final card = _order[_currentIndex];
+    final totalCards = _order.length;
 
     return Scaffold(
       backgroundColor: _bg,
@@ -666,15 +671,32 @@ class _PackRevealSequenceScreenState extends State<_PackRevealSequenceScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: const SizedBox.shrink(),
-        title: Text(
-          'CARD ${_currentIndex + 1} OF $totalCards',
-          style: TextStyle(
-            color: widget.packAccent,
-            fontFamily: 'Orbitron',
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.6,
-          ),
+        // Progress pills — the active card's pill elongates and glows.
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < totalCards; i++)
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                width: i == _currentIndex ? 20 : 7,
+                height: 7,
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                decoration: BoxDecoration(
+                  color: i <= _currentIndex
+                      ? widget.packAccent
+                      : widget.packAccent.withValues(alpha: 0.22),
+                  borderRadius: BorderRadius.circular(4),
+                  boxShadow: i == _currentIndex
+                      ? [
+                          BoxShadow(
+                            color: widget.packAccent.withValues(alpha: 0.6),
+                            blurRadius: 8,
+                          ),
+                        ]
+                      : null,
+                ),
+              ),
+          ],
         ),
         centerTitle: true,
       ),
@@ -694,6 +716,12 @@ class _PackRevealSequenceScreenState extends State<_PackRevealSequenceScreen> {
   }
 
   Widget _buildSummaryScreen() {
+    // Best-to-worst so the hero is the top pull and the grid reads by rarity.
+    final sorted = [...widget.cards]
+      ..sort((a, b) => b.rating.compareTo(a.rating));
+    final best = sorted.first;
+    final rest = sorted.skip(1).toList();
+
     return Scaffold(
       backgroundColor: _bg,
       body: SafeArea(
@@ -730,51 +758,119 @@ class _PackRevealSequenceScreenState extends State<_PackRevealSequenceScreen> {
                   letterSpacing: 1.4,
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
+              // ── Hero: the top pull, enlarged and glowing, with a TOP PULL tag.
               Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _surface.withValues(alpha: 0.4),
-                  border: Border.all(
-                    color: widget.packAccent.withValues(alpha: 0.4),
-                  ),
+                  color: widget.packAccent.withValues(alpha: 0.16),
+                  border: Border.all(color: widget.packAccent),
                 ),
-                child: Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 12,
-                  runSpacing: 12,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    for (final card in widget.cards)
-                      SizedBox(
-                        width: 80,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            CyberPlayerCardTile(
-                              card: card,
-                              selected: true,
-                              size: VisualCardSize.sm,
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              card.shortName,
-                              maxLines: 2,
-                              textAlign: TextAlign.center,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontFamily: 'Orbitron',
-                                fontSize: 8,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
+                    Icon(Icons.star, color: widget.packAccent, size: 12),
+                    const SizedBox(width: 6),
+                    Text(
+                      'TOP PULL',
+                      style: TextStyle(
+                        color: widget.packAccent,
+                        fontFamily: 'Orbitron',
+                        fontWeight: FontWeight.w900,
+                        fontSize: 11,
+                        letterSpacing: 2,
                       ),
+                    ),
                   ],
                 ),
               ),
+              const SizedBox(height: 10),
+              Container(
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: widget.packAccent.withValues(alpha: 0.45),
+                      blurRadius: 36,
+                      spreadRadius: -4,
+                    ),
+                  ],
+                ),
+                child: CyberPlayerCardTile(
+                  card: best,
+                  selected: true,
+                  size: VisualCardSize.lg,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                best.name.toUpperCase(),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'Orbitron',
+                  fontWeight: FontWeight.w900,
+                  fontSize: 13,
+                  letterSpacing: 0.6,
+                ),
+              ),
+              if (rest.isNotEmpty) ...[
+                const SizedBox(height: 22),
+                Text(
+                  'REST OF PACK',
+                  style: TextStyle(
+                    color: _cyan.withValues(alpha: 0.7),
+                    fontFamily: 'Orbitron',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: _surface.withValues(alpha: 0.4),
+                    border: Border.all(
+                      color: widget.packAccent.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      for (final card in rest)
+                        SizedBox(
+                          width: 80,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CyberPlayerCardTile(
+                                card: card,
+                                selected: true,
+                                size: VisualCardSize.sm,
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                card.shortName,
+                                maxLines: 2,
+                                textAlign: TextAlign.center,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontFamily: 'Orbitron',
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -979,6 +1075,7 @@ class _PackTile extends StatelessWidget {
       _showSnack(context, 'Not enough coins — top up in the Coins tab.', false);
       return;
     }
+    playSound(SoundEffect.packOpen);
     bloc.add(ShopPackPurchased(pack.id));
   }
 
@@ -990,6 +1087,7 @@ class _PackTile extends StatelessWidget {
       preview: PackDesignWidget(pack: pack, width: 110, height: 158),
     );
     if (!context.mounted || !confirmed) return;
+    playSound(SoundEffect.packOpen);
     context.read<GameBloc>().add(ShopPackPurchased(pack.id, spendCoins: false));
   }
 
@@ -1531,6 +1629,7 @@ class _PurchasableCardTile extends StatelessWidget {
       _showSnack(context, 'Not enough coins — top up in the Coins tab.', false);
       return;
     }
+    playSound(SoundEffect.coins);
     bloc.add(DirectCardPurchased(cardId: card.id, price: price));
     onPurchased();
     _showSnack(context, '${card.shortName} added to your cards.');
@@ -1548,6 +1647,7 @@ class _PurchasableCardTile extends StatelessWidget {
       ),
     );
     if (!context.mounted || !confirmed) return;
+    playSound(SoundEffect.coins);
     context.read<GameBloc>().add(
       DirectCardPurchased(cardId: card.id, price: 0, spendCoins: false),
     );
