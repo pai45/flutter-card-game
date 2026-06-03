@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -45,129 +46,183 @@ class HomeScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const _LobbyStatusBar(),
+                          const _HomeSlideUpFadeIn(child: _LobbyStatusBar()),
                           const SizedBox(height: 18),
                           // Asymmetric HUD hero: logo emblem + identity block.
-                          Row(
-                            children: [
-                              const _HeroEmblem(size: 92),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'PITCH DUEL',
-                                      style:
-                                          Cyber.display(
-                                            26,
-                                            letterSpacing: 1.4,
-                                          ).copyWith(
-                                            shadows: [
-                                              Shadow(
-                                                color: Cyber.cyan.withValues(
-                                                  alpha: 0.45,
+                          _HomeSlideUpFadeIn(
+                            delay: const Duration(milliseconds: 80),
+                            offset: 24,
+                            child: Row(
+                              children: [
+                                const _HeroEmblem(size: 92),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'PITCH DUEL',
+                                        style:
+                                            Cyber.display(
+                                              26,
+                                              letterSpacing: 1.4,
+                                            ).copyWith(
+                                              shadows: [
+                                                Shadow(
+                                                  color: Cyber.cyan.withValues(
+                                                    alpha: 0.45,
+                                                  ),
+                                                  blurRadius: 14,
                                                 ),
-                                                blurRadius: 14,
-                                              ),
-                                            ],
-                                          ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      'TACTICAL CARD DUEL',
-                                      style: TextStyle(
-                                        color: Cyber.muted,
-                                        fontFamily: Cyber.displayFont,
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: 2.4,
+                                              ],
+                                            ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Align(
-                                      alignment: Alignment.centerLeft,
-                                      child: CyberChip(
-                                        label: state.deckReady
-                                            ? 'DECK ONLINE'
-                                            : 'DEFAULT LOADOUT',
-                                        color: state.deckReady
-                                            ? Cyber.lime
-                                            : Cyber.amber,
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        'TACTICAL CARD DUEL',
+                                        style: TextStyle(
+                                          color: Cyber.muted,
+                                          fontFamily: Cyber.displayFont,
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 2.4,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(height: 10),
+                                      Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: CyberChip(
+                                          label: state.deckReady
+                                              ? 'DECK ONLINE'
+                                              : 'DEFAULT LOADOUT',
+                                          color: state.deckReady
+                                              ? Cyber.lime
+                                              : Cyber.amber,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 20),
                           // Greeble telemetry — real profile data (no glow).
                           Row(
                             children: [
                               Expanded(
-                                child: _HudStat(
-                                  label: 'LEVEL',
-                                  value: '${state.progression.playerLevel}',
+                                child: _HomeDealtCard(
+                                  key: const ValueKey('home-stat-level'),
+                                  index: 0,
+                                  initialDelay: const Duration(
+                                    milliseconds: 180,
+                                  ),
+                                  flyDistance: 130,
+                                  child: _HudStat(
+                                    label: 'LEVEL',
+                                    value: '${state.progression.playerLevel}',
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: _HudStat(
-                                  label: 'TOTAL XP',
-                                  value: _grp(state.progression.totalXP),
+                                child: _HomeDealtCard(
+                                  key: const ValueKey('home-stat-xp'),
+                                  index: 1,
+                                  initialDelay: const Duration(
+                                    milliseconds: 180,
+                                  ),
+                                  flyDistance: 130,
+                                  child: _HudStat(
+                                    label: 'TOTAL XP',
+                                    value: _grp(state.progression.totalXP),
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: _HudStat(
-                                  label: 'COINS',
-                                  value: _grp(state.coins),
-                                  accent: Cyber.gold,
+                                child: _HomeDealtCard(
+                                  key: const ValueKey('home-stat-coins'),
+                                  index: 2,
+                                  initialDelay: const Duration(
+                                    milliseconds: 180,
+                                  ),
+                                  flyDistance: 130,
+                                  child: _HudStat(
+                                    label: 'COINS',
+                                    value: _grp(state.coins),
+                                    accent: Cyber.gold,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 24),
                           // PLAY MATCH — hero CTA, unchanged.
-                          state.deckReady
-                              ? HudCtaButton(
-                                  label: 'PLAY MATCH',
-                                  onTap: () {
-                                    context.read<GameBloc>().add(
-                                      MatchStarted(),
-                                    );
-                                    onNavigate(AppSection.match);
-                                  },
-                                )
-                              : Opacity(
-                                  opacity: 0.45,
-                                  child: IgnorePointer(
-                                    child: HudCtaButton(
-                                      label: 'PLAY MATCH',
-                                      onTap: () {},
+                          _HomeSlideUpFadeIn(
+                            delay: const Duration(milliseconds: 390),
+                            offset: 22,
+                            child: state.deckReady
+                                ? HudCtaButton(
+                                    label: 'PLAY MATCH',
+                                    onTap: () {
+                                      context.read<GameBloc>().add(
+                                        MatchStarted(),
+                                      );
+                                      onNavigate(AppSection.match);
+                                    },
+                                  )
+                                : Opacity(
+                                    opacity: 0.45,
+                                    child: IgnorePointer(
+                                      child: HudCtaButton(
+                                        label: 'PLAY MATCH',
+                                        onTap: () {},
+                                      ),
                                     ),
                                   ),
-                                ),
+                          ),
                           const SizedBox(height: 14),
                           Row(
                             children: [
                               Expanded(
-                                child: CyberCtaButton(
-                                  label: 'Deck Builder',
-                                  clip: false,
-                                  onPressed: () => onNavigate(AppSection.deck),
+                                child: _HomeDealtCard(
+                                  key: const ValueKey('home-action-deck'),
+                                  index: 0,
+                                  initialDelay: const Duration(
+                                    milliseconds: 470,
+                                  ),
+                                  staggerMs: 85,
+                                  flyDistance: 95,
+                                  duration: const Duration(milliseconds: 500),
+                                  child: CyberCtaButton(
+                                    label: 'Deck Builder',
+                                    clip: false,
+                                    onPressed: () =>
+                                        onNavigate(AppSection.deck),
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
-                                child: CyberCtaButton(
-                                  label: 'Match History',
-                                  clip: false,
-                                  onPressed: () => showMatchHistoryArchive(
-                                    context,
-                                    state.matchHistory,
+                                child: _HomeDealtCard(
+                                  key: const ValueKey('home-action-history'),
+                                  index: 1,
+                                  initialDelay: const Duration(
+                                    milliseconds: 470,
+                                  ),
+                                  staggerMs: 85,
+                                  flyDistance: 95,
+                                  duration: const Duration(milliseconds: 500),
+                                  child: CyberCtaButton(
+                                    label: 'Match History',
+                                    clip: false,
+                                    onPressed: () => showMatchHistoryArchive(
+                                      context,
+                                      state.matchHistory,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -175,50 +230,60 @@ class HomeScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 16),
                           // Secondary links (preserved): how-to-play + replay.
-                          Wrap(
-                            alignment: WrapAlignment.center,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            spacing: 14,
-                            runSpacing: 6,
-                            children: [
-                              _HudLink(
-                                label: 'HOW TO PLAY',
-                                onTap: () => onNavigate(AppSection.howToPlay),
-                              ),
-                              Container(
-                                width: 3,
-                                height: 3,
-                                color: Cyber.muted,
-                              ),
-                              _HudLink(
-                                label: 'REPLAY WALKTHROUGH',
-                                faint: true,
-                                onTap: () {
-                                  context.read<GameBloc>().add(TutorialReset());
-                                  showTutorialNow(
-                                    context,
-                                    keyName: 'home',
-                                    steps: homeTutorialSteps,
-                                  );
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Tutorial reset'),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ],
+                          _HomeSlideUpFadeIn(
+                            delay: const Duration(milliseconds: 650),
+                            offset: 14,
+                            child: Wrap(
+                              alignment: WrapAlignment.center,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 14,
+                              runSpacing: 6,
+                              children: [
+                                _HudLink(
+                                  label: 'HOW TO PLAY',
+                                  onTap: () => onNavigate(AppSection.howToPlay),
+                                ),
+                                Container(
+                                  width: 3,
+                                  height: 3,
+                                  color: Cyber.muted,
+                                ),
+                                _HudLink(
+                                  label: 'REPLAY WALKTHROUGH',
+                                  faint: true,
+                                  onTap: () {
+                                    context.read<GameBloc>().add(
+                                      TutorialReset(),
+                                    );
+                                    showTutorialNow(
+                                      context,
+                                      keyName: 'home',
+                                      steps: homeTutorialSteps,
+                                    );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Tutorial reset'),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ),
                 ),
-                const Positioned(
+                Positioned(
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  child: DailyDropButton(),
+                  child: _HomeSlideUpFadeIn(
+                    delay: const Duration(milliseconds: 720),
+                    offset: 36,
+                    child: const DailyDropButton(),
+                  ),
                 ),
                 const TutorialTip(keyName: 'home', steps: homeTutorialSteps),
               ],
@@ -243,6 +308,159 @@ String _grp(int value) {
     b.write(s[i]);
   }
   return '${value < 0 ? '-' : ''}$b';
+}
+
+class _HomeSlideUpFadeIn extends StatefulWidget {
+  const _HomeSlideUpFadeIn({
+    required this.child,
+    this.delay = Duration.zero,
+    this.offset = 30,
+  });
+
+  final Widget child;
+  final Duration delay;
+  final double offset;
+
+  @override
+  State<_HomeSlideUpFadeIn> createState() => _HomeSlideUpFadeInState();
+}
+
+class _HomeSlideUpFadeInState extends State<_HomeSlideUpFadeIn>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _progress;
+  Timer? _kickoff;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 480),
+    );
+    _progress = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutCubic,
+    );
+    if (widget.delay == Duration.zero) {
+      _controller.forward();
+    } else {
+      _kickoff = Timer(widget.delay, () {
+        if (mounted) _controller.forward();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _kickoff?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _progress,
+      builder: (_, child) => Opacity(
+        opacity: _progress.value.clamp(0.0, 1.0),
+        child: Transform.translate(
+          offset: Offset(0, widget.offset * (1 - _progress.value)),
+          child: child,
+        ),
+      ),
+      child: widget.child,
+    );
+  }
+}
+
+class _HomeDealtCard extends StatefulWidget {
+  const _HomeDealtCard({
+    required this.index,
+    required this.child,
+    this.initialDelay = const Duration(milliseconds: 220),
+    this.staggerMs = 75,
+    this.flyDistance = 260,
+    this.duration = const Duration(milliseconds: 540),
+    super.key,
+  });
+
+  final int index;
+  final Widget child;
+  final Duration initialDelay;
+  final int staggerMs;
+  final double flyDistance;
+  final Duration duration;
+
+  @override
+  State<_HomeDealtCard> createState() => _HomeDealtCardState();
+}
+
+class _HomeDealtCardState extends State<_HomeDealtCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _slide;
+  late final Animation<double> _settle;
+  late final Animation<double> _opacity;
+  late final Animation<double> _tilt;
+  Timer? _kickoff;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+    _slide = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
+    _settle = Tween<double>(
+      begin: 0.92,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
+    _opacity = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.0, 0.45, curve: Curves.easeIn),
+    );
+    _tilt = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
+
+    final delay =
+        widget.initialDelay +
+        Duration(milliseconds: widget.index * widget.staggerMs);
+    _kickoff = Timer(delay, () {
+      if (mounted) _controller.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _kickoff?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (_, child) {
+        const tiltAmount = 0.07;
+        final tiltAngle =
+            (widget.index.isEven ? -tiltAmount : tiltAmount) *
+            (1 - _tilt.value);
+        return Opacity(
+          opacity: _opacity.value.clamp(0.0, 1.0),
+          child: Transform.translate(
+            offset: Offset(0, widget.flyDistance * (1 - _slide.value)),
+            child: Transform.rotate(
+              angle: tiltAngle,
+              child: Transform.scale(
+                scale: _settle.value.clamp(0.5, 1.2),
+                child: child,
+              ),
+            ),
+          ),
+        );
+      },
+      child: widget.child,
+    );
+  }
 }
 
 /// Greeble status strip above the hero: a live "ONLINE" indicator and a system

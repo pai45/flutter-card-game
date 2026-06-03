@@ -54,6 +54,13 @@ Color _rarityGlow(String r) => switch (r) {
   _ => _kBronze.withValues(alpha: 0.55),
 };
 
+String _rarityBackAsset(String r) => switch (r) {
+  'silver' => 'assets/packs/silver.png',
+  'gold' => 'assets/packs/gold.png',
+  'platinum' => 'assets/packs/platinum.png',
+  _ => 'assets/packs/bronze.png',
+};
+
 // Vibrant, metallic FIFA/Topps-style fills: a bright catch-light, the tier hue,
 // then a deep base. Gold is true gold (not brown); platinum is iridescent.
 List<Color> _rarityGradientColors(String r) => switch (r) {
@@ -117,6 +124,7 @@ class CardUnpackAnimation extends StatefulWidget {
     required this.rarity,
     required this.onComplete,
     this.showTapCountdown = true,
+    this.packBackAsset,
     this.frontFace, // optional: override the built-in card design
   });
 
@@ -127,6 +135,9 @@ class CardUnpackAnimation extends StatefulWidget {
   final VoidCallback onComplete;
 
   final bool showTapCountdown;
+
+  /// If provided, used for the pack shell and card back during the reveal.
+  final String? packBackAsset;
 
   /// If provided, displayed as the card front face instead of the built-in design.
   final Widget? frontFace;
@@ -678,7 +689,10 @@ class _CardUnpackState extends State<CardUnpackAnimation>
                 child: IgnorePointer(
                   child: RepaintBoundary(
                     child: AnimatedBuilder(
-                      animation: Listenable.merge([_beamCtrl!, _cardSettleCtrl]),
+                      animation: Listenable.merge([
+                        _beamCtrl!,
+                        _cardSettleCtrl,
+                      ]),
                       builder: (_, ignored) => CustomPaint(
                         painter: _RayBurstPainter(
                           color: _rarityBase(widget.rarity),
@@ -730,7 +744,8 @@ class _CardUnpackState extends State<CardUnpackAnimation>
 
             // 5b ── Big OVR number pop (FIFA-style) — counts up, slams, then
             //       lingers ~0.5 s and fades (handled inside _buildOvrPop).
-            if (_ovrCtrl != null && widget.frontFace != null) _buildOvrPop(size),
+            if (_ovrCtrl != null && widget.frontFace != null)
+              _buildOvrPop(size),
 
             // 6 ── Flash overlay
             if (_stage == _Stage.flash && _flashCtrl != null)
@@ -772,30 +787,12 @@ class _CardUnpackState extends State<CardUnpackAnimation>
       blur = lerpDouble(8, 24, t <= 0.5 ? t * 2 : (1 - t) * 2)!;
     }
 
-    Widget pack = Container(
+    Widget pack = _buildPackBackVisual(
       width: 140,
       height: 200,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: _rarityGradientColors(widget.rarity),
-        ),
-        border: Border.all(color: glowColor, width: 1),
-        borderRadius: BorderRadius.zero,
-        boxShadow: [BoxShadow(color: glowColor, blurRadius: blur)],
-      ),
-      child: const Center(
-        child: Text(
-          '?',
-          style: TextStyle(
-            color: _kWhite,
-            fontSize: 48,
-            fontWeight: FontWeight.bold,
-            decoration: TextDecoration.none,
-          ),
-        ),
-      ),
+      glowColor: glowColor,
+      blurRadius: blur,
+      showQuestionMark: true,
     );
 
     // Stage 1: slide in
@@ -951,23 +948,82 @@ class _CardUnpackState extends State<CardUnpackAnimation>
   // ─────────────────────────────────────────────────────────────────────────
   Widget _buildCardBack() {
     final glowColor = _rarityGlow(widget.rarity);
-    return Container(
+    return _buildPackBackVisual(
       width: 128,
       height: 192,
-      decoration: BoxDecoration(
-        color: _kBg,
-        border: Border.all(color: glowColor, width: 1),
-        borderRadius: BorderRadius.zero,
-      ),
-      child: CustomPaint(
-        painter: _CardBackPainter(lineColor: _kCyan.withValues(alpha: 0.3)),
-      ),
+      glowColor: glowColor,
+      blurRadius: 0,
     );
   }
 
   // ─────────────────────────────────────────────────────────────────────────
   // Card front face
   // ─────────────────────────────────────────────────────────────────────────
+  Widget _buildPackBackVisual({
+    required double width,
+    required double height,
+    required Color glowColor,
+    required double blurRadius,
+    bool showQuestionMark = false,
+  }) {
+    final fallback = Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: _rarityGradientColors(widget.rarity),
+        ),
+        border: Border.all(color: glowColor, width: 1),
+        borderRadius: BorderRadius.zero,
+        boxShadow: [
+          if (blurRadius > 0)
+            BoxShadow(color: glowColor, blurRadius: blurRadius),
+        ],
+      ),
+      child: showQuestionMark
+          ? const Center(
+              child: Text(
+                '?',
+                style: TextStyle(
+                  color: _kWhite,
+                  fontSize: 48,
+                  fontWeight: FontWeight.bold,
+                  decoration: TextDecoration.none,
+                ),
+              ),
+            )
+          : CustomPaint(
+              painter: _CardBackPainter(
+                lineColor: _kCyan.withValues(alpha: 0.3),
+              ),
+            ),
+    );
+
+    final asset = widget.packBackAsset ?? _rarityBackAsset(widget.rarity);
+
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        border: Border.all(color: glowColor, width: 1),
+        borderRadius: BorderRadius.zero,
+        boxShadow: [
+          if (blurRadius > 0)
+            BoxShadow(color: glowColor, blurRadius: blurRadius),
+        ],
+      ),
+      child: ClipRect(
+        child: Image.asset(
+          asset,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => fallback,
+        ),
+      ),
+    );
+  }
+
   Widget _buildCardFront({bool countingRating = false}) {
     // Use caller-provided widget (e.g. CyberPlayerCardTile) when available.
     if (widget.frontFace != null) return widget.frontFace!;
@@ -1527,10 +1583,11 @@ class _RayBurstPainter extends CustomPainter {
       final paint = Paint()
         ..blendMode = BlendMode.plus
         ..shader = RadialGradient(
-          colors: [rayColor.withValues(alpha: baseAlpha), Colors.transparent],
-        ).createShader(
-          Rect.fromCircle(center: Offset.zero, radius: maxLen),
-        );
+          colors: [
+            rayColor.withValues(alpha: baseAlpha),
+            Colors.transparent,
+          ],
+        ).createShader(Rect.fromCircle(center: Offset.zero, radius: maxLen));
       canvas.drawPath(wedge, paint);
     }
     canvas.restore();

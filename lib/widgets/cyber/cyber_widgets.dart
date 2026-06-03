@@ -1685,9 +1685,10 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
       ActionCategory.defense => const [Color(0xff151020), Color(0xff1d0d2b)],
       ActionCategory.special => const [Color(0xff0d1520), Color(0xff1a1520)],
     };
-    final powerColor = widget.card.power >= 15
-        ? Cyber.gold
-        : (widget.card.power >= 5 ? Cyber.cyan : Cyber.muted);
+    // The card's power IS its rating — render it in the score colour (gold, per
+    // cyber-ui) at full weight so the headline stat is never the dim element.
+    // Magnitude is conveyed by the value itself, not by fading low values out.
+    const ratingColor = Cyber.gold;
     final small = widget.size == VisualCardSize.sm;
     final large = widget.size == VisualCardSize.lg;
 
@@ -1790,29 +1791,15 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
                               ),
                             ),
                           ),
-                          Positioned(
-                            top: 2,
-                            right: 0,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 1,
-                              ),
-                              color: Colors.black.withValues(alpha: 0.45),
-                              child: Text(
-                                '+${widget.card.power}',
-                                style: TextStyle(
-                                  color: powerColor,
-                                  fontFamily: Cyber.displayFont,
-                                  fontSize: small ? 14 : (large ? 18 : 16),
-                                  fontWeight: FontWeight.w900,
-                                  height: 1,
-                                ),
-                              ),
-                            ),
-                          ),
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(8, 22, 8, 8),
+                            // Top inset clears the single-line rating badge so
+                            // the centred icon never tucks under it.
+                            padding: EdgeInsets.fromLTRB(
+                              8,
+                              small ? 22 : (large ? 26 : 24),
+                              8,
+                              8,
+                            ),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -1865,6 +1852,67 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
                             child: Container(
                               height: 3,
                               color: tierColor(widget.card.tier),
+                            ),
+                          ),
+                          // Rating badge — the card's headline stat. Dark HUD
+                          // chip with a gold score readout; drawn last so the
+                          // centred art never clips it, and glows only when the
+                          // card is selected ("this one is live").
+                          Positioned(
+                            top: 2,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.fromLTRB(6, 2, 6, 3),
+                              decoration: BoxDecoration(
+                                color: Cyber.bg.withValues(alpha: 0.85),
+                                border: const Border(
+                                  left: BorderSide(color: ratingColor, width: 3),
+                                  bottom: BorderSide(
+                                    color: Color(0x73ffd166),
+                                  ),
+                                ),
+                                boxShadow: widget.selected
+                                    ? Cyber.glow(
+                                        ratingColor,
+                                        alpha: 0.55,
+                                        blur: 12,
+                                        spread: -1,
+                                      )
+                                    : null,
+                              ),
+                              // Single line keeps the badge short so it never
+                              // reaches the centred icon below it.
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'PWR',
+                                    style: TextStyle(
+                                      color: ratingColor.withValues(alpha: 0.72),
+                                      fontFamily: Cyber.displayFont,
+                                      fontSize: 6,
+                                      fontWeight: FontWeight.w900,
+                                      height: 1,
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    '+${widget.card.power}',
+                                    style: TextStyle(
+                                      color: ratingColor,
+                                      fontFamily: Cyber.displayFont,
+                                      fontSize: small ? 14 : (large ? 18 : 16),
+                                      fontWeight: FontWeight.w900,
+                                      height: 1,
+                                      fontFeatures: const [
+                                        FontFeature.tabularFigures(),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],

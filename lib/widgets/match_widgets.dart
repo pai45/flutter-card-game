@@ -14,6 +14,57 @@ import 'game_scaffold.dart';
 import 'info_widgets.dart';
 import 'tutorial.dart';
 
+class StadiumBackground extends StatefulWidget {
+  const StadiumBackground({super.key});
+
+  @override
+  State<StadiumBackground> createState() => _StadiumBackgroundState();
+}
+
+class _StadiumBackgroundState extends State<StadiumBackground>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 12),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, _) {
+        final t = _ctrl.value * 2 * pi;
+        final scale = 1.0 + 0.025 * sin(t);
+        final opacity = 0.16 + 0.015 * sin(t * 0.7);
+        return Transform.scale(
+          scale: scale,
+          child: Opacity(
+            opacity: opacity,
+            child: Image.asset(
+              'assets/backgrounds/home_stadium.png',
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class PhaseList extends StatelessWidget {
   const PhaseList({required this.children, super.key});
 
@@ -78,6 +129,7 @@ class MatchPhaseScaffold extends StatelessWidget {
       ),
       child: Stack(
         children: [
+          const Positioned.fill(child: StadiumBackground()),
           ListView.separated(
             padding: EdgeInsets.fromLTRB(
               16,

@@ -46,6 +46,10 @@ class ShopPack {
   final bool gradientAccent;
 
   int get cardCount => playerCount + actionCount;
+
+  /// Pack art, by convention `assets/packs/<id>.webp` (mirrors player portraits).
+  /// Optional on disk — the shop paints a per-tier fallback until the image ships.
+  String get artAsset => 'assets/packs/$id.webp';
 }
 
 class CardBackItem {

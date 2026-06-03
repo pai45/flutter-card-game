@@ -8,7 +8,6 @@ import '../../../blocs/game/game_event.dart';
 import '../../../blocs/game/game_state.dart';
 import '../../../config/theme.dart';
 import '../../../models/progression.dart';
-import '../../../widgets/cyber/cyber_widgets.dart';
 
 class DailyDropButton extends StatefulWidget {
   const DailyDropButton({super.key});
@@ -111,7 +110,7 @@ class _DailyDropButtonState extends State<DailyDropButton>
                         }
                       : null,
                   child: ClipPath(
-                    clipper: CyberClipper(),
+                    clipper: const _DailyDropCtaClipper(cut: 18),
                     child: Stack(
                       children: [
                         DecoratedBox(
@@ -231,6 +230,29 @@ class _DailyDropButtonState extends State<DailyDropButton>
       },
     );
   }
+}
+
+class _DailyDropCtaClipper extends CustomClipper<Path> {
+  const _DailyDropCtaClipper({required this.cut});
+
+  final double cut;
+
+  @override
+  Path getClip(Size size) {
+    final c = cut.clamp(0.0, size.shortestSide / 2);
+    return Path()
+      ..moveTo(c, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width, size.height - c)
+      ..lineTo(size.width - c, size.height)
+      ..lineTo(0, size.height)
+      ..lineTo(0, c)
+      ..close();
+  }
+
+  @override
+  bool shouldReclip(covariant _DailyDropCtaClipper oldClipper) =>
+      oldClipper.cut != cut;
 }
 
 class _ShimmerBandPainter extends CustomPainter {

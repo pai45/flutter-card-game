@@ -21,6 +21,7 @@ enum SoundEffect {
   save, // keeper save / blocked shot
   redCard, // red card event
   coinFlip, // toss animation
+  countdownTick, // per-second tick during a kickoff/match countdown
   coins, // coins earned / purchase
   levelUp, // player level up
   matchWin, // victory screen
@@ -43,6 +44,7 @@ extension _SoundEffectAsset on SoundEffect {
     SoundEffect.save => 'save',
     SoundEffect.redCard => 'red_card',
     SoundEffect.coinFlip => 'coin_flip',
+    SoundEffect.countdownTick => 'tick',
     SoundEffect.coins => 'coins',
     SoundEffect.levelUp => 'level_up',
     SoundEffect.matchWin => 'match_win',
@@ -64,6 +66,7 @@ extension _SoundEffectAsset on SoundEffect {
     SoundEffect.save => 0.7,
     SoundEffect.redCard => 0.8,
     SoundEffect.coinFlip => 0.6,
+    SoundEffect.countdownTick => 0.6,
     SoundEffect.coins => 0.7,
     SoundEffect.levelUp => 0.9,
     SoundEffect.matchWin => 0.95,

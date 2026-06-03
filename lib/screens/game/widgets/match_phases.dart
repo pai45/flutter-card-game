@@ -81,6 +81,7 @@ class _TossPhaseState extends State<TossPhase> with TickerProviderStateMixin {
       backgroundColor: _kTossBg,
       body: Stack(
         children: [
+          const Positioned.fill(child: StadiumBackground()),
           Positioned.fill(
             child: CustomPaint(
               painter: _GridPainter(1.0),
@@ -182,6 +183,7 @@ class TossResultPhase extends StatelessWidget {
       backgroundColor: _kTossBg,
       body: Stack(
         children: [
+          const Positioned.fill(child: StadiumBackground()),
           Positioned.fill(
             child: CustomPaint(
               painter: _GridPainter(1.0),
@@ -3333,7 +3335,7 @@ class _MatchIntroPhaseState extends State<MatchIntroPhase>
       _pulse
         ..reset()
         ..forward();
-      playSound(SoundEffect.cardSlam);
+      playSound(SoundEffect.countdownTick);
       await Future<void>.delayed(const Duration(seconds: 1));
     }
     if (!mounted) return;
@@ -3367,6 +3369,7 @@ class _MatchIntroPhaseState extends State<MatchIntroPhase>
         builder: (context, _) => Stack(
           fit: StackFit.expand,
           children: [
+            const StadiumBackground(),
             if (_stage == 0) _buildReveal(context),
             if (_stage == 1) _buildCountdown(),
             if (_stage == 2) _buildKickoff(),

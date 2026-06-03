@@ -56,6 +56,149 @@ _progressionPackOdds(String packId) => switch (packId) {
   _ => (common: '-', rare: '-', epic: '-', legendary: '-'),
 };
 
+const int _shopTabCount = 5;
+
+const List<
+  ({
+    String id,
+    int price,
+    Color background,
+    Color skin,
+    Color hair,
+    Color kit,
+    Color accent,
+  })
+>
+_avatarPlaceholders = [
+  (
+    id: 'captain',
+    price: 25,
+    background: Color(0xff2ca45f),
+    skin: Color(0xffffbe91),
+    hair: Color(0xff171b25),
+    kit: Color(0xff24344a),
+    accent: Color(0xffff4b52),
+  ),
+  (
+    id: 'playmaker',
+    price: 25,
+    background: Color(0xffffa600),
+    skin: Color(0xfff1a574),
+    hair: Color(0xff432d34),
+    kit: Color(0xff16335f),
+    accent: Color(0xffd83c46),
+  ),
+  (
+    id: 'keeper',
+    price: 25,
+    background: Color(0xff36455f),
+    skin: Color(0xfff2b085),
+    hair: Color(0xff4a2434),
+    kit: Color(0xff7b274f),
+    accent: Color(0xff22c1ff),
+  ),
+  (
+    id: 'blank-red',
+    price: 25,
+    background: Color(0xffe91414),
+    skin: Color(0xffffc09a),
+    hair: Color(0xff141820),
+    kit: Color(0xff0d111a),
+    accent: Color(0xffffd700),
+  ),
+  (
+    id: 'striker',
+    price: 25,
+    background: Color(0xffffd22e),
+    skin: Color(0xffcc8a62),
+    hair: Color(0xff17202e),
+    kit: Color(0xff2856a5),
+    accent: Color(0xfff5f7ff),
+  ),
+  (
+    id: 'speedster',
+    price: 25,
+    background: Color(0xff4d89e5),
+    skin: Color(0xfff0aa79),
+    hair: Color(0xffffd16a),
+    kit: Color(0xff3b2351),
+    accent: Color(0xfff05d7b),
+  ),
+  (
+    id: 'academy',
+    price: 25,
+    background: Color(0xffd900d9),
+    skin: Color(0xffd79369),
+    hair: Color(0xff12151f),
+    kit: Color(0xff1d68be),
+    accent: Color(0xffffffff),
+  ),
+  (
+    id: 'midfield',
+    price: 25,
+    background: Color(0xffb75b00),
+    skin: Color(0xfff1b486),
+    hair: Color(0xff4a2830),
+    kit: Color(0xff262d44),
+    accent: Color(0xfff0edf5),
+  ),
+  (
+    id: 'finisher',
+    price: 25,
+    background: Color(0xff28456f),
+    skin: Color(0xffc8865f),
+    hair: Color(0xff15171e),
+    kit: Color(0xffba2330),
+    accent: Color(0xffdfe8ff),
+  ),
+];
+
+const List<
+  ({String id, int price, Color start, Color end, Color accent, IconData icon})
+>
+_bannerPlaceholders = [
+  (
+    id: 'nebula',
+    price: 25,
+    start: Color(0xff111d60),
+    end: Color(0xff050b1e),
+    accent: Color(0xff5cdfff),
+    icon: Icons.waves,
+  ),
+  (
+    id: 'sunburst',
+    price: 25,
+    start: Color(0xffffb000),
+    end: Color(0xffff5a00),
+    accent: Color(0xffffd700),
+    icon: Icons.flash_on,
+  ),
+  (
+    id: 'night',
+    price: 25,
+    start: Color(0xff431064),
+    end: Color(0xff130018),
+    accent: Color(0xffff3df7),
+    icon: Icons.nightlight_round,
+  ),
+  (
+    id: 'inferno',
+    price: 25,
+    start: Color(0xffb00012),
+    end: Color(0xff1b0207),
+    accent: Color(0xffffd166),
+    icon: Icons.local_fire_department,
+  ),
+  (
+    id: 'flare',
+    price: 25,
+    start: Color(0xffff7a00),
+    end: Color(0xffffc02e),
+    accent: Color(0xffffffff),
+    icon: Icons.wb_sunny,
+  ),
+];
+
 class ShopScreen extends StatefulWidget {
   const ShopScreen({required this.onNavigate, super.key});
 
@@ -76,7 +219,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: _shopTabCount, vsync: this);
     _indicatorController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -134,7 +277,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                   children: [
                     _ShopHeader(
                       coins: state.coins,
-                      onCoinsTap: () => _setTab(0),
+                      onCoinsTap: () => _setTab(2),
                     ),
                     _ShopTabs(
                       activeTab: _activeTab,
@@ -182,8 +325,10 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
 
   Widget _buildTab(GameState state) {
     return switch (_activeTab) {
-      0 => CoinsTab(onPurchased: _showCelebration),
-      1 => const PacksTab(),
+      0 => const AvatarsTab(),
+      1 => const BannersTab(),
+      2 => CoinsTab(onPurchased: _showCelebration),
+      3 => const PacksTab(),
       _ => const CardsTab(),
     };
   }
@@ -317,16 +462,18 @@ class _ShopTabs extends StatelessWidget {
   final Animation<double> indicatorAnimation;
   final ValueChanged<int> onTap;
 
-  static const List<({String label, IconData icon})> _items = [
-    (label: 'COINS', icon: Icons.monetization_on),
-    (label: 'PACKS', icon: Icons.inventory_2),
-    (label: 'CARDS', icon: Icons.style),
+  static const List<String> _items = [
+    'AVATAR',
+    'BANNER',
+    'COINS',
+    'PACKS',
+    'CARDS',
   ];
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 72,
+      height: 50,
       decoration: BoxDecoration(
         color: _bg.withValues(alpha: 0.4),
         border: Border(
@@ -345,8 +492,7 @@ class _ShopTabs extends StatelessWidget {
                       child: _Pressable(
                         onTap: () => onTap(index),
                         child: _TabItem(
-                          icon: _items[index].icon,
-                          label: _items[index].label,
+                          label: _items[index],
                           active: activeTab == index,
                         ),
                       ),
@@ -385,13 +531,8 @@ class _ShopTabs extends StatelessWidget {
 }
 
 class _TabItem extends StatelessWidget {
-  const _TabItem({
-    required this.icon,
-    required this.label,
-    required this.active,
-  });
+  const _TabItem({required this.label, required this.active});
 
-  final IconData icon;
   final String label;
   final bool active;
 
@@ -403,25 +544,446 @@ class _TabItem extends StatelessWidget {
       decoration: BoxDecoration(
         color: active ? _cyan.withValues(alpha: 0.07) : Colors.transparent,
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 5),
-          Text(
+      child: Center(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
             label,
+            maxLines: 1,
             style: TextStyle(
               color: color,
               fontFamily: 'Orbitron',
-              fontSize: 10,
+              fontSize: 9.5,
               fontWeight: FontWeight.w900,
-              letterSpacing: 1.4,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class AvatarsTab extends StatelessWidget {
+  const AvatarsTab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final int columns = constraints.maxWidth >= 720
+            ? 5
+            : constraints.maxWidth >= 480
+            ? 4
+            : 3;
+        return GridView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: _avatarPlaceholders.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 0.78,
+          ),
+          itemBuilder: (BuildContext context, int index) {
+            return _AvatarShopTile(item: _avatarPlaceholders[index]);
+          },
+        );
+      },
+    );
+  }
+}
+
+class BannersTab extends StatelessWidget {
+  const BannersTab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+      itemCount: _bannerPlaceholders.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      itemBuilder: (BuildContext context, int index) {
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: _BannerShopTile(item: _bannerPlaceholders[index]),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _AvatarShopTile extends StatelessWidget {
+  const _AvatarShopTile({required this.item});
+
+  final ({
+    String id,
+    int price,
+    Color background,
+    Color skin,
+    Color hair,
+    Color kit,
+    Color accent,
+  })
+  item;
+
+  @override
+  Widget build(BuildContext context) {
+    return _Pressable(
+      onTap: () => _showSnack(context, 'Avatar placeholder reserved.'),
+      child: Container(
+        decoration: BoxDecoration(
+          color: _bg,
+          border: Border.all(color: item.accent.withValues(alpha: 0.28)),
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Positioned.fill(
+              bottom: 32,
+              child: CustomPaint(
+                painter: _AvatarPlaceholderPainter(
+                  background: item.background,
+                  skin: item.skin,
+                  hair: item.hair,
+                  kit: item.kit,
+                  accent: item.accent,
+                ),
+              ),
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 34,
+              child: _CosmeticPriceStrip(price: item.price),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BannerShopTile extends StatelessWidget {
+  const _BannerShopTile({required this.item});
+
+  final ({
+    String id,
+    int price,
+    Color start,
+    Color end,
+    Color accent,
+    IconData icon,
+  })
+  item;
+
+  @override
+  Widget build(BuildContext context) {
+    return _Pressable(
+      onTap: () => _showSnack(context, 'Banner placeholder reserved.'),
+      child: SizedBox(
+        height: 112,
+        child: ClipPath(
+          clipper: const _BannerNotchClipper(),
+          child: CustomPaint(
+            painter: _BannerPlaceholderPainter(
+              start: item.start,
+              end: item.end,
+              accent: item.accent,
+            ),
+            foregroundPainter: _BannerBorderPainter(item.accent),
+            child: Stack(
+              children: [
+                Positioned(
+                  right: 22,
+                  top: 18,
+                  bottom: 18,
+                  child: _BannerCrest(icon: item.icon, color: item.accent),
+                ),
+                Positioned(
+                  left: 0,
+                  bottom: 0,
+                  width: 92,
+                  height: 38,
+                  child: _CosmeticPriceStrip(price: item.price, compact: true),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CosmeticPriceStrip extends StatelessWidget {
+  const _CosmeticPriceStrip({required this.price, this.compact = false});
+
+  final int price;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black.withValues(alpha: compact ? 0.56 : 0.86),
+      alignment: Alignment.center,
+      padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CoinIcon(size: compact ? 16 : 14),
+          const SizedBox(width: 6),
+          Text(
+            _formatInt(price),
+            style: TextStyle(
+              color: Colors.white,
+              fontFamily: 'Orbitron',
+              fontSize: compact ? 15 : 14,
+              fontWeight: FontWeight.w900,
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
         ],
       ),
     );
   }
+}
+
+class _BannerCrest extends StatelessWidget {
+  const _BannerCrest({required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 1,
+      child: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(
+            colors: [
+              Colors.white.withValues(alpha: 0.24),
+              color.withValues(alpha: 0.38),
+              _bg.withValues(alpha: 0.92),
+            ],
+          ),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.75)),
+          boxShadow: [
+            BoxShadow(color: color.withValues(alpha: 0.62), blurRadius: 24),
+          ],
+        ),
+        child: Center(child: Icon(icon, color: Colors.white, size: 34)),
+      ),
+    );
+  }
+}
+
+class _AvatarPlaceholderPainter extends CustomPainter {
+  const _AvatarPlaceholderPainter({
+    required this.background,
+    required this.skin,
+    required this.hair,
+    required this.kit,
+    required this.accent,
+  });
+
+  final Color background;
+  final Color skin;
+  final Color hair;
+  final Color kit;
+  final Color accent;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Rect bounds = Offset.zero & size;
+    canvas.drawRect(
+      bounds,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [background, background.withValues(alpha: 0.72)],
+        ).createShader(bounds),
+    );
+
+    final Paint line = Paint()
+      ..color = Colors.white.withValues(alpha: 0.10)
+      ..strokeWidth = 1;
+    for (double x = -size.height; x < size.width; x += 18) {
+      canvas.drawLine(Offset(x, 0), Offset(x + size.height, size.height), line);
+    }
+
+    final double w = size.width;
+    final double h = size.height;
+    final Offset headCenter = Offset(w * 0.5, h * 0.38);
+
+    final Path shoulders = Path()
+      ..moveTo(w * 0.13, h)
+      ..quadraticBezierTo(w * 0.24, h * 0.70, w * 0.41, h * 0.66)
+      ..lineTo(w * 0.59, h * 0.66)
+      ..quadraticBezierTo(w * 0.76, h * 0.70, w * 0.87, h)
+      ..close();
+    canvas.drawPath(shoulders, Paint()..color = kit);
+
+    final Path stripe = Path()
+      ..moveTo(w * 0.44, h * 0.70)
+      ..lineTo(w * 0.56, h * 0.70)
+      ..lineTo(w * 0.62, h)
+      ..lineTo(w * 0.38, h)
+      ..close();
+    canvas.drawPath(stripe, Paint()..color = accent.withValues(alpha: 0.78));
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: Offset(w * 0.5, h * 0.64),
+          width: w * 0.17,
+          height: h * 0.18,
+        ),
+        Radius.circular(w * 0.04),
+      ),
+      Paint()..color = skin,
+    );
+
+    canvas.drawOval(
+      Rect.fromCenter(center: headCenter, width: w * 0.36, height: h * 0.42),
+      Paint()..color = skin,
+    );
+
+    final Path hairPath = Path()
+      ..moveTo(w * 0.31, h * 0.34)
+      ..quadraticBezierTo(w * 0.36, h * 0.15, w * 0.54, h * 0.16)
+      ..quadraticBezierTo(w * 0.70, h * 0.20, w * 0.70, h * 0.38)
+      ..quadraticBezierTo(w * 0.58, h * 0.31, w * 0.49, h * 0.30)
+      ..quadraticBezierTo(w * 0.42, h * 0.31, w * 0.31, h * 0.34)
+      ..close();
+    canvas.drawPath(hairPath, Paint()..color = hair);
+
+    final Paint eye = Paint()..color = const Color(0xff111827);
+    canvas.drawCircle(Offset(w * 0.43, h * 0.39), w * 0.018, eye);
+    canvas.drawCircle(Offset(w * 0.57, h * 0.39), w * 0.018, eye);
+    canvas.drawLine(
+      Offset(w * 0.45, h * 0.51),
+      Offset(w * 0.55, h * 0.51),
+      Paint()
+        ..color = const Color(0xff7f1d1d).withValues(alpha: 0.55)
+        ..strokeWidth = 1.5
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_AvatarPlaceholderPainter old) =>
+      old.background != background ||
+      old.skin != skin ||
+      old.hair != hair ||
+      old.kit != kit ||
+      old.accent != accent;
+}
+
+class _BannerPlaceholderPainter extends CustomPainter {
+  const _BannerPlaceholderPainter({
+    required this.start,
+    required this.end,
+    required this.accent,
+  });
+
+  final Color start;
+  final Color end;
+  final Color accent;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Rect bounds = Offset.zero & size;
+    canvas.drawRect(
+      bounds,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [start, end],
+        ).createShader(bounds),
+    );
+
+    final Paint dust = Paint()..color = Colors.white.withValues(alpha: 0.09);
+    for (int i = 0; i < 52; i++) {
+      final double x = (i * 37.0) % size.width;
+      final double y = (i * 19.0) % size.height;
+      canvas.drawCircle(Offset(x, y), (i % 3 + 1) * 0.75, dust);
+    }
+
+    final Paint slash = Paint()
+      ..color = accent.withValues(alpha: 0.10)
+      ..strokeWidth = 2.0;
+    for (double x = -size.height; x < size.width; x += 24) {
+      canvas.drawLine(
+        Offset(x, size.height),
+        Offset(x + size.height, 0),
+        slash,
+      );
+    }
+
+    final Offset burst = Offset(size.width * 0.72, size.height * 0.48);
+    canvas.drawCircle(
+      burst,
+      size.height * 0.72,
+      Paint()
+        ..shader =
+            RadialGradient(
+              colors: [accent.withValues(alpha: 0.56), Colors.transparent],
+            ).createShader(
+              Rect.fromCircle(center: burst, radius: size.height * 0.72),
+            ),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_BannerPlaceholderPainter old) =>
+      old.start != start || old.end != end || old.accent != accent;
+}
+
+class _BannerBorderPainter extends CustomPainter {
+  const _BannerBorderPainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawPath(
+      const _BannerNotchClipper().getClip(size),
+      Paint()
+        ..color = color.withValues(alpha: 0.45)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_BannerBorderPainter old) => old.color != color;
+}
+
+class _BannerNotchClipper extends CustomClipper<Path> {
+  const _BannerNotchClipper();
+
+  @override
+  Path getClip(Size size) {
+    return Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width, size.height - 24)
+      ..lineTo(size.width - 24, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+  }
+
+  @override
+  bool shouldReclip(_BannerNotchClipper oldClipper) => false;
 }
 
 class CoinsTab extends StatelessWidget {
@@ -639,8 +1201,8 @@ class _PackRevealSequenceScreenState extends State<_PackRevealSequenceScreen> {
   int _currentIndex = 0;
 
   // Reveal lowest-rated first so the best pull is the climactic last walkout.
-  late final List<PlayerCard> _order =
-      [...widget.cards]..sort((a, b) => a.rating.compareTo(b.rating));
+  late final List<PlayerCard> _order = [...widget.cards]
+    ..sort((a, b) => a.rating.compareTo(b.rating));
 
   void _advanceCard() {
     if (_currentIndex < widget.cards.length - 1) {
@@ -761,7 +1323,10 @@ class _PackRevealSequenceScreenState extends State<_PackRevealSequenceScreen> {
               const SizedBox(height: 18),
               // ── Hero: the top pull, enlarged and glowing, with a TOP PULL tag.
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: widget.packAccent.withValues(alpha: 0.16),
                   border: Border.all(color: widget.packAccent),
@@ -1135,24 +1700,151 @@ class _PackDesignWidgetState extends State<PackDesignWidget>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _shimmer,
-      builder: (_, child) => SizedBox(
-        width: widget.width,
-        height: widget.height,
+    final pack = widget.pack;
+    final holo = _packHolo(pack.id);
+    return SizedBox(
+      width: widget.width,
+      height: widget.height,
+      child: RepaintBoundary(
         child: ClipRect(
-          child: CustomPaint(
-            painter: _PackDesignPainter(
-              packId: widget.pack.id,
-              accent: widget.pack.accent,
-              shimmer: _shimmer.value,
-              gradientAccent: widget.pack.gradientAccent,
-            ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // 1 ── Base art: try .webp (app standard) → .png → painted
+              //      per-tier fallback, so the art shows whatever format is
+              //      dropped into assets/packs/, and packs still render before
+              //      any art ships.
+              Image.asset(
+                pack.artAsset, // assets/packs/<id>.webp
+                fit: BoxFit.cover,
+                // ignore: prefer_void_to_null
+                errorBuilder: (_, _, _) => Image.asset(
+                  'assets/packs/${pack.id}.png',
+                  fit: BoxFit.cover,
+                  // ignore: prefer_void_to_null
+                  errorBuilder: (_, _, _) => AnimatedBuilder(
+                    animation: _shimmer,
+                    builder: (_, _) => CustomPaint(
+                      painter: _PackDesignPainter(
+                        packId: pack.id,
+                        accent: pack.accent,
+                        shimmer: _shimmer.value,
+                        gradientAccent: pack.gradientAccent,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // 2 ── Multi-colour holographic shimmer, keyed to pack rarity.
+              //      Sweeps brighter, faster and with more colour bands the
+              //      rarer the pack (drama escalates with tier).
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: AnimatedBuilder(
+                    animation: _shimmer,
+                    builder: (_, _) => CustomPaint(
+                      painter: _PackHoloPainter(
+                        shimmer: _shimmer.value,
+                        colors: holo.colors,
+                        intensity: holo.intensity,
+                        bands: holo.bands,
+                        speed: holo.speed,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
+}
+
+// Multi-colour holographic sweep tuned per pack rarity. Lower tiers stay calm
+// (one cooler band); the elite pack gets a full rainbow foil — honouring the
+// glow-scarcity rule (drama escalates with rarity). Intensities are deliberately
+// moderate so the sweep reads as light over the art, not a white-out — tune here.
+({List<Color> colors, double intensity, int bands, double speed}) _packHolo(
+  String packId,
+) => switch (packId) {
+  'starter' => (
+    colors: [_cyan, Colors.white, _violet],
+    intensity: 0.5,
+    bands: 1,
+    speed: 1.0,
+  ),
+  'bronze' => (
+    colors: [_bronze, Color(0xffffd9a8), Colors.white],
+    intensity: 0.5,
+    bands: 1,
+    speed: 1.0,
+  ),
+  'gold' => (
+    colors: [_gold, Colors.white, Color(0xffffe9a8), _gold],
+    intensity: 0.6,
+    bands: 2,
+    speed: 1.15,
+  ),
+  _ => (
+    colors: [_magenta, _violet, _cyan, _gold, _magenta],
+    intensity: 0.72,
+    bands: 2,
+    speed: 1.3,
+  ),
+};
+
+// Sweeps one or more diagonal multi-colour bands across the pack, additively so
+// it reads as light playing over the art (holographic foil).
+class _PackHoloPainter extends CustomPainter {
+  const _PackHoloPainter({
+    required this.shimmer,
+    required this.colors,
+    required this.intensity,
+    required this.bands,
+    required this.speed,
+  });
+
+  final double shimmer;
+  final List<Color> colors;
+  final double intensity;
+  final int bands;
+  final double speed;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    const hw = 0.24; // half-width of the colour window, in gradient space
+    for (var b = 0; b < bands; b++) {
+      final phase = ((shimmer * speed) + b / bands) % 1.0;
+      final center = phase * (1 + 2 * hw) - hw; // travels -hw .. 1+hw
+      final stops = <double>[(center - hw).clamp(0.0, 1.0)];
+      final cols = <Color>[Colors.transparent];
+      for (var i = 0; i < colors.length; i++) {
+        final f = colors.length == 1 ? 0.5 : i / (colors.length - 1);
+        cols.add(colors[i].withValues(alpha: intensity));
+        stops.add((center - hw + f * 2 * hw).clamp(0.0, 1.0));
+      }
+      cols.add(Colors.transparent);
+      stops.add((center + hw).clamp(0.0, 1.0));
+      canvas.drawRect(
+        rect,
+        Paint()
+          ..blendMode = BlendMode.plus
+          ..shader = LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: cols,
+            stops: stops,
+          ).createShader(rect),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_PackHoloPainter old) => old.shimmer != shimmer;
 }
 
 class _PackDesignPainter extends CustomPainter {
