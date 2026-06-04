@@ -38,24 +38,6 @@ Color _tierAccent(String id) => switch (id) {
   _ => _cyan,
 };
 
-({String common, String rare, String epic, String legendary}) _packOdds(
-  String packId,
-) => switch (packId) {
-  'bronze' => (common: '95%', rare: '5%', epic: '—', legendary: '—'),
-  'silver' => (common: '60%', rare: '35%+', epic: '5%', legendary: '—'),
-  'gold' => (common: '30%', rare: '45%', epic: '20%+', legendary: '5%'),
-  _ => (common: '—', rare: '25%', epic: '50%+', legendary: '25%+'),
-};
-
-({String common, String rare, String epic, String legendary})
-_progressionPackOdds(String packId) => switch (packId) {
-  'starter' => (common: '70', rare: '25', epic: '5', legendary: '0'),
-  'bronze' => (common: '65', rare: '28', epic: '6', legendary: '1'),
-  'gold' => (common: '35', rare: '45', epic: '16', legendary: '4'),
-  'elite' => (common: '10', rare: '40', epic: '35', legendary: '15'),
-  _ => (common: '-', rare: '-', epic: '-', legendary: '-'),
-};
-
 const int _shopTabCount = 5;
 
 const List<
@@ -315,7 +297,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
             ],
           ),
           bottomNavigationBar: LandingBottomNavigation(
-            selectedIndex: 1,
+            selectedIndex: 2,
             onNavigate: widget.onNavigate,
           ),
         );
@@ -1466,7 +1448,6 @@ class _PackTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color accent = pack.gradientAccent ? _magenta : pack.accent;
-    final odds = _progressionPackOdds(pack.id);
     final Widget inner = Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -1542,8 +1523,6 @@ class _PackTile extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  _PackOddsRow(odds: odds),
                   const SizedBox(height: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -1772,25 +1751,25 @@ class _PackDesignWidgetState extends State<PackDesignWidget>
 ) => switch (packId) {
   'starter' => (
     colors: [_cyan, Colors.white, _violet],
-    intensity: 0.5,
+    intensity: 0.35,
     bands: 1,
     speed: 1.0,
   ),
   'bronze' => (
     colors: [_bronze, Color(0xffffd9a8), Colors.white],
-    intensity: 0.5,
+    intensity: 0.35,
     bands: 1,
     speed: 1.0,
   ),
   'gold' => (
     colors: [_gold, Colors.white, Color(0xffffe9a8), _gold],
-    intensity: 0.6,
+    intensity: 0.42,
     bands: 2,
     speed: 1.15,
   ),
   _ => (
     colors: [_magenta, _violet, _cyan, _gold, _magenta],
-    intensity: 0.72,
+    intensity: 0.50,
     bands: 2,
     speed: 1.3,
   ),
@@ -1815,22 +1794,33 @@ class _PackHoloPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    const hw = 0.24; // half-width of the colour window, in gradient space
+    // Half-width of the colour band in normalised canvas-diagonal units.
+    const double hw = 0.24;
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
     for (var b = 0; b < bands; b++) {
       final phase = ((shimmer * speed) + b / bands) % 1.0;
-      final center = phase * (1 + 2 * hw) - hw; // travels -hw .. 1+hw
-      final stops = <double>[(center - hw).clamp(0.0, 1.0)];
+      // Center travels from -hw (off left) to 1+hw (off right) as phase 0→1.
+      final center = phase * (1 + 2 * hw) - hw;
+      final left = (center - hw) * size.width;
+      final right = (center + hw) * size.width;
+      // Skip completely off-screen bands — avoids degenerate zero-width rects.
+      if (right <= 0 || left >= size.width) continue;
+
+      // Build stops uniformly within the band rect (no clamping needed).
       final cols = <Color>[Colors.transparent];
+      final stops = <double>[0.0];
       for (var i = 0; i < colors.length; i++) {
-        final f = colors.length == 1 ? 0.5 : i / (colors.length - 1);
+        final f = colors.length == 1 ? 0.5 : i / (colors.length - 1).toDouble();
         cols.add(colors[i].withValues(alpha: intensity));
-        stops.add((center - hw + f * 2 * hw).clamp(0.0, 1.0));
+        stops.add(f);
       }
       cols.add(Colors.transparent);
-      stops.add((center + hw).clamp(0.0, 1.0));
+      stops.add(1.0);
+
+      final bandRect = Rect.fromLTRB(left, 0, right, size.height);
       canvas.drawRect(
-        rect,
+        bandRect,
         Paint()
           ..blendMode = BlendMode.plus
           ..shader = LinearGradient(
@@ -1838,9 +1828,10 @@ class _PackHoloPainter extends CustomPainter {
             end: Alignment.bottomRight,
             colors: cols,
             stops: stops,
-          ).createShader(rect),
+          ).createShader(bandRect),
       );
     }
+    canvas.restore();
   }
 
   @override
@@ -2743,80 +2734,6 @@ class _CornerStar extends StatelessWidget {
         ],
       ),
       child: const Icon(Icons.star, color: _bg, size: 16),
-    );
-  }
-}
-
-class _PackOddsRow extends StatelessWidget {
-  const _PackOddsRow({required this.odds});
-
-  final ({String common, String rare, String epic, String legendary}) odds;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _OddsChip(label: 'C', value: odds.common, color: _secondary),
-        ),
-        const SizedBox(width: 4),
-        Expanded(
-          child: _OddsChip(label: 'R', value: odds.rare, color: _cyan),
-        ),
-        const SizedBox(width: 4),
-        Expanded(
-          child: _OddsChip(label: 'E', value: odds.epic, color: _violet),
-        ),
-        const SizedBox(width: 4),
-        Expanded(
-          child: _OddsChip(label: 'L', value: odds.legendary, color: _gold),
-        ),
-      ],
-    );
-  }
-}
-
-class _OddsChip extends StatelessWidget {
-  const _OddsChip({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        border: Border.all(color: color.withValues(alpha: 0.5)),
-      ),
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontFamily: 'Orbitron',
-              fontWeight: FontWeight.w900,
-              fontSize: 10,
-              letterSpacing: 0.4,
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              color: color.withValues(alpha: 0.9),
-              fontWeight: FontWeight.w900,
-              fontSize: 9,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

@@ -1307,7 +1307,7 @@ class ScenarioPhase extends StatelessWidget {
 }
 
 Color _roleAccent(bool attacking) =>
-    attacking ? Cyber.cyan : const Color(0xFFA855F7);
+    attacking ? Cyber.cyan : const Color(0xFFC084FC);
 
 class ScenarioBriefingSection extends StatefulWidget {
   const ScenarioBriefingSection({
@@ -1368,16 +1368,6 @@ class _ScenarioBriefingSectionState extends State<ScenarioBriefingSection>
             constraints: BoxConstraints(maxWidth: maxWidth),
             child: Container(
               padding: const EdgeInsets.fromLTRB(12, 14, 12, 24),
-              decoration: BoxDecoration(
-                color: const Color(0xff080d16),
-                border: Border.all(color: accent.withValues(alpha: 0.08)),
-                boxShadow: [
-                  BoxShadow(
-                    color: accent.withValues(alpha: 0.08),
-                    blurRadius: 28,
-                  ),
-                ],
-              ),
               child: CustomPaint(
                 painter: _ScenarioGridPainter(accent),
                 child: Column(

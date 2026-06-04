@@ -47,16 +47,23 @@ class _StadiumBackgroundState extends State<StadiumBackground>
       builder: (context, _) {
         final t = _ctrl.value * 2 * pi;
         final scale = 1.0 + 0.025 * sin(t);
-        final opacity = 0.16 + 0.015 * sin(t * 0.7);
         return Transform.scale(
           scale: scale,
           child: Opacity(
-            opacity: opacity,
+            opacity: 0.20,
             child: Image.asset(
-              'assets/backgrounds/home_stadium.png',
+              'assets/backgrounds/match_stadium.png',
               fit: BoxFit.cover,
               width: double.infinity,
               height: double.infinity,
+              // Fall back to the original stadium art if the new match
+              // background hasn't been added to assets/backgrounds/ yet.
+              errorBuilder: (_, _, _) => Image.asset(
+                'assets/backgrounds/home_stadium.png',
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
+              ),
             ),
           ),
         );

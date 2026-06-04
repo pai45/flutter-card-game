@@ -1,4 +1,17 @@
-enum AppSection { home, deck, howToPlay, match, game, shop, allCards, leaderboard }
+enum AppSection {
+  // App-level destinations (bottom nav).
+  predictions, // HOME — the sports-prediction hub
+  leaderboard,
+  shop,
+  profile,
+  // Card-game ("Pitch Duel") internal sections, reached under the GAMES tab.
+  home,
+  deck,
+  howToPlay,
+  match,
+  game,
+  allCards,
+}
 
 enum DeckPickerLane { attacker, defender, keeper, action }
 

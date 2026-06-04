@@ -31,16 +31,19 @@ class GameTabContent extends StatefulWidget {
 class _GameTabContentState extends State<GameTabContent> {
   AppSection _gameSection = AppSection.home;
 
+  // App-level destinations leave the card game and switch the main shell;
+  // everything else navigates within the card-game hub.
+  static const _appLevel = {
+    AppSection.predictions,
+    AppSection.leaderboard,
+    AppSection.shop,
+    AppSection.profile,
+  };
+
   void _navigateGame(AppSection section) {
-    if (section == AppSection.shop) {
-      widget.onNavigate(AppSection.shop);
-    } else if (section == AppSection.game ||
-        section == AppSection.home ||
-        section == AppSection.deck ||
-        section == AppSection.howToPlay ||
-        section == AppSection.match ||
-        section == AppSection.allCards ||
-        section == AppSection.leaderboard) {
+    if (_appLevel.contains(section)) {
+      widget.onNavigate(section);
+    } else {
       setState(
         () => _gameSection = section == AppSection.game
             ? AppSection.home

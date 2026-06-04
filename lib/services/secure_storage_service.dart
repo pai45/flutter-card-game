@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/deck.dart';
 import '../models/match.dart';
+import '../models/prediction.dart';
 import '../models/progression.dart';
 
 class WalletSnapshot {
@@ -67,6 +68,7 @@ class SecureGameStorage {
   static const _starterPackClaimedKey = 'pd_starter_pack_claimed_v1';
   static const _progressionKey = 'pd_progression_v1';
   static const _walletKey = 'pitch_duel_wallet';
+  static const _predictionsKey = 'pd_predictions_v1';
 
   final FlutterSecureStorage _storage;
 
@@ -170,6 +172,29 @@ class SecureGameStorage {
   Future<void> saveWallet(WalletSnapshot wallet) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_walletKey, jsonEncode(wallet.toJson()));
+  }
+
+  Future<List<UserPrediction>> loadPredictions() async {
+    try {
+      final raw = await _storage.read(key: _predictionsKey);
+      if (raw == null || raw.isEmpty) return const [];
+      final data = jsonDecode(raw) as List;
+      return data
+          .map(
+            (item) =>
+                UserPrediction.fromJson(Map<String, dynamic>.from(item)),
+          )
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<void> savePredictions(List<UserPrediction> predictions) async {
+    await _storage.write(
+      key: _predictionsKey,
+      value: jsonEncode(predictions.map((p) => p.toJson()).toList()),
+    );
   }
 
   Future<PlayerProgression> loadProgression() async {

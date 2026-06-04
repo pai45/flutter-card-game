@@ -14,17 +14,24 @@ class LandingBottomNavigation extends StatelessWidget {
     super.key,
   });
 
-  /// 0 = Game, 1 = Shop, 2 = Top (leaderboard).
+  /// 0 = Home, 1 = Leaderboard, 2 = Shop, 3 = Profile.
   final int selectedIndex;
   final ValueChanged<AppSection> onNavigate;
 
   static const List<_NavSpec> _items = [
     _NavSpec(
-      section: AppSection.game,
-      icon: Icons.sports_esports_outlined,
-      activeIcon: Icons.sports_esports,
-      label: 'GAME',
+      section: AppSection.predictions,
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home,
+      label: 'HOME',
       accent: Cyber.cyan,
+    ),
+    _NavSpec(
+      section: AppSection.leaderboard,
+      icon: Icons.emoji_events_outlined,
+      activeIcon: Icons.emoji_events,
+      label: 'TOP',
+      accent: Cyber.gold,
     ),
     _NavSpec(
       section: AppSection.shop,
@@ -34,11 +41,11 @@ class LandingBottomNavigation extends StatelessWidget {
       accent: Cyber.cyan,
     ),
     _NavSpec(
-      section: AppSection.leaderboard,
-      icon: Icons.emoji_events_outlined,
-      activeIcon: Icons.emoji_events,
-      label: 'TOP',
-      accent: Cyber.gold,
+      section: AppSection.profile,
+      icon: Icons.person_outline,
+      activeIcon: Icons.person,
+      label: 'PROFILE',
+      accent: Cyber.cyan,
     ),
   ];
 

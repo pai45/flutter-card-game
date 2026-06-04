@@ -17,6 +17,7 @@ const Color _kWhite = Colors.white;
 const Color _kMuted = Cyber.muted;
 const Color _kBronze = Color(0xFFCD7F32);
 const Color _kSilver = Color(0xFFCBD5E1);
+const Color _kMagenta = Cyber.magenta;
 
 // ── Tier helpers ──────────────────────────────────────────────────────────────
 // Cards reveal by tier: bronze / silver / gold / platinum, escalating in drama.
@@ -80,6 +81,39 @@ List<Color> _rarityGradientColors(String r) => switch (r) {
     const Color(0xFFCD7F32),
     const Color(0xFF5C3A1A),
   ],
+};
+
+// Holographic foil sweep tuned per card rarity — mirrors the shop pack shimmer
+// (`_packHolo` in shop_screen.dart): calmer single-band cooler tiers, escalating
+// to a full multi-colour rainbow foil for platinum. Intensities are deliberately
+// moderate so the sweep reads as light playing over the card, not a white-out.
+({List<Color> colors, double intensity, int bands, double speed}) _cardHolo(
+  String rarity,
+) => switch (rarity) {
+  'silver' => (
+    colors: [_kSilver, _kWhite, _kCyan],
+    intensity: 0.35,
+    bands: 1,
+    speed: 1.0,
+  ),
+  'gold' => (
+    colors: [_kGold, _kWhite, const Color(0xFFFFE9A8), _kGold],
+    intensity: 0.42,
+    bands: 2,
+    speed: 1.15,
+  ),
+  'platinum' => (
+    colors: [_kMagenta, _kViolet, _kCyan, _kGold, _kMagenta],
+    intensity: 0.50,
+    bands: 2,
+    speed: 1.3,
+  ),
+  _ => (
+    colors: [_kBronze, const Color(0xFFFFD9A8), _kWhite],
+    intensity: 0.35,
+    bands: 1,
+    speed: 1.0,
+  ),
 };
 
 // ── Particle ──────────────────────────────────────────────────────────────────
@@ -326,8 +360,8 @@ class _CardUnpackState extends State<CardUnpackAnimation>
       duration: const Duration(milliseconds: 150),
     );
     _flashOpacity = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 0.9), weight: 0.5),
-      TweenSequenceItem(tween: Tween(begin: 0.9, end: 0.0), weight: 0.5),
+      TweenSequenceItem(tween: Tween(begin: 0.0, end: 1.0), weight: 0.5),
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 0.0), weight: 0.5),
     ]).animate(_flashCtrl!);
     // Swap pack → card at the white-out peak
     _flashCtrl!.addListener(() {
@@ -393,23 +427,13 @@ class _CardUnpackState extends State<CardUnpackAnimation>
       )..repeat();
     }
 
-    // Holographic shine sweep across the card; platinum keeps shimmering.
+    // Holographic foil sweep across the card — identical look to the shop pack
+    // shimmer (multi-colour additive bands). Loops continuously and seamlessly
+    // for every rarity, using the same cadence as the pack shimmer (2200 ms).
     _sweepCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
-    );
-    if (rank >= 3) {
-      _sweepCtrl!.repeat();
-    } else {
-      _sweepCtrl!.forward().then((_) {
-        if (mounted) {
-          setState(() {
-            _sweepCtrl?.dispose();
-            _sweepCtrl = null;
-          });
-        }
-      });
-    }
+      duration: const Duration(milliseconds: 2200),
+    )..repeat();
 
     // Big OVR number count-up + slam (only meaningful with a real card face).
     // Once it lands, it lingers ~0.5 s before fading out instead of snapping off.
@@ -467,7 +491,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
 
   // Hold the landed OVR number on screen for ~0.5 s, then fade it out.
   void _holdThenFadeOvr() {
-    _ovrHoldTimer = Timer(const Duration(milliseconds: 500), () {
+    _ovrHoldTimer = Timer(const Duration(milliseconds: 1000), () {
       if (!mounted) return;
       _ovrFadeCtrl = AnimationController(
         vsync: this,
@@ -916,12 +940,18 @@ class _CardUnpackState extends State<CardUnpackAnimation>
             child: IgnorePointer(
               child: AnimatedBuilder(
                 animation: _sweepCtrl!,
-                builder: (_, ignored) => CustomPaint(
-                  painter: _ShineSweepPainter(
-                    progress: _sweepCtrl!.value,
-                    color: _raritySecondary(widget.rarity),
-                  ),
-                ),
+                builder: (_, ignored) {
+                  final holo = _cardHolo(widget.rarity);
+                  return CustomPaint(
+                    painter: _HoloSweepPainter(
+                      shimmer: _sweepCtrl!.value,
+                      colors: holo.colors,
+                      intensity: holo.intensity,
+                      bands: holo.bands,
+                      speed: holo.speed,
+                    ),
+                  );
+                },
               ),
             ),
           ),
@@ -1637,42 +1667,70 @@ class _ShockwavePainter extends CustomPainter {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// Holographic shine — a diagonal highlight band that sweeps across the card.
+// Holographic foil sweep — the same shimmer used over shop packs (_PackHoloPainter
+// in shop_screen.dart). One or more diagonal multi-colour bands sweep across the
+// card additively, so it reads as light playing over the art. Each band is drawn
+// in its own rect with fixed 0→1 stops (rather than position-based clamped stops),
+// which keeps the loop seamless and free of the boundary jitter the old single
+// clamped-gradient sweep suffered from.
 // ═════════════════════════════════════════════════════════════════════════════
-class _ShineSweepPainter extends CustomPainter {
-  const _ShineSweepPainter({required this.progress, required this.color});
+class _HoloSweepPainter extends CustomPainter {
+  const _HoloSweepPainter({
+    required this.shimmer,
+    required this.colors,
+    required this.intensity,
+    required this.bands,
+    required this.speed,
+  });
 
-  final double progress; // 0..1 (loops for platinum)
-  final Color color;
+  final double shimmer; // 0..1, loops
+  final List<Color> colors;
+  final double intensity;
+  final int bands;
+  final double speed;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final p = progress % 1.0;
-    final rect = Offset.zero & size;
-    final paint = Paint()
-      ..blendMode = BlendMode.plus
-      ..shader = LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Colors.transparent,
-          color.withValues(alpha: 0.0),
-          color.withValues(alpha: 0.45),
-          color.withValues(alpha: 0.0),
-          Colors.transparent,
-        ],
-        stops: [
-          (p - 0.18).clamp(0.0, 1.0),
-          (p - 0.09).clamp(0.0, 1.0),
-          p.clamp(0.0, 1.0),
-          (p + 0.09).clamp(0.0, 1.0),
-          (p + 0.18).clamp(0.0, 1.0),
-        ],
-      ).createShader(rect);
-    canvas.drawRect(rect, paint);
+    // Half-width of the colour band in normalised width units.
+    const double hw = 0.24;
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
+    for (var b = 0; b < bands; b++) {
+      final phase = ((shimmer * speed) + b / bands) % 1.0;
+      // Center travels from -hw (off left) to 1+hw (off right) as phase 0→1.
+      final center = phase * (1 + 2 * hw) - hw;
+      final left = (center - hw) * size.width;
+      final right = (center + hw) * size.width;
+      // Skip fully off-screen bands — avoids degenerate zero-width rects.
+      if (right <= 0 || left >= size.width) continue;
+
+      // Stops are uniform within the band rect (no clamping ⇒ no loop jitter).
+      final cols = <Color>[Colors.transparent];
+      final stops = <double>[0.0];
+      for (var i = 0; i < colors.length; i++) {
+        final f = colors.length == 1 ? 0.5 : i / (colors.length - 1).toDouble();
+        cols.add(colors[i].withValues(alpha: intensity));
+        stops.add(f);
+      }
+      cols.add(Colors.transparent);
+      stops.add(1.0);
+
+      final bandRect = Rect.fromLTRB(left, 0, right, size.height);
+      canvas.drawRect(
+        bandRect,
+        Paint()
+          ..blendMode = BlendMode.plus
+          ..shader = LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: cols,
+            stops: stops,
+          ).createShader(bandRect),
+      );
+    }
+    canvas.restore();
   }
 
   @override
-  bool shouldRepaint(_ShineSweepPainter old) =>
-      old.progress != progress || old.color != color;
+  bool shouldRepaint(_HoloSweepPainter old) => old.shimmer != shimmer;
 }

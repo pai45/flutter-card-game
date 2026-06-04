@@ -4,11 +4,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'blocs/game/game_bloc.dart';
 import 'blocs/game/game_event.dart';
 import 'blocs/game/game_state.dart';
+import 'blocs/prediction/prediction_cubit.dart';
 import 'config/enums.dart';
 import 'config/theme.dart';
+import 'models/sport_match.dart';
 import 'screens/game/game_screen.dart';
 import 'screens/home/widgets/starter_pack_onboarding.dart';
+import 'screens/predictions/match_prediction_screen.dart';
+import 'screens/predictions/prediction_home_screen.dart';
+import 'screens/profile/profile_screen.dart';
+import 'screens/leaderboard/leaderboard_screen.dart';
 import 'screens/shop/shop_screen.dart';
+import 'services/prediction_repository.dart';
 import 'services/secure_storage_service.dart';
 
 class PitchDuelApp extends StatelessWidget {
@@ -18,8 +25,17 @@ class PitchDuelApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Cyber.buildTextTheme(ThemeData.dark().textTheme);
 
-    return BlocProvider(
-      create: (_) => GameBloc(SecureGameStorage())..add(GameLoaded()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => GameBloc(SecureGameStorage())..add(GameLoaded()),
+        ),
+        BlocProvider(
+          create: (_) =>
+              PredictionCubit(MockPredictionRepository(), SecureGameStorage())
+                ..load(),
+        ),
+      ],
       child: MaterialApp(
         title: 'Pitch Duel',
         debugShowCheckedModeBanner: false,
@@ -117,9 +133,35 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
-  AppSection section = AppSection.game;
+  // Default landing is the new prediction HOME.
+  AppSection section = AppSection.predictions;
 
   void _go(AppSection next) => setState(() => section = next);
+
+  /// Enter the card game ("Pitch Duel") as a full-screen pushed flow from the
+  /// GAMES tab. App-level destinations selected inside it pop back and switch
+  /// the shell; card-game-internal sections are handled within GameTabContent.
+  void _openGame() {
+    final navigator = Navigator.of(context);
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => GameTabContent(
+          onNavigate: (next) {
+            navigator.pop();
+            _go(next);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _openMatch(SportMatch match) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => MatchPredictionScreen(match: match),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +180,7 @@ class _AppShellState extends State<AppShell> {
                     ),
                     const SizedBox(height: 24),
                     Text(
-                      'Loading Game...',
+                      'Loading...',
                       style: TextStyle(color: Cyber.cyan, fontSize: 16),
                     ),
                   ],
@@ -155,7 +197,13 @@ class _AppShellState extends State<AppShell> {
           }
           return switch (section) {
             AppSection.shop => ShopScreen(onNavigate: _go),
-            _ => GameTabContent(onNavigate: _go),
+            AppSection.leaderboard => LeaderboardScreen(onNavigate: _go),
+            AppSection.profile => ProfileScreen(onNavigate: _go),
+            _ => PredictionHomeScreen(
+              onNavigate: _go,
+              onOpenMatch: _openMatch,
+              onOpenGame: _openGame,
+            ),
           };
         },
       ),

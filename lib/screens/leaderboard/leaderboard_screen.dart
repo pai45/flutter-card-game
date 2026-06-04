@@ -290,7 +290,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             ),
           ),
           bottomNavigationBar: LandingBottomNavigation(
-            selectedIndex: 2,
+            selectedIndex: 1,
             onNavigate: widget.onNavigate,
           ),
         );
