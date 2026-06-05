@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/league.dart';
 import '../models/prediction.dart';
 import '../models/sport_match.dart';
+import '../models/team_standing.dart';
 
 /// Data seam for the prediction hub. The UI/cubit only ever talk to this
 /// interface, so swapping [MockPredictionRepository] for an HTTP/Firebase
@@ -15,6 +16,9 @@ abstract class PredictionRepository {
 
   /// The quiz for a fixture, or null if none is configured.
   Future<PredictionQuiz?> quizFor(String matchId);
+
+  /// The rank-sorted standings table for [leagueId], or empty if none.
+  Future<List<TeamStanding>> standings(String leagueId);
 }
 
 /// Hardcoded fixtures + quizzes mirroring the home mockup, spanning every card
@@ -97,6 +101,50 @@ class MockPredictionRepository implements PredictionRepository {
     color: Color(0xfff0c419),
   );
 
+  // Extra teams that only populate the standings tables (no fixtures yet).
+  static const _ars = SportTeam(
+    id: 'ars',
+    name: 'Arsenal',
+    shortName: 'ARS',
+    color: Color(0xffef0107),
+  );
+  static const _avl = SportTeam(
+    id: 'avl',
+    name: 'Aston Villa',
+    shortName: 'AVL',
+    color: Color(0xff7a003c),
+  );
+  static const _bha = SportTeam(
+    id: 'bha',
+    name: 'Brighton',
+    shortName: 'BHA',
+    color: Color(0xff0057b8),
+  );
+  static const _eve = SportTeam(
+    id: 'eve',
+    name: 'Everton',
+    shortName: 'EVE',
+    color: Color(0xff003399),
+  );
+  static const _bur = SportTeam(
+    id: 'bur',
+    name: 'Burnley',
+    shortName: 'BUR',
+    color: Color(0xff6c1d45),
+  );
+  static const _csk = SportTeam(
+    id: 'csk',
+    name: 'Chennai',
+    shortName: 'CSK',
+    color: Color(0xfff9cd05),
+  );
+  static const _rcb = SportTeam(
+    id: 'rcb',
+    name: 'Bangalore',
+    shortName: 'RCB',
+    color: Color(0xffd81920),
+  );
+
   // Fixtures are built relative to "now" so statuses stay believable on launch.
   late final DateTime _now = DateTime.now();
   late final DateTime _today15 = DateTime(_now.year, _now.month, _now.day, 15);
@@ -172,8 +220,8 @@ class MockPredictionRepository implements PredictionRepository {
       questions: [
         QuizQuestion(
           id: 'q1',
-          text: 'Who will win MAN CITY vs LIVERPOOL?',
-          options: ['Man City', 'Tie', 'Liverpool'],
+          text: 'Predict the full-time score',
+          type: QuizQuestionType.exactScore,
           reward: 100,
         ),
         QuizQuestion(
@@ -197,6 +245,25 @@ class MockPredictionRepository implements PredictionRepository {
         QuizQuestion(
           id: 'q5',
           text: 'Will a red card be shown?',
+          options: ['Yes', 'No'],
+          reward: 50,
+        ),
+      ],
+    ),
+    'epl_cfc_new': const PredictionQuiz(
+      matchId: 'epl_cfc_new',
+      questions: [
+        QuizQuestion(
+          id: 'q1',
+          text: 'Predict the full-time score',
+          type: QuizQuestionType.exactScore,
+          reward: 100,
+          settledHomeScore: 2,
+          settledAwayScore: 1,
+        ),
+        QuizQuestion(
+          id: 'q2',
+          text: 'Both teams to score?',
           options: ['Yes', 'No'],
           reward: 50,
         ),
@@ -231,13 +298,41 @@ class MockPredictionRepository implements PredictionRepository {
       questions: [
         QuizQuestion(
           id: 'q1',
-          text: 'Who will win MAN UTD vs WEST HAM?',
-          options: ['Man Utd', 'Tie', 'West Ham'],
+          text: 'Predict the full-time score',
+          type: QuizQuestionType.exactScore,
           reward: 100,
-          settledOptionIndex: 0,
+          settledHomeScore: 2,
+          settledAwayScore: 1,
         ),
       ],
     ),
+  };
+
+  // ── Standings (rank-sorted; seeded to look like a real season) ───────────────
+  // Football: diffLabel is goal difference, points = W*3 + D*1.
+  // Cricket: diffLabel is net run rate, points = W*2, no drawn column.
+  static const _standings = <String, List<TeamStanding>>{
+    'epl': [
+      TeamStanding(team: _liv, rank: 1, played: 28, won: 20, drawn: 5, lost: 3, points: 65, diffLabel: '+41', form: 'WWDWW'),
+      TeamStanding(team: _ars, rank: 2, played: 28, won: 19, drawn: 6, lost: 3, points: 63, diffLabel: '+38', form: 'WDWWL'),
+      TeamStanding(team: _mc, rank: 3, played: 28, won: 18, drawn: 6, lost: 4, points: 60, diffLabel: '+35', form: 'WWLDW'),
+      TeamStanding(team: _avl, rank: 4, played: 28, won: 15, drawn: 7, lost: 6, points: 52, diffLabel: '+15', form: 'DWWLW'),
+      TeamStanding(team: _mu, rank: 5, played: 28, won: 14, drawn: 6, lost: 8, points: 48, diffLabel: '+9', form: 'WLWDL'),
+      TeamStanding(team: _bha, rank: 6, played: 28, won: 12, drawn: 9, lost: 7, points: 45, diffLabel: '+6', form: 'DDWLW'),
+      TeamStanding(team: _new, rank: 7, played: 28, won: 12, drawn: 6, lost: 10, points: 42, diffLabel: '+4', form: 'LWWDL'),
+      TeamStanding(team: _cfc, rank: 8, played: 28, won: 11, drawn: 8, lost: 9, points: 41, diffLabel: '+2', form: 'WDLWD'),
+      TeamStanding(team: _whu, rank: 9, played: 28, won: 9, drawn: 7, lost: 12, points: 34, diffLabel: '-8', form: 'LLDWL'),
+      TeamStanding(team: _eve, rank: 10, played: 28, won: 7, drawn: 9, lost: 12, points: 30, diffLabel: '-11', form: 'DLLDW'),
+      TeamStanding(team: _bur, rank: 11, played: 28, won: 4, drawn: 6, lost: 18, points: 18, diffLabel: '-29', form: 'LLDLL'),
+    ],
+    'ipl': [
+      TeamStanding(team: _mi, rank: 1, played: 8, won: 6, lost: 2, points: 12, diffLabel: '+0.95', form: 'WWLWW'),
+      TeamStanding(team: _kkr, rank: 2, played: 8, won: 5, lost: 3, points: 10, diffLabel: '+0.62', form: 'WLWWL'),
+      TeamStanding(team: _csk, rank: 3, played: 8, won: 5, lost: 3, points: 10, diffLabel: '+0.41', form: 'WWLWL'),
+      TeamStanding(team: _srh, rank: 4, played: 8, won: 4, lost: 4, points: 8, diffLabel: '+0.12', form: 'LWLWW'),
+      TeamStanding(team: _pjk, rank: 5, played: 8, won: 3, lost: 5, points: 6, diffLabel: '-0.34', form: 'LLWLW'),
+      TeamStanding(team: _rcb, rank: 6, played: 8, won: 2, lost: 6, points: 4, diffLabel: '-0.88', form: 'LLWLL'),
+    ],
   };
 
   @override
@@ -249,4 +344,8 @@ class MockPredictionRepository implements PredictionRepository {
 
   @override
   Future<PredictionQuiz?> quizFor(String matchId) async => _quizzes[matchId];
+
+  @override
+  Future<List<TeamStanding>> standings(String leagueId) async =>
+      _standings[leagueId] ?? const [];
 }

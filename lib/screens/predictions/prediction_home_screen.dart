@@ -6,7 +6,9 @@ import '../../blocs/prediction/prediction_cubit.dart';
 import '../../blocs/prediction/prediction_state.dart';
 import '../../config/enums.dart';
 import '../../config/theme.dart';
+import '../../models/league.dart';
 import '../../models/sport_match.dart';
+import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_segmented_tabs.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
@@ -18,12 +20,14 @@ class PredictionHomeScreen extends StatefulWidget {
   const PredictionHomeScreen({
     required this.onNavigate,
     required this.onOpenMatch,
+    required this.onOpenLeague,
     required this.onOpenGame,
     super.key,
   });
 
   final ValueChanged<AppSection> onNavigate;
   final ValueChanged<SportMatch> onOpenMatch;
+  final ValueChanged<League> onOpenLeague;
   final VoidCallback onOpenGame;
 
   @override
@@ -31,7 +35,7 @@ class PredictionHomeScreen extends StatefulWidget {
 }
 
 class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
-  int _tab = 1;
+  int _tab = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -85,15 +89,24 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
         ],
       ),
       bottomNavigationBar: LandingBottomNavigation(
-        selectedIndex: 0,
+        selectedIndex: switch (_tab) {
+          0 => 0,
+          1 => 1,
+          _ => -1,
+        },
         onNavigate: widget.onNavigate,
+        includeShop: false,
+        onPredictionTabTap: (tab) => setState(() => _tab = tab),
       ),
     );
   }
 
   Widget _buildTab() {
     return switch (_tab) {
-      0 => _MatchesTab(onOpenMatch: widget.onOpenMatch),
+      0 => _MatchesTab(
+        onOpenMatch: widget.onOpenMatch,
+        onOpenLeague: widget.onOpenLeague,
+      ),
       1 => const _PickTab(),
       _ => _GamesTab(onOpenGame: widget.onOpenGame),
     };
@@ -254,9 +267,10 @@ class _CrossedSwordsPainter extends CustomPainter {
 }
 
 class _MatchesTab extends StatelessWidget {
-  const _MatchesTab({required this.onOpenMatch});
+  const _MatchesTab({required this.onOpenMatch, required this.onOpenLeague});
 
   final ValueChanged<SportMatch> onOpenMatch;
+  final ValueChanged<League> onOpenLeague;
 
   @override
   Widget build(BuildContext context) {
@@ -285,19 +299,51 @@ class _MatchesTab extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             for (final entry in grouped.entries) ...[
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8, top: 4),
-                child: Row(
-                  children: [
-                    SectionLabel(label: entry.key.shortCode),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Container(
-                        height: 1,
-                        color: entry.key.accent.withValues(alpha: 0.25),
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  playSound(SoundEffect.uiTap);
+                  onOpenLeague(entry.key);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 8, top: 4),
+                  child: Row(
+                    children: [
+                      Text(
+                        entry.key.shortCode,
+                        style: TextStyle(
+                          color: Cyber.cyan.withValues(alpha: 0.85),
+                          fontFamily: Cyber.displayFont,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 10),
+                      Text(
+                        'STANDINGS',
+                        style: Cyber.label(
+                          9,
+                          color: Cyber.muted,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Container(
+                          height: 1,
+                          color: entry.key.accent.withValues(alpha: 0.25),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.chevron_right,
+                        color: entry.key.accent.withValues(alpha: 0.8),
+                        size: 18,
+                      ),
+                    ],
+                  ),
                 ),
               ),
               for (final match in entry.value) ...[
@@ -1563,9 +1609,10 @@ class _GamesTab extends StatelessWidget {
       children: [
         _GameTile(
           title: 'PITCH DUEL',
-          subtitle: 'TACTICAL CARD DUEL',
-          icon: Icons.sports_esports,
+          subtitle: 'TACTICAL CARD GAME',
+          icon: Icons.sports_soccer,
           accent: Cyber.cyan,
+          featured: true,
           onTap: onOpenGame,
         ),
         const SizedBox(height: 12),
@@ -1589,6 +1636,8 @@ class _GamesTab extends StatelessWidget {
   }
 }
 
+/// HUD game card — flat dark fill, [HudChamferClipper] silhouette and a painted
+/// stroke that follows every cut edge (no gradient wash).
 class _GameTile extends StatelessWidget {
   const _GameTile({
     required this.title,
@@ -1597,6 +1646,7 @@ class _GameTile extends StatelessWidget {
     required this.accent,
     this.onTap,
     this.locked = false,
+    this.featured = false,
   });
 
   final String title;
@@ -1605,59 +1655,343 @@ class _GameTile extends StatelessWidget {
   final Color accent;
   final VoidCallback? onTap;
   final bool locked;
+  final bool featured;
+
+  static const _bigCut = 14.0;
+  static const _smallCut = 4.0;
 
   @override
   Widget build(BuildContext context) {
+    final borderAlpha = locked ? 0.38 : 0.82;
+    final borderColor = accent.withValues(alpha: borderAlpha);
+
     return Opacity(
-      opacity: locked ? 0.5 : 1,
+      opacity: locked ? 0.52 : 1,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: locked ? null : onTap,
-        child: CyberPanel(
-          accent: accent,
-          glow: !locked,
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.12),
-                  border: Border.all(color: accent.withValues(alpha: 0.5)),
-                ),
-                child: Icon(icon, color: accent, size: 26),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: Cyber.display(17, letterSpacing: 1)),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      style: Cyber.label(
-                        9,
-                        color: Cyber.muted,
-                        letterSpacing: 1.4,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                locked ? Icons.lock_outline : Icons.chevron_right,
-                color: locked ? Cyber.muted : accent,
-                size: 22,
-              ),
-            ],
+        child: CustomPaint(
+          painter: _HudChamferCardPainter(
+            bigCut: _bigCut,
+            smallCut: _smallCut,
+            fillColor: Cyber.panel,
+            borderColor: borderColor,
+            borderGlow: !locked && featured,
+          ),
+          child: ClipPath(
+            clipper: const HudChamferClipper(
+              bigCut: _bigCut,
+              smallCut: _smallCut,
+            ),
+            child: featured && !locked
+                ? _FeaturedBody(
+                    title: title,
+                    subtitle: subtitle,
+                    accent: accent,
+                    onTap: onTap,
+                  )
+                : _CompactBody(
+                    title: title,
+                    subtitle: subtitle,
+                    icon: icon,
+                    accent: accent,
+                    locked: locked,
+                  ),
           ),
         ),
       ),
     );
   }
+}
+
+class _CompactBody extends StatelessWidget {
+  const _CompactBody({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.accent,
+    required this.locked,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color accent;
+  final bool locked;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          _GameIconBox(icon: icon, accent: accent, size: 52, iconSize: 26),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Cyber.display(
+                    17,
+                    letterSpacing: 1,
+                    color: locked ? Colors.white.withValues(alpha: 0.45) : Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: Cyber.label(
+                    9,
+                    color: locked ? Cyber.muted : accent.withValues(alpha: 0.65),
+                    letterSpacing: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(
+            locked ? Icons.lock_outline : Icons.chevron_right,
+            color: locked ? accent.withValues(alpha: 0.55) : accent,
+            size: 22,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Pitch Duel hero card — corner brackets, crest watermark, and a chamfered
+/// "Free" footer matching the reference layout.
+class _FeaturedBody extends StatelessWidget {
+  const _FeaturedBody({
+    required this.title,
+    required this.subtitle,
+    required this.accent,
+    required this.onTap,
+  });
+
+  final String title;
+  final String subtitle;
+  final Color accent;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned(
+          right: -8,
+          top: 8,
+          bottom: 8,
+          child: Icon(
+            Icons.sports_soccer,
+            size: 112,
+            color: accent.withValues(alpha: 0.07),
+          ),
+        ),
+        const Positioned.fill(
+          child: CustomPaint(painter: _GameCornerBracketsPainter()),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  _GameIconBox(
+                    icon: Icons.sports_soccer,
+                    accent: accent,
+                    size: 52,
+                    iconSize: 28,
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: Cyber.display(18, letterSpacing: 1.1),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          style: Cyber.label(
+                            9,
+                            color: Cyber.muted,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right, color: accent, size: 22),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _GameFreeButton(accent: accent, onTap: onTap),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GameIconBox extends StatelessWidget {
+  const _GameIconBox({
+    required this.icon,
+    required this.accent,
+    required this.size,
+    required this.iconSize,
+  });
+
+  final IconData icon;
+  final Color accent;
+  final double size;
+  final double iconSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Cyber.bg.withValues(alpha: 0.55),
+        border: Border.all(color: accent.withValues(alpha: 0.55)),
+      ),
+      child: Icon(icon, color: accent, size: iconSize),
+    );
+  }
+}
+
+class _GameFreeButton extends StatelessWidget {
+  const _GameFreeButton({required this.accent, required this.onTap});
+
+  final Color accent;
+  final VoidCallback? onTap;
+
+  static const _bigCut = 10.0;
+  static const _smallCut = 3.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: CustomPaint(
+        painter: _HudChamferCardPainter(
+          bigCut: _bigCut,
+          smallCut: _smallCut,
+          fillColor: Cyber.panel2,
+          borderColor: accent.withValues(alpha: 0.75),
+        ),
+        child: ClipPath(
+          clipper: const HudChamferClipper(
+            bigCut: _bigCut,
+            smallCut: _smallCut,
+          ),
+          child: SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CoinIcon(size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  'Free',
+                  style: Cyber.display(16, letterSpacing: 0.8),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Paints a flat fill plus a stroke that traces the full [HudChamferClipper]
+/// outline — including the diagonal cut edges.
+class _HudChamferCardPainter extends CustomPainter {
+  const _HudChamferCardPainter({
+    required this.bigCut,
+    required this.smallCut,
+    required this.fillColor,
+    required this.borderColor,
+    this.borderGlow = false,
+  });
+
+  final double bigCut;
+  final double smallCut;
+  final Color fillColor;
+  final Color borderColor;
+  final bool borderGlow;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+    final path = HudChamferClipper(
+      bigCut: bigCut,
+      smallCut: smallCut,
+    ).buildPath(size);
+
+    canvas.drawPath(path, Paint()..color = fillColor);
+
+    if (borderGlow) {
+      canvas.drawPath(
+        path,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2
+          ..color = borderColor.withValues(alpha: 0.22)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+      );
+    }
+
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2
+        ..color = borderColor,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _HudChamferCardPainter old) =>
+      old.bigCut != bigCut ||
+      old.smallCut != smallCut ||
+      old.fillColor != fillColor ||
+      old.borderColor != borderColor ||
+      old.borderGlow != borderGlow;
+}
+
+/// Thin L-brackets in the top corners of the featured Pitch Duel card.
+class _GameCornerBracketsPainter extends CustomPainter {
+  const _GameCornerBracketsPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const len = 14.0;
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.22)
+      ..strokeWidth = 1.2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.square;
+    canvas.drawLine(const Offset(0, 0), const Offset(len, 0), paint);
+    canvas.drawLine(const Offset(0, 0), const Offset(0, len), paint);
+    canvas.drawLine(Offset(size.width, 0), Offset(size.width - len, 0), paint);
+    canvas.drawLine(Offset(size.width, 0), Offset(size.width, len), paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _GameCornerBracketsPainter old) => false;
 }
 
 String _formatInt(int value) {

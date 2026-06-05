@@ -26,6 +26,10 @@ class PredictionCubit extends Cubit<PredictionState> {
   Future<void> load() async {
     final leagues = await _repository.leagues();
     final fixtures = await _repository.fixtures();
+    final standings = {
+      for (final league in leagues)
+        league.id: await _repository.standings(league.id),
+    };
     final stored = await _storage.loadPredictions();
     final predictions = {for (final p in stored) p.matchId: p};
     predictions.putIfAbsent(
@@ -42,6 +46,7 @@ class PredictionCubit extends Cubit<PredictionState> {
         leagues: leagues,
         fixtures: fixtures,
         predictions: predictions,
+        standingsByLeague: standings,
       ),
     );
   }
@@ -78,7 +83,11 @@ class PredictionCubit extends Cubit<PredictionState> {
     var reward = 0;
     for (final q in quiz.questions) {
       final picked = prediction.answers[q.id];
-      if (picked != null && picked == q.settledOptionIndex) {
+      if (picked == null) continue;
+      final correctAnswer = q.isScorePrediction
+          ? q.settledScoreEncoded
+          : q.settledOptionIndex;
+      if (correctAnswer != null && picked == correctAnswer) {
         correct++;
         reward += q.reward;
       }

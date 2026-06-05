@@ -298,8 +298,9 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
             ],
           ),
           bottomNavigationBar: LandingBottomNavigation(
-            selectedIndex: 2,
+            selectedIndex: 1,
             onNavigate: widget.onNavigate,
+            includeShop: false,
           ),
         );
       },

@@ -7,9 +7,11 @@ import 'blocs/game/game_state.dart';
 import 'blocs/prediction/prediction_cubit.dart';
 import 'config/enums.dart';
 import 'config/theme.dart';
+import 'models/league.dart';
 import 'models/sport_match.dart';
 import 'screens/game/game_screen.dart';
 import 'screens/home/widgets/starter_pack_onboarding.dart';
+import 'screens/predictions/league_detail_screen.dart';
 import 'screens/predictions/match_prediction_screen.dart';
 import 'screens/predictions/prediction_home_screen.dart';
 import 'screens/profile/profile_screen.dart';
@@ -174,6 +176,14 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
+  void _openLeague(League league) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => LeagueDetailScreen(league: league),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -223,6 +233,7 @@ class _AppShellState extends State<AppShell> {
             _ => PredictionHomeScreen(
               onNavigate: _go,
               onOpenMatch: _openMatch,
+              onOpenLeague: _openLeague,
               onOpenGame: _openGame,
             ),
           };

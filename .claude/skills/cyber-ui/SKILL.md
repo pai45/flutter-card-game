@@ -95,6 +95,13 @@ From [cyber_widgets.dart](../../../lib/widgets/cyber/cyber_widgets.dart):
 - CTAs: `HudCtaButton` (hero, animated glow border) and `CyberCtaButton`
   ([cyber_cta_button.dart](../../../lib/widgets/cyber/cyber_cta_button.dart)).
 - Page chrome: `GameScaffold` / `ReactHeaderBar` ([game_scaffold.dart](../../../lib/widgets/game_scaffold.dart)).
+- `CyberSegmentedTabs(tabs, activeIndex, onTap)` + `CyberTab(label, icon)`
+  ([cyber_segmented_tabs.dart](../../../lib/widgets/cyber/cyber_segmented_tabs.dart))
+  — top tab bar (e.g. MATCHES / PICK / GAMES). Calm dark bar; the ACTIVE tab is
+  the one focal element: a raised, glowing cyan trapezoid (square top, chamfered
+  bottom) that dips below the bar baseline, dark-ink icon + label on it, others
+  muted. `CyberTab.icon` is an `(color, size) => Widget` builder so active/inactive
+  tint stays centralised (use `Icon` or a `CustomPaint` for non-Material glyphs).
 
 ## Workflow for new/changed UI
 1. Reuse a shared component above before building new. If a pattern repeats 2+
@@ -146,3 +153,19 @@ From [cyber_widgets.dart](../../../lib/widgets/cyber/cyber_widgets.dart):
     (`_HudStat`), flat HUD link (`_HudLink`), status strip (`_LobbyStatusBar`).
 - Custom cyber `SnackBar` + loader to replace stock Material (home "Tutorial
   reset" still uses a stock `SnackBar`).
+- Prediction quiz (`match_prediction_screen.dart`) is a gamified ONE-question-
+  at-a-time flow (not a scrolled list): HUD header (corner brackets + kickoff
+  time + team badges + split bar), a "QUIZ LOCKS IN hh:mm:ss" countdown to
+  kickoff, a numbered question panel with a violet→cyan XP pill + A/B/C options,
+  a progress-segment row (current = amber gradient w/ glow "you are here",
+  answered+left = green gradient, pending = slate `#314158`), a docked
+  PREVIOUS + NEXT button pair (`_QuizButton` on the `HudChamferClipper`
+  silhouette: PREVIOUS = calm dark plate w/ cyan text+←, NEXT = glowing cyan
+  focal w/ dark ink+→; final page swaps NEXT → SUBMIT/SETTLE/DONE, SUBMIT
+  disabled until all answered), and a full-screen `_SubmittedOverlay`
+  celebration (elasticOut tick ring + glow, then fades and pops). The dock
+  background fades up into the page (bottom near-black → transparent) rather than
+  a hard divider. The same paginated UI doubles as a read-only review when
+  locked/finished (settled answers show correct/wrong). Patterns worth promoting
+  if reused: `_CornerBracketsPainter` (HUD corner ticks) and `_QuizButton` (an
+  arrow-aware HUD button on `HudChamferClipper`).

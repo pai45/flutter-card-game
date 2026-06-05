@@ -12,6 +12,7 @@ import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import 'widgets/score_prediction_picker.dart';
 
 /// The prediction quiz for one fixture, built as a gamified single-question
 /// flow that mirrors the design reference:
@@ -69,12 +70,31 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen> {
     setState(() {
       _quiz = quiz;
       _loading = false;
+      _ensureScoreDefaults();
     });
   }
 
+  void _ensureScoreDefaults() {
+    for (final q in _questions) {
+      if (q.isScorePrediction && !_answers.containsKey(q.id)) {
+        _answers[q.id] = ScoreAnswer.encode(0, 0);
+      }
+    }
+  }
+
+  (int home, int away) _scoreFor(String questionId) {
+    final encoded = _answers[questionId];
+    if (encoded != null) return ScoreAnswer.decode(encoded);
+    return (0, 0);
+  }
+
   List<QuizQuestion> get _questions => _quiz?.questions ?? const [];
-  bool get _allAnswered =>
-      _quiz != null && _answers.length == _questions.length;
+  bool get _allAnswered {
+    if (_quiz == null) return false;
+    return _questions.every(
+      (q) => q.isScorePrediction || _answers.containsKey(q.id),
+    );
+  }
   bool get _isLast => _index >= _questions.length - 1;
 
   Duration get _untilLock {
@@ -88,23 +108,33 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen> {
     setState(() => _answers[questionId] = optionIndex);
   }
 
-  void _goTo(int i) {
-    if (i < 0 || i >= _questions.length || i == _index) return;
+  void _setScore(String questionId, {int? home, int? away}) {
+    if (!_editable) return;
+    final (currentHome, currentAway) = _scoreFor(questionId);
     playSound(SoundEffect.uiTap);
-    setState(() => _index = i);
+    setState(() {
+      _answers[questionId] = ScoreAnswer.encode(
+        home ?? currentHome,
+        away ?? currentAway,
+      );
+    });
+  }
+
+  void _previous() {
+    if (_index <= 0) return;
+    playSound(SoundEffect.uiTap);
+    setState(() => _index--);
   }
 
   void _next() {
-    if (_isLast) {
-      _submit();
-      return;
-    }
+    if (_isLast) return;
     playSound(SoundEffect.uiTap);
     setState(() => _index++);
   }
 
   Future<void> _submit() async {
     if (!_allAnswered || _submitting) return;
+    _ensureScoreDefaults();
     playSound(SoundEffect.matchWin);
     setState(() => _submitting = true);
     await context.read<PredictionCubit>().submit(_match.id, Map.of(_answers));
@@ -174,6 +204,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen> {
 
     final settled = prediction?.status == PredictionStatus.settled;
     final question = _questions[_index];
+    final primary = _primaryButton(prediction, settled);
 
     return Column(
       children: [
@@ -195,64 +226,79 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen> {
                 child: SlideTransition(position: slide, child: child),
               );
             },
-            child: SingleChildScrollView(
-              key: ValueKey(question.id),
-              padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
-              child: _QuestionPanel(
-                index: _index + 1,
-                question: question,
-                selected: _answers[question.id],
-                settled: settled,
-                onSelect: (opt) => _select(question.id, opt),
-              ),
-            ),
+            child: question.isScorePrediction
+                ? _ScoreQuestionPanel(
+                    key: ValueKey(question.id),
+                    index: _index + 1,
+                    question: question,
+                    match: _match,
+                    homeScore: _scoreFor(question.id).$1,
+                    awayScore: _scoreFor(question.id).$2,
+                    settled: settled,
+                    editable: _editable,
+                    onHomeChanged: (s) =>
+                        _setScore(question.id, home: s),
+                    onAwayChanged: (s) =>
+                        _setScore(question.id, away: s),
+                  )
+                : SingleChildScrollView(
+                    key: ValueKey(question.id),
+                    padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
+                    child: _QuestionPanel(
+                      index: _index + 1,
+                      question: question,
+                      selected: _answers[question.id],
+                      settled: settled,
+                      onSelect: (opt) => _select(question.id, opt),
+                    ),
+                  ),
           ),
         ),
         _BottomDock(
           questions: _questions,
           answers: _answers,
           index: _index,
-          onJump: _goTo,
-          action: _bottomAction(prediction, settled),
+          canGoPrevious: _index > 0,
+          onPrevious: _previous,
+          primary: primary,
           helper: _helperText(prediction, settled),
         ),
       ],
     );
   }
 
-  Widget _bottomAction(UserPrediction? prediction, bool settled) {
-    // Demo settlement on the final page of a finished, scoreable quiz.
+  /// The forward CTA's state for the current page. NEXT pages forward; the
+  /// final page becomes SUBMIT (editable), SETTLE & CLAIM (finished demo) or
+  /// DONE (locked review).
+  _PrimaryAction _primaryButton(UserPrediction? prediction, bool settled) {
     final canSettle = _match.status == MatchStatus.finished &&
         (_quiz?.settleable ?? false) &&
         prediction != null &&
         !settled;
     if (_isLast && canSettle) {
-      return _ChamferCta(
-        label: 'SETTLE & CLAIM',
-        focal: true,
-        onTap: _settle,
-      );
+      return _PrimaryAction('SETTLE & CLAIM', enabled: true, onTap: _settle);
     }
-
     if (!_editable) {
-      // Locked / settled review: page through, finish on the last page.
-      return _ChamferCta(
-        label: _isLast ? 'DONE' : 'NEXT',
-        focal: _isLast,
-        onTap: _isLast ? () => Navigator.of(context).maybePop() : _next,
-      );
+      if (_isLast) {
+        return _PrimaryAction(
+          'DONE',
+          enabled: true,
+          onTap: () {
+            playSound(SoundEffect.uiTap);
+            Navigator.of(context).maybePop();
+          },
+        );
+      }
+      return _PrimaryAction('NEXT', enabled: true, isNext: true, onTap: _next);
     }
-
-    // Editable quiz: NEXT pages forward freely; SUBMIT (last page) unlocks once
-    // every future has an answer — the helper text guides the user there.
     if (_isLast) {
-      return _ChamferCta(
-        label: 'SUBMIT QUIZ',
-        focal: true,
+      return _PrimaryAction(
+        'SUBMIT QUIZ',
+        enabled: _allAnswered,
         onTap: _allAnswered ? _submit : null,
       );
     }
-    return _ChamferCta(label: 'NEXT', focal: false, onTap: _next);
+    return _PrimaryAction('NEXT', enabled: true, isNext: true, onTap: _next);
   }
 
   String _helperText(UserPrediction? prediction, bool settled) {
@@ -590,6 +636,135 @@ class _QuestionPanel extends StatelessWidget {
   }
 }
 
+// ── Score prediction question (Q1 on football fixtures) ───────────────────────
+class _ScoreQuestionPanel extends StatelessWidget {
+  const _ScoreQuestionPanel({
+    super.key,
+    required this.index,
+    required this.question,
+    required this.match,
+    required this.homeScore,
+    required this.awayScore,
+    required this.settled,
+    required this.editable,
+    required this.onHomeChanged,
+    required this.onAwayChanged,
+  });
+
+  final int index;
+  final QuizQuestion question;
+  final SportMatch match;
+  final int homeScore;
+  final int awayScore;
+  final bool settled;
+  final bool editable;
+  final ValueChanged<int> onHomeChanged;
+  final ValueChanged<int> onAwayChanged;
+
+  bool get _correct =>
+      settled &&
+      question.settledHomeScore == homeScore &&
+      question.settledAwayScore == awayScore;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(top: 12),
+            padding: const EdgeInsets.fromLTRB(18, 24, 18, 22),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [_panelTop, _panelBottom],
+              ),
+              border: Border.all(color: _panelBorder),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        question.text.toUpperCase(),
+                        style: Cyber.display(16, letterSpacing: 0.3)
+                            .copyWith(height: 1.25),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    _XpPill(reward: question.reward),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                ScorePredictionPicker(
+                  match: match,
+                  homeScore: homeScore,
+                  awayScore: awayScore,
+                  enabled: editable,
+                  settled: settled,
+                  correctHome: question.settledHomeScore,
+                  correctAway: question.settledAwayScore,
+                  onHomeChanged: onHomeChanged,
+                  onAwayChanged: onAwayChanged,
+                ),
+                if (settled) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Icon(
+                        _correct ? Icons.check_circle : Icons.cancel,
+                        size: 16,
+                        color: _correct ? Cyber.success : Cyber.danger,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _correct
+                            ? 'EXACT SCORE — CORRECT'
+                            : 'ACTUAL: ${question.settledHomeScore}–${question.settledAwayScore}',
+                        style: Cyber.label(
+                          11,
+                          color: _correct ? Cyber.success : Cyber.danger,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          Positioned(
+            left: 14,
+            top: 0,
+            child: Container(
+              width: 30,
+              height: 30,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Cyber.cyan.withValues(alpha: 0.16),
+                border: Border.all(color: Cyber.cyan.withValues(alpha: 0.6)),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                '$index',
+                style: Cyber.display(15, color: Cyber.cyan),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _XpPill extends StatelessWidget {
   const _XpPill({required this.reward});
   final int reward;
@@ -704,35 +879,56 @@ class _OptionTile extends StatelessWidget {
   }
 }
 
-// ── Bottom dock: progress dots + CTA + helper ─────────────────────────────────
+// ── Bottom dock: progress segments + PREVIOUS/NEXT + helper ───────────────────
+/// The forward action shown on the right of the dock.
+class _PrimaryAction {
+  const _PrimaryAction(
+    this.label, {
+    required this.enabled,
+    this.isNext = false,
+    this.onTap,
+  });
+
+  final String label;
+  final bool enabled;
+  final bool isNext;
+  final VoidCallback? onTap;
+}
+
 class _BottomDock extends StatelessWidget {
   const _BottomDock({
     required this.questions,
     required this.answers,
     required this.index,
-    required this.onJump,
-    required this.action,
+    required this.canGoPrevious,
+    required this.onPrevious,
+    required this.primary,
     required this.helper,
   });
 
   final List<QuizQuestion> questions;
   final Map<String, int> answers;
   final int index;
-  final ValueChanged<int> onJump;
-  final Widget action;
+  final bool canGoPrevious;
+  final VoidCallback onPrevious;
+  final _PrimaryAction primary;
   final String helper;
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      // Fades up into the page instead of a hard divider (per the reference).
       decoration: const BoxDecoration(
-        color: Color(0xFF0D111A),
-        border: Border(top: BorderSide(color: Color(0x1A5CDFFF))),
+        gradient: LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          colors: [Color(0xFF010517), Color(0xF2010517), Color(0x00010517)],
+        ),
       ),
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+          padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -741,25 +937,46 @@ class _BottomDock extends StatelessWidget {
                   for (var i = 0; i < questions.length; i++) ...[
                     if (i > 0) const SizedBox(width: 8),
                     Expanded(
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () => onJump(i),
-                        child: _ProgressSegment(
-                          answered: answers.containsKey(questions[i].id),
-                          current: i == index,
-                        ),
+                      child: _ProgressSegment(
+                        answered: answers.containsKey(questions[i].id) ||
+                            questions[i].isScorePrediction,
+                        current: i == index,
                       ),
                     ),
                   ],
                 ],
               ),
-              const SizedBox(height: 16),
-              action,
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  if (canGoPrevious) ...[
+                    Expanded(
+                      child: _QuizButton(
+                        label: 'PREVIOUS',
+                        leadingIcon: Icons.arrow_back,
+                        focal: false,
+                        enabled: true,
+                        onTap: onPrevious,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                  ],
+                  Expanded(
+                    child: _QuizButton(
+                      label: primary.label,
+                      trailingIcon: primary.isNext ? Icons.arrow_forward : null,
+                      focal: primary.enabled,
+                      enabled: primary.enabled,
+                      onTap: primary.onTap,
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 12),
               Text(
                 helper,
                 textAlign: TextAlign.center,
-                style: Cyber.body(11.5, color: Cyber.muted),
+                style: Cyber.body(12, color: const Color(0xFF90A1B9)),
               ),
             ],
           ),
@@ -776,64 +993,75 @@ class _ProgressSegment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color color;
-    if (current) {
-      color = Cyber.gold;
-    } else if (answered) {
-      color = Cyber.gold.withValues(alpha: 0.55);
-    } else {
-      color = const Color(0xff222b3d);
-    }
-    return Container(
-      height: 6,
+    // Current = amber "you are here"; already-answered+left = green; else slate.
+    final Gradient? gradient = current
+        ? const LinearGradient(colors: [_segAmberA, _segAmberB])
+        : answered
+            ? const LinearGradient(colors: [_segGreenA, _segGreenB])
+            : null;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      height: 8,
       decoration: BoxDecoration(
-        color: color,
+        gradient: gradient,
+        color: gradient == null ? _segTrack : null,
         borderRadius: BorderRadius.circular(2),
-        boxShadow: current ? Cyber.glow(Cyber.gold, alpha: 0.4, blur: 8) : null,
+        boxShadow:
+            current ? Cyber.glow(Cyber.amber, alpha: 0.35, blur: 8) : null,
       ),
     );
   }
 }
 
-// ── Chamfered CTA (NEXT / SUBMIT / DONE) ──────────────────────────────────────
-class _ChamferCta extends StatelessWidget {
-  const _ChamferCta({
+// ── PREVIOUS / NEXT button (angular HUD silhouette) ───────────────────────────
+class _QuizButton extends StatelessWidget {
+  const _QuizButton({
     required this.label,
     required this.focal,
+    required this.enabled,
     required this.onTap,
+    this.leadingIcon,
+    this.trailingIcon,
   });
 
   final String label;
   final bool focal;
+  final bool enabled;
   final VoidCallback? onTap;
+  final IconData? leadingIcon;
+  final IconData? trailingIcon;
 
   @override
   Widget build(BuildContext context) {
-    final enabled = onTap != null;
+    final Color content = !enabled
+        ? Cyber.muted
+        : focal
+            ? const Color(0xff06121b)
+            : Cyber.cyan;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: enabled
-          ? () {
-              playSound(SoundEffect.uiTap);
-              onTap!();
-            }
-          : null,
+      onTap: enabled ? onTap : null,
       child: SizedBox(
-        height: 54,
-        width: double.infinity,
+        height: 56,
         child: CustomPaint(
-          painter: _CtaPainter(focal: focal && enabled, enabled: enabled),
-          child: Center(
-            child: Text(
-              label,
-              style: Cyber.display(
-                15,
-                color: !enabled
-                    ? Cyber.muted
-                    : (focal ? const Color(0xff06121b) : Colors.white),
-                letterSpacing: 2,
+          painter: _HudBtnPainter(focal: focal, enabled: enabled),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (leadingIcon != null) ...[
+                Icon(leadingIcon, color: content, size: 20),
+                const SizedBox(width: 8),
+              ],
+              Text(
+                label,
+                style: Cyber.body(16, color: content, weight: FontWeight.w800)
+                    .copyWith(letterSpacing: 0.8),
               ),
-            ),
+              if (trailingIcon != null) ...[
+                const SizedBox(width: 8),
+                Icon(trailingIcon, color: content, size: 20),
+              ],
+            ],
           ),
         ),
       ),
@@ -841,34 +1069,23 @@ class _ChamferCta extends StatelessWidget {
   }
 }
 
-class _CtaPainter extends CustomPainter {
-  const _CtaPainter({required this.focal, required this.enabled});
+class _HudBtnPainter extends CustomPainter {
+  const _HudBtnPainter({required this.focal, required this.enabled});
   final bool focal;
   final bool enabled;
 
-  Path _path(Size s) {
-    const cut = 13.0;
-    return Path()
-      ..moveTo(0, 0)
-      ..lineTo(s.width, 0)
-      ..lineTo(s.width, s.height - cut)
-      ..lineTo(s.width - cut, s.height)
-      ..lineTo(cut, s.height)
-      ..lineTo(0, s.height - cut)
-      ..close();
-  }
+  static const _clipper = HudChamferClipper(bigCut: 14, smallCut: 7);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final path = _path(size);
-
+    final path = _clipper.buildPath(size);
     if (focal) {
-      // Glowing cyan focal CTA (submit / settle / done).
+      // Bright glowing forward CTA (NEXT / SUBMIT).
       canvas.drawPath(
         path,
         Paint()
-          ..color = Cyber.cyan.withValues(alpha: 0.45)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
+          ..color = Cyber.cyan.withValues(alpha: 0.5)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 13),
       );
       canvas.drawPath(
         path,
@@ -876,14 +1093,16 @@ class _CtaPainter extends CustomPainter {
           ..shader = LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color.lerp(Cyber.cyan, Colors.white, 0.25)!, Cyber.cyan],
+            colors: [Color.lerp(Cyber.cyan, Colors.white, 0.28)!, Cyber.cyan],
           ).createShader(Offset.zero & size),
       );
     } else {
-      // Calm dark plate (NEXT, or disabled).
+      // Calm dark plate (PREVIOUS, or a disabled SUBMIT).
       canvas.drawPath(
         path,
-        Paint()..color = enabled ? const Color(0xff1b2336) : const Color(0xff141a26),
+        Paint()
+          ..color =
+              enabled ? const Color(0xff1b2336) : const Color(0xff141a26),
       );
       canvas.drawPath(
         path,
@@ -898,7 +1117,7 @@ class _CtaPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _CtaPainter old) =>
+  bool shouldRepaint(covariant _HudBtnPainter old) =>
       old.focal != focal || old.enabled != enabled;
 }
 
@@ -1031,3 +1250,10 @@ const _panelBorder = Color(0xff2a3550);
 const _optionFill = Color(0xff0f1826);
 const _optionBorder = Color(0xff283448);
 const _letterFill = Color(0xff1a2434);
+
+// Progress-segment palette (green = done, amber = current, slate = pending).
+const _segGreenA = Color(0xFF00C850);
+const _segGreenB = Color(0xFF009865);
+const _segAmberA = Color(0xFFFFB13D);
+const _segAmberB = Color(0xFFFF7A1A);
+const _segTrack = Color(0xFF314158);

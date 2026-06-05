@@ -144,7 +144,9 @@ class _TabContent extends StatelessWidget {
 }
 
 /// Paints the active tab: a chamfered-bottom trapezoid filled with a bright
-/// vertical cyan gradient, a soft cyan glow halo, and a top sheen line.
+/// vertical cyan gradient, raised off the bar by a hard (un-blurred) drop
+/// shadow that follows the chamfer — the same "embossed" lift the match cards
+/// use — plus a top sheen line. No glow halo, per the glow rule.
 class _ActiveTabPainter extends CustomPainter {
   const _ActiveTabPainter({required this.accent, required this.chamfer});
 
@@ -154,10 +156,15 @@ class _ActiveTabPainter extends CustomPainter {
   /// Horizontal inset so the plate floats with a small gap either side.
   static const double margin = 6;
 
+  /// How far the hard drop shadow sits below the plate (matches the match-card
+  /// elevation feel).
+  static const double _shadowDrop = 5;
+
   Path _path(Size s) {
     const l = margin;
     final r = s.width - margin;
-    final h = s.height;
+    // Leave room beneath the plate so the offset shadow stays in bounds.
+    final h = s.height - _shadowDrop;
     return Path()
       ..moveTo(l, 0)
       ..lineTo(r, 0)
@@ -172,12 +179,11 @@ class _ActiveTabPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final path = _path(size);
 
-    // Glow halo behind the tab.
+    // Hard, un-blurred drop shadow that follows the chamfer — gives the plate a
+    // raised, embossed feel against the bar (same technique as the match cards).
     canvas.drawPath(
-      path,
-      Paint()
-        ..color = accent.withValues(alpha: 0.55)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 11),
+      path.shift(const Offset(0, _shadowDrop)),
+      Paint()..color = _shadowCol,
     );
 
     // Bright vertical gradient fill.
@@ -208,3 +214,4 @@ class _ActiveTabPainter extends CustomPainter {
 
 const _barFill = Color(0xff1b2336);
 const _activeInk = Color(0xff09131d); // dark ink for icon/label on the cyan tab
+const _shadowCol = Color(0xff04060b); // hard drop-shadow fill under the active tab
