@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_event.dart';
@@ -2372,35 +2373,14 @@ class CoinIcon extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: CustomPaint(painter: _CoinPainter()),
+      child: SvgPicture.asset(
+        'assets/icons/oz_coins.svg',
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
+      ),
     );
   }
-}
-
-class _CoinPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint base = Paint()..color = _cyan;
-    final Paint inner = Paint()..color = Colors.white.withValues(alpha: 0.34);
-    final Rect lower = Rect.fromLTWH(
-      size.width * 0.12,
-      size.height * 0.32,
-      size.width * 0.76,
-      size.height * 0.42,
-    );
-    final Rect upper = Rect.fromLTWH(
-      size.width * 0.12,
-      size.height * 0.16,
-      size.width * 0.76,
-      size.height * 0.42,
-    );
-    canvas.drawOval(lower, base);
-    canvas.drawOval(upper, base);
-    canvas.drawOval(upper.deflate(size.width * 0.16), inner);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _Pressable extends StatefulWidget {
@@ -2590,17 +2570,6 @@ class _ShopBackgroundPainter extends CustomPainter {
           colors: const [Color(0xff14213a), _bg],
         ).createShader(Offset.zero & size),
     );
-    final Paint grid = Paint()
-      ..color = _cyan.withValues(alpha: 0.05)
-      ..strokeWidth = 0.6;
-    const double gap = 38.0;
-    final double shift = (t * 22) % gap;
-    for (double x = -shift; x < size.width + gap; x += gap) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), grid);
-    }
-    for (double y = -shift; y < size.height + gap; y += gap) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
-    }
     final double scanY = (t * (size.height + 220)) - 110;
     canvas.drawRect(
       Rect.fromLTWH(0, scanY, size.width, 1.4),

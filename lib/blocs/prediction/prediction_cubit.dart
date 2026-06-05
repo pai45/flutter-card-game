@@ -18,16 +18,30 @@ class PredictionCubit extends Cubit<PredictionState> {
   final PredictionRepository _repository;
   final SecureGameStorage _storage;
 
+  /// Fixture shown in the "already predicted" state on the home mockup. Seeded
+  /// for display only (not persisted) so the card reads "Predicted … ago" on a
+  /// fresh install; a real user submission overrides it.
+  static const _demoPredictedMatchId = 'ipl_pjk_kkr';
+
   Future<void> load() async {
     final leagues = await _repository.leagues();
     final fixtures = await _repository.fixtures();
     final stored = await _storage.loadPredictions();
+    final predictions = {for (final p in stored) p.matchId: p};
+    predictions.putIfAbsent(
+      _demoPredictedMatchId,
+      () => UserPrediction(
+        matchId: _demoPredictedMatchId,
+        answers: const {},
+        submittedAt: DateTime.now().subtract(const Duration(hours: 2)),
+      ),
+    );
     emit(
       state.copyWith(
         loading: false,
         leagues: leagues,
         fixtures: fixtures,
-        predictions: {for (final p in stored) p.matchId: p},
+        predictions: predictions,
       ),
     );
   }

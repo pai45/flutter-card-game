@@ -135,6 +135,7 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   // Default landing is the new prediction HOME.
   AppSection section = AppSection.predictions;
+  bool _openGameAfterStarterReveal = false;
 
   void _go(AppSection next) => setState(() => section = next);
 
@@ -142,6 +143,16 @@ class _AppShellState extends State<AppShell> {
   /// GAMES tab. App-level destinations selected inside it pop back and switch
   /// the shell; card-game-internal sections are handled within GameTabContent.
   void _openGame() {
+    final bloc = context.read<GameBloc>();
+    if (!bloc.state.starterPackClaimed) {
+      _openGameAfterStarterReveal = true;
+      bloc.add(StarterPackOpened());
+      return;
+    }
+    _pushGame();
+  }
+
+  void _pushGame() {
     final navigator = Navigator.of(context);
     navigator.push(
       MaterialPageRoute<void>(
@@ -166,7 +177,17 @@ class _AppShellState extends State<AppShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: BlocBuilder<GameBloc, GameState>(
+      body: BlocConsumer<GameBloc, GameState>(
+        listenWhen: (previous, current) =>
+            previous.pendingPackReveal != current.pendingPackReveal,
+        listener: (context, state) {
+          if (_openGameAfterStarterReveal &&
+              state.pendingPackReveal == null &&
+              state.starterPackClaimed) {
+            _openGameAfterStarterReveal = false;
+            _pushGame();
+          }
+        },
         builder: (context, state) {
           if (state.loading) {
             return Container(

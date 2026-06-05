@@ -340,7 +340,15 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
           rarity: _itemRarity(item),
           onComplete: _onCardComplete,
           showTapCountdown: false,
-          frontFace: Transform.scale(scale: 1.5, child: _RevealItemFace(item)),
+          // SizedBox + FittedBox gives layout size = visual size (192×288),
+          // which lets the shimmer overlay in CardUnpackAnimation cover the
+          // full card via Positioned.fill (Transform.scale wouldn't work
+          // because it leaves layout size at the pre-scale 128×192 bounds).
+          frontFace: SizedBox(
+            width: 192,
+            height: 288,
+            child: FittedBox(child: _RevealItemFace(item)),
+          ),
         ),
         // Progress indicator overlay at top
         Positioned(
@@ -368,71 +376,75 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
           painter: _RadialGlowPainter(color: Cyber.cyan, opacity: 0.055),
         ),
         SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 30, 24, 40),
-            child: Column(
-              children: [
-                Text(
-                  'ACTION CARDS',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Cyber.cyan,
-                    fontFamily: 'Orbitron',
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 2.2,
-                    shadows: [
-                      Shadow(
-                        color: Cyber.cyan.withValues(alpha: 0.5),
-                        blurRadius: 20,
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 30, 24, 24),
+                  child: Column(
+                    children: [
+                      Text(
+                        'ACTION CARDS',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Cyber.cyan,
+                          fontFamily: 'Orbitron',
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 2.2,
+                          shadows: [
+                            Shadow(
+                              color: Cyber.cyan.withValues(alpha: 0.5),
+                              blurRadius: 20,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '${actions.length} ACTIONS UNLOCKED TOGETHER',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Cyber.muted,
+                          fontSize: 10,
+                          letterSpacing: 1.8,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          for (final item in actions)
+                            _RevealItemFace(item, size: VisualCardSize.sm),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  '${actions.length} ACTIONS UNLOCKED TOGETHER',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Cyber.muted,
-                    fontSize: 10,
-                    letterSpacing: 1.8,
-                    fontWeight: FontWeight.w800,
+              ),
+              _BottomCtaBar(
+                child: FilledButton(
+                  onPressed: _showSummary,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Cyber.cyan,
+                    foregroundColor: Cyber.bg,
+                    minimumSize: const Size.fromHeight(52),
                   ),
-                ),
-                const SizedBox(height: 28),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    for (final item in actions)
-                      _RevealItemFace(item, size: VisualCardSize.sm),
-                  ],
-                ),
-                const SizedBox(height: 36),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: _showSummary,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Cyber.cyan,
-                      foregroundColor: Cyber.bg,
-                      minimumSize: const Size.fromHeight(52),
-                    ),
-                    child: const Text(
-                      'CONTINUE',
-                      style: TextStyle(
-                        fontFamily: 'Orbitron',
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 2,
-                        fontSize: 14,
-                      ),
+                  child: const Text(
+                    'CONTINUE',
+                    style: TextStyle(
+                      fontFamily: 'Orbitron',
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
+                      fontSize: 14,
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ],
@@ -455,145 +467,150 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
             painter: _RadialGlowPainter(color: Cyber.lime, opacity: 0.055),
           ),
           SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 28, 24, 40),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Trophy icon
-                  Icon(
-                    Icons.emoji_events_rounded,
-                    size: 54,
-                    color: Cyber.gold,
-                    shadows: [
-                      Shadow(
-                        color: Cyber.gold.withValues(alpha: 0.6),
-                        blurRadius: 28,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Trophy icon
+                        Icon(
+                          Icons.emoji_events_rounded,
+                          size: 54,
+                          color: Cyber.gold,
+                          shadows: [
+                            Shadow(
+                              color: Cyber.gold.withValues(alpha: 0.6),
+                              blurRadius: 28,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
 
-                  // SQUAD ASSEMBLED title
-                  Text(
-                    'SQUAD ASSEMBLED!',
-                    style: TextStyle(
-                      color: Cyber.lime,
-                      fontFamily: 'Orbitron',
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 2,
-                      shadows: [
-                        Shadow(
-                          color: Cyber.lime.withValues(alpha: 0.55),
-                          blurRadius: 22,
+                        // SQUAD ASSEMBLED title
+                        Text(
+                          'SQUAD ASSEMBLED!',
+                          style: TextStyle(
+                            color: Cyber.lime,
+                            fontFamily: 'Orbitron',
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 2,
+                            shadows: [
+                              Shadow(
+                                color: Cyber.lime.withValues(alpha: 0.55),
+                                blurRadius: 22,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          widget.reveal.summaryLabel,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Cyber.muted,
+                            fontSize: 10,
+                            letterSpacing: 2,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        if (widget.reveal.detailLabel != null) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            widget.reveal.detailLabel!,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Cyber.cyan.withValues(alpha: 0.85),
+                              fontSize: 10,
+                              letterSpacing: 1.6,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                        if (widget.reveal.xpGained > 0) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            '+${widget.reveal.xpGained} XP',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Cyber.lime.withValues(alpha: 0.9),
+                              fontSize: 12,
+                              fontFamily: 'Orbitron',
+                              letterSpacing: 1.6,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                        if (widget.reveal.levelsGained.isNotEmpty) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            'LEVEL ${widget.reveal.levelsGained.last} REACHED',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Cyber.gold.withValues(alpha: 0.9),
+                              fontSize: 10,
+                              letterSpacing: 1.8,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 30),
+
+                        // Cards in a wrap
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: [
+                            for (int i = 0; i < widget.reveal.items.length; i++)
+                              AnimatedBuilder(
+                                animation: _summaryCtrl[i],
+                                builder: (_, _) {
+                                  final t = _summaryCtrl[i].value.clamp(
+                                    0.0,
+                                    1.0,
+                                  );
+                                  return Opacity(
+                                    opacity: t,
+                                    child: Transform.scale(
+                                      scale: Curves.easeOutBack.transform(t),
+                                      child: _RevealItemFace(
+                                        widget.reveal.items[i],
+                                        size: VisualCardSize.sm,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                          ],
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 5),
-                  Text(
-                    widget.reveal.summaryLabel,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Cyber.muted,
-                      fontSize: 10,
-                      letterSpacing: 2,
-                      fontWeight: FontWeight.w700,
+                ),
+                _BottomCtaBar(
+                  child: FilledButton(
+                    onPressed: _enterGame,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Cyber.lime,
+                      foregroundColor: Cyber.bg,
+                      minimumSize: const Size.fromHeight(52),
                     ),
-                  ),
-                  if (widget.reveal.detailLabel != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      widget.reveal.detailLabel!,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Cyber.cyan.withValues(alpha: 0.85),
-                        fontSize: 10,
-                        letterSpacing: 1.6,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                  if (widget.reveal.xpGained > 0) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      '+${widget.reveal.xpGained} XP',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Cyber.lime.withValues(alpha: 0.9),
-                        fontSize: 12,
+                    child: Text(
+                      widget.reveal.ctaLabel,
+                      style: const TextStyle(
                         fontFamily: 'Orbitron',
-                        letterSpacing: 1.6,
                         fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
-                  if (widget.reveal.levelsGained.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      'LEVEL ${widget.reveal.levelsGained.last} REACHED',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Cyber.gold.withValues(alpha: 0.9),
-                        fontSize: 10,
-                        letterSpacing: 1.8,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 30),
-
-                  // Cards in a wrap
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      for (int i = 0; i < widget.reveal.items.length; i++)
-                        AnimatedBuilder(
-                          animation: _summaryCtrl[i],
-                          builder: (_, _) {
-                            final t = _summaryCtrl[i].value.clamp(0.0, 1.0);
-                            return Opacity(
-                              opacity: t,
-                              child: Transform.scale(
-                                scale: Curves.easeOutBack.transform(t),
-                                child: _RevealItemFace(
-                                  widget.reveal.items[i],
-                                  size: VisualCardSize.sm,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 36),
-
-                  // CTA
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: _enterGame,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Cyber.lime,
-                        foregroundColor: Cyber.bg,
-                        minimumSize: const Size.fromHeight(52),
-                      ),
-                      child: Text(
-                        widget.reveal.ctaLabel,
-                        style: const TextStyle(
-                          fontFamily: 'Orbitron',
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 2,
-                          fontSize: 14,
-                        ),
+                        letterSpacing: 2,
+                        fontSize: 14,
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
@@ -604,6 +621,29 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
 
 // ── interval helper: maps t∈[0,1] through range [a,b] ────────────────────────
 double _iv(double t, double a, double b) => ((t - a) / (b - a)).clamp(0.0, 1.0);
+
+/// Docks a primary CTA to the bottom of an onboarding step: full-width button
+/// in a container with 24px bottom padding and a hairline top divider, so the
+/// content above can scroll while the action stays pinned.
+class _BottomCtaBar extends StatelessWidget {
+  const _BottomCtaBar({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0D111A),
+        border: Border(
+          top: BorderSide(color: Cyber.cyan.withValues(alpha: 0.12)),
+        ),
+      ),
+      child: SizedBox(width: double.infinity, child: child),
+    );
+  }
+}
 
 // ── Small widgets ──────────────────────────────────────────────────────────────
 

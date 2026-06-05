@@ -13,6 +13,7 @@ class GameScaffold extends StatelessWidget {
     this.titleUnderlay,
     this.compactHeader = false,
     this.showShop = false,
+    this.showTitle = true,
     super.key,
   });
 
@@ -23,6 +24,7 @@ class GameScaffold extends StatelessWidget {
   final Widget? titleUnderlay;
   final bool compactHeader;
   final bool showShop;
+  final bool showTitle;
   final Widget child;
 
   @override
@@ -37,6 +39,7 @@ class GameScaffold extends StatelessWidget {
         titleUnderlay: titleUnderlay,
         compact: compactHeader,
         showShop: showShop,
+        showTitle: showTitle,
       ),
       body: CyberBackground(child: child),
     );
@@ -53,6 +56,7 @@ class ReactHeaderBar extends StatelessWidget implements PreferredSizeWidget {
     this.titleUnderlay,
     this.compact = false,
     this.showShop = false,
+    this.showTitle = true,
     super.key,
   });
 
@@ -64,6 +68,7 @@ class ReactHeaderBar extends StatelessWidget implements PreferredSizeWidget {
   final Widget? titleUnderlay;
   final bool compact;
   final bool showShop;
+  final bool showTitle;
 
   @override
   Size get preferredSize => Size.fromHeight(compact ? 56 : 66);
@@ -99,51 +104,53 @@ class ReactHeaderBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             if (leftSlot != null || onBack != null) const SizedBox(width: 8),
             Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Text(
-                        '/',
-                        style: TextStyle(
-                          color: Cyber.cyan,
-                          fontFamily: 'Orbitron',
-                          fontWeight: FontWeight.w900,
+              child: showTitle
+                  ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Text(
+                              '/',
+                              style: TextStyle(
+                                color: Cyber.cyan,
+                                fontFamily: 'Orbitron',
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                title.toUpperCase(),
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontFamily: 'Orbitron',
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.3,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          title.toUpperCase(),
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontFamily: 'Orbitron',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1.3,
+                        if (titleUnderlay != null) ...[
+                          const SizedBox(height: 5),
+                          titleUnderlay!,
+                        ] else if (subtitle != null)
+                          Text(
+                            subtitle!,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Cyber.muted,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (titleUnderlay != null) ...[
-                    const SizedBox(height: 5),
-                    titleUnderlay!,
-                  ] else if (subtitle != null)
-                    Text(
-                      subtitle!,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Cyber.muted,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                ],
-              ),
+                      ],
+                    )
+                  : const SizedBox.shrink(),
             ),
             ?rightSlot,
           ],

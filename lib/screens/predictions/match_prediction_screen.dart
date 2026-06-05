@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -11,10 +13,17 @@ import '../../models/sport_match.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 
-/// The prediction quiz for one fixture: a team header with a split indicator
-/// bar, then numbered multiple-choice questions with XP reward pills. Editable
-/// until kickoff; read-only once live/finished, with a demo SETTLE action for
-/// finished matches that credits the wallet (coins) for correct answers.
+/// The prediction quiz for one fixture, built as a gamified single-question
+/// flow that mirrors the design reference:
+///   • a HUD header (corner brackets, kickoff time, team badges + split bar);
+///   • a "QUIZ LOCKS IN hh:mm:ss" countdown to kickoff;
+///   • ONE question at a time — a numbered panel, an XP pill and A/B/C options;
+///   • a progress-dot row + a chamfered NEXT button (SUBMIT on the last one);
+///   • a full-screen SUBMITTED celebration when the quiz is sent.
+///
+/// Editable until kickoff; once live/finished the same paginated UI becomes a
+/// read-only review (settled answers show correct/wrong), with a demo
+/// SETTLE & CLAIM action on the final page that credits coins.
 class MatchPredictionScreen extends StatefulWidget {
   const MatchPredictionScreen({required this.match, super.key});
 
@@ -27,7 +36,11 @@ class MatchPredictionScreen extends StatefulWidget {
 class _MatchPredictionScreenState extends State<MatchPredictionScreen> {
   PredictionQuiz? _quiz;
   bool _loading = true;
+  bool _submitting = false;
+  int _index = 0;
   final Map<String, int> _answers = {};
+  Timer? _ticker;
+  DateTime _now = DateTime.now();
 
   SportMatch get _match => widget.match;
   bool get _editable => _match.predictable;
@@ -36,6 +49,15 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen> {
   void initState() {
     super.initState();
     _load();
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() => _now = DateTime.now());
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -50,22 +72,43 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen> {
     });
   }
 
+  List<QuizQuestion> get _questions => _quiz?.questions ?? const [];
   bool get _allAnswered =>
-      _quiz != null && _answers.length == _quiz!.questions.length;
+      _quiz != null && _answers.length == _questions.length;
+  bool get _isLast => _index >= _questions.length - 1;
+
+  Duration get _untilLock {
+    final d = _match.kickoff.difference(_now);
+    return d.isNegative ? Duration.zero : d;
+  }
 
   void _select(String questionId, int optionIndex) {
     if (!_editable) return;
-    playSound(SoundEffect.uiTap);
+    playSound(SoundEffect.cardSelect);
     setState(() => _answers[questionId] = optionIndex);
   }
 
+  void _goTo(int i) {
+    if (i < 0 || i >= _questions.length || i == _index) return;
+    playSound(SoundEffect.uiTap);
+    setState(() => _index = i);
+  }
+
+  void _next() {
+    if (_isLast) {
+      _submit();
+      return;
+    }
+    playSound(SoundEffect.uiTap);
+    setState(() => _index++);
+  }
+
   Future<void> _submit() async {
+    if (!_allAnswered || _submitting) return;
+    playSound(SoundEffect.matchWin);
+    setState(() => _submitting = true);
     await context.read<PredictionCubit>().submit(_match.id, Map.of(_answers));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Prediction submitted')),
-    );
-    Navigator.of(context).pop();
+    // The overlay drives the celebration; it pops the screen when done.
   }
 
   Future<void> _settle() async {
@@ -75,180 +118,178 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen> {
       context.read<GameBloc>().add(CoinsAdded(reward));
       playSound(SoundEffect.coins);
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          reward > 0 ? 'Settled · +$reward coins' : 'Settled · no reward',
-        ),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Cyber.bg,
-      appBar: AppBar(
-        title: Text('PREDICTION', style: Cyber.label(15, letterSpacing: 1.5)),
-      ),
       body: Stack(
         children: [
-          const Positioned.fill(child: CyberBackground(child: SizedBox.expand())),
+          const Positioned.fill(
+            child: CyberPlainBackground(child: SizedBox.expand()),
+          ),
           SafeArea(
             child: _loading
-                ? const Center(child: CircularProgressIndicator(color: Cyber.cyan))
+                ? const Center(
+                    child: CircularProgressIndicator(color: Cyber.cyan),
+                  )
                 : BlocBuilder<PredictionCubit, PredictionState>(
-                    builder: (context, state) {
-                      final prediction = state.predictionFor(_match.id);
-                      return _content(prediction);
-                    },
+                    builder: (context, state) =>
+                        _content(state.predictionFor(_match.id)),
                   ),
           ),
+          if (_submitting)
+            Positioned.fill(
+              child: _SubmittedOverlay(
+                potentialXp: _quiz?.maxReward ?? 0,
+                count: _questions.length,
+                onDone: () {
+                  if (mounted) Navigator.of(context).pop();
+                },
+              ),
+            ),
         ],
       ),
     );
   }
 
   Widget _content(UserPrediction? prediction) {
-    final quiz = _quiz;
+    if (_quiz == null || _questions.isEmpty) {
+      return Column(
+        children: [
+          _QuizTopBar(onClose: () => Navigator.of(context).maybePop()),
+          _QuizHeader(match: _match),
+          Expanded(
+            child: Center(
+              child: Text(
+                'No quiz available for this match yet.',
+                style: Cyber.body(13, color: Cyber.muted),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    final settled = prediction?.status == PredictionStatus.settled;
+    final question = _questions[_index];
+
     return Column(
       children: [
-        _MatchHeader(match: _match),
+        _QuizTopBar(onClose: () => Navigator.of(context).maybePop()),
+        _QuizHeader(match: _match),
+        _LockLine(match: _match, untilLock: _untilLock),
         Expanded(
-          child: quiz == null
-              ? Center(
-                  child: Text(
-                    'No quiz available for this match yet.',
-                    style: Cyber.body(13, color: Cyber.muted),
-                  ),
-                )
-              : ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-                  children: [
-                    for (var i = 0; i < quiz.questions.length; i++)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
-                        child: _QuestionCard(
-                          index: i + 1,
-                          question: quiz.questions[i],
-                          selected: _answers[quiz.questions[i].id],
-                          settled: prediction?.status == PredictionStatus.settled,
-                          onSelect: (opt) =>
-                              _select(quiz.questions[i].id, opt),
-                        ),
-                      ),
-                  ],
-                ),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 280),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (child, anim) {
+              final slide = Tween<Offset>(
+                begin: const Offset(0.10, 0),
+                end: Offset.zero,
+              ).animate(anim);
+              return FadeTransition(
+                opacity: anim,
+                child: SlideTransition(position: slide, child: child),
+              );
+            },
+            child: SingleChildScrollView(
+              key: ValueKey(question.id),
+              padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
+              child: _QuestionPanel(
+                index: _index + 1,
+                question: question,
+                selected: _answers[question.id],
+                settled: settled,
+                onSelect: (opt) => _select(question.id, opt),
+              ),
+            ),
+          ),
         ),
-        if (quiz != null) _bottomBar(prediction),
+        _BottomDock(
+          questions: _questions,
+          answers: _answers,
+          index: _index,
+          onJump: _goTo,
+          action: _bottomAction(prediction, settled),
+          helper: _helperText(prediction, settled),
+        ),
       ],
     );
   }
 
-  Widget _bottomBar(UserPrediction? prediction) {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        child: _buildAction(prediction),
-      ),
-    );
-  }
-
-  Widget _buildAction(UserPrediction? prediction) {
-    // Finished + settleable + predicted-not-settled → SETTLE (demo).
-    if (_match.status == MatchStatus.finished &&
+  Widget _bottomAction(UserPrediction? prediction, bool settled) {
+    // Demo settlement on the final page of a finished, scoreable quiz.
+    final canSettle = _match.status == MatchStatus.finished &&
         (_quiz?.settleable ?? false) &&
         prediction != null &&
-        prediction.status != PredictionStatus.settled) {
-      return CyberCtaButton(label: 'SETTLE & CLAIM', primary: true, onPressed: _settle);
-    }
-    if (prediction?.status == PredictionStatus.settled) {
-      return _ResultBanner(prediction: prediction!);
-    }
-    if (!_editable) {
-      return Text(
-        'PREDICTIONS LOCKED — MATCH IN PROGRESS',
-        textAlign: TextAlign.center,
-        style: Cyber.label(11, color: Cyber.muted, letterSpacing: 1),
+        !settled;
+    if (_isLast && canSettle) {
+      return _ChamferCta(
+        label: 'SETTLE & CLAIM',
+        focal: true,
+        onTap: _settle,
       );
     }
-    return CyberCtaButton(
-      label: prediction == null ? 'SUBMIT PREDICTION' : 'UPDATE PREDICTION',
-      primary: true,
-      onPressed: _allAnswered ? _submit : null,
-    );
+
+    if (!_editable) {
+      // Locked / settled review: page through, finish on the last page.
+      return _ChamferCta(
+        label: _isLast ? 'DONE' : 'NEXT',
+        focal: _isLast,
+        onTap: _isLast ? () => Navigator.of(context).maybePop() : _next,
+      );
+    }
+
+    // Editable quiz: NEXT pages forward freely; SUBMIT (last page) unlocks once
+    // every future has an answer — the helper text guides the user there.
+    if (_isLast) {
+      return _ChamferCta(
+        label: 'SUBMIT QUIZ',
+        focal: true,
+        onTap: _allAnswered ? _submit : null,
+      );
+    }
+    return _ChamferCta(label: 'NEXT', focal: false, onTap: _next);
+  }
+
+  String _helperText(UserPrediction? prediction, bool settled) {
+    if (settled) {
+      final correct = prediction?.correctCount ?? 0;
+      final reward = prediction?.rewardEarned ?? 0;
+      return '$correct / ${_questions.length} correct  ·  +$reward COINS';
+    }
+    if (!_editable) {
+      return 'Predictions are locked — match in progress';
+    }
+    if (_allAnswered) {
+      return 'All ${_questions.length} futures locked in — submit your quiz';
+    }
+    return 'Complete all ${_questions.length} futures to submit your quiz';
   }
 }
 
-// ── Match header with split indicator bar ─────────────────────────────────────
-class _MatchHeader extends StatelessWidget {
-  const _MatchHeader({required this.match});
-  final SportMatch match;
+// ── Top bar (collapse chevron) ────────────────────────────────────────────────
+class _QuizTopBar extends StatelessWidget {
+  const _QuizTopBar({required this.onClose});
+  final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
-    final statusLabel = switch (match.status) {
-      MatchStatus.upcoming =>
-        '${match.kickoff.hour.toString().padLeft(2, '0')}:${match.kickoff.minute.toString().padLeft(2, '0')}',
-      MatchStatus.live => match.liveMinute != null
-          ? "LIVE ${match.liveMinute}'"
-          : 'LIVE',
-      MatchStatus.finished => 'FINISHED',
-    };
-    final statusColor = switch (match.status) {
-      MatchStatus.upcoming => Cyber.gold,
-      MatchStatus.live => Cyber.danger,
-      MatchStatus.finished => Cyber.muted,
-    };
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 6),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      decoration: BoxDecoration(
-        color: Cyber.panel.withValues(alpha: 0.55),
-        border: Border.all(color: Cyber.cyan.withValues(alpha: 0.25)),
-      ),
-      child: Column(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 4, 4, 0),
+      child: Row(
         children: [
-          Text(
-            statusLabel,
-            style: Cyber.display(13, color: statusColor, letterSpacing: 1.5),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              _Badge(team: match.home),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  match.home.name,
-                  style: Cyber.display(16, letterSpacing: 0.4),
-                ),
-              ),
-              Text('-', style: Cyber.display(16, color: Cyber.muted)),
-              Expanded(
-                child: Text(
-                  match.away.name,
-                  textAlign: TextAlign.end,
-                  style: Cyber.display(16, letterSpacing: 0.4),
-                ),
-              ),
-              const SizedBox(width: 10),
-              _Badge(team: match.away),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(child: Container(height: 4, color: match.home.color)),
-              Expanded(
-                child: Container(
-                  height: 4,
-                  color: match.away.color.withValues(alpha: 0.85),
-                ),
-              ),
-            ],
+          const Spacer(),
+          IconButton(
+            onPressed: () {
+              playSound(SoundEffect.uiTap);
+              onClose();
+            },
+            icon: const Icon(Icons.keyboard_arrow_down, color: Cyber.muted),
+            tooltip: 'Close',
           ),
         ],
       ),
@@ -256,41 +297,202 @@ class _MatchHeader extends StatelessWidget {
   }
 }
 
-class _Badge extends StatelessWidget {
-  const _Badge({required this.team});
-  final SportTeam team;
+// ── Header: corner brackets + kickoff time + team badges + split bar ──────────
+class _QuizHeader extends StatelessWidget {
+  const _QuizHeader({required this.match});
+  final SportMatch match;
+
+  String get _statusLabel => switch (match.status) {
+        MatchStatus.upcoming => _formatTime(match.kickoff),
+        MatchStatus.live =>
+          match.liveMinute != null ? "LIVE ${match.liveMinute}'" : 'LIVE',
+        MatchStatus.finished => 'FINISHED',
+      };
+
+  Color get _statusColor => switch (match.status) {
+        MatchStatus.upcoming => Cyber.gold,
+        MatchStatus.live => Cyber.danger,
+        MatchStatus.finished => Cyber.muted,
+      };
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 42,
-      height: 42,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [team.color, Color.lerp(team.color, Colors.black, 0.35)!],
-        ),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
-      ),
-      child: Text(
-        team.shortName,
-        style: const TextStyle(
-          color: Colors.white,
-          fontFamily: Cyber.displayFont,
-          fontSize: 12,
-          fontWeight: FontWeight.w900,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 2, 20, 0),
+      child: CustomPaint(
+        painter: const _CornerBracketsPainter(),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 10, 8, 0),
+          child: Column(
+            children: [
+              Text(
+                _statusLabel,
+                style: Cyber.display(15, color: _statusColor, letterSpacing: 1.5)
+                    .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _HeaderBadge(team: match.home, cutBottomRight: true),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      match.home.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Cyber.body(15, weight: FontWeight.w700),
+                    ),
+                  ),
+                  Text('-', style: Cyber.display(16, color: Cyber.muted)),
+                  Expanded(
+                    child: Text(
+                      match.away.name,
+                      textAlign: TextAlign.end,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Cyber.body(15, weight: FontWeight.w700),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  _HeaderBadge(team: match.away, cutBottomRight: false),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(child: Container(height: 4, color: match.home.color)),
+                  const SizedBox(width: 2),
+                  Expanded(
+                    child: Container(
+                      height: 4,
+                      color: match.away.color.withValues(alpha: 0.9),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// ── Question card ─────────────────────────────────────────────────────────────
-class _QuestionCard extends StatelessWidget {
-  const _QuestionCard({
+class _HeaderBadge extends StatelessWidget {
+  const _HeaderBadge({required this.team, required this.cutBottomRight});
+  final SportTeam team;
+  final bool cutBottomRight;
+
+  @override
+  Widget build(BuildContext context) {
+    final light = team.color.computeLuminance() > 0.55;
+    final textColor = light ? const Color(0xff15202e) : Colors.white;
+    final accentEdge = light
+        ? Color.lerp(team.color, Colors.black, 0.28)!
+        : Color.lerp(team.color, Colors.white, 0.5)!;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.only(
+        topLeft: const Radius.circular(8),
+        topRight: const Radius.circular(8),
+        bottomLeft: Radius.circular(cutBottomRight ? 8 : 2),
+        bottomRight: Radius.circular(cutBottomRight ? 2 : 8),
+      ),
+      child: Container(
+        width: 44,
+        height: 44,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [team.color, Color.lerp(team.color, Colors.black, 0.34)!],
+          ),
+          border: Border(bottom: BorderSide(color: accentEdge, width: 3)),
+        ),
+        child: Text(
+          team.shortName,
+          style: TextStyle(
+            color: textColor,
+            fontFamily: Cyber.displayFont,
+            fontSize: 13,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.5,
+            decoration: TextDecoration.none,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Faint HUD corner ticks framing the team header (top-left + top-right).
+class _CornerBracketsPainter extends CustomPainter {
+  const _CornerBracketsPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const len = 16.0;
+    final paint = Paint()
+      ..color = Cyber.cyan.withValues(alpha: 0.4)
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke;
+    // top-left
+    canvas.drawLine(const Offset(0, 0), const Offset(len, 0), paint);
+    canvas.drawLine(const Offset(0, 0), const Offset(0, len), paint);
+    // top-right
+    canvas.drawLine(Offset(size.width, 0), Offset(size.width - len, 0), paint);
+    canvas.drawLine(Offset(size.width, 0), Offset(size.width, len), paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _CornerBracketsPainter oldDelegate) => false;
+}
+
+// ── Lock countdown line ───────────────────────────────────────────────────────
+class _LockLine extends StatelessWidget {
+  const _LockLine({required this.match, required this.untilLock});
+  final SportMatch match;
+  final Duration untilLock;
+
+  @override
+  Widget build(BuildContext context) {
+    final (icon, text, color) = switch (match.status) {
+      MatchStatus.upcoming when untilLock > Duration.zero => (
+          Icons.lock_clock,
+          'QUIZ LOCKS IN ${_formatCountdown(untilLock)}',
+          Cyber.gold,
+        ),
+      MatchStatus.finished => (
+          Icons.flag_outlined,
+          'MATCH ENDED',
+          Cyber.muted,
+        ),
+      _ => (Icons.lock_outline, 'PREDICTIONS LOCKED', Cyber.danger),
+    };
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 6),
+          Text(
+            text,
+            style: Cyber.label(11, color: color, letterSpacing: 1.4)
+                .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── The single question panel ─────────────────────────────────────────────────
+class _QuestionPanel extends StatelessWidget {
+  const _QuestionPanel({
     required this.index,
     required this.question,
     required this.selected,
@@ -306,63 +508,75 @@ class _QuestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CyberPanel(
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(top: 12),
+          padding: const EdgeInsets.fromLTRB(18, 22, 18, 18),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [_panelTop, _panelBottom],
+            ),
+            border: Border.all(color: _panelBorder),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Numbered tab.
-              Container(
-                width: 26,
-                height: 26,
-                alignment: Alignment.center,
-                color: Cyber.cyan.withValues(alpha: 0.14),
-                child: Text(
-                  '$index',
-                  style: Cyber.display(13, color: Cyber.cyan),
-                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      question.text.toUpperCase(),
+                      style: Cyber.display(16, letterSpacing: 0.3)
+                          .copyWith(height: 1.25),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  _XpPill(reward: question.reward),
+                ],
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  question.text.toUpperCase(),
-                  style: Cyber.display(15, letterSpacing: 0.3),
+              const SizedBox(height: 16),
+              for (var i = 0; i < question.options.length; i++)
+                Padding(
+                  padding: EdgeInsets.only(
+                    bottom: i == question.options.length - 1 ? 0 : 10,
+                  ),
+                  child: _OptionTile(
+                    letter: String.fromCharCode(65 + i),
+                    label: question.options[i],
+                    state: _optionState(i),
+                    onTap: () => onSelect(i),
+                  ),
                 ),
-              ),
             ],
           ),
-          const SizedBox(height: 10),
-          // Reward pill (XP), per the design reference.
-          Align(
-            alignment: Alignment.centerRight,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: Cyber.violet.withValues(alpha: 0.18),
-                border: Border.all(color: Cyber.violet.withValues(alpha: 0.6)),
-              ),
-              child: Text(
-                '${question.reward} XP',
-                style: Cyber.label(10, color: Cyber.violet, letterSpacing: 1),
-              ),
+        ),
+        // The numbered tab, dipping over the panel's top-left edge.
+        Positioned(
+          left: 14,
+          top: 0,
+          child: Container(
+            width: 30,
+            height: 30,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Cyber.cyan.withValues(alpha: 0.16),
+              border: Border.all(color: Cyber.cyan.withValues(alpha: 0.6)),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              '$index',
+              style: Cyber.display(15, color: Cyber.cyan),
             ),
           ),
-          const SizedBox(height: 10),
-          for (var i = 0; i < question.options.length; i++)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _Option(
-                letter: String.fromCharCode(65 + i),
-                label: question.options[i],
-                state: _optionState(i),
-                onTap: () => onSelect(i),
-              ),
-            ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -376,10 +590,44 @@ class _QuestionCard extends StatelessWidget {
   }
 }
 
+class _XpPill extends StatelessWidget {
+  const _XpPill({required this.reward});
+  final int reward;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Cyber.violet, Color.lerp(Cyber.violet, Cyber.cyan, 0.35)!],
+        ),
+        borderRadius: BorderRadius.circular(4),
+        boxShadow: Cyber.glow(Cyber.violet, alpha: 0.4, blur: 10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '$reward',
+            style: Cyber.display(13, color: Colors.white)
+                .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            'xp',
+            style: Cyber.label(10, color: Colors.white, letterSpacing: 0.5),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 enum _OptionVisual { idle, selected, correct, wrong }
 
-class _Option extends StatelessWidget {
-  const _Option({
+class _OptionTile extends StatelessWidget {
+  const _OptionTile({
     required this.letter,
     required this.label,
     required this.state,
@@ -403,29 +651,35 @@ class _Option extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
         decoration: BoxDecoration(
-          color: active ? accent.withValues(alpha: 0.10) : Cyber.bg.withValues(alpha: 0.4),
+          color: active
+              ? accent.withValues(alpha: 0.10)
+              : _optionFill,
           border: Border.all(
-            color: active ? accent : Cyber.line,
+            color: active ? accent : _optionBorder,
             width: active ? 1.5 : 1,
           ),
-          boxShadow: state == _OptionVisual.selected ? Cyber.glow(accent) : null,
+          borderRadius: BorderRadius.circular(4),
+          boxShadow:
+              state == _OptionVisual.selected ? Cyber.glow(accent) : null,
         ),
         child: Row(
           children: [
             Container(
-              width: 26,
-              height: 26,
+              width: 28,
+              height: 28,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: active ? accent.withValues(alpha: 0.18) : Cyber.panel,
+                color: active ? accent.withValues(alpha: 0.20) : _letterFill,
                 border: Border.all(color: accent.withValues(alpha: 0.6)),
+                borderRadius: BorderRadius.circular(3),
               ),
               child: Text(
                 letter,
-                style: Cyber.display(12, color: active ? accent : Cyber.muted),
+                style: Cyber.display(13, color: active ? accent : Cyber.muted),
               ),
             ),
             const SizedBox(width: 12),
@@ -433,8 +687,8 @@ class _Option extends StatelessWidget {
               child: Text(
                 label.toUpperCase(),
                 style: Cyber.label(
-                  12,
-                  color: active ? Colors.white : Cyber.muted,
+                  12.5,
+                  color: active ? Colors.white : const Color(0xffc4cedd),
                   letterSpacing: 0.6,
                 ),
               ),
@@ -450,26 +704,330 @@ class _Option extends StatelessWidget {
   }
 }
 
-class _ResultBanner extends StatelessWidget {
-  const _ResultBanner({required this.prediction});
-  final UserPrediction prediction;
+// ── Bottom dock: progress dots + CTA + helper ─────────────────────────────────
+class _BottomDock extends StatelessWidget {
+  const _BottomDock({
+    required this.questions,
+    required this.answers,
+    required this.index,
+    required this.onJump,
+    required this.action,
+    required this.helper,
+  });
+
+  final List<QuizQuestion> questions;
+  final Map<String, int> answers;
+  final int index;
+  final ValueChanged<int> onJump;
+  final Widget action;
+  final String helper;
 
   @override
   Widget build(BuildContext context) {
-    final correct = prediction.correctCount ?? 0;
-    final reward = prediction.rewardEarned;
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: Cyber.success.withValues(alpha: 0.12),
-        border: Border.all(color: Cyber.success.withValues(alpha: 0.5)),
+      decoration: const BoxDecoration(
+        color: Color(0xFF0D111A),
+        border: Border(top: BorderSide(color: Color(0x1A5CDFFF))),
       ),
-      child: Text(
-        '$correct CORRECT · +$reward COINS',
-        style: Cyber.label(13, color: Cyber.success, letterSpacing: 1),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  for (var i = 0; i < questions.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 8),
+                    Expanded(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => onJump(i),
+                        child: _ProgressSegment(
+                          answered: answers.containsKey(questions[i].id),
+                          current: i == index,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 16),
+              action,
+              const SizedBox(height: 12),
+              Text(
+                helper,
+                textAlign: TextAlign.center,
+                style: Cyber.body(11.5, color: Cyber.muted),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
+
+class _ProgressSegment extends StatelessWidget {
+  const _ProgressSegment({required this.answered, required this.current});
+  final bool answered;
+  final bool current;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color color;
+    if (current) {
+      color = Cyber.gold;
+    } else if (answered) {
+      color = Cyber.gold.withValues(alpha: 0.55);
+    } else {
+      color = const Color(0xff222b3d);
+    }
+    return Container(
+      height: 6,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(2),
+        boxShadow: current ? Cyber.glow(Cyber.gold, alpha: 0.4, blur: 8) : null,
+      ),
+    );
+  }
+}
+
+// ── Chamfered CTA (NEXT / SUBMIT / DONE) ──────────────────────────────────────
+class _ChamferCta extends StatelessWidget {
+  const _ChamferCta({
+    required this.label,
+    required this.focal,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool focal;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: enabled
+          ? () {
+              playSound(SoundEffect.uiTap);
+              onTap!();
+            }
+          : null,
+      child: SizedBox(
+        height: 54,
+        width: double.infinity,
+        child: CustomPaint(
+          painter: _CtaPainter(focal: focal && enabled, enabled: enabled),
+          child: Center(
+            child: Text(
+              label,
+              style: Cyber.display(
+                15,
+                color: !enabled
+                    ? Cyber.muted
+                    : (focal ? const Color(0xff06121b) : Colors.white),
+                letterSpacing: 2,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CtaPainter extends CustomPainter {
+  const _CtaPainter({required this.focal, required this.enabled});
+  final bool focal;
+  final bool enabled;
+
+  Path _path(Size s) {
+    const cut = 13.0;
+    return Path()
+      ..moveTo(0, 0)
+      ..lineTo(s.width, 0)
+      ..lineTo(s.width, s.height - cut)
+      ..lineTo(s.width - cut, s.height)
+      ..lineTo(cut, s.height)
+      ..lineTo(0, s.height - cut)
+      ..close();
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = _path(size);
+
+    if (focal) {
+      // Glowing cyan focal CTA (submit / settle / done).
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = Cyber.cyan.withValues(alpha: 0.45)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
+      );
+      canvas.drawPath(
+        path,
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color.lerp(Cyber.cyan, Colors.white, 0.25)!, Cyber.cyan],
+          ).createShader(Offset.zero & size),
+      );
+    } else {
+      // Calm dark plate (NEXT, or disabled).
+      canvas.drawPath(
+        path,
+        Paint()..color = enabled ? const Color(0xff1b2336) : const Color(0xff141a26),
+      );
+      canvas.drawPath(
+        path,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.4
+          ..color = enabled
+              ? Cyber.cyan.withValues(alpha: 0.45)
+              : Cyber.line.withValues(alpha: 0.3),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _CtaPainter old) =>
+      old.focal != focal || old.enabled != enabled;
+}
+
+// ── SUBMITTED celebration overlay ─────────────────────────────────────────────
+class _SubmittedOverlay extends StatefulWidget {
+  const _SubmittedOverlay({
+    required this.potentialXp,
+    required this.count,
+    required this.onDone,
+  });
+
+  final int potentialXp;
+  final int count;
+  final VoidCallback onDone;
+
+  @override
+  State<_SubmittedOverlay> createState() => _SubmittedOverlayState();
+}
+
+class _SubmittedOverlayState extends State<_SubmittedOverlay>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..forward();
+    _c.addStatusListener((s) {
+      if (s == AnimationStatus.completed) widget.onDone();
+    });
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, _) {
+        final t = _c.value;
+        // Ring + tick pop in over the first ~45%, hold, then fade the scrim.
+        final pop = Curves.elasticOut.transform((t / 0.45).clamp(0.0, 1.0));
+        final scrim = (t < 0.85 ? 1.0 : (1 - (t - 0.85) / 0.15)).clamp(0.0, 1.0);
+        return Opacity(
+          opacity: scrim,
+          child: Container(
+            color: Cyber.bg.withValues(alpha: 0.86),
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Transform.scale(
+                  scale: pop,
+                  child: Container(
+                    width: 110,
+                    height: 110,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Cyber.cyan.withValues(alpha: 0.12),
+                      border: Border.all(color: Cyber.cyan, width: 2.5),
+                      boxShadow: Cyber.glow(Cyber.cyan, alpha: 0.7, blur: 26),
+                    ),
+                    child: const Icon(Icons.check_rounded,
+                        color: Cyber.cyan, size: 58),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Opacity(
+                  opacity: ((t - 0.25) / 0.25).clamp(0.0, 1.0),
+                  child: Column(
+                    children: [
+                      Text(
+                        'PREDICTION SUBMITTED',
+                        style: Cyber.display(20, color: Colors.white,
+                                letterSpacing: 2)
+                            .copyWith(shadows: [
+                          Shadow(
+                            color: Cyber.cyan.withValues(alpha: 0.6),
+                            blurRadius: 16,
+                          ),
+                        ]),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        '${widget.count} FUTURES LOCKED · UP TO ${widget.potentialXp} XP',
+                        style: Cyber.label(12, color: Cyber.gold,
+                                letterSpacing: 1.4)
+                            .copyWith(fontFeatures: const [
+                          FontFeature.tabularFigures()
+                        ]),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── Helpers + palette ─────────────────────────────────────────────────────────
+String _formatTime(DateTime dt) {
+  final h = dt.hour.toString().padLeft(2, '0');
+  final m = dt.minute.toString().padLeft(2, '0');
+  return '$h:$m';
+}
+
+String _formatCountdown(Duration d) {
+  final h = d.inHours;
+  final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+  final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+  if (h > 0) return '${h.toString().padLeft(2, '0')}:$m:$s';
+  return '$m:$s';
+}
+
+const _panelTop = Color(0xff1b2336);
+const _panelBottom = Color(0xff131b2a);
+const _panelBorder = Color(0xff2a3550);
+const _optionFill = Color(0xff0f1826);
+const _optionBorder = Color(0xff283448);
+const _letterFill = Color(0xff1a2434);

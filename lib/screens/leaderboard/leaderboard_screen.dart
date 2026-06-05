@@ -5,6 +5,7 @@ import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_state.dart';
 import '../../config/enums.dart';
 import '../../config/theme.dart';
+import '../shop/shop_screen.dart' show CoinIcon;
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
 
@@ -85,13 +86,13 @@ const List<_Seed> _board = [
   _Seed('Rookie7', 1980, 0, isNew: true),
 ];
 
-typedef ScoreMeta = ({String unit, IconData icon});
+typedef ScoreMeta = ({String unit});
 
 ScoreMeta _scoreMeta(LeaderboardType type) => switch (type) {
-  LeaderboardType.matchDay => (unit: 'XP', icon: Icons.bolt),
-  LeaderboardType.tournament => (unit: 'XP', icon: Icons.military_tech),
-  LeaderboardType.coins => (unit: 'OZ', icon: Icons.monetization_on),
-  LeaderboardType.games => (unit: 'W', icon: Icons.sports_esports),
+  LeaderboardType.matchDay => (unit: 'XP'),
+  LeaderboardType.tournament => (unit: 'XP'),
+  LeaderboardType.coins => (unit: 'OZ'),
+  LeaderboardType.games => (unit: 'W'),
 };
 
 Color _accentFor(LeaderboardType type) =>
@@ -215,8 +216,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
       builder: (context, state) {
         return Scaffold(
           backgroundColor: Cyber.bg,
-          body: CyberBackground(
-            animated: true,
+          body: CyberPlainBackground(
             child: SafeArea(
               bottom: false,
               child: LayoutBuilder(
@@ -388,7 +388,7 @@ class _CoinPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.monetization_on, color: Cyber.gold, size: 16),
+          const CoinIcon(size: 16),
           const SizedBox(width: 6),
           Flexible(
             child: FittedBox(
@@ -431,7 +431,7 @@ class _TypeSelector extends StatelessWidget {
   final LeaderboardType active;
   final ValueChanged<LeaderboardType> onSelect;
 
-  static const List<({LeaderboardType type, String label, IconData icon})>
+  static const List<({LeaderboardType type, String label, IconData? icon})>
   _items = [
     (
       type: LeaderboardType.matchDay,
@@ -443,7 +443,7 @@ class _TypeSelector extends StatelessWidget {
       label: 'TOURNEY',
       icon: Icons.military_tech,
     ),
-    (type: LeaderboardType.coins, label: 'COINS', icon: Icons.monetization_on),
+    (type: LeaderboardType.coins, label: 'COINS', icon: null),
     (type: LeaderboardType.games, label: 'GAMES', icon: Icons.sports_esports),
   ];
 
@@ -459,6 +459,7 @@ class _TypeSelector extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 3),
                 child: _TypeChip(
                   label: item.label,
+                  type: item.type,
                   icon: item.icon,
                   active: active == item.type,
                   accent: _accentFor(item.type),
@@ -475,6 +476,7 @@ class _TypeSelector extends StatelessWidget {
 class _TypeChip extends StatelessWidget {
   const _TypeChip({
     required this.label,
+    required this.type,
     required this.icon,
     required this.active,
     required this.accent,
@@ -482,7 +484,8 @@ class _TypeChip extends StatelessWidget {
   });
 
   final String label;
-  final IconData icon;
+  final LeaderboardType type;
+  final IconData? icon;
   final bool active;
   final Color accent;
   final VoidCallback onTap;
@@ -521,7 +524,13 @@ class _TypeChip extends StatelessWidget {
         ),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 18),
+            if (type == LeaderboardType.coins)
+              Opacity(
+                opacity: active ? 1 : 0.72,
+                child: const CoinIcon(size: 18),
+              )
+            else
+              Icon(icon, color: color, size: 18),
             const SizedBox(height: 5),
             FittedBox(
               fit: BoxFit.scaleDown,

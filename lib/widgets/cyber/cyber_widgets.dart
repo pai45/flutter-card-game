@@ -353,6 +353,33 @@ class _CyberBackgroundState extends State<CyberBackground>
   }
 }
 
+class CyberPlainBackground extends StatelessWidget {
+  const CyberPlainBackground({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        const Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xff101827), Cyber.bg, Cyber.bg2],
+              ),
+            ),
+          ),
+        ),
+        const Positioned.fill(child: CyberTextureOverlay()),
+        child,
+      ],
+    );
+  }
+}
+
 class CyberGridPainter extends CustomPainter {
   const CyberGridPainter();
 
@@ -700,9 +727,7 @@ class CyberCtaButton extends StatelessWidget {
       opacity: enabled ? 1 : 0.45,
       child: GestureDetector(
         onTap: onPressed,
-        child: clip
-            ? ClipPath(clipper: CyberClipper(), child: inner)
-            : inner,
+        child: clip ? ClipPath(clipper: CyberClipper(), child: inner) : inner,
       ),
     );
   }
@@ -1440,7 +1465,11 @@ List<double> _foilStops(int rank) => switch (rank) {
 /// A row of four pips with `rank + 1` filled — a language-free rarity gauge
 /// (1 = bronze … 4 = platinum) on the nameplate.
 class _TierPips extends StatelessWidget {
-  const _TierPips({required this.rank, required this.color, required this.small});
+  const _TierPips({
+    required this.rank,
+    required this.color,
+    required this.small,
+  });
 
   final int rank;
   final Color color;
@@ -1567,8 +1596,10 @@ class _CardFramePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final path =
-        HudChamferClipper(bigCut: bigCut, smallCut: smallCut).buildPath(size);
+    final path = HudChamferClipper(
+      bigCut: bigCut,
+      smallCut: smallCut,
+    ).buildPath(size);
 
     // Soft blurred glow — only when active (hover/selected).
     if (glow > 0) {
@@ -1591,8 +1622,11 @@ class _CardFramePainter extends CustomPainter {
             Cyber.violet.withValues(alpha: a),
           ]
         : [
-            Color.lerp(tier, Colors.white, 0.15 + rank * 0.17)!
-                .withValues(alpha: a),
+            Color.lerp(
+              tier,
+              Colors.white,
+              0.15 + rank * 0.17,
+            )!.withValues(alpha: a),
             tier.withValues(alpha: a),
           ];
     final edgePaint = Paint()
@@ -1866,10 +1900,11 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
                               decoration: BoxDecoration(
                                 color: Cyber.bg.withValues(alpha: 0.85),
                                 border: const Border(
-                                  left: BorderSide(color: ratingColor, width: 3),
-                                  bottom: BorderSide(
-                                    color: Color(0x73ffd166),
+                                  left: BorderSide(
+                                    color: ratingColor,
+                                    width: 3,
                                   ),
+                                  bottom: BorderSide(color: Color(0x73ffd166)),
                                 ),
                                 boxShadow: widget.selected
                                     ? Cyber.glow(
@@ -1889,7 +1924,9 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
                                   Text(
                                     'PWR',
                                     style: TextStyle(
-                                      color: ratingColor.withValues(alpha: 0.72),
+                                      color: ratingColor.withValues(
+                                        alpha: 0.72,
+                                      ),
                                       fontFamily: Cyber.displayFont,
                                       fontSize: 6,
                                       fontWeight: FontWeight.w900,

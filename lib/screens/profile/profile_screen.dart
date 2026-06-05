@@ -30,7 +30,9 @@ class ProfileScreen extends StatelessWidget {
       backgroundColor: Cyber.bg,
       body: Stack(
         children: [
-          const Positioned.fill(child: CyberBackground(child: SizedBox.expand())),
+          const Positioned.fill(
+            child: CyberPlainBackground(child: SizedBox.expand()),
+          ),
           SafeArea(
             child: BlocBuilder<GameBloc, GameState>(
               builder: (context, game) {
@@ -89,9 +91,7 @@ class ProfileScreen extends StatelessWidget {
   ) {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
-        builder: (_) => builder((_) => navigator.pop()),
-      ),
+      MaterialPageRoute<void>(builder: (_) => builder((_) => navigator.pop())),
     );
   }
 }
@@ -157,7 +157,11 @@ class _BalancesRow extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: _BalanceTile(
-            icon: const Icon(Icons.change_history, color: Cyber.violet, size: 22),
+            icon: const Icon(
+              Icons.change_history,
+              color: Cyber.violet,
+              size: 22,
+            ),
             label: 'GEMS',
             value: '0',
             accent: Cyber.violet,
@@ -195,11 +199,15 @@ class _BalanceTile extends StatelessWidget {
             children: [
               Text(
                 value,
-                style: Cyber.display(18, letterSpacing: 0.5).copyWith(
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
+                style: Cyber.display(
+                  18,
+                  letterSpacing: 0.5,
+                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
-              Text(label, style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.4)),
+              Text(
+                label,
+                style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.4),
+              ),
             ],
           ),
         ],
@@ -268,12 +276,16 @@ class _StatTile extends StatelessWidget {
         children: [
           Text(
             value,
-            style: Cyber.display(20, letterSpacing: 0.5).copyWith(
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
+            style: Cyber.display(
+              20,
+              letterSpacing: 0.5,
+            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
           const SizedBox(height: 4),
-          Text(label, style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.2)),
+          Text(
+            label,
+            style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.2),
+          ),
         ],
       ),
     );
@@ -281,7 +293,11 @@ class _StatTile extends StatelessWidget {
 }
 
 class _LinkTile extends StatelessWidget {
-  const _LinkTile({required this.icon, required this.label, required this.onTap});
+  const _LinkTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
   final IconData icon;
   final String label;
   final VoidCallback onTap;

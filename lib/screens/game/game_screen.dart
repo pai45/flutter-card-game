@@ -55,7 +55,11 @@ class _GameTabContentState extends State<GameTabContent> {
   @override
   Widget build(BuildContext context) {
     return switch (_gameSection) {
-      AppSection.home => HomeScreen(onNavigate: _navigateGame),
+      AppSection.home => HomeScreen(
+        onNavigate: _navigateGame,
+        showBottomNavigation: false,
+        onBack: () => widget.onNavigate(AppSection.predictions),
+      ),
       AppSection.deck => DeckBuilderScreen(onNavigate: _navigateGame),
       AppSection.howToPlay => HowToPlayScreen(onNavigate: _navigateGame),
       AppSection.match => MatchScreen(onNavigate: _navigateGame),

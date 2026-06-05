@@ -11,12 +11,15 @@ class LandingBottomNavigation extends StatelessWidget {
   const LandingBottomNavigation({
     required this.selectedIndex,
     required this.onNavigate,
+    this.includeShop = true,
     super.key,
   });
 
-  /// 0 = Home, 1 = Leaderboard, 2 = Shop, 3 = Profile.
+  /// With [includeShop] true: 0 = Home, 1 = Leaderboard, 2 = Shop, 3 = Profile.
+  /// With [includeShop] false: 0 = Home, 1 = Leaderboard, 2 = Profile.
   final int selectedIndex;
   final ValueChanged<AppSection> onNavigate;
+  final bool includeShop;
 
   static const List<_NavSpec> _items = [
     _NavSpec(
@@ -49,8 +52,33 @@ class LandingBottomNavigation extends StatelessWidget {
     ),
   ];
 
+  static const List<_NavSpec> _predictionItems = [
+    _NavSpec(
+      section: AppSection.predictions,
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home,
+      label: 'HOME',
+      accent: Color(0xffc27aff),
+    ),
+    _NavSpec(
+      section: AppSection.leaderboard,
+      icon: Icons.emoji_events_outlined,
+      activeIcon: Icons.emoji_events,
+      label: 'TOP',
+      accent: Cyber.gold,
+    ),
+    _NavSpec(
+      section: AppSection.profile,
+      icon: Icons.person_outline,
+      activeIcon: Icons.person,
+      label: 'PROFILE',
+      accent: Cyber.cyan,
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
+    final items = includeShop ? _items : _predictionItems;
     return SafeArea(
       top: false,
       child: Container(
@@ -66,12 +94,12 @@ class LandingBottomNavigation extends StatelessWidget {
         ),
         child: Row(
           children: [
-            for (var i = 0; i < _items.length; i++)
+            for (var i = 0; i < items.length; i++)
               Expanded(
                 child: _NavItem(
-                  spec: _items[i],
+                  spec: items[i],
                   active: selectedIndex == i,
-                  onTap: () => onNavigate(_items[i].section),
+                  onTap: () => onNavigate(items[i].section),
                 ),
               ),
           ],

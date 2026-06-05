@@ -17,54 +17,36 @@ abstract class PredictionRepository {
   Future<PredictionQuiz?> quizFor(String matchId);
 }
 
-/// Hardcoded fixtures + quizzes mirroring the home mockups (IPL & EPL), spanning
-/// every card state: upcoming, live, and finished. Single source of truth for
-/// fixtures until a backend exists.
+/// Hardcoded fixtures + quizzes mirroring the home mockup, spanning every card
+/// state: upcoming-open, upcoming-predicted, live, and finished (football +
+/// cricket). Single source of truth for fixtures until a backend exists.
 class MockPredictionRepository implements PredictionRepository {
-  // ── Leagues ────────────────────────────────────────────────────────────────
-  static const _ipl = League(
-    id: 'ipl',
-    name: 'Indian Premier League',
-    shortCode: 'IPL',
-    accent: Color(0xff5cdfff),
-  );
+  // ── Leagues (EPL first to match the reference order) ─────────────────────────
   static const _epl = League(
     id: 'epl',
     name: 'English Premier League',
     shortCode: 'EPL',
     accent: Color(0xffa855f7),
   );
+  static const _ipl = League(
+    id: 'ipl',
+    name: 'Indian Premier League',
+    shortCode: 'IPL',
+    accent: Color(0xff5cdfff),
+  );
 
-  // ── Teams ────────────────────────────────────────────────────────────────--
-  static const _csk = SportTeam(
-    id: 'csk',
-    name: 'Chennai',
-    shortName: 'CSK',
-    color: Color(0xffffd700),
+  // ── Teams ──────────────────────────────────────────────────────────────────
+  static const _liv = SportTeam(
+    id: 'liv',
+    name: 'Liverpool',
+    shortName: 'LFC',
+    color: Color(0xffc8102e),
   );
-  static const _mi = SportTeam(
-    id: 'mi',
-    name: 'Mumbai',
-    shortName: 'MI',
-    color: Color(0xff2856a5),
-  );
-  static const _rcb = SportTeam(
-    id: 'rcb',
-    name: 'RCB',
-    shortName: 'RCB',
-    color: Color(0xffe21f26),
-  );
-  static const _kkr = SportTeam(
-    id: 'kkr',
-    name: 'KKR',
-    shortName: 'KKR',
-    color: Color(0xff7b27a8),
-  );
-  static const _srh = SportTeam(
-    id: 'srh',
-    name: 'Hyderabad',
-    shortName: 'SRH',
-    color: Color(0xffff822e),
+  static const _mc = SportTeam(
+    id: 'mc',
+    name: 'Man City',
+    shortName: 'MNC',
+    color: Color(0xff6cabdd),
   );
   static const _cfc = SportTeam(
     id: 'cfc',
@@ -76,7 +58,7 @@ class MockPredictionRepository implements PredictionRepository {
     id: 'new',
     name: 'Newcastle',
     shortName: 'NEW',
-    color: Color(0xff111418),
+    color: Color(0xffededE8),
   );
   static const _mu = SportTeam(
     id: 'mu',
@@ -90,33 +72,48 @@ class MockPredictionRepository implements PredictionRepository {
     shortName: 'WHU',
     color: Color(0xff7a263a),
   );
+  static const _srh = SportTeam(
+    id: 'srh',
+    name: 'Hyderabad',
+    shortName: 'SRH',
+    color: Color(0xffff822e),
+  );
+  static const _mi = SportTeam(
+    id: 'mi',
+    name: 'Mumbai',
+    shortName: 'MI',
+    color: Color(0xff2856a5),
+  );
+  static const _pjk = SportTeam(
+    id: 'pjk',
+    name: 'Punjab',
+    shortName: 'PJK',
+    color: Color(0xffdcd9cf),
+  );
+  static const _kkr = SportTeam(
+    id: 'kkr',
+    name: 'KKR',
+    shortName: 'KKR',
+    color: Color(0xfff0c419),
+  );
 
   // Fixtures are built relative to "now" so statuses stay believable on launch.
   late final DateTime _now = DateTime.now();
+  late final DateTime _today15 = DateTime(_now.year, _now.month, _now.day, 15);
 
   late final List<SportMatch> _fixtures = [
-    // Upcoming — open for prediction (prize strip).
+    // EPL — upcoming, open for prediction (prize strip).
     SportMatch(
-      id: 'ipl_csk_mi',
-      leagueId: 'ipl',
-      sport: Sport.cricket,
-      home: _csk,
-      away: _mi,
-      kickoff: _now.add(const Duration(hours: 3)),
+      id: 'epl_liv_mc',
+      leagueId: 'epl',
+      sport: Sport.football,
+      home: _liv,
+      away: _mc,
+      kickoff: _today15,
       status: MatchStatus.upcoming,
-      prizeLabel: 'WIN ₹5000',
+      prizeLabel: 'Win ₹5000',
     ),
-    SportMatch(
-      id: 'ipl_rcb_kkr',
-      leagueId: 'ipl',
-      sport: Sport.cricket,
-      home: _rcb,
-      away: _kkr,
-      kickoff: _now.add(const Duration(hours: 5)),
-      status: MatchStatus.upcoming,
-      prizeLabel: 'WIN ₹5000',
-    ),
-    // Live football — score in progress.
+    // EPL — live football, score in progress.
     SportMatch(
       id: 'epl_cfc_new',
       leagueId: 'epl',
@@ -129,7 +126,7 @@ class MockPredictionRepository implements PredictionRepository {
       homeScore: '2',
       awayScore: '1',
     ),
-    // Finished football — result + earned reward.
+    // EPL — finished football, earned reward (no result line on the card).
     SportMatch(
       id: 'epl_mu_whu',
       leagueId: 'epl',
@@ -140,10 +137,9 @@ class MockPredictionRepository implements PredictionRepository {
       status: MatchStatus.finished,
       homeScore: '2',
       awayScore: '1',
-      resultLine: 'Man Utd won 2–1',
       rewardXp: 100,
     ),
-    // Finished cricket — per-side innings + result + earned reward.
+    // IPL — finished cricket, per-side innings + result + earned reward.
     SportMatch(
       id: 'ipl_srh_mi',
       leagueId: 'ipl',
@@ -152,50 +148,67 @@ class MockPredictionRepository implements PredictionRepository {
       away: _mi,
       kickoff: _now.subtract(const Duration(hours: 5)),
       status: MatchStatus.finished,
-      homeScore: '202-10 (20ov)',
-      awayScore: '221-4 (20ov)',
+      homeScore: '202-10 (20 ov)',
+      awayScore: '221-4 (20 ov)',
       resultLine: 'Mumbai won by 19 runs',
       rewardXp: 100,
+    ),
+    // IPL — upcoming, already predicted (see PredictionCubit demo seed).
+    SportMatch(
+      id: 'ipl_pjk_kkr',
+      leagueId: 'ipl',
+      sport: Sport.cricket,
+      home: _pjk,
+      away: _kkr,
+      kickoff: _today15,
+      status: MatchStatus.upcoming,
+      prizeLabel: 'Win ₹5000',
     ),
   ];
 
   late final Map<String, PredictionQuiz> _quizzes = {
-    'ipl_csk_mi': const PredictionQuiz(
-      matchId: 'ipl_csk_mi',
+    'epl_liv_mc': const PredictionQuiz(
+      matchId: 'epl_liv_mc',
       questions: [
         QuizQuestion(
           id: 'q1',
-          text: 'Who wins the toss?',
-          options: ['Chennai', 'Mumbai'],
-          reward: 50,
+          text: 'Who will win MAN CITY vs LIVERPOOL?',
+          options: ['Man City', 'Tie', 'Liverpool'],
+          reward: 100,
         ),
         QuizQuestion(
           id: 'q2',
-          text: 'Which side bats first?',
-          options: ['Chennai', 'Mumbai'],
+          text: 'Both teams to score?',
+          options: ['Yes', 'No'],
           reward: 50,
         ),
         QuizQuestion(
           id: 'q3',
-          text: 'Top run-scorer of the match?',
-          options: ['Chennai batter', 'Mumbai batter'],
-          reward: 150,
+          text: 'Total goals over/under 2.5?',
+          options: ['Over 2.5', 'Under 2.5'],
+          reward: 75,
         ),
         QuizQuestion(
           id: 'q4',
-          text: 'Who will win CHENNAI vs MUMBAI?',
-          options: ['Chennai', 'Tie', 'Mumbai'],
-          reward: 100,
+          text: 'Which side scores first?',
+          options: ['Man City', 'Liverpool', 'No goal'],
+          reward: 75,
+        ),
+        QuizQuestion(
+          id: 'q5',
+          text: 'Will a red card be shown?',
+          options: ['Yes', 'No'],
+          reward: 50,
         ),
       ],
     ),
-    'ipl_rcb_kkr': const PredictionQuiz(
-      matchId: 'ipl_rcb_kkr',
+    'ipl_pjk_kkr': const PredictionQuiz(
+      matchId: 'ipl_pjk_kkr',
       questions: [
         QuizQuestion(
           id: 'q1',
           text: 'Who wins the toss?',
-          options: ['RCB', 'KKR'],
+          options: ['Punjab', 'KKR'],
           reward: 50,
         ),
         QuizQuestion(
@@ -206,8 +219,8 @@ class MockPredictionRepository implements PredictionRepository {
         ),
         QuizQuestion(
           id: 'q3',
-          text: 'Who will win RCB vs KKR?',
-          options: ['RCB', 'Tie', 'KKR'],
+          text: 'Who will win PUNJAB vs KKR?',
+          options: ['Punjab', 'Tie', 'KKR'],
           reward: 100,
         ),
       ],
@@ -228,7 +241,7 @@ class MockPredictionRepository implements PredictionRepository {
   };
 
   @override
-  Future<List<League>> leagues() async => const [_ipl, _epl];
+  Future<List<League>> leagues() async => const [_epl, _ipl];
 
   @override
   Future<List<SportMatch>> fixtures({DateTime? day}) async =>

@@ -44,28 +44,23 @@ class MatchPredictionCard extends StatelessWidget {
           colors: [_cardTop, _cardBottom],
         ),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _TopStatus(match: match),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _TeamsRow(match: match, dimNames: _finished),
-                if (match.resultLine != null) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    match.resultLine!,
-                    textAlign: TextAlign.center,
-                    style: Cyber.body(11.5, color: _resultCol, weight: FontWeight.w600),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
+      child: Padding(
+        // Extra top room so the teams clear the notch cut into the top edge.
+        padding: const EdgeInsets.fromLTRB(16, 28, 16, 14),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _TeamsRow(match: match, dimNames: _finished),
+            if (match.resultLine != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                match.resultLine!,
+                textAlign: TextAlign.center,
+                style: Cyber.body(11.5, color: _resultCol, weight: FontWeight.w600),
+              ),
+            ],
+          ],
+        ),
       ),
     );
 
@@ -77,98 +72,92 @@ class MatchPredictionCard extends StatelessWidget {
               playSound(SoundEffect.uiTap);
               onTap!();
             },
-      child: Material(
-        color: _cardBase,
-        elevation: 6,
-        shadowColor: Colors.black,
-        clipBehavior: Clip.antiAlias,
-        shape: const _CyberCardBorder(
-          cut: 12,
-          side: BorderSide(color: _borderCol),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            body,
-            _StatusStrip(
-              match: match,
-              predicted: _predicted,
-              submittedAt: prediction?.submittedAt,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Hard, un-blurred drop shadow drawn behind the card.
+          const Positioned.fill(
+            child: CustomPaint(painter: _HardShadowPainter()),
+          ),
+          Material(
+            color: _cardBase,
+            elevation: 0,
+            clipBehavior: Clip.antiAlias,
+            shape: const _CyberCardBorder(
+              cut: 12,
+              notchWidth: _notchFloorW,
+              notchDepth: _notchDepth,
+              notchSlope: _notchSlope,
+              side: BorderSide(color: _borderCol),
             ),
-          ],
-        ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                body,
+                _StatusStrip(
+                  match: match,
+                  predicted: _predicted,
+                  submittedAt: prediction?.submittedAt,
+                ),
+              ],
+            ),
+          ),
+          // The status tag sits inside the notch, reading against the page
+          // background that shows through the cut.
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: _notchDepth,
+            child: Center(child: _TagContent(match: match)),
+          ),
+        ],
       ),
     );
   }
 }
 
-// ── Top status: kickoff time / LIVE / "Finished" notch ────────────────────────
-class _TopStatus extends StatelessWidget {
-  const _TopStatus({required this.match});
+// ── Status tag content (sits inside the top notch, against the background) ─────
+class _TagContent extends StatelessWidget {
+  const _TagContent({required this.match});
   final SportMatch match;
 
   @override
   Widget build(BuildContext context) {
-    switch (match.status) {
-      case MatchStatus.upcoming:
-        return Padding(
-          padding: const EdgeInsets.only(top: 13),
-          child: Center(
-            child: Text(
-              _formatTime(match.kickoff),
-              style: Cyber.body(13, color: _timeGold, weight: FontWeight.w700)
-                  .copyWith(
-                    letterSpacing: 1,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
+    return switch (match.status) {
+      MatchStatus.upcoming => Text(
+        _formatTime(match.kickoff),
+        style: Cyber.body(13, color: _timeGold, weight: FontWeight.w700).copyWith(
+          letterSpacing: 1,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
+      ),
+      MatchStatus.live => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Cyber.danger,
+              boxShadow: Cyber.glow(Cyber.danger, alpha: 0.8, blur: 7),
             ),
           ),
-        );
-      case MatchStatus.live:
-        final label = match.liveMinute != null
-            ? "LIVE ${match.liveMinute}'"
-            : 'LIVE';
-        return Padding(
-          padding: const EdgeInsets.only(top: 13),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 7,
-                height: 7,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Cyber.danger,
-                  boxShadow: Cyber.glow(Cyber.danger, alpha: 0.8, blur: 7),
-                ),
-              ),
-              const SizedBox(width: 7),
-              Text(
-                label,
-                style: Cyber.body(12.5, color: Cyber.danger, weight: FontWeight.w800)
-                    .copyWith(letterSpacing: 0.8),
-              ),
-            ],
+          const SizedBox(width: 7),
+          Text(
+            match.liveMinute != null ? "LIVE ${match.liveMinute}'" : 'LIVE',
+            style: Cyber.body(12.5, color: Cyber.danger, weight: FontWeight.w800)
+                .copyWith(letterSpacing: 0.8),
           ),
-        );
-      case MatchStatus.finished:
-        // A small tab notched into the top edge, flush with the top border.
-        return Align(
-          alignment: Alignment.topCenter,
-          child: ClipPath(
-            clipper: const _BottomChamferClipper(6),
-            child: Container(
-              color: _tabFill,
-              padding: const EdgeInsets.fromLTRB(22, 4, 22, 5),
-              child: Text(
-                'Finished',
-                style: Cyber.body(11, color: Cyber.muted, weight: FontWeight.w600)
-                    .copyWith(letterSpacing: 0.4),
-              ),
-            ),
-          ),
-        );
-    }
+        ],
+      ),
+      MatchStatus.finished => Text(
+        'Finished',
+        style: Cyber.body(11, color: Cyber.muted, weight: FontWeight.w600)
+            .copyWith(letterSpacing: 0.4),
+      ),
+    };
   }
 }
 
@@ -432,19 +421,26 @@ class _Strip extends StatelessWidget {
 
 // ── Shape: square top, chamfered bottom corners — used for the shadow + border ─
 class _CyberCardBorder extends ShapeBorder {
-  const _CyberCardBorder({this.cut = 12, this.side = BorderSide.none});
+  const _CyberCardBorder({
+    this.cut = 12,
+    this.notchWidth = 0,
+    this.notchDepth = 0,
+    this.notchSlope = 0,
+    this.side = BorderSide.none,
+  });
 
   final double cut;
+
+  /// Top-centre notch (floor width / depth / diagonal run). With a positive
+  /// width + depth the top edge dips into a trapezoidal cut so the background
+  /// shows through and the status tag can sit inside it.
+  final double notchWidth;
+  final double notchDepth;
+  final double notchSlope;
   final BorderSide side;
 
-  Path _build(Rect r) => Path()
-    ..moveTo(r.left, r.top)
-    ..lineTo(r.right, r.top)
-    ..lineTo(r.right, r.bottom - cut)
-    ..lineTo(r.right - cut, r.bottom)
-    ..lineTo(r.left + cut, r.bottom)
-    ..lineTo(r.left, r.bottom - cut)
-    ..close();
+  Path _build(Rect r) =>
+      _cardPath(r, cut, notchWidth, notchDepth, notchSlope);
 
   @override
   EdgeInsetsGeometry get dimensions => EdgeInsets.all(side.width);
@@ -469,8 +465,13 @@ class _CyberCardBorder extends ShapeBorder {
   }
 
   @override
-  ShapeBorder scale(double t) =>
-      _CyberCardBorder(cut: cut * t, side: side.scale(t));
+  ShapeBorder scale(double t) => _CyberCardBorder(
+    cut: cut * t,
+    notchWidth: notchWidth * t,
+    notchDepth: notchDepth * t,
+    notchSlope: notchSlope * t,
+    side: side.scale(t),
+  );
 
   @override
   ShapeBorder? lerpFrom(ShapeBorder? a, double t) => this;
@@ -479,23 +480,55 @@ class _CyberCardBorder extends ShapeBorder {
   ShapeBorder? lerpTo(ShapeBorder? b, double t) => this;
 }
 
-/// Cuts the two bottom corners of a rectangle (used for the "Finished" tab).
-class _BottomChamferClipper extends CustomClipper<Path> {
-  const _BottomChamferClipper(this.cut);
-  final double cut;
-
-  @override
-  Path getClip(Size s) => Path()
-    ..moveTo(0, 0)
-    ..lineTo(s.width, 0)
-    ..lineTo(s.width, s.height - cut)
-    ..lineTo(s.width - cut, s.height)
-    ..lineTo(cut, s.height)
-    ..lineTo(0, s.height - cut)
+/// The card silhouette: square top with a centred trapezoidal notch, chamfered
+/// bottom corners. Shared by [_CyberCardBorder] (clip + border + stroke) and
+/// [_HardShadowPainter] (the offset drop shadow).
+Path _cardPath(
+  Rect r,
+  double cut,
+  double notchWidth,
+  double notchDepth,
+  double notchSlope,
+) {
+  final path = Path()..moveTo(r.left, r.top);
+  if (notchWidth > 0 && notchDepth > 0) {
+    final cx = r.center.dx;
+    final half = notchWidth / 2;
+    path
+      ..lineTo(cx - half - notchSlope, r.top) // top edge → notch opening
+      ..lineTo(cx - half, r.top + notchDepth) // diagonal down-in
+      ..lineTo(cx + half, r.top + notchDepth) // notch floor
+      ..lineTo(cx + half + notchSlope, r.top); // diagonal up-out
+  }
+  return path
+    ..lineTo(r.right, r.top)
+    ..lineTo(r.right, r.bottom - cut)
+    ..lineTo(r.right - cut, r.bottom)
+    ..lineTo(r.left + cut, r.bottom)
+    ..lineTo(r.left, r.bottom - cut)
     ..close();
+}
+
+/// A hard (un-blurred) drop shadow: the card silhouette filled with a solid dark
+/// colour and shifted straight down, drawn behind the card for an "embossed"
+/// elevated feel without a soft blur.
+class _HardShadowPainter extends CustomPainter {
+  const _HardShadowPainter();
 
   @override
-  bool shouldReclip(covariant _BottomChamferClipper old) => old.cut != cut;
+  void paint(Canvas canvas, Size size) {
+    final path = _cardPath(
+      Offset.zero & size,
+      12,
+      _notchFloorW,
+      _notchDepth,
+      _notchSlope,
+    ).shift(const Offset(0, 6));
+    canvas.drawPath(path, Paint()..color = _shadowCol);
+  }
+
+  @override
+  bool shouldRepaint(covariant _HardShadowPainter oldDelegate) => false;
 }
 
 /// Cuts a single bottom corner of a team badge (mirrored per side).
@@ -534,7 +567,7 @@ const _cardBase = Color(0xff141c2b);
 const _cardTop = Color(0xff1b2336);
 const _cardBottom = Color(0xff121a28);
 const _borderCol = Color(0xff2a3550);
-const _tabFill = Color(0xff0e1422);
+const _shadowCol = Color(0xff04060b); // hard drop-shadow fill
 const _stripDark = Color(0xff0f1826);
 const _stripBlue = Color(0xff173a5e);
 const _timeGold = Color(0xffc8a45a);
@@ -542,6 +575,11 @@ const _dimName = Color(0xffaeb7c5);
 const _scoreSub = Color(0xff9fb0c2);
 const _resultCol = Color(0xffbac5d3);
 const _predictedText = Color(0xff93a1b2);
+
+// Top-centre notch geometry (shared by the card shape + the tag overlay).
+const _notchFloorW = 96.0;
+const _notchDepth = 22.0;
+const _notchSlope = 12.0;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 String _formatTime(DateTime dt) {

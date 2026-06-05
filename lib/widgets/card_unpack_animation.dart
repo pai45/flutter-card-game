@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../config/theme.dart';
 import '../utils/sound_effects.dart';
+import '../widgets/cyber/cyber_widgets.dart' show HudChamferClipper;
 
 // ── Colour constants (shared app palette) ─────────────────────────────────────
 const Color _kBg = Cyber.bg;
@@ -932,17 +933,32 @@ class _CardUnpackState extends State<CardUnpackAnimation>
   Widget _cardWithGlow(Widget child, Color glowColor) {
     Widget inner = child;
     // Topps-style holographic shine sweeping diagonally across the card face.
+    // When a frontFace is provided (CyberPlayerCardTile), a LayoutBuilder reads
+    // the actual card dimensions and applies a matching HudChamferClipper so the
+    // shimmer is clipped to the chamfered corners and never paints outside them.
     if (_sweepCtrl != null) {
-      inner = Stack(
-        children: [
-          child,
-          Positioned.fill(
-            child: IgnorePointer(
-              child: AnimatedBuilder(
-                animation: _sweepCtrl!,
-                builder: (_, ignored) {
-                  final holo = _cardHolo(widget.rarity);
-                  return CustomPaint(
+      Widget shimmerLayer;
+
+      if (widget.frontFace != null) {
+        // frontFace has a HudChamfer clip — derive the same chamfer from the
+        // layout width so the shimmer matches the card shape exactly.
+        shimmerLayer = LayoutBuilder(
+          builder: (_, constraints) {
+            final w = constraints.maxWidth;
+            // Mirror CyberPlayerCardTile's formula but allow a wider clamp so
+            // cards that have been FittedBox-scaled (e.g. 192 wide) clip right.
+            final bigCut = (w * 0.13).clamp(10.0, 30.0);
+            final smallCut = bigCut * 0.5;
+            return AnimatedBuilder(
+              animation: _sweepCtrl!,
+              builder: (_, ignored) {
+                final holo = _cardHolo(widget.rarity);
+                return ClipPath(
+                  clipper: HudChamferClipper(
+                    bigCut: bigCut,
+                    smallCut: smallCut,
+                  ),
+                  child: CustomPaint(
                     painter: _HoloSweepPainter(
                       shimmer: _sweepCtrl!.value,
                       colors: holo.colors,
@@ -950,11 +966,36 @@ class _CardUnpackState extends State<CardUnpackAnimation>
                       bands: holo.bands,
                       speed: holo.speed,
                     ),
-                  );
-                },
+                  ),
+                );
+              },
+            );
+          },
+        );
+      } else {
+        // Built-in card is a plain rectangle — rectangular clipRect in the
+        // painter is sufficient.
+        shimmerLayer = AnimatedBuilder(
+          animation: _sweepCtrl!,
+          builder: (_, ignored) {
+            final holo = _cardHolo(widget.rarity);
+            return CustomPaint(
+              painter: _HoloSweepPainter(
+                shimmer: _sweepCtrl!.value,
+                colors: holo.colors,
+                intensity: holo.intensity,
+                bands: holo.bands,
+                speed: holo.speed,
               ),
-            ),
-          ),
+            );
+          },
+        );
+      }
+
+      inner = Stack(
+        children: [
+          child,
+          Positioned.fill(child: IgnorePointer(child: shimmerLayer)),
         ],
       );
     }

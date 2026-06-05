@@ -20,9 +20,16 @@ import '../../screens/match_history/match_history_pages.dart';
 import 'widgets/daily_drop.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({required this.onNavigate, super.key});
+  const HomeScreen({
+    required this.onNavigate,
+    this.showBottomNavigation = true,
+    this.onBack,
+    super.key,
+  });
 
   final ValueChanged<AppSection> onNavigate;
+  final bool showBottomNavigation;
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +39,15 @@ class HomeScreen extends StatelessWidget {
           backgroundColor: Cyber.bg,
           appBar: ReactHeaderBar(
             title: 'Pitch Duel',
-            subtitle: '// Match Lobby',
+            subtitle: showBottomNavigation ? '// Match Lobby' : null,
+            showTitle: showBottomNavigation,
+            leftSlot: onBack == null
+                ? null
+                : IconButton(
+                    onPressed: onBack,
+                    icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+                    color: Cyber.cyan,
+                  ),
             rightSlot: PlayerLevelBadge(progression: state.progression),
           ),
           body: _HomeArenaBackground(
@@ -289,10 +304,12 @@ class HomeScreen extends StatelessWidget {
               ],
             ),
           ),
-          bottomNavigationBar: LandingBottomNavigation(
-            selectedIndex: 0,
-            onNavigate: onNavigate,
-          ),
+          bottomNavigationBar: showBottomNavigation
+              ? LandingBottomNavigation(
+                  selectedIndex: 0,
+                  onNavigate: onNavigate,
+                )
+              : null,
         );
       },
     );

@@ -161,50 +161,26 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           : DateTime.fromMillisecondsSinceEpoch(
               wallet.dailyDropLastClaimedAtMillis!,
             );
-      PackRevealData? pendingPackReveal;
-
       final activeBeforeStarter = safeSlots.firstOrNull;
-      final needsStarterDeck =
-          !migratedStarterClaimed ||
-          activeBeforeStarter == null ||
-          !_isLegalSlot(activeBeforeStarter);
+      final needsFallbackDeck =
+          activeBeforeStarter == null || !_isLegalSlot(activeBeforeStarter);
 
-      if (needsStarterDeck) {
-        developer.log('GameLoaded: Building starter pack');
-        final starterResult = buildStarterPack(
-          attackers,
-          defenders,
-          actionCards,
-        );
-        final applied = _applyPackSnapshot(
-          result: starterResult,
-          ownedPlayerIds: ownedPlayerIds,
-          ownedActionIds: ownedActionIds,
-          progression: migratedProgression,
-        );
-        ownedPlayerIds = applied.ownedPlayerIds;
-        ownedActionIds = applied.ownedActionIds;
-        migratedProgression = applied.progression;
-        migratedStarterClaimed = true;
-        final starterSlot = _starterDeckSlot(
-          starterResult,
-          id: activeBeforeStarter?.id ?? defaultDeckSlots.first.id,
-          name: activeBeforeStarter?.name ?? 'Starter Squad',
-        );
-        safeSlots = safeSlots.isEmpty
-            ? [starterSlot]
-            : [starterSlot, ...safeSlots.skip(1)];
-        pendingPackReveal = PackRevealData.starter(
-          result: starterResult,
-          levelsGained: applied.levelsGained,
-        );
+      if (needsFallbackDeck) {
+        developer.log('GameLoaded: Preparing fallback deck');
+        safeSlots = defaultDeckSlots.map(_hydratedSlot).toList();
+        for (final slot in safeSlots) {
+          ownedPlayerIds = _validPlayerIds({
+            ...ownedPlayerIds,
+            ...slot.attackers,
+            ...slot.defenders,
+          });
+          ownedActionIds = _validActionIds({
+            ...ownedActionIds,
+            ...slot.actions,
+          });
+        }
         await _storage.saveDecks(safeSlots);
         await _storage.saveOwnedCards(ownedPlayerIds);
-        await _storage.saveStarterPackClaimed();
-        await _storage.saveProgression(migratedProgression);
-        developer.log('GameLoaded: Starter pack built and saved');
-      } else if (safeSlots.isEmpty) {
-        safeSlots = defaultDeckSlots.map(_hydratedSlot).toList();
       }
 
       final active = safeSlots.first;
@@ -241,7 +217,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           equippedCardBackId: wallet.equippedCardBackId,
           matchHistory: history,
           tutorialSeen: seen,
-          pendingPackReveal: pendingPackReveal,
+          pendingPackReveal: null,
           starterPackClaimed: migratedStarterClaimed,
           dailyDropLastClaimedAt: dailyDropLastClaimedAt,
           progression: migratedProgression,
