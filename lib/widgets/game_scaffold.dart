@@ -14,6 +14,7 @@ class GameScaffold extends StatelessWidget {
     this.compactHeader = false,
     this.showShop = false,
     this.showTitle = true,
+    this.grain = false,
     super.key,
   });
 
@@ -25,6 +26,9 @@ class GameScaffold extends StatelessWidget {
   final bool compactHeader;
   final bool showShop;
   final bool showTitle;
+
+  /// Film-grain noise backdrop — reserved for the in-match (card game) screens.
+  final bool grain;
   final Widget child;
 
   @override
@@ -41,7 +45,7 @@ class GameScaffold extends StatelessWidget {
         showShop: showShop,
         showTitle: showTitle,
       ),
-      body: CyberBackground(child: child),
+      body: CyberBackground(grain: grain, child: child),
     );
   }
 }

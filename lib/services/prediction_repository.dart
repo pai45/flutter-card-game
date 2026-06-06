@@ -212,6 +212,20 @@ class MockPredictionRepository implements PredictionRepository {
       status: MatchStatus.upcoming,
       prizeLabel: 'Win ₹5000',
     ),
+    // IPL — finished cricket, settled prediction history demo (PJK vs RCB).
+    SportMatch(
+      id: 'ipl_pjk_rcb',
+      leagueId: 'ipl',
+      sport: Sport.cricket,
+      home: _pjk,
+      away: _rcb,
+      kickoff: DateTime(_now.year, _now.month, 18, 15),
+      status: MatchStatus.finished,
+      homeScore: '221-4',
+      awayScore: '198-8 (20 ov)',
+      resultLine: 'Punjab won by 23 runs',
+      rewardXp: 20,
+    ),
   ];
 
   late final Map<String, PredictionQuiz> _quizzes = {
@@ -292,7 +306,7 @@ class MockPredictionRepository implements PredictionRepository {
         ),
       ],
     ),
-    // Settled quiz so PICK/finished demos can show a result + reward.
+    // Settled quiz so history / finished demos can show mixed ✓/✕ rows.
     'epl_mu_whu': const PredictionQuiz(
       matchId: 'epl_mu_whu',
       questions: [
@@ -300,9 +314,77 @@ class MockPredictionRepository implements PredictionRepository {
           id: 'q1',
           text: 'Predict the full-time score',
           type: QuizQuestionType.exactScore,
-          reward: 100,
+          reward: 10,
           settledHomeScore: 2,
           settledAwayScore: 1,
+        ),
+        QuizQuestion(
+          id: 'q2',
+          text: 'Both teams to score?',
+          options: ['Yes', 'No'],
+          reward: 5,
+          settledOptionIndex: 0,
+        ),
+        QuizQuestion(
+          id: 'q3',
+          text: 'Total goals over/under 2.5?',
+          options: ['Over 2.5', 'Under 2.5'],
+          reward: 5,
+          settledOptionIndex: 0,
+        ),
+        QuizQuestion(
+          id: 'q4',
+          text: 'Which side scores first?',
+          options: ['Man Utd', 'West Ham', 'No goal'],
+          reward: 5,
+          settledOptionIndex: 0,
+        ),
+        QuizQuestion(
+          id: 'q5',
+          text: 'Will a red card be shown?',
+          options: ['Yes', 'No'],
+          reward: 5,
+          settledOptionIndex: 1,
+        ),
+      ],
+    ),
+    'ipl_pjk_rcb': const PredictionQuiz(
+      matchId: 'ipl_pjk_rcb',
+      questions: [
+        QuizQuestion(
+          id: 'q1',
+          text: 'Who wins the toss?',
+          options: ['Punjab', 'Bangalore'],
+          reward: 5,
+          settledOptionIndex: 0,
+        ),
+        QuizQuestion(
+          id: 'q2',
+          text: 'Total sixes over/under 12.5?',
+          options: ['Over 12.5', 'Under 12.5'],
+          reward: 5,
+          settledOptionIndex: 1,
+        ),
+        QuizQuestion(
+          id: 'q3',
+          text: 'Top scorer from Punjab?',
+          options: ['Yes', 'No'],
+          reward: 5,
+          settledOptionIndex: 1,
+        ),
+        QuizQuestion(
+          id: 'q4',
+          text: 'Will rain affect play?',
+          options: ['Yes', 'No'],
+          reward: 5,
+          settledOptionIndex: 1,
+        ),
+        QuizQuestion(
+          id: 'q5',
+          text: 'Who wins PUNJAB vs RCB?',
+          options: ['Punjab', 'Tie', 'Bangalore'],
+          reward: 5,
+          settledOptionIndex: 0,
         ),
       ],
     ),

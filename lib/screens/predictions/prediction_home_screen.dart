@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../blocs/game/game_bloc.dart';
 import '../../blocs/prediction/prediction_cubit.dart';
@@ -7,12 +8,13 @@ import '../../blocs/prediction/prediction_state.dart';
 import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../models/league.dart';
+import '../../models/match.dart';
 import '../../models/sport_match.dart';
 import '../../utils/sound_effects.dart';
-import '../../widgets/cyber/cyber_segmented_tabs.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
 import '../shop/shop_screen.dart' show CoinIcon;
+import 'streak_calendar_screen.dart';
 import 'widgets/match_prediction_card.dart';
 
 /// A compact sports prediction hub with StatOz styling.
@@ -47,32 +49,9 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
           SafeArea(
             child: Column(
               children: [
-                const _PredictionHeader(),
-                CyberSegmentedTabs(
+                _PredictionTopBar(
                   activeIndex: _tab,
                   onTap: (i) => setState(() => _tab = i),
-                  tabs: [
-                    CyberTab(
-                      label: 'MATCHES',
-                      icon: (c, s) => SizedBox(
-                        width: s,
-                        height: s,
-                        child: CustomPaint(painter: _CrossedSwordsPainter(c)),
-                      ),
-                    ),
-                    CyberTab(
-                      label: 'PICK',
-                      icon: (c, s) => Icon(
-                        Icons.keyboard_double_arrow_up,
-                        color: c,
-                        size: s,
-                      ),
-                    ),
-                    CyberTab(
-                      label: 'GAMES',
-                      icon: (c, s) => Icon(Icons.gamepad, color: c, size: s),
-                    ),
-                  ],
                 ),
                 Expanded(
                   child: AnimatedSwitcher(
@@ -122,71 +101,280 @@ class _PredictionBackground extends StatelessWidget {
   }
 }
 
-class _PredictionHeader extends StatelessWidget {
-  const _PredictionHeader();
+class _PredictionTopBar extends StatelessWidget {
+  const _PredictionTopBar({required this.activeIndex, required this.onTap});
+
+  final int activeIndex;
+  final ValueChanged<int> onTap;
 
   @override
   Widget build(BuildContext context) {
-    final coins = context.select<GameBloc, int>((b) => b.state.coins);
-    return Container(
-      height: 44,
-      padding: const EdgeInsets.fromLTRB(16, 6, 14, 4),
-      decoration: BoxDecoration(
-        color: const Color(0xff18233b).withValues(alpha: 0.72),
-        border: Border(
-          bottom: BorderSide(color: Cyber.line.withValues(alpha: 0.18)),
-        ),
+    final wallet = context.select<GameBloc, ({int coins, int streak})>(
+      (b) => (
+        coins: b.state.coins,
+        streak: _currentWinStreak(b.state.matchHistory),
       ),
-      child: Row(
+    );
+    return SizedBox(
+      height: _TopBarMetrics.totalHeight,
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          const Spacer(),
-          const _HeaderToken(
-            icon: Icons.change_history,
-            color: Color(0xff5cdfff),
-            value: '0',
+          const Positioned(
+            left: 0,
+            top: 0,
+            right: 0,
+            height: _TopBarMetrics.headerHeight,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: _TopBarMetrics.fill,
+                boxShadow: [
+                  BoxShadow(color: Color(0x33000000), offset: Offset(0, 4)),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(width: 10),
-          const _HeaderToken(
-            icon: Icons.diamond_outlined,
-            color: Colors.white,
-            value: '0',
+          const Positioned(
+            left: 0,
+            top: _TopBarMetrics.headerHeight,
+            right: 0,
+            height: _TopBarMetrics.navHeight,
+            child: DecoratedBox(
+              decoration: BoxDecoration(color: _TopBarMetrics.fill),
+            ),
           ),
-          const SizedBox(width: 10),
-          _HeaderCoin(value: _formatInt(coins == 0 ? 100 : coins)),
+          Positioned(
+            left: 0,
+            top: _TopBarMetrics.headerHeight,
+            right: 0,
+            height: 1,
+            child: ColoredBox(color: Colors.black.withValues(alpha: 0.16)),
+          ),
+          Positioned(
+            top: 33,
+            right: 14,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _HeaderStreak(
+                  value: _formatInt(wallet.streak),
+                  onTap: () {
+                    playSound(SoundEffect.uiTap);
+                    showStreakCalendar(context);
+                  },
+                ),
+                const SizedBox(width: 24),
+                _HeaderCoin(
+                  value: _formatInt(wallet.coins == 0 ? 1000 : wallet.coins),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            left: 0,
+            top: _TopBarMetrics.headerHeight,
+            right: 0,
+            height: _TopBarMetrics.activeTabHeight,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final tabWidth =
+                    constraints.maxWidth / _TopBarTabData.tabs.length;
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    AnimatedPositioned(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOutCubic,
+                      left: tabWidth * activeIndex,
+                      top: 0,
+                      width: tabWidth,
+                      height: _TopBarMetrics.activeTabHeight,
+                      child: const CustomPaint(
+                        painter: _TopBarActiveTabPainter(),
+                      ),
+                    ),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (var i = 0; i < _TopBarTabData.tabs.length; i++)
+                          Expanded(
+                            child: _TopBarTab(
+                              data: _TopBarTabData.tabs[i],
+                              active: i == activeIndex,
+                              onTap: () {
+                                playSound(SoundEffect.uiTap);
+                                onTap(i);
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _HeaderToken extends StatelessWidget {
-  const _HeaderToken({
-    required this.icon,
-    required this.color,
-    required this.value,
+class _TopBarTabData {
+  const _TopBarTabData({required this.label, required this.asset});
+
+  final String label;
+  final String asset;
+
+  static const tabs = [
+    _TopBarTabData(label: 'MATCHES', asset: 'assets/icons/match.svg'),
+    _TopBarTabData(label: 'PICK', asset: 'assets/icons/pick.svg'),
+    _TopBarTabData(label: 'GAMES', asset: 'assets/icons/game.svg'),
+  ];
+}
+
+class _TopBarTab extends StatelessWidget {
+  const _TopBarTab({
+    required this.data,
+    required this.active,
+    required this.onTap,
   });
 
-  final IconData icon;
-  final Color color;
-  final String value;
+  final _TopBarTabData data;
+  final bool active;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: color, size: 15),
-        const SizedBox(width: 3),
-        Text(
-          value,
-          style: Cyber.label(
-            12,
-            color: Colors.white,
-            letterSpacing: 1.1,
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
+    final color = active ? _TopBarMetrics.activeInk : _TopBarMetrics.mutedInk;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: SizedBox(
+        height: active
+            ? _TopBarMetrics.activeTabHeight
+            : _TopBarMetrics.navHeight,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SvgPicture.asset(
+              data.asset,
+              width: active ? 20 : 20,
+              height: active ? 20 : 20,
+              fit: BoxFit.contain,
+              colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              data.label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: color,
+                fontFamily: Cyber.displayFont,
+                fontSize: active ? 12 : 10,
+                fontWeight: active ? FontWeight.w900 : FontWeight.w600,
+                height: active ? 1.25 : 1.5,
+                letterSpacing: 0,
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
+    );
+  }
+}
+
+class _TopBarActiveTabPainter extends CustomPainter {
+  const _TopBarActiveTabPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const sideInset = 0.0;
+    const chamfer = 18.0;
+    const shadowDrop = 5.0;
+    final path = Path()
+      ..moveTo(sideInset, 0)
+      ..lineTo(size.width - sideInset, 0)
+      ..lineTo(size.width - sideInset, size.height - chamfer - shadowDrop)
+      ..lineTo(size.width - chamfer, size.height - shadowDrop)
+      ..lineTo(chamfer, size.height - shadowDrop)
+      ..lineTo(sideInset, size.height - chamfer - shadowDrop)
+      ..close();
+
+    canvas.drawPath(
+      path.shift(const Offset(0, shadowDrop)),
+      Paint()..color = const Color(0xff2da9cf),
+    );
+    canvas.drawPath(path, Paint()..color = _TopBarMetrics.activeFill);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..color = const Color(0xff35b8df),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _TopBarActiveTabPainter oldDelegate) => false;
+}
+
+abstract final class _TopBarMetrics {
+  static const totalHeight = 153.0;
+  static const headerHeight = 73.0;
+  static const navHeight = 65.0;
+  static const activeTabHeight = 80.0;
+  static const fill = Color(0xff1a253a);
+  static const activeFill = Color(0xff6bd1ed);
+  static const activeInk = Color(0xff1a253a);
+  static const mutedInk = Color(0xff90a1b8);
+}
+
+int _currentWinStreak(List<MatchHistoryEntry> history) {
+  var streak = 0;
+  for (final match in history) {
+    if (match.resultLabel == 'Victory') {
+      streak++;
+      continue;
+    }
+    break;
+  }
+  return streak;
+}
+
+class _HeaderStreak extends StatelessWidget {
+  const _HeaderStreak({required this.value, required this.onTap});
+
+  final String value;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const StreakIcon(size: 24),
+            const SizedBox(width: 8),
+            Text(
+              value,
+              style: TextStyle(
+                color: Colors.white,
+                fontFamily: Cyber.displayFont,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                height: 1.2,
+                letterSpacing: 0,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -201,14 +389,17 @@ class _HeaderCoin extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        CoinIcon(size: 17),
-        const SizedBox(width: 4),
+        CoinIcon(size: 24),
+        const SizedBox(width: 8),
         Text(
           value,
-          style: Cyber.label(
-            13,
+          style: TextStyle(
             color: Colors.white,
-            letterSpacing: 1.2,
+            fontFamily: Cyber.displayFont,
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            height: 1.2,
+            letterSpacing: 0,
             fontFeatures: const [FontFeature.tabularFigures()],
           ),
         ),
@@ -217,53 +408,24 @@ class _HeaderCoin extends StatelessWidget {
   }
 }
 
-/// Line-art crossed swords for the MATCHES tab (no stock Material equivalent).
-class _CrossedSwordsPainter extends CustomPainter {
-  const _CrossedSwordsPainter(this.color);
+class StreakIcon extends StatelessWidget {
+  const StreakIcon({this.size = 24, super.key});
 
-  final Color color;
+  final double size;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final blade = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.8
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    final guard = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6
-      ..strokeCap = StrokeCap.round;
-    // Two blades crossing — hilts at the bottom, tips fanned out to the top.
-    canvas.drawLine(
-      Offset(w * 0.22, h * 0.84),
-      Offset(w * 0.82, h * 0.18),
-      blade,
-    );
-    canvas.drawLine(
-      Offset(w * 0.78, h * 0.84),
-      Offset(w * 0.18, h * 0.18),
-      blade,
-    );
-    // A short crossguard near each hilt.
-    canvas.drawLine(
-      Offset(w * 0.12, h * 0.66),
-      Offset(w * 0.34, h * 0.84),
-      guard,
-    );
-    canvas.drawLine(
-      Offset(w * 0.66, h * 0.84),
-      Offset(w * 0.88, h * 0.66),
-      guard,
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: SvgPicture.asset(
+        'assets/icons/streak.svg',
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
+      ),
     );
   }
-
-  @override
-  bool shouldRepaint(covariant _CrossedSwordsPainter old) => old.color != color;
 }
 
 class _MatchesTab extends StatelessWidget {
@@ -1215,7 +1377,7 @@ class _PricePill extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: const Color(0xff334fd5),
-        border: Border.all(color: Cyber.cyan.withValues(alpha: 0.26)),
+        border: Border.all(color: Cyber.border),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -1272,7 +1434,7 @@ class _PickConfirmSheetState extends State<_PickConfirmSheet> {
               end: Alignment.bottomRight,
               colors: [Color(0xff152139), Color(0xff0b101c)],
             ),
-            border: Border.all(color: Cyber.cyan.withValues(alpha: 0.55)),
+            border: Border.all(color: Cyber.border),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1455,7 +1617,7 @@ class _AmountSelector extends StatelessWidget {
       height: 48,
       decoration: BoxDecoration(
         color: Cyber.bg.withValues(alpha: 0.62),
-        border: Border.all(color: Cyber.cyan.withValues(alpha: 0.32)),
+        border: Border.all(color: Cyber.border),
       ),
       child: Row(
         children: [
@@ -1736,7 +1898,9 @@ class _CompactBody extends StatelessWidget {
                   style: Cyber.display(
                     17,
                     letterSpacing: 1,
-                    color: locked ? Colors.white.withValues(alpha: 0.45) : Colors.white,
+                    color: locked
+                        ? Colors.white.withValues(alpha: 0.45)
+                        : Colors.white,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -1744,7 +1908,9 @@ class _CompactBody extends StatelessWidget {
                   subtitle,
                   style: Cyber.label(
                     9,
-                    color: locked ? Cyber.muted : accent.withValues(alpha: 0.65),
+                    color: locked
+                        ? Cyber.muted
+                        : accent.withValues(alpha: 0.65),
                     letterSpacing: 1.4,
                   ),
                 ),
@@ -1832,7 +1998,7 @@ class _FeaturedBody extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 14),
-              _GameFreeButton(accent: accent, onTap: onTap),
+              _GameFreeButton(onTap: onTap),
             ],
           ),
         ),
@@ -1870,11 +2036,12 @@ class _GameIconBox extends StatelessWidget {
 }
 
 class _GameFreeButton extends StatelessWidget {
-  const _GameFreeButton({required this.accent, required this.onTap});
+  const _GameFreeButton({required this.onTap});
 
-  final Color accent;
   final VoidCallback? onTap;
 
+  static const _fillColor = Color(0xFF0F3E4F);
+  static const _borderColor = Color(0xFF087B95);
   static const _bigCut = 10.0;
   static const _smallCut = 3.0;
 
@@ -1887,8 +2054,8 @@ class _GameFreeButton extends StatelessWidget {
         painter: _HudChamferCardPainter(
           bigCut: _bigCut,
           smallCut: _smallCut,
-          fillColor: Cyber.panel2,
-          borderColor: accent.withValues(alpha: 0.75),
+          fillColor: _fillColor,
+          borderColor: _borderColor,
         ),
         child: ClipPath(
           clipper: const HudChamferClipper(
@@ -1903,10 +2070,7 @@ class _GameFreeButton extends StatelessWidget {
               children: [
                 CoinIcon(size: 18),
                 const SizedBox(width: 8),
-                Text(
-                  'Free',
-                  style: Cyber.display(16, letterSpacing: 0.8),
-                ),
+                Text('Free', style: Cyber.display(16, letterSpacing: 0.8)),
               ],
             ),
           ),

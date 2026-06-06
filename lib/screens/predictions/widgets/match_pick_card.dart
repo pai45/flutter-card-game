@@ -396,7 +396,7 @@ class _PickConfirmSheetState extends State<_PickConfirmSheet> {
               end: Alignment.bottomRight,
               colors: [Color(0xff152139), Color(0xff0b101c)],
             ),
-            border: Border.all(color: Cyber.cyan.withValues(alpha: 0.55)),
+            border: Border.all(color: Cyber.border),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -607,7 +607,7 @@ class _StepButton extends StatelessWidget {
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: const Color(0xff16223a),
-          border: Border.all(color: Cyber.cyan.withValues(alpha: 0.3)),
+          border: Border.all(color: Cyber.border),
         ),
         child: Icon(icon, color: Cyber.cyan, size: 18),
       ),

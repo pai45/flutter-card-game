@@ -16,6 +16,20 @@ import '../../utils/label_helpers.dart';
 import 'game_event.dart';
 import 'game_state.dart';
 
+/// Probability that an attack with the given power advantage [diff]
+/// (attackPower - defensePower) results in a goal.
+///
+/// This is the single source of truth for the honest odds shown on the Shot
+/// Meter overlay. It MUST mirror the goal branches of [GameBloc._resolveRound];
+/// keep the two in lockstep if the resolution table ever changes.
+double goalChanceForDiff(double diff) {
+  if (diff > 15) return 0.75;
+  if (diff > 5) return 0.60;
+  if (diff > -5) return 0.45;
+  if (diff > -15) return 0.10;
+  return 0.05;
+}
+
 class GameBloc extends Bloc<GameEvent, GameState> {
   GameBloc(this._storage) : super(GameState.initial()) {
     on<GameLoaded>(_onLoaded);
@@ -173,6 +187,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
             ...ownedPlayerIds,
             ...slot.attackers,
             ...slot.defenders,
+            if (slot.keeper != null) slot.keeper!,
           });
           ownedActionIds = _validActionIds({
             ...ownedActionIds,
@@ -625,16 +640,23 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final defenderCard = state.playerAttacking ? oppPlayer : playerCard;
     final attackAction = state.playerAttacking ? actionCard : oppAction;
     final defenseAction = state.playerAttacking ? oppAction : actionCard;
+    // The player's swing comes from the Shot Meter when provided; the opponent
+    // always rolls randomly. A null surge (reduced-motion bypass) falls back to
+    // a random roll, leaving the original behaviour unchanged.
+    final playerSwing = event.playerSurge ?? _random.nextDouble() * 20;
+    final oppSwing = _random.nextDouble() * 20;
+    final attackSwing = state.playerAttacking ? playerSwing : oppSwing;
+    final defenseSwing = state.playerAttacking ? oppSwing : playerSwing;
     final attackPower =
         attackerCard.rating +
         attackAction.power +
         scenario.attackBonus +
-        _random.nextDouble() * 20;
+        attackSwing;
     final defensePower =
         defenderCard.rating +
         defenseAction.power +
         scenario.defenseBonus +
-        _random.nextDouble() * 20;
+        defenseSwing;
     final outcome = _resolveRound(
       attackPower,
       defensePower,

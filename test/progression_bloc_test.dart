@@ -27,13 +27,14 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  test('first launch grants and equips the starter pack', () async {
+  test('first launch prepares a playable fallback deck', () async {
     final bloc = GameBloc(SecureGameStorage());
     addTearDown(bloc.close);
 
     final state = await _load(bloc);
 
-    expect(state.starterPackClaimed, isTrue);
+    expect(state.starterPackClaimed, isFalse);
+    expect(state.pendingPackReveal, isNull);
     expect(state.deckReady, isTrue);
     expect(state.deckAttackers, hasLength(2));
     expect(state.deckDefenders, hasLength(2));
@@ -49,7 +50,6 @@ void main() {
       state.ownedActionCardIds,
       containsAll(state.deckActions.map((card) => card.id)),
     );
-    expect(state.progression.totalXP, state.pendingPackReveal?.xpGained);
   });
 
   test('daily drop cooldown is persisted after claiming', () async {

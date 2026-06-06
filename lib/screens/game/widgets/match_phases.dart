@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../blocs/game/game_bloc.dart';
@@ -14,6 +15,7 @@ import '../../../models/cards.dart';
 import '../../../models/match.dart';
 import '../../../utils/label_helpers.dart';
 import '../../../utils/sound_effects.dart';
+import '../../../widgets/cyber/cyber_cta_button.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../../widgets/match_widgets.dart';
 
@@ -2039,12 +2041,20 @@ class PlayPhase extends StatelessWidget {
     final scenarioBonus = state.playerAttacking
         ? state.currentScenario?.attackBonus ?? 0
         : state.currentScenario?.defenseBonus ?? 0;
-    final estimate =
-        state.selectedPlayerCard == null || state.selectedActionCard == null
+    final selectedAction = state.selectedActionCard;
+    final isRisky = selectedAction?.risky ?? false;
+    // Power floor (swing 0) — the Shot Meter lands the player anywhere up to
+    // floor + 20. The preview shows this as an honest range, not a fake total.
+    final basePower = !hasCompleteSelection
         ? null
-        : state.selectedPlayerCard!.rating +
-              state.selectedActionCard!.power +
-              scenarioBonus;
+        : state.selectedPlayerCard!.rating + selectedAction!.power + scenarioBonus;
+    // Honest success odds (goal when attacking, stop when defending), computed
+    // from the same thresholds the engine resolves with.
+    final successChance = basePower == null
+        ? null
+        : _playerSuccessChance(state, basePower.toDouble());
+    final chanceLabel = state.playerAttacking ? 'GOAL CHANCE' : 'STOP CHANCE';
+    final chancePct = successChance == null ? null : (successChance * 100).round();
     return MatchPhaseScaffold(
       title: 'Round ${max(1, state.currentRound)}',
       subtitle: state.currentScenario?.title ?? '// Play Protocol',
@@ -2054,11 +2064,27 @@ class PlayPhase extends StatelessWidget {
       tutorialSteps: playTutorialSteps,
       bottomAction: hasCompleteSelection
           ? BottomLockButton(
-              enabled: true,
               label: lockLabel,
-              helper: 'Power preview ${estimate ?? '--'} ready',
+              helper: '$chancePct% ${state.playerAttacking ? 'GOAL' : 'STOP'} · TAP TO STRIKE',
               accent: roleAccent,
-              onPressed: () => context.read<GameBloc>().add(MovePlayed()),
+              onPressed: () async {
+                final bloc = context.read<GameBloc>();
+                // Reduced motion: skip the timed meter, fall back to the engine's
+                // random swing.
+                if (MediaQuery.of(context).disableAnimations) {
+                  bloc.add(MovePlayed());
+                  return;
+                }
+                final surge = await showShotMeter(
+                  context,
+                  base: basePower!.toDouble(),
+                  accent: roleAccent,
+                  chanceLabel: chanceLabel,
+                  successChance: successChance!,
+                  isRisky: isRisky,
+                );
+                if (surge != null) bloc.add(MovePlayed(playerSurge: surge));
+              },
             )
           : null,
       children: [
@@ -2068,6 +2094,7 @@ class PlayPhase extends StatelessWidget {
             attacking: state.playerAttacking,
             bonus: scenarioBonus,
             accent: roleAccent,
+            isRisky: isRisky,
           ),
         ),
         _SlideUpFadeIn(
@@ -2076,7 +2103,8 @@ class PlayPhase extends StatelessWidget {
             player: state.selectedPlayerCard,
             action: state.selectedActionCard,
             bonus: scenarioBonus,
-            total: estimate,
+            total: basePower,
+            maxPower: basePower == null ? null : basePower + 20,
             attacking: state.playerAttacking,
             accent: roleAccent,
           ),
@@ -2110,6 +2138,7 @@ class ScenarioPanel extends StatelessWidget {
     required this.attacking,
     required this.bonus,
     required this.accent,
+    this.isRisky = false,
     super.key,
   });
 
@@ -2117,6 +2146,7 @@ class ScenarioPanel extends StatelessWidget {
   final bool attacking;
   final int bonus;
   final Color accent;
+  final bool isRisky;
 
   @override
   Widget build(BuildContext context) {
@@ -2147,10 +2177,12 @@ class ScenarioPanel extends StatelessWidget {
                 value: '+$bonus',
                 accent: accent,
               ),
-              const _InfoChip(
+              // Truthful now: reflects the selected action's risk instead of a
+              // hardcoded value. Risky actions carry a 12% foul/red-card chance.
+              _InfoChip(
                 label: 'RISK',
-                value: 'LOW',
-                accent: Cyber.magenta,
+                value: isRisky ? 'HIGH' : 'LOW',
+                accent: isRisky ? Cyber.danger : Cyber.muted,
               ),
             ],
           ),
@@ -2197,6 +2229,7 @@ class PowerPreviewBar extends StatelessWidget {
     required this.action,
     required this.bonus,
     required this.total,
+    required this.maxPower,
     required this.attacking,
     required this.accent,
     super.key,
@@ -2206,6 +2239,7 @@ class PowerPreviewBar extends StatelessWidget {
   final ActionCard? action;
   final int bonus;
   final int? total;
+  final int? maxPower;
   final bool attacking;
   final Color accent;
 
@@ -2253,7 +2287,11 @@ class PowerPreviewBar extends StatelessWidget {
                 const SizedBox(width: 8),
                 _PowerText('+$bonus', color: Cyber.success),
                 _PowerSymbol('=', color: accent),
-                _PowerText(total == null ? '--' : '$total', color: Cyber.gold),
+                // Honest range (floor..floor+20) rather than a fake exact total.
+                _PowerText(
+                  total == null ? '--' : '$total–$maxPower',
+                  color: Cyber.gold,
+                ),
               ],
             ),
           ),
@@ -2436,9 +2474,11 @@ class ActionCardRail extends StatelessWidget {
   }
 }
 
+/// Primary "lock in your move" CTA. Reuses the Play Match button treatment
+/// (angular HUD silhouette, pulsing glow, haptic) so committing a move feels as
+/// premium as starting a match. Opening the Shot Meter is the actual action.
 class BottomLockButton extends StatelessWidget {
   const BottomLockButton({
-    required this.enabled,
     required this.label,
     required this.helper,
     required this.accent,
@@ -2446,47 +2486,401 @@ class BottomLockButton extends StatelessWidget {
     super.key,
   });
 
-  final bool enabled;
   final String label;
   final String helper;
   final Color accent;
-  final VoidCallback? onPressed;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return HudCtaButton(
+      label: label,
+      helper: helper,
+      icon: Icons.sports_soccer,
+      accent: accent,
+      tapSound: SoundEffect.uiTap,
+      height: 70,
       onTap: onPressed,
-      child: AngularBorderContainer(
-        accent: enabled ? accent : Cyber.muted,
-        fillOpacity: 1,
-        solidFill: true,
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: Cyber.display(
-                25,
-                color: enabled ? accent : Cyber.muted,
-                letterSpacing: 1.2,
+    );
+  }
+}
+
+/// The player's honest success probability for the current selection: goal
+/// chance when attacking, save/stop chance when defending. Uses the same
+/// thresholds the engine resolves with ([goalChanceForDiff]).
+double _playerSuccessChance(GameState state, double basePower) {
+  const meanSwing = 10.0; // expected value of the hidden 0..20 swing
+  final playerExpected = basePower + meanSwing;
+  final oppExpected = _opponentPowerEstimate(state) + meanSwing;
+  if (state.playerAttacking) {
+    return goalChanceForDiff(playerExpected - oppExpected);
+  }
+  return 1 - goalChanceForDiff(oppExpected - playerExpected);
+}
+
+/// A scouting estimate of the opponent's power this round — the averages of
+/// their relevant player and action pools plus the scenario bonus. No specific
+/// opponent card is revealed.
+double _opponentPowerEstimate(GameState state) {
+  final scenario = state.currentScenario;
+  final players = state.playerAttacking
+      ? state.opponentDefenders
+      : state.opponentAttackers;
+  final live = players
+      .where((c) => !state.opponentRedCarded.contains(c.id))
+      .toList();
+  final ratingPool = live.isEmpty ? players : live;
+  final relevantCategory = state.playerAttacking
+      ? ActionCategory.defense
+      : ActionCategory.attack;
+  final relevant = state.opponentActions
+      .where(
+        (a) =>
+            a.category == relevantCategory ||
+            a.category == ActionCategory.special,
+      )
+      .toList();
+  final actionPool = relevant.isEmpty ? state.opponentActions : relevant;
+  final avgRating = ratingPool.isEmpty
+      ? 75.0
+      : ratingPool.map((c) => c.rating).reduce((a, b) => a + b) /
+            ratingPool.length;
+  final avgPower = actionPool.isEmpty
+      ? 10.0
+      : actionPool.map((a) => a.power).reduce((a, b) => a + b) /
+            actionPool.length;
+  final bonus = state.playerAttacking
+      ? scenario?.defenseBonus ?? 0
+      : scenario?.attackBonus ?? 0;
+  return avgRating + avgPower + bonus;
+}
+
+/// Opens the Shot Meter — a focused timing strike that sets the player's power
+/// swing (0..20). Returns the surge, or null if dismissed without striking.
+Future<double?> showShotMeter(
+  BuildContext context, {
+  required double base,
+  required Color accent,
+  required String chanceLabel,
+  required double successChance,
+  required bool isRisky,
+}) {
+  return showGeneralDialog<double>(
+    context: context,
+    barrierDismissible: false,
+    barrierLabel: 'Shot Meter',
+    barrierColor: Colors.black.withValues(alpha: 0.74),
+    transitionDuration: const Duration(milliseconds: 220),
+    pageBuilder: (_, _, _) => ShotMeterOverlay(
+      base: base,
+      accent: accent,
+      chanceLabel: chanceLabel,
+      successChance: successChance,
+      isRisky: isRisky,
+    ),
+    transitionBuilder: (context, anim, _, child) => FadeTransition(
+      opacity: CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
+      child: child,
+    ),
+  );
+}
+
+/// The transient strike overlay. All the new round-phase richness (odds, range,
+/// the timed strike and its feedback) lives here so the resting screen stays
+/// clean. Tapping anywhere strikes.
+class ShotMeterOverlay extends StatefulWidget {
+  const ShotMeterOverlay({
+    required this.base,
+    required this.accent,
+    required this.chanceLabel,
+    required this.successChance,
+    required this.isRisky,
+    super.key,
+  });
+
+  final double base;
+  final Color accent;
+  final String chanceLabel;
+  final double successChance; // 0..1
+  final bool isRisky;
+
+  @override
+  State<ShotMeterOverlay> createState() => _ShotMeterOverlayState();
+}
+
+class _ShotMeterOverlayState extends State<ShotMeterOverlay>
+    with SingleTickerProviderStateMixin {
+  static const double _sweetCenter = 0.72;
+  static const double _halfZone = 0.07;
+
+  late final AnimationController _sweep;
+  bool _struck = false;
+  double _frozenAt = 0;
+  String _tier = '';
+  int _surge = 0;
+  int _lastTickBucket = -1;
+
+  @override
+  void initState() {
+    super.initState();
+    _sweep =
+        AnimationController(
+          vsync: this,
+          duration: const Duration(milliseconds: 900),
+        )..addListener(_onSweep)..repeat(reverse: true);
+  }
+
+  void _onSweep() {
+    if (_struck) return;
+    // Escalating tick as the marker closes on the sweet zone.
+    final near = (1 - (_sweep.value - _sweetCenter).abs() / 0.5).clamp(0.0, 1.0);
+    if (near > 0.55) {
+      final bucket = (near * 6).floor();
+      if (bucket != _lastTickBucket) {
+        _lastTickBucket = bucket;
+        playSound(SoundEffect.countdownTick);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _sweep.dispose();
+    super.dispose();
+  }
+
+  void _strike() {
+    if (_struck) return;
+    final pos = _sweep.value;
+    _sweep.stop();
+    final d = (pos - _sweetCenter).abs();
+    final quality = (1.0 - d / 0.5).clamp(0.0, 1.0);
+    final surge = (20.0 * quality).round();
+    final String tier;
+    if (d <= 0.045) {
+      tier = 'PERFECT';
+    } else if (d <= _halfZone) {
+      tier = 'GREAT';
+    } else if (quality >= 0.45) {
+      tier = 'GOOD';
+    } else {
+      tier = pos < _sweetCenter ? 'EARLY' : 'LATE';
+    }
+    if (tier == 'PERFECT') {
+      HapticFeedback.heavyImpact();
+      playSound(SoundEffect.special);
+    } else {
+      HapticFeedback.mediumImpact();
+    }
+    setState(() {
+      _struck = true;
+      _frozenAt = pos;
+      _tier = tier;
+      _surge = surge;
+    });
+    // Hold the result briefly, then resolve into the cinematic round result.
+    Future.delayed(const Duration(milliseconds: 740), () {
+      if (mounted) Navigator.of(context).pop(surge.toDouble());
+    });
+  }
+
+  Color get _resultColor => switch (_tier) {
+    'PERFECT' || 'GREAT' => Cyber.success,
+    'GOOD' => Cyber.amber,
+    _ => Cyber.danger,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = (widget.successChance * 100).round();
+    final minP = widget.base.round();
+    final maxP = (widget.base + 20).round();
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _strike,
+      child: SafeArea(
+        child: Align(
+          alignment: const Alignment(0, 0.55),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: AngularBorderContainer(
+              accent: widget.accent,
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.chanceLabel,
+                            style: Cyber.label(
+                              10,
+                              color: widget.accent,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text('$pct%', style: Cyber.display(28)),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            'POWER',
+                            style: Cyber.label(
+                              10,
+                              color: Cyber.muted,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '$minP–$maxP',
+                            style: Cyber.display(22, color: Cyber.gold),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  SizedBox(
+                    height: 30,
+                    width: double.infinity,
+                    child: AnimatedBuilder(
+                      animation: _sweep,
+                      builder: (context, _) => CustomPaint(
+                        painter: _ShotMeterPainter(
+                          progress: _struck ? _frozenAt : _sweep.value,
+                          sweetCenter: _sweetCenter,
+                          halfZone: _halfZone,
+                        ),
+                        child: const SizedBox.expand(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (_struck)
+                    Text(
+                      _tier == 'EARLY' || _tier == 'LATE'
+                          ? '$_tier   +$_surge'
+                          : '$_tier!   +$_surge POWER',
+                      style: Cyber.display(20, color: _resultColor),
+                    )
+                  else ...[
+                    Text(
+                      '— TAP TO STRIKE —',
+                      style: Cyber.label(
+                        13,
+                        color: widget.accent,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                    if (widget.isRisky) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'RISKY ACTION · 12% FOUL',
+                        style: Cyber.label(
+                          9,
+                          color: Cyber.danger,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ],
+                  ],
+                ],
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              helper,
-              textAlign: TextAlign.center,
-              style: Cyber.body(
-                12,
-                color: enabled ? Colors.white70 : Cyber.muted,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
+}
+
+class _ShotMeterPainter extends CustomPainter {
+  _ShotMeterPainter({
+    required this.progress,
+    required this.sweetCenter,
+    required this.halfZone,
+  });
+
+  final double progress; // 0..1 marker position
+  final double sweetCenter;
+  final double halfZone;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final radius = Radius.circular(size.height / 2);
+    final rect = Offset.zero & size;
+    final rrect = RRect.fromRectAndRadius(rect, radius);
+
+    canvas.save();
+    canvas.clipRRect(rrect);
+    // Track gradient: danger → amber → success (sweet) → amber → danger.
+    final shader = const LinearGradient(
+      colors: [
+        Cyber.danger,
+        Cyber.amber,
+        Cyber.success,
+        Cyber.amber,
+        Cyber.danger,
+      ],
+      stops: [0.0, 0.45, 0.72, 0.86, 1.0],
+    ).createShader(rect);
+    canvas.drawRect(rect, Paint()..shader = shader);
+    canvas.drawRect(
+      rect,
+      Paint()..color = Colors.black.withValues(alpha: 0.28),
+    );
+    // Brighter sweet-zone band.
+    final zoneLeft = (sweetCenter - halfZone) * size.width;
+    final zoneRight = (sweetCenter + halfZone) * size.width;
+    canvas.drawRect(
+      Rect.fromLTRB(zoneLeft, 0, zoneRight, size.height),
+      Paint()..color = Cyber.success.withValues(alpha: 0.42),
+    );
+    canvas.restore();
+
+    canvas.drawRRect(
+      rrect,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.4
+        ..color = Colors.white.withValues(alpha: 0.22),
+    );
+
+    // Marker with a soft glow.
+    final x = progress.clamp(0.0, 1.0) * size.width;
+    canvas.drawLine(
+      Offset(x, -4),
+      Offset(x, size.height + 4),
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.55)
+        ..strokeWidth = 8
+        ..strokeCap = StrokeCap.round
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4),
+    );
+    canvas.drawLine(
+      Offset(x, -4),
+      Offset(x, size.height + 4),
+      Paint()
+        ..color = Colors.white
+        ..strokeWidth = 3
+        ..strokeCap = StrokeCap.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _ShotMeterPainter old) =>
+      old.progress != progress ||
+      old.sweetCenter != sweetCenter ||
+      old.halfZone != halfZone;
 }
 
 class AngularBorderContainer extends StatelessWidget {

@@ -7,6 +7,7 @@ import '../../../models/sport_match.dart';
 /// with controls hugging the centre line, dark away half mirrored on the right.
 class ScorePredictionPicker extends StatelessWidget {
   const ScorePredictionPicker({
+    super.key,
     required this.match,
     required this.homeScore,
     required this.awayScore,
@@ -184,8 +185,10 @@ class _ScoreControls extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             '$score',
-            style: Cyber.display(30, color: scoreColor)
-                .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            style: Cyber.display(
+              30,
+              color: scoreColor,
+            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
           const SizedBox(height: 4),
           _StepButton(

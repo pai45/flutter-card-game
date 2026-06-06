@@ -20,8 +20,9 @@ class Cyber {
   static const red = Color(0xffff2e63);
   static const violet = Color(0xff8a5cff);
 
-  // Borders.
-  static const line = Color(0x665cdfff);
+  // Borders — dark grey on static surfaces; accent only when active/selected.
+  static const border = Color(0xff2a303c);
+  static const line = Color(0xff343b49);
   static const borderSubtle = Color(0x0fffffff); // rgba(255,255,255,0.06)
   static const borderActive = Color(0x665cdfff); // rgba(92,223,255,0.4)
   static const muted = Color(0xff8fa3b8);

@@ -281,6 +281,7 @@ class CyberBackground extends StatefulWidget {
   const CyberBackground({
     required this.child,
     this.animated = false,
+    this.grain = false,
     super.key,
   });
 
@@ -288,6 +289,9 @@ class CyberBackground extends StatefulWidget {
 
   /// When true, the radial glow slowly drifts (used on the home screen).
   final bool animated;
+
+  /// Film-grain noise overlay — reserved for the in-match (card game) screens.
+  final bool grain;
 
   @override
   State<CyberBackground> createState() => _CyberBackgroundState();
@@ -339,7 +343,7 @@ class _CyberBackgroundState extends State<CyberBackground>
     return Stack(
       children: [
         const Positioned.fill(child: CustomPaint(painter: CyberGridPainter())),
-        const Positioned.fill(child: CyberTextureOverlay()),
+        Positioned.fill(child: CyberTextureOverlay(grain: widget.grain)),
         if (_controller == null)
           _glow(0)
         else
@@ -412,8 +416,9 @@ class CyberGridPainter extends CustomPainter {
 void _paintCyberTexture(
   Canvas canvas,
   Size size,
-  ui.Image? grain, {
+  ui.Image? grainImage, {
   bool vignette = true,
+  bool grain = true,
 }) {
   final rect = Offset.zero & size;
 
@@ -426,13 +431,13 @@ void _paintCyberTexture(
     canvas.drawLine(Offset(0, y), Offset(size.width, y), scan);
   }
 
-  // Film grain — tiled noise, additive.
-  if (grain != null) {
+  // Film grain — tiled noise, additive. Reserved for the in-match screens.
+  if (grain && grainImage != null) {
     canvas.drawRect(
       rect,
       Paint()
         ..shader = ui.ImageShader(
-          grain,
+          grainImage,
           ui.TileMode.repeated,
           ui.TileMode.repeated,
           _kIdentity4,
@@ -464,9 +469,16 @@ void _paintCyberTexture(
 /// Stack above the background and below the content:
 /// `const Positioned.fill(child: CyberTextureOverlay())`.
 class CyberTextureOverlay extends StatefulWidget {
-  const CyberTextureOverlay({this.vignette = true, super.key});
+  const CyberTextureOverlay({
+    this.vignette = true,
+    this.grain = false,
+    super.key,
+  });
 
   final bool vignette;
+
+  /// Film-grain noise is reserved for the in-match (card game) screens.
+  final bool grain;
 
   @override
   State<CyberTextureOverlay> createState() => _CyberTextureOverlayState();
@@ -478,6 +490,7 @@ class _CyberTextureOverlayState extends State<CyberTextureOverlay> {
   @override
   void initState() {
     super.initState();
+    if (!widget.grain) return;
     final cached = _cyberNoise;
     if (cached != null) {
       _noise = cached;
@@ -492,7 +505,11 @@ class _CyberTextureOverlayState extends State<CyberTextureOverlay> {
   Widget build(BuildContext context) {
     return IgnorePointer(
       child: CustomPaint(
-        painter: _CyberOverlayPainter(noise: _noise, vignette: widget.vignette),
+        painter: _CyberOverlayPainter(
+          noise: _noise,
+          vignette: widget.vignette,
+          grain: widget.grain,
+        ),
         size: Size.infinite,
       ),
     );
@@ -500,20 +517,27 @@ class _CyberTextureOverlayState extends State<CyberTextureOverlay> {
 }
 
 class _CyberOverlayPainter extends CustomPainter {
-  const _CyberOverlayPainter({required this.noise, required this.vignette});
+  const _CyberOverlayPainter({
+    required this.noise,
+    required this.vignette,
+    required this.grain,
+  });
 
   final ui.Image? noise;
   final bool vignette;
+  final bool grain;
 
   @override
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
-    _paintCyberTexture(canvas, size, noise, vignette: vignette);
+    _paintCyberTexture(canvas, size, noise, vignette: vignette, grain: grain);
   }
 
   @override
   bool shouldRepaint(covariant _CyberOverlayPainter oldDelegate) =>
-      oldDelegate.noise != noise || oldDelegate.vignette != vignette;
+      oldDelegate.noise != noise ||
+      oldDelegate.vignette != vignette ||
+      oldDelegate.grain != grain;
 }
 
 class SectionLabel extends StatelessWidget {

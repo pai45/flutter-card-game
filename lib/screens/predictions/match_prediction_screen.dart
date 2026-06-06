@@ -613,7 +613,7 @@ class _QuestionPanel extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: Cyber.cyan.withValues(alpha: 0.16),
-              border: Border.all(color: Cyber.cyan.withValues(alpha: 0.6)),
+              border: Border.all(color: Cyber.border),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
@@ -750,7 +750,7 @@ class _ScoreQuestionPanel extends StatelessWidget {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: Cyber.cyan.withValues(alpha: 0.16),
-                border: Border.all(color: Cyber.cyan.withValues(alpha: 0.6)),
+                border: Border.all(color: Cyber.border),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(

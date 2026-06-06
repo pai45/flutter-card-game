@@ -7,7 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('Pitch Duel home renders primary actions', (tester) async {
+  testWidgets('prediction home renders primary navigation', (tester) async {
     final slot = defaultDeckSlots.first;
     FlutterSecureStorage.setMockInitialValues({
       'pd_starter_pack_claimed_v1': 'true',
@@ -26,8 +26,9 @@ void main() {
     await tester.pumpWidget(const PitchDuelApp());
     await tester.pump(const Duration(seconds: 3));
 
-    expect(find.text('PITCH DUEL'), findsAtLeastNWidgets(1));
-    expect(find.text('PLAY MATCH'), findsOneWidget);
-    expect(find.text('DECK BUILDER'), findsOneWidget);
+    expect(find.text('MATCHES'), findsAtLeastNWidgets(1));
+    expect(find.text('PICK'), findsAtLeastNWidgets(1));
+    expect(find.text('TOP'), findsAtLeastNWidgets(1));
+    expect(find.text('PROFILE'), findsAtLeastNWidgets(1));
   });
 }

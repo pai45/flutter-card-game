@@ -50,10 +50,14 @@ class _HudBorderPainter extends CustomPainter {
   final double glow; // 0..1 intensity
   final double bigCut;
   final double smallCut;
+  final Color glowColor;
+  final Color borderColor;
   const _HudBorderPainter({
     required this.glow,
     required this.bigCut,
     required this.smallCut,
+    required this.glowColor,
+    required this.borderColor,
   });
 
   @override
@@ -64,7 +68,7 @@ class _HudBorderPainter extends CustomPainter {
     final glowPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.5
-      ..color = Cyber.cyan.withValues(alpha: 0.30 + 0.40 * glow)
+      ..color = glowColor.withValues(alpha: 0.30 + 0.40 * glow)
       ..maskFilter = MaskFilter.blur(BlurStyle.normal, 6 + 6 * glow);
     canvas.drawPath(path, glowPaint);
 
@@ -76,7 +80,7 @@ class _HudBorderPainter extends CustomPainter {
         end: Alignment.bottomRight,
         colors: [
           Colors.white.withValues(alpha: 0.80 + 0.15 * glow),
-          _accentBlue.withValues(alpha: 0.90),
+          borderColor.withValues(alpha: 0.90),
         ],
       ).createShader(Offset.zero & size);
     canvas.drawPath(path, borderPaint);
@@ -84,7 +88,11 @@ class _HudBorderPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _HudBorderPainter old) =>
-      old.glow != glow || old.bigCut != bigCut || old.smallCut != smallCut;
+      old.glow != glow ||
+      old.bigCut != bigCut ||
+      old.smallCut != smallCut ||
+      old.glowColor != glowColor ||
+      old.borderColor != borderColor;
 }
 
 /// Reusable gamified sci-fi HUD call-to-action button.
@@ -99,12 +107,25 @@ class HudCtaButton extends StatefulWidget {
   final VoidCallback onTap;
   final double height;
 
+  /// Primary accent for the glow, border and fill. Defaults to the Play Match
+  /// cyan; pass e.g. [Cyber.violet] to recolour the button for another role.
+  final Color accent;
+
+  /// Cue played on tap. Defaults to the Play Match whoosh.
+  final SoundEffect tapSound;
+
+  /// Optional small sub-line rendered under [label] (e.g. an odds readout).
+  final String? helper;
+
   const HudCtaButton({
     super.key,
     this.label = 'PLAY MATCH',
     this.icon = Icons.keyboard_double_arrow_right,
     required this.onTap,
     this.height = 64,
+    this.accent = Cyber.cyan,
+    this.tapSound = SoundEffect.playMatch,
+    this.helper,
   });
 
   @override
@@ -136,6 +157,15 @@ class _HudCtaButtonState extends State<HudCtaButton>
 
   @override
   Widget build(BuildContext context) {
+    final accent = widget.accent;
+    // The default cyan keeps the exact original Play Match palette; any other
+    // accent derives a lighter companion tone and a bright fill from it.
+    final bool isCyan = accent == Cyber.cyan;
+    final Color secondary =
+        isCyan ? _accentBlue : Color.lerp(accent, Colors.white, 0.30)!;
+    final Color fillTop =
+        isCyan ? _fillTop : Color.lerp(accent, Colors.white, 0.34)!;
+    final Color fillBottom = isCyan ? _fillBottom : accent;
     return Semantics(
       button: true,
       label: widget.label,
@@ -145,7 +175,7 @@ class _HudCtaButtonState extends State<HudCtaButton>
         onTapCancel: () => setState(() => _pressed = false),
         onTap: () {
           HapticFeedback.mediumImpact();
-          playSound(SoundEffect.playMatch);
+          playSound(widget.tapSound);
           widget.onTap();
         },
         child: AnimatedBuilder(
@@ -159,13 +189,13 @@ class _HudCtaButtonState extends State<HudCtaButton>
               decoration: BoxDecoration(
                 boxShadow: [
                   BoxShadow(
-                    color: Cyber.cyan.withValues(alpha: 0.18 + 0.22 * glow),
+                    color: accent.withValues(alpha: 0.18 + 0.22 * glow),
                     blurRadius: 24 + 16 * glow,
                     spreadRadius: 1,
                   ),
                   BoxShadow(
                     color:
-                        _accentBlue.withValues(alpha: 0.12 + 0.18 * glow),
+                        secondary.withValues(alpha: 0.12 + 0.18 * glow),
                     blurRadius: 40 + 22 * glow,
                     spreadRadius: 2,
                   ),
@@ -176,6 +206,8 @@ class _HudCtaButtonState extends State<HudCtaButton>
                   glow: glow,
                   bigCut: _bigCut,
                   smallCut: _smallCut,
+                  glowColor: accent,
+                  borderColor: secondary,
                 ),
                 child: ClipPath(
                   clipper: const _HudButtonClipper(
@@ -184,14 +216,14 @@ class _HudCtaButtonState extends State<HudCtaButton>
                   ),
                   child: Stack(
                     children: [
-                      // Bright blue interior with a subtle top-lit fade.
-                      const Positioned.fill(
+                      // Bright interior with a subtle top-lit fade.
+                      Positioned.fill(
                         child: DecoratedBox(
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
-                              colors: [_fillTop, _fillBottom],
+                              colors: [fillTop, fillBottom],
                             ),
                           ),
                         ),
@@ -243,23 +275,41 @@ class _HudCtaButtonState extends State<HudCtaButton>
                             ),
                             Expanded(
                               child: Center(
-                                child: Text(
-                                  widget.label,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: _ink,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 3,
-                                    shadows: [
-                                      Shadow(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.30,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      widget.label,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: _ink,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 3,
+                                        shadows: [
+                                          Shadow(
+                                            color: Colors.white.withValues(
+                                              alpha: 0.30,
+                                            ),
+                                            blurRadius: 4,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (widget.helper != null) ...[
+                                      const SizedBox(height: 3),
+                                      Text(
+                                        widget.helper!,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: _ink.withValues(alpha: 0.72),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.8,
                                         ),
-                                        blurRadius: 4,
                                       ),
                                     ],
-                                  ),
+                                  ],
                                 ),
                               ),
                             ),

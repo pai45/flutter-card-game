@@ -38,6 +38,7 @@ dependencies:
 
   cupertino_icons: ^1.0.8
   audioplayers: ^6.7.0
+  lottie: ^3.3.3
 
 dev_dependencies:
   flutter_test:
@@ -95,6 +96,7 @@ flutter:
   assets:
     - assets/backgrounds/
     - assets/icons/
+    - assets/animations/
     - assets/player_images/
     - assets/audio/
     - assets/packs/

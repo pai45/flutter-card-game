@@ -128,7 +128,14 @@ class ActionSelected extends GameEvent {
   final ActionCard card;
 }
 
-class MovePlayed extends GameEvent {}
+class MovePlayed extends GameEvent {
+  MovePlayed({this.playerSurge});
+
+  /// The player's power swing (0..20) from the Shot Meter, replacing the hidden
+  /// random roll on the player's side. Null falls back to a random swing
+  /// (e.g. the reduced-motion bypass).
+  final double? playerSurge;
+}
 
 class RoundAdvanced extends GameEvent {}
 

@@ -119,6 +119,7 @@ class MatchPhaseScaffold extends StatelessWidget {
       subtitle: null,
       showShop: false,
       compactHeader: true,
+      grain: true,
       titleUnderlay:
           scoreLabel == null &&
               state.currentRound >= 1 &&

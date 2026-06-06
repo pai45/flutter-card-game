@@ -18,10 +18,46 @@ class PredictionCubit extends Cubit<PredictionState> {
   final PredictionRepository _repository;
   final SecureGameStorage _storage;
 
-  /// Fixture shown in the "already predicted" state on the home mockup. Seeded
-  /// for display only (not persisted) so the card reads "Predicted … ago" on a
-  /// fresh install; a real user submission overrides it.
-  static const _demoPredictedMatchId = 'ipl_pjk_kkr';
+  /// Demo predictions seeded so the prediction history screen can show every
+  /// lifecycle bucket (pending · live · settled) on a fresh install.
+  static void applyHistoryDemos(Map<String, UserPrediction> predictions) {
+    final now = DateTime.now();
+    predictions['ipl_pjk_kkr'] = UserPrediction(
+      matchId: 'ipl_pjk_kkr',
+      answers: const {},
+      submittedAt: now.subtract(const Duration(hours: 2)),
+      status: PredictionStatus.open,
+    );
+    predictions['epl_liv_mc'] = UserPrediction(
+      matchId: 'epl_liv_mc',
+      answers: const {'q1': 100, 'q2': 0, 'q3': 0, 'q4': 0, 'q5': 0},
+      submittedAt: DateTime(now.year, now.month, now.day - 1, 23, 34),
+      status: PredictionStatus.open,
+    );
+    predictions['epl_cfc_new'] = UserPrediction(
+      matchId: 'epl_cfc_new',
+      answers: const {'q1': 201, 'q2': 0},
+      submittedAt: now.subtract(const Duration(minutes: 45)),
+      status: PredictionStatus.locked,
+    );
+    // settledHome 2-1 → encoded 201; user picked 201 on q1 (✓), mixed on rest.
+    predictions['epl_mu_whu'] = UserPrediction(
+      matchId: 'epl_mu_whu',
+      answers: const {'q1': 201, 'q2': 0, 'q3': 0, 'q4': 2, 'q5': 1},
+      submittedAt: now.subtract(const Duration(days: 3, hours: 2)),
+      status: PredictionStatus.settled,
+      correctCount: 3,
+      rewardEarned: 20,
+    );
+    predictions['ipl_pjk_rcb'] = UserPrediction(
+      matchId: 'ipl_pjk_rcb',
+      answers: const {'q1': 0, 'q2': 0, 'q3': 1, 'q4': 0, 'q5': 0},
+      submittedAt: DateTime(now.year, 1, 24, 23, 34),
+      status: PredictionStatus.settled,
+      correctCount: 3,
+      rewardEarned: 20,
+    );
+  }
 
   Future<void> load() async {
     final leagues = await _repository.leagues();
@@ -32,14 +68,7 @@ class PredictionCubit extends Cubit<PredictionState> {
     };
     final stored = await _storage.loadPredictions();
     final predictions = {for (final p in stored) p.matchId: p};
-    predictions.putIfAbsent(
-      _demoPredictedMatchId,
-      () => UserPrediction(
-        matchId: _demoPredictedMatchId,
-        answers: const {},
-        submittedAt: DateTime.now().subtract(const Duration(hours: 2)),
-      ),
-    );
+    applyHistoryDemos(predictions);
     emit(
       state.copyWith(
         loading: false,

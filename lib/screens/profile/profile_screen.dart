@@ -15,6 +15,7 @@ import '../deck/all_cards_screen.dart';
 import '../deck/deck_builder_screen.dart';
 import '../how_to_play/how_to_play_screen.dart';
 import '../match_history/match_history_pages.dart';
+import '../predictions/prediction_match_history_screen.dart';
 
 /// PROFILE tab — player identity over two record cards: MY MATCHES (the
 /// prediction quiz) and MY PICKS (the Pitch Duel card game), followed by the
@@ -77,7 +78,7 @@ class ProfileScreen extends StatelessWidget {
                             _Stat('PREDICTIONS', '$totalPicks'),
                           ],
                           onViewHistory: () =>
-                              onNavigate(AppSection.predictions),
+                              showPredictionMatchHistory(context),
                         ),
                         const SizedBox(height: 14),
                         _StatSection(
@@ -441,7 +442,7 @@ class _IdentityHeader extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: Cyber.panelGradient(Cyber.cyan),
-          border: Border.all(color: Cyber.cyan.withValues(alpha: 0.5)),
+          border: Border.all(color: Cyber.border),
           boxShadow: Cyber.glow(Cyber.cyan, alpha: 0.16, blur: 20, spread: 1),
         ),
         child: Column(
@@ -546,7 +547,7 @@ class _Crest extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: Cyber.bg.withValues(alpha: 0.5),
-        border: Border.all(color: Cyber.cyan.withValues(alpha: 0.55)),
+        border: Border.all(color: Cyber.border),
         boxShadow: Cyber.glow(Cyber.cyan, alpha: 0.3, blur: 18, spread: -4),
       ),
       child: const Icon(Icons.shield_moon, color: Cyber.cyan, size: 32),
@@ -567,7 +568,7 @@ class _Avatar extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [Cyber.cyan, Cyber.violet],
         ),
-        border: Border.all(color: Cyber.borderActive, width: 2),
+        border: Border.all(color: Cyber.border, width: 2),
       ),
       child: const Icon(Icons.person, color: Colors.white, size: 40),
     );
@@ -604,7 +605,7 @@ class _StatSection extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: Cyber.panelGradient(accent),
-          border: Border.all(color: accent.withValues(alpha: 0.35)),
+          border: Border.all(color: Cyber.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -674,7 +675,7 @@ class _StatTile extends StatelessWidget {
             Cyber.bg.withValues(alpha: 0.4),
           ],
         ),
-        border: Border.all(color: accent.withValues(alpha: 0.3)),
+        border: Border.all(color: Cyber.border),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -747,7 +748,7 @@ class _ViewHistoryRow extends StatelessWidget {
 class _NavRow extends StatelessWidget {
   const _NavRow({required this.icon, required this.label, required this.onTap});
 
-  static const _borderColor = Color(0xff2a303c);
+  static const _borderColor = Cyber.border;
 
   final IconData icon;
   final String label;

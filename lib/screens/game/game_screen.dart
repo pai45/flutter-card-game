@@ -158,6 +158,7 @@ class _MatchScreenState extends State<MatchScreen> {
                 MatchPhase.idle => GameScaffold(
                   title: 'Match',
                   subtitle: '// Match Terminal',
+                  grain: true,
                   leading: IconButton(
                     onPressed: () => _quit(context),
                     icon: const Icon(Icons.close),

@@ -134,6 +134,7 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
     return GameScaffold(
       title: 'Final Result',
       subtitle: '// Archive Complete',
+      grain: true,
       leading: IconButton(
         onPressed: () {
           context.read<GameBloc>().add(MatchReset());
