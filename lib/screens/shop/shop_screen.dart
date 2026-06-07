@@ -14,6 +14,7 @@ import '../../utils/sound_effects.dart';
 import '../../widgets/card_unpack_animation.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
+import '../../widgets/stat_oz_top_bar.dart';
 
 String _tierString(CardTier t) => t.name;
 
@@ -258,9 +259,10 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
               SafeArea(
                 child: Column(
                   children: [
-                    _ShopHeader(
-                      coins: state.coins,
-                      onCoinsTap: () => _setTab(2),
+                    StatOzTopBar(
+                      title: 'Shop',
+                      accent: _cyan,
+                      onAddCoins: () => _setTab(2),
                     ),
                     _ShopTabs(
                       activeTab: _activeTab,
@@ -315,123 +317,6 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
       3 => const PacksTab(),
       _ => const CardsTab(),
     };
-  }
-}
-
-class _ShopHeader extends StatelessWidget {
-  const _ShopHeader({required this.coins, required this.onCoinsTap});
-
-  final int coins;
-  final VoidCallback onCoinsTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [_surface.withValues(alpha: 0.55), Colors.transparent],
-        ),
-        border: Border(
-          bottom: BorderSide(color: _cyan.withValues(alpha: 0.22)),
-        ),
-      ),
-      child: Row(
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'SHOP',
-                style: TextStyle(
-                  color: _cyan,
-                  fontFamily: 'Orbitron',
-                  fontWeight: FontWeight.w900,
-                  fontSize: 24,
-                  letterSpacing: 1.8,
-                  shadows: [
-                    Shadow(color: _cyan.withValues(alpha: 0.7), blurRadius: 14),
-                  ],
-                ),
-              ),
-              Text(
-                '// MARKETPLACE PROTOCOL',
-                style: TextStyle(
-                  color: _cyan.withValues(alpha: 0.55),
-                  fontFamily: 'Orbitron',
-                  fontSize: 9,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.6,
-                ),
-              ),
-            ],
-          ),
-          const Spacer(),
-          _CurrencyPill(coins: coins, onAdd: onCoinsTap),
-        ],
-      ),
-    );
-  }
-}
-
-class _CurrencyPill extends StatelessWidget {
-  const _CurrencyPill({required this.coins, required this.onAdd});
-
-  final int coins;
-  final VoidCallback onAdd;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(10, 5, 5, 5),
-      decoration: BoxDecoration(
-        color: _bg.withValues(alpha: 0.7),
-        border: Border.all(color: _cyan.withValues(alpha: 0.5)),
-      ),
-      child: Row(
-        children: [
-          CoinIcon(size: 18),
-          const SizedBox(width: 7),
-          TweenAnimationBuilder<double>(
-            tween: Tween<double>(end: coins.toDouble()),
-            duration: const Duration(milliseconds: 600),
-            curve: Curves.easeOutCubic,
-            builder: (_, double value, _) => Text(
-              _formatInt(value.round()),
-              style: const TextStyle(
-                color: Colors.white,
-                fontFamily: 'Orbitron',
-                fontSize: 15,
-                fontWeight: FontWeight.w900,
-                fontFeatures: [FontFeature.tabularFigures()],
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          _Pressable(
-            onTap: onAdd,
-            child: Container(
-              width: 28,
-              height: 28,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: _cyan,
-                boxShadow: [
-                  BoxShadow(
-                    color: _cyan.withValues(alpha: 0.55),
-                    blurRadius: 10,
-                  ),
-                ],
-              ),
-              child: const Icon(Icons.add, color: _bg, size: 17),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 

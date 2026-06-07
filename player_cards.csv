@@ -1,0 +1,181 @@
+id,name,shortName,country,countryCode,position,role,ovr,trait,tier,icon,hasPortrait,portraitAsset
+arg-lionel-messi,Lionel Messi,LEO 10,Argentina,ARG,RW/CAM,attacker,92,Creator Finisher,platinum,bolt,yes,assets/player_images/LEO 10.webp
+arg-lautaro-martinez,Lautaro Martínez,LAUTARO,Argentina,ARG,ST,attacker,88,Box Striker,gold,sports_soccer,yes,assets/player_images/LAUTARO.webp
+arg-julian-alvarez,Julián Álvarez,ALVAREZ,Argentina,ARG,ST/SS,attacker,88,Pressing Forward,gold,sports_soccer,yes,assets/player_images/ALVAREZ.webp
+arg-rodrigo-de-paul,Rodrigo De Paul,DE PAUL,Argentina,ARG,CM,attacker,83,Engine Midfielder,silver,sync_alt,yes,assets/player_images/DE PAUL.webp
+arg-enzo-fernandez,Enzo Fernández,ENZO,Argentina,ARG,CM,attacker,84,Tempo Controller,silver,sync_alt,yes,assets/player_images/ENZO.webp
+arg-alexis-mac-allister,Alexis Mac Allister,ALEXIS,Argentina,ARG,CM,attacker,85,Chance Creator,silver,sync_alt,yes,assets/player_images/ALEXIS.webp
+bra-vinicius-junior,Vinícius Júnior,VINICIUS JR,Brazil,BRA,LW,attacker,93,Explosive Winger,platinum,bolt,yes,assets/player_images/VINICIUS JR.webp
+bra-neymar,Neymar,NEYMAR,Brazil,BRA,LW/SS,attacker,90,Flair Forward,platinum,auto_awesome,yes,assets/player_images/NEYMAR.webp
+bra-raphinha,Raphinha,RAPHINHA,Brazil,BRA,RW,attacker,89,Direct Runner,gold,directions_run,yes,assets/player_images/RAPHINHA.webp
+bra-bruno-guimaraes,Bruno Guimarães,BRUNO G.,Brazil,BRA,CM,attacker,87,Press Breaker,gold,psychology,yes,assets/player_images/BRUNO G..webp
+bra-matheus-cunha,Matheus Cunha,CUNHA,Brazil,BRA,ST/SS,attacker,84,Link-Up Forward,silver,sports_soccer,yes,assets/player_images/CUNHA.webp
+fra-kylian-mbappe,Kylian Mbappé,MBAPPE,France,FRA,ST/LW,attacker,94,Clinical Finisher,platinum,bolt,yes,assets/player_images/MBAPPE.webp
+fra-ousmane-dembele,Ousmane Dembélé,DEMBELE,France,FRA,RW,attacker,89,Explosive Winger,gold,directions_run,yes,assets/player_images/DEMBELE.webp
+fra-michael-olise,Michael Olise,OLISE,France,FRA,CAM/RW,attacker,88,Chance Creator,gold,psychology,yes,assets/player_images/OLISE.webp
+eng-harry-kane,Harry Kane,KANE,England,ENG,ST,attacker,92,Clinical Finisher,platinum,bolt,yes,assets/player_images/KANE.webp
+eng-jude-bellingham,Jude Bellingham,BELLINGHAM,England,ENG,CAM/CM,attacker,92,Box-to-Box Star,platinum,bolt,yes,assets/player_images/BELLINGHAM.webp
+eng-bukayo-saka,Bukayo Saka,SAKA,England,ENG,RW,attacker,89,Wide Creator,gold,directions_run,yes,assets/player_images/SAKA.webp
+eng-phil-foden,Phil Foden,FODEN,England,ENG,CAM/LW,attacker,88,Chance Creator,gold,psychology,yes,assets/player_images/FODEN.webp
+eng-marcus-rashford,Marcus Rashford,RASHFORD,England,ENG,LW/ST,attacker,84,Inside Forward,silver,directions_run,yes,assets/player_images/RASHFORD.webp
+eng-cole-palmer,Cole Palmer,PALMER,England,ENG,CAM/RW,attacker,85,Technical Creator,silver,psychology,yes,assets/player_images/PALMER.webp
+por-cristiano-ronaldo,Cristiano Ronaldo,RONALDO,Portugal,POR,ST,attacker,90,Iconic Finisher,platinum,bolt,yes,assets/player_images/RONALDO.webp
+por-rafael-leao,Rafael Leão,LEAO,Portugal,POR,LW,attacker,87,Explosive Winger,gold,directions_run,yes,assets/player_images/LEAO.webp
+por-bruno-fernandes,Bruno Fernandes,B. FERNANDES,Portugal,POR,CAM,attacker,88,Chance Creator,gold,psychology,yes,assets/player_images/B. FERNANDES.webp
+por-bernardo-silva,Bernardo Silva,B. SILVA,Portugal,POR,RW/CAM,attacker,88,Technical Playmaker,gold,psychology,yes,assets/player_images/B. SILVA.webp
+por-vitinha,Vitinha,VITINHA,Portugal,POR,CM,attacker,84,Tempo Controller,silver,sync_alt,yes,assets/player_images/VITINHA.webp
+esp-lamine-yamal,Lamine Yamal,YAMAL,Spain,ESP,RW,attacker,89,Explosive Winger,gold,directions_run,yes,assets/player_images/YAMAL.webp
+esp-nico-williams,Nico Williams,NICO,Spain,ESP,LW,attacker,87,Explosive Winger,gold,directions_run,yes,assets/player_images/NICO.webp
+esp-pedri-gonzalez,Pedri González,PEDRI,Spain,ESP,CM/CAM,attacker,89,Playmaker,gold,psychology,yes,assets/player_images/PEDRI.webp
+esp-mikel-oyarzabal,Mikel Oyarzabal,OYARZABAL,Spain,ESP,ST/SS,attacker,83,Support Striker,silver,sports_soccer,yes,assets/player_images/OYARZABAL.webp
+ger-jamal-musiala,Jamal Musiala,MUSIALA,Germany,GER,CAM/LW,attacker,88,Agile Playmaker,gold,psychology,yes,assets/player_images/MUSIALA.webp
+ger-florian-wirtz,Florian Wirtz,WIRTZ,Germany,GER,CAM,attacker,89,Chance Creator,gold,psychology,yes,assets/player_images/WIRTZ.webp
+ger-kai-havertz,Kai Havertz,HAVERTZ,Germany,GER,ST/CAM,attacker,84,Link-Up Forward,silver,sports_soccer,yes,assets/player_images/HAVERTZ.webp
+ger-leroy-sane,Leroy Sané,SANE,Germany,GER,RW/LW,attacker,84,Explosive Winger,silver,directions_run,yes,assets/player_images/SANE.webp
+ned-frenkie-de-jong,Frenkie de Jong,F. DE JONG,Netherlands,NED,CM,attacker,87,Tempo Controller,gold,psychology,yes,assets/player_images/F. DE JONG.webp
+ned-cody-gakpo,Cody Gakpo,GAKPO,Netherlands,NED,LW/ST,attacker,87,Inside Forward,gold,directions_run,yes,assets/player_images/GAKPO.webp
+ned-xavi-simons,Xavi Simons,SIMONS,Netherlands,NED,CAM/RW,attacker,84,Flair Playmaker,silver,psychology,yes,assets/player_images/SIMONS.webp
+ned-memphis-depay,Memphis Depay,DEPAY,Netherlands,NED,ST/SS,attacker,82,Creator Finisher,silver,sports_soccer,yes,assets/player_images/DEPAY.webp
+ned-ryan-gravenberch,Ryan Gravenberch,GRAVENBERCH,Netherlands,NED,CM,attacker,84,Press Breaker,silver,sync_alt,yes,assets/player_images/GRAVENBERCH.webp
+ned-tijjani-reijnders,Tijjani Reijnders,REIJNDERS,Netherlands,NED,CM/CAM,attacker,83,Late Runner,silver,sync_alt,yes,assets/player_images/REIJNDERS.webp
+bel-kevin-de-bruyne,Kevin De Bruyne,DE BRUYNE,Belgium,BEL,CAM/CM,attacker,91,Master Creator,platinum,bolt,yes,assets/player_images/DE BRUYNE.webp
+bel-romelu-lukaku,Romelu Lukaku,LUKAKU,Belgium,BEL,ST,attacker,86,Power Striker,gold,sports_soccer,yes,assets/player_images/LUKAKU.webp
+bel-jeremy-doku,Jérémy Doku,DOKU,Belgium,BEL,LW/RW,attacker,83,Explosive Winger,silver,directions_run,yes,assets/player_images/DOKU.webp
+bel-leandro-trossard,Leandro Trossard,TROSSARD,Belgium,BEL,LW/SS,attacker,82,Technical Forward,silver,directions_run,yes,assets/player_images/TROSSARD.webp
+bel-youri-tielemans,Youri Tielemans,TIELEMANS,Belgium,BEL,CM,attacker,82,Tempo Controller,silver,sync_alt,yes,assets/player_images/TIELEMANS.webp
+cro-luka-modric,Luka Modrić,MODRIC,Croatia,CRO,CM,attacker,90,Tempo Maestro,platinum,bolt,yes,assets/player_images/MODRIC.webp
+cro-mateo-kovacic,Mateo Kovačić,KOVACIC,Croatia,CRO,CM,attacker,83,Press Breaker,silver,sync_alt,yes,assets/player_images/KOVACIC.webp
+cro-ivan-perisic,Ivan Perišić,PERISIC,Croatia,CRO,LW/LWB,attacker,81,Big-Game Winger,silver,directions_run,yes,assets/player_images/PERISIC.webp
+cro-andrej-kramaric,Andrej Kramarić,KRAMARIC,Croatia,CRO,ST/SS,attacker,80,Support Striker,silver,sports_soccer,yes,assets/player_images/KRAMARIC.webp
+cro-lovro-majer,Lovro Majer,MAJER,Croatia,CRO,CAM,attacker,78,Creative Playmaker,bronze,psychology,yes,assets/player_images/MAJER.webp
+cro-ante-budimir,Ante Budimir,BUDIMIR,Croatia,CRO,ST,attacker,77,Box Striker,bronze,sports_soccer,yes,assets/player_images/BUDIMIR.webp
+uru-federico-valverde,Federico Valverde,VALVERDE,Uruguay,URU,CM/RW,attacker,91,Engine Midfielder,platinum,bolt,yes,assets/player_images/VALVERDE.webp
+uru-darwin-nunez,Darwin Núñez,NUNEZ,Uruguay,URU,ST,attacker,86,Power Forward,gold,sports_soccer,yes,assets/player_images/NUNEZ.webp
+uru-rodrigo-bentancur,Rodrigo Bentancur,BENTANCUR,Uruguay,URU,CM,attacker,82,Tempo Controller,silver,sync_alt,yes,assets/player_images/BENTANCUR.webp
+uru-giorgian-de-arrascaeta,Giorgian De Arrascaeta,ARRASCAETA,Uruguay,URU,CAM,attacker,82,Final Pass Specialist,silver,psychology,yes,assets/player_images/ARRASCAETA.webp
+uru-facundo-pellistri,Facundo Pellistri,PELLISTRI,Uruguay,URU,RW,attacker,77,Direct Runner,bronze,directions_run,yes,assets/player_images/PELLISTRI.webp
+uru-maximiliano-araujo,Maximiliano Araújo,M. ARAUJO,Uruguay,URU,LW/LB,attacker,76,Wide Runner,bronze,directions_run,yes,assets/player_images/M. ARAUJO.webp
+col-luis-diaz,Luis Díaz,LUIS DIAZ,Colombia,COL,LW,attacker,88,Explosive Winger,gold,directions_run,yes,assets/player_images/LUIS DIAZ.webp
+col-james-rodriguez,James Rodríguez,JAMES,Colombia,COL,CAM,attacker,86,Master Creator,gold,psychology,yes,assets/player_images/JAMES.webp
+col-jhon-arias,Jhon Arias,ARIAS,Colombia,COL,RW/CAM,attacker,81,Wide Creator,silver,directions_run,yes,assets/player_images/ARIAS.webp
+col-jhon-duran,Jhon Durán,DURAN,Colombia,COL,ST,attacker,82,Power Striker,silver,sports_soccer,yes,assets/player_images/DURAN.webp
+col-luis-sinisterra,Luis Sinisterra,SINISTERRA,Colombia,COL,LW,attacker,81,Inside Forward,silver,directions_run,yes,assets/player_images/SINISTERRA.webp
+col-richard-rios,Richard Ríos,RIOS,Colombia,COL,CM,attacker,78,Press Breaker,bronze,sync_alt,yes,assets/player_images/RIOS.webp
+usa-christian-pulisic,Christian Pulisic,PULISIC,USA,USA,LW/RW,attacker,87,Captain Creator,gold,directions_run,yes,assets/player_images/PULISIC.webp
+usa-weston-mckennie,Weston McKennie,MCKENNIE,USA,USA,CM,attacker,82,Box-to-Box,silver,sync_alt,yes,assets/player_images/MCKENNIE.webp
+usa-folarin-balogun,Folarin Balogun,BALOGUN,USA,USA,ST,attacker,82,Clinical Forward,silver,sports_soccer,yes,assets/player_images/BALOGUN.webp
+usa-tim-weah,Tim Weah,WEAH,USA,USA,RW/RWB,attacker,77,Direct Runner,bronze,directions_run,yes,assets/player_images/WEAH.webp
+usa-gio-reyna,Gio Reyna,REYNA,USA,USA,CAM/RW,attacker,77,Flair Playmaker,bronze,psychology,yes,assets/player_images/REYNA.webp
+usa-yunus-musah,Yunus Musah,MUSAH,USA,USA,CM,attacker,77,Press Breaker,bronze,sync_alt,yes,assets/player_images/MUSAH.webp
+mex-santiago-gimenez,Santiago Giménez,SANTI,Mexico,MEX,ST,attacker,83,Clinical Striker,silver,sports_soccer,yes,assets/player_images/SANTI.webp
+mex-raul-jimenez,Raúl Jiménez,RAUL,Mexico,MEX,ST,attacker,80,Target Forward,silver,sports_soccer,yes,assets/player_images/RAUL.webp
+mex-hirving-lozano,Hirving Lozano,LOZANO,Mexico,MEX,LW/RW,attacker,82,Explosive Winger,silver,directions_run,yes,assets/player_images/LOZANO.webp
+mex-luis-chavez,Luis Chávez,CHAVEZ,Mexico,MEX,CM,attacker,76,Set-Piece Creator,bronze,sync_alt,yes,assets/player_images/CHAVEZ.webp
+can-jonathan-david,Jonathan David,J. DAVID,Canada,CAN,ST,attacker,87,Clinical Finisher,gold,sports_soccer,yes,assets/player_images/J. DAVID.webp
+can-tajon-buchanan,Tajon Buchanan,BUCHANAN,Canada,CAN,RW/RWB,attacker,81,Direct Runner,silver,directions_run,yes,assets/player_images/BUCHANAN.webp
+can-ismael-kone,Ismaël Koné,KONE,Canada,CAN,CM,attacker,80,Ball Carrier,silver,sync_alt,yes,assets/player_images/KONE.webp
+can-cyle-larin,Cyle Larin,LARIN,Canada,CAN,ST,attacker,80,Box Striker,silver,sports_soccer,yes,assets/player_images/LARIN.webp
+jpn-kaoru-mitoma,Kaoru Mitoma,MITOMA,Japan,JPN,LW,attacker,87,Explosive Winger,gold,directions_run,yes,assets/player_images/MITOMA.webp
+jpn-takefusa-kubo,Takefusa Kubo,KUBO,Japan,JPN,RW/CAM,attacker,86,Technical Creator,gold,psychology,yes,assets/player_images/KUBO.webp
+jpn-takumi-minamino,Takumi Minamino,MINAMINO,Japan,JPN,CAM/LW,attacker,81,Support Forward,silver,psychology,yes,assets/player_images/MINAMINO.webp
+jpn-daichi-kamada,Daichi Kamada,KAMADA,Japan,JPN,CAM,attacker,82,Final Pass Specialist,silver,psychology,yes,assets/player_images/KAMADA.webp
+jpn-ritsu-doan,Ritsu Doan,DOAN,Japan,JPN,RW,attacker,82,Cut-In Winger,silver,directions_run,yes,assets/player_images/DOAN.webp
+kor-son-heung-min,Son Heung-min,SON,South Korea,KOR,LW/ST,attacker,90,Captain Finisher,platinum,bolt,yes,assets/player_images/SON.webp
+kor-lee-kang-in,Lee Kang-in,KANG-IN,South Korea,KOR,CAM/RW,attacker,86,Creative Playmaker,gold,psychology,yes,assets/player_images/KANG-IN.webp
+kor-hwang-hee-chan,Hwang Hee-chan,HWANG,South Korea,KOR,ST/LW,attacker,82,Direct Forward,silver,sports_soccer,yes,assets/player_images/HWANG.webp
+kor-hwang-in-beom,Hwang In-beom,IN-BEOM,South Korea,KOR,CM,attacker,81,Tempo Controller,silver,sync_alt,yes,assets/player_images/IN-BEOM.webp
+kor-oh-hyeon-gyu,Oh Hyeon-gyu,OH,South Korea,KOR,ST,attacker,77,Box Striker,bronze,sports_soccer,yes,assets/player_images/OH.webp
+kor-lee-jae-sung,Lee Jae-sung,JAE-SUNG,South Korea,KOR,CAM,attacker,77,Link-Up Creator,bronze,psychology,yes,assets/player_images/JAE-SUNG.webp
+aus-riley-mcgree,Riley McGree,MCGREE,Australia,AUS,CAM/LW,attacker,76,Chance Creator,bronze,psychology,yes,assets/player_images/MCGREE.webp
+aus-nestory-irankunda,Nestory Irankunda,IRANKUNDA,Australia,AUS,RW,attacker,76,Explosive Prospect,bronze,directions_run,yes,assets/player_images/IRANKUNDA.webp
+aus-martin-boyle,Martin Boyle,BOYLE,Australia,AUS,RW,attacker,76,Direct Runner,bronze,directions_run,yes,assets/player_images/BOYLE.webp
+aus-mitchell-duke,Mitchell Duke,DUKE,Australia,AUS,ST,attacker,75,Target Forward,bronze,sports_soccer,yes,assets/player_images/DUKE.webp
+arg-cristian-romero,Cristian Romero,ROMERO,Argentina,ARG,CB,defender,88,Aggressive Stopper,gold,shield,yes,assets/player_images/ROMERO.webp
+arg-lisandro-martinez,Lisandro Martínez,LISANDRO,Argentina,ARG,CB,defender,85,Ball-Winning CB,silver,shield,yes,assets/player_images/LISANDRO.webp
+arg-nahuel-molina,Nahuel Molina,MOLINA,Argentina,ARG,RB,defender,79,Overlap Runner,bronze,swap_horiz,yes,assets/player_images/MOLINA.webp
+bra-casemiro,Casemiro,CASEMIRO,Brazil,BRA,CDM,defender,87,Shield Midfielder,gold,security,yes,assets/player_images/CASEMIRO.webp
+bra-marquinhos,Marquinhos,MARQUINHOS,Brazil,BRA,CB,defender,88,Leader CB,gold,shield,yes,assets/player_images/MARQUINHOS.webp
+bra-gabriel-magalhaes,Gabriel Magalhães,GABRIEL,Brazil,BRA,CB,defender,85,Aerial Defender,silver,shield,yes,assets/player_images/GABRIEL.webp
+fra-aurelien-tchouameni,Aurélien Tchouaméni,TCHOUAMENI,France,FRA,CDM,defender,88,Ball Winner,gold,security,yes,assets/player_images/TCHOUAMENI.webp
+fra-william-saliba,William Saliba,SALIBA,France,FRA,CB,defender,89,Ball-Playing CB,gold,shield,yes,assets/player_images/SALIBA.webp
+fra-dayot-upamecano,Dayot Upamecano,UPAMECANO,France,FRA,CB,defender,84,Power Stopper,silver,shield,yes,assets/player_images/UPAMECANO.webp
+fra-jules-kounde,Jules Koundé,KOUNDE,France,FRA,RB/CB,defender,84,Recovery Defender,silver,swap_horiz,yes,assets/player_images/KOUNDE.webp
+fra-theo-hernandez,Theo Hernández,THEO,France,FRA,LB,defender,84,Overlap Runner,silver,swap_horiz,yes,assets/player_images/THEO.webp
+fra-n-golo-kante,N'Golo Kanté,KANTE,France,FRA,CDM,defender,84,Shield Midfielder,silver,security,yes,assets/player_images/KANTE.webp
+eng-declan-rice,Declan Rice,RICE,England,ENG,CDM/CM,defender,89,Shield Midfielder,gold,security,yes,assets/player_images/RICE.webp
+eng-john-stones,John Stones,STONES,England,ENG,CB,defender,84,Ball-Playing CB,silver,shield,yes,assets/player_images/STONES.webp
+eng-reece-james,Reece James,R. JAMES,England,ENG,RB,defender,83,Overlap Runner,silver,swap_horiz,yes,assets/player_images/R. JAMES.webp
+por-joao-neves,João Neves,J. NEVES,Portugal,POR,CM/CDM,defender,85,Press Breaker,silver,security,yes,assets/player_images/J. NEVES.webp
+por-nuno-mendes,Nuno Mendes,N. MENDES,Portugal,POR,LB,defender,88,Attacking Fullback,gold,swap_horiz,yes,assets/player_images/N. MENDES.webp
+por-ruben-dias,Rúben Dias,DIAS,Portugal,POR,CB,defender,89,Leader CB,gold,shield,yes,assets/player_images/DIAS.webp
+por-joao-cancelo,João Cancelo,CANCELO,Portugal,POR,RB/LB,defender,83,Attacking Fullback,silver,swap_horiz,yes,assets/player_images/CANCELO.webp
+esp-rodri,Rodri,RODRI,Spain,ESP,CDM,defender,93,Tempo Controller,platinum,security,yes,assets/player_images/RODRI.webp
+esp-dean-huijsen,Dean Huijsen,HUIJSEN,Spain,ESP,CB,defender,83,Ball-Playing CB,silver,shield,yes,assets/player_images/HUIJSEN.webp
+esp-pau-cubarsi,Pau Cubarsí,CUBARSI,Spain,ESP,CB,defender,79,Ball-Playing CB,bronze,shield,yes,assets/player_images/CUBARSI.webp
+esp-dani-carvajal,Dani Carvajal,CARVAJAL,Spain,ESP,RB,defender,84,Overlap Runner,silver,swap_horiz,yes,assets/player_images/CARVAJAL.webp
+esp-martin-zubimendi,Martin Zubimendi,ZUBIMENDI,Spain,ESP,CDM,defender,84,Ball Winner,silver,security,yes,assets/player_images/ZUBIMENDI.webp
+ger-joshua-kimmich,Joshua Kimmich,KIMMICH,Germany,GER,CDM/RB,defender,88,Tempo Controller,gold,security,yes,assets/player_images/KIMMICH.webp
+ger-antonio-rudiger,Antonio Rüdiger,RUDIGER,Germany,GER,CB,defender,88,Aggressive Stopper,gold,shield,yes,assets/player_images/RUDIGER.webp
+ger-leon-goretzka,Leon Goretzka,GORETZKA,Germany,GER,CM,defender,82,Box-to-Box Enforcer,silver,security,yes,assets/player_images/GORETZKA.webp
+ger-jonathan-tah,Jonathan Tah,TAH,Germany,GER,CB,defender,83,Aerial Defender,silver,shield,yes,assets/player_images/TAH.webp
+ger-david-raum,David Raum,RAUM,Germany,GER,LB,defender,78,Overlap Runner,bronze,swap_horiz,yes,assets/player_images/RAUM.webp
+ned-virgil-van-dijk,Virgil van Dijk,VAN DIJK,Netherlands,NED,CB,defender,92,Leader CB,platinum,shield,yes,assets/player_images/VAN DIJK.webp
+ned-denzel-dumfries,Denzel Dumfries,DUMFRIES,Netherlands,NED,RB/RWB,defender,83,Power Fullback,silver,swap_horiz,yes,assets/player_images/DUMFRIES.webp
+ned-micky-van-de-ven,Micky van de Ven,VAN DE VEN,Netherlands,NED,CB/LB,defender,84,Recovery Defender,silver,shield,yes,assets/player_images/VAN DE VEN.webp
+bel-amadou-onana,Amadou Onana,ONANA,Belgium,BEL,CDM,defender,83,Shield Midfielder,silver,security,yes,assets/player_images/ONANA.webp
+bel-timothy-castagne,Timothy Castagne,CASTAGNE,Belgium,BEL,RB/LB,defender,77,Wide Defender,bronze,swap_horiz,yes,assets/player_images/CASTAGNE.webp
+bel-arthur-theate,Arthur Theate,THEATE,Belgium,BEL,CB/LB,defender,77,Flexible Defender,bronze,shield,yes,assets/player_images/THEATE.webp
+bel-axel-witsel,Axel Witsel,WITSEL,Belgium,BEL,CDM/CB,defender,76,Veteran Shield,bronze,security,yes,assets/player_images/WITSEL.webp
+cro-josko-gvardiol,Joško Gvardiol,GVARDIOL,Croatia,CRO,CB/LB,defender,88,Ball-Playing CB,gold,shield,yes,assets/player_images/GVARDIOL.webp
+cro-marcelo-brozovic,Marcelo Brozović,BROZOVIC,Croatia,CRO,CDM,defender,83,Shield Midfielder,silver,security,yes,assets/player_images/BROZOVIC.webp
+cro-josip-stanisic,Josip Stanišić,STANISIC,Croatia,CRO,RB/CB,defender,82,Flexible Defender,silver,swap_horiz,yes,assets/player_images/STANISIC.webp
+uru-ronald-araujo,Ronald Araújo,ARAUJO,Uruguay,URU,CB/RB,defender,87,Recovery Defender,gold,shield,yes,assets/player_images/ARAUJO.webp
+uru-jose-maria-gimenez,José María Giménez,GIMENEZ,Uruguay,URU,CB,defender,83,Aggressive Stopper,silver,shield,yes,assets/player_images/GIMENEZ.webp
+uru-manuel-ugarte,Manuel Ugarte,UGARTE,Uruguay,URU,CDM,defender,82,Ball Winner,silver,security,yes,assets/player_images/UGARTE.webp
+col-jefferson-lerma,Jefferson Lerma,LERMA,Colombia,COL,CDM,defender,81,Shield Midfielder,silver,security,yes,assets/player_images/LERMA.webp
+col-daniel-munoz,Daniel Muñoz,D. MUNOZ,Colombia,COL,RB,defender,82,Attacking Fullback,silver,swap_horiz,yes,assets/player_images/D. MUNOZ.webp
+col-davinson-sanchez,Davinson Sánchez,DAVINSON,Colombia,COL,CB,defender,81,Aerial Defender,silver,shield,yes,assets/player_images/DAVINSON.webp
+usa-tyler-adams,Tyler Adams,ADAMS,USA,USA,CDM,defender,82,Ball Winner,silver,security,yes,assets/player_images/ADAMS.webp
+usa-antonee-robinson,Antonee Robinson,A. ROBINSON,USA,USA,LB,defender,83,Overlap Runner,silver,swap_horiz,yes,assets/player_images/A. ROBINSON.webp
+usa-chris-richards,Chris Richards,RICHARDS,USA,USA,CB,defender,78,Ball-Playing CB,bronze,shield,yes,assets/player_images/RICHARDS.webp
+mex-edson-alvarez,Edson Álvarez,EDSON,Mexico,MEX,CDM/CB,defender,82,Shield Midfielder,silver,security,yes,assets/player_images/EDSON.webp
+mex-johan-vasquez,Johan Vásquez,VASQUEZ,Mexico,MEX,CB,defender,77,Ball-Playing CB,bronze,shield,yes,assets/player_images/VASQUEZ.webp
+mex-cesar-montes,César Montes,MONTES,Mexico,MEX,CB,defender,77,Aerial Defender,bronze,shield,yes,assets/player_images/MONTES.webp
+mex-jorge-sanchez,Jorge Sánchez,J. SANCHEZ,Mexico,MEX,RB,defender,76,Wide Defender,bronze,swap_horiz,yes,assets/player_images/J. SANCHEZ.webp
+mex-jesus-gallardo,Jesús Gallardo,GALLARDO,Mexico,MEX,LB,defender,76,Overlap Runner,bronze,swap_horiz,yes,assets/player_images/GALLARDO.webp
+can-alphonso-davies,Alphonso Davies,DAVIES,Canada,CAN,LB/LW,defender,88,Explosive Fullback,gold,swap_horiz,yes,assets/player_images/DAVIES.webp
+can-stephen-eustaquio,Stephen Eustáquio,EUSTAQUIO,Canada,CAN,CM/CDM,defender,81,Tempo Controller,silver,security,yes,assets/player_images/EUSTAQUIO.webp
+can-alistair-johnston,Alistair Johnston,JOHNSTON,Canada,CAN,RB,defender,77,Wide Defender,bronze,swap_horiz,yes,assets/player_images/JOHNSTON.webp
+can-moise-bombito,Moïse Bombito,BOMBITO,Canada,CAN,CB,defender,77,Recovery Defender,bronze,shield,yes,assets/player_images/BOMBITO.webp
+can-derek-cornelius,Derek Cornelius,CORNELIUS,Canada,CAN,CB,defender,76,Aerial Defender,bronze,shield,yes,assets/player_images/CORNELIUS.webp
+jpn-wataru-endo,Wataru Endo,ENDO,Japan,JPN,CDM,defender,82,Captain Shield,silver,security,yes,assets/player_images/ENDO.webp
+jpn-takehiro-tomiyasu,Takehiro Tomiyasu,TOMIYASU,Japan,JPN,CB/RB,defender,82,Flexible Defender,silver,shield,yes,assets/player_images/TOMIYASU.webp
+jpn-ko-itakura,Ko Itakura,ITAKURA,Japan,JPN,CB,defender,81,Ball-Playing CB,silver,shield,yes,assets/player_images/ITAKURA.webp
+jpn-hidemasa-morita,Hidemasa Morita,MORITA,Japan,JPN,CM,defender,78,Tempo Controller,bronze,security,yes,assets/player_images/MORITA.webp
+kor-kim-min-jae,Kim Min-jae,KIM MJ,South Korea,KOR,CB,defender,87,Leader CB,gold,shield,yes,assets/player_images/KIM MJ.webp
+kor-paik-seung-ho,Paik Seung-ho,PAIK,South Korea,KOR,CM/CDM,defender,76,Ball Winner,bronze,security,yes,assets/player_images/PAIK.webp
+kor-seol-young-woo,Seol Young-woo,SEOL,South Korea,KOR,RB/LB,defender,76,Wide Defender,bronze,swap_horiz,yes,assets/player_images/SEOL.webp
+aus-harry-souttar,Harry Souttar,SOUTTAR,Australia,AUS,CB,defender,80,Aerial Defender,silver,shield,yes,assets/player_images/SOUTTAR.webp
+aus-jackson-irvine,Jackson Irvine,IRVINE,Australia,AUS,CM,defender,80,Engine Midfielder,silver,security,yes,assets/player_images/IRVINE.webp
+aus-aziz-behich,Aziz Behich,BEHICH,Australia,AUS,LB/LWB,defender,76,Wide Defender,bronze,swap_horiz,yes,assets/player_images/BEHICH.webp
+aus-lewis-miller,Lewis Miller,MILLER,Australia,AUS,RB/RWB,defender,75,Overlap Runner,bronze,swap_horiz,yes,assets/player_images/MILLER.webp
+aus-alessandro-circati,Alessandro Circati,CIRCATI,Australia,AUS,CB,defender,77,Recovery Defender,bronze,shield,yes,assets/player_images/CIRCATI.webp
+arg-emiliano-martinez,Emiliano Martínez,EMI,Argentina,ARG,GK,goalkeeper,89,Penalty Wall,gold,pan_tool,yes,assets/player_images/EMI.webp
+bra-alisson-becker,Alisson Becker,ALISSON,Brazil,BRA,GK,goalkeeper,89,Sweeper Keeper,gold,pan_tool,yes,assets/player_images/ALISSON.webp
+bra-ederson-moraes,Ederson Moraes,EDERSON,Brazil,BRA,GK,goalkeeper,85,Sweeper Keeper,silver,pan_tool,yes,assets/player_images/EDERSON.webp
+fra-mike-maignan,Mike Maignan,MAIGNAN,France,FRA,GK,goalkeeper,88,Shot Stopper,gold,pan_tool,yes,assets/player_images/MAIGNAN.webp
+eng-jordan-pickford,Jordan Pickford,PICKFORD,England,ENG,GK,goalkeeper,84,Shot Stopper,silver,pan_tool,yes,assets/player_images/PICKFORD.webp
+por-diogo-costa,Diogo Costa,D. COSTA,Portugal,POR,GK,goalkeeper,84,Shot Stopper,silver,pan_tool,yes,assets/player_images/D. COSTA.webp
+esp-unai-simon,Unai Simón,SIMON,Spain,ESP,GK,goalkeeper,83,Shot Stopper,silver,pan_tool,yes,assets/player_images/SIMON.webp
+ger-oliver-baumann,Oliver Baumann,BAUMANN,Germany,GER,GK,goalkeeper,78,Shot Stopper,bronze,pan_tool,yes,assets/player_images/BAUMANN.webp
+ned-bart-verbruggen,Bart Verbruggen,VERBRUGGEN,Netherlands,NED,GK,goalkeeper,79,Shot Stopper,bronze,pan_tool,yes,assets/player_images/VERBRUGGEN.webp
+bel-thibaut-courtois,Thibaut Courtois,COURTOIS,Belgium,BEL,GK,goalkeeper,89,Penalty Wall,gold,pan_tool,yes,assets/player_images/COURTOIS.webp
+cro-dominik-livakovic,Dominik Livaković,LIVAKOVIC,Croatia,CRO,GK,goalkeeper,82,Penalty Keeper,silver,pan_tool,yes,assets/player_images/LIVAKOVIC.webp
+uru-sergio-rochet,Sergio Rochet,ROCHET,Uruguay,URU,GK,goalkeeper,77,Shot Stopper,bronze,pan_tool,yes,assets/player_images/ROCHET.webp
+col-camilo-vargas,Camilo Vargas,VARGAS,Colombia,COL,GK,goalkeeper,77,Shot Stopper,bronze,pan_tool,yes,assets/player_images/VARGAS.webp
+usa-matt-turner,Matt Turner,TURNER,USA,USA,GK,goalkeeper,77,Shot Stopper,bronze,pan_tool,yes,assets/player_images/TURNER.webp
+mex-luis-malagon,Luis Malagón,MALAGON,Mexico,MEX,GK,goalkeeper,77,Shot Stopper,bronze,pan_tool,yes,assets/player_images/MALAGON.webp
+can-dayne-st-clair,Dayne St. Clair,ST. CLAIR,Canada,CAN,GK,goalkeeper,76,Shot Stopper,bronze,pan_tool,yes,assets/player_images/ST. CLAIR.webp
+jpn-zion-suzuki,Zion Suzuki,ZION,Japan,JPN,GK,goalkeeper,78,Reflex Keeper,bronze,pan_tool,yes,assets/player_images/ZION.webp
+kor-kim-seung-gyu,Kim Seung-gyu,KIM SG,South Korea,KOR,GK,goalkeeper,77,Shot Stopper,bronze,pan_tool,yes,assets/player_images/KIM SG.webp
+aus-mathew-ryan,Mathew Ryan,RYAN,Australia,AUS,GK,goalkeeper,81,Veteran Keeper,silver,pan_tool,yes,assets/player_images/RYAN.webp

@@ -8,11 +8,11 @@ import '../../blocs/prediction/prediction_state.dart';
 import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../models/league.dart';
-import '../../models/match.dart';
 import '../../models/sport_match.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
+import '../../widgets/stat_oz_top_bar.dart';
 import '../shop/shop_screen.dart' show CoinIcon;
 import 'streak_calendar_screen.dart';
 import 'widgets/match_prediction_card.dart';
@@ -49,6 +49,11 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
           SafeArea(
             child: Column(
               children: [
+                StatOzTopBar(
+                  title: 'StatOz',
+                  onAddCoins: () => widget.onNavigate(AppSection.shop),
+                  onStreakTap: () => showStreakCalendar(context),
+                ),
                 _PredictionTopBar(
                   activeIndex: _tab,
                   onTap: (i) => setState(() => _tab = i),
@@ -109,34 +114,14 @@ class _PredictionTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final wallet = context.select<GameBloc, ({int coins, int streak})>(
-      (b) => (
-        coins: b.state.coins,
-        streak: _currentWinStreak(b.state.matchHistory),
-      ),
-    );
     return SizedBox(
-      height: _TopBarMetrics.totalHeight,
+      height: _TopBarMetrics.activeTabHeight,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           const Positioned(
             left: 0,
             top: 0,
-            right: 0,
-            height: _TopBarMetrics.headerHeight,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: _TopBarMetrics.fill,
-                boxShadow: [
-                  BoxShadow(color: Color(0x33000000), offset: Offset(0, 4)),
-                ],
-              ),
-            ),
-          ),
-          const Positioned(
-            left: 0,
-            top: _TopBarMetrics.headerHeight,
             right: 0,
             height: _TopBarMetrics.navHeight,
             child: DecoratedBox(
@@ -145,34 +130,14 @@ class _PredictionTopBar extends StatelessWidget {
           ),
           Positioned(
             left: 0,
-            top: _TopBarMetrics.headerHeight,
+            top: 0,
             right: 0,
             height: 1,
             child: ColoredBox(color: Colors.black.withValues(alpha: 0.16)),
           ),
           Positioned(
-            top: 33,
-            right: 14,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _HeaderStreak(
-                  value: _formatInt(wallet.streak),
-                  onTap: () {
-                    playSound(SoundEffect.uiTap);
-                    showStreakCalendar(context);
-                  },
-                ),
-                const SizedBox(width: 24),
-                _HeaderCoin(
-                  value: _formatInt(wallet.coins == 0 ? 1000 : wallet.coins),
-                ),
-              ],
-            ),
-          ),
-          Positioned(
             left: 0,
-            top: _TopBarMetrics.headerHeight,
+            top: 0,
             right: 0,
             height: _TopBarMetrics.activeTabHeight,
             child: LayoutBuilder(
@@ -320,112 +285,12 @@ class _TopBarActiveTabPainter extends CustomPainter {
 }
 
 abstract final class _TopBarMetrics {
-  static const totalHeight = 153.0;
-  static const headerHeight = 73.0;
   static const navHeight = 65.0;
   static const activeTabHeight = 80.0;
   static const fill = Color(0xff1a253a);
   static const activeFill = Color(0xff6bd1ed);
   static const activeInk = Color(0xff1a253a);
   static const mutedInk = Color(0xff90a1b8);
-}
-
-int _currentWinStreak(List<MatchHistoryEntry> history) {
-  var streak = 0;
-  for (final match in history) {
-    if (match.resultLabel == 'Victory') {
-      streak++;
-      continue;
-    }
-    break;
-  }
-  return streak;
-}
-
-class _HeaderStreak extends StatelessWidget {
-  const _HeaderStreak({required this.value, required this.onTap});
-
-  final String value;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const StreakIcon(size: 24),
-            const SizedBox(width: 8),
-            Text(
-              value,
-              style: TextStyle(
-                color: Colors.white,
-                fontFamily: Cyber.displayFont,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                height: 1.2,
-                letterSpacing: 0,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _HeaderCoin extends StatelessWidget {
-  const _HeaderCoin({required this.value});
-
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        CoinIcon(size: 24),
-        const SizedBox(width: 8),
-        Text(
-          value,
-          style: TextStyle(
-            color: Colors.white,
-            fontFamily: Cyber.displayFont,
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            height: 1.2,
-            letterSpacing: 0,
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class StreakIcon extends StatelessWidget {
-  const StreakIcon({this.size = 24, super.key});
-
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: SvgPicture.asset(
-        'assets/icons/streak.svg',
-        width: size,
-        height: size,
-        fit: BoxFit.contain,
-      ),
-    );
-  }
 }
 
 class _MatchesTab extends StatefulWidget {

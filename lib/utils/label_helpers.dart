@@ -17,6 +17,19 @@ Color tierColor(CardTier tier) => switch (tier) {
   CardTier.platinum => const Color(0xff67e8f9),
 };
 
+/// Attack/defend lane accent used across play and round-result UI.
+Color roleAccent(bool attacking) =>
+    attacking ? Cyber.cyan : const Color(0xFFC084FC);
+
+Color outcomeColor(RoundOutcome outcome) => switch (outcome) {
+  RoundOutcome.goal => Cyber.success,
+  RoundOutcome.saved => Cyber.cyan,
+  RoundOutcome.blocked => Cyber.violet,
+  RoundOutcome.missed => Cyber.muted,
+  RoundOutcome.foul => Cyber.amber,
+  RoundOutcome.redCard => Cyber.danger,
+};
+
 Color actionColor(ActionCategory category) => switch (category) {
   ActionCategory.attack => Cyber.lime,
   ActionCategory.defense => Cyber.violet,

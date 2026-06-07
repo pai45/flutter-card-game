@@ -12,12 +12,13 @@ import '../../../config/enums.dart';
 import '../../../config/theme.dart';
 import '../../../config/tutorial_steps.dart';
 import '../../../models/cards.dart';
-import '../../../models/match.dart';
 import '../../../utils/label_helpers.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_cta_button.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../../widgets/match_widgets.dart';
+import '../../../widgets/pitch_background.dart';
+import 'round_result_cinematic.dart';
 
 // ── Toss-phase local colour constants ────────────────────────────────────────
 const Color _kTossCyan = Color(0xFF5CDFFF);
@@ -1856,8 +1857,7 @@ class ScenarioPhase extends StatelessWidget {
   }
 }
 
-Color _roleAccent(bool attacking) =>
-    attacking ? Cyber.cyan : const Color(0xFFC084FC);
+Color _roleAccent(bool attacking) => roleAccent(attacking);
 
 class ScenarioBriefingSection extends StatefulWidget {
   const ScenarioBriefingSection({
@@ -2922,35 +2922,40 @@ class DefenderDeckGrid extends StatelessWidget {
           child: _PlaySectionHeading(title, color: accent),
         ),
         const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: cards.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 14,
-            mainAxisSpacing: 14,
-            childAspectRatio: 0.66,
-          ),
-          itemBuilder: (context, index) {
-            final card = cards[index];
-            final disabled = redCardedIds.contains(card.id);
-            return _DealtCard(
-              key: ValueKey('deck-${card.id}'),
-              index: index,
-              initialDelay: const Duration(milliseconds: 260),
-              child: Center(
-                child: CyberPlayerCardTile(
-                  card: card,
-                  selected: selectedId == card.id,
-                  disabled: disabled,
-                  size: VisualCardSize.lg,
-                  selectedAccent: accent,
-                  onTap: disabled ? null : () => onSelect(card),
+        _PlaySelectionBackdrop(
+          bright: true,
+          accent: accent,
+          pitchHalf: attacking ? PitchHalf.top : PitchHalf.bottom,
+          child: GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: cards.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 14,
+              mainAxisSpacing: 14,
+              childAspectRatio: 0.66,
+            ),
+            itemBuilder: (context, index) {
+              final card = cards[index];
+              final disabled = redCardedIds.contains(card.id);
+              return _DealtCard(
+                key: ValueKey('deck-${card.id}'),
+                index: index,
+                initialDelay: const Duration(milliseconds: 260),
+                child: Center(
+                  child: CyberPlayerCardTile(
+                    card: card,
+                    selected: selectedId == card.id,
+                    disabled: disabled,
+                    size: VisualCardSize.lg,
+                    selectedAccent: accent,
+                    onTap: disabled ? null : () => onSelect(card),
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ],
     );
@@ -2968,6 +2973,72 @@ class _PlaySectionHeading extends StatelessWidget {
     return Text(
       title,
       style: Cyber.label(16, color: color, letterSpacing: 1.1),
+    );
+  }
+}
+
+/// Full-bleed backdrop behind card pickers — optional pitch half + role tint.
+class _PlaySelectionBackdrop extends StatelessWidget {
+  const _PlaySelectionBackdrop({
+    required this.bright,
+    required this.accent,
+    required this.child,
+    this.pitchHalf,
+  });
+
+  static const _listPadding = 16.0;
+
+  final bool bright;
+  final Color accent;
+  final Widget child;
+  final PitchHalf? pitchHalf;
+
+  @override
+  Widget build(BuildContext context) {
+    final screenW = MediaQuery.sizeOf(context).width;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final sideInset = (screenW - constraints.maxWidth) / 2;
+        return Transform.translate(
+          offset: Offset(-sideInset, 0),
+          child: SizedBox(
+            width: screenW,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: ClipRect(
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        if (pitchHalf != null)
+                          PitchHalfBackground(half: pitchHalf!)
+                        else
+                          ColoredBox(
+                            color: bright
+                                ? accent.withValues(alpha: 0.18)
+                                : accent.withValues(alpha: 0.12),
+                          ),
+                        ColoredBox(
+                          color: accent.withValues(alpha: bright ? 0.08 : 0.05),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    _listPadding,
+                    14,
+                    _listPadding,
+                    14,
+                  ),
+                  child: child,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -3002,33 +3073,37 @@ class ActionCardRail extends StatelessWidget {
           child: _PlaySectionHeading('SELECT AN ACTION', color: accent),
         ),
         const SizedBox(height: 12),
-        SizedBox(
-          height: 158,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: cards.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 12),
-            itemBuilder: (context, index) {
-              final card = cards[index];
-              final used = usedIds.contains(card.id);
-              return _DealtCard(
-                key: ValueKey('action-${card.id}'),
-                index: index,
-                initialDelay: railBaseDelay + const Duration(milliseconds: 80),
-                staggerMs: 65,
-                flyDistance: 200,
-                duration: const Duration(milliseconds: 480),
-                child: CyberActionCardTile(
-                  card: card,
-                  selected: selectedId == card.id,
-                  disabled: used,
-                  disabledLabel: 'USED',
-                  size: VisualCardSize.lg,
-                  selectedAccent: accent,
-                  onTap: used ? null : () => onSelect(card),
-                ),
-              );
-            },
+        _PlaySelectionBackdrop(
+          bright: false,
+          accent: accent,
+          child: SizedBox(
+            height: 158,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: cards.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                final card = cards[index];
+                final used = usedIds.contains(card.id);
+                return _DealtCard(
+                  key: ValueKey('action-${card.id}'),
+                  index: index,
+                  initialDelay: railBaseDelay + const Duration(milliseconds: 80),
+                  staggerMs: 65,
+                  flyDistance: 200,
+                  duration: const Duration(milliseconds: 480),
+                  child: CyberActionCardTile(
+                    card: card,
+                    selected: selectedId == card.id,
+                    disabled: used,
+                    disabledLabel: 'USED',
+                    size: VisualCardSize.lg,
+                    selectedAccent: accent,
+                    onTap: used ? null : () => onSelect(card),
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ],
@@ -3514,7 +3589,7 @@ class AngularBorderContainer extends StatelessWidget {
   }
 }
 
-class RoundResultPhase extends StatelessWidget {
+class RoundResultPhase extends StatefulWidget {
   const RoundResultPhase({
     required this.state,
     required this.onQuit,
@@ -3525,16 +3600,23 @@ class RoundResultPhase extends StatelessWidget {
   final VoidCallback onQuit;
 
   @override
+  State<RoundResultPhase> createState() => _RoundResultPhaseState();
+}
+
+class _RoundResultPhaseState extends State<RoundResultPhase> {
+  bool _cinematicDone = false;
+
+  @override
   Widget build(BuildContext context) {
-    final result = state.roundResults.last;
+    final result = widget.state.roundResults.last;
     return MatchPhaseScaffold(
       title: 'Round ${result.round} // Result',
       subtitle: '// Resolution Log',
-      state: state,
-      onQuit: onQuit,
+      state: widget.state,
+      onQuit: widget.onQuit,
       tutorialKey: 'round-result',
       tutorialSteps: resultTutorialSteps,
-      bottomAction: state.currentRound >= 4
+      bottomAction: widget.state.currentRound >= 4
           ? CyberCtaButton(
               label: 'Full-Time Result',
               primary: true,
@@ -3542,393 +3624,32 @@ class RoundResultPhase extends StatelessWidget {
             )
           : null,
       children: [
-        _CinematicRoundResult(result: result),
-        if (state.currentRound < 4)
-          _NextRoundCountdown(
-            startDelay: const Duration(milliseconds: 2300),
-            onComplete: () => context.read<GameBloc>().add(RoundAdvanced()),
+        RoundClashArena(
+          result: result,
+          onComplete: () {
+            if (mounted) setState(() => _cinematicDone = true);
+          },
+        ),
+        if (widget.state.currentRound < 4)
+          AnimatedOpacity(
+            opacity: _cinematicDone ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 400),
+            child: _cinematicDone
+                ? _NextRoundCountdown(
+                    onComplete: () =>
+                        context.read<GameBloc>().add(RoundAdvanced()),
+                  )
+                : const SizedBox(height: 72),
           ),
       ],
     );
   }
-}
-
-/// Accent color for an outcome (drives stamp + flashes).
-Color outcomeColor(RoundOutcome outcome) => switch (outcome) {
-  RoundOutcome.goal => Cyber.success,
-  RoundOutcome.saved => Cyber.cyan,
-  RoundOutcome.blocked => Cyber.violet,
-  RoundOutcome.missed => Cyber.muted,
-  RoundOutcome.foul => Cyber.amber,
-  RoundOutcome.redCard => Cyber.danger,
-};
-
-/// Theatrical round reveal: letterbox bars, cards slam in from the sides, a
-/// pulsing VS, power bars fill, then the outcome stamp drops with a goal
-/// particle burst.
-class _CinematicRoundResult extends StatefulWidget {
-  const _CinematicRoundResult({required this.result});
-  final RoundResult result;
-
-  @override
-  State<_CinematicRoundResult> createState() => _CinematicRoundResultState();
-}
-
-class _CinematicRoundResultState extends State<_CinematicRoundResult>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 2200),
-  );
-  bool _slammed = false;
-  bool _stamped = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _c.addListener(_onTick);
-    _c.forward();
-  }
-
-  void _onTick() {
-    if (!_slammed && _c.value >= 0.16) {
-      _slammed = true;
-      playSound(SoundEffect.cardSlam);
-    }
-    if (!_stamped && _c.value >= 0.80) {
-      _stamped = true;
-      playSound(switch (widget.result.outcome) {
-        RoundOutcome.redCard => SoundEffect.redCard,
-        RoundOutcome.goal => SoundEffect.goal,
-        RoundOutcome.saved || RoundOutcome.blocked => SoundEffect.save,
-        _ => SoundEffect.cardSlam,
-      });
-      // Let the body feel the peak moments, not just hear them.
-      if (widget.result.outcome == RoundOutcome.goal ||
-          widget.result.outcome == RoundOutcome.redCard) {
-        HapticFeedback.heavyImpact();
-      }
-    }
-  }
-
-  @override
-  void dispose() {
-    _c
-      ..removeListener(_onTick)
-      ..dispose();
-    super.dispose();
-  }
-
-  double _interval(double a, double b, {Curve curve = Curves.easeOut}) {
-    final t = ((_c.value - a) / (b - a)).clamp(0.0, 1.0);
-    return curve.transform(t);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final r = widget.result;
-    final playerAttacking = r.playerAttacking;
-    final playerCard = playerAttacking ? r.attackerCard : r.defenderCard;
-    final oppCard = playerAttacking ? r.defenderCard : r.attackerCard;
-    final playerAction = playerAttacking ? r.attackAction : r.defenseAction;
-    final oppAction = playerAttacking ? r.defenseAction : r.attackAction;
-    final playerPower = playerAttacking ? r.attackPower : r.defensePower;
-    final oppPower = playerAttacking ? r.defensePower : r.attackPower;
-    final accent = outcomeColor(r.outcome);
-
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (context, _) {
-        final bars = _interval(0.0, 0.16);
-        final pIn = _interval(0.16, 0.36, curve: Curves.easeOutBack);
-        final oIn = _interval(0.30, 0.50, curve: Curves.easeOutBack);
-        final vs = _interval(0.50, 0.64);
-        final powerT = _interval(0.62, 0.82, curve: Curves.easeOutCubic);
-        final stamp = _interval(0.80, 1.0, curve: Curves.easeOutBack);
-        // easeOutBack overshoots <0 / >1, but Opacity requires [0,1].
-        final pInO = pIn.clamp(0.0, 1.0);
-        final oInO = oIn.clamp(0.0, 1.0);
-        final vsO = vs.clamp(0.0, 1.0);
-        final stampO = stamp.clamp(0.0, 1.0);
-        final redShake = r.outcome == RoundOutcome.redCard
-            ? sin(stamp * pi * 5) * 5 * (1 - stamp)
-            : 0.0;
-
-        return Transform.translate(
-          offset: Offset(redShake, 0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.35 * bars),
-              border: Border.all(color: accent.withValues(alpha: 0.4 * stamp)),
-            ),
-            child: Column(
-              children: [
-                // Top letterbox bar.
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Container(height: 14 * bars, color: Colors.black),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    clipBehavior: Clip.none,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          Transform.translate(
-                            offset: Offset(-160 * (1 - pIn), 0),
-                            child: Opacity(
-                              opacity: pInO,
-                              child: _RevealCardColumn(
-                                label: 'YOU',
-                                labelColor: Cyber.cyan,
-                                card: playerCard,
-                                action: playerAction,
-                              ),
-                            ),
-                          ),
-                          Transform.translate(
-                            offset: Offset(160 * (1 - oIn), 0),
-                            child: Opacity(
-                              opacity: oInO,
-                              child: _RevealCardColumn(
-                                label: 'CPU',
-                                labelColor: Cyber.amber,
-                                card: oppCard,
-                                action: oppAction,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      // VS marker.
-                      Transform.scale(
-                        scale: 0.6 + 0.4 * vs + 0.06 * sin(vs * pi),
-                        child: Opacity(
-                          opacity: vsO,
-                          child: Text(
-                            'VS',
-                            style: Cyber.display(30, color: Cyber.gold)
-                                .copyWith(
-                                  shadows: [
-                                    const Shadow(
-                                      color: Cyber.gold,
-                                      blurRadius: 18,
-                                    ),
-                                  ],
-                                ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Power bars.
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Column(
-                    children: [
-                      _PowerBar(
-                        label: 'YOUR POWER',
-                        value: playerPower,
-                        progress: powerT,
-                        color: Cyber.cyan,
-                      ),
-                      const SizedBox(height: 6),
-                      _PowerBar(
-                        label: 'OPPONENT POWER',
-                        value: oppPower,
-                        progress: powerT,
-                        color: Cyber.amber,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Outcome stamp + goal particle burst.
-                SizedBox(
-                  height: 64,
-                  child: Stack(
-                    alignment: Alignment.center,
-                    clipBehavior: Clip.none,
-                    children: [
-                      if (r.outcome == RoundOutcome.goal && stamp > 0)
-                        Positioned.fill(
-                          child: CustomPaint(
-                            painter: _BurstPainter(stamp, accent),
-                          ),
-                        ),
-                      Transform.translate(
-                        offset: Offset(0, -50 * (1 - stamp)),
-                        child: Transform.rotate(
-                          angle: -3 * pi / 180,
-                          child: Opacity(
-                            opacity: stampO,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 18,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: accent.withValues(alpha: 0.16),
-                                border: Border.all(color: accent, width: 2),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: accent.withValues(alpha: 0.5),
-                                    blurRadius: 24,
-                                  ),
-                                ],
-                              ),
-                              child: Text(
-                                outcomeLabel(r.outcome).toUpperCase(),
-                                style: Cyber.display(
-                                  36,
-                                  color: accent,
-                                  letterSpacing: 3,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Bottom letterbox bar.
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Container(height: 14 * bars, color: Colors.black),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _RevealCardColumn extends StatelessWidget {
-  const _RevealCardColumn({
-    required this.label,
-    required this.labelColor,
-    required this.card,
-    required this.action,
-  });
-
-  final String label;
-  final Color labelColor;
-  final PlayerCard card;
-  final ActionCard action;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: Cyber.display(13, color: labelColor, letterSpacing: 2),
-        ),
-        const SizedBox(height: 6),
-        CyberPlayerCardTile(card: card, selected: false),
-        const SizedBox(height: 6),
-        CyberChip(label: action.title, color: actionColor(action.category)),
-      ],
-    );
-  }
-}
-
-class _PowerBar extends StatelessWidget {
-  const _PowerBar({
-    required this.label,
-    required this.value,
-    required this.progress,
-    required this.color,
-  });
-
-  final String label;
-  final double value;
-  final double progress;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    // Normalize against a plausible max power (~150) for the fill width.
-    final fill = (value / 150).clamp(0.0, 1.0) * progress;
-    return Row(
-      children: [
-        SizedBox(
-          width: 116,
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: Cyber.muted,
-              fontFamily: Cyber.bodyFont,
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 1,
-            ),
-          ),
-        ),
-        Expanded(
-          child: CyberProgressBar(
-            value: fill,
-            accent: color,
-            height: 14,
-            radius: 0,
-            animate: false,
-            trackColor: Cyber.bg2,
-            trackBorderColor: Cyber.borderSubtle,
-          ),
-        ),
-        const SizedBox(width: 8),
-        SizedBox(
-          width: 40,
-          child: Text(
-            (value * progress).toStringAsFixed(0),
-            textAlign: TextAlign.right,
-            style: Cyber.display(18, color: color, letterSpacing: 0.5),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _BurstPainter extends CustomPainter {
-  _BurstPainter(this.t, this.color);
-  final double t;
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final paint = Paint()..color = color.withValues(alpha: (1 - t).clamp(0, 1));
-    final rng = Random(7);
-    for (var i = 0; i < 14; i++) {
-      final angle = (i / 14) * 2 * pi + rng.nextDouble();
-      final dist = 90 * t * (0.6 + rng.nextDouble() * 0.6);
-      final p = center + Offset(cos(angle), sin(angle)) * dist;
-      final s = 5 * (1 - t) + 2;
-      canvas.drawRect(Rect.fromCenter(center: p, width: s, height: s), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _BurstPainter old) =>
-      old.t != t || old.color != color;
 }
 
 class _NextRoundCountdown extends StatefulWidget {
-  const _NextRoundCountdown({
-    required this.onComplete,
-    this.startDelay = Duration.zero,
-  });
+  const _NextRoundCountdown({required this.onComplete});
+
   final VoidCallback onComplete;
-  final Duration startDelay;
 
   @override
   State<_NextRoundCountdown> createState() => _NextRoundCountdownState();
@@ -3944,10 +3665,6 @@ class _NextRoundCountdownState extends State<_NextRoundCountdown> {
   }
 
   Future<void> _tick() async {
-    if (widget.startDelay > Duration.zero) {
-      await Future<void>.delayed(widget.startDelay);
-      if (!mounted) return;
-    }
     for (var i = 3; i > 0; i--) {
       await Future<void>.delayed(const Duration(seconds: 1));
       if (!mounted) return;

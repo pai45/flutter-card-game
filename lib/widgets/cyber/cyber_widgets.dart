@@ -868,11 +868,9 @@ const List<double> _grayscaleMatrix = <double>[
   0, 0, 0, 1, 0, //
 ];
 
-/// Shared interaction shell for player/action cards. Handles the premium
-/// states from the design spec: hover lift, selected lift+scale+pulsing glow
-/// ring + glow dot, and disabled grayscale + "SUSPENDED" banner + shake on a
-/// blocked tap. The [builder] receives the current hover state so inner
-/// visuals (e.g. holographic gradients) can react.
+/// Shared interaction shell for player/action cards. Handles hover lift,
+/// selected hard-elevation (offset shadow + accent fill + square marker),
+/// and disabled grayscale + "SUSPENDED" banner + shake on a blocked tap.
 class PremiumCardShell extends StatefulWidget {
   const PremiumCardShell({
     required this.width,
@@ -913,11 +911,9 @@ class PremiumCardShell extends StatefulWidget {
 }
 
 class _PremiumCardShellState extends State<PremiumCardShell>
-    with TickerProviderStateMixin {
-  late final AnimationController _pulse = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1100),
-  )..repeat(reverse: true);
+    with SingleTickerProviderStateMixin {
+  static const _hardShadowColor = Color(0xff04060b);
+
   late final AnimationController _shake = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 420),
@@ -926,7 +922,6 @@ class _PremiumCardShellState extends State<PremiumCardShell>
 
   @override
   void dispose() {
-    _pulse.dispose();
     _shake.dispose();
     super.dispose();
   }
@@ -953,31 +948,29 @@ class _PremiumCardShellState extends State<PremiumCardShell>
       child: GestureDetector(
         onTap: _handleTap,
         child: AnimatedBuilder(
-          animation: Listenable.merge([_pulse, _shake]),
+          animation: _shake,
           builder: (context, _) {
             final hot = _hovered && !widget.disabled;
-            final lift = hot ? -3.0 : 0.0;
-            final scale = hot ? 1.02 : 1.0;
+            final lift = widget.selected ? -5.0 : (hot ? -3.0 : 0.0);
+            final scale = hot && !widget.selected ? 1.02 : 1.0;
             final shakeX = _shake.isAnimating
                 ? sin(_shake.value * pi * 6) * 4 * (1 - _shake.value)
                 : 0.0;
-            final ring = widget.selected ? 3.0 + 3.0 * _pulse.value : 0.0;
-            final glowA = widget.selected ? 0.25 - 0.15 * _pulse.value : 0.0;
 
-            Widget card = SizedBox(
+            Widget cardBody = SizedBox(
               width: widget.width,
               height: widget.height,
               child: widget.builder(_hovered),
             );
 
             if (widget.disabled) {
-              card = ColorFiltered(
+              cardBody = ColorFiltered(
                 colorFilter: const ColorFilter.matrix(_grayscaleMatrix),
-                child: card,
+                child: cardBody,
               );
-              card = Stack(
+              cardBody = Stack(
                 children: [
-                  card,
+                  cardBody,
                   Positioned.fill(
                     child: ClipPath(
                       clipper: widget.clipper ?? CyberClipper(),
@@ -987,13 +980,43 @@ class _PremiumCardShellState extends State<PremiumCardShell>
                 ],
               );
             } else if (widget.selected) {
-              card = Stack(
+              final clipper = widget.clipper ?? CyberClipper();
+              final inner = SizedBox(
+                width: widget.width,
+                height: widget.height,
+                child: widget.builder(_hovered),
+              );
+              cardBody = Stack(
+                clipBehavior: Clip.none,
                 children: [
-                  card,
+                  Transform.translate(
+                    offset: const Offset(0, 6),
+                    child: ClipPath(
+                      clipper: clipper,
+                      child: SizedBox(
+                        width: widget.width,
+                        height: widget.height,
+                        child: const ColoredBox(color: _hardShadowColor),
+                      ),
+                    ),
+                  ),
+                  ClipPath(
+                    clipper: clipper,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: widget.selectedAccent.withValues(alpha: 0.12),
+                        border: Border.all(
+                          color: widget.selectedAccent,
+                          width: 2,
+                        ),
+                      ),
+                      child: inner,
+                    ),
+                  ),
                   Positioned(
                     right: 7,
                     bottom: 7,
-                    child: _GlowDot(_pulse.value, color: widget.selectedAccent),
+                    child: _SelectionSquare(color: widget.selectedAccent),
                   ),
                 ],
               );
@@ -1005,34 +1028,16 @@ class _PremiumCardShellState extends State<PremiumCardShell>
                 scale: scale,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    boxShadow: widget.selected
+                    boxShadow: hot && !widget.selected && !widget.disabled
                         ? [
                             BoxShadow(
-                              color: widget.selectedAccent.withValues(
-                                alpha: glowA,
-                              ),
-                              blurRadius: 22,
-                              spreadRadius: ring,
-                            ),
-                            BoxShadow(
-                              color: widget.selectedAccent.withValues(
-                                alpha: 0.18,
-                              ),
-                              blurRadius: 28,
+                              color: widget.accent.withValues(alpha: 0.28),
+                              blurRadius: 16,
                             ),
                           ]
-                        : (hot
-                              ? [
-                                  BoxShadow(
-                                    color: widget.accent.withValues(
-                                      alpha: 0.28,
-                                    ),
-                                    blurRadius: 16,
-                                  ),
-                                ]
-                              : null),
+                        : null,
                   ),
-                  child: card,
+                  child: cardBody,
                 ),
               ),
             );
@@ -1043,9 +1048,9 @@ class _PremiumCardShellState extends State<PremiumCardShell>
   }
 }
 
-class _GlowDot extends StatelessWidget {
-  const _GlowDot(this.t, {required this.color});
-  final double t;
+class _SelectionSquare extends StatelessWidget {
+  const _SelectionSquare({required this.color});
+
   final Color color;
 
   @override
@@ -1055,14 +1060,7 @@ class _GlowDot extends StatelessWidget {
       height: 9,
       decoration: BoxDecoration(
         color: color,
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.6 + 0.4 * t),
-            blurRadius: 8 + 4 * t,
-            spreadRadius: 1,
-          ),
-        ],
+        border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
       ),
     );
   }
@@ -1164,17 +1162,9 @@ class CyberPlayerCardTile extends StatefulWidget {
 }
 
 class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
-    with TickerProviderStateMixin {
+    with SingleTickerProviderStateMixin {
   late final AnimationController _tapController = AnimationController(
     duration: const Duration(milliseconds: 300),
-    vsync: this,
-  );
-
-  // Drives the CTA-style pulsing edge glow. It only runs while the card is
-  // selected, so the dozens of unselected cards in a grid stay idle and the
-  // glow stays scarce (per the design glow rule).
-  late final AnimationController _pulse = AnimationController(
-    duration: const Duration(milliseconds: 1500),
     vsync: this,
   );
 
@@ -1183,7 +1173,6 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
     super.initState();
     if (widget.selected) {
       _tapController.value = 1;
-      _pulse.repeat(reverse: true);
     }
   }
 
@@ -1192,19 +1181,14 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
     super.didUpdateWidget(oldWidget);
     if (widget.selected && !oldWidget.selected) {
       _tapController.forward(from: 0);
-      _pulse.repeat(reverse: true);
     } else if (!widget.selected && oldWidget.selected) {
       _tapController.reverse();
-      _pulse
-        ..stop()
-        ..value = 0;
     }
   }
 
   @override
   void dispose() {
     _tapController.dispose();
-    _pulse.dispose();
     super.dispose();
   }
 
@@ -1415,35 +1399,18 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
             ),
           );
 
-          // Static rarity edge is always painted; the soft blurred glow only
-          // appears on hover (steady) or selection (pulsing) — glow stays scarce.
-          if (!selected) {
-            return CustomPaint(
-              foregroundPainter: _CardFramePainter(
-                tier: tier,
-                accent: tier,
-                rank: rank,
-                glow: hovered ? 0.6 : 0.0,
-                bigCut: bigCut,
-                smallCut: smallCut,
-              ),
-              child: content,
-            );
-          }
-          return AnimatedBuilder(
-            animation: _pulse,
-            child: content,
-            builder: (_, child) => CustomPaint(
-              foregroundPainter: _CardFramePainter(
-                tier: tier,
-                accent: selectedAccent,
-                rank: rank,
-                glow: 0.55 + 0.45 * _pulse.value,
-                bigCut: bigCut,
-                smallCut: smallCut,
-              ),
-              child: child,
+          // Static rarity edge on idle/hover; selected uses a hard accent rim
+          // (elevation + border live on [PremiumCardShell]).
+          return CustomPaint(
+            foregroundPainter: _CardFramePainter(
+              tier: tier,
+              accent: selected ? selectedAccent : tier,
+              rank: rank,
+              glow: selected ? 0 : (hovered ? 0.6 : 0.0),
+              bigCut: bigCut,
+              smallCut: smallCut,
             ),
+            child: content,
           );
         },
       ),
@@ -1750,6 +1717,11 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
     // cyber-ui) at full weight so the headline stat is never the dim element.
     // Magnitude is conveyed by the value itself, not by fading low values out.
     const ratingColor = Cyber.gold;
+    // Bronze read too close to gold on the thin tier strip; deepen it to a true
+    // copper bronze (matching the player OVR plate) so the tier is unmistakable.
+    final stripColor = widget.card.tier == CardTier.bronze
+        ? const Color(0xffa85f25)
+        : tierColor(widget.card.tier);
     final small = widget.size == VisualCardSize.sm;
     final large = widget.size == VisualCardSize.lg;
 
@@ -1759,18 +1731,9 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
     final rotateAnim = Tween<double>(begin: 0, end: 0.08).animate(
       CurvedAnimation(parent: _tapController, curve: Curves.easeOutBack),
     );
-    final glowAnim = Tween<double>(
-      begin: 0,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _tapController, curve: Curves.easeOut));
 
     return AnimatedBuilder(
-      animation: Listenable.merge([
-        _tapController,
-        scaleAnim,
-        rotateAnim,
-        glowAnim,
-      ]),
+      animation: _tapController,
       builder: (_, _) {
         return Transform.scale(
           scale: scaleAnim.value,
@@ -1784,6 +1747,7 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
               disabledLabel: widget.disabledLabel,
               accent: widget.card.risky ? Cyber.magenta : catAccent,
               selectedAccent: widget.selectedAccent,
+              clipper: RectangleClipper(),
               onTap: widget.onTap,
               tapSound: switch (widget.card.category) {
                 ActionCategory.attack => SoundEffect.attack,
@@ -1793,36 +1757,23 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
               builder: (hovered) {
                 return DecoratedBox(
                   decoration: BoxDecoration(
-                    boxShadow: widget.selected
-                        ? [
-                            BoxShadow(
-                              color: catAccent.withValues(
-                                alpha: 0.3 * glowAnim.value,
-                              ),
-                              blurRadius: 24 * glowAnim.value,
-                              spreadRadius: 4 * glowAnim.value,
-                            ),
-                          ]
-                        : null,
+                    border: widget.selected
+                        ? null
+                        : Border.all(
+                            color: widget.card.risky
+                                ? Cyber.magenta
+                                : catAccent.withValues(alpha: 0.55),
+                          ),
+                    gradient: widget.selected
+                        ? null
+                        : LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: catColors,
+                            transform: GradientRotation(hovered ? 1.13 : 0),
+                          ),
                   ),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: widget.selected
-                            ? widget.selectedAccent
-                            : (widget.card.risky
-                                  ? Cyber.magenta
-                                  : catAccent.withValues(alpha: 0.55)),
-                        width: widget.selected ? 1.5 : 1,
-                      ),
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: catColors,
-                        transform: GradientRotation(hovered ? 1.13 : 0),
-                      ),
-                    ),
-                    child: ClipPath(
+                  child: ClipPath(
                       clipper: RectangleClipper(),
                       child: Stack(
                         children: [
@@ -1911,14 +1862,12 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
                             left: 0,
                             right: 0,
                             child: Container(
-                              height: 3,
-                              color: tierColor(widget.card.tier),
+                              height: 6,
+                              color: stripColor,
                             ),
                           ),
-                          // Rating badge — the card's headline stat. Dark HUD
-                          // chip with a gold score readout; drawn last so the
-                          // centred art never clips it, and glows only when the
-                          // card is selected ("this one is live").
+                          // Rating badge — headline stat; stays flat when selected
+                          // (elevation is handled by [PremiumCardShell]).
                           Positioned(
                             top: 2,
                             right: 0,
@@ -1933,14 +1882,6 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
                                   ),
                                   bottom: BorderSide(color: Color(0x73ffd166)),
                                 ),
-                                boxShadow: widget.selected
-                                    ? Cyber.glow(
-                                        ratingColor,
-                                        alpha: 0.55,
-                                        blur: 12,
-                                        spread: -1,
-                                      )
-                                    : null,
                               ),
                               // Single line keeps the badge short so it never
                               // reaches the centred icon below it.
@@ -1982,7 +1923,6 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
                         ],
                       ),
                     ),
-                  ),
                 );
               },
             ),

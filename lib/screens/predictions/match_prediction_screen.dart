@@ -35,7 +35,10 @@ class MatchPredictionScreen extends StatefulWidget {
   State<MatchPredictionScreen> createState() => _MatchPredictionScreenState();
 }
 
-class _MatchPredictionScreenState extends State<MatchPredictionScreen> {
+enum _QuizRevealPhase { numberIntro, questionReveal, optionsReveal, ready }
+
+class _MatchPredictionScreenState extends State<MatchPredictionScreen>
+    with TickerProviderStateMixin {
   PredictionQuiz? _quiz;
   bool _loading = true;
   bool _submitting = false;
@@ -43,6 +46,12 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen> {
   final Map<String, int> _answers = {};
   Timer? _ticker;
   DateTime _now = DateTime.now();
+  _QuizRevealPhase _revealPhase = _QuizRevealPhase.ready;
+  int _revealRun = 0;
+
+  late final AnimationController _numberIntro;
+  late final AnimationController _questionReveal;
+  late final AnimationController _optionsReveal;
 
   SportMatch get _match => widget.match;
   bool get _editable => _match.predictable;
@@ -50,6 +59,18 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen> {
   @override
   void initState() {
     super.initState();
+    _numberIntro = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    _questionReveal = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 720),
+    );
+    _optionsReveal = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 620),
+    );
     _load();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _now = DateTime.now());
@@ -59,6 +80,9 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen> {
   @override
   void dispose() {
     _ticker?.cancel();
+    _numberIntro.dispose();
+    _questionReveal.dispose();
+    _optionsReveal.dispose();
     super.dispose();
   }
 
@@ -73,6 +97,9 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen> {
       _loading = false;
       _ensureScoreDefaults();
     });
+    if (_questions.isNotEmpty) {
+      _runForwardReveal();
+    }
   }
 
   void _ensureScoreDefaults() {
@@ -98,6 +125,12 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen> {
   }
 
   bool get _isLast => _index >= _questions.length - 1;
+  bool get _revealing => _revealPhase != _QuizRevealPhase.ready;
+  bool get _currentAnswered {
+    if (_questions.isEmpty) return false;
+    final q = _questions[_index];
+    return q.isScorePrediction || _answers.containsKey(q.id);
+  }
 
   Duration get _untilLock {
     final d = _match.kickoff.difference(_now);
@@ -105,13 +138,13 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen> {
   }
 
   void _select(String questionId, int optionIndex) {
-    if (!_editable) return;
+    if (!_editable || _revealing) return;
     playSound(SoundEffect.cardSelect);
     setState(() => _answers[questionId] = optionIndex);
   }
 
   void _setScore(String questionId, {int? home, int? away}) {
-    if (!_editable) return;
+    if (!_editable || _revealing) return;
     final (currentHome, currentAway) = _scoreFor(questionId);
     playSound(SoundEffect.uiTap);
     setState(() {
@@ -125,13 +158,49 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen> {
   void _previous() {
     if (_index <= 0) return;
     playSound(SoundEffect.uiTap);
-    setState(() => _index--);
+    _revealRun++;
+    _numberIntro.value = 1;
+    _questionReveal.value = 1;
+    _optionsReveal.value = 1;
+    setState(() {
+      _index--;
+      _revealPhase = _QuizRevealPhase.ready;
+    });
   }
 
   void _next() {
-    if (_isLast) return;
+    if (_isLast || _revealing || (_editable && !_currentAnswered)) return;
     playSound(SoundEffect.uiTap);
     setState(() => _index++);
+    _runForwardReveal();
+  }
+
+  Future<void> _runForwardReveal() async {
+    final run = ++_revealRun;
+    _numberIntro
+      ..stop()
+      ..reset();
+    _questionReveal
+      ..stop()
+      ..reset();
+    _optionsReveal
+      ..stop()
+      ..reset();
+    if (!mounted) return;
+    setState(() => _revealPhase = _QuizRevealPhase.numberIntro);
+    playSound(SoundEffect.countdownTick);
+    unawaited(_numberIntro.forward());
+    await Future<void>.delayed(_numberIntro.duration!);
+    if (!mounted || run != _revealRun) return;
+    setState(() => _revealPhase = _QuizRevealPhase.questionReveal);
+    unawaited(_questionReveal.forward());
+    await Future<void>.delayed(_questionReveal.duration!);
+    if (!mounted || run != _revealRun) return;
+    setState(() => _revealPhase = _QuizRevealPhase.optionsReveal);
+    unawaited(_optionsReveal.forward());
+    await Future<void>.delayed(_optionsReveal.duration!);
+    if (!mounted || run != _revealRun) return;
+    setState(() => _revealPhase = _QuizRevealPhase.ready);
   }
 
   Future<void> _submit() async {
@@ -181,6 +250,20 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen> {
                 },
               ),
             ),
+          if (!_loading && _questions.isNotEmpty)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: AnimatedBuilder(
+                  animation: _numberIntro,
+                  builder: (context, _) => _QuizNumberBurst(
+                    number: _index + 1,
+                    progress: _revealPhase == _QuizRevealPhase.numberIntro
+                        ? _numberIntro.value
+                        : 0,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -214,51 +297,73 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen> {
         _QuizHeader(match: _match),
         _LockLine(match: _match, untilLock: _untilLock),
         Expanded(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 280),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            transitionBuilder: (child, anim) {
-              final slide = Tween<Offset>(
-                begin: const Offset(0.10, 0),
-                end: Offset.zero,
-              ).animate(anim);
-              return FadeTransition(
-                opacity: anim,
-                child: SlideTransition(position: slide, child: child),
+          child: AnimatedBuilder(
+            animation: Listenable.merge([_questionReveal, _optionsReveal]),
+            builder: (context, _) {
+              final questionProgress = switch (_revealPhase) {
+                _QuizRevealPhase.numberIntro => 0.0,
+                _QuizRevealPhase.questionReveal => _questionReveal.value,
+                _QuizRevealPhase.optionsReveal || _QuizRevealPhase.ready => 1.0,
+              };
+              final optionsProgress = switch (_revealPhase) {
+                _QuizRevealPhase.optionsReveal => _optionsReveal.value,
+                _QuizRevealPhase.ready => 1.0,
+                _ => 0.0,
+              };
+              return AnimatedSwitcher(
+                duration: const Duration(milliseconds: 280),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                transitionBuilder: (child, anim) {
+                  final slide = Tween<Offset>(
+                    begin: const Offset(0.10, 0),
+                    end: Offset.zero,
+                  ).animate(anim);
+                  return FadeTransition(
+                    opacity: anim,
+                    child: SlideTransition(position: slide, child: child),
+                  );
+                },
+                child: _revealPhase == _QuizRevealPhase.numberIntro
+                    ? const SizedBox.shrink(key: ValueKey('question-intro-gap'))
+                    : question.isScorePrediction
+                    ? _ScoreQuestionPanel(
+                        key: ValueKey(question.id),
+                        index: _index + 1,
+                        question: question,
+                        match: _match,
+                        homeScore: _scoreFor(question.id).$1,
+                        awayScore: _scoreFor(question.id).$2,
+                        settled: settled,
+                        editable: _editable && !_revealing,
+                        questionProgress: questionProgress,
+                        controlProgress: optionsProgress,
+                        onHomeChanged: (s) => _setScore(question.id, home: s),
+                        onAwayChanged: (s) => _setScore(question.id, away: s),
+                      )
+                    : SingleChildScrollView(
+                        key: ValueKey(question.id),
+                        padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
+                        child: _QuestionPanel(
+                          index: _index + 1,
+                          question: question,
+                          selected: _answers[question.id],
+                          settled: settled,
+                          enabled: !_revealing,
+                          questionProgress: questionProgress,
+                          optionsProgress: optionsProgress,
+                          onSelect: (opt) => _select(question.id, opt),
+                        ),
+                      ),
               );
             },
-            child: question.isScorePrediction
-                ? _ScoreQuestionPanel(
-                    key: ValueKey(question.id),
-                    index: _index + 1,
-                    question: question,
-                    match: _match,
-                    homeScore: _scoreFor(question.id).$1,
-                    awayScore: _scoreFor(question.id).$2,
-                    settled: settled,
-                    editable: _editable,
-                    onHomeChanged: (s) => _setScore(question.id, home: s),
-                    onAwayChanged: (s) => _setScore(question.id, away: s),
-                  )
-                : SingleChildScrollView(
-                    key: ValueKey(question.id),
-                    padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
-                    child: _QuestionPanel(
-                      index: _index + 1,
-                      question: question,
-                      selected: _answers[question.id],
-                      settled: settled,
-                      onSelect: (opt) => _select(question.id, opt),
-                    ),
-                  ),
           ),
         ),
         _BottomDock(
           questions: _questions,
           answers: _answers,
           index: _index,
-          canGoPrevious: _index > 0,
+          canGoPrevious: _index > 0 && !_revealing,
           onPrevious: _previous,
           primary: primary,
           helper: _helperText(prediction, settled),
@@ -277,29 +382,46 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen> {
         prediction != null &&
         !settled;
     if (_isLast && canSettle) {
-      return _PrimaryAction('SETTLE & CLAIM', enabled: true, onTap: _settle);
+      return _PrimaryAction(
+        'SETTLE & CLAIM',
+        enabled: !_revealing,
+        onTap: _revealing ? null : _settle,
+      );
     }
     if (!_editable) {
       if (_isLast) {
         return _PrimaryAction(
           'DONE',
-          enabled: true,
-          onTap: () {
-            playSound(SoundEffect.uiTap);
-            Navigator.of(context).maybePop();
-          },
+          enabled: !_revealing,
+          onTap: _revealing
+              ? null
+              : () {
+                  playSound(SoundEffect.uiTap);
+                  Navigator.of(context).maybePop();
+                },
         );
       }
-      return _PrimaryAction('NEXT', enabled: true, isNext: true, onTap: _next);
+      return _PrimaryAction(
+        'NEXT',
+        enabled: !_revealing,
+        isNext: true,
+        onTap: _revealing ? null : _next,
+      );
     }
     if (_isLast) {
       return _PrimaryAction(
         'SUBMIT QUIZ',
-        enabled: _allAnswered,
-        onTap: _allAnswered ? _submit : null,
+        enabled: _allAnswered && !_revealing,
+        onTap: _allAnswered && !_revealing ? _submit : null,
       );
     }
-    return _PrimaryAction('NEXT', enabled: true, isNext: true, onTap: _next);
+    final canAdvance = _currentAnswered && !_revealing;
+    return _PrimaryAction(
+      'NEXT',
+      enabled: canAdvance,
+      isNext: true,
+      onTap: canAdvance ? _next : null,
+    );
   }
 
   String _helperText(UserPrediction? prediction, bool settled) {
@@ -510,12 +632,74 @@ class _LockLine extends StatelessWidget {
 }
 
 // ── The single question panel ─────────────────────────────────────────────────
+class _QuizNumberBurst extends StatelessWidget {
+  const _QuizNumberBurst({required this.number, required this.progress});
+
+  final int number;
+  final double progress;
+
+  @override
+  Widget build(BuildContext context) {
+    if (progress <= 0) return const SizedBox.shrink();
+
+    final p = progress.clamp(0.0, 1.0);
+    final double scale;
+    final double opacity;
+    if (p < 0.25) {
+      scale = 2.0 - Curves.easeOutBack.transform(p / 0.25);
+      opacity = 1.0;
+    } else if (p < 0.82) {
+      scale = 1.0;
+      opacity = 1.0;
+    } else {
+      final t = (p - 0.82) / 0.18;
+      scale = 1.0 + 0.18 * t;
+      opacity = 1.0 - t;
+    }
+    final glow = (1 - (p / 0.45).clamp(0.0, 1.0)) * 0.85 + 0.15;
+
+    return ColoredBox(
+      color: Cyber.bg.withValues(alpha: (0.86 * opacity).clamp(0.0, 0.86)),
+      child: Center(
+        child: Transform.scale(
+          scale: scale.clamp(0.4, 2.5),
+          child: Opacity(
+            opacity: opacity.clamp(0.0, 1.0),
+            child: Text(
+              '$number',
+              style: TextStyle(
+                color: Cyber.lime,
+                fontFamily: 'Orbitron',
+                fontSize: 128,
+                fontWeight: FontWeight.w900,
+                shadows: [
+                  Shadow(
+                    color: Cyber.lime.withValues(alpha: glow),
+                    blurRadius: 52,
+                  ),
+                  Shadow(
+                    color: Cyber.cyan.withValues(alpha: glow * 0.55),
+                    blurRadius: 80,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _QuestionPanel extends StatelessWidget {
   const _QuestionPanel({
     required this.index,
     required this.question,
     required this.selected,
     required this.settled,
+    required this.enabled,
+    required this.questionProgress,
+    required this.optionsProgress,
     required this.onSelect,
   });
 
@@ -523,6 +707,9 @@ class _QuestionPanel extends StatelessWidget {
   final QuizQuestion question;
   final int? selected;
   final bool settled;
+  final bool enabled;
+  final double questionProgress;
+  final double optionsProgress;
   final ValueChanged<int> onSelect;
 
   @override
@@ -550,8 +737,9 @@ class _QuestionPanel extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: Text(
-                      question.text.toUpperCase(),
+                    child: _WordRevealText(
+                      text: question.text.toUpperCase(),
+                      progress: questionProgress,
                       style: Cyber.display(
                         16,
                         letterSpacing: 0.3,
@@ -564,15 +752,25 @@ class _QuestionPanel extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               for (var i = 0; i < question.options.length; i++)
-                Padding(
-                  padding: EdgeInsets.only(
-                    bottom: i == question.options.length - 1 ? 0 : 10,
+                _StaggeredReveal(
+                  progress: _itemProgress(
+                    optionsProgress,
+                    i,
+                    question.options.length,
                   ),
-                  child: _OptionTile(
-                    letter: String.fromCharCode(65 + i),
-                    label: question.options[i],
-                    state: _optionState(i),
-                    onTap: () => onSelect(i),
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      bottom: i == question.options.length - 1 ? 0 : 10,
+                    ),
+                    child: IgnorePointer(
+                      ignoring: !enabled,
+                      child: _OptionTile(
+                        letter: String.fromCharCode(65 + i),
+                        label: question.options[i],
+                        state: _optionState(i),
+                        onTap: () => onSelect(i),
+                      ),
+                    ),
                   ),
                 ),
             ],
@@ -609,6 +807,64 @@ class _QuestionPanel extends StatelessWidget {
 }
 
 // ── Score prediction question (Q1 on football fixtures) ───────────────────────
+class _WordRevealText extends StatelessWidget {
+  const _WordRevealText({
+    required this.text,
+    required this.progress,
+    required this.style,
+  });
+
+  final String text;
+  final double progress;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    final words = text
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .toList();
+    if (words.isEmpty) return const SizedBox.shrink();
+
+    return Semantics(
+      label: text,
+      child: Wrap(
+        spacing: 5,
+        runSpacing: 2,
+        children: [
+          for (var i = 0; i < words.length; i++)
+            _StaggeredReveal(
+              progress: _itemProgress(progress, i, words.length),
+              child: Text(words[i], style: style),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StaggeredReveal extends StatelessWidget {
+  const _StaggeredReveal({required this.progress, required this.child});
+
+  final double progress;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Curves.easeOutCubic.transform(progress.clamp(0.0, 1.0));
+    return Opacity(
+      opacity: t,
+      child: Transform.translate(offset: Offset(0, 10 * (1 - t)), child: child),
+    );
+  }
+}
+
+double _itemProgress(double progress, int index, int total) {
+  if (total <= 1) return progress.clamp(0.0, 1.0);
+  final step = 1 / total;
+  return ((progress - step * index) / step).clamp(0.0, 1.0);
+}
+
 class _ScoreQuestionPanel extends StatelessWidget {
   const _ScoreQuestionPanel({
     super.key,
@@ -619,6 +875,8 @@ class _ScoreQuestionPanel extends StatelessWidget {
     required this.awayScore,
     required this.settled,
     required this.editable,
+    required this.questionProgress,
+    required this.controlProgress,
     required this.onHomeChanged,
     required this.onAwayChanged,
   });
@@ -630,6 +888,8 @@ class _ScoreQuestionPanel extends StatelessWidget {
   final int awayScore;
   final bool settled;
   final bool editable;
+  final double questionProgress;
+  final double controlProgress;
   final ValueChanged<int> onHomeChanged;
   final ValueChanged<int> onAwayChanged;
 
@@ -665,8 +925,9 @@ class _ScoreQuestionPanel extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: Text(
-                        question.text.toUpperCase(),
+                      child: _WordRevealText(
+                        text: question.text.toUpperCase(),
+                        progress: questionProgress,
                         style: Cyber.display(
                           16,
                           letterSpacing: 0.3,
@@ -678,16 +939,19 @@ class _ScoreQuestionPanel extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 24),
-                ScorePredictionPicker(
-                  match: match,
-                  homeScore: homeScore,
-                  awayScore: awayScore,
-                  enabled: editable,
-                  settled: settled,
-                  correctHome: question.settledHomeScore,
-                  correctAway: question.settledAwayScore,
-                  onHomeChanged: onHomeChanged,
-                  onAwayChanged: onAwayChanged,
+                _StaggeredReveal(
+                  progress: controlProgress,
+                  child: ScorePredictionPicker(
+                    match: match,
+                    homeScore: homeScore,
+                    awayScore: awayScore,
+                    enabled: editable,
+                    settled: settled,
+                    correctHome: question.settledHomeScore,
+                    correctAway: question.settledAwayScore,
+                    onHomeChanged: onHomeChanged,
+                    onAwayChanged: onAwayChanged,
+                  ),
                 ),
                 if (settled) ...[
                   const SizedBox(height: 12),

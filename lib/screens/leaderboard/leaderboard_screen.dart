@@ -4,14 +4,26 @@ import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../models/avatar_option.dart';
 import '../../models/sport_match.dart';
-import '../shop/shop_screen.dart' show CoinIcon;
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
+import '../../widgets/stat_oz_top_bar.dart';
 import '../../widgets/team_logo.dart';
 
 // ─── Domain ──────────────────────────────────────────────────────────────────
 
 enum LeaderboardType { matchDay, tournament, coins, games }
+
+// Matches shop tab styling (_ShopTabs / _TabItem).
+const Color _tabBarBg = Color(0xff0d111a);
+const Color _tabCyan = Color(0xff5cdfff);
+const Color _tabSecondary = Color(0xff94a3b8);
+
+const List<LeaderboardType> _typeTabOrder = [
+  LeaderboardType.matchDay,
+  LeaderboardType.tournament,
+  LeaderboardType.coins,
+  LeaderboardType.games,
+];
 
 enum TournamentBoard { players, teams }
 
@@ -422,7 +434,8 @@ class LeaderboardScreen extends StatefulWidget {
   State<LeaderboardScreen> createState() => _LeaderboardScreenState();
 }
 
-class _LeaderboardScreenState extends State<LeaderboardScreen> {
+class _LeaderboardScreenState extends State<LeaderboardScreen>
+    with TickerProviderStateMixin {
   LeaderboardType _type = LeaderboardType.matchDay;
   TournamentBoard _tournamentBoard = TournamentBoard.teams;
   String _sport = 'FIFA';
@@ -430,6 +443,47 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   GameMode _mode = GameMode.quiz;
 
   static const List<String> _sports = ['FIFA', 'IPL', 'UCL', 'NBA', 'F1'];
+
+  late final AnimationController _typeTabIndicatorController;
+  late Animation<double> _typeTabIndicatorAnimation;
+  int _previousTypeTab = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _typeTabIndicatorController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+      value: 0,
+    );
+    _typeTabIndicatorAnimation = AlwaysStoppedAnimation<double>(
+      _typeTabOrder.indexOf(_type).toDouble(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _typeTabIndicatorController.dispose();
+    super.dispose();
+  }
+
+  void _setTypeTab(int index) {
+    final type = _typeTabOrder[index];
+    if (type == _type) return;
+    _previousTypeTab = _typeTabOrder.indexOf(_type);
+    _typeTabIndicatorAnimation =
+        Tween<double>(
+          begin: _previousTypeTab.toDouble(),
+          end: index.toDouble(),
+        ).animate(
+          CurvedAnimation(
+            parent: _typeTabIndicatorController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+    _typeTabIndicatorController.forward(from: 0);
+    setState(() => _type = type);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -456,10 +510,15 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
                 return Column(
                   children: [
-                    _Header(accent: accent),
-                    _TypeSelector(
-                      active: _type,
-                      onSelect: (type) => setState(() => _type = type),
+                    StatOzTopBar(
+                      title: 'Leaderboard',
+                      accent: accent,
+                      onAddCoins: () => widget.onNavigate(AppSection.shop),
+                    ),
+                    _LeaderboardTabs(
+                      activeTab: _typeTabOrder.indexOf(_type),
+                      indicatorAnimation: _typeTabIndicatorAnimation,
+                      onTap: _setTypeTab,
                     ),
                     _FilterBar(
                       type: _type,
@@ -526,173 +585,158 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   }
 }
 
-// ─── Header ──────────────────────────────────────────────────────────────────
+// ─── Type tabs (matches shop _ShopTabs) ──────────────────────────────────────
 
-class _Header extends StatelessWidget {
-  const _Header({required this.accent});
+class _LeaderboardTabs extends StatelessWidget {
+  const _LeaderboardTabs({
+    required this.activeTab,
+    required this.indicatorAnimation,
+    required this.onTap,
+  });
 
-  final Color accent;
+  final int activeTab;
+  final Animation<double> indicatorAnimation;
+  final ValueChanged<int> onTap;
+
+  static const List<String> _items = ['MATCH DAY', 'TOURNEY', 'COINS', 'GAMES'];
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+      height: 50,
       decoration: BoxDecoration(
+        color: _tabBarBg.withValues(alpha: 0.4),
         border: Border(
-          bottom: BorderSide(color: accent.withValues(alpha: 0.22)),
+          bottom: BorderSide(color: _tabCyan.withValues(alpha: 0.22)),
         ),
       ),
-      child: Row(
-        children: [
-          const Icon(Icons.emoji_events, color: Cyber.gold, size: 24),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Leaderboard',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontFamily: Cyber.displayFont,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 22,
-                    letterSpacing: 0.2,
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final double tabWidth = constraints.maxWidth / _items.length;
+          return Stack(
+            children: [
+              Row(
+                children: [
+                  for (int index = 0; index < _items.length; index++)
+                    Expanded(
+                      child: _Pressable(
+                        onTap: () => onTap(index),
+                        child: _LeaderboardTabItem(
+                          label: _items[index],
+                          active: activeTab == index,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              AnimatedBuilder(
+                animation: indicatorAnimation,
+                builder: (BuildContext context, Widget? child) {
+                  return Positioned(
+                    left: tabWidth * indicatorAnimation.value + tabWidth * 0.18,
+                    bottom: 0,
+                    width: tabWidth * 0.64,
+                    height: 3,
+                    child: child!,
+                  );
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: _tabCyan,
+                    boxShadow: [
+                      BoxShadow(
+                        color: _tabCyan.withValues(alpha: 0.7),
+                        blurRadius: 10,
+                      ),
+                    ],
                   ),
                 ),
-                Text(
-                  'Climb the ranks',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: accent.withValues(alpha: 0.55),
-                    fontFamily: Cyber.displayFont,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-// ─── Type selector ───────────────────────────────────────────────────────────
+class _LeaderboardTabItem extends StatelessWidget {
+  const _LeaderboardTabItem({required this.label, required this.active});
 
-class _TypeSelector extends StatelessWidget {
-  const _TypeSelector({required this.active, required this.onSelect});
-
-  final LeaderboardType active;
-  final ValueChanged<LeaderboardType> onSelect;
-
-  static const List<({LeaderboardType type, String label, IconData? icon})>
-  _items = [
-    (
-      type: LeaderboardType.matchDay,
-      label: 'MATCH DAY',
-      icon: Icons.local_fire_department,
-    ),
-    (
-      type: LeaderboardType.tournament,
-      label: 'TOURNEY',
-      icon: Icons.military_tech,
-    ),
-    (type: LeaderboardType.coins, label: 'COINS', icon: null),
-    (type: LeaderboardType.games, label: 'GAMES', icon: Icons.sports_esports),
-  ];
+  final String label;
+  final bool active;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
-      child: Row(
-        children: [
-          for (final item in _items)
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 3),
-                child: _TypeChip(
-                  label: item.label,
-                  type: item.type,
-                  icon: item.icon,
-                  active: active == item.type,
-                  accent: _accentFor(item.type),
-                  onTap: () => onSelect(item.type),
-                ),
-              ),
+    final Color color = active ? _tabCyan : _tabSecondary;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      decoration: BoxDecoration(
+        color: active ? _tabCyan.withValues(alpha: 0.07) : Colors.transparent,
+      ),
+      child: Center(
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label,
+            maxLines: 1,
+            style: TextStyle(
+              color: color,
+              fontFamily: 'Orbitron',
+              fontSize: 9.5,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.2,
             ),
-        ],
+          ),
+        ),
       ),
     );
   }
 }
 
-class _TypeChip extends StatelessWidget {
-  const _TypeChip({
-    required this.label,
-    required this.type,
-    required this.icon,
-    required this.active,
-    required this.accent,
-    required this.onTap,
-  });
+class _Pressable extends StatefulWidget {
+  const _Pressable({required this.child, required this.onTap});
 
-  final String label;
-  final LeaderboardType type;
-  final IconData? icon;
-  final bool active;
-  final Color accent;
+  final Widget child;
   final VoidCallback onTap;
 
   @override
+  State<_Pressable> createState() => _PressableState();
+}
+
+class _PressableState extends State<_Pressable> {
+  bool _pressed = false;
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    final color = active ? accent : Cyber.muted;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 9),
-        decoration: _cutDecoration(
-          color: active
-              ? accent.withValues(alpha: 0.16)
-              : Cyber.panel.withValues(alpha: 0.36),
-          borderColor: active
-              ? accent.withValues(alpha: 0.72)
-              : Colors.transparent,
-          cut: 9,
-        ),
-        child: Column(
-          children: [
-            if (type == LeaderboardType.coins)
-              Opacity(
-                opacity: active ? 1 : 0.72,
-                child: const CoinIcon(size: 18),
-              )
-            else
-              Icon(icon, color: color, size: 18),
-            const SizedBox(height: 5),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: color,
-                  fontFamily: Cyber.displayFont,
-                  fontSize: 9.5,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.8,
-                ),
-              ),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapCancel: () => setState(() => _pressed = false),
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTap: widget.onTap,
+        child: AnimatedScale(
+          duration: const Duration(milliseconds: 150),
+          scale: _pressed ? 0.97 : 1,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.zero,
+              boxShadow: _hovered
+                  ? [
+                      BoxShadow(
+                        color: _tabCyan.withValues(alpha: 0.25),
+                        blurRadius: 16,
+                      ),
+                    ]
+                  : null,
             ),
-          ],
+            child: widget.child,
+          ),
         ),
       ),
     );
@@ -1128,13 +1172,9 @@ class _Body extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _SectionLabel('Top players'),
-          SizedBox(height: compact ? 12 : 14),
           _Podium(entries: podium, meta: meta, accent: accent),
           if (remaining.isNotEmpty) ...[
             SizedBox(height: compact ? 18 : 24),
-            const _SectionLabel('All ranks'),
-            const SizedBox(height: 10),
             for (final entry in remaining)
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
@@ -1146,26 +1186,6 @@ class _Body extends StatelessWidget {
               ),
           ],
         ],
-      ),
-    );
-  }
-}
-
-class _SectionLabel extends StatelessWidget {
-  const _SectionLabel(this.label);
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: TextStyle(
-        color: Cyber.muted.withValues(alpha: 0.9),
-        fontFamily: Cyber.displayFont,
-        fontSize: 11,
-        fontWeight: FontWeight.w800,
-        letterSpacing: 0.2,
       ),
     );
   }

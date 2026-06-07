@@ -13,6 +13,7 @@ import '../../utils/card_helpers.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
 import '../../widgets/match_widgets.dart';
+import '../../widgets/pitch_background.dart';
 import '../../widgets/tutorial.dart';
 
 class DeckBuilderScreen extends StatefulWidget {
@@ -274,8 +275,6 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
                                     onSelectAction: _assignActionToActiveSlot,
                                   ),
                                 ],
-                                const SizedBox(height: 8),
-                                MatchHistoryPanel(history: state.matchHistory),
                               ],
                             ),
                           ),
@@ -910,115 +909,112 @@ class FiveSideDeckPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CyberPanel(
-      padding: const EdgeInsets.all(10),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '5-A-SIDE DECK',
-                      style: TextStyle(
-                        color: Cyber.cyan.withValues(alpha: 0.65),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 2,
-                      ),
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '5-A-SIDE DECK',
+                    style: TextStyle(
+                      color: Cyber.cyan.withValues(alpha: 0.65),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 2,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      deckName.toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontFamily: 'Orbitron',
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.3,
-                      ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    deckName.toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Orbitron',
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.3,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              CyberChip(
-                label: valid ? 'Ready' : 'Build',
-                color: valid ? Cyber.lime : Cyber.amber,
+            ),
+            CyberChip(
+              label: valid ? 'Ready' : 'Build',
+              color: valid ? Cyber.lime : Cyber.amber,
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        FiveSidePitch(
+          attackers: attackers,
+          defenders: defenders,
+          keeper: keeper,
+          editing: editing,
+          focusedAttackerIndex: focusedLane == DeckPickerLane.attacker
+              ? focusedIndex
+              : null,
+          focusedDefenderIndex: focusedLane == DeckPickerLane.defender
+              ? focusedIndex
+              : null,
+          keeperFocused: focusedLane == DeckPickerLane.keeper,
+          onAttackTap: onAttackTap,
+          onDefenseTap: onDefenseTap,
+          onKeeperTap: onKeeperTap,
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Text(
+              '6 ACTION CARDS',
+              style: TextStyle(
+                color: Cyber.cyan.withValues(alpha: 0.65),
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.7,
               ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          FiveSidePitch(
-            attackers: attackers,
-            defenders: defenders,
-            keeper: keeper,
-            editing: editing,
-            focusedAttackerIndex: focusedLane == DeckPickerLane.attacker
-                ? focusedIndex
-                : null,
-            focusedDefenderIndex: focusedLane == DeckPickerLane.defender
-                ? focusedIndex
-                : null,
-            keeperFocused: focusedLane == DeckPickerLane.keeper,
-            onAttackTap: onAttackTap,
-            onDefenseTap: onDefenseTap,
-            onKeeperTap: onKeeperTap,
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Text(
-                '6 ACTION CARDS',
-                style: TextStyle(
-                  color: Cyber.cyan.withValues(alpha: 0.65),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.7,
-                ),
+            ),
+            const Spacer(),
+            Text(
+              'ATK $actionAtk · DEF $actionDef · SPC $actionSpc',
+              style: TextStyle(
+                color: Cyber.cyan.withValues(alpha: 0.45),
+                fontSize: 10,
               ),
-              const Spacer(),
-              Text(
-                'ATK $actionAtk · DEF $actionDef · SPC $actionSpc',
-                style: TextStyle(
-                  color: Cyber.cyan.withValues(alpha: 0.45),
-                  fontSize: 10,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          SizedBox(
-            height: 88,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: 6,
-              separatorBuilder: (_, _) => const SizedBox(width: 12),
-              itemBuilder: (_, index) {
-                final card = index < actions.length ? actions[index] : null;
-                if (card == null) {
-                  return EmptyActionSlot(
-                    highlighted:
-                        editing &&
-                        focusedLane == DeckPickerLane.action &&
-                        focusedIndex == index,
-                    onTap: () => onActionTap(index),
-                  );
-                }
-                return CyberActionCardTile(
-                  card: card,
-                  selected:
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
+        SizedBox(
+          height: 88,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: 6,
+            separatorBuilder: (_, _) => const SizedBox(width: 12),
+            itemBuilder: (_, index) {
+              final card = index < actions.length ? actions[index] : null;
+              if (card == null) {
+                return EmptyActionSlot(
+                  highlighted:
                       editing &&
                       focusedLane == DeckPickerLane.action &&
                       focusedIndex == index,
                   onTap: () => onActionTap(index),
-                  size: VisualCardSize.sm,
                 );
-              },
-            ),
+              }
+              return CyberActionCardTile(
+                card: card,
+                selected:
+                    editing &&
+                    focusedLane == DeckPickerLane.action &&
+                    focusedIndex == index,
+                onTap: () => onActionTap(index),
+                size: VisualCardSize.sm,
+              );
+            },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -1341,34 +1337,4 @@ class EmptyActionSlot extends StatelessWidget {
       ),
     );
   }
-}
-
-class PitchPainter extends CustomPainter {
-  const PitchPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Cyber.cyan.withValues(alpha: 0.22)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    canvas.drawLine(
-      Offset(16, size.height * 0.26),
-      Offset(size.width - 16, size.height * 0.26),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(16, size.height * 0.54),
-      Offset(size.width - 16, size.height * 0.54),
-      paint,
-    );
-    canvas.drawCircle(Offset(size.width / 2, size.height * 0.54), 40, paint);
-    canvas.drawRect(
-      Rect.fromLTWH(14, 14, size.width - 28, size.height - 28),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
