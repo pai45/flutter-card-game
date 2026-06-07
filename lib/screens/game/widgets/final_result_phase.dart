@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../blocs/game/game_bloc.dart';
@@ -98,6 +99,8 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
         ? s.penaltyWinner == 'player'
         : s.playerScore > s.opponentScore;
     playSound(won ? SoundEffect.matchWin : SoundEffect.matchLose);
+    // Peak-end beat — the result that defines how the session is remembered.
+    HapticFeedback.heavyImpact();
   }
 
   @override

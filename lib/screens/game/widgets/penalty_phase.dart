@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../blocs/game/game_bloc.dart';
@@ -59,6 +60,7 @@ class _PenaltyPhaseState extends State<PenaltyPhase>
           widget.state.penaltyKicks.isNotEmpty &&
           widget.state.penaltyKicks.last.scored;
       playSound(scored ? SoundEffect.goal : SoundEffect.save);
+      if (scored) HapticFeedback.heavyImpact();
     } else if (old.state.penaltyKickPhase == 'result' &&
         widget.state.penaltyKickPhase == 'choose') {
       _revealCtrl.reset();

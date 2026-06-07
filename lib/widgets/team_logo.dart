@@ -1,0 +1,104 @@
+import 'package:flutter/material.dart';
+
+import '../models/sport_match.dart';
+
+class TeamLogo extends StatelessWidget {
+  const TeamLogo({
+    required this.team,
+    required this.width,
+    required this.height,
+    this.cutBottomRight = true,
+    super.key,
+  });
+
+  final SportTeam team;
+  final double width;
+  final double height;
+  final bool cutBottomRight;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      height: height,
+      child: CustomPaint(
+        painter: _TeamLogoPainter(
+          label: team.shortName,
+          color: team.id == 'mc' ? const Color(0xff74acde) : team.color,
+        ),
+      ),
+    );
+  }
+}
+
+class _TeamLogoPainter extends CustomPainter {
+  const _TeamLogoPainter({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bodyHeight = size.height * 0.9;
+    final shadowOffset = size.height - bodyHeight;
+    final cut = size.shortestSide * 0.15;
+    final bodyRect = Rect.fromLTWH(0, 0, size.width, bodyHeight);
+    final bodyPath = _octagonPath(bodyRect, cut);
+
+    canvas.drawPath(
+      bodyPath.shift(Offset(0, shadowOffset)),
+      Paint()..color = Color.lerp(color, Colors.black, 0.58)!,
+    );
+    canvas.drawPath(bodyPath, Paint()..color = color);
+
+    final textColor = color.computeLuminance() > 0.48
+        ? Colors.black
+        : Colors.white;
+
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: label,
+        style: TextStyle(
+          color: textColor,
+          fontFamily: 'Onest',
+          fontSize: size.width * _fontScale(label),
+          fontWeight: FontWeight.w900,
+          height: 1,
+          letterSpacing: 0,
+          decoration: TextDecoration.none,
+        ),
+      ),
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: size.width);
+
+    final textOffset = Offset(
+      (size.width - textPainter.width) / 2,
+      (bodyHeight - textPainter.height) / 2 + bodyHeight * 0.055,
+    );
+    textPainter.paint(canvas, textOffset);
+  }
+
+  double _fontScale(String text) => switch (text.length) {
+    <= 2 => 0.38,
+    3 => 0.33,
+    _ => 0.28,
+  };
+
+  Path _octagonPath(Rect rect, double cut) {
+    return Path()
+      ..moveTo(rect.left + cut, rect.top)
+      ..lineTo(rect.right - cut, rect.top)
+      ..lineTo(rect.right, rect.top + cut)
+      ..lineTo(rect.right, rect.bottom - cut)
+      ..lineTo(rect.right - cut, rect.bottom)
+      ..lineTo(rect.left + cut, rect.bottom)
+      ..lineTo(rect.left, rect.bottom - cut)
+      ..lineTo(rect.left, rect.top + cut)
+      ..close();
+  }
+
+  @override
+  bool shouldRepaint(covariant _TeamLogoPainter oldDelegate) =>
+      oldDelegate.label != label || oldDelegate.color != color;
+}

@@ -6,6 +6,7 @@ import '../../../models/sport_match.dart';
 import '../../../models/team_standing.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
+import '../../../widgets/team_logo.dart';
 
 /// Back chevron + title bar shared by the league and team detail screens.
 class DetailTopBar extends StatelessWidget {
@@ -28,13 +29,14 @@ class DetailTopBar extends StatelessWidget {
             child: const SizedBox(
               width: 48,
               height: 48,
-              child: Icon(Icons.arrow_back_ios_new, color: Cyber.cyan, size: 18),
+              child: Icon(
+                Icons.arrow_back_ios_new,
+                color: Cyber.cyan,
+                size: 18,
+              ),
             ),
           ),
-          Text(
-            title,
-            style: Cyber.display(15, letterSpacing: 1.6),
-          ),
+          Text(title, style: Cyber.display(15, letterSpacing: 1.6)),
         ],
       ),
     );
@@ -43,7 +45,11 @@ class DetailTopBar extends StatelessWidget {
 
 /// League lockup: chamfered accent emblem + full name + team count.
 class LeagueHeader extends StatelessWidget {
-  const LeagueHeader({required this.league, required this.teamCount, super.key});
+  const LeagueHeader({
+    required this.league,
+    required this.teamCount,
+    super.key,
+  });
 
   final League league;
   final int teamCount;
@@ -82,7 +88,11 @@ class LeagueHeader extends StatelessWidget {
             children: [
               Text(
                 league.name,
-                style: Cyber.display(19, color: Colors.white, letterSpacing: 0.4),
+                style: Cyber.display(
+                  19,
+                  color: Colors.white,
+                  letterSpacing: 0.4,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
@@ -181,7 +191,9 @@ class _HeaderRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.22),
         border: Border(
-          bottom: BorderSide(color: const Color(0xff243654).withValues(alpha: 0.8)),
+          bottom: BorderSide(
+            color: const Color(0xff243654).withValues(alpha: 0.8),
+          ),
         ),
       ),
       child: Row(
@@ -279,27 +291,7 @@ class _TeamBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final light = team.color.computeLuminance() > 0.55;
-    return Container(
-      width: 28,
-      height: 22,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: team.color,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          team.shortName,
-          style: Cyber.label(
-            8,
-            color: light ? const Color(0xff15202e) : Colors.white,
-            letterSpacing: 0.2,
-          ),
-        ),
-      ),
-    );
+    return TeamLogo(team: team, width: 28, height: 22);
   }
 }
 
@@ -315,35 +307,7 @@ class TeamHeader extends StatelessWidget {
     final s = standing;
     return Row(
       children: [
-        ClipPath(
-          clipper: const HudChamferClipper(bigCut: 12, smallCut: 2),
-          child: Container(
-            width: 54,
-            height: 54,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  team.color,
-                  Color.lerp(team.color, Colors.black, 0.4)!,
-                ],
-              ),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
-            ),
-            child: Text(
-              team.shortName,
-              style: Cyber.display(
-                14,
-                color: team.color.computeLuminance() > 0.55
-                    ? const Color(0xff15202e)
-                    : Colors.white,
-                letterSpacing: 0.4,
-              ),
-            ),
-          ),
-        ),
+        TeamLogo(team: team, width: 54, height: 54),
         const SizedBox(width: 14),
         Expanded(
           child: Column(
@@ -351,7 +315,11 @@ class TeamHeader extends StatelessWidget {
             children: [
               Text(
                 team.name,
-                style: Cyber.display(19, color: Colors.white, letterSpacing: 0.4),
+                style: Cyber.display(
+                  19,
+                  color: Colors.white,
+                  letterSpacing: 0.4,
+                ),
               ),
               const SizedBox(height: 5),
               if (s != null)
@@ -359,7 +327,11 @@ class TeamHeader extends StatelessWidget {
                   children: [
                     Text(
                       'RANK #${s.rank}  ·  ${s.points} PTS',
-                      style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1),
+                      style: Cyber.label(
+                        10,
+                        color: Cyber.muted,
+                        letterSpacing: 1,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     FormPips(form: s.form),

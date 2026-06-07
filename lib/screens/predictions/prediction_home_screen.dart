@@ -428,104 +428,257 @@ class StreakIcon extends StatelessWidget {
   }
 }
 
-class _MatchesTab extends StatelessWidget {
+class _MatchesTab extends StatefulWidget {
   const _MatchesTab({required this.onOpenMatch, required this.onOpenLeague});
 
   final ValueChanged<SportMatch> onOpenMatch;
   final ValueChanged<League> onOpenLeague;
 
   @override
+  State<_MatchesTab> createState() => _MatchesTabState();
+}
+
+class _MatchesTabState extends State<_MatchesTab> {
+  late DateTime _selectedDay = _startOfDay(DateTime.now());
+
+  Future<void> _openCalendar(List<DateTime> days) async {
+    final today = _startOfDay(DateTime.now());
+    final firstDay = days.isEmpty ? today : days.first;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDay,
+      firstDate: firstDay,
+      lastDate: today.add(const Duration(days: 4)),
+      selectableDayPredicate: (day) {
+        final normalized = _startOfDay(day);
+        return days.any((d) => _sameDay(d, normalized));
+      },
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Cyber.cyan,
+              onPrimary: Color(0xff101826),
+              surface: Color(0xff162235),
+              onSurface: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked == null) return;
+    setState(() => _selectedDay = _startOfDay(picked));
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocBuilder<PredictionCubit, PredictionState>(
       builder: (context, state) {
         if (state.loading) return const _PickSkeleton();
-        final grouped = state.fixturesByLeague;
+        final days = _calendarDays(state.fixtures);
+        if (!days.any((day) => _sameDay(day, _selectedDay))) {
+          _selectedDay = _startOfDay(DateTime.now());
+        }
+        final selectedFixtures = state.fixtures
+            .where((fixture) => _sameDay(fixture.kickoff, _selectedDay))
+            .toList();
+        final grouped = _groupByLeague(state.leagues, selectedFixtures);
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
           children: [
             Row(
               children: [
-                Text('TODAY', style: Cyber.display(15, letterSpacing: 1.5)),
+                Text(
+                  _dayHeading(_selectedDay),
+                  style: Cyber.display(15, letterSpacing: 1.5),
+                ),
                 const SizedBox(width: 6),
                 Text(
-                  '(${state.fixtures.length})',
+                  '(${selectedFixtures.length})',
                   style: Cyber.label(13, color: Cyber.muted),
                 ),
                 const Spacer(),
-                const Icon(
-                  Icons.calendar_today_outlined,
-                  color: Cyber.muted,
-                  size: 18,
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  tooltip: 'Pick match day',
+                  onPressed: () {
+                    playSound(SoundEffect.uiTap);
+                    _openCalendar(days);
+                  },
+                  icon: const Icon(
+                    Icons.calendar_today_outlined,
+                    color: Cyber.muted,
+                    size: 18,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            for (final entry in grouped.entries) ...[
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () {
-                  playSound(SoundEffect.uiTap);
-                  onOpenLeague(entry.key);
-                },
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 8, top: 4),
-                  child: Row(
-                    children: [
-                      Text(
-                        entry.key.shortCode,
-                        style: TextStyle(
-                          color: Cyber.cyan.withValues(alpha: 0.85),
-                          fontFamily: Cyber.displayFont,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 2,
-                          fontFeatures: const [FontFeature.tabularFigures()],
+            if (grouped.isEmpty)
+              _EmptyMatchDay(day: _selectedDay)
+            else
+              for (final entry in grouped.entries) ...[
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    playSound(SoundEffect.uiTap);
+                    widget.onOpenLeague(entry.key);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 8, top: 4),
+                    child: Row(
+                      children: [
+                        Text(
+                          entry.key.shortCode,
+                          style: TextStyle(
+                            color: Cyber.cyan.withValues(alpha: 0.85),
+                            fontFamily: Cyber.displayFont,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 2,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        'STANDINGS',
-                        style: Cyber.label(
-                          9,
-                          color: Cyber.muted,
-                          letterSpacing: 1.2,
+                        const SizedBox(width: 10),
+                        Text(
+                          'STANDINGS',
+                          style: Cyber.label(
+                            9,
+                            color: Cyber.muted,
+                            letterSpacing: 1.2,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Container(
-                          height: 1,
-                          color: entry.key.accent.withValues(alpha: 0.25),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Container(
+                            height: 1,
+                            color: entry.key.accent.withValues(alpha: 0.25),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 6),
-                      Icon(
-                        Icons.chevron_right,
-                        color: entry.key.accent.withValues(alpha: 0.8),
-                        size: 18,
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        Icon(
+                          Icons.chevron_right,
+                          color: entry.key.accent.withValues(alpha: 0.8),
+                          size: 18,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              for (final match in entry.value) ...[
-                MatchPredictionCard(
-                  match: match,
-                  prediction: state.predictionFor(match.id),
-                  onTap:
-                      (match.predictable ||
-                          state.predictionFor(match.id) != null)
-                      ? () => onOpenMatch(match)
-                      : null,
-                ),
-                const SizedBox(height: 12),
+                for (final match in entry.value) ...[
+                  MatchPredictionCard(
+                    match: match,
+                    prediction: state.predictionFor(match.id),
+                    onTap:
+                        (match.predictable ||
+                            state.predictionFor(match.id) != null)
+                        ? () => widget.onOpenMatch(match)
+                        : null,
+                  ),
+                  const SizedBox(height: 12),
+                ],
               ],
-            ],
           ],
         );
       },
     );
   }
+}
+
+class _EmptyMatchDay extends StatelessWidget {
+  const _EmptyMatchDay({required this.day});
+
+  final DateTime day;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      decoration: BoxDecoration(
+        color: const Color(0xff172234),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.event_busy_outlined, color: Cyber.muted, size: 26),
+          const SizedBox(height: 10),
+          Text(
+            'No games on ${_monthDayLabel(day)}',
+            textAlign: TextAlign.center,
+            style: Cyber.body(13, color: Cyber.muted, weight: FontWeight.w600),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Map<League, List<SportMatch>> _groupByLeague(
+  List<League> leagues,
+  List<SportMatch> fixtures,
+) {
+  final grouped = <League, List<SportMatch>>{};
+  for (final league in leagues) {
+    final matches = fixtures.where((m) => m.leagueId == league.id).toList();
+    if (matches.isNotEmpty) grouped[league] = matches;
+  }
+  return grouped;
+}
+
+List<DateTime> _calendarDays(List<SportMatch> fixtures) {
+  final today = _startOfDay(DateTime.now());
+  final latest = today.add(const Duration(days: 4));
+  final daysByEpoch = <int, DateTime>{};
+
+  for (var offset = 0; offset <= 4; offset++) {
+    final day = today.add(Duration(days: offset));
+    daysByEpoch[day.millisecondsSinceEpoch] = day;
+  }
+
+  for (final fixture in fixtures) {
+    final day = _startOfDay(fixture.kickoff);
+    if (!day.isAfter(latest)) {
+      daysByEpoch[day.millisecondsSinceEpoch] = day;
+    }
+  }
+
+  final days = daysByEpoch.values.toList()..sort();
+  return days;
+}
+
+DateTime _startOfDay(DateTime value) =>
+    DateTime(value.year, value.month, value.day);
+
+bool _sameDay(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;
+
+String _dayHeading(DateTime day) {
+  final today = _startOfDay(DateTime.now());
+  if (_sameDay(day, today)) return 'TODAY';
+  if (_sameDay(day, today.add(const Duration(days: 1)))) return 'TOMORROW';
+  if (_sameDay(day, today.subtract(const Duration(days: 1)))) {
+    return 'YESTERDAY';
+  }
+  return _monthDayLabel(day).toUpperCase();
+}
+
+String _monthDayLabel(DateTime day) {
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return '${months[day.month - 1]} ${day.day}';
 }
 
 class _PickTab extends StatefulWidget {

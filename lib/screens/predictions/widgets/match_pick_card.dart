@@ -7,6 +7,7 @@ import '../../../models/sport_match.dart';
 import '../../../models/team_standing.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
+import '../../../widgets/team_logo.dart';
 import '../../shop/shop_screen.dart' show CoinIcon;
 
 /// A fixture rendered as a quick market: HOME / DRAW / AWAY (football) or
@@ -221,27 +222,7 @@ class _Badge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final light = team.color.computeLuminance() > 0.55;
-    return Container(
-      width: 30,
-      height: 24,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: team.color,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          team.shortName,
-          style: Cyber.label(
-            8,
-            color: light ? const Color(0xff15202e) : Colors.white,
-            letterSpacing: 0.2,
-          ),
-        ),
-      ),
-    );
+    return TeamLogo(team: team, width: 30, height: 24);
   }
 }
 
@@ -267,7 +248,11 @@ class _StatusBadge extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             match.liveMinute != null ? "LIVE ${match.liveMinute}'" : 'LIVE',
-            style: Cyber.label(9, color: const Color(0xffff2f35), letterSpacing: 1),
+            style: Cyber.label(
+              9,
+              color: const Color(0xffff2f35),
+              letterSpacing: 1,
+            ),
           ),
         ],
       ),
@@ -339,7 +324,10 @@ class _PickButtonState extends State<_PickButton> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(widget.label, style: Cyber.label(11, color: ink, letterSpacing: 0.6)),
+            Text(
+              widget.label,
+              style: Cyber.label(11, color: ink, letterSpacing: 0.6),
+            ),
             const SizedBox(width: 5),
             CoinIcon(size: 14),
             const SizedBox(width: 3),
@@ -410,12 +398,20 @@ class _PickConfirmSheetState extends State<_PickConfirmSheet> {
                   children: [
                     Text(
                       'CONFIRM PICK',
-                      style: Cyber.label(12, color: Cyber.cyan, letterSpacing: 1.8),
+                      style: Cyber.label(
+                        12,
+                        color: Cyber.cyan,
+                        letterSpacing: 1.8,
+                      ),
                     ),
                     const SizedBox(height: 10),
                     Text(
                       widget.question,
-                      style: Cyber.body(16, weight: FontWeight.w900, height: 1.2),
+                      style: Cyber.body(
+                        16,
+                        weight: FontWeight.w900,
+                        height: 1.2,
+                      ),
                     ),
                     const SizedBox(height: 14),
                     Row(
@@ -513,7 +509,10 @@ class _SummaryTile extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1)),
+            Text(
+              label,
+              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1),
+            ),
             const SizedBox(height: 4),
             child,
           ],
@@ -616,7 +615,11 @@ class _StepButton extends StatelessWidget {
 }
 
 class _SheetAction extends StatelessWidget {
-  const _SheetAction({required this.label, required this.color, required this.onTap});
+  const _SheetAction({
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
 
   final String label;
   final Color color;
@@ -629,7 +632,10 @@ class _SheetAction extends StatelessWidget {
       onTap: onTap,
       child: Container(
         alignment: Alignment.center,
-        child: Text(label, style: Cyber.label(12, color: color, letterSpacing: 1.2)),
+        child: Text(
+          label,
+          style: Cyber.label(12, color: color, letterSpacing: 1.2),
+        ),
       ),
     );
   }

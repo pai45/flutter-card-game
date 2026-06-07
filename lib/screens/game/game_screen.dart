@@ -1,6 +1,3 @@
-import 'dart:async';
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -8,10 +5,13 @@ import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_event.dart';
 import '../../blocs/game/game_state.dart';
 import '../../config/enums.dart';
+import '../../config/theme.dart';
+import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
 import '../deck/all_cards_screen.dart';
 import '../deck/deck_builder_screen.dart';
+import '../home/widgets/starter_pack_onboarding.dart';
 import '../home/home_screen.dart';
 import '../how_to_play/how_to_play_screen.dart';
 import '../leaderboard/leaderboard_screen.dart';
@@ -54,19 +54,35 @@ class _GameTabContentState extends State<GameTabContent> {
 
   @override
   Widget build(BuildContext context) {
-    return switch (_gameSection) {
-      AppSection.home => HomeScreen(
-        onNavigate: _navigateGame,
-        showBottomNavigation: false,
-        onBack: () => widget.onNavigate(AppSection.predictions),
-      ),
-      AppSection.deck => DeckBuilderScreen(onNavigate: _navigateGame),
-      AppSection.howToPlay => HowToPlayScreen(onNavigate: _navigateGame),
-      AppSection.match => MatchScreen(onNavigate: _navigateGame),
-      AppSection.allCards => AllCardsScreen(onNavigate: _navigateGame),
-      AppSection.leaderboard => LeaderboardScreen(onNavigate: _navigateGame),
-      _ => HomeScreen(onNavigate: _navigateGame),
-    };
+    return BlocBuilder<GameBloc, GameState>(
+      buildWhen: (previous, current) =>
+          previous.pendingPackReveal != current.pendingPackReveal,
+      builder: (context, state) {
+        final packReveal = state.pendingPackReveal;
+        if (packReveal != null && packReveal.items.isNotEmpty) {
+          return PackOnboardingScreen(
+            key: const ValueKey('game-pack-reveal'),
+            reveal: packReveal,
+          );
+        }
+
+        return switch (_gameSection) {
+          AppSection.home => HomeScreen(
+            onNavigate: _navigateGame,
+            showBottomNavigation: false,
+            onBack: () => widget.onNavigate(AppSection.predictions),
+          ),
+          AppSection.deck => DeckBuilderScreen(onNavigate: _navigateGame),
+          AppSection.howToPlay => HowToPlayScreen(onNavigate: _navigateGame),
+          AppSection.match => MatchScreen(onNavigate: _navigateGame),
+          AppSection.allCards => AllCardsScreen(onNavigate: _navigateGame),
+          AppSection.leaderboard => LeaderboardScreen(
+            onNavigate: _navigateGame,
+          ),
+          _ => HomeScreen(onNavigate: _navigateGame),
+        };
+      },
+    );
   }
 }
 
@@ -80,12 +96,18 @@ class MatchScreen extends StatefulWidget {
 }
 
 class _MatchScreenState extends State<MatchScreen> {
-  Timer? cpuTossTimer;
   bool _introShown = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Low cyber ambient bed under the whole match; stings duck it automatically.
+    AudioController.instance.playLoop(MusicTrack.matchAmbient);
+  }
+
+  @override
   void dispose() {
-    cpuTossTimer?.cancel();
+    AudioController.instance.stopLoop();
     super.dispose();
   }
 
@@ -96,14 +118,6 @@ class _MatchScreenState extends State<MatchScreen> {
         if (state.phase == MatchPhase.scenario &&
             state.currentScenario == null) {
           context.read<GameBloc>().add(ScenarioShown());
-        }
-        if (state.phase == MatchPhase.tossResult &&
-            state.playerWonToss == false) {
-          cpuTossTimer?.cancel();
-          cpuTossTimer = Timer(const Duration(milliseconds: 900), () {
-            if (!mounted) return;
-            context.read<GameBloc>().add(RoleChosen(Random().nextBool()));
-          });
         }
       },
       builder: (context, state) {
@@ -128,6 +142,10 @@ class _MatchScreenState extends State<MatchScreen> {
                   onQuit: () => _quit(context),
                 ),
                 MatchPhase.tossResult => TossResultPhase(
+                  state: state,
+                  onQuit: () => _quit(context),
+                ),
+                MatchPhase.roleReveal => RoleRevealPhase(
                   state: state,
                   onQuit: () => _quit(context),
                 ),
@@ -176,7 +194,7 @@ class _MatchScreenState extends State<MatchScreen> {
               };
 
         final reduceMotion = MediaQuery.of(context).disableAnimations;
-        return AnimatedSwitcher(
+        final switcher = AnimatedSwitcher(
           duration: Duration(milliseconds: reduceMotion ? 120 : 300),
           switchInCurve: Curves.easeOutCubic,
           switchOutCurve: Curves.easeInCubic,
@@ -199,6 +217,12 @@ class _MatchScreenState extends State<MatchScreen> {
             key: showIntro ? const ValueKey('intro') : ValueKey(state.phase),
             child: phaseWidget,
           ),
+        );
+        return Stack(
+          children: [
+            switcher,
+            const Positioned(top: 0, right: 0, child: SafeArea(child: _MuteToggle())),
+          ],
         );
       },
     );
@@ -226,5 +250,48 @@ class _MatchScreenState extends State<MatchScreen> {
 
     gameBloc.add(MatchReset());
     widget.onNavigate(AppSection.home);
+  }
+}
+
+/// Small in-match audio mute toggle. Observes the global [AudioController.muted]
+/// notifier so it stays in sync wherever it's shown, and the choice persists.
+class _MuteToggle extends StatelessWidget {
+  const _MuteToggle();
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: AudioController.instance.muted,
+      builder: (context, muted, _) {
+        return Padding(
+          padding: const EdgeInsets.all(10),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: AudioController.instance.toggleMute,
+              customBorder: const CircleBorder(),
+              child: Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: const Color(0xCC0A0F1A),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: (muted ? Cyber.muted : Cyber.cyan)
+                        .withValues(alpha: 0.6),
+                  ),
+                ),
+                child: Icon(
+                  muted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
+                  size: 19,
+                  color: muted ? Cyber.muted : Cyber.cyan,
+                  semanticLabel: muted ? 'Unmute sound' : 'Mute sound',
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }

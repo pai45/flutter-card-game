@@ -62,8 +62,10 @@ class _HudBorderPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final path =
-        _HudButtonClipper(bigCut: bigCut, smallCut: smallCut).buildPath(size);
+    final path = _HudButtonClipper(
+      bigCut: bigCut,
+      smallCut: smallCut,
+    ).buildPath(size);
 
     final glowPaint = Paint()
       ..style = PaintingStyle.stroke
@@ -97,8 +99,8 @@ class _HudBorderPainter extends CustomPainter {
 
 /// Reusable gamified sci-fi HUD call-to-action button.
 ///
-/// Angular clipped silhouette, glowing cyan border, dark translucent fill with
-/// a lower-center lens flare, a chevron compartment and a glowing label. Pulses
+/// Angular clipped silhouette, glowing cyan border, bright gradient fill with
+/// a chevron compartment and a glowing label. Pulses
 /// gently while idle and intensifies on tap. Reuse it for any primary CTA via
 /// [label] and the optional [icon].
 class HudCtaButton extends StatefulWidget {
@@ -161,10 +163,12 @@ class _HudCtaButtonState extends State<HudCtaButton>
     // The default cyan keeps the exact original Play Match palette; any other
     // accent derives a lighter companion tone and a bright fill from it.
     final bool isCyan = accent == Cyber.cyan;
-    final Color secondary =
-        isCyan ? _accentBlue : Color.lerp(accent, Colors.white, 0.30)!;
-    final Color fillTop =
-        isCyan ? _fillTop : Color.lerp(accent, Colors.white, 0.34)!;
+    final Color secondary = isCyan
+        ? _accentBlue
+        : Color.lerp(accent, Colors.white, 0.30)!;
+    final Color fillTop = isCyan
+        ? _fillTop
+        : Color.lerp(accent, Colors.white, 0.34)!;
     final Color fillBottom = isCyan ? _fillBottom : accent;
     return Semantics(
       button: true,
@@ -194,8 +198,7 @@ class _HudCtaButtonState extends State<HudCtaButton>
                     spreadRadius: 1,
                   ),
                   BoxShadow(
-                    color:
-                        secondary.withValues(alpha: 0.12 + 0.18 * glow),
+                    color: secondary.withValues(alpha: 0.12 + 0.18 * glow),
                     blurRadius: 40 + 22 * glow,
                     spreadRadius: 2,
                   ),
@@ -224,29 +227,6 @@ class _HudCtaButtonState extends State<HudCtaButton>
                               begin: Alignment.topCenter,
                               end: Alignment.bottomCenter,
                               colors: [fillTop, fillBottom],
-                            ),
-                          ),
-                        ),
-                      ),
-                      // Lower-center white light streak / lens flare.
-                      Positioned.fill(
-                        child: IgnorePointer(
-                          child: Align(
-                            alignment: const Alignment(0, 0.8),
-                            child: Container(
-                              height: widget.height * 0.55,
-                              margin:
-                                  const EdgeInsets.symmetric(horizontal: 22),
-                              decoration: BoxDecoration(
-                                gradient: RadialGradient(
-                                  radius: 0.9,
-                                  colors: [
-                                    Colors.white
-                                        .withValues(alpha: 0.28 + 0.20 * glow),
-                                    Colors.transparent,
-                                  ],
-                                ),
-                              ),
                             ),
                           ),
                         ),

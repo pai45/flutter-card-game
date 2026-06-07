@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../config/theme.dart';
 import '../utils/sound_effects.dart';
@@ -148,6 +149,76 @@ enum _Stage {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+// Subtle half-width SKIP control for pack unwrap flows.
+// ═════════════════════════════════════════════════════════════════════════════
+class PackSkipButton extends StatelessWidget {
+  const PackSkipButton({required this.onPressed, super.key});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: FractionallySizedBox(
+            widthFactor: 0.5,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onPressed,
+              child: SizedBox(
+                height: 44,
+                child: CustomPaint(
+                  painter: const _PackSkipBtnPainter(),
+                  child: Center(
+                    child: Text(
+                      'SKIP',
+                      style: TextStyle(
+                        color: Cyber.cyan.withValues(alpha: 0.72),
+                        fontFamily: Cyber.displayFont,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 2.4,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PackSkipBtnPainter extends CustomPainter {
+  const _PackSkipBtnPainter();
+
+  static const _clipper = HudChamferClipper(bigCut: 12, smallCut: 6);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = _clipper.buildPath(size);
+    canvas.drawPath(path, Paint()..color = const Color(0xFF141A26));
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2
+        ..color = Cyber.cyan.withValues(alpha: 0.32),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _PackSkipBtnPainter old) => false;
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // Main widget
 // ═════════════════════════════════════════════════════════════════════════════
 class CardUnpackAnimation extends StatefulWidget {
@@ -159,6 +230,7 @@ class CardUnpackAnimation extends StatefulWidget {
     required this.rarity,
     required this.onComplete,
     this.showTapCountdown = true,
+    this.showSkip = true,
     this.packBackAsset,
     this.frontFace, // optional: override the built-in card design
   });
@@ -170,6 +242,7 @@ class CardUnpackAnimation extends StatefulWidget {
   final VoidCallback onComplete;
 
   final bool showTapCountdown;
+  final bool showSkip;
 
   /// If provided, used for the pack shell and card back during the reveal.
   final String? packBackAsset;
@@ -186,6 +259,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
   // ── State ──
   _Stage _stage = _Stage.packEntry;
   bool _showCard = false;
+  bool _finishing = false;
 
   // ── Controllers (nullable, created lazily per stage) ──
   AnimationController? _packEntryCtrl; // stage 1 – 400 ms
@@ -348,6 +422,8 @@ class _CardUnpackState extends State<CardUnpackAnimation>
       TweenSequenceItem(tween: Tween(begin: -0.01, end: 0.01), weight: 1),
       TweenSequenceItem(tween: Tween(begin: 0.01, end: 0.0), weight: 1),
     ]).animate(_packShakeCtrl!);
+    // The pack rattles and bursts — anticipation peak before the reveal.
+    playSound(SoundEffect.packOpen);
     _packShakeCtrl!.forward().then((_) => _startStage4());
     setState(() => _stage = _Stage.packShake);
   }
@@ -407,6 +483,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
     final rank = _rarityRank(widget.rarity);
 
     // Reveal shockwave ring — punches outward as the card pops in.
+    playSound(SoundEffect.whoosh);
     _shockCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 650),
@@ -517,6 +594,14 @@ class _CardUnpackState extends State<CardUnpackAnimation>
         Tween<Offset>(begin: const Offset(0, -0.5), end: Offset.zero).animate(
           CurvedAnimation(parent: _rarityDropCtrl!, curve: Curves.easeOutBack),
         );
+    // Rarity-scaled payoff sting: the rarer the pull, the bigger it sounds.
+    final rank = _rarityRank(widget.rarity);
+    playSound(rarityRevealSound(rank));
+    if (rank >= 2) {
+      HapticFeedback.heavyImpact();
+    } else {
+      HapticFeedback.mediumImpact();
+    }
     setState(() => _stage = _Stage.rarityDrop);
     _rarityDropCtrl!.forward().then((_) {
       if (widget.rarity == 'platinum') {
@@ -564,12 +649,19 @@ class _CardUnpackState extends State<CardUnpackAnimation>
       begin: 0,
       end: widget.rating,
     ).animate(CurvedAnimation(parent: _ratingCtrl!, curve: Curves.easeOut));
+    var lastTickBucket = -1;
     anim.addListener(() {
       if (anim.value != _displayRating) {
         setState(() {
           _displayRating = anim.value;
           _ratingFlash = true;
         });
+        // Throttle the climb blips so a 0→90 count doesn't machine-gun.
+        final bucket = anim.value ~/ 8;
+        if (bucket != lastTickBucket) {
+          lastTickBucket = bucket;
+          playSound(SoundEffect.countdownTick);
+        }
         Future.delayed(const Duration(milliseconds: 50), () {
           if (mounted) setState(() => _ratingFlash = false);
         });
@@ -625,10 +717,39 @@ class _CardUnpackState extends State<CardUnpackAnimation>
   }
 
   // ─────────────────────────────────────────────────────────────────────────
+  // Skip — jump straight to completion from any stage.
+  // ─────────────────────────────────────────────────────────────────────────
+  void _skip() {
+    if (_finishing) return;
+    _finishing = true;
+    _countdownTimer?.cancel();
+    _ovrHoldTimer?.cancel();
+    _packEntryCtrl?.stop();
+    _packPulseCtrl?.stop();
+    _packShakeCtrl?.stop();
+    _flashCtrl?.stop();
+    _cardFlipCtrl?.stop();
+    _cardSettleCtrl?.stop();
+    _particleCtrl?.stop();
+    _rarityDropCtrl?.stop();
+    _shimmerCtrl?.stop();
+    _ratingCtrl?.stop();
+    _idleCtrl?.stop();
+    _tapCtrl?.stop();
+    _dismissCtrl?.stop();
+    _beamCtrl?.stop();
+    _shockCtrl?.stop();
+    _sweepCtrl?.stop();
+    _ovrCtrl?.stop();
+    _ovrFadeCtrl?.stop();
+    widget.onComplete();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
   // Dismiss on tap
   // ─────────────────────────────────────────────────────────────────────────
   void _onTap() {
-    if (_stage != _Stage.idle) return;
+    if (_finishing || _stage != _Stage.idle) return;
     _countdownTimer?.cancel();
     _countdownTimer = null;
     setState(() => _stage = _Stage.dismissing);
@@ -786,6 +907,15 @@ class _CardUnpackState extends State<CardUnpackAnimation>
             // 7 ── Tap to continue
             if (_stage == _Stage.idle || _stage == _Stage.dismissing)
               _buildTapLabel(),
+
+            // 8 ── Skip (subtle half-width CTA)
+            if (widget.showSkip && !_finishing && _stage != _Stage.dismissing)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: PackSkipButton(onPressed: _skip),
+              ),
           ],
         ),
       ),

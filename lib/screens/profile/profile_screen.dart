@@ -7,7 +7,9 @@ import '../../blocs/prediction/prediction_cubit.dart';
 import '../../blocs/prediction/prediction_state.dart';
 import '../../config/enums.dart';
 import '../../config/theme.dart';
+import '../../models/avatar_option.dart';
 import '../../models/match.dart';
+import '../../services/secure_storage_service.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/player_level_badge.dart';
@@ -555,22 +557,43 @@ class _Crest extends StatelessWidget {
   }
 }
 
-class _Avatar extends StatelessWidget {
+class _Avatar extends StatefulWidget {
+  const _Avatar();
+
+  @override
+  State<_Avatar> createState() => _AvatarState();
+}
+
+class _AvatarState extends State<_Avatar> {
+  String? _selectedAvatarId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAvatar();
+  }
+
+  Future<void> _loadAvatar() async {
+    final avatarId = await SecureGameStorage().loadSelectedAvatarId();
+    if (!mounted) return;
+    setState(() => _selectedAvatarId = avatarId);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final avatar = avatarOptionById(_selectedAvatarId);
     return Container(
       width: 80,
       height: 80,
-      alignment: Alignment.center,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Cyber.cyan, Cyber.violet],
-        ),
+        color: Cyber.panel,
         border: Border.all(color: Cyber.border, width: 2),
       ),
-      child: const Icon(Icons.person, color: Colors.white, size: 40),
+      child: Image.asset(
+        avatar.assetPath,
+        fit: BoxFit.cover,
+        alignment: Alignment.topCenter,
+      ),
     );
   }
 }

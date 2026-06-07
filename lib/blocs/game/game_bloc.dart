@@ -60,7 +60,15 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       (event, emit) => emit(state.copyWith(tossChoice: event.choice)),
     );
     on<TossResolved>(_onTossResolved);
+    on<TossContinued>(
+      (_, emit) => emit(state.copyWith(phase: MatchPhase.roleReveal)),
+    );
     on<RoleChosen>(_onRoleChosen);
+    on<RoleRevealAcknowledged>(
+      (_, emit) => emit(
+        state.copyWith(phase: MatchPhase.scenario, currentScenario: null),
+      ),
+    );
     on<ScenarioShown>(_onScenarioShown);
     on<PlayStarted>((_, emit) => emit(state.copyWith(phase: MatchPhase.play)));
     on<PlayerSelected>(
@@ -545,10 +553,27 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   void _onTossResolved(TossResolved event, Emitter<GameState> emit) {
     if (state.tossChoice == null) return;
     final result = _random.nextBool() ? 'heads' : 'tails';
+    final playerWon = result == state.tossChoice;
+    if (playerWon) {
+      // Winner picks their role on the toss-result screen (RoleChosen).
+      emit(
+        state.copyWith(
+          tossResult: result,
+          playerWonToss: true,
+          phase: MatchPhase.tossResult,
+        ),
+      );
+      return;
+    }
+    // Player lost: the CPU picks its role now, and the player gets the opposite.
+    // The resulting role is revealed in MatchPhase.roleReveal after CONTINUE.
+    final cpuAttacks = _random.nextBool();
     emit(
       state.copyWith(
         tossResult: result,
-        playerWonToss: result == state.tossChoice,
+        playerWonToss: false,
+        playerAttacking: !cpuAttacks,
+        initialAttackingChoice: !cpuAttacks,
         phase: MatchPhase.tossResult,
       ),
     );
@@ -713,7 +738,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     emit(
       state.copyWith(
         currentRound: nextRound,
-        phase: MatchPhase.scenario,
+        phase: MatchPhase.roleReveal,
         currentScenario: null,
         selectedPlayerCard: null,
         selectedActionCard: null,

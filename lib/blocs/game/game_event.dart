@@ -109,10 +109,18 @@ class TossChoiceChanged extends GameEvent {
 
 class TossResolved extends GameEvent {}
 
+/// Fired when the toss loser acknowledges the result and moves on to see the
+/// CPU's role pick (→ [MatchPhase.roleReveal]).
+class TossContinued extends GameEvent {}
+
 class RoleChosen extends GameEvent {
   RoleChosen(this.playerAttacking);
   final bool playerAttacking;
 }
+
+/// Fired when the player acknowledges the role-reveal beat (CPU-won round 1 or a
+/// round 2–4 role switch) and proceeds to the scenario briefing.
+class RoleRevealAcknowledged extends GameEvent {}
 
 class ScenarioShown extends GameEvent {}
 

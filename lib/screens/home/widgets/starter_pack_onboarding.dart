@@ -97,6 +97,22 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
     });
   }
 
+  void _skipIntro() {
+    if (!mounted || _phase != _Phase.intro) return;
+    _exitFlash.stop();
+    setState(() => _phase = _Phase.reveal);
+  }
+
+  void _skipAllReveal() {
+    if (!mounted || _phase != _Phase.reveal) return;
+    if (widget.reveal.groupActionCards &&
+        widget.reveal.groupedActionItems.isNotEmpty) {
+      setState(() => _phase = _Phase.actions);
+    } else {
+      _showSummary();
+    }
+  }
+
   void _onCardComplete() {
     if (!mounted) return;
     if (_cardIndex < widget.reveal.animatedItems.length - 1) {
@@ -316,6 +332,13 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
               ColoredBox(
                 color: Colors.white.withValues(alpha: ef.clamp(0.0, 1.0)),
               ),
+
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: PackSkipButton(onPressed: _skipIntro),
+            ),
           ],
         );
       },
@@ -340,6 +363,7 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
           rarity: _itemRarity(item),
           onComplete: _onCardComplete,
           showTapCountdown: false,
+          showSkip: false,
           // SizedBox + FittedBox gives layout size = visual size (192×288),
           // which lets the shimmer overlay in CardUnpackAnimation cover the
           // full card via Positioned.fill (Transform.scale wouldn't work
@@ -359,6 +383,12 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
             current: _cardIndex + 1,
             total: animatedItems.length,
           ),
+        ),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: PackSkipButton(onPressed: _skipAllReveal),
         ),
       ],
     );

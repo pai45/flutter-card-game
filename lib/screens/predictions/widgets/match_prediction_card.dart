@@ -4,6 +4,7 @@ import '../../../config/theme.dart';
 import '../../../models/prediction.dart';
 import '../../../models/sport_match.dart';
 import '../../../utils/sound_effects.dart';
+import '../../../widgets/team_logo.dart';
 
 /// Fixture card on the prediction home — a faithful build of the design
 /// reference. A neutral dark-navy panel (NOT league-tinted) with:
@@ -56,7 +57,11 @@ class MatchPredictionCard extends StatelessWidget {
               Text(
                 match.resultLine!,
                 textAlign: TextAlign.center,
-                style: Cyber.body(11.5, color: _resultCol, weight: FontWeight.w600),
+                style: Cyber.body(
+                  11.5,
+                  color: _resultCol,
+                  weight: FontWeight.w600,
+                ),
               ),
             ],
           ],
@@ -127,10 +132,11 @@ class _TagContent extends StatelessWidget {
     return switch (match.status) {
       MatchStatus.upcoming => Text(
         _formatTime(match.kickoff),
-        style: Cyber.body(13, color: _timeGold, weight: FontWeight.w700).copyWith(
-          letterSpacing: 1,
-          fontFeatures: const [FontFeature.tabularFigures()],
-        ),
+        style: Cyber.body(13, color: _timeGold, weight: FontWeight.w700)
+            .copyWith(
+              letterSpacing: 1,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
       ),
       MatchStatus.live => Row(
         mainAxisSize: MainAxisSize.min,
@@ -147,15 +153,21 @@ class _TagContent extends StatelessWidget {
           const SizedBox(width: 7),
           Text(
             match.liveMinute != null ? "LIVE ${match.liveMinute}'" : 'LIVE',
-            style: Cyber.body(12.5, color: Cyber.danger, weight: FontWeight.w800)
-                .copyWith(letterSpacing: 0.8),
+            style: Cyber.body(
+              12.5,
+              color: Cyber.danger,
+              weight: FontWeight.w800,
+            ).copyWith(letterSpacing: 0.8),
           ),
         ],
       ),
       MatchStatus.finished => Text(
         'Finished',
-        style: Cyber.body(11, color: Cyber.muted, weight: FontWeight.w600)
-            .copyWith(letterSpacing: 0.4),
+        style: Cyber.body(
+          11,
+          color: Cyber.muted,
+          weight: FontWeight.w600,
+        ).copyWith(letterSpacing: 0.4),
       ),
     };
   }
@@ -213,8 +225,9 @@ class _TeamColumn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment:
-          alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      crossAxisAlignment: alignEnd
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
       children: [
         // Mirror the badge chamfer toward the centre of the card.
         _TeamBadge(team: team, cutBottomRight: !alignEnd),
@@ -235,8 +248,11 @@ class _TeamColumn extends StatelessWidget {
             scoreLine!,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.body(10.5, color: _scoreSub, weight: FontWeight.w600)
-                .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            style: Cyber.body(
+              10.5,
+              color: _scoreSub,
+              weight: FontWeight.w600,
+            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
         ],
       ],
@@ -251,40 +267,11 @@ class _TeamBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Very light crests (cream/white/yellow) read better with dark text; tinted
-    // crests keep white text. Threshold tuned so orange/sky stay white-on-colour.
-    final light = team.color.computeLuminance() > 0.55;
-    final textColor = light ? const Color(0xff15202e) : Colors.white;
-    final accentEdge = light
-        ? Color.lerp(team.color, Colors.black, 0.28)!
-        : Color.lerp(team.color, Colors.white, 0.5)!;
-
-    return ClipPath(
-      clipper: _BadgeClipper(cutBottomRight: cutBottomRight),
-      child: Container(
-        width: 46,
-        height: 46,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [team.color, Color.lerp(team.color, Colors.black, 0.34)!],
-          ),
-          border: Border(bottom: BorderSide(color: accentEdge, width: 3)),
-        ),
-        child: Text(
-          team.shortName,
-          style: TextStyle(
-            color: textColor,
-            fontFamily: Cyber.displayFont,
-            fontSize: 13,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0.5,
-            decoration: TextDecoration.none,
-          ),
-        ),
-      ),
+    return TeamLogo(
+      team: team,
+      width: 46,
+      height: 46,
+      cutBottomRight: cutBottomRight,
     );
   }
 }
@@ -300,8 +287,11 @@ class _ScoreCentre extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Text(
           '${match.homeScore ?? '-'}  -  ${match.awayScore ?? '-'}',
-          style: Cyber.display(21, color: Colors.white, letterSpacing: 0.5)
-              .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+          style: Cyber.display(
+            21,
+            color: Colors.white,
+            letterSpacing: 0.5,
+          ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
         ),
       );
     }
@@ -347,8 +337,12 @@ class _StatusStrip extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               '+${match.rewardXp} XP',
-              style: Cyber.body(12.5, color: Cyber.cyan, weight: FontWeight.w700)
-                  .copyWith(
+              style:
+                  Cyber.body(
+                    12.5,
+                    color: Cyber.cyan,
+                    weight: FontWeight.w700,
+                  ).copyWith(
                     letterSpacing: 0.5,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
@@ -364,7 +358,11 @@ class _StatusStrip extends StatelessWidget {
         fill: _stripDark,
         child: Text(
           'Predicted ${_timeAgo(submittedAt)}',
-          style: Cyber.body(12.5, color: _predictedText, weight: FontWeight.w500),
+          style: Cyber.body(
+            12.5,
+            color: _predictedText,
+            weight: FontWeight.w500,
+          ),
         ),
       );
     }
@@ -439,8 +437,7 @@ class _CyberCardBorder extends ShapeBorder {
   final double notchSlope;
   final BorderSide side;
 
-  Path _build(Rect r) =>
-      _cardPath(r, cut, notchWidth, notchDepth, notchSlope);
+  Path _build(Rect r) => _cardPath(r, cut, notchWidth, notchDepth, notchSlope);
 
   @override
   EdgeInsetsGeometry get dimensions => EdgeInsets.all(side.width);
@@ -529,37 +526,6 @@ class _HardShadowPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _HardShadowPainter oldDelegate) => false;
-}
-
-/// Cuts a single bottom corner of a team badge (mirrored per side).
-class _BadgeClipper extends CustomClipper<Path> {
-  const _BadgeClipper({required this.cutBottomRight});
-  final bool cutBottomRight;
-
-  @override
-  Path getClip(Size s) {
-    const c = 11.0;
-    if (cutBottomRight) {
-      return Path()
-        ..moveTo(0, 0)
-        ..lineTo(s.width, 0)
-        ..lineTo(s.width, s.height - c)
-        ..lineTo(s.width - c, s.height)
-        ..lineTo(0, s.height)
-        ..close();
-    }
-    return Path()
-      ..moveTo(0, 0)
-      ..lineTo(s.width, 0)
-      ..lineTo(s.width, s.height)
-      ..lineTo(c, s.height)
-      ..lineTo(0, s.height - c)
-      ..close();
-  }
-
-  @override
-  bool shouldReclip(covariant _BadgeClipper old) =>
-      old.cutBottomRight != cutBottomRight;
 }
 
 // ── Palette (card-local, tuned to the reference) ──────────────────────────────

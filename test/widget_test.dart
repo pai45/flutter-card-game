@@ -11,6 +11,7 @@ void main() {
     final slot = defaultDeckSlots.first;
     FlutterSecureStorage.setMockInitialValues({
       'pd_starter_pack_claimed_v1': 'true',
+      'pd_selected_avatar_v1': 'adams',
       'pd_deck_slots_v1': jsonEncode([slot.toJson()]),
     });
     SharedPreferences.setMockInitialValues({

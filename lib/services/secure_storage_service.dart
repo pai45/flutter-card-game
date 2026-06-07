@@ -69,6 +69,7 @@ class SecureGameStorage {
   static const _progressionKey = 'pd_progression_v1';
   static const _walletKey = 'pitch_duel_wallet';
   static const _predictionsKey = 'pd_predictions_v1';
+  static const _selectedAvatarKey = 'pd_selected_avatar_v1';
 
   final FlutterSecureStorage _storage;
 
@@ -181,8 +182,7 @@ class SecureGameStorage {
       final data = jsonDecode(raw) as List;
       return data
           .map(
-            (item) =>
-                UserPrediction.fromJson(Map<String, dynamic>.from(item)),
+            (item) => UserPrediction.fromJson(Map<String, dynamic>.from(item)),
           )
           .toList();
     } catch (_) {
@@ -195,6 +195,19 @@ class SecureGameStorage {
       key: _predictionsKey,
       value: jsonEncode(predictions.map((p) => p.toJson()).toList()),
     );
+  }
+
+  Future<String?> loadSelectedAvatarId() async {
+    try {
+      final raw = await _storage.read(key: _selectedAvatarKey);
+      return raw == null || raw.isEmpty ? null : raw;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveSelectedAvatarId(String avatarId) async {
+    await _storage.write(key: _selectedAvatarKey, value: avatarId);
   }
 
   Future<PlayerProgression> loadProgression() async {

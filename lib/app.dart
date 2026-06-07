@@ -11,6 +11,7 @@ import 'models/league.dart';
 import 'models/sport_match.dart';
 import 'screens/game/game_screen.dart';
 import 'screens/home/widgets/starter_pack_onboarding.dart';
+import 'screens/onboarding/avatar_selection_screen.dart';
 import 'screens/predictions/league_detail_screen.dart';
 import 'screens/predictions/match_prediction_screen.dart';
 import 'screens/predictions/prediction_home_screen.dart';
@@ -138,8 +139,32 @@ class _AppShellState extends State<AppShell> {
   // Default landing is the new prediction HOME.
   AppSection section = AppSection.predictions;
   bool _openGameAfterStarterReveal = false;
+  final SecureGameStorage _storage = SecureGameStorage();
+  bool _avatarLoading = true;
+  String? _selectedAvatarId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSelectedAvatar();
+  }
+
+  Future<void> _loadSelectedAvatar() async {
+    final avatarId = await _storage.loadSelectedAvatarId();
+    if (!mounted) return;
+    setState(() {
+      _selectedAvatarId = avatarId;
+      _avatarLoading = false;
+    });
+  }
 
   void _go(AppSection next) => setState(() => section = next);
+
+  Future<void> _completeAvatarSelection(String avatarId) async {
+    await _storage.saveSelectedAvatarId(avatarId);
+    if (!mounted) return;
+    setState(() => _selectedAvatarId = avatarId);
+  }
 
   /// Enter the card game ("Pitch Duel") as a full-screen pushed flow from the
   /// GAMES tab. App-level destinations selected inside it pop back and switch
@@ -199,7 +224,7 @@ class _AppShellState extends State<AppShell> {
           }
         },
         builder: (context, state) {
-          if (state.loading) {
+          if (state.loading || _avatarLoading) {
             return Container(
               color: Cyber.bg,
               child: Center(
@@ -218,6 +243,9 @@ class _AppShellState extends State<AppShell> {
                 ),
               ),
             );
+          }
+          if (_selectedAvatarId == null) {
+            return AvatarSelectionScreen(onComplete: _completeAvatarSelection);
           }
           final packReveal = state.pendingPackReveal;
           if (packReveal != null && packReveal.items.isNotEmpty) {

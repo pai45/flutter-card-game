@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../../config/enums.dart';
 import '../../config/theme.dart';
+import '../../models/avatar_option.dart';
+import '../../models/sport_match.dart';
 import '../shop/shop_screen.dart' show CoinIcon;
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
+import '../../widgets/team_logo.dart';
 
 // ─── Domain ──────────────────────────────────────────────────────────────────
 
@@ -25,6 +28,7 @@ class LeaderboardEntry {
     this.isNew = false,
     this.badge,
     this.isUser = false,
+    this.team,
   });
 
   /// >0 climbed, <0 dropped, 0 held.
@@ -35,6 +39,7 @@ class LeaderboardEntry {
   final bool isNew;
   final String? badge;
   final bool isUser;
+  final SportTeam? team;
 }
 
 class _Seed {
@@ -56,11 +61,17 @@ class _Seed {
 }
 
 class _TeamSeed {
-  const _TeamSeed(this.name, this.players, this.movement);
+  const _TeamSeed({
+    required this.team,
+    required this.score,
+    required this.movement,
+    this.isUser = false,
+  });
 
-  final String name;
-  final List<String> players;
+  final SportTeam team;
+  final int score;
   final int movement;
+  final bool isUser;
 }
 
 // Named users keep the exact scores from the brief; filler rivals are inserted
@@ -93,17 +104,167 @@ const List<_Seed> _board = [
 ];
 
 const List<_TeamSeed> _teams = [
-  _TeamSeed('Solar FC', ['pai', 'jarvis', 'Blaze', 'Rookie7'], 2),
-  _TeamSeed('Neon Knights', ['Vortex', 'Titan', 'Comet', 'Drift'], -1),
-  _TeamSeed('Apex United', ['NeoStrike', 'NovaQ', 'rocky', 'Volt'], 3),
-  _TeamSeed('Quantum XI', ['PhantomX', 'EchoZero', 'Zenith', 'Ghost'], 1),
-  _TeamSeed('Metro Strikers', ['Reaper', 'Striker', 'Diwakar', 'monika'], -2),
-  _TeamSeed('Royal Pulse', [
-    'Raja2000',
-    'Invincible51',
-    'Mirage',
-    'Falcon9',
-  ], 1),
+  _TeamSeed(
+    team: SportTeam(
+      id: 'fra',
+      name: 'France',
+      shortName: 'FRA',
+      color: Color(0xff1b4fd7),
+    ),
+    score: 1877,
+    movement: 2,
+  ),
+  _TeamSeed(
+    team: SportTeam(
+      id: 'esp',
+      name: 'Spain',
+      shortName: 'ESP',
+      color: Color(0xffd71920),
+    ),
+    score: 1876,
+    movement: -1,
+  ),
+  _TeamSeed(
+    team: SportTeam(
+      id: 'arg',
+      name: 'Argentina',
+      shortName: 'ARG',
+      color: Color(0xff74acdf),
+    ),
+    score: 1875,
+    movement: -1,
+    isUser: true,
+  ),
+  _TeamSeed(
+    team: SportTeam(
+      id: 'eng',
+      name: 'England',
+      shortName: 'ENG',
+      color: Color(0xfff5f5f5),
+    ),
+    score: 1813,
+    movement: 0,
+  ),
+  _TeamSeed(
+    team: SportTeam(
+      id: 'por',
+      name: 'Portugal',
+      shortName: 'POR',
+      color: Color(0xff006600),
+    ),
+    score: 1764,
+    movement: 1,
+  ),
+  _TeamSeed(
+    team: SportTeam(
+      id: 'bra',
+      name: 'Brazil',
+      shortName: 'BRA',
+      color: Color(0xffffdf00),
+    ),
+    score: 1761,
+    movement: -1,
+  ),
+  _TeamSeed(
+    team: SportTeam(
+      id: 'ned',
+      name: 'Netherlands',
+      shortName: 'NED',
+      color: Color(0xffff7f00),
+    ),
+    score: 1756,
+    movement: 0,
+  ),
+  _TeamSeed(
+    team: SportTeam(
+      id: 'mar',
+      name: 'Morocco',
+      shortName: 'MAR',
+      color: Color(0xffc1272d),
+    ),
+    score: 1738,
+    movement: 1,
+  ),
+  _TeamSeed(
+    team: SportTeam(
+      id: 'bel',
+      name: 'Belgium',
+      shortName: 'BEL',
+      color: Color(0xfffdda24),
+    ),
+    score: 1735,
+    movement: 0,
+  ),
+  _TeamSeed(
+    team: SportTeam(
+      id: 'ger',
+      name: 'Germany',
+      shortName: 'GER',
+      color: Color(0xff111111),
+    ),
+    score: 1730,
+    movement: 0,
+  ),
+  _TeamSeed(
+    team: SportTeam(
+      id: 'cro',
+      name: 'Croatia',
+      shortName: 'CRO',
+      color: Color(0xffe31b23),
+    ),
+    score: 1717,
+    movement: 1,
+  ),
+  _TeamSeed(
+    team: SportTeam(
+      id: 'mex',
+      name: 'Mexico',
+      shortName: 'MEX',
+      color: Color(0xff006847),
+    ),
+    score: 1706,
+    movement: 1,
+  ),
+  _TeamSeed(
+    team: SportTeam(
+      id: 'usa',
+      name: 'United States',
+      shortName: 'USA',
+      color: Color(0xff3c3b6e),
+    ),
+    score: 1698,
+    movement: 2,
+  ),
+  _TeamSeed(
+    team: SportTeam(
+      id: 'uru',
+      name: 'Uruguay',
+      shortName: 'URU',
+      color: Color(0xff7bb9e8),
+    ),
+    score: 1687,
+    movement: -1,
+  ),
+  _TeamSeed(
+    team: SportTeam(
+      id: 'col',
+      name: 'Colombia',
+      shortName: 'COL',
+      color: Color(0xffffd100),
+    ),
+    score: 1684,
+    movement: 1,
+  ),
+  _TeamSeed(
+    team: SportTeam(
+      id: 'jpn',
+      name: 'Japan',
+      shortName: 'JPN',
+      color: Color(0xff0033a0),
+    ),
+    score: 1672,
+    movement: 0,
+  ),
 ];
 
 typedef ScoreMeta = ({String unit});
@@ -159,63 +320,17 @@ List<LeaderboardEntry> _entriesFor(
 }
 
 List<LeaderboardEntry> _teamEntriesFor() {
-  final seedsByName = {for (final seed in _board) seed.name: seed};
-  final teams =
-      [
-        for (final team in _teams)
-          (
-            seed: team,
-            players: [
-              for (final player in team.players)
-                if (seedsByName[player] != null) seedsByName[player]!,
-            ],
-          ),
-      ]..sort((a, b) {
-        final bScore = b.players.fold<int>(
-          0,
-          (sum, player) =>
-              sum +
-              _scoreFor(
-                LeaderboardType.tournament,
-                player.base,
-                TournamentScope.allTime,
-                GameMode.quiz,
-              ),
-        );
-        final aScore = a.players.fold<int>(
-          0,
-          (sum, player) =>
-              sum +
-              _scoreFor(
-                LeaderboardType.tournament,
-                player.base,
-                TournamentScope.allTime,
-                GameMode.quiz,
-              ),
-        );
-        return bScore.compareTo(aScore);
-      });
-
   return [
-    for (var i = 0; i < teams.length; i++)
+    for (var i = 0; i < _teams.length; i++)
       LeaderboardEntry(
         rank: i + 1,
-        name: teams[i].seed.name,
-        score: teams[i].players.fold<int>(
-          0,
-          (sum, player) =>
-              sum +
-              _scoreFor(
-                LeaderboardType.tournament,
-                player.base,
-                TournamentScope.allTime,
-                GameMode.quiz,
-              ),
-        ),
-        movement: teams[i].seed.movement,
+        name: _teams[i].team.name,
+        score: _teams[i].score,
+        movement: _teams[i].movement,
         isNew: false,
-        badge: '${teams[i].players.length}P',
-        isUser: teams[i].players.any((player) => player.isUser),
+        badge: _teams[i].team.shortName,
+        isUser: _teams[i].isUser,
+        team: _teams[i].team,
       ),
   ];
 }
@@ -233,20 +348,67 @@ String _formatInt(int value) {
   return '${value < 0 ? '-' : ''}$buffer';
 }
 
-Color _avatarColor(String name) {
-  const palette = [
-    Cyber.cyan,
-    Cyber.violet,
-    Cyber.gold,
-    Cyber.success,
-    Cyber.magenta,
-    Cyber.amber,
-  ];
+ShapeDecoration _cutDecoration({
+  required Color color,
+  Color borderColor = Colors.transparent,
+  double borderWidth = 1,
+  double cut = 14,
+}) {
+  return ShapeDecoration(
+    color: color,
+    shape: _CutCornerBorder(
+      cut: cut,
+      side: BorderSide(color: borderColor, width: borderWidth),
+    ),
+  );
+}
+
+class _CutCornerBorder extends ShapeBorder {
+  const _CutCornerBorder({required this.cut, this.side = BorderSide.none});
+
+  final double cut;
+  final BorderSide side;
+
+  @override
+  EdgeInsetsGeometry get dimensions => EdgeInsets.all(side.width);
+
+  @override
+  ShapeBorder scale(double t) {
+    return _CutCornerBorder(cut: cut * t, side: side.scale(t));
+  }
+
+  @override
+  Path getInnerPath(Rect rect, {TextDirection? textDirection}) {
+    return getOuterPath(rect.deflate(side.width), textDirection: textDirection);
+  }
+
+  @override
+  Path getOuterPath(Rect rect, {TextDirection? textDirection}) {
+    final safeCut = cut.clamp(0, rect.shortestSide / 2).toDouble();
+    return Path()
+      ..moveTo(rect.left + safeCut, rect.top)
+      ..lineTo(rect.right, rect.top)
+      ..lineTo(rect.right, rect.bottom - safeCut)
+      ..lineTo(rect.right - safeCut, rect.bottom)
+      ..lineTo(rect.left, rect.bottom)
+      ..lineTo(rect.left, rect.top + safeCut)
+      ..close();
+  }
+
+  @override
+  void paint(Canvas canvas, Rect rect, {TextDirection? textDirection}) {
+    if (side.style == BorderStyle.none || side.width <= 0) return;
+    final paint = side.toPaint()..style = PaintingStyle.stroke;
+    canvas.drawPath(getOuterPath(rect, textDirection: textDirection), paint);
+  }
+}
+
+AvatarOption _avatarForName(String name) {
   var hash = 0;
   for (final unit in name.codeUnits) {
     hash = (hash * 31 + unit) & 0x7fffffff;
   }
-  return palette[hash % palette.length];
+  return avatarOptions[hash % avatarOptions.length];
 }
 
 // ─── Screen ──────────────────────────────────────────────────────────────────
@@ -262,12 +424,12 @@ class LeaderboardScreen extends StatefulWidget {
 
 class _LeaderboardScreenState extends State<LeaderboardScreen> {
   LeaderboardType _type = LeaderboardType.matchDay;
-  TournamentBoard _tournamentBoard = TournamentBoard.players;
-  String _sport = 'IPL';
+  TournamentBoard _tournamentBoard = TournamentBoard.teams;
+  String _sport = 'FIFA';
   TournamentScope _scope = TournamentScope.weekly;
   GameMode _mode = GameMode.quiz;
 
-  static const List<String> _sports = ['IPL', 'UCL', 'NBA', 'F1'];
+  static const List<String> _sports = ['FIFA', 'IPL', 'UCL', 'NBA', 'F1'];
 
   @override
   Widget build(BuildContext context) {
@@ -390,7 +552,7 @@ class _Header extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  'LEADERBOARD',
+                  'Leaderboard',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
@@ -398,19 +560,19 @@ class _Header extends StatelessWidget {
                     fontFamily: Cyber.displayFont,
                     fontWeight: FontWeight.w900,
                     fontSize: 22,
-                    letterSpacing: 1.6,
+                    letterSpacing: 0.2,
                   ),
                 ),
                 Text(
-                  '// CLIMB THE RANKS',
+                  'Climb the ranks',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: accent.withValues(alpha: 0.55),
                     fontFamily: Cyber.displayFont,
-                    fontSize: 9,
+                    fontSize: 10,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: 1.6,
+                    letterSpacing: 0.2,
                   ),
                 ),
               ],
@@ -498,14 +660,14 @@ class _TypeChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 9),
-        decoration: BoxDecoration(
+        decoration: _cutDecoration(
           color: active
               ? accent.withValues(alpha: 0.16)
-              : Cyber.panel.withValues(alpha: 0.5),
-          border: Border.all(
-            color: active ? accent : Cyber.line.withValues(alpha: 0.4),
-            width: active ? 1.4 : 1,
-          ),
+              : Cyber.panel.withValues(alpha: 0.36),
+          borderColor: active
+              ? accent.withValues(alpha: 0.72)
+              : Colors.transparent,
+          cut: 9,
         ),
         child: Column(
           children: [
@@ -667,11 +829,12 @@ class _SportChip extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-        decoration: BoxDecoration(
+        decoration: _cutDecoration(
           color: active ? accent.withValues(alpha: 0.14) : Colors.transparent,
-          border: Border.all(
-            color: active ? accent : Cyber.line.withValues(alpha: 0.4),
-          ),
+          borderColor: active
+              ? accent.withValues(alpha: 0.72)
+              : Cyber.line.withValues(alpha: 0.28),
+          cut: 8,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -690,7 +853,7 @@ class _SportChip extends StatelessWidget {
               const SizedBox(width: 5),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                decoration: const BoxDecoration(color: Cyber.danger),
+                decoration: _cutDecoration(color: Cyber.danger, cut: 3),
                 child: const Text(
                   'LIVE',
                   style: TextStyle(
@@ -719,9 +882,10 @@ class _CountdownCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
+      decoration: _cutDecoration(
         color: Cyber.amber.withValues(alpha: 0.14),
-        border: Border.all(color: Cyber.amber.withValues(alpha: 0.55)),
+        borderColor: Cyber.amber.withValues(alpha: 0.55),
+        cut: 8,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -757,8 +921,8 @@ class _TournamentBoardTabs extends StatelessWidget {
   final Color accent;
 
   static const List<({TournamentBoard board, String label})> _items = [
-    (board: TournamentBoard.players, label: 'PLAYERS'),
     (board: TournamentBoard.teams, label: 'TEAMS'),
+    (board: TournamentBoard.players, label: 'PLAYERS'),
   ];
 
   @override
@@ -776,15 +940,14 @@ class _TournamentBoardTabs extends StatelessWidget {
                   margin: const EdgeInsets.only(right: 6),
                   padding: const EdgeInsets.symmetric(vertical: 7),
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(
+                  decoration: _cutDecoration(
                     color: active == item.board
                         ? accent.withValues(alpha: 0.14)
                         : Cyber.panel.withValues(alpha: 0.5),
-                    border: Border.all(
-                      color: active == item.board
-                          ? accent
-                          : Cyber.line.withValues(alpha: 0.35),
-                    ),
+                    borderColor: active == item.board
+                        ? accent
+                        : Cyber.line.withValues(alpha: 0.35),
+                    cut: 8,
                   ),
                   child: Text(
                     item.label,
@@ -841,15 +1004,14 @@ class _ScopeToggle extends StatelessWidget {
                   margin: const EdgeInsets.only(right: 6),
                   padding: const EdgeInsets.symmetric(vertical: 7),
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(
+                  decoration: _cutDecoration(
                     color: scope == item.scope
                         ? accent.withValues(alpha: 0.14)
                         : Cyber.panel.withValues(alpha: 0.5),
-                    border: Border.all(
-                      color: scope == item.scope
-                          ? accent
-                          : Cyber.line.withValues(alpha: 0.35),
-                    ),
+                    borderColor: scope == item.scope
+                        ? accent
+                        : Cyber.line.withValues(alpha: 0.35),
+                    cut: 8,
                   ),
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
@@ -909,15 +1071,14 @@ class _ModeTabs extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(
+                  decoration: _cutDecoration(
                     color: mode == item.mode
                         ? accent.withValues(alpha: 0.16)
                         : Colors.transparent,
-                    border: Border.all(
-                      color: mode == item.mode
-                          ? accent
-                          : Cyber.line.withValues(alpha: 0.4),
-                    ),
+                    borderColor: mode == item.mode
+                        ? accent
+                        : Cyber.line.withValues(alpha: 0.4),
+                    cut: 8,
                   ),
                   child: Text(
                     item.label,
@@ -956,44 +1117,27 @@ class _Body extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final meta = _scoreMeta(type);
+    final meta = entries.isNotEmpty && entries.first.team != null
+        ? (unit: 'PTS')
+        : _scoreMeta(type);
     final podium = entries.take(3).toList();
-    final rewardZone = entries
-        .where((e) => e.rank >= 4 && e.rank <= 10 && !e.isUser)
-        .toList();
-    final eliteZone = entries.where((e) => e.rank > 10 && !e.isUser).toList();
+    final remaining = entries.skip(3).toList();
 
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(16, compact ? 10 : 14, 16, 12),
+      padding: EdgeInsets.fromLTRB(16, compact ? 12 : 18, 16, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _SectionLabel('TOP RANKS'),
-          SizedBox(height: compact ? 10 : 12),
-          _Podium(entries: podium, meta: meta),
-          SizedBox(height: compact ? 14 : 20),
-          _ZoneDivider(
-            label: 'TOP 10 · REWARD ZONE',
-            icon: Icons.workspace_premium,
-            color: Cyber.gold,
-          ),
-          const SizedBox(height: 10),
-          for (final entry in rewardZone)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _LeaderboardRow(entry: entry, accent: accent, meta: meta),
-            ),
-          if (eliteZone.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            _ZoneDivider(
-              label: 'ELITE ZONE · TOP 100',
-              icon: Icons.shield_moon,
-              color: Cyber.violet,
-            ),
+          const _SectionLabel('Top players'),
+          SizedBox(height: compact ? 12 : 14),
+          _Podium(entries: podium, meta: meta, accent: accent),
+          if (remaining.isNotEmpty) ...[
+            SizedBox(height: compact ? 18 : 24),
+            const _SectionLabel('All ranks'),
             const SizedBox(height: 10),
-            for (final entry in eliteZone)
+            for (final entry in remaining)
               Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.only(bottom: 10),
                 child: _LeaderboardRow(
                   entry: entry,
                   accent: accent,
@@ -1017,11 +1161,11 @@ class _SectionLabel extends StatelessWidget {
     return Text(
       label,
       style: TextStyle(
-        color: Cyber.muted,
+        color: Cyber.muted.withValues(alpha: 0.9),
         fontFamily: Cyber.displayFont,
-        fontSize: 10,
-        fontWeight: FontWeight.w900,
-        letterSpacing: 2,
+        fontSize: 11,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 0.2,
       ),
     );
   }
@@ -1042,25 +1186,33 @@ class _UserRankBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final meta = _scoreMeta(type);
+    final meta = user.team != null ? (unit: 'PTS') : _scoreMeta(type);
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
       decoration: BoxDecoration(
         color: Cyber.bg,
-        border: Border(top: BorderSide(color: accent.withValues(alpha: 0.45))),
+        border: Border(
+          top: BorderSide(color: Cyber.line.withValues(alpha: 0.32)),
+        ),
       ),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: accent.withValues(alpha: 0.08),
-          border: Border.all(color: accent.withValues(alpha: 0.65), width: 1.4),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: _cutDecoration(
+          color: accent.withValues(alpha: 0.1),
+          borderColor: accent.withValues(alpha: 0.34),
+          cut: 18,
         ),
         child: Row(
           children: [
-            _Avatar(name: user.name, size: 40, highlight: true),
-            const SizedBox(width: 10),
+            _Avatar(
+              name: user.name,
+              size: 54,
+              highlight: true,
+              team: user.team,
+            ),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1068,13 +1220,13 @@ class _UserRankBar extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        'YOUR RANK',
+                        'Your rank',
                         style: TextStyle(
                           color: accent.withValues(alpha: 0.85),
                           fontFamily: Cyber.displayFont,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.4,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.1,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -1094,7 +1246,7 @@ class _UserRankBar extends StatelessWidget {
                         style: const TextStyle(
                           color: Colors.white,
                           fontFamily: Cyber.displayFont,
-                          fontSize: 26,
+                          fontSize: 28,
                           fontWeight: FontWeight.w900,
                           height: 1,
                         ),
@@ -1108,7 +1260,7 @@ class _UserRankBar extends StatelessWidget {
                           style: const TextStyle(
                             color: Colors.white,
                             fontFamily: Cyber.bodyFont,
-                            fontSize: 14,
+                            fontSize: 15,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -1126,7 +1278,7 @@ class _UserRankBar extends StatelessWidget {
                   style: TextStyle(
                     color: accent,
                     fontFamily: Cyber.displayFont,
-                    fontSize: 20,
+                    fontSize: 21,
                     fontWeight: FontWeight.w900,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
@@ -1138,7 +1290,7 @@ class _UserRankBar extends StatelessWidget {
                     fontFamily: Cyber.displayFont,
                     fontSize: 9,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: 1,
+                    letterSpacing: 0.4,
                   ),
                 ),
               ],
@@ -1153,10 +1305,15 @@ class _UserRankBar extends StatelessWidget {
 // ─── Podium ──────────────────────────────────────────────────────────────────
 
 class _Podium extends StatelessWidget {
-  const _Podium({required this.entries, required this.meta});
+  const _Podium({
+    required this.entries,
+    required this.meta,
+    required this.accent,
+  });
 
   final List<LeaderboardEntry> entries;
   final ScoreMeta meta;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
@@ -1164,173 +1321,255 @@ class _Podium extends StatelessWidget {
     final first = entries[0];
     final second = entries[1];
     final third = entries[2];
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
+    return Column(
       children: [
-        Expanded(
-          child: _PodiumCard(
-            entry: second,
-            meta: meta,
-            color: Cyber.violet,
-            height: 150,
-          ),
+        _WinnerTile(
+          entry: first,
+          meta: meta,
+          color: Cyber.gold,
+          avatarSize: 86,
+          primary: true,
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _PodiumCard(
-            entry: first,
-            meta: meta,
-            color: Cyber.gold,
-            height: 178,
-            champion: true,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _PodiumCard(
-            entry: third,
-            meta: meta,
-            color: Cyber.amber,
-            height: 150,
-          ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _WinnerTile(
+                entry: second,
+                meta: meta,
+                color: accent,
+                avatarSize: 66,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _WinnerTile(
+                entry: third,
+                meta: meta,
+                color: Cyber.amber,
+                avatarSize: 66,
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
 }
 
-class _PodiumCard extends StatelessWidget {
-  const _PodiumCard({
+class _WinnerTile extends StatelessWidget {
+  const _WinnerTile({
     required this.entry,
     required this.meta,
     required this.color,
-    required this.height,
-    this.champion = false,
+    required this.avatarSize,
+    this.primary = false,
   });
 
   final LeaderboardEntry entry;
   final ScoreMeta meta;
   final Color color;
-  final double height;
-  final bool champion;
+  final double avatarSize;
+  final bool primary;
 
   @override
   Widget build(BuildContext context) {
+    final scoreText = _formatInt(entry.score);
+
     return Container(
-      height: height,
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: champion ? 0.18 : 0.12),
-        border: Border.all(
-          color: color.withValues(alpha: champion ? 0.95 : 0.55),
-          width: champion ? 1.8 : 1,
-        ),
+      padding: EdgeInsets.all(primary ? 16 : 12),
+      decoration: _cutDecoration(
+        color: primary
+            ? Cyber.panel.withValues(alpha: 0.84)
+            : Cyber.panel.withValues(alpha: 0.58),
+        borderColor: color.withValues(alpha: primary ? 0.42 : 0.26),
+        cut: primary ? 18 : 13,
       ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (champion)
-              Icon(Icons.workspace_premium, color: color, size: 20)
-            else
-              Text(
-                '#${entry.rank}',
-                style: TextStyle(
-                  color: color,
-                  fontFamily: Cyber.displayFont,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w900,
+      child: primary
+          ? Row(
+              children: [
+                _Avatar(
+                  name: entry.name,
+                  size: avatarSize,
+                  ring: color,
+                  team: entry.team,
                 ),
-              ),
-            const SizedBox(height: 6),
-            _Avatar(name: entry.name, size: champion ? 50 : 42, ring: color),
-            const SizedBox(height: 7),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 86),
-              child: Text(
-                entry.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontFamily: Cyber.displayFont,
-                  fontSize: champion ? 12 : 11,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.4,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _WinnerCopy(entry: entry, color: color),
                 ),
-              ),
+                const SizedBox(width: 12),
+                _WinnerScore(score: scoreText, unit: meta.unit, color: color),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      '#${entry.rank}',
+                      style: TextStyle(
+                        color: color,
+                        fontFamily: Cyber.displayFont,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _MovementBadge(
+                      movement: entry.movement,
+                      isNew: entry.isNew,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    _Avatar(
+                      name: entry.name,
+                      size: avatarSize,
+                      ring: color,
+                      team: entry.team,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            entry.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontFamily: Cyber.bodyFont,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '$scoreText ${meta.unit}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: color,
+                              fontFamily: Cyber.displayFont,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w900,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            const SizedBox(height: 3),
-            Text(
-              _formatInt(entry.score),
-              style: TextStyle(
-                color: color,
-                fontFamily: Cyber.displayFont,
-                fontSize: champion ? 17 : 14,
-                fontWeight: FontWeight.w900,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-            Text(
-              meta.unit,
-              style: TextStyle(
-                color: color.withValues(alpha: 0.7),
-                fontFamily: Cyber.displayFont,
-                fontSize: 8,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1,
-              ),
-            ),
-            const SizedBox(height: 5),
-            _MovementBadge(movement: entry.movement, isNew: entry.isNew),
-          ],
-        ),
-      ),
     );
   }
 }
 
-// ─── Zone divider ────────────────────────────────────────────────────────────
+class _WinnerCopy extends StatelessWidget {
+  const _WinnerCopy({required this.entry, required this.color});
 
-class _ZoneDivider extends StatelessWidget {
-  const _ZoneDivider({
-    required this.label,
-    required this.icon,
-    required this.color,
-  });
-
-  final String label;
-  final IconData icon;
+  final LeaderboardEntry entry;
   final Color color;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: color, size: 13),
-        const SizedBox(width: 6),
-        Flexible(
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+        Row(
+          children: [
+            Text(
+              '#${entry.rank}',
+              style: TextStyle(
+                color: color,
+                fontFamily: Cyber.displayFont,
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.workspace_premium, color: Cyber.gold, size: 18),
+            const SizedBox(width: 8),
+            _MovementBadge(movement: entry.movement, isNew: entry.isNew),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          entry.name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Colors.white,
+            fontFamily: Cyber.bodyFont,
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+            height: 1.05,
+          ),
+        ),
+        if (entry.badge != null) ...[
+          const SizedBox(height: 8),
+          _Tag(label: entry.badge!, color: color),
+        ],
+      ],
+    );
+  }
+}
+
+class _WinnerScore extends StatelessWidget {
+  const _WinnerScore({
+    required this.score,
+    required this.unit,
+    required this.color,
+  });
+
+  final String score;
+  final String unit;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 98),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              score,
+              maxLines: 1,
+              style: TextStyle(
+                color: color,
+                fontFamily: Cyber.displayFont,
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+          Text(
+            unit,
             style: TextStyle(
-              color: color,
+              color: color.withValues(alpha: 0.72),
               fontFamily: Cyber.displayFont,
               fontSize: 9,
               fontWeight: FontWeight.w900,
-              letterSpacing: 1.2,
+              letterSpacing: 0.4,
             ),
           ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Container(height: 1, color: color.withValues(alpha: 0.25)),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -1351,66 +1590,80 @@ class _LeaderboardRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = entry.isUser;
-    final rankColor = entry.rank <= 10 ? Cyber.gold : Cyber.muted;
+    final rankColor = entry.rank <= 3 ? Cyber.gold : Cyber.muted;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-      decoration: BoxDecoration(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+      decoration: _cutDecoration(
         color: isUser
-            ? accent.withValues(alpha: 0.14)
-            : Cyber.panel.withValues(alpha: 0.45),
-        border: Border.all(
-          color: isUser ? accent : Cyber.line.withValues(alpha: 0.3),
-          width: isUser ? 1.4 : 1,
-        ),
+            ? accent.withValues(alpha: 0.1)
+            : Cyber.panel.withValues(alpha: 0.34),
+        borderColor: isUser
+            ? accent.withValues(alpha: 0.5)
+            : Colors.transparent,
+        cut: 12,
       ),
       child: Row(
         children: [
           SizedBox(
-            width: 26,
+            width: 34,
             child: Text(
-              '${entry.rank}',
-              textAlign: TextAlign.center,
+              '#${entry.rank}',
+              textAlign: TextAlign.left,
               style: TextStyle(
                 color: rankColor,
                 fontFamily: Cyber.displayFont,
-                fontSize: 15,
+                fontSize: 14,
                 fontWeight: FontWeight.w900,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          _Avatar(name: entry.name, size: 34, highlight: isUser),
           const SizedBox(width: 10),
+          _Avatar(
+            name: entry.name,
+            size: 48,
+            highlight: isUser,
+            team: entry.team,
+          ),
+          const SizedBox(width: 12),
           Expanded(
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Flexible(
-                  child: Text(
-                    entry.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontFamily: Cyber.bodyFont,
-                      fontSize: 14,
-                      fontWeight: isUser ? FontWeight.w800 : FontWeight.w600,
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        entry.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontFamily: Cyber.bodyFont,
+                          fontSize: 15,
+                          fontWeight: isUser
+                              ? FontWeight.w800
+                              : FontWeight.w600,
+                        ),
+                      ),
                     ),
-                  ),
+                    if (isUser) ...[
+                      const SizedBox(width: 7),
+                      const _Tag(label: 'YOU', color: Cyber.cyan),
+                    ] else if (entry.badge != null) ...[
+                      const SizedBox(width: 7),
+                      _Tag(label: entry.badge!, color: Cyber.violet),
+                    ],
+                  ],
                 ),
-                const SizedBox(width: 6),
-                if (isUser)
-                  const _Tag(label: 'YOU', color: Cyber.cyan)
-                else if (entry.badge != null)
-                  _Tag(label: entry.badge!, color: Cyber.violet),
+                const SizedBox(height: 4),
+                _MovementBadge(movement: entry.movement, isNew: entry.isNew),
               ],
             ),
           ),
-          const SizedBox(width: 6),
-          _MovementBadge(movement: entry.movement, isNew: entry.isNew),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 82),
+            constraints: const BoxConstraints(maxWidth: 86),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -1431,11 +1684,11 @@ class _LeaderboardRow extends StatelessWidget {
                 Text(
                   meta.unit,
                   style: TextStyle(
-                    color: Cyber.muted,
+                    color: Cyber.muted.withValues(alpha: 0.82),
                     fontFamily: Cyber.displayFont,
-                    fontSize: 7,
+                    fontSize: 8,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: 1,
+                    letterSpacing: 0.4,
                   ),
                 ),
               ],
@@ -1457,9 +1710,10 @@ class _Tag extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-      decoration: BoxDecoration(
+      decoration: _cutDecoration(
         color: color.withValues(alpha: 0.16),
-        border: Border.all(color: color.withValues(alpha: 0.7)),
+        borderColor: color.withValues(alpha: 0.7),
+        cut: 4,
       ),
       child: Text(
         label,
@@ -1528,35 +1782,51 @@ class _Avatar extends StatelessWidget {
     required this.size,
     this.highlight = false,
     this.ring,
+    this.team,
   });
 
   final String name;
   final double size;
   final bool highlight;
   final Color? ring;
+  final SportTeam? team;
 
   @override
   Widget build(BuildContext context) {
-    final color = ring ?? _avatarColor(name);
-    final initial = name.isEmpty ? '?' : name[0].toUpperCase();
+    if (team != null) {
+      return SizedBox(
+        width: size,
+        height: size,
+        child: Center(
+          child: TeamLogo(
+            team: team!,
+            width: size,
+            height: size,
+            cutBottomRight: false,
+          ),
+        ),
+      );
+    }
+
+    final color = ring ?? (highlight ? Cyber.cyan : Cyber.line);
+    final avatar = _avatarForName(name);
     return Container(
       width: size,
       height: size,
-      alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: color.withValues(alpha: highlight ? 0.28 : 0.2),
+        color: Cyber.panel,
+        shape: BoxShape.circle,
         border: Border.all(
-          color: color.withValues(alpha: highlight ? 0.95 : 0.6),
-          width: highlight ? 1.6 : 1,
+          color: color.withValues(alpha: highlight ? 0.9 : 0.42),
+          width: highlight ? 2 : 1.2,
         ),
       ),
-      child: Text(
-        initial,
-        style: TextStyle(
-          color: Colors.white,
-          fontFamily: Cyber.displayFont,
-          fontSize: size * 0.42,
-          fontWeight: FontWeight.w900,
+      clipBehavior: Clip.antiAlias,
+      child: ClipOval(
+        child: Image.asset(
+          avatar.assetPath,
+          fit: BoxFit.cover,
+          alignment: Alignment.topCenter,
         ),
       ),
     );
@@ -1656,7 +1926,7 @@ class _EmptyState extends StatelessWidget {
                   horizontal: 22,
                   vertical: 12,
                 ),
-                decoration: BoxDecoration(color: accent),
+                decoration: _cutDecoration(color: accent, cut: 10),
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
                   child: Text(

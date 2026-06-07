@@ -12,6 +12,7 @@ import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/team_logo.dart';
 import 'widgets/score_prediction_picker.dart';
 
 /// The prediction quiz for one fixture, built as a gamified single-question
@@ -95,6 +96,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen> {
       (q) => q.isScorePrediction || _answers.containsKey(q.id),
     );
   }
+
   bool get _isLast => _index >= _questions.length - 1;
 
   Duration get _untilLock {
@@ -236,10 +238,8 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen> {
                     awayScore: _scoreFor(question.id).$2,
                     settled: settled,
                     editable: _editable,
-                    onHomeChanged: (s) =>
-                        _setScore(question.id, home: s),
-                    onAwayChanged: (s) =>
-                        _setScore(question.id, away: s),
+                    onHomeChanged: (s) => _setScore(question.id, home: s),
+                    onAwayChanged: (s) => _setScore(question.id, away: s),
                   )
                 : SingleChildScrollView(
                     key: ValueKey(question.id),
@@ -271,7 +271,8 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen> {
   /// final page becomes SUBMIT (editable), SETTLE & CLAIM (finished demo) or
   /// DONE (locked review).
   _PrimaryAction _primaryButton(UserPrediction? prediction, bool settled) {
-    final canSettle = _match.status == MatchStatus.finished &&
+    final canSettle =
+        _match.status == MatchStatus.finished &&
         (_quiz?.settleable ?? false) &&
         prediction != null &&
         !settled;
@@ -349,17 +350,17 @@ class _QuizHeader extends StatelessWidget {
   final SportMatch match;
 
   String get _statusLabel => switch (match.status) {
-        MatchStatus.upcoming => _formatTime(match.kickoff),
-        MatchStatus.live =>
-          match.liveMinute != null ? "LIVE ${match.liveMinute}'" : 'LIVE',
-        MatchStatus.finished => 'FINISHED',
-      };
+    MatchStatus.upcoming => _formatTime(match.kickoff),
+    MatchStatus.live =>
+      match.liveMinute != null ? "LIVE ${match.liveMinute}'" : 'LIVE',
+    MatchStatus.finished => 'FINISHED',
+  };
 
   Color get _statusColor => switch (match.status) {
-        MatchStatus.upcoming => Cyber.gold,
-        MatchStatus.live => Cyber.danger,
-        MatchStatus.finished => Cyber.muted,
-      };
+    MatchStatus.upcoming => Cyber.gold,
+    MatchStatus.live => Cyber.danger,
+    MatchStatus.finished => Cyber.muted,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -373,8 +374,11 @@ class _QuizHeader extends StatelessWidget {
             children: [
               Text(
                 _statusLabel,
-                style: Cyber.display(15, color: _statusColor, letterSpacing: 1.5)
-                    .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+                style: Cyber.display(
+                  15,
+                  color: _statusColor,
+                  letterSpacing: 1.5,
+                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
               const SizedBox(height: 12),
               Row(
@@ -407,7 +411,9 @@ class _QuizHeader extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(child: Container(height: 4, color: match.home.color)),
+                  Expanded(
+                    child: Container(height: 4, color: match.home.color),
+                  ),
                   const SizedBox(width: 2),
                   Expanded(
                     child: Container(
@@ -432,43 +438,11 @@ class _HeaderBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final light = team.color.computeLuminance() > 0.55;
-    final textColor = light ? const Color(0xff15202e) : Colors.white;
-    final accentEdge = light
-        ? Color.lerp(team.color, Colors.black, 0.28)!
-        : Color.lerp(team.color, Colors.white, 0.5)!;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.only(
-        topLeft: const Radius.circular(8),
-        topRight: const Radius.circular(8),
-        bottomLeft: Radius.circular(cutBottomRight ? 8 : 2),
-        bottomRight: Radius.circular(cutBottomRight ? 2 : 8),
-      ),
-      child: Container(
-        width: 44,
-        height: 44,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [team.color, Color.lerp(team.color, Colors.black, 0.34)!],
-          ),
-          border: Border(bottom: BorderSide(color: accentEdge, width: 3)),
-        ),
-        child: Text(
-          team.shortName,
-          style: TextStyle(
-            color: textColor,
-            fontFamily: Cyber.displayFont,
-            fontSize: 13,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0.5,
-            decoration: TextDecoration.none,
-          ),
-        ),
-      ),
+    return TeamLogo(
+      team: team,
+      width: 44,
+      height: 44,
+      cutBottomRight: cutBottomRight,
     );
   }
 }
@@ -506,15 +480,11 @@ class _LockLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final (icon, text, color) = switch (match.status) {
       MatchStatus.upcoming when untilLock > Duration.zero => (
-          Icons.lock_clock,
-          'QUIZ LOCKS IN ${_formatCountdown(untilLock)}',
-          Cyber.gold,
-        ),
-      MatchStatus.finished => (
-          Icons.flag_outlined,
-          'MATCH ENDED',
-          Cyber.muted,
-        ),
+        Icons.lock_clock,
+        'QUIZ LOCKS IN ${_formatCountdown(untilLock)}',
+        Cyber.gold,
+      ),
+      MatchStatus.finished => (Icons.flag_outlined, 'MATCH ENDED', Cyber.muted),
       _ => (Icons.lock_outline, 'PREDICTIONS LOCKED', Cyber.danger),
     };
 
@@ -527,8 +497,11 @@ class _LockLine extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             text,
-            style: Cyber.label(11, color: color, letterSpacing: 1.4)
-                .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            style: Cyber.label(
+              11,
+              color: color,
+              letterSpacing: 1.4,
+            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
         ],
       ),
@@ -579,8 +552,10 @@ class _QuestionPanel extends StatelessWidget {
                   Expanded(
                     child: Text(
                       question.text.toUpperCase(),
-                      style: Cyber.display(16, letterSpacing: 0.3)
-                          .copyWith(height: 1.25),
+                      style: Cyber.display(
+                        16,
+                        letterSpacing: 0.3,
+                      ).copyWith(height: 1.25),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -616,10 +591,7 @@ class _QuestionPanel extends StatelessWidget {
               border: Border.all(color: Cyber.border),
               borderRadius: BorderRadius.circular(4),
             ),
-            child: Text(
-              '$index',
-              style: Cyber.display(15, color: Cyber.cyan),
-            ),
+            child: Text('$index', style: Cyber.display(15, color: Cyber.cyan)),
           ),
         ),
       ],
@@ -695,8 +667,10 @@ class _ScoreQuestionPanel extends StatelessWidget {
                     Expanded(
                       child: Text(
                         question.text.toUpperCase(),
-                        style: Cyber.display(16, letterSpacing: 0.3)
-                            .copyWith(height: 1.25),
+                        style: Cyber.display(
+                          16,
+                          letterSpacing: 0.3,
+                        ).copyWith(height: 1.25),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -785,8 +759,10 @@ class _XpPill extends StatelessWidget {
         children: [
           Text(
             '$reward',
-            style: Cyber.display(13, color: Colors.white)
-                .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            style: Cyber.display(
+              13,
+              color: Colors.white,
+            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
           const SizedBox(width: 4),
           Text(
@@ -830,16 +806,15 @@ class _OptionTile extends StatelessWidget {
         duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 13),
         decoration: BoxDecoration(
-          color: active
-              ? accent.withValues(alpha: 0.10)
-              : _optionFill,
+          color: active ? accent.withValues(alpha: 0.10) : _optionFill,
           border: Border.all(
             color: active ? accent : _optionBorder,
             width: active ? 1.5 : 1,
           ),
           borderRadius: BorderRadius.circular(4),
-          boxShadow:
-              state == _OptionVisual.selected ? Cyber.glow(accent) : null,
+          boxShadow: state == _OptionVisual.selected
+              ? Cyber.glow(accent)
+              : null,
         ),
         child: Row(
           children: [
@@ -938,7 +913,8 @@ class _BottomDock extends StatelessWidget {
                     if (i > 0) const SizedBox(width: 8),
                     Expanded(
                       child: _ProgressSegment(
-                        answered: answers.containsKey(questions[i].id) ||
+                        answered:
+                            answers.containsKey(questions[i].id) ||
                             questions[i].isScorePrediction,
                         current: i == index,
                       ),
@@ -997,8 +973,8 @@ class _ProgressSegment extends StatelessWidget {
     final Gradient? gradient = current
         ? const LinearGradient(colors: [_segAmberA, _segAmberB])
         : answered
-            ? const LinearGradient(colors: [_segGreenA, _segGreenB])
-            : null;
+        ? const LinearGradient(colors: [_segGreenA, _segGreenB])
+        : null;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
       height: 8,
@@ -1006,8 +982,9 @@ class _ProgressSegment extends StatelessWidget {
         gradient: gradient,
         color: gradient == null ? _segTrack : null,
         borderRadius: BorderRadius.circular(2),
-        boxShadow:
-            current ? Cyber.glow(Cyber.amber, alpha: 0.35, blur: 8) : null,
+        boxShadow: current
+            ? Cyber.glow(Cyber.amber, alpha: 0.35, blur: 8)
+            : null,
       ),
     );
   }
@@ -1036,8 +1013,8 @@ class _QuizButton extends StatelessWidget {
     final Color content = !enabled
         ? Cyber.muted
         : focal
-            ? const Color(0xff06121b)
-            : Cyber.cyan;
+        ? const Color(0xff06121b)
+        : Cyber.cyan;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: enabled ? onTap : null,
@@ -1054,8 +1031,11 @@ class _QuizButton extends StatelessWidget {
               ],
               Text(
                 label,
-                style: Cyber.body(16, color: content, weight: FontWeight.w800)
-                    .copyWith(letterSpacing: 0.8),
+                style: Cyber.body(
+                  16,
+                  color: content,
+                  weight: FontWeight.w800,
+                ).copyWith(letterSpacing: 0.8),
               ),
               if (trailingIcon != null) ...[
                 const SizedBox(width: 8),
@@ -1101,8 +1081,7 @@ class _HudBtnPainter extends CustomPainter {
       canvas.drawPath(
         path,
         Paint()
-          ..color =
-              enabled ? const Color(0xff1b2336) : const Color(0xff141a26),
+          ..color = enabled ? const Color(0xff1b2336) : const Color(0xff141a26),
       );
       canvas.drawPath(
         path,
@@ -1167,7 +1146,10 @@ class _SubmittedOverlayState extends State<_SubmittedOverlay>
         final t = _c.value;
         // Ring + tick pop in over the first ~45%, hold, then fade the scrim.
         final pop = Curves.elasticOut.transform((t / 0.45).clamp(0.0, 1.0));
-        final scrim = (t < 0.85 ? 1.0 : (1 - (t - 0.85) / 0.15)).clamp(0.0, 1.0);
+        final scrim = (t < 0.85 ? 1.0 : (1 - (t - 0.85) / 0.15)).clamp(
+          0.0,
+          1.0,
+        );
         return Opacity(
           opacity: scrim,
           child: Container(
@@ -1188,8 +1170,11 @@ class _SubmittedOverlayState extends State<_SubmittedOverlay>
                       border: Border.all(color: Cyber.cyan, width: 2.5),
                       boxShadow: Cyber.glow(Cyber.cyan, alpha: 0.7, blur: 26),
                     ),
-                    child: const Icon(Icons.check_rounded,
-                        color: Cyber.cyan, size: 58),
+                    child: const Icon(
+                      Icons.check_rounded,
+                      color: Cyber.cyan,
+                      size: 58,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -1199,23 +1184,33 @@ class _SubmittedOverlayState extends State<_SubmittedOverlay>
                     children: [
                       Text(
                         'PREDICTION SUBMITTED',
-                        style: Cyber.display(20, color: Colors.white,
-                                letterSpacing: 2)
-                            .copyWith(shadows: [
-                          Shadow(
-                            color: Cyber.cyan.withValues(alpha: 0.6),
-                            blurRadius: 16,
-                          ),
-                        ]),
+                        style:
+                            Cyber.display(
+                              20,
+                              color: Colors.white,
+                              letterSpacing: 2,
+                            ).copyWith(
+                              shadows: [
+                                Shadow(
+                                  color: Cyber.cyan.withValues(alpha: 0.6),
+                                  blurRadius: 16,
+                                ),
+                              ],
+                            ),
                       ),
                       const SizedBox(height: 10),
                       Text(
                         '${widget.count} FUTURES LOCKED · UP TO ${widget.potentialXp} XP',
-                        style: Cyber.label(12, color: Cyber.gold,
-                                letterSpacing: 1.4)
-                            .copyWith(fontFeatures: const [
-                          FontFeature.tabularFigures()
-                        ]),
+                        style:
+                            Cyber.label(
+                              12,
+                              color: Cyber.gold,
+                              letterSpacing: 1.4,
+                            ).copyWith(
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
                       ),
                     ],
                   ),

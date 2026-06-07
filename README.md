@@ -14,6 +14,13 @@ deck building, match history, picks, wallet coins, and player progression.
 - Calendar days light up when a duel match or prediction pick exists on that
   date. Match cards open the existing match-history detail screen; pick cards
   open the prediction detail flow.
+- First-time users must choose a profile avatar before entering the app. The
+  avatar options live in `assets/avatar_options/` as WebP images and are saved
+  with `SecureGameStorage`.
+- Profile and leaderboard avatars use the same avatar option set. Leaderboard
+  players are assigned a stable pseudo-random avatar from their player name, so
+  each row, podium card, and the user's sticky rank bar share the same portrait
+  mapping.
 
 ## Getting Started
 

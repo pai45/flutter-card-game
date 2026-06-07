@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../config/enums.dart';
 import '../../config/theme.dart';
@@ -936,6 +937,8 @@ class _PremiumCardShellState extends State<PremiumCardShell>
       return;
     }
     playSound(widget.tapSound);
+    // Light tactile confirmation so a selection feels like it "registered".
+    HapticFeedback.selectionClick();
     widget.onTap?.call();
   }
 

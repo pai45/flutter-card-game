@@ -27,6 +27,7 @@ enum MatchPhase {
   idle,
   toss,
   tossResult,
+  roleReveal,
   scenario,
   play,
   roundResult,

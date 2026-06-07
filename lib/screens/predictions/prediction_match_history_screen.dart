@@ -9,6 +9,7 @@ import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
 import '../../utils/prediction_helpers.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/team_logo.dart';
 import '../shop/shop_screen.dart' show CoinIcon;
 import 'match_prediction_screen.dart';
 
@@ -85,11 +86,8 @@ class _PredictionMatchHistoryScreenState
 
                 final filtered = entries
                     .where(
-                      (e) => matchesHistoryFilter(
-                        e.match,
-                        e.prediction,
-                        _filter,
-                      ),
+                      (e) =>
+                          matchesHistoryFilter(e.match, e.prediction, _filter),
                     )
                     .toList();
 
@@ -130,7 +128,8 @@ class _PredictionMatchHistoryScreenState
                               itemBuilder: (context, index) {
                                 final entry = filtered[index];
                                 final quiz = _quizzes[entry.match.id];
-                                if (quiz == null) return const SizedBox.shrink();
+                                if (quiz == null)
+                                  return const SizedBox.shrink();
                                 return _HistoryMatchCard(
                                   match: entry.match,
                                   league: entry.league,
@@ -234,10 +233,7 @@ class _HistoryHeader extends StatelessWidget {
             onPressed: onBack,
             icon: const Icon(Icons.arrow_back, color: Colors.white),
           ),
-          Text(
-            'MY MATCHES',
-            style: Cyber.display(20, letterSpacing: 1.2),
-          ),
+          Text('MY MATCHES', style: Cyber.display(20, letterSpacing: 1.2)),
         ],
       ),
     );
@@ -308,10 +304,7 @@ class _NotchedStatCard extends StatelessWidget {
     return CustomPaint(
       painter: _NotchedStatBorderPainter(fill: fill),
       child: ClipPath(
-        clipper: const _NotchedStatClipper(
-          notchW: _notchW,
-          notchH: _notchH,
-        ),
+        clipper: const _NotchedStatClipper(notchW: _notchW, notchH: _notchH),
         child: Container(
           color: fill,
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 18),
@@ -436,8 +429,7 @@ class _FilterBar extends StatelessWidget {
               active: active == filter,
               onTap: () => onSelect(filter),
             ),
-            if (filter != PredictionHistoryFilter.out)
-              const SizedBox(width: 8),
+            if (filter != PredictionHistoryFilter.out) const SizedBox(width: 8),
           ],
         ],
       ),
@@ -464,9 +456,7 @@ class _FilterChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: active ? Cyber.cyan.withValues(alpha: 0.12) : Cyber.panel,
-          border: Border.all(
-            color: active ? Cyber.cyan : Cyber.border,
-          ),
+          border: Border.all(color: active ? Cyber.cyan : Cyber.border),
         ),
         child: Text(
           label,
@@ -601,9 +591,7 @@ class _HistoryMatchCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                 color: Cyber.panel2.withValues(alpha: 0.85),
-                border: Border(
-                  top: BorderSide(color: Cyber.line),
-                ),
+                border: Border(top: BorderSide(color: Cyber.line)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -645,29 +633,9 @@ class _TeamScoreRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final light = team.color.computeLuminance() > 0.55;
-    final textOnBadge = light ? const Color(0xff15202e) : Colors.white;
-
     return Row(
       children: [
-        Container(
-          width: 32,
-          height: 32,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: team.color,
-            border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
-          ),
-          child: Text(
-            team.shortName,
-            style: TextStyle(
-              color: textOnBadge,
-              fontFamily: Cyber.displayFont,
-              fontSize: 9,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ),
+        TeamLogo(team: team, width: 32, height: 32),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
@@ -749,10 +717,7 @@ class _StatusValue extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!settled) {
-      return Text(
-        'Pending',
-        style: Cyber.body(14, weight: FontWeight.w600),
-      );
+      return Text('Pending', style: Cyber.body(14, weight: FontWeight.w600));
     }
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -761,9 +726,10 @@ class _StatusValue extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           '$reward',
-          style: Cyber.display(16, letterSpacing: 0.5).copyWith(
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
+          style: Cyber.display(
+            16,
+            letterSpacing: 0.5,
+          ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
         ),
       ],
     );

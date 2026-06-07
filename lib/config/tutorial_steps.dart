@@ -69,16 +69,18 @@ const tossTutorialSteps = [
   TutorialStepData(
     title: 'Win the Toss',
     body:
-        'Pick HEADS or TAILS. The winner chooses to ATTACK or DEFEND for round 1.',
+        'Call HEADS or TAILS to win the toss. The call only decides who wins — '
+        'win it and YOU choose to ATTACK or DEFEND for round 1.',
     icon: Icons.toll,
-    hint: 'HEADS = ATTACK FIRST  ·  TAILS = DEFEND FIRST',
+    hint: 'CALL TO WIN  →  THEN CHOOSE ROLE',
   ),
   TutorialStepData(
-    title: 'Then Roles Flip',
+    title: 'Then Roles Switch',
     body:
-        'This is the only toss. After round 1, roles automatically alternate: attack → defense → attack.',
+        'This is the only toss. After round 1, roles automatically switch each '
+        'round: attack → defense → attack.',
     icon: Icons.swap_horiz,
-    hint: 'R1: YOUR CHOICE  ·  R2-R4: AUTO FLIP',
+    hint: 'R1: YOUR CHOICE  ·  R2–R4: AUTO SWITCH',
   ),
 ];
 
