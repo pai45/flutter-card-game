@@ -19,6 +19,14 @@ abstract class PredictionRepository {
 
   /// The rank-sorted standings table for [leagueId], or empty if none.
   Future<List<TeamStanding>> standings(String leagueId);
+
+  /// Aggregate vote totals for a match question.
+  Future<PredictionVoteBreakdown?> votesFor(String matchId, String questionId);
+
+  /// Rank table scoped to one prediction match.
+  Future<List<MatchPredictionLeaderboardEntry>> matchLeaderboard(
+    String matchId,
+  );
 }
 
 /// Hardcoded fixtures + quizzes mirroring the home mockup, spanning every card
@@ -753,4 +761,80 @@ class MockPredictionRepository implements PredictionRepository {
   @override
   Future<List<TeamStanding>> standings(String leagueId) async =>
       _standings[leagueId] ?? const [];
+
+  @override
+  Future<PredictionVoteBreakdown?> votesFor(
+    String matchId,
+    String questionId,
+  ) async {
+    final quiz = _quizzes[matchId];
+    if (quiz == null) return null;
+    for (final question in quiz.questions) {
+      if (question.id == questionId) {
+        return PredictionVoteBreakdown(
+          matchId: matchId,
+          questionId: questionId,
+          totals: _voteTotals(matchId, question),
+        );
+      }
+    }
+    return null;
+  }
+
+  @override
+  Future<List<MatchPredictionLeaderboardEntry>> matchLeaderboard(
+    String matchId,
+  ) async {
+    final seed = _stableSeed(matchId);
+    final names = const [
+      'You',
+      'Aarav',
+      'Maya',
+      'Dev',
+      'Priya',
+      'Kabir',
+      'Isha',
+    ];
+    return [
+      for (var i = 0; i < names.length; i++)
+        MatchPredictionLeaderboardEntry(
+          rank: i + 1,
+          name: names[i],
+          points: 620 - i * 47 + (seed + i * 13) % 31,
+          correct: 5 - (i % 3),
+        ),
+    ];
+  }
+
+  static Map<int, int> _voteTotals(String matchId, QuizQuestion question) {
+    final seed = _stableSeed('$matchId:${question.id}');
+    if (question.isScorePrediction) {
+      final correct = question.settledScoreEncoded;
+      final scores = <int>[
+        if (correct != null) correct,
+        ScoreAnswer.encode(1, 0),
+        ScoreAnswer.encode(1, 1),
+        ScoreAnswer.encode(2, 1),
+        ScoreAnswer.encode(0, 0),
+      ];
+      final totals = <int, int>{};
+      for (var i = 0; i < scores.length; i++) {
+        totals.putIfAbsent(scores[i], () => 28 + ((seed + i * 23) % 72));
+      }
+      return totals;
+    }
+
+    return {
+      for (var i = 0; i < question.options.length; i++)
+        i: 34 + ((seed + i * 29) % 96),
+    };
+  }
+
+  static int _stableSeed(String value) {
+    var hash = 17;
+    for (final unit in value.codeUnits) {
+      hash = (hash * 31 + unit) % 100000;
+    }
+    return hash;
+  }
 }

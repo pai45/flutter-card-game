@@ -83,11 +83,25 @@ class PredictionCubit extends Cubit<PredictionState> {
   Future<PredictionQuiz?> quizFor(String matchId) =>
       _repository.quizFor(matchId);
 
+  Future<PredictionVoteBreakdown?> votesFor(
+    String matchId,
+    String questionId,
+  ) => _repository.votesFor(matchId, questionId);
+
+  Future<List<MatchPredictionLeaderboardEntry>> matchLeaderboard(
+    String matchId,
+  ) => _repository.matchLeaderboard(matchId);
+
   /// Stores (or replaces) the user's answers for a fixture.
-  Future<void> submit(String matchId, Map<String, int> answers) async {
+  Future<void> submit(
+    String matchId,
+    Map<String, int> answers, {
+    Map<String, PredictionMultiplier> multipliersByQuestion = const {},
+  }) async {
     final prediction = UserPrediction(
       matchId: matchId,
       answers: answers,
+      multipliersByQuestion: multipliersByQuestion,
       submittedAt: DateTime.now(),
       status: PredictionStatus.open,
     );
@@ -118,7 +132,9 @@ class PredictionCubit extends Cubit<PredictionState> {
           : q.settledOptionIndex;
       if (correctAnswer != null && picked == correctAnswer) {
         correct++;
-        reward += q.reward;
+        reward +=
+            prediction.multipliersByQuestion[q.id]?.applyTo(q.reward) ??
+            q.reward;
       }
     }
 

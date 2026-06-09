@@ -42,8 +42,15 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
   PredictionQuiz? _quiz;
   bool _loading = true;
   bool _submitting = false;
+  bool _savingUpdates = false;
   int _index = 0;
   final Map<String, int> _answers = {};
+  Map<String, int> _savedAnswers = {};
+  final Map<String, PredictionMultiplier> _multipliersByQuestion = {};
+  Map<String, PredictionMultiplier> _savedMultipliersByQuestion = {};
+  final Set<String> _expandedQuestions = {};
+  Map<String, PredictionVoteBreakdown> _votesByQuestion = {};
+  List<MatchPredictionLeaderboardEntry> _leaderboard = const [];
   Timer? _ticker;
   DateTime _now = DateTime.now();
   _QuizRevealPhase _revealPhase = _QuizRevealPhase.ready;
@@ -90,14 +97,36 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     final cubit = context.read<PredictionCubit>();
     final quiz = await cubit.quizFor(_match.id);
     final existing = cubit.state.predictionFor(_match.id);
-    if (existing != null) _answers.addAll(existing.answers);
+    if (existing != null) {
+      _answers.addAll(existing.answers);
+      _multipliersByQuestion.addAll(existing.multipliersByQuestion);
+    }
+    final votes = <String, PredictionVoteBreakdown>{};
+    if (quiz != null) {
+      for (final question in quiz.questions) {
+        final vote = await cubit.votesFor(_match.id, question.id);
+        if (vote != null) votes[question.id] = vote;
+      }
+    }
+    final leaderboard = await cubit.matchLeaderboard(_match.id);
     if (!mounted) return;
     setState(() {
       _quiz = quiz;
       _loading = false;
+      _votesByQuestion = votes;
+      _leaderboard = leaderboard;
       _ensureScoreDefaults();
+      _savedAnswers = Map<String, int>.from(_answers);
+      _savedMultipliersByQuestion = Map<String, PredictionMultiplier>.from(
+        _multipliersByQuestion,
+      );
+      if (existing != null && !_match.predictable && quiz != null) {
+        _expandedQuestions
+          ..clear()
+          ..addAll(quiz.questions.map((q) => q.id));
+      }
     });
-    if (_questions.isNotEmpty) {
+    if (_questions.isNotEmpty && existing == null) {
       _runForwardReveal();
     }
   }
@@ -132,6 +161,43 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     return q.isScorePrediction || _answers.containsKey(q.id);
   }
 
+  bool _questionAnswered(String questionId) {
+    QuizQuestion? question;
+    for (final candidate in _questions) {
+      if (candidate.id == questionId) {
+        question = candidate;
+        break;
+      }
+    }
+    if (question == null) return false;
+    return question.isScorePrediction || _answers.containsKey(questionId);
+  }
+
+  bool get _hasDraftChanges =>
+      !_sameAnswers(_answers, _savedAnswers) ||
+      !_sameMultipliers(_multipliersByQuestion, _savedMultipliersByQuestion);
+
+  Map<PredictionMultiplier, String> get _multiplierOwners => {
+    for (final entry in _multipliersByQuestion.entries) entry.value: entry.key,
+  };
+
+  int get _potentialXp =>
+      _questions.fold(0, (sum, question) => sum + _boostedRewardFor(question));
+
+  int _boostedRewardFor(QuizQuestion question) =>
+      _multipliersByQuestion[question.id]?.applyTo(question.reward) ??
+      question.reward;
+
+  String get _remainingBoostText {
+    final remaining = PredictionMultiplier.values
+        .where(
+          (multiplier) => !_multipliersByQuestion.containsValue(multiplier),
+        )
+        .map((multiplier) => multiplier.label)
+        .join(', ');
+    return remaining.isEmpty ? 'Boosts armed' : 'Boosts left: $remaining';
+  }
+
   Duration get _untilLock {
     final d = _match.kickoff.difference(_now);
     return d.isNegative ? Duration.zero : d;
@@ -152,6 +218,28 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
         home ?? currentHome,
         away ?? currentAway,
       );
+    });
+  }
+
+  void _toggleMultiplier(String questionId, PredictionMultiplier multiplier) {
+    if (!_editable || _revealing || !_questionAnswered(questionId)) return;
+    final active = _multipliersByQuestion[questionId] == multiplier;
+    playSound(
+      active
+          ? SoundEffect.uiTap
+          : multiplier == PredictionMultiplier.x2
+          ? SoundEffect.rarityGold
+          : SoundEffect.raritySilver,
+    );
+    setState(() {
+      if (active) {
+        _multipliersByQuestion.remove(questionId);
+        return;
+      }
+      _multipliersByQuestion.removeWhere(
+        (key, value) => key == questionId || value == multiplier,
+      );
+      _multipliersByQuestion[questionId] = multiplier;
     });
   }
 
@@ -208,8 +296,34 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     _ensureScoreDefaults();
     playSound(SoundEffect.matchWin);
     setState(() => _submitting = true);
-    await context.read<PredictionCubit>().submit(_match.id, Map.of(_answers));
+    await context.read<PredictionCubit>().submit(
+      _match.id,
+      Map.of(_answers),
+      multipliersByQuestion: Map.of(_multipliersByQuestion),
+    );
     // The overlay drives the celebration; it pops the screen when done.
+  }
+
+  Future<void> _saveUpdates() async {
+    if (!_editable || _savingUpdates || !_hasDraftChanges || !_allAnswered) {
+      return;
+    }
+    _ensureScoreDefaults();
+    playSound(SoundEffect.uiTap);
+    setState(() => _savingUpdates = true);
+    await context.read<PredictionCubit>().submit(
+      _match.id,
+      Map.of(_answers),
+      multipliersByQuestion: Map.of(_multipliersByQuestion),
+    );
+    if (!mounted) return;
+    setState(() {
+      _savedAnswers = Map<String, int>.from(_answers);
+      _savedMultipliersByQuestion = Map<String, PredictionMultiplier>.from(
+        _multipliersByQuestion,
+      );
+      _savingUpdates = false;
+    });
   }
 
   Future<void> _settle() async {
@@ -243,7 +357,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
           if (_submitting)
             Positioned.fill(
               child: _SubmittedOverlay(
-                potentialXp: _quiz?.maxReward ?? 0,
+                potentialXp: _potentialXp,
                 count: _questions.length,
                 onDone: () {
                   if (mounted) Navigator.of(context).pop();
@@ -273,7 +387,11 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     if (_quiz == null || _questions.isEmpty) {
       return Column(
         children: [
-          _QuizTopBar(onClose: () => Navigator.of(context).maybePop()),
+          _QuizTopBar(
+            onBack: () => Navigator.of(context).popUntil((r) => r.isFirst),
+            onLeaderboard: _showMatchLeaderboard,
+          ),
+          const SizedBox(height: 20),
           _QuizHeader(match: _match),
           Expanded(
             child: Center(
@@ -287,13 +405,21 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
       );
     }
 
+    if (prediction != null) {
+      return _reviewContent(prediction);
+    }
+
     final settled = prediction?.status == PredictionStatus.settled;
     final question = _questions[_index];
     final primary = _primaryButton(prediction, settled);
 
     return Column(
       children: [
-        _QuizTopBar(onClose: () => Navigator.of(context).maybePop()),
+        _QuizTopBar(
+          onBack: () => Navigator.of(context).popUntil((r) => r.isFirst),
+          onLeaderboard: _showMatchLeaderboard,
+        ),
+        const SizedBox(height: 20),
         _QuizHeader(match: _match),
         _LockLine(match: _match, untilLock: _untilLock),
         Expanded(
@@ -336,10 +462,18 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
                         awayScore: _scoreFor(question.id).$2,
                         settled: settled,
                         editable: _editable && !_revealing,
+                        selectedMultiplier: _multipliersByQuestion[question.id],
+                        multiplierOwners: _multiplierOwners,
+                        multiplierEnabled:
+                            _editable &&
+                            !_revealing &&
+                            _questionAnswered(question.id),
                         questionProgress: questionProgress,
                         controlProgress: optionsProgress,
                         onHomeChanged: (s) => _setScore(question.id, home: s),
                         onAwayChanged: (s) => _setScore(question.id, away: s),
+                        onMultiplierTap: (multiplier) =>
+                            _toggleMultiplier(question.id, multiplier),
                       )
                     : SingleChildScrollView(
                         key: ValueKey(question.id),
@@ -350,9 +484,18 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
                           selected: _answers[question.id],
                           settled: settled,
                           enabled: !_revealing,
+                          selectedMultiplier:
+                              _multipliersByQuestion[question.id],
+                          multiplierOwners: _multiplierOwners,
+                          multiplierEnabled:
+                              _editable &&
+                              !_revealing &&
+                              _questionAnswered(question.id),
                           questionProgress: questionProgress,
                           optionsProgress: optionsProgress,
                           onSelect: (opt) => _select(question.id, opt),
+                          onMultiplierTap: (multiplier) =>
+                              _toggleMultiplier(question.id, multiplier),
                         ),
                       ),
               );
@@ -369,6 +512,98 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
           helper: _helperText(prediction, settled),
         ),
       ],
+    );
+  }
+
+  Widget _reviewContent(UserPrediction prediction) {
+    final editable = _editable;
+    final readOnly = !editable;
+    return Column(
+      children: [
+        _QuizTopBar(
+          onBack: () => Navigator.of(context).popUntil((r) => r.isFirst),
+          onLeaderboard: _showMatchLeaderboard,
+        ),
+        const SizedBox(height: 20),
+        _QuizHeader(match: _match),
+        _LockLine(match: _match, untilLock: _untilLock),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
+          child: _ReviewNotice(text: _reviewNotice(prediction)),
+        ),
+        Expanded(
+          child: ListView.separated(
+            padding: const EdgeInsets.fromLTRB(20, 6, 20, 18),
+            itemCount: _questions.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 10),
+            itemBuilder: (context, i) {
+              final question = _questions[i];
+              return _ReviewQuestionCard(
+                index: i + 1,
+                question: question,
+                match: _match,
+                selected: _answers[question.id],
+                multiplier: _multipliersByQuestion[question.id],
+                multiplierOwners: _multiplierOwners,
+                votes: _votesByQuestion[question.id],
+                expanded: _expandedQuestions.contains(question.id),
+                editable: editable,
+                readOnly: readOnly,
+                finished: _match.status == MatchStatus.finished,
+                onToggle: () {
+                  playSound(SoundEffect.uiTap);
+                  setState(() {
+                    if (!_expandedQuestions.add(question.id)) {
+                      _expandedQuestions.remove(question.id);
+                    }
+                  });
+                },
+                onSelect: (answer) {
+                  if (!editable) return;
+                  playSound(SoundEffect.cardSelect);
+                  setState(() => _answers[question.id] = answer);
+                },
+                onScoreChanged: (home, away) {
+                  if (!editable) return;
+                  playSound(SoundEffect.uiTap);
+                  setState(() {
+                    _answers[question.id] = ScoreAnswer.encode(home, away);
+                  });
+                },
+                onMultiplierTap: (multiplier) =>
+                    _toggleMultiplier(question.id, multiplier),
+              );
+            },
+          ),
+        ),
+        if (editable)
+          _ReviewSaveDock(
+            enabled: _hasDraftChanges && _allAnswered && !_savingUpdates,
+            saving: _savingUpdates,
+            onSave: _saveUpdates,
+          ),
+      ],
+    );
+  }
+
+  String _reviewNotice(UserPrediction prediction) {
+    if (_editable) {
+      return 'You can update answers until match starts.';
+    }
+    if (_match.status == MatchStatus.finished ||
+        prediction.status == PredictionStatus.settled) {
+      return 'Final answers are in. Review results and crowd votes.';
+    }
+    return 'Predictions are locked. Review crowd votes as the match unfolds.';
+  }
+
+  void _showMatchLeaderboard() {
+    playSound(SoundEffect.uiTap);
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) =>
+          _MatchLeaderboardSheet(match: _match, entries: _leaderboard),
     );
   }
 
@@ -434,31 +669,77 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
       return 'Predictions are locked — match in progress';
     }
     if (_allAnswered) {
-      return 'All ${_questions.length} futures locked in — submit your quiz';
+      return 'All ${_questions.length} futures locked in - $_remainingBoostText';
     }
-    return 'Complete all ${_questions.length} futures to submit your quiz';
+    return 'Complete all ${_questions.length} futures - $_remainingBoostText';
   }
 }
 
 // ── Top bar (collapse chevron) ────────────────────────────────────────────────
 class _QuizTopBar extends StatelessWidget {
-  const _QuizTopBar({required this.onClose});
-  final VoidCallback onClose;
+  const _QuizTopBar({required this.onBack, required this.onLeaderboard});
+
+  final VoidCallback onBack;
+  final VoidCallback onLeaderboard;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 4, 4, 0),
+    return Container(
+      height: 80,
+      padding: const EdgeInsets.fromLTRB(16, 16, 24, 16),
+      decoration: BoxDecoration(
+        color: const Color(0xff1a253a),
+        border: const Border(bottom: BorderSide(color: Cyber.cyan, width: 1)),
+      ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Spacer(),
-          IconButton(
-            onPressed: () {
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
               playSound(SoundEffect.uiTap);
-              onClose();
+              onBack();
             },
-            icon: const Icon(Icons.keyboard_arrow_down, color: Cyber.muted),
-            tooltip: 'Close',
+            child: const SizedBox(
+              width: 36,
+              height: 56,
+              child: Icon(Icons.arrow_back, color: Color(0xffd9e5f6), size: 24),
+            ),
+          ),
+          const SizedBox(width: 22),
+          Expanded(
+            child: Text(
+              'Back to Matches',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white,
+                fontFamily: Cyber.bodyFont,
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+                height: 1,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Semantics(
+            button: true,
+            label: 'Match leaderboard',
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onLeaderboard,
+              child: Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                color: const Color(0xff11182a),
+                child: const Icon(
+                  Icons.emoji_events_outlined,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -632,6 +913,616 @@ class _LockLine extends StatelessWidget {
 }
 
 // ── The single question panel ─────────────────────────────────────────────────
+class _ReviewNotice extends StatelessWidget {
+  const _ReviewNotice({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Cyber.cyan.withValues(alpha: 0.08),
+        border: Border.all(color: Cyber.cyan.withValues(alpha: 0.28)),
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: Cyber.body(12.5, color: const Color(0xffbed7ee)),
+      ),
+    );
+  }
+}
+
+class _ReviewQuestionCard extends StatelessWidget {
+  const _ReviewQuestionCard({
+    required this.index,
+    required this.question,
+    required this.match,
+    required this.selected,
+    required this.multiplier,
+    required this.multiplierOwners,
+    required this.votes,
+    required this.expanded,
+    required this.editable,
+    required this.readOnly,
+    required this.finished,
+    required this.onToggle,
+    required this.onSelect,
+    required this.onScoreChanged,
+    required this.onMultiplierTap,
+  });
+
+  final int index;
+  final QuizQuestion question;
+  final SportMatch match;
+  final int? selected;
+  final PredictionMultiplier? multiplier;
+  final Map<PredictionMultiplier, String> multiplierOwners;
+  final PredictionVoteBreakdown? votes;
+  final bool expanded;
+  final bool editable;
+  final bool readOnly;
+  final bool finished;
+  final VoidCallback onToggle;
+  final ValueChanged<int> onSelect;
+  final void Function(int home, int away) onScoreChanged;
+  final ValueChanged<PredictionMultiplier> onMultiplierTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedLabel = _answerLabel(question, selected);
+    final correct = _correctAnswer(question);
+    final selectedCorrect = selected != null && selected == correct;
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [_panelTop, _panelBottom],
+        ),
+        border: Border.all(color: _panelBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onToggle,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 11),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 30,
+                        height: 30,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: Cyber.cyan.withValues(alpha: 0.14),
+                          border: Border.all(color: Cyber.border),
+                        ),
+                        child: Text(
+                          'Q$index',
+                          style: Cyber.label(10, color: Cyber.cyan),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          question.text.toUpperCase(),
+                          style: Cyber.display(
+                            13.5,
+                            color: Colors.white,
+                            letterSpacing: 0.2,
+                          ).copyWith(height: 1.25),
+                        ),
+                      ),
+                      Icon(
+                        expanded
+                            ? Icons.keyboard_arrow_up
+                            : Icons.keyboard_arrow_down,
+                        color: Cyber.muted,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Text(
+                        'YOUR PICK',
+                        style: Cyber.label(
+                          9,
+                          color: Cyber.muted,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          selectedLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Cyber.body(
+                            13,
+                            color: selected == null
+                                ? Cyber.muted
+                                : selectedCorrect && finished
+                                ? Cyber.success
+                                : Colors.white,
+                            weight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      if (multiplier != null) ...[
+                        const SizedBox(width: 8),
+                        _MultiplierBadge(multiplier: multiplier!),
+                      ],
+                      if (finished && correct != null)
+                        Icon(
+                          selectedCorrect ? Icons.check_circle : Icons.cancel,
+                          color: selectedCorrect ? Cyber.success : Cyber.danger,
+                          size: 16,
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 180),
+            crossFadeState: expanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            firstChild: const SizedBox.shrink(),
+            secondChild: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Divider(color: Color(0xff27334c), height: 1),
+                  const SizedBox(height: 12),
+                  if (editable) _editableBody() else _pollBody(),
+                  if (readOnly && finished && correct != null) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      'CORRECT ANSWER: ${_answerLabel(question, correct)}',
+                      style: Cyber.label(
+                        10,
+                        color: Cyber.success,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _EarnedXpLine(
+                      earned: selectedCorrect
+                          ? multiplier?.applyTo(question.reward) ??
+                                question.reward
+                          : 0,
+                      boosted: multiplier != null,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _editableBody() {
+    final boostSelector = _BoostSelector(
+      questionId: question.id,
+      selected: multiplier,
+      owners: multiplierOwners,
+      enabled: selected != null,
+      onTap: onMultiplierTap,
+    );
+    if (question.isScorePrediction) {
+      final score = selected == null ? (home: 0, away: 0) : _decode(selected!);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ScorePredictionPicker(
+            match: match,
+            homeScore: score.home,
+            awayScore: score.away,
+            enabled: true,
+            settled: false,
+            correctHome: question.settledHomeScore,
+            correctAway: question.settledAwayScore,
+            onHomeChanged: (home) => onScoreChanged(home, score.away),
+            onAwayChanged: (away) => onScoreChanged(score.home, away),
+          ),
+          const SizedBox(height: 12),
+          boostSelector,
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < question.options.length; i++)
+          Padding(
+            padding: EdgeInsets.only(
+              bottom: i == question.options.length - 1 ? 0 : 9,
+            ),
+            child: _ReviewOptionChoice(
+              label: question.options[i],
+              selected: selected == i,
+              onTap: () => onSelect(i),
+            ),
+          ),
+        const SizedBox(height: 12),
+        boostSelector,
+      ],
+    );
+  }
+
+  Widget _pollBody() {
+    final answers = _pollAnswers(question, votes, selected);
+    if (answers.isEmpty) {
+      return Text(
+        'No crowd votes yet.',
+        style: Cyber.body(12, color: Cyber.muted),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (multiplier != null) ...[
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _MultiplierBadge(multiplier: multiplier!),
+          ),
+          const SizedBox(height: 10),
+        ],
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'CROWD VOTES',
+              style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.1),
+            ),
+            Text(
+              '${votes?.totalVotes ?? 0} votes',
+              style: Cyber.body(11, color: Cyber.muted),
+            ),
+          ],
+        ),
+        const SizedBox(height: 9),
+        for (final answer in answers)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _PollResultRow(
+              label: _answerLabel(question, answer),
+              votes: votes?.votesFor(answer) ?? 0,
+              share: votes?.shareFor(answer) ?? 0,
+              selected: selected == answer,
+              correct: finished && _correctAnswer(question) == answer,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _MultiplierBadge extends StatelessWidget {
+  const _MultiplierBadge({required this.multiplier});
+
+  final PredictionMultiplier multiplier;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = multiplier == PredictionMultiplier.x2
+        ? Cyber.gold
+        : Cyber.cyan;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.14),
+        border: Border.all(color: accent.withValues(alpha: 0.7)),
+      ),
+      child: Text(multiplier.label, style: Cyber.display(10, color: accent)),
+    );
+  }
+}
+
+class _EarnedXpLine extends StatelessWidget {
+  const _EarnedXpLine({required this.earned, required this.boosted});
+
+  final int earned;
+  final bool boosted;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          boosted ? Icons.bolt : Icons.stars_outlined,
+          color: earned > 0 ? Cyber.gold : Cyber.muted,
+          size: 15,
+        ),
+        const SizedBox(width: 7),
+        Text(
+          'EARNED XP: $earned',
+          style: Cyber.label(
+            10,
+            color: earned > 0 ? Cyber.gold : Cyber.muted,
+            letterSpacing: 1,
+          ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+        ),
+      ],
+    );
+  }
+}
+
+class _ReviewOptionChoice extends StatelessWidget {
+  const _ReviewOptionChoice({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: selected
+              ? Cyber.cyan.withValues(alpha: 0.12)
+              : const Color(0xff0f1826),
+          border: Border.all(
+            color: selected ? Cyber.cyan : const Color(0xff283448),
+            width: selected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              selected ? Icons.radio_button_checked : Icons.radio_button_off,
+              color: selected ? Cyber.cyan : Cyber.muted,
+              size: 18,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                label.toUpperCase(),
+                style: Cyber.label(
+                  12,
+                  color: selected ? Colors.white : const Color(0xffc4cedd),
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PollResultRow extends StatelessWidget {
+  const _PollResultRow({
+    required this.label,
+    required this.votes,
+    required this.share,
+    required this.selected,
+    required this.correct,
+  });
+
+  final String label;
+  final int votes;
+  final double share;
+  final bool selected;
+  final bool correct;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = correct
+        ? Cyber.success
+        : selected
+        ? Cyber.cyan
+        : Cyber.muted;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                label.toUpperCase(),
+                style: Cyber.body(
+                  12,
+                  color: correct || selected ? Colors.white : Cyber.muted,
+                  weight: FontWeight.w700,
+                ),
+              ),
+            ),
+            if (selected)
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: Text(
+                  'YOU',
+                  style: Cyber.label(8, color: Cyber.cyan, letterSpacing: 0.8),
+                ),
+              ),
+            if (correct)
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: Text(
+                  'RIGHT',
+                  style: Cyber.label(
+                    8,
+                    color: Cyber.success,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+            Text(
+              '$votes',
+              style: Cyber.body(
+                12,
+                color: accent,
+                weight: FontWeight.w800,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            ),
+          ],
+        ),
+        const SizedBox(height: 5),
+        LinearProgressIndicator(
+          value: share.clamp(0.0, 1.0),
+          minHeight: 7,
+          backgroundColor: const Color(0xff101827),
+          valueColor: AlwaysStoppedAnimation<Color>(accent),
+        ),
+      ],
+    );
+  }
+}
+
+class _ReviewSaveDock extends StatelessWidget {
+  const _ReviewSaveDock({
+    required this.enabled,
+    required this.saving,
+    required this.onSave,
+  });
+
+  final bool enabled;
+  final bool saving;
+  final VoidCallback onSave;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          colors: [Color(0xFF010517), Color(0xF2010517), Color(0x00010517)],
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 22),
+          child: _QuizButton(
+            label: saving ? 'SAVING...' : 'SAVE UPDATES',
+            focal: enabled,
+            enabled: enabled,
+            onTap: onSave,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MatchLeaderboardSheet extends StatelessWidget {
+  const _MatchLeaderboardSheet({required this.match, required this.entries});
+
+  final SportMatch match;
+  final List<MatchPredictionLeaderboardEntry> entries;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Container(
+        margin: const EdgeInsets.all(14),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+        decoration: BoxDecoration(
+          color: const Color(0xff11182a),
+          border: Border.all(color: Cyber.cyan.withValues(alpha: 0.35)),
+          boxShadow: Cyber.glow(Cyber.cyan, alpha: 0.18, blur: 16),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.emoji_events_outlined, color: Cyber.gold),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Text(
+                    'MATCH LEADERBOARD',
+                    style: Cyber.display(
+                      15,
+                      color: Colors.white,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close, color: Cyber.muted),
+                ),
+              ],
+            ),
+            Text(
+              '${match.home.shortName} vs ${match.away.shortName}',
+              style: Cyber.body(12, color: Cyber.muted),
+            ),
+            const SizedBox(height: 14),
+            for (final entry in entries.take(6))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 28,
+                      child: Text(
+                        '#${entry.rank}',
+                        style: Cyber.display(12, color: Cyber.cyan),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        entry.name,
+                        style: Cyber.body(13.5, weight: FontWeight.w700),
+                      ),
+                    ),
+                    Text(
+                      '${entry.correct} CORRECT',
+                      style: Cyber.label(
+                        9,
+                        color: Cyber.muted,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      '${entry.points}',
+                      style: Cyber.display(13, color: Cyber.gold),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _QuizNumberBurst extends StatelessWidget {
   const _QuizNumberBurst({required this.number, required this.progress});
 
@@ -698,9 +1589,13 @@ class _QuestionPanel extends StatelessWidget {
     required this.selected,
     required this.settled,
     required this.enabled,
+    required this.selectedMultiplier,
+    required this.multiplierOwners,
+    required this.multiplierEnabled,
     required this.questionProgress,
     required this.optionsProgress,
     required this.onSelect,
+    required this.onMultiplierTap,
   });
 
   final int index;
@@ -708,9 +1603,13 @@ class _QuestionPanel extends StatelessWidget {
   final int? selected;
   final bool settled;
   final bool enabled;
+  final PredictionMultiplier? selectedMultiplier;
+  final Map<PredictionMultiplier, String> multiplierOwners;
+  final bool multiplierEnabled;
   final double questionProgress;
   final double optionsProgress;
   final ValueChanged<int> onSelect;
+  final ValueChanged<PredictionMultiplier> onMultiplierTap;
 
   @override
   Widget build(BuildContext context) {
@@ -719,8 +1618,8 @@ class _QuestionPanel extends StatelessWidget {
       children: [
         Container(
           width: double.infinity,
-          margin: const EdgeInsets.only(top: 12),
-          padding: const EdgeInsets.fromLTRB(18, 22, 18, 18),
+          margin: const EdgeInsets.only(top: 26),
+          padding: const EdgeInsets.fromLTRB(18, 28, 18, 18),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               begin: Alignment.topCenter,
@@ -728,7 +1627,6 @@ class _QuestionPanel extends StatelessWidget {
               colors: [_panelTop, _panelBottom],
             ),
             border: Border.all(color: _panelBorder),
-            borderRadius: BorderRadius.circular(6),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -746,9 +1644,15 @@ class _QuestionPanel extends StatelessWidget {
                       ).copyWith(height: 1.25),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  _XpPill(reward: question.reward),
                 ],
+              ),
+              const SizedBox(height: 12),
+              _BoostSelector(
+                questionId: question.id,
+                selected: selectedMultiplier,
+                owners: multiplierOwners,
+                enabled: multiplierEnabled,
+                onTap: onMultiplierTap,
               ),
               const SizedBox(height: 16),
               for (var i = 0; i < question.options.length; i++)
@@ -776,10 +1680,19 @@ class _QuestionPanel extends StatelessWidget {
             ],
           ),
         ),
+        Positioned(
+          right: 0,
+          top: 0,
+          child: _XpPill(
+            reward:
+                selectedMultiplier?.applyTo(question.reward) ?? question.reward,
+            multiplier: selectedMultiplier,
+          ),
+        ),
         // The numbered tab, dipping over the panel's top-left edge.
         Positioned(
           left: 14,
-          top: 0,
+          top: 14,
           child: Container(
             width: 30,
             height: 30,
@@ -787,7 +1700,6 @@ class _QuestionPanel extends StatelessWidget {
             decoration: BoxDecoration(
               color: Cyber.cyan.withValues(alpha: 0.16),
               border: Border.all(color: Cyber.border),
-              borderRadius: BorderRadius.circular(4),
             ),
             child: Text('$index', style: Cyber.display(15, color: Cyber.cyan)),
           ),
@@ -875,10 +1787,14 @@ class _ScoreQuestionPanel extends StatelessWidget {
     required this.awayScore,
     required this.settled,
     required this.editable,
+    required this.selectedMultiplier,
+    required this.multiplierOwners,
+    required this.multiplierEnabled,
     required this.questionProgress,
     required this.controlProgress,
     required this.onHomeChanged,
     required this.onAwayChanged,
+    required this.onMultiplierTap,
   });
 
   final int index;
@@ -888,10 +1804,14 @@ class _ScoreQuestionPanel extends StatelessWidget {
   final int awayScore;
   final bool settled;
   final bool editable;
+  final PredictionMultiplier? selectedMultiplier;
+  final Map<PredictionMultiplier, String> multiplierOwners;
+  final bool multiplierEnabled;
   final double questionProgress;
   final double controlProgress;
   final ValueChanged<int> onHomeChanged;
   final ValueChanged<int> onAwayChanged;
+  final ValueChanged<PredictionMultiplier> onMultiplierTap;
 
   bool get _correct =>
       settled &&
@@ -907,8 +1827,8 @@ class _ScoreQuestionPanel extends StatelessWidget {
         children: [
           Container(
             width: double.infinity,
-            margin: const EdgeInsets.only(top: 12),
-            padding: const EdgeInsets.fromLTRB(18, 24, 18, 22),
+            margin: const EdgeInsets.only(top: 26),
+            padding: const EdgeInsets.fromLTRB(18, 30, 18, 22),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 begin: Alignment.topCenter,
@@ -916,7 +1836,6 @@ class _ScoreQuestionPanel extends StatelessWidget {
                 colors: [_panelTop, _panelBottom],
               ),
               border: Border.all(color: _panelBorder),
-              borderRadius: BorderRadius.circular(6),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -934,9 +1853,15 @@ class _ScoreQuestionPanel extends StatelessWidget {
                         ).copyWith(height: 1.25),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    _XpPill(reward: question.reward),
                   ],
+                ),
+                const SizedBox(height: 12),
+                _BoostSelector(
+                  questionId: question.id,
+                  selected: selectedMultiplier,
+                  owners: multiplierOwners,
+                  enabled: multiplierEnabled,
+                  onTap: onMultiplierTap,
                 ),
                 const SizedBox(height: 24),
                 _StaggeredReveal(
@@ -980,8 +1905,18 @@ class _ScoreQuestionPanel extends StatelessWidget {
             ),
           ),
           Positioned(
-            left: 14,
+            right: 0,
             top: 0,
+            child: _XpPill(
+              reward:
+                  selectedMultiplier?.applyTo(question.reward) ??
+                  question.reward,
+              multiplier: selectedMultiplier,
+            ),
+          ),
+          Positioned(
+            left: 14,
+            top: 14,
             child: Container(
               width: 30,
               height: 30,
@@ -989,7 +1924,6 @@ class _ScoreQuestionPanel extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Cyber.cyan.withValues(alpha: 0.16),
                 border: Border.all(color: Cyber.border),
-                borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
                 '$index',
@@ -1003,37 +1937,224 @@ class _ScoreQuestionPanel extends StatelessWidget {
   }
 }
 
-class _XpPill extends StatelessWidget {
-  const _XpPill({required this.reward});
-  final int reward;
+class _BoostSelector extends StatelessWidget {
+  const _BoostSelector({
+    required this.questionId,
+    required this.selected,
+    required this.owners,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String questionId;
+  final PredictionMultiplier? selected;
+  final Map<PredictionMultiplier, String> owners;
+  final bool enabled;
+  final ValueChanged<PredictionMultiplier> onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Cyber.violet, Color.lerp(Cyber.violet, Cyber.cyan, 0.35)!],
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Text(
+          'BOOST',
+          style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.1),
         ),
-        borderRadius: BorderRadius.circular(4),
-        boxShadow: Cyber.glow(Cyber.violet, alpha: 0.4, blur: 10),
+        for (final multiplier in PredictionMultiplier.values)
+          _MultiplierChip(
+            multiplier: multiplier,
+            active: selected == multiplier,
+            claimedElsewhere:
+                owners[multiplier] != null && owners[multiplier] != questionId,
+            enabled: enabled,
+            onTap: () => onTap(multiplier),
+          ),
+      ],
+    );
+  }
+}
+
+class _MultiplierChip extends StatefulWidget {
+  const _MultiplierChip({
+    required this.multiplier,
+    required this.active,
+    required this.claimedElsewhere,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final PredictionMultiplier multiplier;
+  final bool active;
+  final bool claimedElsewhere;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  State<_MultiplierChip> createState() => _MultiplierChipState();
+}
+
+class _MultiplierChipState extends State<_MultiplierChip>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pop = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 360),
+  );
+
+  @override
+  void didUpdateWidget(covariant _MultiplierChip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.active && widget.active) {
+      _pop
+        ..reset()
+        ..forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _pop.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = widget.multiplier == PredictionMultiplier.x2
+        ? Cyber.gold
+        : Cyber.cyan;
+    final active = widget.active;
+    final claimedElsewhere = widget.claimedElsewhere;
+    final enabled = widget.enabled;
+    return AnimatedBuilder(
+      animation: _pop,
+      builder: (context, child) {
+        final t = Curves.easeOutBack.transform(_pop.value);
+        final scale = active
+            ? 1 + 0.14 * (1 - (t - 1).abs()).clamp(0.0, 1.0)
+            : 1.0;
+        return Transform.scale(scale: scale, child: child);
+      },
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: enabled ? widget.onTap : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            color: active
+                ? accent.withValues(alpha: 0.22)
+                : claimedElsewhere
+                ? const Color(0xff0c1220)
+                : const Color(0xff121b2c),
+            border: Border.all(
+              color: active
+                  ? accent
+                  : claimedElsewhere
+                  ? Cyber.line
+                  : accent.withValues(alpha: enabled ? 0.45 : 0.18),
+              width: active ? 1.5 : 1,
+            ),
+            boxShadow: active
+                ? Cyber.glow(accent, alpha: 0.35, blur: 12)
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                active
+                    ? Icons.bolt
+                    : claimedElsewhere
+                    ? Icons.swap_horiz
+                    : Icons.bolt_outlined,
+                size: 14,
+                color: enabled || active
+                    ? accent
+                    : Cyber.muted.withValues(alpha: 0.5),
+              ),
+              const SizedBox(width: 5),
+              Text(
+                widget.multiplier.label,
+                style: Cyber.display(
+                  11,
+                  color: enabled || active
+                      ? active
+                            ? Colors.white
+                            : accent
+                      : Cyber.muted.withValues(alpha: 0.55),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '$reward',
-            style: Cyber.display(
-              13,
-              color: Colors.white,
-            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+    );
+  }
+}
+
+class _XpPill extends StatelessWidget {
+  const _XpPill({required this.reward, this.multiplier});
+  final int reward;
+  final PredictionMultiplier? multiplier;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = multiplier == PredictionMultiplier.x2
+        ? Cyber.gold
+        : multiplier == PredictionMultiplier.x15
+        ? Cyber.cyan
+        : Cyber.violet;
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 240),
+      transitionBuilder: (child, animation) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutBack,
+        );
+        return ScaleTransition(
+          scale: curved,
+          child: FadeTransition(opacity: animation, child: child),
+        );
+      },
+      child: Container(
+        key: ValueKey('xp-$reward-${multiplier?.jsonKey ?? 'base'}'),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Cyber.violet, Color.lerp(Cyber.violet, accent, 0.45)!],
           ),
-          const SizedBox(width: 4),
-          Text(
-            'xp',
-            style: Cyber.label(10, color: Colors.white, letterSpacing: 0.5),
+          boxShadow: Cyber.glow(
+            accent,
+            alpha: multiplier == null ? 0.4 : 0.65,
+            blur: 12,
           ),
-        ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '$reward',
+              style: Cyber.display(
+                13,
+                color: Colors.white,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              'xp',
+              style: Cyber.label(10, color: Colors.white, letterSpacing: 0.5),
+            ),
+            if (multiplier != null) ...[
+              const SizedBox(width: 6),
+              Text(
+                multiplier!.label,
+                style: Cyber.label(9, color: accent, letterSpacing: 0.4),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -1075,7 +2196,6 @@ class _OptionTile extends StatelessWidget {
             color: active ? accent : _optionBorder,
             width: active ? 1.5 : 1,
           ),
-          borderRadius: BorderRadius.circular(4),
           boxShadow: state == _OptionVisual.selected
               ? Cyber.glow(accent)
               : null,
@@ -1089,7 +2209,6 @@ class _OptionTile extends StatelessWidget {
               decoration: BoxDecoration(
                 color: active ? accent.withValues(alpha: 0.20) : _letterFill,
                 border: Border.all(color: accent.withValues(alpha: 0.6)),
-                borderRadius: BorderRadius.circular(3),
               ),
               child: Text(
                 letter,
@@ -1245,7 +2364,6 @@ class _ProgressSegment extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: gradient,
         color: gradient == null ? _segTrack : null,
-        borderRadius: BorderRadius.circular(2),
         boxShadow: current
             ? Cyber.glow(Cyber.amber, alpha: 0.35, blur: 8)
             : null,
@@ -1429,7 +2547,6 @@ class _SubmittedOverlayState extends State<_SubmittedOverlay>
                     height: 110,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
                       color: Cyber.cyan.withValues(alpha: 0.12),
                       border: Border.all(color: Cyber.cyan, width: 2.5),
                       boxShadow: Cyber.glow(Cyber.cyan, alpha: 0.7, blur: 26),
@@ -1489,6 +2606,63 @@ class _SubmittedOverlayState extends State<_SubmittedOverlay>
 }
 
 // ── Helpers + palette ─────────────────────────────────────────────────────────
+({int home, int away}) _decode(int encoded) {
+  final (home, away) = ScoreAnswer.decode(encoded);
+  return (home: home, away: away);
+}
+
+String _answerLabel(QuizQuestion question, int? answer) {
+  if (answer == null) return 'Not answered';
+  if (question.isScorePrediction) {
+    final (home, away) = ScoreAnswer.decode(answer);
+    return '$home - $away';
+  }
+  if (answer < 0 || answer >= question.options.length) return 'Unknown';
+  return question.options[answer];
+}
+
+int? _correctAnswer(QuizQuestion question) => question.isScorePrediction
+    ? question.settledScoreEncoded
+    : question.settledOptionIndex;
+
+List<int> _pollAnswers(
+  QuizQuestion question,
+  PredictionVoteBreakdown? votes,
+  int? selected,
+) {
+  if (!question.isScorePrediction) {
+    return [for (var i = 0; i < question.options.length; i++) i];
+  }
+  final answers = <int>{...votes?.totals.keys ?? const <int>[]};
+  if (selected != null) answers.add(selected);
+  final correct = question.settledScoreEncoded;
+  if (correct != null) answers.add(correct);
+  final sorted = answers.toList()
+    ..sort(
+      (a, b) => (votes?.votesFor(b) ?? 0).compareTo(votes?.votesFor(a) ?? 0),
+    );
+  return sorted.take(5).toList();
+}
+
+bool _sameAnswers(Map<String, int> a, Map<String, int> b) {
+  if (a.length != b.length) return false;
+  for (final entry in a.entries) {
+    if (b[entry.key] != entry.value) return false;
+  }
+  return true;
+}
+
+bool _sameMultipliers(
+  Map<String, PredictionMultiplier> a,
+  Map<String, PredictionMultiplier> b,
+) {
+  if (a.length != b.length) return false;
+  for (final entry in a.entries) {
+    if (b[entry.key] != entry.value) return false;
+  }
+  return true;
+}
+
 String _formatTime(DateTime dt) {
   final h = dt.hour.toString().padLeft(2, '0');
   final m = dt.minute.toString().padLeft(2, '0');

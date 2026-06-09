@@ -33,15 +33,16 @@ The main navigation keeps Predictions, Pick, Leaderboard, Shop, and Profile as a
 
 1. User opens Matches.
 2. User chooses an upcoming fixture.
-3. User answers the match quiz before kickoff.
-4. Prediction locks once the match is live or no longer editable.
-5. Finished matches can be settled when result data is available.
-6. Correct answers return coins/rewards.
+3. User answers the animated match quiz before kickoff.
+4. Already-submitted predictions reopen as an editable review list until kickoff.
+5. Prediction locks once the match is live or no longer editable, with vote results available for review.
+6. Finished matches can show correct answers, vote distribution, and settlement when result data is available.
+7. Correct answers return coins/rewards.
 
 **Pitch Duel card-game loop**
 
 1. User enters Games and chooses Pitch Duel.
-2. First-time users claim a starter pack.
+2. First-time users claim a starter pack (see [Starter Pack](pitch-duel-card-game.md#first-time-entry-and-starter-pack) for composition, tier odds, and roll logic).
 3. User receives cards and a legal starter deck.
 4. User plays a four-round card match.
 5. Match result awards XP and coins.
@@ -55,7 +56,7 @@ The main navigation keeps Predictions, Pick, Leaderboard, Shop, and Profile as a
 
 ## Current Product Notes
 
-- Match fixtures and quizzes are currently mock-backed but written as product behavior so the surface can later connect to live data.
+- Match fixtures, quizzes, vote results, and match leaderboard rows are currently mock-backed but written as product behavior so the surface can later connect to live data.
 - The Pick tab currently behaves like a product prototype: users can choose a market and confirm an amount, but the confirmed pick is not yet a persisted portfolio position.
 - Leaderboard entries are seeded to demonstrate ranking states, user highlighting, podiums, movement, and team boards.
 - Pitch Duel gameplay, deck ownership, progression, wallet, daily drop, and match history are persistent product experiences.

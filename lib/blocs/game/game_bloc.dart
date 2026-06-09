@@ -23,8 +23,8 @@ import 'game_state.dart';
 /// Meter overlay. It MUST mirror the goal branches of [GameBloc._resolveRound];
 /// keep the two in lockstep if the resolution table ever changes.
 double goalChanceForDiff(double diff) {
-  if (diff > 15) return 0.75;
-  if (diff > 5) return 0.60;
+  if (diff > 15) return 0.80;
+  if (diff > 5) return 0.65;
   if (diff > -5) return 0.45;
   if (diff > -15) return 0.10;
   return 0.05;
@@ -913,12 +913,12 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final diff = attackPower - defensePower;
     final roll = _random.nextDouble();
     if (diff > 15) {
-      if (roll < 0.75) return RoundOutcome.goal;
+      if (roll < 0.80) return RoundOutcome.goal;
       if (roll < 0.95) return RoundOutcome.saved;
       return RoundOutcome.blocked;
     }
     if (diff > 5) {
-      if (roll < 0.60) return RoundOutcome.goal;
+      if (roll < 0.65) return RoundOutcome.goal;
       if (roll < 0.90) return RoundOutcome.saved;
       return RoundOutcome.missed;
     }

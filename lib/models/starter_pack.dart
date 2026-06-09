@@ -3,83 +3,82 @@ import 'dart:math';
 import '../config/enums.dart';
 import 'cards.dart';
 
-/// Unified four-tier rarity scale used when rolling a starter pack.
+/// Relative drop weights for the starter pack (55 : 35 : 4 : 1).
+const starterPackTierWeights = {
+  CardTier.bronze: 55,
+  CardTier.silver: 35,
+  CardTier.gold: 4,
+  CardTier.platinum: 1,
+};
+
+/// Starter-pack drop weights on the unified [CardTier] scale (bronze → platinum).
 ///
-/// The game's cards are authored with [CardTier] (bronze/silver/gold/platinum),
-/// which does not by itself match the silver/gold/epic/legendary odds we want
-/// for pack drops. This enum is the single scale the roller reasons about;
-/// [packRarityForRating] / [packRarityForPower] project existing cards onto it.
-enum PackRarity { silver, gold, epic, legendary }
+/// Cards are bucketed by rating / action power, then each slot rolls a target
+/// tier using [starterDropChance] before drawing from the position pool.
+extension StarterPackTier on CardTier {
+  /// Probability a single roll lands on this tier. Weights 55/35/4/1, normalized.
+  double get starterDropChance =>
+      starterPackTierWeights[this]! /
+      starterPackTierWeights.values.reduce((a, b) => a + b);
 
-extension PackRarityInfo on PackRarity {
-  /// Probability a single roll lands on this rarity. The four values sum to 1.
-  double get dropChance => switch (this) {
-    PackRarity.legendary => 0.05,
-    PackRarity.epic => 0.10,
-    PackRarity.gold => 0.35,
-    PackRarity.silver => 0.50,
-  };
-
-  String get label => switch (this) {
-    PackRarity.legendary => 'Legendary',
-    PackRarity.epic => 'Epic',
-    PackRarity.gold => 'Gold',
-    PackRarity.silver => 'Silver',
+  String get starterLabel => switch (this) {
+    CardTier.platinum => 'Platinum',
+    CardTier.gold => 'Gold',
+    CardTier.silver => 'Silver',
+    CardTier.bronze => 'Bronze',
   };
 }
 
-/// Rarity buckets in descending drop order — useful for weighted rolls and for
-/// "nearest available rarity" fallback searches.
-const _rarityByDropOrder = [
-  PackRarity.legendary,
-  PackRarity.epic,
-  PackRarity.gold,
-  PackRarity.silver,
+/// Tiers in descending drop order — used for weighted rolls and for
+/// "nearest available tier" fallback searches.
+const _tierByDropOrder = [
+  CardTier.platinum,
+  CardTier.gold,
+  CardTier.silver,
+  CardTier.bronze,
 ];
 
-/// Maps a player's overall rating onto the pack-rarity scale.
-PackRarity packRarityForRating(int rating) {
-  if (rating >= 90) return PackRarity.legendary;
-  if (rating >= 86) return PackRarity.epic;
-  if (rating >= 80) return PackRarity.gold;
-  return PackRarity.silver;
+/// Maps a player's overall rating onto the starter-pack tier scale.
+CardTier packRarityForRating(int rating) {
+  if (rating >= 90) return CardTier.platinum;
+  if (rating >= 86) return CardTier.gold;
+  if (rating >= 80) return CardTier.silver;
+  return CardTier.bronze;
 }
 
 /// Maps an action card's power onto the same scale.
-PackRarity packRarityForPower(int power) {
-  if (power >= 22) return PackRarity.legendary;
-  if (power >= 16) return PackRarity.epic;
-  if (power >= 10) return PackRarity.gold;
-  return PackRarity.silver;
+CardTier packRarityForPower(int power) {
+  if (power >= 22) return CardTier.platinum;
+  if (power >= 16) return CardTier.gold;
+  if (power >= 10) return CardTier.silver;
+  return CardTier.bronze;
 }
 
-PackRarity packRarityOfPlayer(PlayerCard card) =>
-    packRarityForRating(card.rating);
+CardTier packRarityOfPlayer(PlayerCard card) => packRarityForRating(card.rating);
 
-PackRarity packRarityOfAction(ActionCard card) =>
-    packRarityForPower(card.power);
+CardTier packRarityOfAction(ActionCard card) => packRarityForPower(card.power);
 
-/// Rolls a target rarity using the 50 / 35 / 10 / 5 weighting
-/// (silver / gold / epic / legendary).
-PackRarity rollPackRarity(Random random) {
+/// Rolls a target tier using the 55 / 35 / 4 / 1 weighting
+/// (bronze / silver / gold / platinum).
+CardTier rollPackRarity(Random random) {
   final roll = random.nextDouble();
   var cumulative = 0.0;
-  for (final rarity in _rarityByDropOrder) {
-    cumulative += rarity.dropChance;
-    if (roll < cumulative) return rarity;
+  for (final tier in _tierByDropOrder) {
+    cumulative += tier.starterDropChance;
+    if (roll < cumulative) return tier;
   }
-  return PackRarity.silver;
+  return CardTier.bronze;
 }
 
-/// Draws one card from [pool] whose rarity matches a fresh rarity roll,
+/// Draws one card from [pool] whose tier matches a fresh rarity roll,
 /// skipping anything already in [taken].
 ///
-/// If no card of the rolled rarity remains, it falls back to the nearest
-/// available rarity (by ordinal distance), so a draw never fails while any
+/// If no card of the rolled tier remains, it falls back to the nearest
+/// available tier (by ordinal distance), so a draw never fails while any
 /// card is left. Returns the picked card and records it in [taken].
 T _drawByRarity<T>(
   List<T> pool,
-  PackRarity Function(T) rarityOf,
+  CardTier Function(T) rarityOf,
   Set<T> taken,
   Random random,
 ) {
@@ -88,7 +87,7 @@ T _drawByRarity<T>(
     throw StateError('Starter pack draw failed: pool exhausted.');
   }
   final target = rollPackRarity(random);
-  // Smallest ordinal distance from the rolled rarity that has stock.
+  // Smallest ordinal distance from the rolled tier that has stock.
   int distance(T card) => (rarityOf(card).index - target.index).abs();
   final minDistance = available.map(distance).reduce(min);
   final candidates = available
@@ -121,16 +120,16 @@ class StarterPack {
   List<PlayerCard> get players => [...strikers, ...defenders, keeper];
   List<ActionCard> get actions => [...attackActions, ...defenseActions];
 
-  /// How many of each rarity this pack contains (players + actions combined).
-  Map<PackRarity, int> get rarityBreakdown {
-    final counts = {for (final rarity in PackRarity.values) rarity: 0};
+  /// How many of each tier this pack contains (players + actions combined).
+  Map<CardTier, int> get rarityBreakdown {
+    final counts = {for (final tier in CardTier.values) tier: 0};
     for (final card in players) {
-      final rarity = packRarityOfPlayer(card);
-      counts[rarity] = counts[rarity]! + 1;
+      final tier = packRarityOfPlayer(card);
+      counts[tier] = counts[tier]! + 1;
     }
     for (final card in actions) {
-      final rarity = packRarityOfAction(card);
-      counts[rarity] = counts[rarity]! + 1;
+      final tier = packRarityOfAction(card);
+      counts[tier] = counts[tier]! + 1;
     }
     return counts;
   }
@@ -143,8 +142,8 @@ const starterPackActionCount = 5;
 
 /// Rolls a random starter pack from the supplied pools.
 ///
-/// Every card is chosen via [rollPackRarity] (silver 50% / gold 35% / epic 10%
-/// / legendary 5%) with no duplicates inside the pack. The [actionCount] action
+/// Every card is chosen via [rollPackRarity] (bronze 55% / silver 35% / gold 4%
+/// / platinum 1%) with no duplicates inside the pack. The [actionCount] action
 /// cards are split as evenly as possible between attack and defense; when the
 /// count is odd the heavier side (e.g. 3 attack + 2 defense, or vice-versa) is
 /// chosen at random.

@@ -218,12 +218,7 @@ class _MatchScreenState extends State<MatchScreen> {
             child: phaseWidget,
           ),
         );
-        return Stack(
-          children: [
-            switcher,
-            const Positioned(top: 0, right: 0, child: SafeArea(child: _MuteToggle())),
-          ],
-        );
+        return switcher;
       },
     );
   }
@@ -250,48 +245,5 @@ class _MatchScreenState extends State<MatchScreen> {
 
     gameBloc.add(MatchReset());
     widget.onNavigate(AppSection.home);
-  }
-}
-
-/// Small in-match audio mute toggle. Observes the global [AudioController.muted]
-/// notifier so it stays in sync wherever it's shown, and the choice persists.
-class _MuteToggle extends StatelessWidget {
-  const _MuteToggle();
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: AudioController.instance.muted,
-      builder: (context, muted, _) {
-        return Padding(
-          padding: const EdgeInsets.all(10),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: AudioController.instance.toggleMute,
-              customBorder: const CircleBorder(),
-              child: Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: const Color(0xCC0A0F1A),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: (muted ? Cyber.muted : Cyber.cyan)
-                        .withValues(alpha: 0.6),
-                  ),
-                ),
-                child: Icon(
-                  muted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
-                  size: 19,
-                  color: muted ? Cyber.muted : Cyber.cyan,
-                  semanticLabel: muted ? 'Unmute sound' : 'Mute sound',
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
   }
 }

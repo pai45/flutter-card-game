@@ -14,6 +14,11 @@ deck building, match history, picks, wallet coins, and player progression.
 - Calendar days light up when a duel match or prediction pick exists on that
   date. Match cards open the existing match-history detail screen; pick cards
   open the prediction detail flow.
+- Prediction Matches use an animated first-time quiz reveal, then reopen
+  submitted predictions as an editable review list before kickoff and a
+  read-only vote/result review once matches are live or finished.
+- Prediction quizzes include one `2x` and one `1.5x` booster that can be moved
+  between answered questions until the fixture locks.
 - First-time users must choose a profile avatar before entering the app. The
   avatar options live in `assets/avatar_options/` as WebP images and are saved
   with `SecureGameStorage`.

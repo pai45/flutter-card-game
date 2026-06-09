@@ -5,7 +5,10 @@ import 'package:card_game/screens/game/widgets/round_result_cinematic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-RoundResult _sampleResult({required bool playerAttacking}) {
+RoundResult _sampleResult({
+  required bool playerAttacking,
+  required RoundOutcome outcome,
+}) {
   final attackAction = actionCards.firstWhere((c) => c.title == 'All In');
   final defenseAction = actionCards.firstWhere(
     (c) => c.title == 'Last-Ditch Tackle',
@@ -18,7 +21,7 @@ RoundResult _sampleResult({required bool playerAttacking}) {
     defenderCard: defenders.first,
     attackAction: attackAction,
     defenseAction: defenseAction,
-    outcome: RoundOutcome.foul,
+    outcome: outcome,
     attackPower: 115,
     defensePower: 129,
   );
@@ -42,7 +45,12 @@ void main() {
         home: Scaffold(
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
-            child: RoundClashArena(key: arenaKey, result: result),
+            child: RoundClashArena(
+              key: arenaKey,
+              result: result,
+              playerScore: 1,
+              opponentScore: 2,
+            ),
           ),
         ),
       ),
@@ -56,20 +64,33 @@ void main() {
   testWidgets('RoundClashArena has no overflow across animation timeline', (
     tester,
   ) async {
+    const outcomes = [
+      RoundOutcome.goal,
+      RoundOutcome.foul,
+      RoundOutcome.redCard,
+      RoundOutcome.missed,
+    ];
     for (final attacking in [true, false]) {
-      final result = _sampleResult(playerAttacking: attacking);
-      for (final progress in [
-        0.0,
-        0.12,
-        0.26,
-        0.33,
-        0.38,
-        0.55,
-        0.76,
-        0.9,
-        1.0,
-      ]) {
-        await pumpArena(tester, result: result, progress: progress);
+      for (final outcome in outcomes) {
+        final result = _sampleResult(
+          playerAttacking: attacking,
+          outcome: outcome,
+        );
+        for (final progress in [
+          0.0,
+          0.12,
+          0.28,
+          0.35,
+          0.42,
+          0.55,
+          0.68,
+          0.8,
+          0.86,
+          0.92,
+          1.0,
+        ]) {
+          await pumpArena(tester, result: result, progress: progress);
+        }
       }
     }
   });

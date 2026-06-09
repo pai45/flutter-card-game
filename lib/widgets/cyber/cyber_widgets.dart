@@ -41,6 +41,7 @@ class CyberConfirmDialog extends StatelessWidget {
         child: CyberPanel(
           accent: destructive ? Cyber.magenta : Cyber.cyan,
           padding: EdgeInsets.zero,
+          solidBackground: true,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -391,20 +392,7 @@ class CyberGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
-    // Base fill.
     canvas.drawRect(Offset.zero & size, Paint()..color = Cyber.bg);
-
-    // Blueprint grid.
-    final grid = Paint()
-      ..color = Cyber.cyan.withValues(alpha: 0.055)
-      ..strokeWidth = 1;
-    const step = 40.0;
-    for (var x = 0.0; x < size.width; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), grid);
-    }
-    for (var y = 0.0; y < size.height; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
-    }
   }
 
   @override
@@ -764,6 +752,7 @@ class CyberPanel extends StatelessWidget {
     this.accent = Cyber.cyan,
     this.padding = const EdgeInsets.all(16),
     this.glow = false,
+    this.solidBackground = false,
     super.key,
   });
 
@@ -776,22 +765,51 @@ class CyberPanel extends StatelessWidget {
   /// Reserve [glow] for the panel the user should look at first on a screen.
   final bool glow;
 
+  /// Flat panel fill instead of the accent-tinted gradient. Used for modal chrome
+  /// (confirm dialogs, walkthrough) where the gradient reads too busy.
+  final bool solidBackground;
+
   @override
   Widget build(BuildContext context) {
-    return ClipPath(
-      clipper: CyberClipper(),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: Cyber.panelGradient(accent),
-          border: Border.all(color: accent.withValues(alpha: 0.5)),
-          boxShadow: glow
-              ? Cyber.glow(accent, alpha: 0.18, blur: 18, spread: 1)
-              : null,
+    final borderColor = accent.withValues(alpha: 0.5);
+    return CustomPaint(
+      foregroundPainter: _CyberPanelBorderPainter(color: borderColor),
+      child: ClipPath(
+        clipper: CyberClipper(),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: solidBackground ? Cyber.panel : null,
+            gradient: solidBackground ? null : Cyber.panelGradient(accent),
+            boxShadow: glow
+                ? Cyber.glow(accent, alpha: 0.18, blur: 18, spread: 1)
+                : null,
+          ),
+          child: Padding(padding: padding, child: child),
         ),
-        child: Padding(padding: padding, child: child),
       ),
     );
   }
+}
+
+class _CyberPanelBorderPainter extends CustomPainter {
+  const _CyberPanelBorderPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawPath(
+      CyberClipper.buildPath(size),
+      Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_CyberPanelBorderPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 class RectangleClipper extends CustomClipper<Path> {
@@ -807,9 +825,9 @@ class RectangleClipper extends CustomClipper<Path> {
 }
 
 class CyberClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    const cut = 12.0;
+  static const double cut = 12;
+
+  static Path buildPath(Size size, {double cut = cut}) {
     return Path()
       ..moveTo(0, 0)
       ..lineTo(size.width, 0)
@@ -817,9 +835,11 @@ class CyberClipper extends CustomClipper<Path> {
       ..lineTo(size.width - cut, size.height)
       ..lineTo(cut, size.height)
       ..lineTo(0, size.height - cut)
-      ..lineTo(0, 0)
       ..close();
   }
+
+  @override
+  Path getClip(Size size) => buildPath(size);
 
   @override
   bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;

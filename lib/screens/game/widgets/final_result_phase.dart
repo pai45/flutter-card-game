@@ -7,7 +7,6 @@ import '../../../blocs/game/game_event.dart';
 import '../../../blocs/game/game_state.dart';
 import '../../../config/enums.dart';
 import '../../../config/theme.dart';
-import '../../../config/tutorial_steps.dart';
 import '../../../models/match.dart';
 import '../../../utils/label_helpers.dart';
 import '../../../utils/sound_effects.dart';
@@ -15,7 +14,7 @@ import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../../widgets/game_scaffold.dart';
 import '../../../widgets/level_up_celebration.dart';
 import '../../../widgets/match_widgets.dart';
-import '../../../widgets/tutorial.dart';
+import '../../../widgets/spotlight_walkthrough.dart';
 
 class FinalResultPhase extends StatefulWidget {
   const FinalResultPhase({
@@ -69,6 +68,25 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
   late final int _oldXpIntoLevel;
   late final int _oldXpToNextLevel;
   bool _showLevelUp = false;
+  final _scoreKey = GlobalKey();
+  final _actionsKey = GlobalKey();
+
+  List<SpotlightStep> get _spotlightSteps => [
+    SpotlightStep(
+      targetKey: _scoreKey,
+      title: 'Final Score',
+      body: 'Scoreline, penalties, and MVP.',
+      icon: Icons.emoji_events,
+      accent: Cyber.cyan,
+    ),
+    SpotlightStep(
+      targetKey: _actionsKey,
+      title: 'What\'s Next',
+      body: 'Play Again or head Home.',
+      icon: Icons.home,
+      accent: Cyber.lime,
+    ),
+  ];
 
   static const _dirLabel = {
     PenaltyDirection.left: 'L',
@@ -164,12 +182,14 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
                   // Winner banner with fade animation
                   FadeTransition(
                     opacity: _scoreOpacity,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 20,
-                        horizontal: 16,
-                      ),
+                    child: SpotlightTarget(
+                      spotlightKey: _scoreKey,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 20,
+                          horizontal: 16,
+                        ),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: won
@@ -238,6 +258,7 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
                           ),
                         ],
                       ),
+                    ),
                     ),
                   ),
 
@@ -350,31 +371,38 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
                   const SizedBox(height: 8),
                   FadeTransition(
                     opacity: _buttonsOpacity,
-                    child: Column(
-                      children: [
-                        FilledButton.icon(
-                          onPressed: () {
-                            context.read<GameBloc>().add(MatchStarted());
-                          },
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('PLAY AGAIN'),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: () {
-                            context.read<GameBloc>().add(MatchReset());
-                            widget.onNavigate(AppSection.home);
-                          },
-                          icon: const Icon(Icons.home),
-                          label: const Text('HOME'),
-                        ),
-                      ],
+                    child: SpotlightTarget(
+                      spotlightKey: _actionsKey,
+                      child: Column(
+                        children: [
+                          FilledButton.icon(
+                            onPressed: () {
+                              context.read<GameBloc>().add(MatchStarted());
+                            },
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('PLAY AGAIN'),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              context.read<GameBloc>().add(MatchReset());
+                              widget.onNavigate(AppSection.home);
+                            },
+                            icon: const Icon(Icons.home),
+                            label: const Text('HOME'),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
               );
             },
           ),
-          const TutorialTip(keyName: 'final', steps: finalTutorialSteps),
+          SpotlightTutorial(
+            keyName: 'final',
+            steps: _spotlightSteps,
+            startDelay: const Duration(milliseconds: 1400),
+          ),
 
           // Level-up celebration overlay
           if (_showLevelUp)

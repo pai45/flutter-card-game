@@ -12,6 +12,7 @@ import '../utils/label_helpers.dart';
 import 'cyber/cyber_widgets.dart';
 import 'game_scaffold.dart';
 import 'info_widgets.dart';
+import 'spotlight_walkthrough.dart';
 import 'tutorial.dart';
 
 class StadiumBackground extends StatefulWidget {
@@ -98,7 +99,13 @@ class MatchPhaseScaffold extends StatelessWidget {
     this.scoreLabel,
     this.tutorialKey,
     this.tutorialSteps = const [],
+    this.spotlightKey,
+    this.spotlightSteps = const [],
+    this.spotlightEnabled = true,
+    this.spotlightDelay = Duration.zero,
+    this.spotlightOnComplete,
     this.bottomAction,
+    this.bottomActionKey,
     super.key,
   });
 
@@ -110,7 +117,13 @@ class MatchPhaseScaffold extends StatelessWidget {
   final String? scoreLabel;
   final String? tutorialKey;
   final List<TutorialStepData> tutorialSteps;
+  final String? spotlightKey;
+  final List<SpotlightStep> spotlightSteps;
+  final bool spotlightEnabled;
+  final Duration spotlightDelay;
+  final VoidCallback? spotlightOnComplete;
   final Widget? bottomAction;
+  final GlobalKey? bottomActionKey;
 
   @override
   Widget build(BuildContext context) {
@@ -139,6 +152,7 @@ class MatchPhaseScaffold extends StatelessWidget {
         children: [
           const Positioned.fill(child: StadiumBackground()),
           ListView.separated(
+            clipBehavior: Clip.none,
             padding: EdgeInsets.fromLTRB(
               16,
               16,
@@ -162,8 +176,26 @@ class MatchPhaseScaffold extends StatelessWidget {
           ),
           if (tutorialKey != null)
             TutorialTip(keyName: tutorialKey!, steps: tutorialSteps),
+          if (spotlightKey != null && spotlightSteps.isNotEmpty)
+            SpotlightTutorial(
+              keyName: spotlightKey!,
+              steps: spotlightSteps,
+              enabled: spotlightEnabled,
+              startDelay: spotlightDelay,
+              onComplete: spotlightOnComplete,
+            ),
           if (bottomAction != null)
-            Positioned(left: 16, right: 16, bottom: 32, child: bottomAction!),
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 32,
+              child: bottomActionKey == null
+                  ? bottomAction!
+                  : SpotlightTarget(
+                      spotlightKey: bottomActionKey!,
+                      child: bottomAction!,
+                    ),
+            ),
         ],
       ),
     );
@@ -439,13 +471,6 @@ class SelectedMovePanel extends StatelessWidget {
           ),
           child: Stack(
             children: [
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: CustomPaint(
-                    painter: _SelectionArenaPainter(roleAccent),
-                  ),
-                ),
-              ),
               Positioned(
                 left: 0,
                 right: 0,
@@ -535,41 +560,6 @@ class SelectedMovePanel extends StatelessWidget {
       },
     );
   }
-}
-
-class _SelectionArenaPainter extends CustomPainter {
-  const _SelectionArenaPainter(this.accent);
-
-  final Color accent;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final minor = Paint()
-      ..color = Colors.white.withValues(alpha: 0.035)
-      ..strokeWidth = 1;
-    final major = Paint()
-      ..color = accent.withValues(alpha: 0.06)
-      ..strokeWidth = 1;
-
-    for (double x = 0; x <= size.width; x += 32) {
-      canvas.drawLine(
-        Offset(x, 0),
-        Offset(x, size.height),
-        (x % 96 == 0) ? major : minor,
-      );
-    }
-    for (double y = 0; y <= size.height; y += 28) {
-      canvas.drawLine(
-        Offset(0, y),
-        Offset(size.width, y),
-        (y % 84 == 0) ? major : minor,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _SelectionArenaPainter oldDelegate) =>
-      oldDelegate.accent != accent;
 }
 
 class _MoveArenaSlot extends StatelessWidget {

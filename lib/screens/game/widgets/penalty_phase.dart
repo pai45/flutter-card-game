@@ -9,11 +9,11 @@ import '../../../blocs/game/game_event.dart';
 import '../../../blocs/game/game_state.dart';
 import '../../../config/enums.dart';
 import '../../../config/theme.dart';
-import '../../../config/tutorial_steps.dart';
 import '../../../models/match.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../../widgets/match_widgets.dart';
+import '../../../widgets/spotlight_walkthrough.dart';
 import 'match_phases.dart' show CountdownRing;
 
 class PenaltyPhase extends StatefulWidget {
@@ -28,6 +28,26 @@ class PenaltyPhase extends StatefulWidget {
 
 class _PenaltyPhaseState extends State<PenaltyPhase>
     with TickerProviderStateMixin {
+  final _panelKey = GlobalKey();
+  final _shootKey = GlobalKey();
+
+  List<SpotlightStep> get _spotlightSteps => [
+    SpotlightStep(
+      targetKey: _panelKey,
+      title: 'Penalties',
+      body: 'Pick direction, then SHOOT or DIVE. Best of 5.',
+      icon: Icons.sports_soccer,
+      accent: Cyber.amber,
+    ),
+    SpotlightStep(
+      targetKey: _shootKey,
+      title: 'Confirm',
+      body: 'Tap SHOOT or DIVE to take your turn.',
+      icon: Icons.sports,
+      accent: Cyber.cyan,
+    ),
+  ];
+
   late AnimationController _revealCtrl;
   late Animation<double> _revealScale;
   late final AnimationController _scanner;
@@ -94,8 +114,10 @@ class _PenaltyPhaseState extends State<PenaltyPhase>
       state: s,
       onQuit: widget.onQuit,
       scoreLabel: 'PEN ${s.penaltyPlayerScore}-${s.penaltyOpponentScore}',
-      tutorialKey: 'penalty',
-      tutorialSteps: penaltyTutorialSteps,
+      spotlightKey: 'penalty',
+      spotlightSteps: _spotlightSteps,
+      spotlightDelay: const Duration(milliseconds: 500),
+      bottomActionKey: _shootKey,
       bottomAction: CyberCtaButton(
         label: playerTaking ? 'SHOOT' : 'DIVE',
         primary: true,
@@ -104,11 +126,11 @@ class _PenaltyPhaseState extends State<PenaltyPhase>
             : () => context.read<GameBloc>().add(PenaltyKickConfirmed()),
       ),
       children: [
-        // Progress + history row
         _PenaltyHeader(state: s, kickLabel: kickLabel),
-        // Scenario-style action panel — TAKE THE SHOT / GO FOR THE SAVE.
-        _PenaltyActionPanel(playerTaking: playerTaking),
-        // Direction buttons
+        SpotlightTarget(
+          spotlightKey: _panelKey,
+          child: _PenaltyActionPanel(playerTaking: playerTaking),
+        ),
         _DirectionButtons(
           playerTaking: playerTaking,
           selected: selected,
@@ -598,13 +620,10 @@ class _PenaltyAttemptIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentKick = kick;
     final bool pending = currentKick == null;
-    final bool playerKick = currentKick?.byPlayer ?? true;
     final bool scored = currentKick?.scored ?? false;
     final color = pending
         ? Cyber.muted
-        : playerKick
-        ? (scored ? Cyber.lime : Cyber.red)
-        : (scored ? Cyber.red : Cyber.lime);
+        : (scored ? Cyber.lime : Cyber.red);
     final icon = pending
         ? Icons.sports_soccer_outlined
         : Icons.sports_soccer;
@@ -692,17 +711,19 @@ class _DirectionButton extends StatelessWidget {
         duration: const Duration(milliseconds: 140),
         height: 96,
         decoration: BoxDecoration(
-          color: selected ? Cyber.cyan.withValues(alpha: 0.12) : Cyber.panel,
+          color: selected
+              ? Colors.white.withValues(alpha: 0.10)
+              : Cyber.panel,
           border: Border.all(
-            color: selected ? Cyber.cyan : Cyber.line,
-            width: selected ? 2 : 1,
+            color: Colors.white.withValues(alpha: selected ? 1.0 : 0.72),
+            width: selected ? 2 : 1.5,
           ),
           boxShadow: selected
               ? [
                   BoxShadow(
-                    color: Cyber.cyan.withValues(alpha: 0.25),
-                    blurRadius: 14,
-                    spreadRadius: 1,
+                    color: Colors.white.withValues(alpha: 0.18),
+                    blurRadius: 12,
+                    spreadRadius: 0,
                   ),
                 ]
               : null,
@@ -710,12 +731,12 @@ class _DirectionButton extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 26, color: selected ? Cyber.cyan : Colors.white54),
+            Icon(icon, size: 26, color: Colors.white),
             const SizedBox(height: 8),
             Text(
               label,
-              style: TextStyle(
-                color: selected ? Cyber.cyan : Colors.white54,
+              style: const TextStyle(
+                color: Colors.white,
                 fontFamily: 'Orbitron',
                 fontSize: 10,
                 fontWeight: FontWeight.w900,
@@ -766,15 +787,6 @@ class _KickResultCard extends StatelessWidget {
               fontSize: 28,
               fontWeight: FontWeight.w900,
               letterSpacing: 3,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            kick.byPlayer ? 'You scored' : 'Opponent scored',
-            style: TextStyle(
-              color: color.withValues(alpha: 0.7),
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
             ),
           ),
         ],

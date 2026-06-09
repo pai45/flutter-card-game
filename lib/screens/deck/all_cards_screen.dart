@@ -41,7 +41,8 @@ class _AllCardsScreenState extends State<AllCardsScreen>
     final all = [
       ...attackers,
       ...defenders,
-    ].where((card) => state.ownedCardIds.contains(card.id)).toList();
+    ].where((card) => state.ownedCardIds.contains(card.id)).toList()
+      ..sort((a, b) => b.rating.compareTo(a.rating));
     if (_roleFilter == null) return all;
     return all.where((c) => c.role == _roleFilter).toList();
   }
@@ -167,19 +168,16 @@ class _PlayersTab extends StatelessWidget {
         ),
         Expanded(
           child: _CardGrid(
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final card in cards)
-                  CyberPlayerCardTile(
-                    card: card,
-                    selected: false,
-                    size: VisualCardSize.md,
-                    onTap: () => _showPlayerCardDetail(context, card),
-                  ),
-              ],
-            ),
+            itemCount: cards.length,
+            itemBuilder: (context, index) {
+              final card = cards[index];
+              return CyberPlayerCardTile(
+                card: card,
+                selected: false,
+                size: VisualCardSize.md,
+                onTap: () => _showPlayerCardDetail(context, card),
+              );
+            },
           ),
         ),
       ],
@@ -235,19 +233,16 @@ class _ActionsTab extends StatelessWidget {
         ),
         Expanded(
           child: _CardGrid(
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final card in cards)
-                  CyberActionCardTile(
-                    card: card,
-                    selected: false,
-                    size: VisualCardSize.md,
-                    onTap: () => _showActionCardDetail(context, card),
-                  ),
-              ],
-            ),
+            itemCount: cards.length,
+            itemBuilder: (context, index) {
+              final card = cards[index];
+              return CyberActionCardTile(
+                card: card,
+                selected: false,
+                size: VisualCardSize.md,
+                onTap: () => _showActionCardDetail(context, card),
+              );
+            },
           ),
         ),
       ],
@@ -331,17 +326,31 @@ class _FilterChip extends StatelessWidget {
 }
 
 class _CardGrid extends StatelessWidget {
-  const _CardGrid({required this.child});
+  const _CardGrid({
+    required this.itemCount,
+    required this.itemBuilder,
+  });
 
-  final Widget child;
+  final int itemCount;
+  final Widget Function(BuildContext context, int index) itemBuilder;
 
   @override
   Widget build(BuildContext context) {
-    return CyberBackground(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: child,
+    final width = MediaQuery.sizeOf(context).width;
+    final crossAxisCount = width >= 720 ? 3 : 2;
+
+    return GridView.builder(
+      padding: const EdgeInsets.fromLTRB(0, 12, 0, 16),
+      itemCount: itemCount,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        mainAxisSpacing: 14,
+        crossAxisSpacing: 14,
+        childAspectRatio: 128 / 192,
       ),
+      itemBuilder: (context, index) {
+        return Center(child: itemBuilder(context, index));
+      },
     );
   }
 }

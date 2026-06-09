@@ -59,3 +59,28 @@ String outcomeLabel(RoundOutcome outcome) => switch (outcome) {
   RoundOutcome.foul => 'Foul',
   RoundOutcome.redCard => 'Red Card',
 };
+
+/// Short, perspective-aware flavour caption shown under the round verdict.
+///
+/// [playerAttacking] flips the voice between the player's and the CPU's point of
+/// view so a goal reads "you find the net" vs "CPU buries it". Kept deterministic
+/// so widget/golden tests stay stable.
+String outcomeNarration(
+  RoundOutcome outcome, {
+  required bool playerAttacking,
+}) => switch (outcome) {
+  RoundOutcome.goal => playerAttacking
+      ? 'Top corner — you find the net!'
+      : 'CPU buries it past your keeper.',
+  RoundOutcome.saved => playerAttacking
+      ? 'Denied — the keeper gets a strong hand to it.'
+      : 'Your keeper stands tall and saves!',
+  RoundOutcome.blocked => playerAttacking
+      ? 'Wall holds — the shot is smothered.'
+      : 'You throw a body in the way — blocked!',
+  RoundOutcome.missed => playerAttacking
+      ? 'Dragged wide — the chance is gone.'
+      : 'CPU skews it wide — let off!',
+  RoundOutcome.foul => 'Cynical challenge — the whistle blows.',
+  RoundOutcome.redCard => 'Straight red — down to ten!',
+};

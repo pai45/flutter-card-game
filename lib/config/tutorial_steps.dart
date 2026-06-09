@@ -8,6 +8,7 @@ const tutorialKeys = [
   'toss',
   'scenario',
   'play',
+  'shot-meter',
   'round-result',
   'match-end',
   'penalty',

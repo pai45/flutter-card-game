@@ -6,50 +6,61 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('packRarity mapping', () {
-    test('rating bands map to the right rarity', () {
-      // Platinum 90-94, gold 86-89, silver 80-85, bronze 75-79.
-      expect(packRarityForRating(94), PackRarity.legendary);
-      expect(packRarityForRating(90), PackRarity.legendary);
-      expect(packRarityForRating(89), PackRarity.epic);
-      expect(packRarityForRating(86), PackRarity.epic);
-      expect(packRarityForRating(85), PackRarity.gold);
-      expect(packRarityForRating(80), PackRarity.gold);
-      expect(packRarityForRating(79), PackRarity.silver);
-      expect(packRarityForRating(75), PackRarity.silver);
+    test('rating bands map to the right tier', () {
+      expect(packRarityForRating(94), CardTier.platinum);
+      expect(packRarityForRating(90), CardTier.platinum);
+      expect(packRarityForRating(89), CardTier.gold);
+      expect(packRarityForRating(86), CardTier.gold);
+      expect(packRarityForRating(85), CardTier.silver);
+      expect(packRarityForRating(80), CardTier.silver);
+      expect(packRarityForRating(79), CardTier.bronze);
+      expect(packRarityForRating(75), CardTier.bronze);
     });
 
-    test('action power bands map to the right rarity', () {
-      expect(packRarityForPower(30), PackRarity.legendary);
-      expect(packRarityForPower(22), PackRarity.legendary);
-      expect(packRarityForPower(20), PackRarity.epic);
-      expect(packRarityForPower(16), PackRarity.epic);
-      expect(packRarityForPower(15), PackRarity.gold);
-      expect(packRarityForPower(10), PackRarity.gold);
-      expect(packRarityForPower(9), PackRarity.silver);
-      expect(packRarityForPower(8), PackRarity.silver);
+    test('action power bands map to the right tier', () {
+      expect(packRarityForPower(30), CardTier.platinum);
+      expect(packRarityForPower(22), CardTier.platinum);
+      expect(packRarityForPower(20), CardTier.gold);
+      expect(packRarityForPower(16), CardTier.gold);
+      expect(packRarityForPower(15), CardTier.silver);
+      expect(packRarityForPower(10), CardTier.silver);
+      expect(packRarityForPower(9), CardTier.bronze);
+      expect(packRarityForPower(8), CardTier.bronze);
     });
 
     test('drop chances sum to 1.0', () {
-      final total = PackRarity.values
-          .map((r) => r.dropChance)
+      final total = CardTier.values
+          .map((tier) => tier.starterDropChance)
           .reduce((a, b) => a + b);
       expect(total, closeTo(1.0, 1e-9));
     });
   });
 
   group('rollPackRarity distribution', () {
-    test('roughly matches 50/35/10/5 over many rolls', () {
+    test('roughly matches 55/35/4/1 weights over many rolls', () {
       final rng = Random(42);
       const n = 100000;
-      final counts = {for (final r in PackRarity.values) r: 0};
+      final counts = {for (final tier in CardTier.values) tier: 0};
       for (var i = 0; i < n; i++) {
-        final r = rollPackRarity(rng);
-        counts[r] = counts[r]! + 1;
+        final tier = rollPackRarity(rng);
+        counts[tier] = counts[tier]! + 1;
       }
-      expect(counts[PackRarity.silver]! / n, closeTo(0.50, 0.02));
-      expect(counts[PackRarity.gold]! / n, closeTo(0.35, 0.02));
-      expect(counts[PackRarity.epic]! / n, closeTo(0.10, 0.02));
-      expect(counts[PackRarity.legendary]! / n, closeTo(0.05, 0.02));
+      expect(
+        counts[CardTier.bronze]! / n,
+        closeTo(CardTier.bronze.starterDropChance, 0.02),
+      );
+      expect(
+        counts[CardTier.silver]! / n,
+        closeTo(CardTier.silver.starterDropChance, 0.02),
+      );
+      expect(
+        counts[CardTier.gold]! / n,
+        closeTo(CardTier.gold.starterDropChance, 0.01),
+      );
+      expect(
+        counts[CardTier.platinum]! / n,
+        closeTo(CardTier.platinum.starterDropChance, 0.005),
+      );
     });
   });
 
