@@ -57,13 +57,25 @@ class RoundClashArena extends StatefulWidget {
 
 @visibleForTesting
 class RoundClashArenaState extends State<RoundClashArena>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   static const _duration = Duration(milliseconds: 4600);
 
   late final AnimationController _c = AnimationController(
     vsync: this,
     duration: _duration,
   );
+
+  /// Full-bleed payoff stinger (GOAL! / DENIED!) fired at the verdict beat.
+  late final AnimationController _stinger = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 950),
+  );
+
+  _StingerKind? get _stingerKind => switch (widget.result.outcome) {
+    RoundOutcome.goal => _StingerKind.goal,
+    RoundOutcome.saved || RoundOutcome.blocked => _StingerKind.denied,
+    _ => null,
+  };
 
   bool _clashFired = false;
   bool _meterFired = false;
@@ -124,6 +136,7 @@ class RoundClashArenaState extends State<RoundClashArena>
     if (!_verdictFired && _c.value >= _kVerdictStart) {
       _verdictFired = true;
       _fireVerdictSounds();
+      if (_stingerKind != null) _stinger.forward(from: 0);
     }
     if (!_scoreFired && _c.value >= _kVerdictEnd) {
       _scoreFired = true;
@@ -167,6 +180,7 @@ class RoundClashArenaState extends State<RoundClashArena>
       ..removeListener(_onTick)
       ..removeStatusListener(_onStatus)
       ..dispose();
+    _stinger.dispose();
     super.dispose();
   }
 
@@ -207,6 +221,14 @@ class RoundClashArenaState extends State<RoundClashArena>
     // A goal is scored by the attacker; everything else leaves the score held.
     final goalScored = r.outcome == RoundOutcome.goal;
     final scoringIsPlayer = playerAttacking;
+
+    // Side-aware stinger tint: your goal celebrates, a conceded goal alarms,
+    // and a save is always the keeper's violet moment.
+    final stingerAccent = switch (_stingerKind) {
+      _StingerKind.goal => scoringIsPlayer ? Cyber.lime : Cyber.danger,
+      _StingerKind.denied => Cyber.violet,
+      null => Colors.transparent,
+    };
 
     return AnimatedBuilder(
       animation: _c,
@@ -255,213 +277,232 @@ class RoundClashArenaState extends State<RoundClashArena>
 
         final showActions = _c.value >= 0.30;
 
-        return Transform.translate(
-          offset: Offset(shakeX + redShake, 0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _TelemetryStrip(round: r.round, opacity: powerOnT),
-              const SizedBox(height: 12),
-              Opacity(
-                opacity: (0.25 + 0.75 * approachT).clamp(0.0, 1.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _SideHeader(
-                      label: 'YOU',
-                      role: playerRole,
-                      accent: playerAccent,
-                    ),
-                    _SideHeader(
-                      label: 'CPU',
-                      role: oppRole,
-                      accent: oppAccent,
-                      alignEnd: true,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final arenaW = constraints.maxWidth;
-                  const cardHalfW = _kClashCardW / 2;
-                  const restOffset = 84.0;
-                  const impactOffset = 22.0;
-                  final offScreen = arenaW / 2 + cardHalfW + 12;
-
-                  double playerX;
-                  double oppX;
-                  if (_c.value < _kApproachEnd) {
-                    final t = _interval(
-                      _kPowerOnEnd,
-                      _kApproachEnd,
-                      curve: Curves.easeIn,
-                    );
-                    playerX = -offScreen + (offScreen - impactOffset) * t;
-                    oppX = offScreen - (offScreen - impactOffset) * t;
-                  } else {
-                    playerX =
-                        -impactOffset + (impactOffset - restOffset) * clashT;
-                    oppX = impactOffset - (impactOffset - restOffset) * clashT;
-                  }
-
-                  final playerTilt =
-                      (1 - clashT.clamp(0.0, 1.0)) * 8 * pi / 180;
-                  final oppTilt = -(1 - clashT.clamp(0.0, 1.0)) * 8 * pi / 180;
-
-                  return Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(
-                        height: _kClashStackH,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          clipBehavior: Clip.hardEdge,
-                          children: [
-                            if (clashProgress > 0 && clashProgress < 0.85)
-                              Positioned.fill(
-                                child: CustomPaint(
-                                  painter: _ImpactFlashPainter(
-                                    clashProgress,
-                                    Cyber.cyan,
-                                    const Color(0xFFC084FC),
-                                  ),
-                                ),
-                              ),
-                            if (clashProgress > 0 && clashProgress < 0.7)
-                              Positioned.fill(
-                                child: CustomPaint(
-                                  painter: _BurstPainter(
-                                    clashProgress / 0.7,
-                                    Cyber.gold,
-                                  ),
-                                ),
-                              ),
-                            Transform.translate(
-                              offset: Offset(playerX, 0),
-                              child: Transform.rotate(
-                                angle: playerTilt,
-                                child: Opacity(
-                                  opacity: approachT.clamp(0.0, 1.0),
-                                  child: _ClashCard(card: playerCard),
-                                ),
-                              ),
-                            ),
-                            Transform.translate(
-                              offset: Offset(oppX, 0),
-                              child: Transform.rotate(
-                                angle: oppTilt,
-                                child: Opacity(
-                                  opacity: _interval(
-                                    _kPowerOnEnd + 0.02,
-                                    _kApproachEnd,
-                                    curve: Curves.easeOut,
-                                  ).clamp(0.0, 1.0),
-                                  child: _ClashCard(card: oppCard),
-                                ),
-                              ),
-                            ),
-                            if (vsOpacity > 0)
-                              Transform.scale(
-                                scale:
-                                    0.55 +
-                                    0.45 * vsPeak +
-                                    0.05 * sin(vsPeak * pi),
-                                child: Opacity(
-                                  opacity: vsOpacity,
-                                  child: Text(
-                                    'VS',
-                                    style: Cyber.display(28, color: Cyber.gold)
-                                        .copyWith(
-                                          shadows: const [
-                                            Shadow(
-                                              color: Cyber.gold,
-                                              blurRadius: 16,
-                                            ),
-                                          ],
-                                        ),
-                                  ),
-                                ),
-                              ),
-                          ],
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Transform.translate(
+              offset: Offset(shakeX + redShake, 0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _TelemetryStrip(round: r.round, opacity: powerOnT),
+                  const SizedBox(height: 12),
+                  Opacity(
+                    opacity: (0.25 + 0.75 * approachT).clamp(0.0, 1.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _SideHeader(
+                          label: 'YOU',
+                          role: playerRole,
+                          accent: playerAccent,
                         ),
-                      ),
-                      SizedBox(
-                        height: _kActionRowH,
-                        child: showActions
-                            ? Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Expanded(
-                                    child: Align(
-                                      alignment: Alignment.centerLeft,
-                                      child: FittedBox(
-                                        fit: BoxFit.scaleDown,
-                                        alignment: Alignment.centerLeft,
-                                        child: CyberChip(
-                                          label: playerAction.title,
-                                          color: actionColor(
-                                            playerAction.category,
-                                          ),
-                                        ),
+                        _SideHeader(
+                          label: 'CPU',
+                          role: oppRole,
+                          accent: oppAccent,
+                          alignEnd: true,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final arenaW = constraints.maxWidth;
+                      const cardHalfW = _kClashCardW / 2;
+                      const restOffset = 84.0;
+                      const impactOffset = 22.0;
+                      final offScreen = arenaW / 2 + cardHalfW + 12;
+
+                      double playerX;
+                      double oppX;
+                      if (_c.value < _kApproachEnd) {
+                        final t = _interval(
+                          _kPowerOnEnd,
+                          _kApproachEnd,
+                          curve: Curves.easeIn,
+                        );
+                        playerX = -offScreen + (offScreen - impactOffset) * t;
+                        oppX = offScreen - (offScreen - impactOffset) * t;
+                      } else {
+                        playerX =
+                            -impactOffset +
+                            (impactOffset - restOffset) * clashT;
+                        oppX =
+                            impactOffset - (impactOffset - restOffset) * clashT;
+                      }
+
+                      final playerTilt =
+                          (1 - clashT.clamp(0.0, 1.0)) * 8 * pi / 180;
+                      final oppTilt =
+                          -(1 - clashT.clamp(0.0, 1.0)) * 8 * pi / 180;
+
+                      return Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            height: _kClashStackH,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              clipBehavior: Clip.hardEdge,
+                              children: [
+                                if (clashProgress > 0 && clashProgress < 0.85)
+                                  Positioned.fill(
+                                    child: CustomPaint(
+                                      painter: _ImpactFlashPainter(
+                                        clashProgress,
+                                        Cyber.cyan,
+                                        const Color(0xFFC084FC),
                                       ),
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Align(
-                                      alignment: Alignment.centerRight,
-                                      child: FittedBox(
-                                        fit: BoxFit.scaleDown,
-                                        alignment: Alignment.centerRight,
-                                        child: CyberChip(
-                                          label: oppAction.title,
-                                          color: actionColor(
-                                            oppAction.category,
-                                          ),
-                                        ),
+                                if (clashProgress > 0 && clashProgress < 0.7)
+                                  Positioned.fill(
+                                    child: CustomPaint(
+                                      painter: _BurstPainter(
+                                        clashProgress / 0.7,
+                                        Cyber.gold,
                                       ),
                                     ),
                                   ),
-                                ],
-                              )
-                            : null,
-                      ),
-                    ],
-                  );
-                },
+                                Transform.translate(
+                                  offset: Offset(playerX, 0),
+                                  child: Transform.rotate(
+                                    angle: playerTilt,
+                                    child: Opacity(
+                                      opacity: approachT.clamp(0.0, 1.0),
+                                      child: _ClashCard(card: playerCard),
+                                    ),
+                                  ),
+                                ),
+                                Transform.translate(
+                                  offset: Offset(oppX, 0),
+                                  child: Transform.rotate(
+                                    angle: oppTilt,
+                                    child: Opacity(
+                                      opacity: _interval(
+                                        _kPowerOnEnd + 0.02,
+                                        _kApproachEnd,
+                                        curve: Curves.easeOut,
+                                      ).clamp(0.0, 1.0),
+                                      child: _ClashCard(card: oppCard),
+                                    ),
+                                  ),
+                                ),
+                                if (vsOpacity > 0)
+                                  Transform.scale(
+                                    scale:
+                                        0.55 +
+                                        0.45 * vsPeak +
+                                        0.05 * sin(vsPeak * pi),
+                                    child: Opacity(
+                                      opacity: vsOpacity,
+                                      child: Text(
+                                        'VS',
+                                        style:
+                                            Cyber.display(
+                                              28,
+                                              color: Cyber.gold,
+                                            ).copyWith(
+                                              shadows: const [
+                                                Shadow(
+                                                  color: Cyber.gold,
+                                                  blurRadius: 16,
+                                                ),
+                                              ],
+                                            ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(
+                            height: _kActionRowH,
+                            child: showActions
+                                ? Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      Expanded(
+                                        child: Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            alignment: Alignment.centerLeft,
+                                            child: CyberChip(
+                                              label: playerAction.title,
+                                              color: actionColor(
+                                                playerAction.category,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Align(
+                                          alignment: Alignment.centerRight,
+                                          child: FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            alignment: Alignment.centerRight,
+                                            child: CyberChip(
+                                              label: oppAction.title,
+                                              color: actionColor(
+                                                oppAction.category,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : null,
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  Opacity(
+                    opacity: compareT.clamp(0.0, 1.0),
+                    child: _HeadToHeadPowerMeter(
+                      playerRole: playerRole,
+                      oppRole: oppRole,
+                      playerPower: playerPower,
+                      oppPower: oppPower,
+                      playerAccent: playerAccent,
+                      oppAccent: oppAccent,
+                      progress: compareT,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _VerdictHero(
+                    outcome: r.outcome,
+                    playerAttacking: playerAttacking,
+                    accent: outcomeAccent,
+                    t: verdictT,
+                  ),
+                  const SizedBox(height: 14),
+                  _ScoreImpactStrip(
+                    playerScore: widget.playerScore,
+                    opponentScore: widget.opponentScore,
+                    goalScored: goalScored,
+                    scoringIsPlayer: scoringIsPlayer,
+                    t: scoreT,
+                  ),
+                ],
               ),
-              const SizedBox(height: 14),
-              Opacity(
-                opacity: compareT.clamp(0.0, 1.0),
-                child: _HeadToHeadPowerMeter(
-                  playerRole: playerRole,
-                  oppRole: oppRole,
-                  playerPower: playerPower,
-                  oppPower: oppPower,
-                  playerAccent: playerAccent,
-                  oppAccent: oppAccent,
-                  progress: compareT,
-                ),
+            ),
+            Positioned.fill(
+              child: _StingerOverlay(
+                kind: _stingerKind,
+                accent: stingerAccent,
+                animation: _stinger,
               ),
-              const SizedBox(height: 16),
-              _VerdictHero(
-                outcome: r.outcome,
-                playerAttacking: playerAttacking,
-                accent: outcomeAccent,
-                t: verdictT,
-              ),
-              const SizedBox(height: 14),
-              _ScoreImpactStrip(
-                playerScore: widget.playerScore,
-                opponentScore: widget.opponentScore,
-                goalScored: goalScored,
-                scoringIsPlayer: scoringIsPlayer,
-                t: scoreT,
-              ),
-            ],
-          ),
+            ),
+          ],
         );
       },
     );
@@ -1094,4 +1135,117 @@ class _BurstPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _BurstPainter old) =>
       old.t != t || old.color != color;
+}
+
+enum _StingerKind { goal, denied }
+
+/// Full-bleed payoff fired the instant the verdict lands: a stadium-wide
+/// accent flash, a particle burst (goals only) and a chromatic "GOAL!" /
+/// "DENIED!" stamp that slams in oversized and settles. Visual-only overlay —
+/// it never affects layout or input, and stays empty unless its animation
+/// is actually running (so reduced-motion and test timelines skip it).
+class _StingerOverlay extends StatelessWidget {
+  const _StingerOverlay({
+    required this.kind,
+    required this.accent,
+    required this.animation,
+  });
+
+  final _StingerKind? kind;
+  final Color accent;
+  final Animation<double> animation;
+
+  @override
+  Widget build(BuildContext context) {
+    final k = kind;
+    if (k == null) return const SizedBox.shrink();
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: animation,
+        builder: (context, _) {
+          final t = animation.value;
+          if (t <= 0 || t >= 1) return const SizedBox.shrink();
+
+          // Flash ramps up fast then decays; stamp slams in, holds, fades out.
+          final flashIn = Curves.easeOut.transform((t / 0.16).clamp(0.0, 1.0));
+          final flashOut =
+              1 - Curves.easeIn.transform(((t - 0.16) / 0.6).clamp(0.0, 1.0));
+          final flash = 0.4 * flashIn * flashOut;
+          final slamT = Curves.easeOutCubic.transform(
+            (t / 0.32).clamp(0.0, 1.0),
+          );
+          final fadeOut =
+              1 - Curves.easeIn.transform(((t - 0.72) / 0.28).clamp(0.0, 1.0));
+          final scale = 2.3 - 1.3 * slamT;
+          // Chromatic aberration settles as the stamp lands.
+          final aberration = 6.0 * (1 - slamT);
+
+          final label = k == _StingerKind.goal ? 'GOAL!' : 'DENIED!';
+          final style = Cyber.display(54, color: accent, letterSpacing: 4)
+              .copyWith(
+                shadows: [
+                  Shadow(color: accent.withValues(alpha: 0.8), blurRadius: 26),
+                ],
+              );
+          final ghost = style.copyWith(shadows: const []);
+
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      colors: [
+                        accent.withValues(alpha: flash),
+                        accent.withValues(alpha: flash * 0.35),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.55, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+              if (k == _StingerKind.goal)
+                Positioned.fill(
+                  child: CustomPaint(painter: _BurstPainter(t, accent)),
+                ),
+              Opacity(
+                opacity: (slamT * fadeOut).clamp(0.0, 1.0),
+                child: Transform.scale(
+                  scale: scale,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Stack(
+                      children: [
+                        Transform.translate(
+                          offset: Offset(-aberration, 0),
+                          child: Text(
+                            label,
+                            style: ghost.copyWith(
+                              color: Cyber.cyan.withValues(alpha: 0.55),
+                            ),
+                          ),
+                        ),
+                        Transform.translate(
+                          offset: Offset(aberration, 0),
+                          child: Text(
+                            label,
+                            style: ghost.copyWith(
+                              color: Cyber.magenta.withValues(alpha: 0.55),
+                            ),
+                          ),
+                        ),
+                        Text(label, style: style),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
 }

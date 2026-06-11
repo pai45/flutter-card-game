@@ -15,6 +15,7 @@ import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/stat_oz_top_bar.dart';
 import '../shop/shop_screen.dart' show CoinIcon;
 import 'streak_calendar_screen.dart';
+import 'picks_home_view.dart';
 import 'widgets/match_prediction_card.dart';
 
 /// A compact sports prediction hub with StatOz styling.
@@ -24,6 +25,7 @@ class PredictionHomeScreen extends StatefulWidget {
     required this.onOpenMatch,
     required this.onOpenLeague,
     required this.onOpenGame,
+    required this.onOpenShootout,
     super.key,
   });
 
@@ -31,6 +33,7 @@ class PredictionHomeScreen extends StatefulWidget {
   final ValueChanged<SportMatch> onOpenMatch;
   final ValueChanged<League> onOpenLeague;
   final VoidCallback onOpenGame;
+  final VoidCallback onOpenShootout;
 
   @override
   State<PredictionHomeScreen> createState() => _PredictionHomeScreenState();
@@ -92,7 +95,10 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
         onOpenLeague: widget.onOpenLeague,
       ),
       1 => const _PickTab(),
-      _ => _GamesTab(onOpenGame: widget.onOpenGame),
+      _ => _GamesTab(
+        onOpenGame: widget.onOpenGame,
+        onOpenShootout: widget.onOpenShootout,
+      ),
     };
   }
 }
@@ -546,87 +552,11 @@ String _monthDayLabel(DateTime day) {
   return '${months[day.month - 1]} ${day.day}';
 }
 
-class _PickTab extends StatefulWidget {
+class _PickTab extends StatelessWidget {
   const _PickTab();
 
   @override
-  State<_PickTab> createState() => _PickTabState();
-}
-
-class _PickTabState extends State<_PickTab> {
-  String? _selectedKey;
-
-  void _openPickSheet({
-    required String key,
-    required String question,
-    required String selectedPick,
-    required int price,
-    required Color color,
-  }) {
-    setState(() => _selectedKey = key);
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.72),
-      builder: (context) => _PickConfirmSheet(
-        question: question,
-        selectedPick: selectedPick,
-        price: price,
-        color: color,
-      ),
-    ).whenComplete(() {
-      if (mounted) setState(() => _selectedKey = null);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<PredictionCubit, PredictionState>(
-      builder: (context, state) {
-        if (state.loading) return const _PickSkeleton();
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 28),
-          children: [
-            const _SportsTabs(),
-            const SizedBox(height: 10),
-            const _MarketFilterTabs(),
-            const SizedBox(height: 14),
-            _MatchMarketCard(selectedKey: _selectedKey, onPick: _openPickSheet),
-            const SizedBox(height: 12),
-            _BinaryMarketCard(
-              badge: 'IPL',
-              badgeColor: const Color(0xff2f55b8),
-              question: 'Will RCB qualify for Playoff?',
-              league: 'IPL',
-              marketType: 'Event market',
-              volume: 'Volume 850 Oz',
-              closes: 'Closes: Matchday end',
-              selectedKey: _selectedKey,
-              onPick: _openPickSheet,
-            ),
-            const SizedBox(height: 12),
-            _BinaryMarketCard(
-              badge: 'LY',
-              badgeColor: const Color(0xff143a82),
-              question: 'Will Lamine Yamal play in the World Cup?',
-              league: 'FIFA',
-              marketType: 'Player prop',
-              volume: 'Volume 1.2K Oz',
-              closes: 'Result pending',
-              selectedKey: _selectedKey,
-              onPick: _openPickSheet,
-            ),
-            const SizedBox(height: 12),
-            _FuturesMarketCard(
-              selectedKey: _selectedKey,
-              onPick: _openPickSheet,
-            ),
-          ],
-        );
-      },
-    );
-  }
+  Widget build(BuildContext context) => const PicksHomeView();
 }
 
 class _SportsTabs extends StatelessWidget {
@@ -1778,9 +1708,10 @@ class _PickSkeleton extends StatelessWidget {
 }
 
 class _GamesTab extends StatelessWidget {
-  const _GamesTab({required this.onOpenGame});
+  const _GamesTab({required this.onOpenGame, required this.onOpenShootout});
 
   final VoidCallback onOpenGame;
+  final VoidCallback onOpenShootout;
 
   @override
   Widget build(BuildContext context) {
@@ -1794,6 +1725,15 @@ class _GamesTab extends StatelessWidget {
           accent: Cyber.cyan,
           featured: true,
           onTap: onOpenGame,
+        ),
+        const SizedBox(height: 12),
+        _GameTile(
+          title: 'PENALTY SHOOTOUT',
+          subtitle: 'SUDDEN-DEATH SPOT KICKS',
+          icon: Icons.gps_fixed,
+          accent: Cyber.lime,
+          featured: true,
+          onTap: onOpenShootout,
         ),
         const SizedBox(height: 12),
         const _GameTile(
@@ -1867,6 +1807,7 @@ class _GameTile extends StatelessWidget {
                 ? _FeaturedBody(
                     title: title,
                     subtitle: subtitle,
+                    icon: icon,
                     accent: accent,
                     onTap: onTap,
                   )
@@ -1952,12 +1893,14 @@ class _FeaturedBody extends StatelessWidget {
   const _FeaturedBody({
     required this.title,
     required this.subtitle,
+    required this.icon,
     required this.accent,
     required this.onTap,
   });
 
   final String title;
   final String subtitle;
+  final IconData icon;
   final Color accent;
   final VoidCallback? onTap;
 
@@ -1970,7 +1913,7 @@ class _FeaturedBody extends StatelessWidget {
           top: 8,
           bottom: 8,
           child: Icon(
-            Icons.sports_soccer,
+            icon,
             size: 112,
             color: accent.withValues(alpha: 0.07),
           ),
@@ -1986,7 +1929,7 @@ class _FeaturedBody extends StatelessWidget {
               Row(
                 children: [
                   _GameIconBox(
-                    icon: Icons.sports_soccer,
+                    icon: icon,
                     accent: accent,
                     size: 52,
                     iconSize: 28,

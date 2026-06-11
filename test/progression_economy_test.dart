@@ -43,6 +43,55 @@ void main() {
     expect(formatCountdown(cooldown.remaining), '22h 0m');
   });
 
+  test('match XP rewards wins, small draw, and floors losses', () {
+    // Win scales by margin + shutout, capped at 25.
+    expect(
+      calculateMatchXP(resultLabel: 'Victory', playerScore: 1, opponentScore: 0),
+      18, // 10 + 1*3 + 5 shutout
+    );
+    expect(
+      calculateMatchXP(resultLabel: 'Victory', playerScore: 5, opponentScore: 1),
+      22, // 10 + 4*3, no shutout
+    );
+    // A level score after 4 rounds is a small positive draw award.
+    expect(
+      calculateMatchXP(resultLabel: 'Draw', playerScore: 2, opponentScore: 2),
+      4,
+    );
+    // Defeats lose XP scaled by conceded margin, floored at -15.
+    expect(
+      calculateMatchXP(resultLabel: 'Defeat', playerScore: 0, opponentScore: 1),
+      -7,
+    );
+    expect(
+      calculateMatchXP(resultLabel: 'Defeat', playerScore: 0, opponentScore: 9),
+      -15,
+    );
+  });
+
+  test('shootout XP and coins are smaller, margin-scaled, never punish', () {
+    expect(calculateShootoutXP(won: true, margin: 1), 8);
+    expect(calculateShootoutXP(won: true, margin: 2), 10);
+    expect(calculateShootoutXP(won: true, margin: 5), 12); // capped at 12
+    expect(calculateShootoutXP(won: false, margin: 3), 0);
+    expect(shootoutCoins(true), 20);
+    expect(shootoutCoins(false), 5);
+  });
+
+  test('shootout opponent fields a full five-man squad with a keeper', () {
+    final cpu = generateShootoutOpponent(
+      6,
+      attackers,
+      defenders,
+      goalkeepers,
+      random: Random(7),
+    );
+    expect(cpu.shooters.length, 5);
+    expect(cpu.shooters.last.isGoalkeeper, isTrue);
+    expect(cpu.keeper.isGoalkeeper, isTrue);
+    expect(cpu.shooters.last.id, cpu.keeper.id);
+  });
+
   test('starter pack is a legal playable deck', () {
     final result = buildStarterPack(attackers, defenders, actionCards);
     expect(result.playerCards.length, 5);

@@ -10,9 +10,8 @@ const tutorialKeys = [
   'play',
   'shot-meter',
   'round-result',
-  'match-end',
-  'penalty',
   'final',
+  'shootout',
 ];
 
 class TutorialStepData {
@@ -35,7 +34,7 @@ const homeTutorialSteps = [
   TutorialStepData(
     title: 'Welcome to PITCH/DUEL',
     body:
-        'A fast 4-round card duel. Stats, scenarios and a touch of luck decide each round — outscore the CPU.',
+        'A fast 4-round card duel. Stats, scenarios and a touch of luck decide each round.',
     icon: Icons.sports_soccer,
     accent: Cyber.cyan,
     hint: '4 ROUNDS  ·  1 MOVE EACH',
@@ -53,7 +52,8 @@ const homeTutorialSteps = [
 const deckTutorialSteps = [
   TutorialStepData(
     title: 'Build Your Squad',
-    body: 'Pick 2 attackers, 2 defenders, and 6 action cards. Tap players to add/remove. Lock formation when ready.',
+    body:
+        'Pick 2 attackers, 2 defenders, and 6 action cards. Tap players to add/remove. Lock formation when ready.',
     icon: Icons.style,
     hint: '2 ATK  +  2 DEF  +  6 ACTION = READY',
   ),
@@ -94,7 +94,8 @@ const scenarioTutorialSteps = [
   ),
   TutorialStepData(
     title: 'Your Role This Round',
-    body: 'The banner shows ATTACKER or DEFENDER. Pick cards that match your role.',
+    body:
+        'The banner shows ATTACKER or DEFENDER. Pick cards that match your role.',
     hint: 'ATTACK ↔ DEFENSE (alternates each round)',
   ),
 ];
@@ -119,45 +120,32 @@ const playTutorialSteps = [
 const resultTutorialSteps = [
   TutorialStepData(
     title: 'Round Result',
-    body: 'The outcome shows: GOAL, SAVED, MISSED, FOUL, or RED CARD. Used players appear marked and are locked for the match.',
+    body:
+        'The outcome shows: GOAL, SAVED, MISSED, FOUL, or RED CARD. Used players appear marked and are locked for the match.',
     icon: Icons.sports_soccer,
     hint: 'GOAL ✓  ·  SAVED ✓  ·  MISSED ✗  ·  FOUL ⚠️  ·  RED CARD 🔴',
   ),
   TutorialStepData(
     title: 'Next Round Begins',
-    body: 'Tap NEXT ROUND to continue. Roles automatically flip: attack ↔ defense. Repeat for 4 rounds.',
+    body:
+        'Tap NEXT ROUND to continue. Roles automatically flip: attack ↔ defense. Repeat for 4 rounds.',
     icon: Icons.arrow_forward,
     hint: 'ROUND 2 → ROLE SWITCHES → REPEAT 3 MORE TIMES',
   ),
 ];
 
-const matchEndTutorialSteps = [
-  TutorialStepData(
-    title: 'Match Result',
-    body: 'After 4 rounds, you see VICTORY, DEFEAT, or DEADLOCK. The log shows each round\'s scenario and outcome.',
-    icon: Icons.emoji_events,
-    hint: 'DEADLOCK = TIE  →  PENALTIES BEGIN',
-  ),
-  TutorialStepData(
-    title: 'Penalty Shootout (If Tied)',
-    body: 'A draw triggers a penalty shootout: best of 5 kicks, then sudden death if still tied.',
-    icon: Icons.sports_soccer,
-    hint: 'FIRST TO LEAD AFTER EQUAL KICKS WINS',
-  ),
-];
-
-const penaltyTutorialSteps = [
+const shootoutTutorialSteps = [
   TutorialStepData(
     title: 'Penalty Shootout',
     body:
-        'Tap TAKE KICK on your turn. CPU auto-kicks. Each kick has ~70% chance to score. First to lead after equal attempts wins.',
+        'Your five squad players each take one kick — ratings tip the duel. Tap a goal zone to aim, then SHOOT. On CPU kicks, pick where your keeper dives.',
     icon: Icons.sports_soccer,
-    hint: 'YOUR TURN → TAP KICK  ·  CPU AUTO-KICKS',
+    hint: '5 KICKS EACH  ·  SHOOT & DIVE',
   ),
   TutorialStepData(
     title: 'Sudden Death Rules',
     body:
-        'After 5 kicks each, if tied, continue sudden death: next goal wins. Best of 5 first, then sudden death.',
+        'Still level after 5 kicks each? Sudden death cycles your lineup: next unanswered goal wins.',
     icon: Icons.whatshot,
     hint: 'BEST OF 5 → SUDDEN DEATH → NEXT GOAL WINS',
   ),
@@ -166,13 +154,15 @@ const penaltyTutorialSteps = [
 const finalTutorialSteps = [
   TutorialStepData(
     title: 'Final Score & MVP',
-    body: 'Final scoreline appears with MVP (your goal scorer). Penalties shown if applicable.',
+    body:
+        'Final scoreline appears with MVP (your goal scorer). A level score after 4 rounds is a draw.',
     icon: Icons.emoji_events,
     hint: 'FINAL SCORE  ·  MVP AWARDED',
   ),
   TutorialStepData(
     title: 'What\'s Next?',
-    body: 'REMATCH plays again with the same deck. HOME exits to menu. DECK tunes your squad.',
+    body:
+        'REMATCH plays again with the same deck. HOME exits to menu. DECK tunes your squad.',
     icon: Icons.home,
     hint: 'REMATCH  ·  HOME  ·  DECK (TAP ICON)',
   ),

@@ -14,6 +14,7 @@ import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/team_logo.dart';
 import 'widgets/score_prediction_picker.dart';
+import 'widgets/settlement_reveal.dart';
 
 /// The prediction quiz for one fixture, built as a gamified single-question
 /// flow that mirrors the design reference:
@@ -24,8 +25,9 @@ import 'widgets/score_prediction_picker.dart';
 ///   • a full-screen SUBMITTED celebration when the quiz is sent.
 ///
 /// Editable until kickoff; once live/finished the same paginated UI becomes a
-/// read-only review (settled answers show correct/wrong), with a demo
-/// SETTLE & CLAIM action on the final page that credits coins.
+/// read-only review (settled answers show correct/wrong). Finished settleable
+/// matches dock a REVEAL RESULTS action that plays the settlement reveal
+/// cinematic ([SettlementRevealOverlay]) and credits the earned XP.
 class MatchPredictionScreen extends StatefulWidget {
   const MatchPredictionScreen({required this.match, super.key});
 
@@ -45,12 +47,17 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
   bool _savingUpdates = false;
   int _index = 0;
   final Map<String, int> _answers = {};
+  final Set<String> _interactedScoreQuestions = {};
   Map<String, int> _savedAnswers = {};
   final Map<String, PredictionMultiplier> _multipliersByQuestion = {};
   Map<String, PredictionMultiplier> _savedMultipliersByQuestion = {};
   final Set<String> _expandedQuestions = {};
   Map<String, PredictionVoteBreakdown> _votesByQuestion = {};
   List<MatchPredictionLeaderboardEntry> _leaderboard = const [];
+  List<SettlementQuestionResult>? _settlementResults;
+  int _settlementXp = 0;
+  int _settlementXpBefore = 0;
+  double? _settlementBeatenShare;
   Timer? _ticker;
   DateTime _now = DateTime.now();
   _QuizRevealPhase _revealPhase = _QuizRevealPhase.ready;
@@ -116,6 +123,16 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
       _votesByQuestion = votes;
       _leaderboard = leaderboard;
       _ensureScoreDefaults();
+      if (existing != null) {
+        _interactedScoreQuestions.addAll(
+          _questions
+              .where(
+                (q) =>
+                    q.isScorePrediction && existing.answers.containsKey(q.id),
+              )
+              .map((q) => q.id),
+        );
+      }
       _savedAnswers = Map<String, int>.from(_answers);
       _savedMultipliersByQuestion = Map<String, PredictionMultiplier>.from(
         _multipliersByQuestion,
@@ -128,6 +145,8 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     });
     if (_questions.isNotEmpty && existing == null) {
       _runForwardReveal();
+    } else if (existing != null && _canSettle(existing)) {
+      _startSettlementReveal(existing);
     }
   }
 
@@ -184,6 +203,19 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
   int get _potentialXp =>
       _questions.fold(0, (sum, question) => sum + _boostedRewardFor(question));
 
+  /// XP "in the pot" so far: boosted rewards of the questions the user has
+  /// actually answered. Score questions only count once touched, so the 0-0
+  /// default doesn't pre-fill the pot.
+  int get _bankedXp => _questions.fold(
+    0,
+    (sum, question) =>
+        sum + (_questionBanked(question) ? _boostedRewardFor(question) : 0),
+  );
+
+  bool _questionBanked(QuizQuestion question) => question.isScorePrediction
+      ? _interactedScoreQuestions.contains(question.id)
+      : _answers.containsKey(question.id);
+
   int _boostedRewardFor(QuizQuestion question) =>
       _multipliersByQuestion[question.id]?.applyTo(question.reward) ??
       question.reward;
@@ -214,6 +246,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     final (currentHome, currentAway) = _scoreFor(questionId);
     playSound(SoundEffect.uiTap);
     setState(() {
+      _interactedScoreQuestions.add(questionId);
       _answers[questionId] = ScoreAnswer.encode(
         home ?? currentHome,
         away ?? currentAway,
@@ -326,13 +359,54 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     });
   }
 
-  Future<void> _settle() async {
-    final reward = await context.read<PredictionCubit>().settle(_match.id);
-    if (!mounted) return;
-    if (reward > 0) {
-      context.read<GameBloc>().add(CoinsAdded(reward));
-      playSound(SoundEffect.coins);
+  /// Scores the stored answers locally (presentation), persists the
+  /// settlement, credits the XP to progression, then plays the reveal
+  /// cinematic. Rewards are credited up front so skipping changes nothing.
+  Future<void> _startSettlementReveal(UserPrediction prediction) async {
+    if (_settlementResults != null) return;
+    final quiz = _quiz;
+    if (quiz == null) return;
+    final results = <SettlementQuestionResult>[];
+    var correctCount = 0;
+    var totalXp = 0;
+    for (final question in quiz.questions) {
+      final picked = prediction.answers[question.id];
+      final correctAnswer = _correctAnswer(question);
+      final correct =
+          picked != null && correctAnswer != null && picked == correctAnswer;
+      final multiplier = prediction.multipliersByQuestion[question.id];
+      final earned = correct
+          ? (multiplier?.applyTo(question.reward) ?? question.reward)
+          : 0;
+      if (correct) correctCount++;
+      totalXp += earned;
+      results.add(
+        SettlementQuestionResult(
+          text: question.text,
+          pickedLabel: _answerLabel(question, picked),
+          correctLabel: _answerLabel(question, correctAnswer),
+          correct: correct,
+          earnedXp: earned,
+          multiplier: multiplier,
+        ),
+      );
     }
+    final xpBefore = context.read<GameBloc>().state.progression.totalXP;
+    final beatenShare = _leaderboard.isEmpty
+        ? null
+        : _leaderboard.where((e) => correctCount >= e.correct).length /
+              _leaderboard.length;
+    final earnedXp = await context.read<PredictionCubit>().settle(_match.id);
+    if (!mounted) return;
+    if (earnedXp > 0) {
+      context.read<GameBloc>().add(PredictionXpAdded(earnedXp));
+    }
+    setState(() {
+      _settlementResults = results;
+      _settlementXp = totalXp;
+      _settlementXpBefore = xpBefore;
+      _settlementBeatenShare = beatenShare;
+    });
   }
 
   @override
@@ -354,6 +428,19 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
                         _content(state.predictionFor(_match.id)),
                   ),
           ),
+          if (_settlementResults != null)
+            Positioned.fill(
+              child: SettlementRevealOverlay(
+                match: _match,
+                results: _settlementResults!,
+                totalXp: _settlementXp,
+                xpBefore: _settlementXpBefore,
+                beatenShare: _settlementBeatenShare,
+                onDone: () {
+                  if (mounted) setState(() => _settlementResults = null);
+                },
+              ),
+            ),
           if (_submitting)
             Positioned.fill(
               child: _SubmittedOverlay(
@@ -413,17 +500,48 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     final question = _questions[_index];
     final primary = _primaryButton(prediction, settled);
 
-    return Column(
+    return Stack(
+      fit: StackFit.expand,
       children: [
-        _QuizTopBar(
-          onBack: () => Navigator.of(context).popUntil((r) => r.isFirst),
-          onLeaderboard: _showMatchLeaderboard,
-        ),
-        const SizedBox(height: 20),
-        _QuizHeader(match: _match),
-        _LockLine(match: _match, untilLock: _untilLock),
-        Expanded(
-          child: AnimatedBuilder(
+        if (question.backgroundAsset != null &&
+            _revealPhase != _QuizRevealPhase.numberIntro)
+          Positioned.fill(
+            child: Opacity(
+              opacity: _QuizQuestionPanelFrame.backgroundOpacity,
+              child: Image.asset(
+                question.backgroundAsset!,
+                key: ValueKey(question.backgroundAsset),
+                fit: BoxFit.cover,
+                alignment: Alignment.center,
+                filterQuality: FilterQuality.medium,
+              ),
+            ),
+          ),
+        Column(
+          children: [
+            _QuizChromeShell(
+              edge: _QuizChromeEdge.top,
+              child: Column(
+                children: [
+                  _QuizTopBar(
+                    onBack: () =>
+                        Navigator.of(context).popUntil((r) => r.isFirst),
+                    onLeaderboard: _showMatchLeaderboard,
+                  ),
+                  const SizedBox(height: 20),
+                  _QuizHeader(match: _match),
+                  _LockLine(
+                    match: _match,
+                    untilLock: _untilLock,
+                    trailing: _editable
+                        ? _XpPotTicker(value: _bankedXp, max: _potentialXp)
+                        : null,
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: AnimatedBuilder(
             animation: Listenable.merge([_questionReveal, _optionsReveal]),
             builder: (context, _) {
               final questionProgress = switch (_revealPhase) {
@@ -501,35 +619,52 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
               );
             },
           ),
-        ),
-        _BottomDock(
-          questions: _questions,
-          answers: _answers,
-          index: _index,
-          canGoPrevious: _index > 0 && !_revealing,
-          onPrevious: _previous,
-          primary: primary,
-          helper: _helperText(prediction, settled),
+            ),
+            _QuizChromeShell(
+              edge: _QuizChromeEdge.bottom,
+              child: _BottomDock(
+                questions: _questions,
+                answers: _answers,
+                index: _index,
+                canGoPrevious: _index > 0 && !_revealing,
+                onPrevious: _previous,
+                primary: primary,
+                helper: _helperText(prediction, settled),
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
+
+  bool _canSettle(UserPrediction prediction) =>
+      _match.status == MatchStatus.finished &&
+      (_quiz?.settleable ?? false) &&
+      prediction.status != PredictionStatus.settled;
 
   Widget _reviewContent(UserPrediction prediction) {
     final editable = _editable;
     final readOnly = !editable;
     return Column(
       children: [
-        _QuizTopBar(
-          onBack: () => Navigator.of(context).popUntil((r) => r.isFirst),
-          onLeaderboard: _showMatchLeaderboard,
-        ),
-        const SizedBox(height: 20),
-        _QuizHeader(match: _match),
-        _LockLine(match: _match, untilLock: _untilLock),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
-          child: _ReviewNotice(text: _reviewNotice(prediction)),
+        _QuizChromeShell(
+          edge: _QuizChromeEdge.top,
+          child: Column(
+            children: [
+              _QuizTopBar(
+                onBack: () => Navigator.of(context).popUntil((r) => r.isFirst),
+                onLeaderboard: _showMatchLeaderboard,
+              ),
+              const SizedBox(height: 20),
+              _QuizHeader(match: _match),
+              _LockLine(match: _match, untilLock: _untilLock),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
+                child: _ReviewNotice(text: _reviewNotice(prediction)),
+              ),
+            ],
+          ),
         ),
         Expanded(
           child: ListView.separated(
@@ -577,10 +712,23 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
           ),
         ),
         if (editable)
-          _ReviewSaveDock(
-            enabled: _hasDraftChanges && _allAnswered && !_savingUpdates,
-            saving: _savingUpdates,
-            onSave: _saveUpdates,
+          _QuizChromeShell(
+            edge: _QuizChromeEdge.bottom,
+            child: _ReviewSaveDock(
+              enabled: _hasDraftChanges && _allAnswered && !_savingUpdates,
+              saving: _savingUpdates,
+              onSave: _saveUpdates,
+            ),
+          )
+        else if (_canSettle(prediction))
+          _QuizChromeShell(
+            edge: _QuizChromeEdge.bottom,
+            child: _SettleDock(
+              onSettle: () {
+                playSound(SoundEffect.uiTap);
+                _startSettlementReveal(prediction);
+              },
+            ),
           ),
       ],
     );
@@ -589,6 +737,9 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
   String _reviewNotice(UserPrediction prediction) {
     if (_editable) {
       return 'You can update answers until match starts.';
+    }
+    if (_canSettle(prediction)) {
+      return 'Results are in. Reveal your verdicts to claim XP.';
     }
     if (_match.status == MatchStatus.finished ||
         prediction.status == PredictionStatus.settled) {
@@ -599,30 +750,25 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
 
   void _showMatchLeaderboard() {
     playSound(SoundEffect.uiTap);
-    showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) =>
-          _MatchLeaderboardSheet(match: _match, entries: _leaderboard),
+    final prediction = context.read<PredictionCubit>().state.predictionFor(
+      _match.id,
+    );
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => _MatchLeaderboardScreen(
+          match: _match,
+          quiz: _quiz,
+          prediction: prediction,
+          entries: _leaderboard,
+        ),
+      ),
     );
   }
 
   /// The forward CTA's state for the current page. NEXT pages forward; the
-  /// final page becomes SUBMIT (editable), SETTLE & CLAIM (finished demo) or
-  /// DONE (locked review).
+  /// final page becomes SUBMIT (editable) or DONE (locked review). Settlement
+  /// lives on the review screen's REVEAL RESULTS dock, not here.
   _PrimaryAction _primaryButton(UserPrediction? prediction, bool settled) {
-    final canSettle =
-        _match.status == MatchStatus.finished &&
-        (_quiz?.settleable ?? false) &&
-        prediction != null &&
-        !settled;
-    if (_isLast && canSettle) {
-      return _PrimaryAction(
-        'SETTLE & CLAIM',
-        enabled: !_revealing,
-        onTap: _revealing ? null : _settle,
-      );
-    }
     if (!_editable) {
       if (_isLast) {
         return _PrimaryAction(
@@ -663,7 +809,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     if (settled) {
       final correct = prediction?.correctCount ?? 0;
       final reward = prediction?.rewardEarned ?? 0;
-      return '$correct / ${_questions.length} correct  ·  +$reward COINS';
+      return '$correct / ${_questions.length} correct  ·  +$reward XP';
     }
     if (!_editable) {
       return 'Predictions are locked — match in progress';
@@ -672,6 +818,47 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
       return 'All ${_questions.length} futures locked in - $_remainingBoostText';
     }
     return 'Complete all ${_questions.length} futures - $_remainingBoostText';
+  }
+}
+
+// ── Top / bottom chrome that fades into the question backdrop ─────────────────
+enum _QuizChromeEdge { top, bottom }
+
+class _QuizChromeShell extends StatelessWidget {
+  const _QuizChromeShell({required this.edge, required this.child});
+
+  final _QuizChromeEdge edge;
+  final Widget child;
+
+  static const _opacity = 0.92;
+  static const _fadeHeight = 40.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final solid = Cyber.bg.withValues(alpha: _opacity);
+    final clear = Cyber.bg.withValues(alpha: 0);
+    final gradient = edge == _QuizChromeEdge.top
+        ? LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [solid, solid, solid.withValues(alpha: 0.35), clear],
+            stops: const [0, 0.58, 0.82, 1],
+          )
+        : LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [clear, solid.withValues(alpha: 0.35), solid, solid],
+            stops: const [0, 0.18, 0.42, 1],
+          );
+
+    final fadePad = edge == _QuizChromeEdge.top
+        ? const EdgeInsets.only(bottom: _fadeHeight)
+        : const EdgeInsets.only(top: _fadeHeight);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(gradient: gradient),
+      child: Padding(padding: fadePad, child: child),
+    );
   }
 }
 
@@ -687,10 +874,6 @@ class _QuizTopBar extends StatelessWidget {
     return Container(
       height: 80,
       padding: const EdgeInsets.fromLTRB(16, 16, 24, 16),
-      decoration: BoxDecoration(
-        color: const Color(0xff1a253a),
-        border: const Border(bottom: BorderSide(color: Cyber.cyan, width: 1)),
-      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -875,9 +1058,17 @@ class _CornerBracketsPainter extends CustomPainter {
 
 // ── Lock countdown line ───────────────────────────────────────────────────────
 class _LockLine extends StatelessWidget {
-  const _LockLine({required this.match, required this.untilLock});
+  const _LockLine({
+    required this.match,
+    required this.untilLock,
+    this.trailing,
+  });
   final SportMatch match;
   final Duration untilLock;
+
+  /// Optional second line (the potential-XP ticker while answering),
+  /// stacked under the lock countdown.
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -891,19 +1082,111 @@ class _LockLine extends StatelessWidget {
       _ => (Icons.lock_outline, 'PREDICTIONS LOCKED', Cyber.danger),
     };
 
+    final lockLine = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 13, color: color),
+        const SizedBox(width: 6),
+        Text(
+          text,
+          style: Cyber.label(
+            11,
+            color: color,
+            letterSpacing: 1.4,
+          ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+        ),
+      ],
+    );
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 2),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: trailing == null
+          ? Center(child: lockLine)
+          : Column(children: [lockLine, const SizedBox(height: 7), trailing!]),
+    );
+  }
+}
+
+// ── Potential-XP pot ticker ───────────────────────────────────────────────────
+/// The running "pot" in the quiz header: counts up as answers lock and
+/// boosters land, toward the quiz's boosted max. Gold = reward, tabular
+/// figures, a brief pulse on gains — no persistent glow.
+class _XpPotTicker extends StatefulWidget {
+  const _XpPotTicker({required this.value, required this.max});
+
+  final int value;
+  final int max;
+
+  @override
+  State<_XpPotTicker> createState() => _XpPotTickerState();
+}
+
+class _XpPotTickerState extends State<_XpPotTicker>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 140),
+      reverseDuration: const Duration(milliseconds: 320),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _XpPotTicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.value > oldWidget.value) {
+      _pulse.forward(from: 0).then((_) {
+        if (mounted) _pulse.reverse();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: widget.value.toDouble()),
+      duration: const Duration(milliseconds: 480),
+      curve: Curves.easeOutCubic,
+      builder: (context, shown, _) => Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: color),
-          const SizedBox(width: 6),
           Text(
-            text,
+            'POTENTIAL',
+            style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.4),
+          ),
+          const SizedBox(width: 5),
+          const Icon(Icons.bolt, size: 13, color: Cyber.gold),
+          const SizedBox(width: 2),
+          ScaleTransition(
+            scale: Tween(
+              begin: 1.0,
+              end: 1.2,
+            ).animate(CurvedAnimation(parent: _pulse, curve: Curves.easeOut)),
+            child: Text(
+              '${shown.round()}',
+              style: Cyber.display(
+                12,
+                color: Cyber.gold,
+                letterSpacing: 0.6,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            ),
+          ),
+          Text(
+            '/${widget.max} XP',
             style: Cyber.label(
-              11,
-              color: color,
-              letterSpacing: 1.4,
+              10,
+              color: Cyber.muted,
+              letterSpacing: 1.2,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
         ],
@@ -1412,112 +1695,547 @@ class _ReviewSaveDock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.bottomCenter,
-          end: Alignment.topCenter,
-          colors: [Color(0xFF010517), Color(0xF2010517), Color(0x00010517)],
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 18, 16, 22),
-          child: _QuizButton(
-            label: saving ? 'SAVING...' : 'SAVE UPDATES',
-            focal: enabled,
-            enabled: enabled,
-            onTap: onSave,
-          ),
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 22),
+        child: _QuizButton(
+          label: saving ? 'SAVING...' : 'SAVE UPDATES',
+          focal: enabled,
+          enabled: enabled,
+          onTap: onSave,
         ),
       ),
     );
   }
 }
 
-class _MatchLeaderboardSheet extends StatelessWidget {
-  const _MatchLeaderboardSheet({required this.match, required this.entries});
+/// Focal dock on a finished, settleable review: launches the settlement
+/// reveal cinematic.
+class _SettleDock extends StatelessWidget {
+  const _SettleDock({required this.onSettle});
 
-  final SportMatch match;
-  final List<MatchPredictionLeaderboardEntry> entries;
+  final VoidCallback onSettle;
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Container(
-        margin: const EdgeInsets.all(14),
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-        decoration: BoxDecoration(
-          color: const Color(0xff11182a),
-          border: Border.all(color: Cyber.cyan.withValues(alpha: 0.35)),
-          boxShadow: Cyber.glow(Cyber.cyan, alpha: 0.18, blur: 16),
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 22),
+        child: _QuizButton(
+          label: 'REVEAL RESULTS',
+          focal: true,
+          enabled: true,
+          onTap: onSettle,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
+      ),
+    );
+  }
+}
+
+enum _MatchLeaderboardMode {
+  notEntered,
+  editable,
+  locked,
+  revealReady,
+  settled,
+  closed,
+}
+
+const double _matchLeaderboardCardHeight = 70;
+
+class _MatchLeaderboardScreen extends StatelessWidget {
+  const _MatchLeaderboardScreen({
+    required this.match,
+    required this.quiz,
+    required this.prediction,
+    required this.entries,
+  });
+
+  final SportMatch match;
+  final PredictionQuiz? quiz;
+  final UserPrediction? prediction;
+  final List<MatchPredictionLeaderboardEntry> entries;
+
+  _MatchLeaderboardMode get _mode {
+    if (prediction?.status == PredictionStatus.settled) {
+      return _MatchLeaderboardMode.settled;
+    }
+    if (match.status == MatchStatus.finished) {
+      if (prediction != null && (quiz?.settleable ?? false)) {
+        return _MatchLeaderboardMode.revealReady;
+      }
+      return _MatchLeaderboardMode.closed;
+    }
+    if (match.status == MatchStatus.live ||
+        prediction?.status == PredictionStatus.locked) {
+      return _MatchLeaderboardMode.locked;
+    }
+    if (prediction != null) return _MatchLeaderboardMode.editable;
+    return _MatchLeaderboardMode.notEntered;
+  }
+
+  MatchPredictionLeaderboardEntry? get _userEntry {
+    for (final entry in entries) {
+      if (entry.name.toLowerCase() == 'you') return entry;
+    }
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final totalQuestions = quiz?.questions.length ?? 0;
+    final user = _userEntry;
+
+    return Scaffold(
+      backgroundColor: Cyber.bg,
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: CyberPlainBackground(child: SizedBox.expand()),
+          ),
+          SafeArea(
+            child: Column(
               children: [
-                const Icon(Icons.emoji_events_outlined, color: Cyber.gold),
-                const SizedBox(width: 9),
-                Expanded(
-                  child: Text(
-                    'MATCH LEADERBOARD',
-                    style: Cyber.display(
-                      15,
-                      color: Colors.white,
-                      letterSpacing: 1.1,
-                    ),
-                  ),
+                _MatchLeaderboardTopBar(
+                  onBack: () => Navigator.of(context).pop(),
                 ),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close, color: Cyber.muted),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 22),
+                    children: [
+                      _MatchLeaderboardStats(
+                        user: user,
+                        prediction: prediction,
+                        entries: entries,
+                        totalQuestions: totalQuestions,
+                      ),
+                      const SizedBox(height: 16),
+                      _RankSectionHeader(mode: _mode, count: entries.length),
+                      const SizedBox(height: 10),
+                      for (final entry in entries)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 9),
+                          child: _MatchRankRow(entry: entry),
+                        ),
+                      if (entries.isEmpty) const _EmptyLeaderboard(),
+                    ],
+                  ),
                 ),
               ],
             ),
-            Text(
-              '${match.home.shortName} vs ${match.away.shortName}',
-              style: Cyber.body(12, color: Cyber.muted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MatchLeaderboardTopBar extends StatelessWidget {
+  const _MatchLeaderboardTopBar({required this.onBack});
+
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 70,
+      padding: const EdgeInsets.fromLTRB(8, 10, 16, 10),
+      decoration: BoxDecoration(
+        color: const Color(0xff11182a).withValues(alpha: 0.96),
+        border: Border(
+          bottom: BorderSide(color: Cyber.cyan.withValues(alpha: 0.34)),
+        ),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: onBack,
+            icon: const Icon(Icons.arrow_back, color: Color(0xffd9e5f6)),
+          ),
+          const SizedBox(width: 2),
+          const Icon(Icons.emoji_events_outlined, color: Cyber.gold, size: 22),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Text(
+              'MATCH LEADERBOARD',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Cyber.display(15, color: Colors.white, letterSpacing: 1.1),
             ),
-            const SizedBox(height: 14),
-            for (final entry in entries.take(6))
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 28,
-                      child: Text(
-                        '#${entry.rank}',
-                        style: Cyber.display(12, color: Cyber.cyan),
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        entry.name,
-                        style: Cyber.body(13.5, weight: FontWeight.w700),
-                      ),
-                    ),
-                    Text(
-                      '${entry.correct} CORRECT',
-                      style: Cyber.label(
-                        9,
-                        color: Cyber.muted,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      '${entry.points}',
-                      style: Cyber.display(13, color: Cyber.gold),
-                    ),
-                  ],
-                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MatchLeaderboardStats extends StatelessWidget {
+  const _MatchLeaderboardStats({
+    required this.user,
+    required this.prediction,
+    required this.entries,
+    required this.totalQuestions,
+  });
+
+  final MatchPredictionLeaderboardEntry? user;
+  final UserPrediction? prediction;
+  final List<MatchPredictionLeaderboardEntry> entries;
+  final int totalQuestions;
+
+  @override
+  Widget build(BuildContext context) {
+    final predictions = prediction?.answers.length ?? user?.correct ?? 0;
+    return Row(
+      children: [
+        Expanded(
+          child: _LeaderboardStatCard(
+            label: 'YOUR RANK',
+            value: user == null ? '--' : '#${user!.rank}',
+            color: Cyber.cyan,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _LeaderboardStatCard(
+            label: 'PREDICTIONS',
+            value: totalQuestions == 0
+                ? '$predictions'
+                : '$predictions/$totalQuestions',
+            color: Cyber.gold,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _LeaderboardStatCard(
+            label: 'PLAYERS',
+            value: '${entries.length}',
+            color: Cyber.lime,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RankSectionHeader extends StatelessWidget {
+  const _RankSectionHeader({required this.mode, required this.count});
+
+  final _MatchLeaderboardMode mode;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = switch (mode) {
+      _MatchLeaderboardMode.notEntered => 'JOIN BEFORE LOCK',
+      _MatchLeaderboardMode.editable => 'LIVE STANDINGS PREVIEW',
+      _MatchLeaderboardMode.locked => 'LOCKED PICKS',
+      _MatchLeaderboardMode.revealReady => 'FINAL RANKS READY',
+      _MatchLeaderboardMode.settled => 'FINAL RESULTS',
+      _MatchLeaderboardMode.closed => 'MATCH CLOSED',
+    };
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1.0),
+          ),
+        ),
+        Text(
+          '$count PLAYERS',
+          style: Cyber.label(9, color: Cyber.cyan, letterSpacing: 0.8),
+        ),
+      ],
+    );
+  }
+}
+
+class _MatchRankRow extends StatelessWidget {
+  const _MatchRankRow({required this.entry});
+
+  final MatchPredictionLeaderboardEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final isUser = entry.name.toLowerCase() == 'you';
+    final rankColor = entry.rank <= 3 ? Cyber.gold : Cyber.cyan;
+    final accent = isUser ? Cyber.cyan : rankColor;
+    return SizedBox(
+      height: _matchLeaderboardCardHeight,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: isUser
+              ? Cyber.cyan.withValues(alpha: 0.10)
+              : Cyber.panel.withValues(alpha: 0.34),
+          border: Border.all(
+            color: isUser
+                ? Cyber.cyan.withValues(alpha: 0.55)
+                : Cyber.line.withValues(alpha: entry.rank <= 3 ? 0.24 : 0.0),
+          ),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 36,
+              child: Text(
+                '#${entry.rank}',
+                style: Cyber.display(
+                  13,
+                  color: rankColor,
+                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
+            ),
+            const SizedBox(width: 10),
+            _MatchPlayerAvatar(
+              name: entry.name,
+              size: 44,
+              highlight: isUser,
+              ring: entry.rank <= 3 ? rankColor : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          entry.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Cyber.body(
+                            14,
+                            weight: isUser ? FontWeight.w800 : FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      if (isUser) ...[
+                        const SizedBox(width: 7),
+                        const _StatusPill(
+                          label: 'YOU',
+                          color: Cyber.cyan,
+                          small: true,
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${entry.correct} correct',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Cyber.label(
+                      8.5,
+                      color: Cyber.muted,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 72),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      '${entry.points}',
+                      maxLines: 1,
+                      style: Cyber.display(16, color: accent).copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ),
+                  Text(
+                    'XP',
+                    style: Cyber.label(
+                      8,
+                      color: Cyber.muted.withValues(alpha: 0.82),
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _MatchPlayerAvatar extends StatelessWidget {
+  const _MatchPlayerAvatar({
+    required this.name,
+    required this.size,
+    required this.highlight,
+    this.ring,
+  });
+
+  final String name;
+  final double size;
+  final bool highlight;
+  final Color? ring;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = ring ?? (highlight ? Cyber.cyan : Cyber.line);
+    final fill = _avatarFill(name);
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Color.lerp(fill, Cyber.panel, 0.42),
+        border: Border.all(
+          color: color.withValues(alpha: highlight ? 0.9 : 0.42),
+          width: highlight ? 2 : 1.2,
+        ),
+      ),
+      child: Text(
+        _initials(name),
+        style: Cyber.display(
+          size >= 44 ? 13 : 11,
+          color: Colors.white,
+          letterSpacing: 0,
+        ),
+      ),
+    );
+  }
+}
+
+String _initials(String name) {
+  final parts = name
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .toList();
+  if (parts.isEmpty) return '?';
+  if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
+  return '${parts.first.substring(0, 1)}${parts.last.substring(0, 1)}'
+      .toUpperCase();
+}
+
+Color _avatarFill(String name) {
+  const palette = [
+    Cyber.cyan,
+    Cyber.violet,
+    Cyber.gold,
+    Cyber.lime,
+    Cyber.danger,
+  ];
+  final seed = name.codeUnits.fold<int>(0, (sum, unit) => sum + unit);
+  return palette[seed % palette.length];
+}
+
+class _LeaderboardStatCard extends StatelessWidget {
+  const _LeaderboardStatCard({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 62,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        decoration: BoxDecoration(
+          color: Cyber.panel.withValues(alpha: 0.58),
+          border: Border.all(color: color.withValues(alpha: 0.28)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.7),
+            ),
+            const Spacer(),
+            Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Cyber.display(
+                17,
+                color: color,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({
+    required this.label,
+    required this.color,
+    this.small = false,
+  });
+
+  final String label;
+  final Color color;
+  final bool small;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: small ? 6 : 9,
+        vertical: small ? 3 : 5,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        border: Border.all(color: color.withValues(alpha: 0.55)),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: Cyber.label(
+          small ? 7 : 8.5,
+          color: color,
+          letterSpacing: small ? 0.5 : 0.8,
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyLeaderboard extends StatelessWidget {
+  const _EmptyLeaderboard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Cyber.panel.withValues(alpha: 0.5),
+        border: Border.all(color: Cyber.line.withValues(alpha: 0.28)),
+      ),
+      child: Text(
+        'Leaderboard will populate once predictions are submitted.',
+        textAlign: TextAlign.center,
+        style: Cyber.body(12.5, color: Cyber.muted),
       ),
     );
   }
@@ -1582,6 +2300,48 @@ class _QuizNumberBurst extends StatelessWidget {
   }
 }
 
+// ── Question panel backdrop + frame ───────────────────────────────────────────
+class _QuizQuestionPanelFrame extends StatelessWidget {
+  const _QuizQuestionPanelFrame({
+    required this.backgroundAsset,
+    required this.margin,
+    required this.padding,
+    required this.child,
+  });
+
+  final String? backgroundAsset;
+  final EdgeInsets margin;
+  final EdgeInsets padding;
+  final Widget child;
+
+  static const backgroundOpacity = 0.5;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasBackground = backgroundAsset != null;
+
+    return Container(
+      width: double.infinity,
+      margin: margin,
+      decoration: BoxDecoration(
+        color: hasBackground
+            ? _panelBottom.withValues(alpha: 0.62)
+            : null,
+        gradient: hasBackground
+            ? null
+            : const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [_panelTop, _panelBottom],
+              ),
+        border: Border.all(color: _panelBorder),
+      ),
+      clipBehavior: Clip.hardEdge,
+      child: Padding(padding: padding, child: child),
+    );
+  }
+}
+
 class _QuestionPanel extends StatelessWidget {
   const _QuestionPanel({
     required this.index,
@@ -1616,18 +2376,10 @@ class _QuestionPanel extends StatelessWidget {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        Container(
-          width: double.infinity,
-          margin: const EdgeInsets.only(top: 26),
+        _QuizQuestionPanelFrame(
+          backgroundAsset: question.backgroundAsset,
+          margin: const EdgeInsets.only(top: 42),
           padding: const EdgeInsets.fromLTRB(18, 28, 18, 18),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [_panelTop, _panelBottom],
-            ),
-            border: Border.all(color: _panelBorder),
-          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1636,7 +2388,7 @@ class _QuestionPanel extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _WordRevealText(
-                      text: question.text.toUpperCase(),
+                      text: question.text,
                       progress: questionProgress,
                       style: Cyber.display(
                         16,
@@ -1645,14 +2397,6 @@ class _QuestionPanel extends StatelessWidget {
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 12),
-              _BoostSelector(
-                questionId: question.id,
-                selected: selectedMultiplier,
-                owners: multiplierOwners,
-                enabled: multiplierEnabled,
-                onTap: onMultiplierTap,
               ),
               const SizedBox(height: 16),
               for (var i = 0; i < question.options.length; i++)
@@ -1683,16 +2427,31 @@ class _QuestionPanel extends StatelessWidget {
         Positioned(
           right: 0,
           top: 0,
-          child: _XpPill(
-            reward:
-                selectedMultiplier?.applyTo(question.reward) ?? question.reward,
-            multiplier: selectedMultiplier,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _BoostSelector(
+                questionId: question.id,
+                selected: selectedMultiplier,
+                owners: multiplierOwners,
+                enabled: multiplierEnabled,
+                onTap: onMultiplierTap,
+                showLabel: false,
+              ),
+              const SizedBox(width: 4),
+              _XpPill(
+                reward:
+                    selectedMultiplier?.applyTo(question.reward) ??
+                    question.reward,
+                multiplier: selectedMultiplier,
+              ),
+            ],
           ),
         ),
         // The numbered tab, dipping over the panel's top-left edge.
         Positioned(
           left: 14,
-          top: 14,
+          top: 30,
           child: Container(
             width: 30,
             height: 30,
@@ -1739,15 +2498,15 @@ class _WordRevealText extends StatelessWidget {
     if (words.isEmpty) return const SizedBox.shrink();
 
     return Semantics(
-      label: text,
-      child: Wrap(
+        label: text,
+        child: Wrap(
         spacing: 5,
         runSpacing: 2,
         children: [
           for (var i = 0; i < words.length; i++)
             _StaggeredReveal(
               progress: _itemProgress(progress, i, words.length),
-              child: Text(words[i], style: style),
+              child: Text(words[i].toUpperCase(), style: style),
             ),
         ],
       ),
@@ -1825,18 +2584,10 @@ class _ScoreQuestionPanel extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.only(top: 26),
+          _QuizQuestionPanelFrame(
+            backgroundAsset: question.backgroundAsset,
+            margin: const EdgeInsets.only(top: 42),
             padding: const EdgeInsets.fromLTRB(18, 30, 18, 22),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [_panelTop, _panelBottom],
-              ),
-              border: Border.all(color: _panelBorder),
-            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1845,7 +2596,7 @@ class _ScoreQuestionPanel extends StatelessWidget {
                   children: [
                     Expanded(
                       child: _WordRevealText(
-                        text: question.text.toUpperCase(),
+                        text: question.text,
                         progress: questionProgress,
                         style: Cyber.display(
                           16,
@@ -1854,14 +2605,6 @@ class _ScoreQuestionPanel extends StatelessWidget {
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 12),
-                _BoostSelector(
-                  questionId: question.id,
-                  selected: selectedMultiplier,
-                  owners: multiplierOwners,
-                  enabled: multiplierEnabled,
-                  onTap: onMultiplierTap,
                 ),
                 const SizedBox(height: 24),
                 _StaggeredReveal(
@@ -1907,16 +2650,30 @@ class _ScoreQuestionPanel extends StatelessWidget {
           Positioned(
             right: 0,
             top: 0,
-            child: _XpPill(
-              reward:
-                  selectedMultiplier?.applyTo(question.reward) ??
-                  question.reward,
-              multiplier: selectedMultiplier,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _BoostSelector(
+                  questionId: question.id,
+                  selected: selectedMultiplier,
+                  owners: multiplierOwners,
+                  enabled: multiplierEnabled,
+                  onTap: onMultiplierTap,
+                  showLabel: false,
+                ),
+                const SizedBox(width: 4),
+                _XpPill(
+                  reward:
+                      selectedMultiplier?.applyTo(question.reward) ??
+                      question.reward,
+                  multiplier: selectedMultiplier,
+                ),
+              ],
             ),
           ),
           Positioned(
             left: 14,
-            top: 14,
+            top: 30,
             child: Container(
               width: 30,
               height: 30,
@@ -1944,6 +2701,7 @@ class _BoostSelector extends StatelessWidget {
     required this.owners,
     required this.enabled,
     required this.onTap,
+    this.showLabel = true,
   });
 
   final String questionId;
@@ -1951,6 +2709,7 @@ class _BoostSelector extends StatelessWidget {
   final Map<PredictionMultiplier, String> owners;
   final bool enabled;
   final ValueChanged<PredictionMultiplier> onTap;
+  final bool showLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -1959,10 +2718,11 @@ class _BoostSelector extends StatelessWidget {
       runSpacing: 8,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        Text(
-          'BOOST',
-          style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.1),
-        ),
+        if (showLabel)
+          Text(
+            'BOOST',
+            style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.1),
+          ),
         for (final multiplier in PredictionMultiplier.values)
           _MultiplierChip(
             multiplier: multiplier,
@@ -2039,54 +2799,57 @@ class _MultiplierChipState extends State<_MultiplierChip>
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: enabled ? widget.onTap : null,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-          decoration: BoxDecoration(
-            color: active
-                ? accent.withValues(alpha: 0.22)
-                : claimedElsewhere
-                ? const Color(0xff0c1220)
-                : const Color(0xff121b2c),
-            border: Border.all(
+        child: SizedBox(
+          height: 30,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(
               color: active
-                  ? accent
+                  ? accent.withValues(alpha: 0.22)
                   : claimedElsewhere
-                  ? Cyber.line
-                  : accent.withValues(alpha: enabled ? 0.45 : 0.18),
-              width: active ? 1.5 : 1,
-            ),
-            boxShadow: active
-                ? Cyber.glow(accent, alpha: 0.35, blur: 12)
-                : null,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                active
-                    ? Icons.bolt
-                    : claimedElsewhere
-                    ? Icons.swap_horiz
-                    : Icons.bolt_outlined,
-                size: 14,
-                color: enabled || active
+                  ? const Color(0xff0c1220)
+                  : const Color(0xff121b2c),
+              border: Border.all(
+                color: active
                     ? accent
-                    : Cyber.muted.withValues(alpha: 0.5),
+                    : claimedElsewhere
+                    ? Cyber.line
+                    : accent.withValues(alpha: enabled ? 0.45 : 0.18),
+                width: active ? 1.5 : 1,
               ),
-              const SizedBox(width: 5),
-              Text(
-                widget.multiplier.label,
-                style: Cyber.display(
-                  11,
+              boxShadow: active
+                  ? Cyber.glow(accent, alpha: 0.35, blur: 12)
+                  : null,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  active
+                      ? Icons.bolt
+                      : claimedElsewhere
+                      ? Icons.swap_horiz
+                      : Icons.bolt_outlined,
+                  size: 14,
                   color: enabled || active
-                      ? active
-                            ? Colors.white
-                            : accent
-                      : Cyber.muted.withValues(alpha: 0.55),
+                      ? accent
+                      : Cyber.muted.withValues(alpha: 0.5),
                 ),
-              ),
-            ],
+                const SizedBox(width: 5),
+                Text(
+                  widget.multiplier.label,
+                  style: Cyber.display(
+                    11,
+                    color: enabled || active
+                        ? active
+                              ? Colors.white
+                              : accent
+                        : Cyber.muted.withValues(alpha: 0.55),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -2120,7 +2883,8 @@ class _XpPill extends StatelessWidget {
       },
       child: Container(
         key: ValueKey('xp-$reward-${multiplier?.jsonKey ?? 'base'}'),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        height: 30,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [Cyber.violet, Color.lerp(Cyber.violet, accent, 0.45)!],
@@ -2274,71 +3038,61 @@ class _BottomDock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      // Fades up into the page instead of a hard divider (per the reference).
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.bottomCenter,
-          end: Alignment.topCenter,
-          colors: [Color(0xFF010517), Color(0xF2010517), Color(0x00010517)],
-        ),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  for (var i = 0; i < questions.length; i++) ...[
-                    if (i > 0) const SizedBox(width: 8),
-                    Expanded(
-                      child: _ProgressSegment(
-                        answered:
-                            answers.containsKey(questions[i].id) ||
-                            questions[i].isScorePrediction,
-                        current: i == index,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  if (canGoPrevious) ...[
-                    Expanded(
-                      child: _QuizButton(
-                        label: 'PREVIOUS',
-                        leadingIcon: Icons.arrow_back,
-                        focal: false,
-                        enabled: true,
-                        onTap: onPrevious,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                  ],
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                for (var i = 0; i < questions.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 8),
                   Expanded(
-                    child: _QuizButton(
-                      label: primary.label,
-                      trailingIcon: primary.isNext ? Icons.arrow_forward : null,
-                      focal: primary.enabled,
-                      enabled: primary.enabled,
-                      onTap: primary.onTap,
+                    child: _ProgressSegment(
+                      answered:
+                          answers.containsKey(questions[i].id) ||
+                          questions[i].isScorePrediction,
+                      current: i == index,
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                helper,
-                textAlign: TextAlign.center,
-                style: Cyber.body(12, color: const Color(0xFF90A1B9)),
-              ),
-            ],
-          ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                if (canGoPrevious) ...[
+                  Expanded(
+                    child: _QuizButton(
+                      label: 'PREVIOUS',
+                      leadingIcon: Icons.arrow_back,
+                      focal: false,
+                      enabled: true,
+                      onTap: onPrevious,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                ],
+                Expanded(
+                  child: _QuizButton(
+                    label: primary.label,
+                    trailingIcon: primary.isNext ? Icons.arrow_forward : null,
+                    focal: primary.enabled,
+                    enabled: primary.enabled,
+                    onTap: primary.onTap,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              helper,
+              textAlign: TextAlign.center,
+              style: Cyber.body(12, color: const Color(0xFF90A1B9)),
+            ),
+          ],
         ),
       ),
     );

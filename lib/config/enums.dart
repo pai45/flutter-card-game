@@ -9,6 +9,7 @@ enum AppSection {
   deck,
   howToPlay,
   match,
+  shootout,
   game,
   allCards,
 }
@@ -31,9 +32,10 @@ enum MatchPhase {
   scenario,
   play,
   roundResult,
-  matchEnd,
-  penalty,
   finalResult,
 }
+
+/// Stages of the standalone Penalty Shootout mode.
+enum ShootoutStage { lineup, choose, result, summary }
 
 enum RoundOutcome { goal, saved, blocked, missed, foul, redCard }

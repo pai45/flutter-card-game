@@ -92,49 +92,41 @@ class LandingBottomNavigation extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = includeShop ? _items : _predictionItems;
     return Container(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
           colors: [Color(0xf90e162b), Color(0xf91c283c)],
         ),
-        border: Border.all(color: const Color(0x4cf0b000)),
       ),
       child: SafeArea(
         top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(height: 1, color: Cyber.gold.withValues(alpha: 0.28)),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-              child: SizedBox(
-                height: 60,
-                child: Row(
-                  children: [
-                    for (var i = 0; i < items.length; i++) ...[
-                      Expanded(
-                        child: _NavItem(
-                          spec: items[i],
-                          active: selectedIndex == i,
-                          onTap: () {
-                            final tabIndex = items[i].predictionTabIndex;
-                            if (tabIndex != null &&
-                                onPredictionTabTap != null) {
-                              onPredictionTabTap!(tabIndex);
-                            } else {
-                              onNavigate(items[i].section);
-                            }
-                          },
-                        ),
-                      ),
-                      if (i != items.length - 1) const SizedBox(width: 6),
-                    ],
-                  ],
-                ),
-              ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          child: SizedBox(
+            height: 60,
+            child: Row(
+              children: [
+                for (var i = 0; i < items.length; i++) ...[
+                  Expanded(
+                    child: _NavItem(
+                      spec: items[i],
+                      active: selectedIndex == i,
+                      onTap: () {
+                        final tabIndex = items[i].predictionTabIndex;
+                        if (tabIndex != null && onPredictionTabTap != null) {
+                          onPredictionTabTap!(tabIndex);
+                        } else {
+                          onNavigate(items[i].section);
+                        }
+                      },
+                    ),
+                  ),
+                  if (i != items.length - 1) const SizedBox(width: 6),
+                ],
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

@@ -312,10 +312,12 @@ Rewards connect the match to the broader product economy:
 
 - Victory gives more coins than a draw or defeat.
 - Match XP can increase or decrease based on result, margin, shutout, or penalties.
-- XP never drops below zero and does not de-level the user.
+- XP never drops below zero. Current implementation derives level from total XP, so a large enough negative XP delta can de-level the user.
 - Level-ups can trigger celebration states.
 
 Match results are saved to history with the deck name, score, penalty score if any, round summary, and XP earned.
+
+For the full XP curve, pack XP formulas, level progress fields, de-leveling nuance, and CPU difficulty scaling, see [Pitch Duel Leveling System](pitch-duel-leveling.md).
 
 ## Product Loop
 

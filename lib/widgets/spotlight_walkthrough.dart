@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -20,6 +19,7 @@ class SpotlightStep {
     this.icon = Icons.info_outline,
     this.accent = Cyber.cyan,
     this.padding = 8,
+    this.interactiveKeys = const [],
   });
 
   final GlobalKey targetKey;
@@ -29,6 +29,18 @@ class SpotlightStep {
   final IconData icon;
   final Color accent;
   final double padding;
+
+  /// Extra regions that stay bright and tappable on this step only.
+  final List<GlobalKey> interactiveKeys;
+}
+
+/// Where the walkthrough card is anchored on screen.
+enum SpotlightCardAnchor {
+  /// Place below/above the highlighted target when possible.
+  auto,
+
+  /// Pin to bottom center ([SpotlightTutorial.cardBottomInset] above the edge).
+  bottom,
 }
 
 /// Wraps a walkthrough target so its bounds can be measured.
@@ -56,6 +68,9 @@ class SpotlightTutorial extends StatefulWidget {
     this.enabled = true,
     this.startDelay = Duration.zero,
     this.onComplete,
+    this.interactiveKeys = const [],
+    this.cardAnchor = SpotlightCardAnchor.auto,
+    this.cardBottomInset = 24,
     this.forceToken = 0,
     super.key,
   });
@@ -65,6 +80,11 @@ class SpotlightTutorial extends StatefulWidget {
   final bool enabled;
   final Duration startDelay;
   final VoidCallback? onComplete;
+
+  /// Extra regions that stay bright and tappable for the whole walkthrough.
+  final List<GlobalKey> interactiveKeys;
+  final SpotlightCardAnchor cardAnchor;
+  final double cardBottomInset;
   final int forceToken;
 
   @override
@@ -123,6 +143,9 @@ class _SpotlightTutorialState extends State<SpotlightTutorial> {
         steps: widget.steps,
         force: force,
         onComplete: widget.onComplete,
+        interactiveKeys: widget.interactiveKeys,
+        cardAnchor: widget.cardAnchor,
+        cardBottomInset: widget.cardBottomInset,
       );
     });
   }
@@ -143,6 +166,9 @@ void showSpotlightWalkthrough(
   required List<SpotlightStep> steps,
   bool force = false,
   VoidCallback? onComplete,
+  List<GlobalKey> interactiveKeys = const [],
+  SpotlightCardAnchor cardAnchor = SpotlightCardAnchor.auto,
+  double cardBottomInset = 24,
 }) {
   if (steps.isEmpty) return;
   final gameBloc = context.read<GameBloc>();
@@ -158,6 +184,9 @@ void showSpotlightWalkthrough(
           keyName: keyName,
           steps: steps,
           onComplete: onComplete,
+          interactiveKeys: interactiveKeys,
+          cardAnchor: cardAnchor,
+          cardBottomInset: cardBottomInset,
         ),
       ),
     ),
@@ -169,37 +198,32 @@ class _SpotlightWalkthroughPage extends StatefulWidget {
     required this.keyName,
     required this.steps,
     this.onComplete,
+    this.interactiveKeys = const [],
+    this.cardAnchor = SpotlightCardAnchor.auto,
+    this.cardBottomInset = 24,
   });
 
   final String keyName;
   final List<SpotlightStep> steps;
   final VoidCallback? onComplete;
+  final List<GlobalKey> interactiveKeys;
+  final SpotlightCardAnchor cardAnchor;
+  final double cardBottomInset;
 
   @override
   State<_SpotlightWalkthroughPage> createState() =>
       _SpotlightWalkthroughPageState();
 }
 
-class _SpotlightWalkthroughPageState extends State<_SpotlightWalkthroughPage>
-    with SingleTickerProviderStateMixin {
+class _SpotlightWalkthroughPageState extends State<_SpotlightWalkthroughPage> {
   int _index = 0;
   Rect? _targetRect;
-  late final AnimationController _pulse;
+  List<Rect> _passThroughRects = const [];
 
   @override
   void initState() {
     super.initState();
-    _pulse = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    )..repeat(reverse: true);
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncTarget());
-  }
-
-  @override
-  void dispose() {
-    _pulse.dispose();
-    super.dispose();
   }
 
   SpotlightStep get _step => widget.steps[_index];
@@ -216,15 +240,55 @@ class _SpotlightWalkthroughPageState extends State<_SpotlightWalkthroughPage>
     }
     await Future<void>.delayed(const Duration(milliseconds: 48));
     if (!mounted) return;
-    setState(() => _targetRect = _measureTarget(_step));
+    _applyTargetMeasurement();
+    if (_targetRect == null) {
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      if (!mounted) return;
+      _applyTargetMeasurement();
+    }
   }
 
-  Rect? _measureTarget(SpotlightStep step) {
-    final render = step.targetKey.currentContext?.findRenderObject();
+  void _applyTargetMeasurement() {
+    setState(() {
+      _targetRect = _measureTarget(_step);
+      _passThroughRects = _collectPassThroughRects();
+    });
+  }
+
+  Rect? _measureKey(GlobalKey key) {
+    final render = key.currentContext?.findRenderObject();
     if (render is! RenderBox || !render.hasSize) return null;
     final offset = render.localToGlobal(Offset.zero);
     return offset & render.size;
   }
+
+  Rect? _measureTarget(SpotlightStep step) => _measureKey(step.targetKey);
+
+  List<GlobalKey> get _stepInteractiveKeys => [
+    ..._step.interactiveKeys,
+    ...widget.interactiveKeys,
+  ];
+
+  List<Rect> _collectPassThroughRects() {
+    final rects = <Rect>[];
+    final seen = <GlobalKey>{};
+
+    void addKey(GlobalKey key, double padding) {
+      if (!seen.add(key)) return;
+      final rect = _measureKey(key);
+      if (rect != null) {
+        rects.add(rect.inflate(padding));
+      }
+    }
+
+    addKey(_step.targetKey, _step.padding);
+    for (final key in _stepInteractiveKeys) {
+      addKey(key, 8);
+    }
+    return rects;
+  }
+
+  bool get _interactiveMode => _stepInteractiveKeys.isNotEmpty;
 
   void _next() {
     if (_index < widget.steps.length - 1) {
@@ -260,46 +324,43 @@ class _SpotlightWalkthroughPageState extends State<_SpotlightWalkthroughPage>
     widget.onComplete?.call();
   }
 
+  bool get _singleStep => widget.steps.length == 1;
+
   @override
   Widget build(BuildContext context) {
     final step = _step;
     final rect = _targetRect;
     final size = MediaQuery.sizeOf(context);
-    const cardMaxHeight = 320.0;
+    const cardMaxHeight = 360.0;
     final cardMaxWidth = min(size.width - 32, 320.0);
+    final hole = rect?.inflate(step.padding);
 
-    return Material(
-      color: Colors.transparent,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          AnimatedBuilder(
-            animation: _pulse,
-            builder: (context, _) {
-              return CustomPaint(
-                painter: _SpotlightDimPainter(
-                  target: rect,
-                  padding: step.padding,
-                  accent: step.accent,
-                  pulse: _pulse.value,
-                ),
-                child: const SizedBox.expand(),
-              );
-            },
-          ),
-          if (rect != null)
-            Positioned(
-              left: max(8, rect.left - 4),
-              top: max(8, rect.top - 4),
-              width: min(rect.width + 8, size.width - 16),
-              height: rect.height + 8,
-              child: IgnorePointer(child: const SizedBox.shrink()),
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (_interactiveMode)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(
+                painter: _MultiHoleDimPainter(holes: _passThroughRects),
+              ),
             ),
-          Positioned(
-            left: 16,
-            right: 16,
-            top: _cardTop(size, rect),
-            child: Center(
+          )
+        else
+          ..._dimPanels(size, hole),
+        Positioned(
+          left: 16,
+          right: 16,
+          top: widget.cardAnchor == SpotlightCardAnchor.bottom
+              ? null
+              : _cardTop(size, rect),
+          bottom: widget.cardAnchor == SpotlightCardAnchor.bottom
+              ? widget.cardBottomInset +
+                    MediaQuery.paddingOf(context).bottom
+              : null,
+          child: Center(
+            child: Material(
+              type: MaterialType.transparency,
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   maxWidth: cardMaxWidth,
@@ -336,22 +397,23 @@ class _SpotlightWalkthroughPageState extends State<_SpotlightWalkthroughPage>
                               ),
                             ),
                           ),
-                          TextButton(
-                            onPressed: _skipAll,
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: Text(
-                              'SKIP',
-                              style: TextStyle(
-                                color: step.accent.withValues(alpha: 0.75),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
+                          if (!_singleStep)
+                            TextButton(
+                              onPressed: _skipAll,
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: Text(
+                                'SKIP ALL',
+                                style: TextStyle(
+                                  color: step.accent.withValues(alpha: 0.75),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
                             ),
-                          ),
                         ],
                       ),
                       const SizedBox(height: 6),
@@ -381,26 +443,33 @@ class _SpotlightWalkthroughPageState extends State<_SpotlightWalkthroughPage>
                           height: 1.35,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          for (var i = 0; i < widget.steps.length; i++)
-                            Expanded(
-                              child: Container(
-                                height: 2,
-                                margin: EdgeInsets.only(
-                                  right: i == widget.steps.length - 1 ? 0 : 3,
+                      if (widget.steps.length > 1) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            for (var i = 0; i < widget.steps.length; i++)
+                              Expanded(
+                                child: Container(
+                                  height: 2,
+                                  margin: EdgeInsets.only(
+                                    right: i == widget.steps.length - 1 ? 0 : 3,
+                                  ),
+                                  color: i == _index
+                                      ? step.accent
+                                      : i < _index
+                                      ? step.accent.withValues(alpha: 0.35)
+                                      : const Color(0xff1e2538),
                                 ),
-                                color: i == _index
-                                    ? step.accent
-                                    : i < _index
-                                    ? step.accent.withValues(alpha: 0.35)
-                                    : const Color(0xff1e2538),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 10),
+                      Container(
+                        height: 1,
+                        color: step.accent.withValues(alpha: 0.2),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Row(
                         children: [
                           if (_index > 0)
@@ -409,7 +478,7 @@ class _SpotlightWalkthroughPageState extends State<_SpotlightWalkthroughPage>
                                 onPressed: _back,
                                 style: TextButton.styleFrom(
                                   padding: const EdgeInsets.symmetric(
-                                    vertical: 4,
+                                    vertical: 8,
                                   ),
                                   minimumSize: Size.zero,
                                   tapTargetSize:
@@ -417,25 +486,33 @@ class _SpotlightWalkthroughPageState extends State<_SpotlightWalkthroughPage>
                                 ),
                                 child: const Text(
                                   '< BACK',
-                                  style: TextStyle(fontSize: 10),
+                                  style: TextStyle(fontSize: 12),
                                 ),
                               ),
                             ),
                           Expanded(
                             child: TextButton(
-                              onPressed: _next,
+                              onPressed: _index < widget.steps.length - 1
+                                  ? _next
+                                  : _dismissLastStep,
                               style: TextButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(
-                                  vertical: 4,
+                                  vertical: 10,
                                 ),
-                                minimumSize: Size.zero,
+                                minimumSize: const Size(0, 44),
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
                               child: Text(
                                 _index < widget.steps.length - 1
                                     ? 'NEXT >'
                                     : 'GOT IT >',
-                                style: const TextStyle(fontSize: 10),
+                                style: TextStyle(
+                                  color: step.accent,
+                                  fontFamily: 'Orbitron',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.4,
+                                ),
                               ),
                             ),
                           ),
@@ -447,13 +524,15 @@ class _SpotlightWalkthroughPageState extends State<_SpotlightWalkthroughPage>
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
+  void _dismissLastStep() => _dismiss(markSeen: true);
+
   double _cardTop(Size screen, Rect? target) {
-    const cardEstimate = 320.0;
+    const cardEstimate = 360.0;
     const margin = 16.0;
     if (target == null) return screen.height * 0.28;
     final below = target.bottom + margin;
@@ -462,61 +541,60 @@ class _SpotlightWalkthroughPageState extends State<_SpotlightWalkthroughPage>
     if (above > margin) return above;
     return margin;
   }
+
+  /// Four dim panels around the hole so taps pass through the cutout to the UI
+  /// below (e.g. HEADS / TAILS on the toss screen).
+  List<Widget> _dimPanels(Size screen, Rect? hole) {
+    const color = Color(0xD6000000);
+    if (hole == null) {
+      return [
+        Positioned.fill(
+          child: ColoredBox(color: color),
+        ),
+      ];
+    }
+
+    final left = hole.left.clamp(0.0, screen.width);
+    final top = hole.top.clamp(0.0, screen.height);
+    final right = hole.right.clamp(0.0, screen.width);
+    final bottom = hole.bottom.clamp(0.0, screen.height);
+
+    return [
+      Positioned(left: 0, top: 0, right: 0, height: top, child: _DimPanel(color: color)),
+      Positioned(left: 0, top: bottom, right: 0, bottom: 0, child: _DimPanel(color: color)),
+      Positioned(left: 0, top: top, width: left, height: bottom - top, child: _DimPanel(color: color)),
+      Positioned(left: right, top: top, right: 0, height: bottom - top, child: _DimPanel(color: color)),
+    ];
+  }
 }
 
-class _SpotlightDimPainter extends CustomPainter {
-  const _SpotlightDimPainter({
-    required this.target,
-    required this.padding,
-    required this.accent,
-    required this.pulse,
-  });
+class _DimPanel extends StatelessWidget {
+  const _DimPanel({required this.color});
 
-  final Rect? target;
-  final double padding;
-  final Color accent;
-  final double pulse;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(color: color);
+  }
+}
+
+class _MultiHoleDimPainter extends CustomPainter {
+  const _MultiHoleDimPainter({required this.holes});
+
+  final List<Rect> holes;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final dim = Path()
+    final path = Path()
       ..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
-
-    if (target != null) {
-      final hole = RRect.fromRectAndRadius(
-        target!.inflate(padding),
-        const Radius.circular(3),
-      );
-      dim.addRRect(hole);
-      dim.fillType = PathFillType.evenOdd;
-
-      final glowAlpha = 0.35 + pulse * 0.25;
-      canvas.drawRRect(
-        hole,
-        Paint()
-          ..color = accent.withValues(alpha: glowAlpha)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2,
-      );
-      canvas.drawRRect(
-        hole.inflate(3 + pulse * 4),
-        Paint()
-          ..color = accent.withValues(alpha: 0.08 + pulse * 0.06)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1,
-      );
+    for (final hole in holes) {
+      path.addRRect(RRect.fromRectAndRadius(hole, const Radius.circular(3)));
     }
-
-    canvas.drawPath(
-      dim,
-      Paint()..color = Colors.black.withValues(alpha: 0.84),
-    );
+    path.fillType = PathFillType.evenOdd;
+    canvas.drawPath(path, Paint()..color = const Color(0xD6000000));
   }
 
   @override
-  bool shouldRepaint(_SpotlightDimPainter old) =>
-      old.target != target ||
-      old.padding != padding ||
-      old.accent != accent ||
-      old.pulse != pulse;
+  bool shouldRepaint(_MultiHoleDimPainter old) => old.holes != holes;
 }

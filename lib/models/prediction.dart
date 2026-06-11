@@ -43,6 +43,7 @@ class QuizQuestion {
     this.options = const [],
     this.reward = 0,
     this.type = QuizQuestionType.multipleChoice,
+    this.backgroundAsset,
     this.settledOptionIndex,
     this.settledHomeScore,
     this.settledAwayScore,
@@ -53,7 +54,10 @@ class QuizQuestion {
   final List<String> options;
   final QuizQuestionType type;
 
-  /// Virtual coins credited if this question is answered correctly.
+  /// Optional full-bleed panel backdrop (shown at 50% opacity in the quiz UI).
+  final String? backgroundAsset;
+
+  /// XP credited if this question is answered correctly.
   final int reward;
 
   /// The correct option once the match is settled (multiple-choice only).

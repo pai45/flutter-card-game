@@ -1406,6 +1406,7 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
                           overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,
                           style: TextStyle(
+                            color: Colors.white,
                             fontFamily: 'Orbitron',
                             fontWeight: FontWeight.w900,
                             fontSize: small ? 9 : (large ? 13 : 12),

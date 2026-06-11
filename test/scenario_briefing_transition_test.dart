@@ -42,12 +42,14 @@ void main() {
         home: ScenarioBriefingSection(
           scenario: scenario,
           attacking: false,
-          initialSeconds: 2,
+          initialSeconds: 3,
           onComplete: () => completed = true,
         ),
       ),
     );
 
+    expect(find.text('3'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
     expect(find.text('2'), findsOneWidget);
     await tester.pump(const Duration(seconds: 1));
     expect(find.text('1'), findsOneWidget);

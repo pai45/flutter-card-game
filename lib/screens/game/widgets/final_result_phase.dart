@@ -16,6 +16,7 @@ import '../../../widgets/level_up_celebration.dart';
 import '../../../widgets/match_widgets.dart';
 import '../../../widgets/spotlight_walkthrough.dart';
 
+/// Unified full-time screen: victory, scoreline, XP, MVP, and match logs.
 class FinalResultPhase extends StatefulWidget {
   const FinalResultPhase({
     required this.state,
@@ -37,45 +38,45 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
     duration: const Duration(milliseconds: 2400),
   );
 
-  late final Animation<double> _scoreOpacity = CurvedAnimation(
+  late final Animation<double> _bannerOpacity = CurvedAnimation(
     parent: _seq,
-    curve: const Interval(0.0, 0.25, curve: Curves.easeOut),
+    curve: const Interval(0.0, 0.22, curve: Curves.easeOut),
+  );
+
+  late final Animation<double> _scoreScale = CurvedAnimation(
+    parent: _seq,
+    curve: const Interval(0.12, 0.35, curve: Curves.easeOutBack),
   );
 
   late final Animation<Offset> _xpPanelSlide = Tween<Offset>(
-    begin: const Offset(0, 0.6),
+    begin: const Offset(0, 0.5),
     end: Offset.zero,
   ).animate(CurvedAnimation(
     parent: _seq,
-    curve: const Interval(0.20, 0.45, curve: Curves.easeOutCubic),
+    curve: const Interval(0.28, 0.50, curve: Curves.easeOutCubic),
   ));
 
   late final Animation<double> _xpPanelOpacity = CurvedAnimation(
     parent: _seq,
-    curve: const Interval(0.20, 0.40, curve: Curves.easeOut),
+    curve: const Interval(0.28, 0.48, curve: Curves.easeOut),
   );
 
   late final Animation<double> _xpBarProgress = CurvedAnimation(
     parent: _seq,
-    curve: const Interval(0.50, 0.85, curve: Curves.easeInOut),
-  );
-
-  late final Animation<double> _buttonsOpacity = CurvedAnimation(
-    parent: _seq,
-    curve: const Interval(0.90, 1.00, curve: Curves.easeOut),
+    curve: const Interval(0.50, 0.82, curve: Curves.easeInOut),
   );
 
   late final int _oldXpIntoLevel;
   late final int _oldXpToNextLevel;
   bool _showLevelUp = false;
-  final _scoreKey = GlobalKey();
+  final _bannerKey = GlobalKey();
   final _actionsKey = GlobalKey();
 
   List<SpotlightStep> get _spotlightSteps => [
     SpotlightStep(
-      targetKey: _scoreKey,
-      title: 'Final Score',
-      body: 'Scoreline, penalties, and MVP.',
+      targetKey: _bannerKey,
+      title: 'Full Time',
+      body: 'Final score, XP earned, and match recap.',
       icon: Icons.emoji_events,
       accent: Cyber.cyan,
     ),
@@ -87,12 +88,6 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
       accent: Cyber.lime,
     ),
   ];
-
-  static const _dirLabel = {
-    PenaltyDirection.left: 'L',
-    PenaltyDirection.center: 'C',
-    PenaltyDirection.right: 'R',
-  };
 
   @override
   void initState() {
@@ -111,13 +106,16 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
     });
     _seq.forward();
 
-    // Win/lose sting as the result screen appears.
     final s = widget.state;
-    final won = s.penaltyKicks.isNotEmpty
-        ? s.penaltyWinner == 'player'
-        : s.playerScore > s.opponentScore;
-    playSound(won ? SoundEffect.matchWin : SoundEffect.matchLose);
-    // Peak-end beat — the result that defines how the session is remembered.
+    final won = s.playerScore > s.opponentScore;
+    final drawn = s.playerScore == s.opponentScore;
+    playSound(
+      won
+          ? SoundEffect.matchWin
+          : drawn
+          ? SoundEffect.bannerSlam
+          : SoundEffect.matchLose,
+    );
     HapticFeedback.heavyImpact();
   }
 
@@ -130,10 +128,8 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
   @override
   Widget build(BuildContext context) {
     final state = widget.state;
-    final wentToPenalties = state.penaltyKicks.isNotEmpty;
-    final won = wentToPenalties
-        ? state.penaltyWinner == 'player'
-        : state.playerScore > state.opponentScore;
+    final won = state.playerScore > state.opponentScore;
+    final drawn = state.playerScore == state.opponentScore;
     final mvp = state.roundResults
         .where(
           (round) =>
@@ -142,29 +138,45 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
         .map((round) => round.attackerCard)
         .firstOrNull;
 
-    // Running score after each round
     final List<({int p, int c})> runningScores = [];
     var pGoals = 0, cGoals = 0;
     for (final r in state.roundResults) {
       if (r.outcome == RoundOutcome.goal) {
-        if (r.playerAttacking) { pGoals++; } else { cGoals++; }
+        if (r.playerAttacking) {
+          pGoals++;
+        } else {
+          cGoals++;
+        }
       }
       runningScores.add((p: pGoals, c: cGoals));
     }
 
+    final outcomeTitle = drawn ? 'DRAW' : (won ? 'VICTORY' : 'DEFEAT');
+    final outcomeAccent = drawn
+        ? Cyber.amber
+        : won
+        ? Cyber.success
+        : Cyber.danger;
+
     return GameScaffold(
-      title: 'Final Result',
-      subtitle: '// Archive Complete',
+      title: 'Full Time',
+      showTitle: true,
       grain: true,
+      compactHeader: true,
+      rightSlot: MatchHeaderScore(
+        playerScore: state.playerScore,
+        opponentScore: state.opponentScore,
+      ),
       leading: IconButton(
         onPressed: () {
           context.read<GameBloc>().add(MatchReset());
           widget.onNavigate(AppSection.home);
         },
-        icon: const Icon(Icons.close),
+        icon: const Icon(Icons.close, color: Cyber.cyan),
       ),
       child: Stack(
         children: [
+          const Positioned.fill(child: StadiumBackground()),
           AnimatedBuilder(
             animation: _seq,
             builder: (context, _) {
@@ -177,234 +189,109 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
                   (oldRatio + (newRatio - oldRatio) * _xpBarProgress.value)
                       .clamp(0.0, 1.0);
 
-              return PhaseList(
-                children: [
-                  // Winner banner with fade animation
-                  FadeTransition(
-                    opacity: _scoreOpacity,
-                    child: SpotlightTarget(
-                      spotlightKey: _scoreKey,
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 20,
-                          horizontal: 16,
+              return SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    FadeTransition(
+                      opacity: _bannerOpacity,
+                      child: SpotlightTarget(
+                        spotlightKey: _bannerKey,
+                        child: _OutcomeBanner(
+                          title: outcomeTitle,
+                          accent: outcomeAccent,
+                          won: won,
+                          drawn: drawn,
                         ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: won
-                              ? [
-                                  const Color(0xFF00E5FF).withValues(alpha: 0.15),
-                                  const Color(0xFF00E5FF).withValues(alpha: 0.05),
-                                ]
-                              : [
-                                  const Color(0xFFFF1744).withValues(alpha: 0.15),
-                                  const Color(0xFFFF1744).withValues(alpha: 0.05),
-                                ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        border: Border.all(
-                          color: won
-                              ? const Color(0xFF00E5FF)
-                              : const Color(0xFFFF1744),
-                          width: 1.5,
-                        ),
-                        borderRadius: BorderRadius.circular(4),
                       ),
-                      child: Column(
-                        children: [
-                          Icon(
-                            won ? Icons.emoji_events : Icons.sentiment_dissatisfied,
-                            color: won
-                                ? const Color(0xFF00E5FF)
-                                : const Color(0xFFFF1744),
-                            size: 40,
+                    ),
+                    const SizedBox(height: 14),
+                    ScaleTransition(
+                      scale: _scoreScale,
+                      child: _GiantScoreline(
+                        playerScore: state.playerScore,
+                        opponentScore: state.opponentScore,
+                      ),
+                    ),
+                    if (state.lastMatchXP != null) ...[
+                      const SizedBox(height: 14),
+                      SlideTransition(
+                        position: _xpPanelSlide,
+                        child: FadeTransition(
+                          opacity: _xpPanelOpacity,
+                          child: _XpProgressPanel(
+                            xpDelta: state.lastMatchXP!,
+                            displayedCount: displayedXP,
+                            barFillRatio: barFill,
+                            level: state.progression.playerLevel,
+                            xpIntoLevel: state.progression.xpIntoLevel,
+                            xpToNextLevel: state.progression.xpToNextLevel,
                           ),
-                          const SizedBox(height: 8),
+                        ),
+                      ),
+                    ],
+                    if (mvp != null) ...[
+                      const SizedBox(height: 14),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
                           Text(
-                            wentToPenalties
-                                ? (won
-                                    ? 'YOU WIN ON PENALTIES'
-                                    : 'DEFEAT ON PENALTIES')
-                                : (won ? 'MATCH WON' : 'MATCH LOST'),
-                            style: Cyber.display(
-                              22,
-                              color: won
-                                  ? const Color(0xFF00E5FF)
-                                  : const Color(0xFFFF1744),
+                            'MVP',
+                            style: Cyber.label(
+                              12,
+                              color: Cyber.cyan,
                               letterSpacing: 2,
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              _ScorePill(
-                                label: 'REGULAR',
-                                score:
-                                    '${state.playerScore} - ${state.opponentScore}',
-                              ),
-                              if (wentToPenalties) ...[
-                                const SizedBox(width: 12),
-                                _ScorePill(
-                                  label: 'PENALTIES',
-                                  score:
-                                      '${state.penaltyPlayerScore} - ${state.penaltyOpponentScore}',
-                                  highlight: true,
-                                ),
-                              ],
-                            ],
-                          ),
+                          const SizedBox(height: 8),
+                          CyberPlayerCardTile(card: mvp, selected: true),
                         ],
                       ),
-                    ),
-                    ),
-                  ),
-
-                  // XP panel with slide+fade animation
-                  if (state.lastMatchXP != null)
-                    SlideTransition(
-                      position: _xpPanelSlide,
-                      child: FadeTransition(
-                        opacity: _xpPanelOpacity,
-                        child: _XpProgressPanel(
-                          xpDelta: state.lastMatchXP!,
-                          displayedCount: displayedXP,
-                          barFillRatio: barFill,
-                          level: state.progression.playerLevel,
-                          xpIntoLevel: state.progression.xpIntoLevel,
-                          xpToNextLevel: state.progression.xpToNextLevel,
-                        ),
+                    ],
+                    const SizedBox(height: 14),
+                    _RoundLogHeader(count: state.roundResults.length),
+                    if (state.roundResults.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      _RoundGoalTrail(rounds: state.roundResults),
+                    ],
+                    for (var i = 0; i < state.roundResults.length; i++) ...[
+                      const SizedBox(height: 4),
+                      _FinalRoundLogItem(
+                        round: state.roundResults[i],
+                        playerGoals: runningScores[i].p,
+                        cpuGoals: runningScores[i].c,
+                        index: i,
+                        isLast: i == state.roundResults.length - 1,
                       ),
-                    ),
-
-                  // MVP card
-                  if (mvp != null) ...[
-                    Text(
-                      'MVP',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: Cyber.cyan,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                    CyberPlayerCardTile(card: mvp, selected: true),
+                    ],
                   ],
-
-                  // Penalty log
-                  if (wentToPenalties) ...[
-                    Text(
-                      'PENALTY LOG',
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: Cyber.cyan,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: Cyber.cyan.withValues(alpha: 0.3),
-                        ),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
-                            ),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 28,
-                                  child: Text('#', style: _headerStyle),
-                                ),
-                                Expanded(child: Text('TAKER', style: _headerStyle)),
-                                SizedBox(
-                                  width: 44,
-                                  child: Text(
-                                    'SHOOT',
-                                    style: _headerStyle,
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                SizedBox(
-                                  width: 44,
-                                  child: Text(
-                                    'DIVE',
-                                    style: _headerStyle,
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                SizedBox(
-                                  width: 32,
-                                  child: Text('', style: _headerStyle),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Divider(height: 1, color: Color(0xFF1E3A5F)),
-                          for (final kick in state.penaltyKicks)
-                            _PenaltyLogRow(kick: kick, dirLabel: _dirLabel),
-                        ],
-                      ),
-                    ),
-                  ],
-
-                  // Round log
-                  _RoundLogHeader(count: state.roundResults.length),
-                  if (state.roundResults.isNotEmpty)
-                    _RoundGoalTrail(rounds: state.roundResults),
-                  for (var i = 0; i < state.roundResults.length; i++)
-                    _FinalRoundLogItem(
-                      round: state.roundResults[i],
-                      playerGoals: runningScores[i].p,
-                      cpuGoals: runningScores[i].c,
-                      index: i,
-                      isLast: i == state.roundResults.length - 1,
-                    ),
-
-                  // Action buttons with fade animation
-                  const SizedBox(height: 8),
-                  FadeTransition(
-                    opacity: _buttonsOpacity,
-                    child: SpotlightTarget(
-                      spotlightKey: _actionsKey,
-                      child: Column(
-                        children: [
-                          FilledButton.icon(
-                            onPressed: () {
-                              context.read<GameBloc>().add(MatchStarted());
-                            },
-                            icon: const Icon(Icons.refresh),
-                            label: const Text('PLAY AGAIN'),
-                          ),
-                          OutlinedButton.icon(
-                            onPressed: () {
-                              context.read<GameBloc>().add(MatchReset());
-                              widget.onNavigate(AppSection.home);
-                            },
-                            icon: const Icon(Icons.home),
-                            label: const Text('HOME'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               );
             },
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: SpotlightTarget(
+              spotlightKey: _actionsKey,
+              child: _ResultFooterDock(
+                onPlayAgain: () {
+                  context.read<GameBloc>().add(MatchStarted());
+                },
+                onHome: () {
+                  context.read<GameBloc>().add(MatchReset());
+                  widget.onNavigate(AppSection.home);
+                },
+              ),
+            ),
           ),
           SpotlightTutorial(
             keyName: 'final',
             steps: _spotlightSteps,
             startDelay: const Duration(milliseconds: 1400),
           ),
-
-          // Level-up celebration overlay
           if (_showLevelUp)
             LevelUpCelebration(
               levels: widget.state.pendingLevelUps,
@@ -415,13 +302,229 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
     );
   }
 
-  static final _headerStyle = Cyber.label(
-    10,
-    color: Colors.white38,
-    weight: FontWeight.w700,
-    letterSpacing: 1,
-  );
 }
+
+// ── Outcome banner ────────────────────────────────────────────────────────────
+
+class _OutcomeBanner extends StatelessWidget {
+  const _OutcomeBanner({
+    required this.title,
+    required this.accent,
+    required this.won,
+    required this.drawn,
+  });
+
+  final String title;
+  final Color accent;
+  final bool won;
+  final bool drawn;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 18),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.12),
+        border: Border.all(color: accent, width: 1.5),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            drawn
+                ? Icons.balance
+                : won
+                ? Icons.emoji_events
+                : Icons.sentiment_dissatisfied,
+            color: accent,
+            size: 36,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            title,
+            style: Cyber.display(36, color: accent, letterSpacing: 3),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Giant scoreline ─────────────────────────────────────────────────────────────
+
+class _GiantScoreline extends StatelessWidget {
+  const _GiantScoreline({
+    required this.playerScore,
+    required this.opponentScore,
+  });
+
+  final int playerScore;
+  final int opponentScore;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          '$playerScore',
+          style: Cyber.display(72, color: Cyber.cyan),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text('-', style: Cyber.display(48, color: Cyber.muted)),
+        ),
+        Text(
+          '$opponentScore',
+          style: Cyber.display(72, color: Cyber.danger),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Fixed footer dock (PLAY AGAIN | HOME) ─────────────────────────────────────
+
+class _ResultFooterDock extends StatelessWidget {
+  const _ResultFooterDock({
+    required this.onPlayAgain,
+    required this.onHome,
+  });
+
+  final VoidCallback onPlayAgain;
+  final VoidCallback onHome;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          colors: [Color(0xFF010517), Color(0xF2010517), Color(0x00010517)],
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+          child: Row(
+            children: [
+              Expanded(
+                child: _ResultDockButton(
+                  label: 'PLAY AGAIN',
+                  leadingIcon: Icons.refresh,
+                  focal: true,
+                  onTap: onPlayAgain,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: _ResultDockButton(
+                  label: 'HOME',
+                  leadingIcon: Icons.home_outlined,
+                  focal: false,
+                  onTap: onHome,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ResultDockButton extends StatelessWidget {
+  const _ResultDockButton({
+    required this.label,
+    required this.focal,
+    required this.onTap,
+    this.leadingIcon,
+  });
+
+  final String label;
+  final bool focal;
+  final VoidCallback onTap;
+  final IconData? leadingIcon;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color content = focal ? const Color(0xff06121b) : Cyber.cyan;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: SizedBox(
+        height: 56,
+        child: CustomPaint(
+          painter: _ResultDockBtnPainter(focal: focal),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (leadingIcon != null) ...[
+                Icon(leadingIcon, color: content, size: 20),
+                const SizedBox(width: 8),
+              ],
+              Text(
+                label,
+                style: Cyber.body(
+                  15,
+                  color: content,
+                  weight: FontWeight.w800,
+                ).copyWith(letterSpacing: 0.8),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ResultDockBtnPainter extends CustomPainter {
+  const _ResultDockBtnPainter({required this.focal});
+  final bool focal;
+
+  static const _clipper = HudChamferClipper(bigCut: 14, smallCut: 7);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = _clipper.buildPath(size);
+    if (focal) {
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = Cyber.cyan.withValues(alpha: 0.5)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 13),
+      );
+      canvas.drawPath(
+        path,
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color.lerp(Cyber.cyan, Colors.white, 0.28)!, Cyber.cyan],
+          ).createShader(Offset.zero & size),
+      );
+    } else {
+      canvas.drawPath(path, Paint()..color = const Color(0xff1b2336));
+      canvas.drawPath(
+        path,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.4
+          ..color = Cyber.cyan.withValues(alpha: 0.45),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _ResultDockBtnPainter old) =>
+      old.focal != focal;
+}
+
+// ── XP panel ──────────────────────────────────────────────────────────────────
 
 class _XpProgressPanel extends StatelessWidget {
   const _XpProgressPanel({
@@ -448,27 +551,24 @@ class _XpProgressPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Cyber.panel,
-        border: Border.all(color: accentColor.withValues(alpha: 0.4), width: 1),
+        color: Cyber.panel.withValues(alpha: 0.85),
+        border: Border.all(color: accentColor.withValues(alpha: 0.35), width: 1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // XP amount display
           Text(
             isWin ? '+$displayedCount XP' : '−$displayedCount XP',
             style: TextStyle(
               fontFamily: 'Orbitron',
               fontSize: 28,
               fontWeight: FontWeight.w900,
-              color: accentColor,
+              color: Colors.white,
               letterSpacing: 1,
             ),
           ),
           const SizedBox(height: 12),
-
-          // XP bar
           CyberProgressBar(
             value: barFillRatio,
             accent: accentColor,
@@ -478,15 +578,9 @@ class _XpProgressPanel extends StatelessWidget {
             trackColor: accentColor.withValues(alpha: 0.15),
           ),
           const SizedBox(height: 8),
-
-          // XP label
           Text(
             '$xpIntoLevel / $xpToNextLevel XP · LEVEL $level',
-            style: Cyber.label(
-              9,
-              color: Cyber.muted,
-              letterSpacing: 0.5,
-            ),
+            style: Cyber.label(9, color: Cyber.muted, letterSpacing: 0.5),
           ),
         ],
       ),
@@ -494,127 +588,7 @@ class _XpProgressPanel extends StatelessWidget {
   }
 }
 
-class _ScorePill extends StatelessWidget {
-  const _ScorePill({
-    required this.label,
-    required this.score,
-    this.highlight = false,
-  });
-  final String label;
-  final String score;
-  final bool highlight;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: highlight
-            ? Cyber.cyan.withValues(alpha: 0.15)
-            : Colors.white.withValues(alpha: 0.05),
-        border: Border.all(color: highlight ? Cyber.cyan : Colors.white24),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: Cyber.label(
-              10,
-              color: highlight ? Cyber.cyan : Colors.white54,
-              weight: FontWeight.w700,
-              letterSpacing: 1,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            score,
-            style: Cyber.display(
-              20,
-              color: highlight ? Cyber.cyan : Colors.white,
-              letterSpacing: 1,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PenaltyLogRow extends StatelessWidget {
-  const _PenaltyLogRow({required this.kick, required this.dirLabel});
-  final PenaltyKick kick;
-  final Map<PenaltyDirection, String> dirLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final goalColor = kick.scored
-        ? const Color(0xFF00E5FF)
-        : const Color(0xFFFF1744);
-    return Container(
-      color: kick.scored
-          ? const Color(0xFF00E5FF).withValues(alpha: 0.04)
-          : Colors.transparent,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 28,
-            child: Text(
-              '${kick.kickNumber}',
-              style: const TextStyle(color: Colors.white54, fontSize: 12),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              kick.byPlayer ? 'YOU' : 'CPU',
-              style: Cyber.label(
-                12,
-                color: kick.byPlayer ? Cyber.cyan : Colors.orange,
-                weight: FontWeight.w700,
-                letterSpacing: 0.8,
-              ),
-            ),
-          ),
-          SizedBox(
-            width: 44,
-            child: Text(
-              dirLabel[kick.shootDirection]!,
-              style: TextStyle(
-                color: goalColor,
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 44,
-            child: Text(
-              dirLabel[kick.diveDirection]!,
-              style: const TextStyle(
-                color: Colors.white38,
-                fontWeight: FontWeight.w700,
-                fontSize: 12,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 32,
-            child: Icon(
-              kick.scored ? Icons.check_circle : Icons.cancel,
-              size: 18,
-              color: goalColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// ── Match log ─────────────────────────────────────────────────────────────────
 
 class _RoundLogHeader extends StatelessWidget {
   const _RoundLogHeader({required this.count});
@@ -627,19 +601,12 @@ class _RoundLogHeader extends StatelessWidget {
       children: [
         Text(
           'MATCH LOG',
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            color: Cyber.cyan,
-            letterSpacing: 2,
-          ),
+          style: Cyber.label(12, color: Cyber.cyan, letterSpacing: 2),
         ),
         const SizedBox(height: 8),
         Text(
           '$count ROUNDS PLAYED',
-          style: Cyber.label(
-            10,
-            color: Colors.white38,
-            letterSpacing: 1,
-          ),
+          style: Cyber.label(10, color: Colors.white38, letterSpacing: 1),
         ),
       ],
     );
@@ -746,12 +713,12 @@ class _FinalRoundLogItem extends StatelessWidget {
             begin: const Offset(0.28, 0),
             end: Offset.zero,
           ).animate(
-            CurvedAnimation(parent: AlwaysStoppedAnimation(value), curve: Curves.linear),
+            CurvedAnimation(
+              parent: AlwaysStoppedAnimation(value),
+              curve: Curves.linear,
+            ),
           ),
-          child: Opacity(
-            opacity: value,
-            child: child,
-          ),
+          child: Opacity(opacity: value, child: child),
         );
       },
       child: Container(
@@ -803,11 +770,7 @@ class _FinalRoundLogItem extends StatelessWidget {
               width: 50,
               child: Text(
                 '$playerGoals - $cpuGoals',
-                style: Cyber.display(
-                  14,
-                  color: Colors.white,
-                  letterSpacing: 1,
-                ),
+                style: Cyber.display(14, color: Colors.white, letterSpacing: 1),
                 textAlign: TextAlign.right,
               ),
             ),

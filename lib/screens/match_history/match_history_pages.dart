@@ -384,6 +384,25 @@ class _HeroScoreline extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
+              if (entry.isShootout) ...[
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Cyber.violet.withValues(alpha: 0.15),
+                    border: Border.all(color: Cyber.violet.withValues(alpha: 0.6)),
+                  ),
+                  child: const Text(
+                    'PENALTY SHOOTOUT',
+                    style: TextStyle(
+                      color: Cyber.violet,
+                      fontFamily: 'Orbitron',
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
               if (entry.penaltyPlayerScore != null) ...[
                 const SizedBox(height: 4),
                 Container(

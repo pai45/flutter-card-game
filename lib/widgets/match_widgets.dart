@@ -41,34 +41,38 @@ class _StadiumBackgroundState extends State<StadiumBackground>
     super.dispose();
   }
 
+  // Held opacity passed straight to Image.paint so the dim is applied while the
+  // bitmap is drawn — no per-frame saveLayer like an Opacity widget would force.
+  static const _dim = AlwaysStoppedAnimation<double>(0.20);
+
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _ctrl,
-      builder: (context, _) {
-        final t = _ctrl.value * 2 * pi;
-        final scale = 1.0 + 0.025 * sin(t);
-        return Transform.scale(
-          scale: scale,
-          child: Opacity(
-            opacity: 0.20,
-            child: Image.asset(
-              'assets/backgrounds/match_stadium.png',
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-              // Fall back to the original stadium art if the new match
-              // background hasn't been added to assets/backgrounds/ yet.
-              errorBuilder: (_, _, _) => Image.asset(
-                'assets/backgrounds/home_stadium.png',
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-              ),
-            ),
+    // Isolated in its own layer so the slow ambient scale never repaints (or
+    // gets repainted by) the foreground phase animations sitting above it.
+    return RepaintBoundary(
+      child: AnimatedBuilder(
+        animation: _ctrl,
+        builder: (context, child) {
+          final scale = 1.0 + 0.025 * sin(_ctrl.value * 2 * pi);
+          return Transform.scale(scale: scale, child: child);
+        },
+        child: Image.asset(
+          'assets/backgrounds/match_stadium.png',
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+          opacity: _dim,
+          // Fall back to the original stadium art if the new match
+          // background hasn't been added to assets/backgrounds/ yet.
+          errorBuilder: (_, _, _) => Image.asset(
+            'assets/backgrounds/home_stadium.png',
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+            opacity: _dim,
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
@@ -93,9 +97,9 @@ class MatchPhaseScaffold extends StatelessWidget {
   const MatchPhaseScaffold({
     required this.title,
     required this.subtitle,
-    required this.state,
     required this.children,
     required this.onQuit,
+    this.state,
     this.scoreLabel,
     this.tutorialKey,
     this.tutorialSteps = const [],
@@ -104,14 +108,21 @@ class MatchPhaseScaffold extends StatelessWidget {
     this.spotlightEnabled = true,
     this.spotlightDelay = Duration.zero,
     this.spotlightOnComplete,
+    this.spotlightInteractiveKeys = const [],
+    this.spotlightCardAnchor = SpotlightCardAnchor.auto,
+    this.spotlightCardBottomInset = 24,
     this.bottomAction,
     this.bottomActionKey,
+    this.showStadium = true,
     super.key,
   });
 
   final String title;
   final String subtitle;
-  final GameState state;
+
+  /// Match state for the round meter + header score. Null for non-match
+  /// flows (the standalone shootout passes a [scoreLabel] instead.)
+  final GameState? state;
   final List<Widget> children;
   final VoidCallback onQuit;
   final String? scoreLabel;
@@ -122,11 +133,20 @@ class MatchPhaseScaffold extends StatelessWidget {
   final bool spotlightEnabled;
   final Duration spotlightDelay;
   final VoidCallback? spotlightOnComplete;
+  final List<GlobalKey> spotlightInteractiveKeys;
+  final SpotlightCardAnchor spotlightCardAnchor;
+  final double spotlightCardBottomInset;
   final Widget? bottomAction;
   final GlobalKey? bottomActionKey;
 
+  /// Whether to lay the ambient stadium image behind the content. Off for
+  /// non-match flows that want a clean HUD backdrop (e.g. the shootout lineup).
+  final bool showStadium;
+
   @override
   Widget build(BuildContext context) {
+    // No score to show when neither a label nor match state is supplied.
+    final showScore = scoreLabel != null || state != null;
     return GameScaffold(
       title: title,
       subtitle: null,
@@ -135,22 +155,25 @@ class MatchPhaseScaffold extends StatelessWidget {
       grain: true,
       titleUnderlay:
           scoreLabel == null &&
-              state.currentRound >= 1 &&
-              state.currentRound <= 4
-          ? _RoundProgressMeter(currentRound: state.currentRound)
+              state != null &&
+              state!.currentRound >= 1 &&
+              state!.currentRound <= 4
+          ? _RoundProgressMeter(currentRound: state!.currentRound)
           : null,
-      rightSlot: _MatchHeaderScore(
-        label: scoreLabel,
-        playerScore: state.playerScore,
-        opponentScore: state.opponentScore,
-      ),
+      rightSlot: showScore
+          ? MatchHeaderScore(
+              label: scoreLabel,
+              playerScore: state?.playerScore ?? 0,
+              opponentScore: state?.opponentScore ?? 0,
+            )
+          : null,
       leading: IconButton(
         onPressed: onQuit,
         icon: const Icon(Icons.close, color: Cyber.cyan),
       ),
       child: Stack(
         children: [
-          const Positioned.fill(child: StadiumBackground()),
+          if (showStadium) const Positioned.fill(child: StadiumBackground()),
           ListView.separated(
             clipBehavior: Clip.none,
             padding: EdgeInsets.fromLTRB(
@@ -183,6 +206,9 @@ class MatchPhaseScaffold extends StatelessWidget {
               enabled: spotlightEnabled,
               startDelay: spotlightDelay,
               onComplete: spotlightOnComplete,
+              interactiveKeys: spotlightInteractiveKeys,
+              cardAnchor: spotlightCardAnchor,
+              cardBottomInset: spotlightCardBottomInset,
             ),
           if (bottomAction != null)
             Positioned(
@@ -235,8 +261,8 @@ class _RoundProgressMeter extends StatelessWidget {
   }
 }
 
-class _MatchHeaderScore extends StatelessWidget {
-  const _MatchHeaderScore({
+class MatchHeaderScore extends StatelessWidget {
+  const MatchHeaderScore({
     required this.playerScore,
     required this.opponentScore,
     this.label,
@@ -1041,6 +1067,30 @@ class MatchHistoryTile extends StatelessWidget {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
+                        if (entry.isShootout) ...[
+                          const SizedBox(width: 7),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Cyber.violet.withValues(alpha: 0.14),
+                              border: Border.all(
+                                color: Cyber.violet.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: const Text(
+                              'SHOOTOUT',
+                              style: TextStyle(
+                                color: Cyber.violet,
+                                fontSize: 9,
+                                fontFamily: 'Orbitron',
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ],
                         if (entry.penaltyPlayerScore != null) ...[
                           const SizedBox(width: 7),
                           Container(

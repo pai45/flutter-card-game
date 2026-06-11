@@ -1,3 +1,4 @@
+import 'package:card_game/blocs/game/game_bloc.dart';
 import 'package:card_game/blocs/prediction/prediction_cubit.dart';
 import 'package:card_game/blocs/prediction/prediction_state.dart';
 import 'package:card_game/models/league.dart';
@@ -43,7 +44,7 @@ void main() {
     expect(find.text('WILL'), findsNothing);
     expect(find.text('YES'), findsNothing);
 
-    await _pumpFrames(tester, const Duration(seconds: 4));
+    await _pumpFrames(tester, const Duration(seconds: 5));
 
     expect(find.text('WILL'), findsOneWidget);
     expect(find.text('YES'), findsOneWidget);
@@ -64,7 +65,7 @@ void main() {
 
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 16));
-    await _pumpFrames(tester, const Duration(seconds: 4));
+    await _pumpFrames(tester, const Duration(seconds: 5));
 
     await _tapButton(tester, 'NEXT');
     await tester.pump(const Duration(milliseconds: 200));
@@ -141,18 +142,20 @@ void main() {
 
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 16));
-    await _pumpFrames(tester, const Duration(seconds: 4));
+    await _pumpFrames(tester, const Duration(seconds: 5));
 
-    await tester.tap(find.text('YES'));
+    await _tapOption(tester, 'YES');
     await tester.pumpAndSettle();
     await tester.tap(find.text('2x').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('10'), findsOneWidget);
+    // Boosted value shows twice: the question's XP pill and the header
+    // potential-XP ticker (5 base × 2x booster = 10 banked).
+    expect(find.text('10'), findsNWidgets(2));
 
     await _tapButton(tester, 'NEXT');
-    await _pumpFrames(tester, const Duration(seconds: 4));
-    await tester.tap(find.text('HOME'));
+    await _pumpFrames(tester, const Duration(seconds: 5));
+    await _tapOption(tester, 'HOME');
     await tester.pumpAndSettle();
 
     expect(find.text('MOVE'), findsNothing);
@@ -179,9 +182,9 @@ void main() {
 
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 16));
-    await _pumpFrames(tester, const Duration(seconds: 4));
+    await _pumpFrames(tester, const Duration(seconds: 5));
 
-    await tester.tap(find.text('YES'));
+    await _tapOption(tester, 'YES');
     await tester.pumpAndSettle();
     await tester.tap(find.text('2x').first);
     await tester.pumpAndSettle();
@@ -189,8 +192,8 @@ void main() {
     await tester.pumpAndSettle();
 
     await _tapButton(tester, 'NEXT');
-    await _pumpFrames(tester, const Duration(seconds: 4));
-    await tester.tap(find.text('HOME'));
+    await _pumpFrames(tester, const Duration(seconds: 5));
+    await _tapOption(tester, 'HOME');
     await tester.pumpAndSettle();
     await _tapButton(tester, 'SUBMIT QUIZ');
     await tester.pump();
@@ -214,9 +217,9 @@ void main() {
 
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 16));
-    await _pumpFrames(tester, const Duration(seconds: 4));
+    await _pumpFrames(tester, const Duration(seconds: 5));
 
-    await tester.tap(find.text('YES'));
+    await _tapOption(tester, 'YES');
     await tester.pumpAndSettle();
     await tester.tap(find.text('2x').first);
     await tester.pumpAndSettle();
@@ -224,8 +227,8 @@ void main() {
     await tester.pumpAndSettle();
 
     await _tapButton(tester, 'NEXT');
-    await _pumpFrames(tester, const Duration(seconds: 4));
-    await tester.tap(find.text('HOME'));
+    await _pumpFrames(tester, const Duration(seconds: 5));
+    await _tapOption(tester, 'HOME');
     await tester.pumpAndSettle();
     await _tapButton(tester, 'SUBMIT QUIZ');
     await tester.pump();
@@ -250,7 +253,7 @@ void main() {
 
     await _pumpPredictionScreen(tester, cubit: cubit, match: _match);
 
-    await tester.tap(find.text('SECOND QUESTION'));
+    await _tapOption(tester, 'SECOND QUESTION');
     await tester.pumpAndSettle();
     expect(find.text('MOVE'), findsNothing);
     await tester.ensureVisible(find.text('2x').last);
@@ -341,6 +344,55 @@ void main() {
     expect(find.text('CROWD VOTES'), findsAtLeastNWidgets(1));
   });
 
+  testWidgets('settleable review auto-reveals on open and credits XP', (
+    tester,
+  ) async {
+    final cubit = _TestPredictionCubit(_QuizRepo(_settledQuiz));
+    cubit.seed(
+      _prediction(matchId: _finishedMatch.id, status: PredictionStatus.locked),
+    );
+    final gameBloc = GameBloc(SecureGameStorage());
+    addTearDown(cubit.close);
+    addTearDown(gameBloc.close);
+
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<PredictionCubit>.value(value: cubit),
+          BlocProvider<GameBloc>.value(value: gameBloc),
+        ],
+        child: MaterialApp(home: MatchPredictionScreen(match: _finishedMatch)),
+      ),
+    );
+    // Pump through the full async chain: _load → settle → savePredictions →
+    // setState fires overlay. 3 pumps replaces the original 2 pre-tap +
+    // 1 post-tap pumps; the 16ms render pump finishes the sequence.
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+    final coinsBefore = gameBloc.state.coins;
+    await tester.pump(const Duration(milliseconds: 16));
+
+    expect(find.text('RESULTS ARE IN'), findsOneWidget);
+
+    // Header beat + two verdict flips, then the summary beat.
+    await _pumpFrames(tester, const Duration(seconds: 4));
+    expect(find.text('+5 XP'), findsAtLeastNWidgets(1));
+    expect(find.text('CONTINUE'), findsOneWidget);
+
+    await tester.tap(find.text('CONTINUE'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('CONTINUE'), findsNothing);
+    expect(
+      cubit.state.predictionFor(_finishedMatch.id)?.status,
+      PredictionStatus.settled,
+    );
+    // q1 was wrong, q2 right → 5 XP credited to progression, no coins.
+    expect(gameBloc.state.progression.totalXP, 5);
+    expect(gameBloc.state.coins, coinsBefore);
+  });
+
   testWidgets('match leaderboard button opens leaderboard sheet', (
     tester,
   ) async {
@@ -384,6 +436,14 @@ Future<void> _pumpFrames(WidgetTester tester, Duration duration) async {
 }
 
 Future<void> _tapButton(WidgetTester tester, String label) {
+  return tester.tap(
+    find
+        .ancestor(of: find.text(label), matching: find.byType(GestureDetector))
+        .first,
+  );
+}
+
+Future<void> _tapOption(WidgetTester tester, String label) {
   return tester.tap(
     find
         .ancestor(of: find.text(label), matching: find.byType(GestureDetector))

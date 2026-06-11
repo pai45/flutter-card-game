@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../blocs/picks/picks_cubit.dart';
+import '../../blocs/picks/picks_state.dart';
 import '../../blocs/prediction/prediction_cubit.dart';
 import '../../blocs/prediction/prediction_state.dart';
 import '../../config/theme.dart';
 import '../../models/league.dart';
+import '../../models/picks.dart';
 import '../../models/sport_match.dart';
 import '../../models/team_standing.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import 'market_detail_screen.dart';
 import 'match_prediction_screen.dart';
-import 'widgets/match_pick_card.dart';
+import 'widgets/pick_market_card.dart';
+import 'widgets/pick_trade_sheet.dart';
 import 'widgets/match_prediction_card.dart';
 import 'widgets/standings_table.dart';
 
@@ -30,6 +35,14 @@ class TeamDetailScreen extends StatelessWidget {
     );
   }
 
+  void _openPickMarket(BuildContext context, String marketId) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => MarketDetailScreen(marketId: marketId),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -41,13 +54,12 @@ class TeamDetailScreen extends StatelessWidget {
               final standings = state.standingsFor(league.id);
               final standing = _standingFor(standings, team.id);
               final fixtures = state.fixturesForTeam(league.id, team.id);
-              final pickFixtures = fixtures
-                  .where((m) => m.status != MatchStatus.finished)
-                  .toList();
 
               return Column(
                 children: [
-                  DetailTopBar(title: '${league.shortCode} · ${team.shortName}'),
+                  DetailTopBar(
+                    title: '${league.shortCode} · ${team.shortName}',
+                  ),
                   Expanded(
                     child: ListView(
                       padding: const EdgeInsets.fromLTRB(16, 6, 16, 28),
@@ -76,13 +88,42 @@ class TeamDetailScreen extends StatelessWidget {
                         const SizedBox(height: 12),
                         const _Heading(label: 'PICKS CENTER'),
                         const SizedBox(height: 12),
-                        if (pickFixtures.isEmpty)
-                          const _EmptyNote('No open markets for this team.')
-                        else
-                          for (final match in pickFixtures) ...[
-                            MatchPickCard(match: match, standings: standings),
-                            const SizedBox(height: 12),
-                          ],
+                        BlocBuilder<PicksCubit, PicksState>(
+                          builder: (context, picksState) {
+                            final markets = picksState.markets
+                                .where(
+                                  (m) =>
+                                      m.leagueId == league.id &&
+                                      _marketMentionsTeam(m, team),
+                                )
+                                .toList();
+                            if (markets.isEmpty) {
+                              return const _EmptyNote(
+                                'No markets for this team.',
+                              );
+                            }
+                            return Column(
+                              children: [
+                                for (final market in markets) ...[
+                                  PickMarketCard(
+                                    market: market,
+                                    position: picksState.positionForMarket(
+                                      market.id,
+                                    ),
+                                    onOpen: () =>
+                                        _openPickMarket(context, market.id),
+                                    onBuy: (outcome) => showPickTradeSheet(
+                                      context: context,
+                                      market: market,
+                                      outcome: outcome,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                ],
+                              ],
+                            );
+                          },
+                        ),
                       ],
                     ),
                   ),
@@ -101,6 +142,20 @@ TeamStanding? _standingFor(List<TeamStanding> standings, String teamId) {
     if (s.team.id == teamId) return s;
   }
   return null;
+}
+
+bool _marketMentionsTeam(PickMarket market, SportTeam team) {
+  final needle = team.name.toLowerCase();
+  final short = team.shortName.toLowerCase();
+  bool contains(String? value) {
+    final text = value?.toLowerCase() ?? '';
+    return text.contains(needle) || text.contains(short);
+  }
+
+  return contains(market.question) ||
+      contains(market.homeLabel) ||
+      contains(market.awayLabel) ||
+      market.outcomes.any((outcome) => contains(outcome.label));
 }
 
 class _Heading extends StatelessWidget {

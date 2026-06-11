@@ -436,6 +436,15 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
   }
 
   Widget _buildSummary(BuildContext context) {
+    final items = widget.reveal.items;
+    final playerIndices = [
+      for (int i = 0; i < items.length; i++)
+        if (items[i].isPlayer) i,
+    ];
+    final actionIndices = [
+      for (int i = 0; i < items.length; i++)
+        if (!items[i].isPlayer) i,
+    ];
     return AnimatedBuilder(
       animation: _summaryExit,
       builder: (context, child) => Opacity(
@@ -522,35 +531,15 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
                           ],
                           const SizedBox(height: 30),
 
-                        // Cards in a wrap
-                        Wrap(
-                          alignment: WrapAlignment.center,
-                          spacing: 10,
-                          runSpacing: 10,
-                          children: [
-                            for (int i = 0; i < widget.reveal.items.length; i++)
-                              AnimatedBuilder(
-                                animation: _summaryCtrl[i],
-                                builder: (_, _) {
-                                  final t = _summaryCtrl[i].value.clamp(
-                                    0.0,
-                                    1.0,
-                                  );
-                                  return Opacity(
-                                    opacity: t,
-                                    child: Transform.scale(
-                                      scale: Curves.easeOutBack.transform(t),
-                                      child: _RevealItemFace(
-                                        widget.reveal.items[i],
-                                        size: VisualCardSize.sm,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                          ],
-                        ),
-                      ],
+                          // Cards grouped under left-aligned section headers.
+                          if (playerIndices.isNotEmpty)
+                            _cardGroup('PLAYER CARDS', playerIndices),
+                          if (playerIndices.isNotEmpty &&
+                              actionIndices.isNotEmpty)
+                            const SizedBox(height: 26),
+                          if (actionIndices.isNotEmpty)
+                            _cardGroup('ACTION CARDS', actionIndices),
+                        ],
                     ),
                   ),
                 ),
@@ -574,6 +563,48 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
         ),
       ],
       ),
+    );
+  }
+
+  /// A left-aligned, full-width section: an accent header with a count over a
+  /// start-aligned wrap of the cards at [indices] (indices into
+  /// `widget.reveal.items`, so each maps to its own summary animation).
+  Widget _cardGroup(String title, List<int> indices) {
+    return SizedBox(
+      width: double.infinity,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SummaryGroupHeader(title: title, count: indices.length),
+          const SizedBox(height: 14),
+          Wrap(
+            alignment: WrapAlignment.start,
+            spacing: 10,
+            runSpacing: 10,
+            children: [for (final i in indices) _summaryCard(i)],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// A single summary card with its staggered scale-in/fade-in animation.
+  Widget _summaryCard(int i) {
+    return AnimatedBuilder(
+      animation: _summaryCtrl[i],
+      builder: (_, _) {
+        final t = _summaryCtrl[i].value.clamp(0.0, 1.0);
+        return Opacity(
+          opacity: t,
+          child: Transform.scale(
+            scale: Curves.easeOutBack.transform(t),
+            child: _RevealItemFace(
+              widget.reveal.items[i],
+              size: VisualCardSize.sm,
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -690,6 +721,45 @@ class _MysterySlot extends StatelessWidget {
           style: Cyber.display(24, color: Cyber.cyan),
         ),
       ),
+    );
+  }
+}
+
+/// Left-aligned section header for a card group on the summary screen: an
+/// accent tick, an uppercase Orbitron label and the item count. Static chrome,
+/// so it carries no glow (per the design rule).
+class _SummaryGroupHeader extends StatelessWidget {
+  const _SummaryGroupHeader({required this.title, required this.count});
+
+  final String title;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 3,
+          height: 15,
+          color: Cyber.cyan.withValues(alpha: 0.9),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: Cyber.label(13, color: Cyber.cyan, letterSpacing: 2.2),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          '$count',
+          style: Cyber.body(
+            11,
+            color: Cyber.muted,
+            weight: FontWeight.w800,
+            letterSpacing: 1,
+          ),
+        ),
+      ],
     );
   }
 }

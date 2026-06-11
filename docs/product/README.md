@@ -23,8 +23,10 @@ The main navigation keeps Predictions, Pick, Leaderboard, Shop, and Profile as a
 ## Feature Docs
 
 - [Prediction Matches](prediction-matches.md)
+- [Prediction Gamification](prediction-gamification.md) (designed, not yet built)
 - [Picks](picks.md)
 - [Pitch Duel Card Game](pitch-duel-card-game.md)
+- [Pitch Duel Leveling System](pitch-duel-leveling.md)
 - [Leaderboard](leaderboard.md)
 
 ## Product Loops
@@ -37,7 +39,8 @@ The main navigation keeps Predictions, Pick, Leaderboard, Shop, and Profile as a
 4. Already-submitted predictions reopen as an editable review list until kickoff.
 5. Prediction locks once the match is live or no longer editable, with vote results available for review.
 6. Finished matches can show correct answers, vote distribution, and settlement when result data is available.
-7. Correct answers return coins/rewards.
+7. Finished settleable matches dock a REVEAL RESULTS action: settlement plays as a staged reveal cinematic and correct answers credit XP into the shared progression track (predictions never pay coins).
+8. (Designed, not yet built) The reveal will also feed an accuracy streak, achievements, and daily quests — see [Prediction Gamification](prediction-gamification.md).
 
 **Pitch Duel card-game loop**
 
@@ -46,7 +49,7 @@ The main navigation keeps Predictions, Pick, Leaderboard, Shop, and Profile as a
 3. User receives cards and a legal starter deck.
 4. User plays a four-round card match.
 5. Match result awards XP and coins.
-6. User grows level, collection, and match history.
+6. User grows level, collection, and match history. See [Pitch Duel Leveling System](pitch-duel-leveling.md) for the XP curve, match rewards, pack XP, and opponent scaling.
 
 **Competition loop**
 
@@ -60,6 +63,7 @@ The main navigation keeps Predictions, Pick, Leaderboard, Shop, and Profile as a
 - The Pick tab currently behaves like a product prototype: users can choose a market and confirm an amount, but the confirmed pick is not yet a persisted portfolio position.
 - Leaderboard entries are seeded to demonstrate ranking states, user highlighting, podiums, movement, and team boards.
 - Pitch Duel gameplay, deck ownership, progression, wallet, daily drop, and match history are persistent product experiences.
+- The prediction gamification layer (streaks, settlement reveal, achievements, prediction XP, daily quests) is a designed-not-yet-built system documented in [Prediction Gamification](prediction-gamification.md).
 
 ## How To Maintain These Docs
 

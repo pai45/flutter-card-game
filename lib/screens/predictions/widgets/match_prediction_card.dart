@@ -18,7 +18,9 @@ import '../../../widgets/team_logo.dart';
 ///   • a full-width bottom strip whose chamfered corners match the card:
 ///       - upcoming + open → bluer "Make prediction and …" CTA (focal),
 ///       - upcoming + predicted → calm "Predicted … ago",
-///       - finished + reward → "△ +N XP",
+///       - finished + predicted + unsettled → gold "Results ready" CTA (focal),
+///       - finished + predicted + settled → the user's earned "△ +N XP",
+///       - finished, no prediction → the fixture's "△ +N XP",
 ///       - live → no strip.
 class MatchPredictionCard extends StatelessWidget {
   const MatchPredictionCard({
@@ -101,6 +103,7 @@ class MatchPredictionCard extends StatelessWidget {
                 body,
                 _StatusStrip(
                   match: match,
+                  prediction: prediction,
                   predicted: _predicted,
                   submittedAt: prediction?.submittedAt,
                 ),
@@ -316,18 +319,48 @@ class _ScoreCentre extends StatelessWidget {
 class _StatusStrip extends StatelessWidget {
   const _StatusStrip({
     required this.match,
+    required this.prediction,
     required this.predicted,
     required this.submittedAt,
   });
 
   final SportMatch match;
+  final UserPrediction? prediction;
   final bool predicted;
   final DateTime? submittedAt;
 
   @override
   Widget build(BuildContext context) {
-    // Finished with a reward → "△ +N XP".
-    if (match.status == MatchStatus.finished && match.rewardXp > 0) {
+    // Finished + predicted but not yet settled → the settlement reveal is
+    // waiting; this is the card's focal pull-back-in state.
+    if (match.status == MatchStatus.finished &&
+        prediction != null &&
+        prediction!.status != PredictionStatus.settled) {
+      return _Strip(
+        fill: _stripDark,
+        topBorder: Cyber.gold.withValues(alpha: 0.28),
+        child: Text(
+          'Results ready — tap to reveal',
+          style: Cyber.body(12.5, color: Cyber.gold, weight: FontWeight.w700)
+              .copyWith(
+                shadows: [
+                  Shadow(
+                    color: Cyber.gold.withValues(alpha: 0.45),
+                    blurRadius: 10,
+                  ),
+                ],
+              ),
+        ),
+      );
+    }
+
+    // Finished with a reward → "△ +N XP" (the user's own earned XP once
+    // settled, otherwise the fixture's advertised reward).
+    final settledXp = prediction?.status == PredictionStatus.settled
+        ? prediction!.rewardEarned
+        : null;
+    final rewardXp = settledXp ?? match.rewardXp;
+    if (match.status == MatchStatus.finished && rewardXp > 0) {
       return _Strip(
         fill: _stripDark,
         child: Row(
@@ -336,7 +369,7 @@ class _StatusStrip extends StatelessWidget {
             const Icon(Icons.change_history, color: Cyber.cyan, size: 15),
             const SizedBox(width: 6),
             Text(
-              '+${match.rewardXp} XP',
+              '+$rewardXp XP',
               style:
                   Cyber.body(
                     12.5,

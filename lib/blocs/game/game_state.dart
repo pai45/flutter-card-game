@@ -177,15 +177,6 @@ class GameState {
     required this.opponentDefenders,
     required this.opponentActions,
     required this.opponentRedCarded,
-    required this.penaltyKicks,
-    required this.penaltyPlayerScore,
-    required this.penaltyOpponentScore,
-    required this.penaltyRound,
-    required this.penaltyPhaseOver,
-    required this.penaltyPlayerDirection,
-    required this.penaltyKickPhase,
-    required this.penaltySuddenDeath,
-    required this.penaltyWinner,
     required this.progression,
     required this.previousProgression,
     required this.pendingLevelUps,
@@ -233,15 +224,6 @@ class GameState {
     opponentDefenders: const [],
     opponentActions: const [],
     opponentRedCarded: const [],
-    penaltyKicks: const [],
-    penaltyPlayerScore: 0,
-    penaltyOpponentScore: 0,
-    penaltyRound: 0,
-    penaltyPhaseOver: false,
-    penaltyPlayerDirection: null,
-    penaltyKickPhase: 'choose',
-    penaltySuddenDeath: false,
-    penaltyWinner: null,
     progression: PlayerProgression.initial(),
     previousProgression: null,
     pendingLevelUps: const [],
@@ -285,15 +267,6 @@ class GameState {
   final List<PlayerCard> opponentDefenders;
   final List<ActionCard> opponentActions;
   final List<String> opponentRedCarded;
-  final List<PenaltyKick> penaltyKicks;
-  final int penaltyPlayerScore;
-  final int penaltyOpponentScore;
-  final int penaltyRound;
-  final bool penaltyPhaseOver;
-  final PenaltyDirection? penaltyPlayerDirection;
-  final String penaltyKickPhase; // 'choose' | 'result'
-  final bool penaltySuddenDeath;
-  final String? penaltyWinner; // 'player' | 'opponent'
   final PlayerProgression progression;
   final PlayerProgression? previousProgression;
   final List<int> pendingLevelUps;
@@ -349,15 +322,6 @@ class GameState {
     List<PlayerCard>? opponentDefenders,
     List<ActionCard>? opponentActions,
     List<String>? opponentRedCarded,
-    List<PenaltyKick>? penaltyKicks,
-    int? penaltyPlayerScore,
-    int? penaltyOpponentScore,
-    int? penaltyRound,
-    bool? penaltyPhaseOver,
-    Object? penaltyPlayerDirection = _sentinel,
-    String? penaltyKickPhase,
-    bool? penaltySuddenDeath,
-    Object? penaltyWinner = _sentinel,
     PlayerProgression? progression,
     Object? previousProgression = _sentinel,
     List<int>? pendingLevelUps,
@@ -420,19 +384,6 @@ class GameState {
     opponentDefenders: opponentDefenders ?? this.opponentDefenders,
     opponentActions: opponentActions ?? this.opponentActions,
     opponentRedCarded: opponentRedCarded ?? this.opponentRedCarded,
-    penaltyKicks: penaltyKicks ?? this.penaltyKicks,
-    penaltyPlayerScore: penaltyPlayerScore ?? this.penaltyPlayerScore,
-    penaltyOpponentScore: penaltyOpponentScore ?? this.penaltyOpponentScore,
-    penaltyRound: penaltyRound ?? this.penaltyRound,
-    penaltyPhaseOver: penaltyPhaseOver ?? this.penaltyPhaseOver,
-    penaltyPlayerDirection: penaltyPlayerDirection == _sentinel
-        ? this.penaltyPlayerDirection
-        : penaltyPlayerDirection as PenaltyDirection?,
-    penaltyKickPhase: penaltyKickPhase ?? this.penaltyKickPhase,
-    penaltySuddenDeath: penaltySuddenDeath ?? this.penaltySuddenDeath,
-    penaltyWinner: penaltyWinner == _sentinel
-        ? this.penaltyWinner
-        : penaltyWinner as String?,
     progression: progression ?? this.progression,
     previousProgression: previousProgression == _sentinel
         ? this.previousProgression

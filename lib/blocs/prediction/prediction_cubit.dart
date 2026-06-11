@@ -9,8 +9,9 @@ import 'prediction_state.dart';
 /// the user's own predictions (persisted via [SecureGameStorage]).
 ///
 /// Reward crediting is intentionally NOT done here — settlement returns the
-/// reward and the UI credits the wallet through `GameBloc` (`CoinsAdded`), so
-/// the cubit stays decoupled from the game economy.
+/// earned XP and the UI credits progression through `GameBloc`
+/// (`PredictionXpAdded`), so the cubit stays decoupled from the game economy.
+/// Predictions reward XP only; coins are never involved.
 class PredictionCubit extends Cubit<PredictionState> {
   PredictionCubit(this._repository, this._storage)
     : super(const PredictionState());
@@ -19,44 +20,70 @@ class PredictionCubit extends Cubit<PredictionState> {
   final SecureGameStorage _storage;
 
   /// Demo predictions seeded so the prediction history screen can show every
-  /// lifecycle bucket (pending · live · settled) on a fresh install.
+  /// lifecycle bucket (pending · live · settleable · settled) on a fresh
+  /// install. Stored predictions always win — a demo is only inserted when the
+  /// user has no prediction for that match, so settling a demo fixture
+  /// persists across relaunches.
   static void applyHistoryDemos(Map<String, UserPrediction> predictions) {
     final now = DateTime.now();
-    predictions['ipl_pjk_kkr'] = UserPrediction(
-      matchId: 'ipl_pjk_kkr',
-      answers: const {},
-      submittedAt: now.subtract(const Duration(hours: 2)),
-      status: PredictionStatus.open,
-    );
-    predictions['epl_liv_mc'] = UserPrediction(
-      matchId: 'epl_liv_mc',
-      answers: const {'q1': 100, 'q2': 0, 'q3': 0, 'q4': 0, 'q5': 0},
-      submittedAt: DateTime(now.year, now.month, now.day - 1, 23, 34),
-      status: PredictionStatus.open,
-    );
-    predictions['epl_cfc_new'] = UserPrediction(
-      matchId: 'epl_cfc_new',
-      answers: const {'q1': 201, 'q2': 0},
-      submittedAt: now.subtract(const Duration(minutes: 45)),
-      status: PredictionStatus.locked,
-    );
-    // settledHome 2-1 → encoded 201; user picked 201 on q1 (✓), mixed on rest.
-    predictions['epl_mu_whu'] = UserPrediction(
-      matchId: 'epl_mu_whu',
-      answers: const {'q1': 201, 'q2': 0, 'q3': 0, 'q4': 2, 'q5': 1},
-      submittedAt: now.subtract(const Duration(days: 3, hours: 2)),
-      status: PredictionStatus.settled,
-      correctCount: 3,
-      rewardEarned: 20,
-    );
-    predictions['ipl_pjk_rcb'] = UserPrediction(
-      matchId: 'ipl_pjk_rcb',
-      answers: const {'q1': 0, 'q2': 0, 'q3': 1, 'q4': 0, 'q5': 0},
-      submittedAt: DateTime(now.year, 1, 24, 23, 34),
-      status: PredictionStatus.settled,
-      correctCount: 3,
-      rewardEarned: 20,
-    );
+    final demos = [
+      UserPrediction(
+        matchId: 'ipl_pjk_kkr',
+        answers: const {},
+        submittedAt: now.subtract(const Duration(hours: 2)),
+        status: PredictionStatus.open,
+      ),
+      UserPrediction(
+        matchId: 'epl_liv_mc',
+        answers: const {'q1': 100, 'q2': 0, 'q3': 0, 'q4': 0, 'q5': 0},
+        submittedAt: DateTime(now.year, now.month, now.day - 1, 23, 34),
+        status: PredictionStatus.open,
+      ),
+      UserPrediction(
+        matchId: 'epl_cfc_new',
+        answers: const {'q1': 201, 'q2': 0},
+        submittedAt: now.subtract(const Duration(minutes: 45)),
+        status: PredictionStatus.locked,
+      ),
+      // Finished fixture settled as a clean win for history/demo coverage.
+      UserPrediction(
+        matchId: 'epl_mu_whu',
+        answers: const {'q1': 201, 'q2': 0, 'q3': 0, 'q4': 0, 'q5': 1},
+        submittedAt: now.subtract(const Duration(days: 3, hours: 2)),
+        status: PredictionStatus.settled,
+        correctCount: 5,
+        rewardEarned: 30,
+      ),
+      // 8th fixture: Chennai vs Mumbai — answers score 3/4 (q2 misses: user
+      // picks Under 12.5, actual is Over).
+      UserPrediction(
+        matchId: 'ipl_csk_mi',
+        answers: const {'q1': 0, 'q2': 1, 'q3': 0, 'q4': 0},
+        submittedAt: now.subtract(const Duration(days: 1, hours: 3)),
+        status: PredictionStatus.locked,
+      ),
+      // 9th fixture: Aston Villa vs Brighton — settled as a loss so the
+      // history page always shows a red outcome state on a fresh install.
+      UserPrediction(
+        matchId: 'epl_avl_bha',
+        answers: const {'q1': 101, 'q2': 0, 'q3': 1, 'q4': 0},
+        submittedAt: now.subtract(const Duration(days: 2, hours: 5)),
+        status: PredictionStatus.settled,
+        correctCount: 0,
+        rewardEarned: 0,
+      ),
+      UserPrediction(
+        matchId: 'ipl_pjk_rcb',
+        answers: const {'q1': 0, 'q2': 0, 'q3': 1, 'q4': 0, 'q5': 0},
+        submittedAt: DateTime(now.year, 1, 24, 23, 34),
+        status: PredictionStatus.settled,
+        correctCount: 3,
+        rewardEarned: 20,
+      ),
+    ];
+    for (final demo in demos) {
+      predictions.putIfAbsent(demo.matchId, () => demo);
+    }
   }
 
   Future<void> load() async {
@@ -112,8 +139,8 @@ class PredictionCubit extends Cubit<PredictionState> {
   }
 
   /// Mock settlement: scores the stored answers against the quiz's
-  /// [QuizQuestion.settledOptionIndex] and returns the coins earned so the
-  /// caller can credit the wallet. Returns 0 if nothing to settle.
+  /// [QuizQuestion.settledOptionIndex] and returns the XP earned so the
+  /// caller can credit progression. Returns 0 if nothing to settle.
   Future<int> settle(String matchId) async {
     final prediction = state.predictions[matchId];
     if (prediction == null || prediction.status == PredictionStatus.settled) {

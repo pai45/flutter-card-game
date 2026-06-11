@@ -108,7 +108,7 @@ The match is live or no longer predictable. The user can review answers and crow
 
 **Settled**
 
-The app compares stored answers against known results. Correct answers are highlighted in review, generate reward value, and the reward is credited to the user's coins.
+The app compares stored answers against known results. Correct answers are highlighted in review, generate reward value, and the earned XP is credited to the user's progression. Settlement is triggered from the review screen's **REVEAL RESULTS** action, which plays the settlement reveal cinematic (see [Prediction Gamification](prediction-gamification.md)).
 
 ## League And Standings Mapping
 
@@ -122,13 +122,14 @@ Standings show team ranking context for the selected league. Team and league det
 
 ## Rewards
 
-Prediction settlement can credit coins. The match quiz also displays potential reward values per question and summary copy after results are known.
+Predictions reward **XP only — coins are never involved**. Settlement credits the earned XP into the same progression track used by Pitch Duel; a level crossed by a settlement plays the level-up celebration inside the settlement reveal. The match quiz displays potential XP per question and summary copy after results are known.
 
-Current product behavior credits coins from settled predictions into the same wallet used by other app surfaces.
+The staged settlement reveal and prediction XP are built; the rest of the gamified reward layer — accuracy streaks, achievements, daily quests — is designed but not yet built. See [Prediction Gamification](prediction-gamification.md).
 
 ## Current Product Notes
 
 - Fixtures, leagues, standings, and quizzes are currently mock-backed.
 - Match-level vote breakdowns and leaderboard entries are mock-backed through the prediction repository, keyed by match and question so they can later be replaced by backend data.
 - One IPL fixture is seeded as already predicted to demonstrate the predicted-card state on a fresh install.
-- Some finished fixtures include settleable results so the claim flow can be demonstrated.
+- One finished EPL fixture (Man Utd vs West Ham) is seeded with an unsettled prediction so the settlement reveal can be demonstrated; its card shows the gold "Results ready" strip. One finished IPL fixture is seeded already settled to show the settled state.
+- Demo predictions never overwrite stored ones, so settling a demo fixture persists across relaunches.

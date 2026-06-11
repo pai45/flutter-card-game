@@ -38,13 +38,17 @@ class MatchHistoryEntry {
     required this.resultLabel,
     required this.playerScore,
     required this.opponentScore,
-    required this.penaltyPlayerScore,
-    required this.penaltyOpponentScore,
     required this.rounds,
+    this.mode = 'match',
+    // Legacy in-match shootout scores; kept nullable so old saved history
+    // still deserializes and renders its PEN badge.
+    this.penaltyPlayerScore,
+    this.penaltyOpponentScore,
     this.xpEarned,
   });
 
   final String id;
+  final String mode; // 'match' | 'shootout'
   final String deckName;
   final String timestampIso;
   final String resultLabel;
@@ -55,8 +59,11 @@ class MatchHistoryEntry {
   final List<MatchHistoryRound> rounds;
   final int? xpEarned;
 
+  bool get isShootout => mode == 'shootout';
+
   Map<String, dynamic> toJson() => {
     'id': id,
+    'mode': mode,
     'deckName': deckName,
     'timestampIso': timestampIso,
     'resultLabel': resultLabel,
@@ -71,6 +78,7 @@ class MatchHistoryEntry {
   static MatchHistoryEntry fromJson(Map<String, dynamic> json) =>
       MatchHistoryEntry(
         id: json['id'] as String,
+        mode: json['mode'] as String? ?? 'match',
         deckName: json['deckName'] as String,
         timestampIso: json['timestampIso'] as String,
         resultLabel: json['resultLabel'] as String,
@@ -121,6 +129,8 @@ class PenaltyKick {
     required this.shootDirection,
     required this.diveDirection,
     required this.scored,
+    this.shooter,
+    this.keeper,
   });
 
   final int kickNumber; // 1-indexed
@@ -128,5 +138,10 @@ class PenaltyKick {
   final PenaltyDirection shootDirection;
   final PenaltyDirection diveDirection;
   final bool scored;
+
+  // Squad context for the standalone shootout mode (in-memory only).
+  final PlayerCard? shooter;
+  final PlayerCard? keeper;
+
   String get label => scored ? 'Goal' : 'Saved';
 }

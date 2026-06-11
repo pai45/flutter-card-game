@@ -161,6 +161,17 @@ class MockPredictionRepository implements PredictionRepository {
       _today.add(Duration(days: dayOffset, hours: hour, minutes: minute));
 
   late final List<SportMatch> _fixtures = [
+    // EPL — today's headline fixture: Man Utd vs Arsenal.
+    SportMatch(
+      id: 'epl_mu_ars',
+      leagueId: 'epl',
+      sport: Sport.football,
+      home: _mu,
+      away: _ars,
+      kickoff: _at(0, 17, 30),
+      status: MatchStatus.upcoming,
+      prizeLabel: 'Win 5000 coins',
+    ),
     // EPL — upcoming, open for prediction (prize strip).
     SportMatch(
       id: 'epl_liv_mc',
@@ -247,25 +258,32 @@ class MockPredictionRepository implements PredictionRepository {
       status: MatchStatus.upcoming,
       prizeLabel: 'Win 3000 coins',
     ),
+    // IPL — finished cricket, settleable reveal demo (8th fixture).
     SportMatch(
       id: 'ipl_csk_mi',
       leagueId: 'ipl',
       sport: Sport.cricket,
       home: _csk,
       away: _mi,
-      kickoff: _at(1, 15),
-      status: MatchStatus.upcoming,
-      prizeLabel: 'Win 4000 coins',
+      kickoff: _at(-1, 15),
+      status: MatchStatus.finished,
+      homeScore: '189-6 (20 ov)',
+      awayScore: '175-8 (20 ov)',
+      resultLine: 'Chennai won by 14 runs',
+      rewardXp: 325,
     ),
+    // EPL — finished football, settleable reveal demo (9th fixture).
     SportMatch(
       id: 'epl_avl_bha',
       leagueId: 'epl',
       sport: Sport.football,
       home: _avl,
       away: _bha,
-      kickoff: _at(2, 19, 45),
-      status: MatchStatus.upcoming,
-      prizeLabel: 'Win 2500 coins',
+      kickoff: _at(-2, 19, 45),
+      status: MatchStatus.finished,
+      homeScore: '2',
+      awayScore: '0',
+      rewardXp: 300,
     ),
     SportMatch(
       id: 'ipl_rcb_srh',
@@ -320,6 +338,40 @@ class MockPredictionRepository implements PredictionRepository {
   ];
 
   late final Map<String, PredictionQuiz> _quizzes = {
+    'epl_mu_ars': const PredictionQuiz(
+      matchId: 'epl_mu_ars',
+      questions: [
+        QuizQuestion(
+          id: 'q1',
+          text: 'Predict the full-time score',
+          type: QuizQuestionType.exactScore,
+          reward: 100,
+          backgroundAsset: 'assets/backgrounds/predictions/mu_ars_q1.png',
+        ),
+        QuizQuestion(
+          id: 'q2',
+          text: 'There will be more than 8 corner kicks in the match.',
+          options: ['Yes', 'No'],
+          reward: 75,
+          backgroundAsset: 'assets/backgrounds/predictions/mu_ars_q2.png',
+        ),
+        QuizQuestion(
+          id: 'q3',
+          text:
+              'The first goal of the match will be scored before the 30-minute mark.',
+          options: ['Yes', 'No'],
+          reward: 75,
+          backgroundAsset: 'assets/backgrounds/predictions/mu_ars_q3.png',
+        ),
+        QuizQuestion(
+          id: 'q4',
+          text: 'Will Man Utd concede a red card?',
+          options: ['Yes', 'No'],
+          reward: 50,
+          backgroundAsset: 'assets/backgrounds/predictions/mu_ars_q4.png',
+        ),
+      ],
+    ),
     'epl_liv_mc': const PredictionQuiz(
       matchId: 'epl_liv_mc',
       questions: [
@@ -480,8 +532,77 @@ class MockPredictionRepository implements PredictionRepository {
       ],
     ),
     'epl_ars_new': _footballQuiz('epl_ars_new', 'Arsenal', 'Newcastle'),
-    'ipl_csk_mi': _cricketQuiz('ipl_csk_mi', 'Chennai', 'Mumbai'),
-    'epl_avl_bha': _footballQuiz('epl_avl_bha', 'Aston Villa', 'Brighton'),
+    // Settled cricket quiz — Chennai won the toss, hit 15 sixes, won the match;
+    // demo prediction misses q2 (user picks Under 12.5, actual is Over).
+    'ipl_csk_mi': const PredictionQuiz(
+      matchId: 'ipl_csk_mi',
+      questions: [
+        QuizQuestion(
+          id: 'q1',
+          text: 'Who wins the toss?',
+          options: ['Chennai', 'Mumbai'],
+          reward: 50,
+          settledOptionIndex: 0,
+        ),
+        QuizQuestion(
+          id: 'q2',
+          text: 'Total sixes over/under 12.5?',
+          options: ['Over 12.5', 'Under 12.5'],
+          reward: 100,
+          settledOptionIndex: 0,
+        ),
+        QuizQuestion(
+          id: 'q3',
+          text: 'Who will win Chennai vs Mumbai?',
+          options: ['Chennai', 'Tie', 'Mumbai'],
+          reward: 100,
+          settledOptionIndex: 0,
+        ),
+        QuizQuestion(
+          id: 'q4',
+          text: 'Will either opener score 50+?',
+          options: ['Yes', 'No'],
+          reward: 75,
+          settledOptionIndex: 0,
+        ),
+      ],
+    ),
+    // Settled football quiz — Villa won 2-0; demo prediction misses q4
+    // (user picks Over 2.5, actual is Under 2.5 with only 2 goals).
+    'epl_avl_bha': const PredictionQuiz(
+      matchId: 'epl_avl_bha',
+      questions: [
+        QuizQuestion(
+          id: 'q1',
+          text: 'Predict the full-time score',
+          type: QuizQuestionType.exactScore,
+          reward: 100,
+          settledHomeScore: 2,
+          settledAwayScore: 0,
+        ),
+        QuizQuestion(
+          id: 'q2',
+          text: 'Both teams to score?',
+          options: ['Yes', 'No'],
+          reward: 50,
+          settledOptionIndex: 1,
+        ),
+        QuizQuestion(
+          id: 'q3',
+          text: 'Which side scores first?',
+          options: ['Aston Villa', 'Brighton', 'No goal'],
+          reward: 75,
+          settledOptionIndex: 0,
+        ),
+        QuizQuestion(
+          id: 'q4',
+          text: 'Total goals over/under 2.5?',
+          options: ['Over 2.5', 'Under 2.5'],
+          reward: 75,
+          settledOptionIndex: 1,
+        ),
+      ],
+    ),
     'ipl_rcb_srh': _cricketQuiz('ipl_rcb_srh', 'Bangalore', 'Hyderabad'),
     'epl_mc_mu': _footballQuiz('epl_mc_mu', 'Man City', 'Man Utd'),
     'ipl_kkr_csk': _cricketQuiz('ipl_kkr_csk', 'KKR', 'Chennai'),
