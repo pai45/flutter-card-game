@@ -127,8 +127,7 @@ class AppTheme {
     return const LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      stops: [0.0, 0.5, 1.0],
-      colors: [Color(0xFF020618), Color(0xFF162456), Color(0xFF020618)],
+      colors: [Color(0xFF010916), Color(0xFF0E2646)],
     );
   }
 

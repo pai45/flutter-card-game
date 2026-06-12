@@ -46,6 +46,32 @@ class PicksState {
   int get claimableCount =>
       positions.values.where((position) => position.canSettle).length;
 
+  List<PickPosition> get claimablePositions => [
+    for (final position in positionList)
+      if (position.canSettle) position,
+  ];
+
+  bool get hasClaimable => claimableCount > 0;
+
+  /// Consecutive wins walking back from the most recently resolved pick.
+  /// Voided picks are neutral (skipped); a loss breaks the streak.
+  int get winStreak {
+    final settled =
+        positions.values.where((position) => position.isFinal).toList()
+          ..sort((a, b) {
+            final at = a.resolvedAt ?? a.submittedAt;
+            final bt = b.resolvedAt ?? b.submittedAt;
+            return bt.compareTo(at);
+          });
+    var streak = 0;
+    for (final position in settled) {
+      if (position.status == PickPositionStatus.voided) continue;
+      if (position.status != PickPositionStatus.won) break;
+      streak++;
+    }
+    return streak;
+  }
+
   int get openExposureOz => positions.values
       .where((position) => !position.isFinal)
       .fold(0, (sum, position) => sum + position.stakeOz);
@@ -195,4 +221,21 @@ class PickSettlementResult {
   final String message;
   final PickPosition? position;
   final int payoutOz;
+}
+
+/// Outcome of settling every claimable position in one tap (Claim All).
+class PickBatchSettlementResult {
+  const PickBatchSettlementResult({
+    required this.settledCount,
+    required this.wonCount,
+    required this.stakeOz,
+    required this.payoutOz,
+  });
+
+  final int settledCount;
+  final int wonCount;
+  final int stakeOz;
+  final int payoutOz;
+
+  int get profitOz => payoutOz - stakeOz;
 }

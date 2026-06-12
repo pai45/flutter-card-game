@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -74,7 +72,7 @@ class _PredictionPicksHistoryScreenState
                     const SizedBox(height: 12),
                     Expanded(
                       child: filtered.isEmpty
-                          ? const _EmptyHistory()
+                          ? _EmptyHistory(hasAnyPicks: positions.isNotEmpty)
                           : ListView.separated(
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                               itemCount: filtered.length,
@@ -900,15 +898,20 @@ String _formatPickTime(DateTime time) {
 }
 
 class _EmptyHistory extends StatelessWidget {
-  const _EmptyHistory();
+  const _EmptyHistory({required this.hasAnyPicks});
+
+  final bool hasAnyPicks;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'No Oz coin picks in this filter yet.',
-        style: Cyber.body(13, color: Cyber.muted),
-      ),
+    return CyberNoDataState(
+      icon: hasAnyPicks ? Icons.filter_alt_off : Icons.ads_click,
+      title: hasAnyPicks ? 'No picks in this filter' : 'Be the 1st to pick',
+      message: hasAnyPicks
+          ? 'Switch filters to review the picks already on your board.'
+          : 'No one has submitted a pick here yet. Make the first call.',
+      accent: hasAnyPicks ? Cyber.success : Cyber.lime,
+      spark: hasAnyPicks ? Icons.tune : Icons.flash_on,
     );
   }
 }

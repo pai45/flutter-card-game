@@ -64,6 +64,7 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   // Default landing is the new prediction HOME.
   AppSection section = AppSection.predictions;
+  int _predictionTab = 0;
   // A game flow to push once the starter-pack reveal finishes (first launch).
   VoidCallback? _pendingGameLaunch;
   final SecureGameStorage _storage = SecureGameStorage();
@@ -208,6 +209,8 @@ class _AppShellState extends State<AppShell> {
             AppSection.leaderboard => LeaderboardScreen(onNavigate: _go),
             AppSection.profile => ProfileScreen(onNavigate: _go),
             _ => PredictionHomeScreen(
+              activeTab: _predictionTab,
+              onTabChanged: (tab) => setState(() => _predictionTab = tab),
               onNavigate: _go,
               onOpenMatch: _openMatch,
               onOpenLeague: _openLeague,

@@ -12,7 +12,6 @@ class LandingBottomNavigation extends StatelessWidget {
     required this.selectedIndex,
     required this.onNavigate,
     this.includeShop = true,
-    this.onPredictionTabTap,
     super.key,
   });
 
@@ -21,7 +20,6 @@ class LandingBottomNavigation extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<AppSection> onNavigate;
   final bool includeShop;
-  final ValueChanged<int>? onPredictionTabTap;
 
   static const List<_NavSpec> _items = [
     _NavSpec(
@@ -61,7 +59,6 @@ class LandingBottomNavigation extends StatelessWidget {
       activeIcon: Icons.sports_esports,
       label: 'MATCHES',
       accent: Color(0xffc27aff),
-      predictionTabIndex: 0,
       iconKind: _NavIconKind.matches,
       activeFontSize: 12,
     ),
@@ -113,12 +110,7 @@ class LandingBottomNavigation extends StatelessWidget {
                       spec: items[i],
                       active: selectedIndex == i,
                       onTap: () {
-                        final tabIndex = items[i].predictionTabIndex;
-                        if (tabIndex != null && onPredictionTabTap != null) {
-                          onPredictionTabTap!(tabIndex);
-                        } else {
-                          onNavigate(items[i].section);
-                        }
+                        onNavigate(items[i].section);
                       },
                     ),
                   ),
@@ -142,7 +134,6 @@ class _NavSpec {
     required this.activeIcon,
     required this.label,
     required this.accent,
-    this.predictionTabIndex,
     this.iconKind = _NavIconKind.material,
     this.activeFontSize = 10,
   });
@@ -152,7 +143,6 @@ class _NavSpec {
   final IconData activeIcon;
   final String label;
   final Color accent;
-  final int? predictionTabIndex;
   final _NavIconKind iconKind;
   final double activeFontSize;
 }

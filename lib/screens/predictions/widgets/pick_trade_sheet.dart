@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -11,6 +9,7 @@ import '../../../models/picks.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../shop/shop_screen.dart' show CoinIcon;
+import 'pick_status_style.dart';
 
 Future<bool> showPickTradeSheet({
   required BuildContext context,
@@ -26,7 +25,12 @@ Future<bool> showPickTradeSheet({
   );
   if (result == null) return false;
   if (context.mounted) {
-    await _showPickSuccessOverlay(context: context, success: result);
+    final streak = context.read<PicksCubit>().state.winStreak;
+    await _showPickSuccessOverlay(
+      context: context,
+      success: result,
+      winStreak: streak,
+    );
   }
   return true;
 }
@@ -47,6 +51,9 @@ class _PickTradeSuccess {
   final int maxPayoutOz;
 }
 
+/// Order-ticket style buy sheet: the potential payout is the hero number,
+/// quick-stake chips make sizing one tap, and the confirm action is the one
+/// glowing element.
 class _PickTradeSheet extends StatefulWidget {
   const _PickTradeSheet({required this.market, required this.outcome});
 
@@ -65,7 +72,6 @@ class _PickTradeSheetState extends State<_PickTradeSheet> {
   int get _shares =>
       PickMath.sharesForStake(stakeOz: _stakeOz, probabilityPercent: _price);
   int get _maxPayout => PickMath.payoutForShares(_shares);
-  int get _profit => PickMath.profitFor(stakeOz: _stakeOz, shares: _shares);
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +105,7 @@ class _PickTradeSheetState extends State<_PickTradeSheet> {
             children: [
               const HudLine(),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -126,74 +132,60 @@ class _PickTradeSheetState extends State<_PickTradeSheet> {
                         height: 1.2,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${widget.outcome.label} costs $_price Oz per share',
-                      style: Cyber.body(
-                        12,
-                        color: Cyber.muted,
-                        weight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 6),
                     Row(
                       children: [
-                        _SheetSummaryTile(
-                          label: 'STAKE',
-                          child: _CoinValue(value: _stakeOz),
-                        ),
-                        const SizedBox(width: 8),
-                        _SheetSummaryTile(
-                          label: 'SHARES',
-                          child: Text(
-                            '$_shares',
-                            style: Cyber.label(
-                              13,
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ),
+                        Text(
+                          '$_price OZ / SHARE',
+                          style: Cyber.label(
+                            8,
+                            color: Cyber.muted,
+                            letterSpacing: 1,
+                            fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        _SheetSummaryTile(
-                          label: 'PAYOUT',
-                          child: _CoinValue(value: _maxPayout),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        _SheetSummaryTile(
-                          label: 'PROFIT IF RIGHT',
-                          child: Text(
-                            '+$_profit',
-                            style: Cyber.label(
-                              13,
-                              color: Cyber.success,
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'PAYS ${_multiplierLabel(_price)} IF RIGHT',
+                          style: Cyber.label(
+                            8,
+                            color: Cyber.gold,
+                            letterSpacing: 1,
+                            fontFeatures: const [FontFeature.tabularFigures()],
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        _SheetSummaryTile(
-                          label: 'BALANCE AFTER',
-                          child: _CoinValue(value: _balanceAfter(balance)),
                         ),
                       ],
                     ),
                     const SizedBox(height: 14),
+                    _ToWinHero(payoutOz: _maxPayout, price: _price),
+                    const SizedBox(height: 12),
                     _StakeStepper(
                       value: _stakeOz,
                       step: _price,
                       max: balance,
                       onChanged: (value) => setState(() => _stakeOz = value),
                     ),
-                    if (!canConfirm) ...[
-                      const SizedBox(height: 10),
+                    const SizedBox(height: 8),
+                    _QuickStakeRow(
+                      price: _price,
+                      balance: balance,
+                      stakeOz: _stakeOz,
+                      onChanged: (value) => setState(() => _stakeOz = value),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      '$_shares ${_shares == 1 ? 'SHARE' : 'SHARES'} · '
+                      'BALANCE AFTER '
+                      '${formatOzGrouped(_balanceAfter(balance))} OZ',
+                      style: Cyber.label(
+                        8,
+                        color: Cyber.muted,
+                        letterSpacing: 1,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                    if (!canConfirm && !_submitting) ...[
+                      const SizedBox(height: 8),
                       Text(
                         _disabledReason(balance),
                         style: Cyber.body(
@@ -203,27 +195,28 @@ class _PickTradeSheetState extends State<_PickTradeSheet> {
                         ),
                       ),
                     ],
-                  ],
-                ),
-              ),
-              SizedBox(
-                height: 50,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _SheetAction(
-                        label: 'CANCEL',
-                        color: Cyber.muted,
-                        onTap: () => Navigator.of(context).pop(),
-                      ),
-                    ),
-                    Container(width: 1, color: const Color(0xff243654)),
-                    Expanded(
-                      child: _SheetAction(
-                        label: _submitting ? 'CONFIRMING' : 'CONFIRM',
-                        color: canConfirm ? Cyber.cyan : Cyber.muted,
-                        onTap: canConfirm ? () => _confirm(balance) : null,
-                      ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _SheetAction(
+                            label: 'CANCEL',
+                            color: Cyber.muted,
+                            onTap: () => Navigator.of(context).pop(),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          flex: 2,
+                          child: CyberCtaButton(
+                            label: _submitting ? 'CONFIRMING' : 'CONFIRM PICK',
+                            primary: true,
+                            onPressed: canConfirm
+                                ? () => _confirm(balance)
+                                : null,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -279,9 +272,172 @@ class _PickTradeSheetState extends State<_PickTradeSheet> {
   }
 }
 
+/// The hero of the ticket: what this pick pays if it hits. The number
+/// retargets smoothly as the stake changes.
+class _ToWinHero extends StatelessWidget {
+  const _ToWinHero({required this.payoutOz, required this.price});
+
+  final int payoutOz;
+  final int price;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipPath(
+      clipper: const HudChamferClipper(bigCut: 12, smallCut: 2),
+      child: Container(
+        height: 64,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: Cyber.lime.withValues(alpha: 0.07),
+          border: Border.all(color: Cyber.lime.withValues(alpha: 0.5)),
+        ),
+        child: Row(
+          children: [
+            Text(
+              'TO WIN',
+              style: Cyber.label(
+                9,
+                color: Cyber.lime.withValues(alpha: 0.85),
+                letterSpacing: 1.6,
+              ),
+            ),
+            const Spacer(),
+            const CoinIcon(size: 20),
+            const SizedBox(width: 7),
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: payoutOz.toDouble()),
+              duration: const Duration(milliseconds: 320),
+              curve: Curves.easeOutCubic,
+              builder: (context, v, _) => Text(
+                formatOzGrouped(v.round()),
+                style: Cyber.display(
+                  24,
+                  color: Cyber.lime,
+                  letterSpacing: 0.5,
+                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+              decoration: BoxDecoration(
+                color: Cyber.gold.withValues(alpha: 0.12),
+                border: Border.all(color: Cyber.gold.withValues(alpha: 0.6)),
+              ),
+              child: Text(
+                _multiplierLabel(price),
+                style: Cyber.label(
+                  10,
+                  color: Cyber.gold,
+                  letterSpacing: 0.4,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One-tap stake sizing: share multiples of the price, plus an all-in MAX.
+class _QuickStakeRow extends StatelessWidget {
+  const _QuickStakeRow({
+    required this.price,
+    required this.balance,
+    required this.stakeOz,
+    required this.onChanged,
+  });
+
+  final int price;
+  final int balance;
+  final int stakeOz;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final maxStake = balance < price ? 0 : (balance ~/ price) * price;
+    final presets = <({String label, int value})>[
+      (label: '1×', value: price),
+      (label: '5×', value: price * 5),
+      (label: '10×', value: price * 10),
+      (label: 'MAX', value: maxStake),
+    ];
+    return Row(
+      children: [
+        for (var i = 0; i < presets.length; i++) ...[
+          Expanded(
+            child: _QuickStakeChip(
+              label: presets[i].label,
+              active: stakeOz == presets[i].value && presets[i].value > 0,
+              enabled: presets[i].value > 0 && presets[i].value <= maxStake,
+              onTap: () {
+                playSound(SoundEffect.uiTap);
+                onChanged(presets[i].value);
+              },
+            ),
+          ),
+          if (i != presets.length - 1) const SizedBox(width: 7),
+        ],
+      ],
+    );
+  }
+}
+
+class _QuickStakeChip extends StatelessWidget {
+  const _QuickStakeChip({
+    required this.label,
+    required this.active,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool active;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return PressableScale(
+      onTap: enabled ? onTap : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        height: 32,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: active
+              ? const Color(0xff12304a)
+              : const Color(0xff111827).withValues(alpha: 0.86),
+          border: Border.all(
+            color: active
+                ? Cyber.cyan.withValues(alpha: 0.7)
+                : const Color(0xff273654),
+          ),
+        ),
+        child: Text(
+          label,
+          style: Cyber.label(
+            10,
+            color: !enabled
+                ? Cyber.muted.withValues(alpha: 0.4)
+                : active
+                ? Cyber.cyan
+                : Cyber.muted,
+            letterSpacing: 0.6,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 Future<void> _showPickSuccessOverlay({
   required BuildContext context,
   required _PickTradeSuccess success,
+  required int winStreak,
 }) {
   return showGeneralDialog<void>(
     context: context,
@@ -289,14 +445,15 @@ Future<void> _showPickSuccessOverlay({
     barrierColor: Colors.transparent,
     transitionDuration: Duration.zero,
     pageBuilder: (context, animation, secondaryAnimation) =>
-        _PickSubmittedOverlay(success: success),
+        _PickSubmittedOverlay(success: success, winStreak: winStreak),
   );
 }
 
 class _PickSubmittedOverlay extends StatefulWidget {
-  const _PickSubmittedOverlay({required this.success});
+  const _PickSubmittedOverlay({required this.success, required this.winStreak});
 
   final _PickTradeSuccess success;
+  final int winStreak;
 
   @override
   State<_PickSubmittedOverlay> createState() => _PickSubmittedOverlayState();
@@ -446,6 +603,43 @@ class _PickSubmittedOverlayState extends State<_PickSubmittedOverlay>
                               ],
                             ),
                           ),
+                          if (widget.winStreak >= 2) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 7,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Cyber.gold.withValues(alpha: 0.12),
+                                border: Border.all(
+                                  color: Cyber.gold.withValues(alpha: 0.7),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.local_fire_department,
+                                    color: Cyber.gold,
+                                    size: 14,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    'WIN STREAK ×${widget.winStreak} — KEEP IT ALIVE',
+                                    style: Cyber.label(
+                                      9,
+                                      color: Cyber.gold,
+                                      letterSpacing: 1,
+                                      fontFeatures: const [
+                                        FontFeature.tabularFigures(),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -480,44 +674,6 @@ class _PercentPill extends StatelessWidget {
           color: outcome.color,
           letterSpacing: 0.5,
           fontFeatures: const [FontFeature.tabularFigures()],
-        ),
-      ),
-    );
-  }
-}
-
-class _SheetSummaryTile extends StatelessWidget {
-  const _SheetSummaryTile({required this.label, required this.child});
-
-  final String label;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        height: 55,
-        padding: const EdgeInsets.all(9),
-        decoration: BoxDecoration(
-          color: Cyber.bg.withValues(alpha: 0.62),
-          border: Border.all(color: const Color(0xff243654)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Cyber.label(
-                7,
-                color: Cyber.muted.withValues(alpha: 0.72),
-                letterSpacing: 1,
-              ),
-            ),
-            child,
-          ],
         ),
       ),
     );
@@ -559,9 +715,9 @@ class _StakeStepper extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  'AMOUNT',
+                  'STAKE',
                   style: Cyber.label(
-                    7,
+                    8,
                     color: Cyber.muted.withValues(alpha: 0.72),
                     letterSpacing: 1,
                   ),
@@ -623,17 +779,20 @@ class _SheetAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        splashColor: color.withValues(alpha: 0.12),
-        highlightColor: color.withValues(alpha: 0.08),
-        child: Center(
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: Cyber.label(10, color: color, letterSpacing: 1.6),
+    return SizedBox(
+      height: 56,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          splashColor: color.withValues(alpha: 0.12),
+          highlightColor: color.withValues(alpha: 0.08),
+          child: Center(
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: Cyber.label(10, color: color, letterSpacing: 1.6),
+            ),
           ),
         ),
       ),
@@ -654,7 +813,7 @@ class _CoinValue extends StatelessWidget {
         const CoinIcon(size: 14),
         const SizedBox(width: 4),
         Text(
-          _formatInt(value),
+          formatOzGrouped(value),
           style: Cyber.label(
             12,
             fontFeatures: const [FontFeature.tabularFigures()],
@@ -665,13 +824,12 @@ class _CoinValue extends StatelessWidget {
   }
 }
 
-String _formatInt(int value) {
-  final raw = value.toString();
-  final buffer = StringBuffer();
-  for (var i = 0; i < raw.length; i++) {
-    final fromEnd = raw.length - i;
-    buffer.write(raw[i]);
-    if (fromEnd > 1 && fromEnd % 3 == 1) buffer.write(',');
-  }
-  return buffer.toString();
+/// "2.4×" style payout multiplier for a share priced at [price] Oz.
+String _multiplierLabel(int price) {
+  if (price <= 0) return '—';
+  final multiplier = 100 / price;
+  var text = multiplier.toStringAsFixed(2);
+  if (text.endsWith('0')) text = text.substring(0, text.length - 1);
+  if (text.endsWith('.0')) text = text.substring(0, text.length - 2);
+  return '$text×';
 }

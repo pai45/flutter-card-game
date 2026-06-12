@@ -481,11 +481,13 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
           const SizedBox(height: 20),
           _QuizHeader(match: _match),
           Expanded(
-            child: Center(
-              child: Text(
-                'No quiz available for this match yet.',
-                style: Cyber.body(13, color: Cyber.muted),
-              ),
+            child: CyberNoDataState(
+              icon: Icons.quiz_outlined,
+              title: 'Quiz not live yet',
+              message:
+                  'Prediction questions will appear here when this match opens.',
+              accent: Cyber.violet,
+              spark: Icons.schedule,
             ),
           ),
         ],
@@ -542,83 +544,89 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
             ),
             Expanded(
               child: AnimatedBuilder(
-            animation: Listenable.merge([_questionReveal, _optionsReveal]),
-            builder: (context, _) {
-              final questionProgress = switch (_revealPhase) {
-                _QuizRevealPhase.numberIntro => 0.0,
-                _QuizRevealPhase.questionReveal => _questionReveal.value,
-                _QuizRevealPhase.optionsReveal || _QuizRevealPhase.ready => 1.0,
-              };
-              final optionsProgress = switch (_revealPhase) {
-                _QuizRevealPhase.optionsReveal => _optionsReveal.value,
-                _QuizRevealPhase.ready => 1.0,
-                _ => 0.0,
-              };
-              return AnimatedSwitcher(
-                duration: const Duration(milliseconds: 280),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeInCubic,
-                transitionBuilder: (child, anim) {
-                  final slide = Tween<Offset>(
-                    begin: const Offset(0.10, 0),
-                    end: Offset.zero,
-                  ).animate(anim);
-                  return FadeTransition(
-                    opacity: anim,
-                    child: SlideTransition(position: slide, child: child),
+                animation: Listenable.merge([_questionReveal, _optionsReveal]),
+                builder: (context, _) {
+                  final questionProgress = switch (_revealPhase) {
+                    _QuizRevealPhase.numberIntro => 0.0,
+                    _QuizRevealPhase.questionReveal => _questionReveal.value,
+                    _QuizRevealPhase.optionsReveal ||
+                    _QuizRevealPhase.ready => 1.0,
+                  };
+                  final optionsProgress = switch (_revealPhase) {
+                    _QuizRevealPhase.optionsReveal => _optionsReveal.value,
+                    _QuizRevealPhase.ready => 1.0,
+                    _ => 0.0,
+                  };
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 280),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, anim) {
+                      final slide = Tween<Offset>(
+                        begin: const Offset(0.10, 0),
+                        end: Offset.zero,
+                      ).animate(anim);
+                      return FadeTransition(
+                        opacity: anim,
+                        child: SlideTransition(position: slide, child: child),
+                      );
+                    },
+                    child: _revealPhase == _QuizRevealPhase.numberIntro
+                        ? const SizedBox.shrink(
+                            key: ValueKey('question-intro-gap'),
+                          )
+                        : question.isScorePrediction
+                        ? _ScoreQuestionPanel(
+                            key: ValueKey(question.id),
+                            index: _index + 1,
+                            question: question,
+                            match: _match,
+                            homeScore: _scoreFor(question.id).$1,
+                            awayScore: _scoreFor(question.id).$2,
+                            settled: settled,
+                            editable: _editable && !_revealing,
+                            selectedMultiplier:
+                                _multipliersByQuestion[question.id],
+                            multiplierOwners: _multiplierOwners,
+                            multiplierEnabled:
+                                _editable &&
+                                !_revealing &&
+                                _questionAnswered(question.id),
+                            questionProgress: questionProgress,
+                            controlProgress: optionsProgress,
+                            onHomeChanged: (s) =>
+                                _setScore(question.id, home: s),
+                            onAwayChanged: (s) =>
+                                _setScore(question.id, away: s),
+                            onMultiplierTap: (multiplier) =>
+                                _toggleMultiplier(question.id, multiplier),
+                          )
+                        : SingleChildScrollView(
+                            key: ValueKey(question.id),
+                            padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
+                            child: _QuestionPanel(
+                              index: _index + 1,
+                              question: question,
+                              selected: _answers[question.id],
+                              settled: settled,
+                              enabled: !_revealing,
+                              selectedMultiplier:
+                                  _multipliersByQuestion[question.id],
+                              multiplierOwners: _multiplierOwners,
+                              multiplierEnabled:
+                                  _editable &&
+                                  !_revealing &&
+                                  _questionAnswered(question.id),
+                              questionProgress: questionProgress,
+                              optionsProgress: optionsProgress,
+                              onSelect: (opt) => _select(question.id, opt),
+                              onMultiplierTap: (multiplier) =>
+                                  _toggleMultiplier(question.id, multiplier),
+                            ),
+                          ),
                   );
                 },
-                child: _revealPhase == _QuizRevealPhase.numberIntro
-                    ? const SizedBox.shrink(key: ValueKey('question-intro-gap'))
-                    : question.isScorePrediction
-                    ? _ScoreQuestionPanel(
-                        key: ValueKey(question.id),
-                        index: _index + 1,
-                        question: question,
-                        match: _match,
-                        homeScore: _scoreFor(question.id).$1,
-                        awayScore: _scoreFor(question.id).$2,
-                        settled: settled,
-                        editable: _editable && !_revealing,
-                        selectedMultiplier: _multipliersByQuestion[question.id],
-                        multiplierOwners: _multiplierOwners,
-                        multiplierEnabled:
-                            _editable &&
-                            !_revealing &&
-                            _questionAnswered(question.id),
-                        questionProgress: questionProgress,
-                        controlProgress: optionsProgress,
-                        onHomeChanged: (s) => _setScore(question.id, home: s),
-                        onAwayChanged: (s) => _setScore(question.id, away: s),
-                        onMultiplierTap: (multiplier) =>
-                            _toggleMultiplier(question.id, multiplier),
-                      )
-                    : SingleChildScrollView(
-                        key: ValueKey(question.id),
-                        padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
-                        child: _QuestionPanel(
-                          index: _index + 1,
-                          question: question,
-                          selected: _answers[question.id],
-                          settled: settled,
-                          enabled: !_revealing,
-                          selectedMultiplier:
-                              _multipliersByQuestion[question.id],
-                          multiplierOwners: _multiplierOwners,
-                          multiplierEnabled:
-                              _editable &&
-                              !_revealing &&
-                              _questionAnswered(question.id),
-                          questionProgress: questionProgress,
-                          optionsProgress: optionsProgress,
-                          onSelect: (opt) => _select(question.id, opt),
-                          onMultiplierTap: (multiplier) =>
-                              _toggleMultiplier(question.id, multiplier),
-                        ),
-                      ),
-              );
-            },
-          ),
+              ),
             ),
             _QuizChromeShell(
               edge: _QuizChromeEdge.bottom,
@@ -648,87 +656,90 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     final readOnly = !editable;
     return Column(
       children: [
-        _QuizChromeShell(
-          edge: _QuizChromeEdge.top,
-          child: Column(
-            children: [
-              _QuizTopBar(
-                onBack: () => Navigator.of(context).popUntil((r) => r.isFirst),
-                onLeaderboard: _showMatchLeaderboard,
-              ),
-              const SizedBox(height: 20),
-              _QuizHeader(match: _match),
-              _LockLine(match: _match, untilLock: _untilLock),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 14, 20, 6),
-                child: _ReviewNotice(text: _reviewNotice(prediction)),
-              ),
-            ],
-          ),
+        _QuizTopBar(
+          onBack: () => Navigator.of(context).popUntil((r) => r.isFirst),
+          onLeaderboard: _showMatchLeaderboard,
         ),
         Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.fromLTRB(20, 6, 20, 18),
-            itemCount: _questions.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 10),
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(0, 0, 0, 18),
+            itemCount: _questions.length + 1,
             itemBuilder: (context, i) {
-              final question = _questions[i];
-              return _ReviewQuestionCard(
-                index: i + 1,
-                question: question,
-                match: _match,
-                selected: _answers[question.id],
-                multiplier: _multipliersByQuestion[question.id],
-                multiplierOwners: _multiplierOwners,
-                votes: _votesByQuestion[question.id],
-                expanded: _expandedQuestions.contains(question.id),
-                editable: editable,
-                readOnly: readOnly,
-                finished: _match.status == MatchStatus.finished,
-                onToggle: () {
-                  playSound(SoundEffect.uiTap);
-                  setState(() {
-                    if (!_expandedQuestions.add(question.id)) {
-                      _expandedQuestions.remove(question.id);
-                    }
-                  });
-                },
-                onSelect: (answer) {
-                  if (!editable) return;
-                  playSound(SoundEffect.cardSelect);
-                  setState(() => _answers[question.id] = answer);
-                },
-                onScoreChanged: (home, away) {
-                  if (!editable) return;
-                  playSound(SoundEffect.uiTap);
-                  setState(() {
-                    _answers[question.id] = ScoreAnswer.encode(home, away);
-                  });
-                },
-                onMultiplierTap: (multiplier) =>
-                    _toggleMultiplier(question.id, multiplier),
+              if (i == 0) {
+                return Column(
+                  children: [
+                    const SizedBox(height: 20),
+                    _QuizHeader(match: _match),
+                    _LockLine(match: _match, untilLock: _untilLock),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+                      child: _ReviewNotice(text: _reviewNotice(prediction)),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                );
+              }
+
+              final questionIndex = i - 1;
+              final question = _questions[questionIndex];
+              return Padding(
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  0,
+                  20,
+                  questionIndex == _questions.length - 1 ? 0 : 10,
+                ),
+                child: _ReviewQuestionCard(
+                  index: questionIndex + 1,
+                  question: question,
+                  match: _match,
+                  selected: _answers[question.id],
+                  multiplier: _multipliersByQuestion[question.id],
+                  multiplierOwners: _multiplierOwners,
+                  votes: _votesByQuestion[question.id],
+                  expanded: _expandedQuestions.contains(question.id),
+                  editable: editable,
+                  readOnly: readOnly,
+                  finished: _match.status == MatchStatus.finished,
+                  onToggle: () {
+                    playSound(SoundEffect.uiTap);
+                    setState(() {
+                      if (!_expandedQuestions.add(question.id)) {
+                        _expandedQuestions.remove(question.id);
+                      }
+                    });
+                  },
+                  onSelect: (answer) {
+                    if (!editable) return;
+                    playSound(SoundEffect.cardSelect);
+                    setState(() => _answers[question.id] = answer);
+                  },
+                  onScoreChanged: (home, away) {
+                    if (!editable) return;
+                    playSound(SoundEffect.uiTap);
+                    setState(() {
+                      _answers[question.id] = ScoreAnswer.encode(home, away);
+                    });
+                  },
+                  onMultiplierTap: (multiplier) =>
+                      _toggleMultiplier(question.id, multiplier),
+                ),
               );
             },
           ),
         ),
         if (editable)
-          _QuizChromeShell(
-            edge: _QuizChromeEdge.bottom,
-            child: _ReviewSaveDock(
-              enabled: _hasDraftChanges && _allAnswered && !_savingUpdates,
-              saving: _savingUpdates,
-              onSave: _saveUpdates,
-            ),
+          _ReviewSaveDock(
+            enabled: _hasDraftChanges && _allAnswered && !_savingUpdates,
+            saving: _savingUpdates,
+            onSave: _saveUpdates,
           )
         else if (_canSettle(prediction))
-          _QuizChromeShell(
-            edge: _QuizChromeEdge.bottom,
-            child: _SettleDock(
-              onSettle: () {
-                playSound(SoundEffect.uiTap);
-                _startSettlementReveal(prediction);
-              },
-            ),
+          _SettleDock(
+            onSettle: () {
+              playSound(SoundEffect.uiTap);
+              _startSettlementReveal(prediction);
+            },
           ),
       ],
     );
@@ -1698,7 +1709,7 @@ class _ReviewSaveDock extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 22),
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 22),
         child: _QuizButton(
           label: saving ? 'SAVING...' : 'SAVE UPDATES',
           focal: enabled,
@@ -1722,7 +1733,7 @@ class _SettleDock extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 22),
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 22),
         child: _QuizButton(
           label: 'REVEAL RESULTS',
           focal: true,
@@ -1819,7 +1830,11 @@ class _MatchLeaderboardScreen extends StatelessWidget {
                           padding: const EdgeInsets.only(bottom: 9),
                           child: _MatchRankRow(entry: entry),
                         ),
-                      if (entries.isEmpty) const _EmptyLeaderboard(),
+                      if (entries.isEmpty)
+                        SizedBox(
+                          height: MediaQuery.sizeOf(context).height * 0.42,
+                          child: _EmptyLeaderboard(mode: _mode),
+                        ),
                     ],
                   ),
                 ),
@@ -2222,21 +2237,23 @@ class _StatusPill extends StatelessWidget {
 }
 
 class _EmptyLeaderboard extends StatelessWidget {
-  const _EmptyLeaderboard();
+  const _EmptyLeaderboard({required this.mode});
+
+  final _MatchLeaderboardMode mode;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Cyber.panel.withValues(alpha: 0.5),
-        border: Border.all(color: Cyber.line.withValues(alpha: 0.28)),
-      ),
-      child: Text(
-        'Leaderboard will populate once predictions are submitted.',
-        textAlign: TextAlign.center,
-        style: Cyber.body(12.5, color: Cyber.muted),
-      ),
+    final canJoin =
+        mode == _MatchLeaderboardMode.notEntered ||
+        mode == _MatchLeaderboardMode.editable;
+    return CyberNoDataState(
+      icon: canJoin ? Icons.sports_esports : Icons.emoji_events_outlined,
+      title: canJoin ? 'Be the 1st to play' : 'No players yet',
+      message: canJoin
+          ? 'No one has submitted this prediction quiz yet. Play first and set the rank to beat.'
+          : 'No prediction quiz results were submitted before this board closed.',
+      accent: canJoin ? Cyber.cyan : Cyber.gold,
+      spark: canJoin ? Icons.bolt : Icons.lock_clock,
     );
   }
 }
@@ -2324,9 +2341,7 @@ class _QuizQuestionPanelFrame extends StatelessWidget {
       width: double.infinity,
       margin: margin,
       decoration: BoxDecoration(
-        color: hasBackground
-            ? _panelBottom.withValues(alpha: 0.62)
-            : null,
+        color: hasBackground ? _panelBottom.withValues(alpha: 0.62) : null,
         gradient: hasBackground
             ? null
             : const LinearGradient(
@@ -2498,8 +2513,8 @@ class _WordRevealText extends StatelessWidget {
     if (words.isEmpty) return const SizedBox.shrink();
 
     return Semantics(
-        label: text,
-        child: Wrap(
+      label: text,
+      child: Wrap(
         spacing: 5,
         runSpacing: 2,
         children: [

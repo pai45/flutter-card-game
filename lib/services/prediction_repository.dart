@@ -932,7 +932,7 @@ class MockPredictionRepository implements PredictionRepository {
     if (question.isScorePrediction) {
       final correct = question.settledScoreEncoded;
       final scores = <int>[
-        if (correct != null) correct,
+        ?correct,
         ScoreAnswer.encode(1, 0),
         ScoreAnswer.encode(1, 1),
         ScoreAnswer.encode(2, 1),

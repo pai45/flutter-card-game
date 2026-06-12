@@ -263,6 +263,7 @@ class _RoundProgressMeter extends StatelessWidget {
 
 class MatchHeaderScore extends StatelessWidget {
   const MatchHeaderScore({
+    super.key,
     required this.playerScore,
     required this.opponentScore,
     this.label,
@@ -1123,11 +1124,17 @@ class MatchHistoryTile extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: (entry.xpEarned! >= 0 ? Cyber.cyan : const Color(0xFFFF4D6A))
-                                  .withValues(alpha: 0.14),
+                              color:
+                                  (entry.xpEarned! >= 0
+                                          ? Cyber.cyan
+                                          : const Color(0xFFFF4D6A))
+                                      .withValues(alpha: 0.14),
                               border: Border.all(
-                                color: (entry.xpEarned! >= 0 ? Cyber.cyan : const Color(0xFFFF4D6A))
-                                    .withValues(alpha: 0.5),
+                                color:
+                                    (entry.xpEarned! >= 0
+                                            ? Cyber.cyan
+                                            : const Color(0xFFFF4D6A))
+                                        .withValues(alpha: 0.5),
                               ),
                             ),
                             child: Text(
@@ -1135,7 +1142,9 @@ class MatchHistoryTile extends StatelessWidget {
                                   ? '+${entry.xpEarned} XP'
                                   : '${entry.xpEarned} XP',
                               style: TextStyle(
-                                color: entry.xpEarned! >= 0 ? Cyber.cyan : const Color(0xFFFF4D6A),
+                                color: entry.xpEarned! >= 0
+                                    ? Cyber.cyan
+                                    : const Color(0xFFFF4D6A),
                                 fontSize: 9,
                                 fontFamily: 'Orbitron',
                                 fontWeight: FontWeight.w900,

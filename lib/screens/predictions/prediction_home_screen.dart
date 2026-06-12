@@ -21,6 +21,8 @@ import 'widgets/match_prediction_card.dart';
 /// A compact sports prediction hub with StatOz styling.
 class PredictionHomeScreen extends StatefulWidget {
   const PredictionHomeScreen({
+    required this.activeTab,
+    required this.onTabChanged,
     required this.onNavigate,
     required this.onOpenMatch,
     required this.onOpenLeague,
@@ -29,6 +31,8 @@ class PredictionHomeScreen extends StatefulWidget {
     super.key,
   });
 
+  final int activeTab;
+  final ValueChanged<int> onTabChanged;
   final ValueChanged<AppSection> onNavigate;
   final ValueChanged<SportMatch> onOpenMatch;
   final ValueChanged<League> onOpenLeague;
@@ -40,10 +44,9 @@ class PredictionHomeScreen extends StatefulWidget {
 }
 
 class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
-  int _tab = 0;
-
   @override
   Widget build(BuildContext context) {
+    final tab = widget.activeTab;
     return Scaffold(
       backgroundColor: Cyber.bg,
       body: Stack(
@@ -57,16 +60,13 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
                   onAddCoins: () => widget.onNavigate(AppSection.shop),
                   onStreakTap: () => showStreakCalendar(context),
                 ),
-                _PredictionTopBar(
-                  activeIndex: _tab,
-                  onTap: (i) => setState(() => _tab = i),
-                ),
+                _PredictionTopBar(activeIndex: tab, onTap: widget.onTabChanged),
                 Expanded(
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 240),
                     child: KeyedSubtree(
-                      key: ValueKey<int>(_tab),
-                      child: _buildTab(),
+                      key: ValueKey<int>(tab),
+                      child: _buildTab(tab),
                     ),
                   ),
                 ),
@@ -76,20 +76,15 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
         ],
       ),
       bottomNavigationBar: LandingBottomNavigation(
-        selectedIndex: switch (_tab) {
-          0 => 0,
-          1 => 1,
-          _ => -1,
-        },
+        selectedIndex: 0,
         onNavigate: widget.onNavigate,
         includeShop: false,
-        onPredictionTabTap: (tab) => setState(() => _tab = tab),
       ),
     );
   }
 
-  Widget _buildTab() {
-    return switch (_tab) {
+  Widget _buildTab(int tab) {
+    return switch (tab) {
       0 => _MatchesTab(
         onOpenMatch: widget.onOpenMatch,
         onOpenLeague: widget.onOpenLeague,
@@ -170,6 +165,7 @@ class _PredictionTopBar extends StatelessWidget {
                         for (var i = 0; i < _TopBarTabData.tabs.length; i++)
                           Expanded(
                             child: _TopBarTab(
+                              key: ValueKey('prediction_top_tab_$i'),
                               data: _TopBarTabData.tabs[i],
                               active: i == activeIndex,
                               onTap: () {
@@ -206,6 +202,7 @@ class _TopBarTabData {
 
 class _TopBarTab extends StatelessWidget {
   const _TopBarTab({
+    super.key,
     required this.data,
     required this.active,
     required this.onTap,
@@ -464,22 +461,14 @@ class _EmptyMatchDay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      decoration: BoxDecoration(
-        color: const Color(0xff172234),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Column(
-        children: [
-          const Icon(Icons.event_busy_outlined, color: Cyber.muted, size: 26),
-          const SizedBox(height: 10),
-          Text(
-            'No games on ${_monthDayLabel(day)}',
-            textAlign: TextAlign.center,
-            style: Cyber.body(13, color: Cyber.muted, weight: FontWeight.w600),
-          ),
-        ],
+    return SizedBox(
+      height: 360,
+      child: CyberNoDataState(
+        icon: Icons.event_busy_outlined,
+        title: 'No games on ${_monthDayLabel(day)}',
+        message: 'Pick another match day to find open predictions.',
+        accent: Cyber.cyan,
+        spark: Icons.calendar_today_outlined,
       ),
     );
   }
@@ -1912,11 +1901,7 @@ class _FeaturedBody extends StatelessWidget {
           right: -8,
           top: 8,
           bottom: 8,
-          child: Icon(
-            icon,
-            size: 112,
-            color: accent.withValues(alpha: 0.07),
-          ),
+          child: Icon(icon, size: 112, color: accent.withValues(alpha: 0.07)),
         ),
         const Positioned.fill(
           child: CustomPaint(painter: _GameCornerBracketsPainter()),

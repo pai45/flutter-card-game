@@ -8,11 +8,13 @@ class PlayerLevelBadge extends StatefulWidget {
   const PlayerLevelBadge({
     required this.progression,
     this.onTap,
+    this.flatStyle = false,
     super.key,
   });
 
   final PlayerProgression progression;
   final VoidCallback? onTap;
+  final bool flatStyle;
 
   @override
   State<PlayerLevelBadge> createState() => _PlayerLevelBadgeState();
@@ -46,29 +48,36 @@ class _PlayerLevelBadgeState extends State<PlayerLevelBadge> {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           clipBehavior: Clip.hardEdge,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Cyber.cyan.withValues(alpha: _expanded ? 0.22 : 0.12),
-                Cyber.panel,
-                Cyber.bg2,
-              ],
-            ),
+            color: widget.flatStyle ? Cyber.panel2 : null,
+            gradient: widget.flatStyle
+                ? null
+                : LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Cyber.cyan.withValues(alpha: _expanded ? 0.22 : 0.12),
+                      Cyber.panel,
+                      Cyber.bg2,
+                    ],
+                  ),
             border: Border.all(
-              color: _expanded
-                  ? Cyber.gold.withValues(alpha: 0.85)
-                  : Cyber.cyan.withValues(alpha: 0.45),
+              color: widget.flatStyle
+                  ? Cyber.border
+                  : _expanded
+                      ? Cyber.gold.withValues(alpha: 0.85)
+                      : Cyber.cyan.withValues(alpha: 0.45),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: (_expanded ? Cyber.gold : Cyber.cyan).withValues(
-                  alpha: _expanded ? 0.30 : 0.14,
-                ),
-                blurRadius: _expanded ? 22 : 12,
-                spreadRadius: _expanded ? -4 : -8,
-              ),
-            ],
+            boxShadow: widget.flatStyle
+                ? null
+                : [
+                    BoxShadow(
+                      color: (_expanded ? Cyber.gold : Cyber.cyan).withValues(
+                        alpha: _expanded ? 0.30 : 0.14,
+                      ),
+                      blurRadius: _expanded ? 22 : 12,
+                      spreadRadius: _expanded ? -4 : -8,
+                    ),
+                  ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

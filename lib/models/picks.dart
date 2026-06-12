@@ -169,6 +169,23 @@ class PickMarket {
     for (final point in priceHistory)
       if (point.percentFor(outcomeId) != null) point.percentFor(outcomeId)!,
   ];
+
+  /// Probability movement (percentage points) between the last two price
+  /// points for [outcomeId]; null when there isn't enough history.
+  int? latestDeltaFor(String outcomeId) {
+    if (priceHistory.length < 2) return null;
+    final last = priceHistory.last.percentFor(outcomeId);
+    final previous = priceHistory[priceHistory.length - 2].percentFor(
+      outcomeId,
+    );
+    if (last == null || previous == null) return null;
+    return last - previous;
+  }
+
+  /// The outcome currently priced highest — the market's headline number.
+  PickOutcome get leadingOutcome => outcomes.reduce(
+    (a, b) => b.probabilityPercent > a.probabilityPercent ? b : a,
+  );
 }
 
 class PickPosition {

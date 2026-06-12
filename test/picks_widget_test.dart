@@ -48,7 +48,7 @@ void main() {
 
     expect(find.text('ALL PICKS'), findsOneWidget);
     expect(find.text('Punjab vs Bangalore winner'), findsOneWidget);
-    expect(find.text('FIFA'), findsOneWidget);
+    expect(find.text('FIFA'), findsAtLeastNWidgets(1));
     expect(find.text('68%'), findsAtLeastNWidgets(1));
     expect(find.byIcon(Icons.settings), findsOneWidget);
   });

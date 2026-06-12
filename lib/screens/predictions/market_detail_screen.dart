@@ -1,7 +1,7 @@
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../blocs/game/game_bloc.dart';
@@ -13,6 +13,8 @@ import '../../models/picks.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../shop/shop_screen.dart' show CoinIcon;
+import 'widgets/pick_settlement_reveal.dart';
+import 'widgets/pick_status_style.dart';
 import 'widgets/pick_trade_sheet.dart';
 import 'widgets/standings_table.dart' show DetailTopBar;
 
@@ -103,16 +105,27 @@ class _MarketDetailScreenState extends State<MarketDetailScreen> {
 
   Future<void> _settle(BuildContext context, PickPosition position) async {
     playSound(SoundEffect.uiTap);
-    final result = await context.read<PicksCubit>().settlePosition(position.id);
+    final picks = context.read<PicksCubit>();
+    final result = await picks.settlePosition(position.id);
     if (!context.mounted) return;
+    final settled = result.position;
+    if (!result.settled || settled == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: const Color(0xff121b30),
+          content: Text(result.message, style: Cyber.body(12)),
+        ),
+      );
+      return;
+    }
     if (result.payoutOz > 0) {
       context.read<GameBloc>().add(CoinsAdded(result.payoutOz));
-      playSound(SoundEffect.coins);
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: const Color(0xff121b30),
-        content: Text(result.message, style: Cyber.body(12)),
+    await showPickSettlementReveal(
+      context,
+      PickSettlementRevealData.single(
+        position: settled,
+        winStreak: picks.state.winStreak,
       ),
     );
   }
@@ -127,70 +140,144 @@ class _MarketHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipPath(
       clipper: const HudChamferClipper(bigCut: 16, smallCut: 3),
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xff10192d),
-          border: Border.all(color: Cyber.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const HudLine(),
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      _TypePill(type: market.type),
-                      const SizedBox(width: 8),
-                      _StatusPill(status: market.status),
-                      const Spacer(),
-                      Text(
-                        market.leagueLabel,
-                        style: Cyber.label(10, color: Cyber.muted),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    market.question,
-                    style: Cyber.display(18, letterSpacing: 0.5),
-                  ),
-                  const SizedBox(height: 10),
-                  if (market.homeLabel != null && market.awayLabel != null)
-                    _ScoreContext(market: market)
-                  else
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    _TypePill(type: market.type),
+                    const SizedBox(width: 8),
+                    _StatusPill(status: market.status),
+                    const Spacer(),
                     Text(
-                      [
-                        market.contextTitle,
-                        market.contextSubtitle,
-                      ].whereType<String>().join(' · '),
-                      style: Cyber.body(
-                        12,
-                        color: Cyber.muted,
-                        weight: FontWeight.w700,
-                      ),
+                      market.leagueLabel,
+                      style: Cyber.label(10, color: Cyber.muted),
                     ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      _MiniMetric(
-                        label: 'VOLUME',
-                        value: '${market.volumeOz} Oz',
-                      ),
-                      const SizedBox(width: 10),
-                      _MiniMetric(
-                        label: 'CLOSES',
-                        value: _timeLabel(market.closesAt),
-                      ),
-                    ],
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  market.question,
+                  style: Cyber.display(18, letterSpacing: 0.5),
+                ),
+                const SizedBox(height: 12),
+                _LeadingProbability(market: market),
+                const SizedBox(height: 12),
+                if (market.homeLabel != null && market.awayLabel != null)
+                  _ScoreContext(market: market)
+                else
+                  Text(
+                    [
+                      market.contextTitle,
+                      market.contextSubtitle,
+                    ].whereType<String>().join(' · '),
+                    style: Cyber.body(
+                      12,
+                      color: Cyber.muted,
+                      weight: FontWeight.w700,
+                    ),
                   ),
-                ],
-              ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    _MiniMetric(
+                      label: 'VOLUME',
+                      value: '${market.volumeOz} Oz',
+                    ),
+                    const SizedBox(width: 10),
+                    _MiniMetric(
+                      label: 'CLOSES',
+                      value: _timeLabel(market.closesAt),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The Polymarket signature: the leading outcome's probability as the hero
+/// number, with its movement since the last price point.
+class _LeadingProbability extends StatelessWidget {
+  const _LeadingProbability({required this.market});
+
+  final PickMarket market;
+
+  @override
+  Widget build(BuildContext context) {
+    final leading = market.leadingOutcome;
+    final delta = market.latestDeltaFor(leading.id);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          '${leading.probabilityPercent}%',
+          style: Cyber.display(
+            34,
+            color: leading.color,
+            letterSpacing: 0,
+          ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                leading.label.toUpperCase(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Cyber.label(10, color: Colors.white, letterSpacing: 1),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'CHANCE',
+                style: Cyber.label(
+                  8,
+                  color: Cyber.muted.withValues(alpha: 0.8),
+                  letterSpacing: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (delta != null && delta != 0) _DeltaChip(delta: delta),
+      ],
+    );
+  }
+}
+
+class _DeltaChip extends StatelessWidget {
+  const _DeltaChip({required this.delta});
+
+  final int delta;
+
+  @override
+  Widget build(BuildContext context) {
+    final up = delta > 0;
+    final color = up ? Cyber.lime : Cyber.red;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        border: Border.all(color: color.withValues(alpha: 0.6)),
+      ),
+      child: Text(
+        '${up ? '▲' : '▼'}${delta.abs()} TODAY',
+        style: Cyber.label(
+          8,
+          color: color,
+          letterSpacing: 0.8,
+          fontFeatures: const [FontFeature.tabularFigures()],
         ),
       ),
     );
@@ -282,20 +369,8 @@ class _OddsChartState extends State<_OddsChart> {
 
   @override
   Widget build(BuildContext context) {
-    final outcomes = [...widget.market.outcomes]
-      ..sort((a, b) => b.probabilityPercent.compareTo(a.probabilityPercent));
-    final topOutcomes = outcomes.take(3).toList();
     final history = _historyForRange(widget.market.priceHistory, widget.range);
-    final series = [
-      for (final outcome in topOutcomes)
-        ChartSeries(
-          label: outcome.label,
-          color: outcome.color,
-          values: _historyValuesFor(history, outcome.id).isEmpty
-              ? [outcome.probabilityPercent]
-              : _historyValuesFor(history, outcome.id),
-        ),
-    ];
+    final series = _chartSeriesFor(widget.market, widget.range, limit: 3);
     final pointCount = _chartPointCount(series);
     final selectedIndex = _selectedChartIndex(_selectedIndex, pointCount);
     return Container(
@@ -316,6 +391,16 @@ class _OddsChartState extends State<_OddsChart> {
                   style: Cyber.label(10, color: Cyber.cyan),
                 ),
               ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                tooltip: 'Expand odds chart',
+                onPressed: () => _openExpandedOdds(context),
+                icon: const Icon(
+                  Icons.open_in_full,
+                  color: Cyber.cyan,
+                  size: 16,
+                ),
+              ),
               Text(
                 '${history.length} BETS',
                 style: Cyber.label(9, color: Cyber.muted),
@@ -334,13 +419,14 @@ class _OddsChartState extends State<_OddsChart> {
           LayoutBuilder(
             builder: (context, constraints) {
               void selectAt(Offset position) {
-                setState(() {
-                  _selectedIndex = _indexForChartDx(
-                    dx: position.dx,
-                    width: constraints.maxWidth,
-                    pointCount: pointCount,
-                  );
-                });
+                final index = _indexForChartDx(
+                  dx: position.dx,
+                  width: constraints.maxWidth,
+                  pointCount: pointCount,
+                );
+                if (index == _selectedIndex) return;
+                HapticFeedback.selectionClick();
+                setState(() => _selectedIndex = index);
               }
 
               return GestureDetector(
@@ -364,6 +450,135 @@ class _OddsChartState extends State<_OddsChart> {
           const SizedBox(height: 10),
           _SelectedChartValues(series: series, selectedIndex: selectedIndex),
         ],
+      ),
+    );
+  }
+
+  void _openExpandedOdds(BuildContext context) {
+    playSound(SoundEffect.uiTap);
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => _ExpandedOddsChartScreen(
+          market: widget.market,
+          initialRange: widget.range,
+        ),
+      ),
+    );
+  }
+}
+
+class _ExpandedOddsChartScreen extends StatefulWidget {
+  const _ExpandedOddsChartScreen({
+    required this.market,
+    required this.initialRange,
+  });
+
+  final PickMarket market;
+  final _ChartRange initialRange;
+
+  @override
+  State<_ExpandedOddsChartScreen> createState() =>
+      _ExpandedOddsChartScreenState();
+}
+
+class _ExpandedOddsChartScreenState extends State<_ExpandedOddsChartScreen> {
+  late _ChartRange _range = widget.initialRange;
+  int? _selectedIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    final history = _historyForRange(widget.market.priceHistory, _range);
+    final series = _chartSeriesFor(widget.market, _range);
+    final pointCount = _chartPointCount(series);
+    final selectedIndex = _selectedChartIndex(_selectedIndex, pointCount);
+
+    return Scaffold(
+      backgroundColor: Cyber.bg,
+      body: CyberPlainBackground(
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 12, 8),
+                child: Row(
+                  children: [
+                    IconButton(
+                      tooltip: 'Close',
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close, color: Colors.white),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'MARKET ODDS',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Cyber.display(16, letterSpacing: 1),
+                      ),
+                    ),
+                    Text(
+                      '${history.length} BETS',
+                      style: Cyber.label(9, color: Cyber.muted),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _ChartRangeTabs(
+                  active: _range,
+                  onChanged: (range) {
+                    setState(() {
+                      _range = range;
+                      _selectedIndex = null;
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      void selectAt(Offset position) {
+                        final index = _indexForChartDx(
+                          dx: position.dx,
+                          width: constraints.maxWidth,
+                          pointCount: pointCount,
+                        );
+                        if (index == _selectedIndex) return;
+                        HapticFeedback.selectionClick();
+                        setState(() => _selectedIndex = index);
+                      }
+
+                      return GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTapDown: (details) => selectAt(details.localPosition),
+                        onHorizontalDragUpdate: (details) =>
+                            selectAt(details.localPosition),
+                        child: CustomPaint(
+                          painter: _OddsChartPainter(
+                            series: series,
+                            selectedIndex: selectedIndex,
+                          ),
+                          child: const SizedBox.expand(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
+                child: _SelectedChartValues(
+                  series: series,
+                  selectedIndex: selectedIndex,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -458,6 +673,7 @@ class _SelectedChartValues extends StatelessWidget {
                   10,
                   color: item.color,
                   weight: FontWeight.w900,
+                  fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
             ],
@@ -633,7 +849,7 @@ class _PositionPanel extends StatelessWidget {
         ),
       );
     }
-    final statusColor = _positionColor(position!.status);
+    final statusColor = pickPositionColor(position!.status);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -648,7 +864,7 @@ class _PositionPanel extends StatelessWidget {
               Text('YOUR TICKET', style: Cyber.label(11, color: statusColor)),
               const Spacer(),
               Text(
-                _positionLabel(position!.status),
+                pickPositionLabel(position!.status),
                 style: Cyber.label(9, color: statusColor),
               ),
             ],
@@ -718,7 +934,9 @@ class _RulesPanel extends StatelessWidget {
       ),
       child: Text(
         'At ${outcome.probabilityPercent}%, every share costs '
-        '${outcome.probabilityPercent} Oz and pays 100 Oz if correct.',
+        '${outcome.probabilityPercent} Oz and pays 100 Oz '
+        '(${(100 / outcome.probabilityPercent).toStringAsFixed(1)}×) '
+        'if correct.',
         style: Cyber.body(12, color: Cyber.muted, weight: FontWeight.w700),
       ),
     );
@@ -745,7 +963,7 @@ class _MiniMetric extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: Cyber.label(7, color: Cyber.muted)),
+            Text(label, style: Cyber.label(8, color: Cyber.muted)),
             const SizedBox(height: 5),
             Text(
               value,
@@ -772,7 +990,7 @@ class _TicketMetric extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: Cyber.label(7, color: Cyber.muted)),
+          Text(label, style: Cyber.label(8, color: Cyber.muted)),
           const SizedBox(height: 5),
           Text(
             value,
@@ -816,23 +1034,17 @@ class _TypePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = switch (type) {
-      PickMarketType.match => Cyber.cyan,
-      PickMarketType.event => Cyber.gold,
-      PickMarketType.future => Cyber.violet,
-    };
-    final label = switch (type) {
-      PickMarketType.match => 'MATCH',
-      PickMarketType.event => 'EVENT',
-      PickMarketType.future => 'FUTURE',
-    };
+    final color = pickMarketTypeColor(type);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         border: Border.all(color: color.withValues(alpha: 0.7)),
       ),
-      child: Text(label, style: Cyber.label(8, color: color)),
+      child: Text(
+        pickMarketTypeLabel(type),
+        style: Cyber.label(8, color: color),
+      ),
     );
   }
 }
@@ -844,7 +1056,7 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _marketStatusColor(status);
+    final color = pickMarketStatusColor(status);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
       decoration: BoxDecoration(
@@ -852,7 +1064,7 @@ class _StatusPill extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.7)),
       ),
       child: Text(
-        _marketStatusLabel(status),
+        pickMarketStatusLabel(status),
         style: Cyber.label(8, color: color),
       ),
     );
@@ -895,7 +1107,8 @@ class _OddsChartPainter extends CustomPainter {
     final spread = math.max(1, maxValue - minValue);
     final pointCount = _chartPointCount(series);
 
-    for (final item in series) {
+    for (var s = 0; s < series.length; s++) {
+      final item = series[s];
       final points = <Offset>[];
       for (var i = 0; i < item.values.length; i++) {
         final x = item.values.length == 1
@@ -912,6 +1125,25 @@ class _OddsChartPainter extends CustomPainter {
         final point = points[i];
         path.lineTo(point.dx, previous.dy);
         path.lineTo(point.dx, point.dy);
+      }
+      // Gradient fill under the leading series only — one focal series.
+      if (s == 0 && points.length > 1) {
+        final fill = Path.from(path)
+          ..lineTo(points.last.dx, size.height)
+          ..lineTo(points.first.dx, size.height)
+          ..close();
+        canvas.drawPath(
+          fill,
+          Paint()
+            ..shader = LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                item.color.withValues(alpha: 0.18),
+                item.color.withValues(alpha: 0.0),
+              ],
+            ).createShader(Offset.zero & size),
+        );
       }
       canvas.drawPath(
         path,
@@ -967,15 +1199,6 @@ class _OddsChartPainter extends CustomPainter {
         ..color = markerSeries.color
         ..style = PaintingStyle.fill,
     );
-    if (selectedX + 42 < size.width) {
-      canvas.drawLine(
-        center + const Offset(13, 0),
-        center + const Offset(42, 0),
-        Paint()
-          ..color = markerSeries.color
-          ..strokeWidth = 3,
-      );
-    }
   }
 
   @override
@@ -1022,6 +1245,27 @@ List<PickPricePoint> _historyForRange(
   if (filtered.length >= 2) return filtered;
   if (history.length <= 2) return history;
   return history.sublist(history.length - 2);
+}
+
+List<ChartSeries> _chartSeriesFor(
+  PickMarket market,
+  _ChartRange range, {
+  int? limit,
+}) {
+  final outcomes = [...market.outcomes]
+    ..sort((a, b) => b.probabilityPercent.compareTo(a.probabilityPercent));
+  final selectedOutcomes = limit == null ? outcomes : outcomes.take(limit);
+  final history = _historyForRange(market.priceHistory, range);
+  return [
+    for (final outcome in selectedOutcomes)
+      ChartSeries(
+        label: outcome.label,
+        color: outcome.color,
+        values: _historyValuesFor(history, outcome.id).isEmpty
+            ? [outcome.probabilityPercent]
+            : _historyValuesFor(history, outcome.id),
+      ),
+  ];
 }
 
 List<int> _historyValuesFor(List<PickPricePoint> history, String outcomeId) => [
@@ -1089,41 +1333,3 @@ String _timeLabel(DateTime value) {
   final minute = local.minute.toString().padLeft(2, '0');
   return '$hour:$minute';
 }
-
-String _marketStatusLabel(PickMarketStatus status) => switch (status) {
-  PickMarketStatus.upcoming => 'OPEN',
-  PickMarketStatus.live => 'LIVE',
-  PickMarketStatus.closed => 'CLOSED',
-  PickMarketStatus.unresolved => 'UNRESOLVED',
-  PickMarketStatus.settled => 'SETTLED',
-  PickMarketStatus.voided => 'VOID',
-};
-
-Color _marketStatusColor(PickMarketStatus status) => switch (status) {
-  PickMarketStatus.upcoming => Cyber.gold,
-  PickMarketStatus.live => Cyber.red,
-  PickMarketStatus.closed => Cyber.muted,
-  PickMarketStatus.unresolved => Cyber.amber,
-  PickMarketStatus.settled => Cyber.success,
-  PickMarketStatus.voided => Cyber.muted,
-};
-
-String _positionLabel(PickPositionStatus status) => switch (status) {
-  PickPositionStatus.pending => 'PENDING',
-  PickPositionStatus.live => 'LIVE',
-  PickPositionStatus.unresolved => 'UNRESOLVED',
-  PickPositionStatus.settleable => 'CLAIM',
-  PickPositionStatus.won => 'WON',
-  PickPositionStatus.lost => 'LOST',
-  PickPositionStatus.voided => 'REFUNDED',
-};
-
-Color _positionColor(PickPositionStatus status) => switch (status) {
-  PickPositionStatus.pending => Cyber.cyan,
-  PickPositionStatus.live => Cyber.red,
-  PickPositionStatus.unresolved => Cyber.amber,
-  PickPositionStatus.settleable => Cyber.gold,
-  PickPositionStatus.won => Cyber.success,
-  PickPositionStatus.lost => Cyber.red,
-  PickPositionStatus.voided => Cyber.muted,
-};

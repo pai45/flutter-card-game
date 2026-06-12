@@ -817,7 +817,7 @@ class _FilterBar extends StatelessWidget {
                     ),
                   ),
                   if (showCountdownInline)
-                    const _CountdownCard(remaining: 'Ends 04h 12m'),
+                    const _CountdownCard(remaining: '04h 12m'),
                 ],
               ),
             ),
@@ -826,7 +826,7 @@ class _FilterBar extends StatelessWidget {
                 padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
                 child: Align(
                   alignment: Alignment.centerRight,
-                  child: _CountdownCard(remaining: 'Ends 04h 12m'),
+                  child: _CountdownCard(remaining: '04h 12m'),
                 ),
               ),
             if (type == LeaderboardType.tournament) ...[

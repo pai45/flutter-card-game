@@ -27,15 +27,15 @@ void main() {
     final valid = await cubit.placePick(
       marketId: 'ipl_2026_winner',
       outcomeId: 'mi',
-      stakeOz: 48,
+      stakeOz: 45,
       balanceOz: 500,
     );
     expect(valid.success, isTrue);
-    expect(valid.shares, 2);
+    expect(valid.shares, 3);
 
     final position = cubit.state.positionForMarket('ipl_2026_winner');
-    expect(position?.stakeOz, 48);
-    expect(position?.maxPayoutOz, 200);
+    expect(position?.stakeOz, 45);
+    expect(position?.maxPayoutOz, 300);
   });
 
   test('repeat buys on the same outcome aggregate shares', () async {
@@ -45,19 +45,19 @@ void main() {
     await cubit.placePick(
       marketId: 'ipl_2026_winner',
       outcomeId: 'mi',
-      stakeOz: 48,
+      stakeOz: 45,
       balanceOz: 500,
     );
     await cubit.placePick(
       marketId: 'ipl_2026_winner',
       outcomeId: 'mi',
-      stakeOz: 24,
+      stakeOz: 30,
       balanceOz: 500,
     );
 
     final position = cubit.state.positionForMarket('ipl_2026_winner');
-    expect(position?.stakeOz, 72);
-    expect(position?.shareCount, 3);
+    expect(position?.stakeOz, 75);
+    expect(position?.shareCount, 5);
   });
 
   test('FIFA finals market is built from uploaded bet dataset', () async {

@@ -131,7 +131,7 @@ class _PredictionMatchHistoryScreenState
                               ),
                             )
                           : filtered.isEmpty
-                          ? const _EmptyHistory('No match quizzes here yet.')
+                          ? _EmptyHistory(hasAnyQuizzes: items.isNotEmpty)
                           : ListView.separated(
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                               itemCount: filtered.length,
@@ -869,14 +869,20 @@ class _OutcomeDot extends StatelessWidget {
 }
 
 class _EmptyHistory extends StatelessWidget {
-  const _EmptyHistory(this.message);
+  const _EmptyHistory({required this.hasAnyQuizzes});
 
-  final String message;
+  final bool hasAnyQuizzes;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text(message, style: Cyber.body(13, color: Cyber.muted)),
+    return CyberNoDataState(
+      icon: hasAnyQuizzes ? Icons.filter_alt_off : Icons.sports_esports,
+      title: hasAnyQuizzes ? 'No quizzes in this filter' : 'Be the 1st to play',
+      message: hasAnyQuizzes
+          ? 'Switch filters to review the quizzes already played.'
+          : 'No one has played a prediction quiz yet. Start one and claim the first rank.',
+      accent: hasAnyQuizzes ? Cyber.violet : Cyber.cyan,
+      spark: hasAnyQuizzes ? Icons.tune : Icons.bolt,
     );
   }
 }

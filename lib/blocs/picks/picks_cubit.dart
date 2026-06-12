@@ -46,6 +46,19 @@ class PicksCubit extends Cubit<PicksState> {
     emit(state.copyWith(sortOption: option, clearMessage: true));
   }
 
+  /// Restores the default browse view (used by the empty state's
+  /// CLEAR FILTERS action).
+  void resetFilters() {
+    emit(
+      state.copyWith(
+        sportFilter: PickSportFilter.all,
+        typeFilter: null,
+        statusFilter: PickMarketStatusFilter.all,
+        clearMessage: true,
+      ),
+    );
+  }
+
   Future<PickPlacementResult> placePick({
     required String marketId,
     required String outcomeId,
@@ -172,6 +185,37 @@ class PicksCubit extends Cubit<PicksState> {
       message: _settlementMessage(settled),
       position: settled,
       payoutOz: settled.payoutOz,
+    );
+  }
+
+  /// Settles every claimable position in one pass and returns the aggregate
+  /// so the caller can credit coins once and play a single reveal.
+  Future<PickBatchSettlementResult> settleAllClaimable() async {
+    final claimable = state.claimablePositions;
+    var settledCount = 0;
+    var wonCount = 0;
+    var stakeOz = 0;
+    var payoutOz = 0;
+    final next = Map<String, PickPosition>.from(state.positions);
+    for (final position in claimable) {
+      final market = state.marketFor(position.marketId);
+      if (market == null || !market.isResultKnown) continue;
+      final settled = _settledPosition(position, market);
+      next[settled.id] = settled;
+      settledCount++;
+      stakeOz += settled.stakeOz;
+      payoutOz += settled.payoutOz;
+      if (settled.status == PickPositionStatus.won) wonCount++;
+    }
+    if (settledCount > 0) {
+      emit(state.copyWith(positions: next, clearMessage: true));
+      await _storage.savePickPositions(next.values.toList());
+    }
+    return PickBatchSettlementResult(
+      settledCount: settledCount,
+      wonCount: wonCount,
+      stakeOz: stakeOz,
+      payoutOz: payoutOz,
     );
   }
 

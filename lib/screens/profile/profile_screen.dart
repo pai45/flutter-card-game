@@ -28,7 +28,6 @@ abstract final class _ProfilePastel {
       Color.lerp(base, accent, _tint)!;
 
   static final header = _wash(Cyber.cyan);
-  static final headerBanner = _wash(Cyber.violet);
 
   static Color section(Color accent) => _wash(accent);
 
@@ -485,7 +484,10 @@ class _IdentityHeader extends StatelessWidget {
                       children: [
                         const _Avatar(),
                         const Spacer(),
-                        PlayerLevelBadge(progression: game.progression),
+                        PlayerLevelBadge(
+                          progression: game.progression,
+                          flatStyle: true,
+                        ),
                       ],
                     ),
                     const SizedBox(height: 14),
@@ -513,44 +515,42 @@ class _IdentityHeader extends StatelessWidget {
   }
 }
 
-/// Decorative banner strip with a centred crest on a flat pastel wash.
+/// Full-bleed hero banner; bottom fades into the identity card body.
 class _EmblemBanner extends StatelessWidget {
   const _EmblemBanner();
 
+  static const _asset = 'assets/backgrounds/profile_banner.png';
+
   @override
   Widget build(BuildContext context) {
+    final mergeColor = _ProfilePastel.header;
     return SizedBox(
-      height: 116,
+      height: 148,
       width: double.infinity,
-      child: ColoredBox(
-        color: _ProfilePastel.headerBanner,
-        child: Align(
-          alignment: Alignment.centerRight,
-          child: Padding(
-            padding: const EdgeInsets.only(right: 24),
-            child: _Crest(),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            _asset,
+            fit: BoxFit.cover,
+            alignment: Alignment.topCenter,
           ),
-        ),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: const [0.35, 0.72, 1.0],
+                colors: [
+                  Colors.transparent,
+                  mergeColor.withValues(alpha: 0.55),
+                  mergeColor,
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
-    );
-  }
-}
-
-class _Crest extends StatelessWidget {
-  const _Crest();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 64,
-      height: 64,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Cyber.bg.withValues(alpha: 0.5),
-        border: Border.all(color: Cyber.border),
-      ),
-      child: const Icon(Icons.shield_moon, color: Cyber.cyan, size: 32),
     );
   }
 }
@@ -597,8 +597,8 @@ class _AvatarState extends State<_Avatar> {
   Widget build(BuildContext context) {
     final avatar = avatarOptionById(_selectedAvatarId);
     return SizedBox(
-      width: 88,
-      height: 88,
+      width: 104,
+      height: 104,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -606,8 +606,8 @@ class _AvatarState extends State<_Avatar> {
             left: 0,
             bottom: 0,
             child: Container(
-              width: 80,
-              height: 80,
+              width: 96,
+              height: 96,
               decoration: BoxDecoration(
                 color: Cyber.panel,
                 border: Border.all(color: Cyber.border, width: 2),
@@ -628,16 +628,15 @@ class _AvatarState extends State<_Avatar> {
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: _showAvatarPicker,
-                  customBorder: const CircleBorder(),
+                  customBorder: const RoundedRectangleBorder(),
                   splashColor: Cyber.cyan.withValues(alpha: 0.18),
                   highlightColor: Cyber.cyan.withValues(alpha: 0.10),
                   child: Container(
-                    width: 30,
-                    height: 30,
+                    width: 32,
+                    height: 32,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: Cyber.bg,
-                      shape: BoxShape.circle,
                       border: Border.all(color: Cyber.cyan),
                     ),
                     child: const Icon(Icons.edit, color: Cyber.cyan, size: 16),

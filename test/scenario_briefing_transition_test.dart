@@ -1,7 +1,6 @@
 import 'package:card_game/blocs/game/game_bloc.dart';
 import 'package:card_game/blocs/game/game_state.dart';
 import 'package:card_game/config/enums.dart';
-import 'package:card_game/config/theme.dart';
 import 'package:card_game/models/cards.dart';
 import 'package:card_game/screens/game/widgets/match_phases.dart';
 import 'package:card_game/services/secure_storage_service.dart';
@@ -33,8 +32,9 @@ void main() {
     tutorialSeen: const {'scenario'},
   );
 
-  testWidgets('ScenarioBriefingSection calls onComplete after countdown',
-      (tester) async {
+  testWidgets('ScenarioBriefingSection calls onComplete after countdown', (
+    tester,
+  ) async {
     var completed = false;
     await tester.pumpWidget(
       MaterialApp(
@@ -58,14 +58,13 @@ void main() {
     expect(completed, isTrue);
   });
 
-  testWidgets('PlayPhase builds with full-bleed selection backdrops',
-      (tester) async {
+  testWidgets('PlayPhase builds with full-bleed selection backdrops', (
+    tester,
+  ) async {
     final bloc = GameBloc(SecureGameStorage());
     addTearDown(bloc.close);
     final base = GameState.initial().copyWith(loading: false);
-    bloc.emit(
-      scenarioState(base).copyWith(phase: MatchPhase.play),
-    );
+    bloc.emit(scenarioState(base).copyWith(phase: MatchPhase.play));
 
     await tester.pumpWidget(
       BlocProvider.value(
@@ -84,5 +83,4 @@ void main() {
 
     expect(tester.takeException(), isNull);
   });
-
 }
