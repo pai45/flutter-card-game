@@ -122,7 +122,7 @@ class StarterPackRevealDialog extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               const Text(
-                'Pack rarity odds: Bronze 50%  Silver 30%  Gold 15%  Platinum 5%',
+                'Pack rarity odds: Bronze 55%  Silver 35%  Gold 4%  Platinum 1%',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Cyber.muted,

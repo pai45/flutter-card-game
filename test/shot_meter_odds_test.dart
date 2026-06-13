@@ -7,8 +7,8 @@ void main() {
       // These probabilities are the single source of truth shared by the Shot
       // Meter overlay and GameBloc._resolveRound. If the resolution table
       // changes, both must move together.
-      expect(goalChanceForDiff(20), 0.75);
-      expect(goalChanceForDiff(10), 0.60);
+      expect(goalChanceForDiff(20), 0.80);
+      expect(goalChanceForDiff(10), 0.65);
       expect(goalChanceForDiff(0), 0.45);
       expect(goalChanceForDiff(-10), 0.10);
       expect(goalChanceForDiff(-20), 0.05);
@@ -17,7 +17,7 @@ void main() {
     test('treats the threshold edges the same way the engine does', () {
       // The engine uses strict > comparisons; verify the boundary values land
       // in the lower bucket (e.g. exactly +15 is NOT the >15 bucket).
-      expect(goalChanceForDiff(15), 0.60);
+      expect(goalChanceForDiff(15), 0.65);
       expect(goalChanceForDiff(5), 0.45);
       expect(goalChanceForDiff(-5), 0.10);
       expect(goalChanceForDiff(-15), 0.05);

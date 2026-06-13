@@ -87,26 +87,30 @@ int coinsForResult(String result) {
 }
 
 // Calculate XP delta for a match result.
-// Wins in regulation get more XP scaled by goal margin + shutout bonus, capped at +25.
-// Losses in regulation lose XP scaled by goal conceded margin, floored at -15.
-// Penalty outcomes get flat bonuses/penalties.
+// Wins get more XP scaled by goal margin + shutout bonus, capped at +25.
+// Losses lose XP scaled by goal conceded margin, floored at -15.
+// Draws (level after 4 rounds) award a small flat +4.
 int calculateMatchXP({
   required String resultLabel,
   required int playerScore,
   required int opponentScore,
-  required bool wentToPenalties,
 }) {
-  if (resultLabel == 'Draw') return 0;
+  if (resultLabel == 'Draw') return 4;
   if (resultLabel == 'Victory') {
-    if (wentToPenalties) return 6;
     final diff = playerScore - opponentScore;
     final shutout = opponentScore == 0 ? 5 : 0;
     return min(25, 10 + diff * 3 + shutout);
   }
   // Defeat
-  if (wentToPenalties) return -2;
   return max(-15, -(5 + (opponentScore - playerScore) * 2));
 }
+
+// XP for the standalone Penalty Shootout mode — a quicker mode, so smaller
+// stakes than a full match: +8/+10/+12 by winning margin, nothing on a loss.
+int calculateShootoutXP({required bool won, required int margin}) =>
+    won ? min(12, 8 + (margin - 1) * 2) : 0;
+
+int shootoutCoins(bool won) => won ? 20 : 5;
 
 class PlayerProgression {
   const PlayerProgression({required this.totalXP});
@@ -205,6 +209,32 @@ OpponentDeck generateOpponentDeck(
     defenders: opponentDefenders,
     actions: picks,
     level: level,
+  );
+}
+
+class ShootoutOpponent {
+  const ShootoutOpponent({required this.shooters, required this.keeper});
+
+  /// Kick order: ATK, ATK, DEF, DEF, GK — the keeper steps up last.
+  final List<PlayerCard> shooters;
+  final PlayerCard keeper;
+}
+
+ShootoutOpponent generateShootoutOpponent(
+  int level,
+  List<PlayerCard> attackerPool,
+  List<PlayerCard> defenderPool,
+  List<PlayerCard> keeperPool, {
+  Random? random,
+}) {
+  final rng = random ?? Random();
+  final target = targetRatingForLevel(level);
+  final cpuAttackers = _nearestByRating(attackerPool, target, 2, rng);
+  final cpuDefenders = _nearestByRating(defenderPool, target, 2, rng);
+  final keeper = _nearestByRating(keeperPool, target, 1, rng).first;
+  return ShootoutOpponent(
+    shooters: [...cpuAttackers, ...cpuDefenders, keeper],
+    keeper: keeper,
   );
 }
 

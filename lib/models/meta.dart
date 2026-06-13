@@ -56,9 +56,9 @@ const coreFeatures = [
     accent: Cyber.violet,
   ),
   AppInfoItem(
-    title: 'Penalty Finish',
+    title: 'Penalty Shootout Mode',
     body:
-        'Tied matches roll into a shootout with sudden death until one side finally breaks through.',
+        'A standalone shootout: your five-player squad trades kicks with a CPU team, sudden death until one side breaks.',
     icon: Icons.emoji_events,
     accent: Cyber.red,
   ),

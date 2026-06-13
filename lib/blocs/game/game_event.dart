@@ -1,4 +1,3 @@
-import '../../config/enums.dart';
 import '../../models/cards.dart';
 import '../../models/deck.dart';
 
@@ -39,6 +38,12 @@ class CoinsAdded extends GameEvent {
 
 class CoinsSpent extends GameEvent {
   CoinsSpent(this.amount);
+  final int amount;
+}
+
+/// XP earned outside Pitch Duel matches (prediction settlements).
+class PredictionXpAdded extends GameEvent {
+  PredictionXpAdded(this.amount);
   final int amount;
 }
 
@@ -107,7 +112,12 @@ class TossChoiceChanged extends GameEvent {
   final String choice;
 }
 
-class TossResolved extends GameEvent {}
+class TossResolved extends GameEvent {
+  TossResolved(this.call);
+
+  /// The face the player called before the flip: 'heads' or 'tails'.
+  final String call;
+}
 
 /// Fired when the toss loser acknowledges the result and moves on to see the
 /// CPU's role pick (→ [MatchPhase.roleReveal]).
@@ -147,15 +157,13 @@ class MovePlayed extends GameEvent {
 
 class RoundAdvanced extends GameEvent {}
 
-class PenaltyStarted extends GameEvent {}
-
-class PenaltyDirectionSelected extends GameEvent {
-  PenaltyDirectionSelected(this.direction);
-  final PenaltyDirection direction;
-}
-
-class PenaltyKickConfirmed extends GameEvent {}
-
-class PenaltyNextKick extends GameEvent {}
-
 class MatchFinished extends GameEvent {}
+
+/// Fired once by the standalone Penalty Shootout mode when a shootout ends,
+/// so XP/coins/history flow through the same progression owner as matches.
+class ShootoutFinished extends GameEvent {
+  ShootoutFinished({required this.playerGoals, required this.cpuGoals});
+
+  final int playerGoals;
+  final int cpuGoals;
+}

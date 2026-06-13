@@ -15,32 +15,38 @@ import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/stat_oz_top_bar.dart';
 import '../shop/shop_screen.dart' show CoinIcon;
 import 'streak_calendar_screen.dart';
+import 'picks_home_view.dart';
 import 'widgets/match_prediction_card.dart';
 
 /// A compact sports prediction hub with StatOz styling.
 class PredictionHomeScreen extends StatefulWidget {
   const PredictionHomeScreen({
+    required this.activeTab,
+    required this.onTabChanged,
     required this.onNavigate,
     required this.onOpenMatch,
     required this.onOpenLeague,
     required this.onOpenGame,
+    required this.onOpenShootout,
     super.key,
   });
 
+  final int activeTab;
+  final ValueChanged<int> onTabChanged;
   final ValueChanged<AppSection> onNavigate;
   final ValueChanged<SportMatch> onOpenMatch;
   final ValueChanged<League> onOpenLeague;
   final VoidCallback onOpenGame;
+  final VoidCallback onOpenShootout;
 
   @override
   State<PredictionHomeScreen> createState() => _PredictionHomeScreenState();
 }
 
 class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
-  int _tab = 0;
-
   @override
   Widget build(BuildContext context) {
+    final tab = widget.activeTab;
     return Scaffold(
       backgroundColor: Cyber.bg,
       body: Stack(
@@ -54,16 +60,13 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
                   onAddCoins: () => widget.onNavigate(AppSection.shop),
                   onStreakTap: () => showStreakCalendar(context),
                 ),
-                _PredictionTopBar(
-                  activeIndex: _tab,
-                  onTap: (i) => setState(() => _tab = i),
-                ),
+                _PredictionTopBar(activeIndex: tab, onTap: widget.onTabChanged),
                 Expanded(
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 240),
                     child: KeyedSubtree(
-                      key: ValueKey<int>(_tab),
-                      child: _buildTab(),
+                      key: ValueKey<int>(tab),
+                      child: _buildTab(tab),
                     ),
                   ),
                 ),
@@ -73,26 +76,24 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
         ],
       ),
       bottomNavigationBar: LandingBottomNavigation(
-        selectedIndex: switch (_tab) {
-          0 => 0,
-          1 => 1,
-          _ => -1,
-        },
+        selectedIndex: 0,
         onNavigate: widget.onNavigate,
         includeShop: false,
-        onPredictionTabTap: (tab) => setState(() => _tab = tab),
       ),
     );
   }
 
-  Widget _buildTab() {
-    return switch (_tab) {
+  Widget _buildTab(int tab) {
+    return switch (tab) {
       0 => _MatchesTab(
         onOpenMatch: widget.onOpenMatch,
         onOpenLeague: widget.onOpenLeague,
       ),
       1 => const _PickTab(),
-      _ => _GamesTab(onOpenGame: widget.onOpenGame),
+      _ => _GamesTab(
+        onOpenGame: widget.onOpenGame,
+        onOpenShootout: widget.onOpenShootout,
+      ),
     };
   }
 }
@@ -164,6 +165,7 @@ class _PredictionTopBar extends StatelessWidget {
                         for (var i = 0; i < _TopBarTabData.tabs.length; i++)
                           Expanded(
                             child: _TopBarTab(
+                              key: ValueKey('prediction_top_tab_$i'),
                               data: _TopBarTabData.tabs[i],
                               active: i == activeIndex,
                               onTap: () {
@@ -200,6 +202,7 @@ class _TopBarTabData {
 
 class _TopBarTab extends StatelessWidget {
   const _TopBarTab({
+    super.key,
     required this.data,
     required this.active,
     required this.onTap,
@@ -458,22 +461,14 @@ class _EmptyMatchDay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-      decoration: BoxDecoration(
-        color: const Color(0xff172234),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-      ),
-      child: Column(
-        children: [
-          const Icon(Icons.event_busy_outlined, color: Cyber.muted, size: 26),
-          const SizedBox(height: 10),
-          Text(
-            'No games on ${_monthDayLabel(day)}',
-            textAlign: TextAlign.center,
-            style: Cyber.body(13, color: Cyber.muted, weight: FontWeight.w600),
-          ),
-        ],
+    return SizedBox(
+      height: 360,
+      child: CyberNoDataState(
+        icon: Icons.event_busy_outlined,
+        title: 'No games on ${_monthDayLabel(day)}',
+        message: 'Pick another match day to find open predictions.',
+        accent: Cyber.cyan,
+        spark: Icons.calendar_today_outlined,
       ),
     );
   }
@@ -546,87 +541,11 @@ String _monthDayLabel(DateTime day) {
   return '${months[day.month - 1]} ${day.day}';
 }
 
-class _PickTab extends StatefulWidget {
+class _PickTab extends StatelessWidget {
   const _PickTab();
 
   @override
-  State<_PickTab> createState() => _PickTabState();
-}
-
-class _PickTabState extends State<_PickTab> {
-  String? _selectedKey;
-
-  void _openPickSheet({
-    required String key,
-    required String question,
-    required String selectedPick,
-    required int price,
-    required Color color,
-  }) {
-    setState(() => _selectedKey = key);
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.72),
-      builder: (context) => _PickConfirmSheet(
-        question: question,
-        selectedPick: selectedPick,
-        price: price,
-        color: color,
-      ),
-    ).whenComplete(() {
-      if (mounted) setState(() => _selectedKey = null);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<PredictionCubit, PredictionState>(
-      builder: (context, state) {
-        if (state.loading) return const _PickSkeleton();
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 28),
-          children: [
-            const _SportsTabs(),
-            const SizedBox(height: 10),
-            const _MarketFilterTabs(),
-            const SizedBox(height: 14),
-            _MatchMarketCard(selectedKey: _selectedKey, onPick: _openPickSheet),
-            const SizedBox(height: 12),
-            _BinaryMarketCard(
-              badge: 'IPL',
-              badgeColor: const Color(0xff2f55b8),
-              question: 'Will RCB qualify for Playoff?',
-              league: 'IPL',
-              marketType: 'Event market',
-              volume: 'Volume 850 Oz',
-              closes: 'Closes: Matchday end',
-              selectedKey: _selectedKey,
-              onPick: _openPickSheet,
-            ),
-            const SizedBox(height: 12),
-            _BinaryMarketCard(
-              badge: 'LY',
-              badgeColor: const Color(0xff143a82),
-              question: 'Will Lamine Yamal play in the World Cup?',
-              league: 'FIFA',
-              marketType: 'Player prop',
-              volume: 'Volume 1.2K Oz',
-              closes: 'Result pending',
-              selectedKey: _selectedKey,
-              onPick: _openPickSheet,
-            ),
-            const SizedBox(height: 12),
-            _FuturesMarketCard(
-              selectedKey: _selectedKey,
-              onPick: _openPickSheet,
-            ),
-          ],
-        );
-      },
-    );
-  }
+  Widget build(BuildContext context) => const PicksHomeView();
 }
 
 class _SportsTabs extends StatelessWidget {
@@ -1778,9 +1697,10 @@ class _PickSkeleton extends StatelessWidget {
 }
 
 class _GamesTab extends StatelessWidget {
-  const _GamesTab({required this.onOpenGame});
+  const _GamesTab({required this.onOpenGame, required this.onOpenShootout});
 
   final VoidCallback onOpenGame;
+  final VoidCallback onOpenShootout;
 
   @override
   Widget build(BuildContext context) {
@@ -1794,6 +1714,15 @@ class _GamesTab extends StatelessWidget {
           accent: Cyber.cyan,
           featured: true,
           onTap: onOpenGame,
+        ),
+        const SizedBox(height: 12),
+        _GameTile(
+          title: 'PENALTY SHOOTOUT',
+          subtitle: 'SUDDEN-DEATH SPOT KICKS',
+          icon: Icons.gps_fixed,
+          accent: Cyber.lime,
+          featured: true,
+          onTap: onOpenShootout,
         ),
         const SizedBox(height: 12),
         const _GameTile(
@@ -1867,6 +1796,7 @@ class _GameTile extends StatelessWidget {
                 ? _FeaturedBody(
                     title: title,
                     subtitle: subtitle,
+                    icon: icon,
                     accent: accent,
                     onTap: onTap,
                   )
@@ -1952,12 +1882,14 @@ class _FeaturedBody extends StatelessWidget {
   const _FeaturedBody({
     required this.title,
     required this.subtitle,
+    required this.icon,
     required this.accent,
     required this.onTap,
   });
 
   final String title;
   final String subtitle;
+  final IconData icon;
   final Color accent;
   final VoidCallback? onTap;
 
@@ -1969,11 +1901,7 @@ class _FeaturedBody extends StatelessWidget {
           right: -8,
           top: 8,
           bottom: 8,
-          child: Icon(
-            Icons.sports_soccer,
-            size: 112,
-            color: accent.withValues(alpha: 0.07),
-          ),
+          child: Icon(icon, size: 112, color: accent.withValues(alpha: 0.07)),
         ),
         const Positioned.fill(
           child: CustomPaint(painter: _GameCornerBracketsPainter()),
@@ -1986,7 +1914,7 @@ class _FeaturedBody extends StatelessWidget {
               Row(
                 children: [
                   _GameIconBox(
-                    icon: Icons.sports_soccer,
+                    icon: icon,
                     accent: accent,
                     size: 52,
                     iconSize: 28,

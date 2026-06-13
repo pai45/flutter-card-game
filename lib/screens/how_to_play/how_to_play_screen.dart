@@ -129,9 +129,10 @@ const _steps = [
     index: 6,
     icon: Icons.emoji_events,
     color: Cyber.magenta,
-    title: 'Penalty Shootout',
-    body: 'Still tied after 4 rounds? Best of 5 kicks, then sudden death.',
-    hint: 'BEST OF 5   →   SUDDEN DEATH',
+    title: 'Full-Time Verdict',
+    body:
+        'Highest score after 4 rounds wins. Still level? It\'s a draw — a small XP award for both sides.',
+    hint: 'WIN BIG XP   ·   DRAW = SMALL XP',
   ),
 ];
 

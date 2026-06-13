@@ -1,75 +1,67 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../blocs/game/game_bloc.dart';
-import '../../../blocs/game/game_event.dart';
-import '../../../blocs/game/game_state.dart';
+import '../../../blocs/shootout/shootout_bloc.dart';
+import '../../../blocs/shootout/shootout_event.dart';
+import '../../../blocs/shootout/shootout_state.dart';
 import '../../../config/enums.dart';
 import '../../../config/theme.dart';
-import '../../../config/tutorial_steps.dart';
+import '../../../models/cards.dart';
 import '../../../models/match.dart';
-import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../../widgets/match_widgets.dart';
-import 'match_phases.dart' show CountdownRing;
+import '../../../widgets/spotlight_walkthrough.dart';
+import '../../game/widgets/match_phases.dart' show CountdownRing;
+import 'penalty_goal_frame.dart';
 
-class PenaltyPhase extends StatefulWidget {
-  const PenaltyPhase({required this.state, required this.onQuit, super.key});
+class ShootoutPhase extends StatefulWidget {
+  const ShootoutPhase({required this.state, required this.onQuit, super.key});
 
-  final GameState state;
+  final ShootoutState state;
   final VoidCallback onQuit;
 
   @override
-  State<PenaltyPhase> createState() => _PenaltyPhaseState();
+  State<ShootoutPhase> createState() => _ShootoutPhaseState();
 }
 
-class _PenaltyPhaseState extends State<PenaltyPhase>
+class _ShootoutPhaseState extends State<ShootoutPhase>
     with TickerProviderStateMixin {
-  late AnimationController _revealCtrl;
-  late Animation<double> _revealScale;
+  final _panelKey = GlobalKey();
+  final _shootKey = GlobalKey();
+
+  List<SpotlightStep> get _spotlightSteps => [
+    SpotlightStep(
+      targetKey: _panelKey,
+      title: 'Penalties',
+      body:
+          'Your five squad players each take one kick — ratings tip the duel. Tap a goal zone to aim.',
+      icon: Icons.sports_soccer,
+      accent: Cyber.amber,
+    ),
+    SpotlightStep(
+      targetKey: _shootKey,
+      title: 'Confirm',
+      body: 'Tap SHOOT or DIVE to take your turn.',
+      icon: Icons.sports,
+      accent: Cyber.cyan,
+    ),
+  ];
+
   late final AnimationController _scanner;
 
   @override
   void initState() {
     super.initState();
-    _revealCtrl = AnimationController(
-      duration: const Duration(milliseconds: 350),
-      vsync: this,
-    );
-    _revealScale = CurvedAnimation(
-      parent: _revealCtrl,
-      curve: Curves.easeOutBack,
-    );
     _scanner = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1800),
     )..repeat();
-    if (widget.state.penaltyKickPhase == 'result') _revealCtrl.value = 1;
-  }
-
-  @override
-  void didUpdateWidget(PenaltyPhase old) {
-    super.didUpdateWidget(old);
-    if (old.state.penaltyKickPhase != 'result' &&
-        widget.state.penaltyKickPhase == 'result') {
-      _revealCtrl.forward(from: 0);
-      final scored =
-          widget.state.penaltyKicks.isNotEmpty &&
-          widget.state.penaltyKicks.last.scored;
-      playSound(scored ? SoundEffect.goal : SoundEffect.save);
-      if (scored) HapticFeedback.heavyImpact();
-    } else if (old.state.penaltyKickPhase == 'result' &&
-        widget.state.penaltyKickPhase == 'choose') {
-      _revealCtrl.reset();
-    }
   }
 
   @override
   void dispose() {
-    _revealCtrl.dispose();
     _scanner.dispose();
     super.dispose();
   }
@@ -77,134 +69,118 @@ class _PenaltyPhaseState extends State<PenaltyPhase>
   @override
   Widget build(BuildContext context) {
     final s = widget.state;
-    return s.penaltyKickPhase == 'result'
+    return s.stage == ShootoutStage.result
         ? _buildResult(context, s)
         : _buildChoose(context, s);
   }
 
-  Widget _buildChoose(BuildContext context, GameState s) {
-    final playerTaking = s.penaltyRound.isEven;
-    final selected = s.penaltyPlayerDirection;
-    final totalLabel = s.penaltySuddenDeath ? 'SD' : 'of 6';
-    final kickLabel = 'KICK ${s.penaltyRound + 1} $totalLabel';
+  String _kickLabel(ShootoutState s) => s.suddenDeath
+      ? 'KICK ${s.sideKickIndex + 1} SD'
+      : 'KICK ${s.sideKickIndex + 1} of 5';
+
+  Widget _buildChoose(BuildContext context, ShootoutState s) {
+    final playerTaking = s.playerTaking;
+    final selected = s.selectedDirection;
 
     return MatchPhaseScaffold(
-      title: s.penaltySuddenDeath ? 'SUDDEN DEATH' : 'PENALTY SHOOTOUT',
+      title: s.suddenDeath ? 'SUDDEN DEATH' : 'PENALTY SHOOTOUT',
       subtitle: playerTaking ? '// Your Turn to Shoot' : '// Opponent Shooting',
-      state: s,
       onQuit: widget.onQuit,
-      scoreLabel: 'PEN ${s.penaltyPlayerScore}-${s.penaltyOpponentScore}',
-      tutorialKey: 'penalty',
-      tutorialSteps: penaltyTutorialSteps,
+      scoreLabel: 'PEN ${s.playerScore}-${s.opponentScore}',
+      spotlightKey: 'shootout',
+      spotlightSteps: _spotlightSteps,
+      spotlightDelay: const Duration(milliseconds: 500),
+      bottomActionKey: _shootKey,
       bottomAction: CyberCtaButton(
         label: playerTaking ? 'SHOOT' : 'DIVE',
         primary: true,
         onPressed: selected == null
             ? null
-            : () => context.read<GameBloc>().add(PenaltyKickConfirmed()),
+            : () => context.read<ShootoutBloc>().add(ShootoutKickConfirmed()),
       ),
       children: [
-        // Progress + history row
-        _PenaltyHeader(state: s, kickLabel: kickLabel),
-        // Scenario-style action panel — TAKE THE SHOT / GO FOR THE SAVE.
-        _PenaltyActionPanel(playerTaking: playerTaking),
-        // Direction buttons
-        _DirectionButtons(
+        _ShootoutHeader(state: s, kickLabel: _kickLabel(s)),
+        SpotlightTarget(
+          spotlightKey: _panelKey,
+          child: _ShooterActionPanel(state: s),
+        ),
+        PenaltyGoalMouth(
           playerTaking: playerTaking,
           selected: selected,
           onSelect: (dir) =>
-              context.read<GameBloc>().add(PenaltyDirectionSelected(dir)),
+              context.read<ShootoutBloc>().add(ShootoutDirectionSelected(dir)),
         ),
       ],
     );
   }
 
-  Widget _buildResult(BuildContext context, GameState s) {
-    final kick = s.penaltyKicks.last;
+  Widget _buildResult(BuildContext context, ShootoutState s) {
+    final kick = s.kicks.last;
     final goal = kick.scored;
 
     return MatchPhaseScaffold(
-      title: s.penaltySuddenDeath ? 'SUDDEN DEATH' : 'PENALTY SHOOTOUT',
+      title: s.suddenDeath ? 'SUDDEN DEATH' : 'PENALTY SHOOTOUT',
       subtitle: goal ? '// GOAL!' : '// SAVED!',
-      state: s,
       onQuit: widget.onQuit,
-      scoreLabel: 'PEN ${s.penaltyPlayerScore}-${s.penaltyOpponentScore}',
+      scoreLabel: 'PEN ${s.playerScore}-${s.opponentScore}',
       tutorialKey: null,
       tutorialSteps: const [],
-      bottomAction: s.penaltyPhaseOver
+      bottomAction: s.over
           ? CyberCtaButton(
-              label: 'See Final Result',
+              label: 'CONTINUE',
               primary: true,
-              onPressed: () => context.read<GameBloc>().add(MatchFinished()),
+              onPressed: () =>
+                  context.read<ShootoutBloc>().add(ShootoutSummaryShown()),
             )
           : null,
       children: [
-        // Animated result reveal with goal/save flash + shake on a save.
-        AnimatedBuilder(
-          animation: _revealCtrl,
-          builder: (context, child) {
-            final t = _revealCtrl.value;
-            final flash = (1 - t).clamp(0.0, 1.0) * 0.4;
-            final shakeX = goal ? 0.0 : sin(t * pi * 5) * 6 * (1 - t);
-            return Transform.translate(
-              offset: Offset(shakeX, 0),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: (goal ? Cyber.success : Cyber.danger).withValues(
-                    alpha: flash,
-                  ),
-                ),
-                child: child,
-              ),
-            );
-          },
-          child: ScaleTransition(
-            scale: _revealScale,
-            child: _KickResultCard(kick: kick),
-          ),
+        // Spatial resolution: ball flight vs keeper dive on a drawn goal.
+        PenaltyGoalScene(
+          key: ValueKey('kick-scene-${s.kicks.length}'),
+          kick: kick,
         ),
         // YOU vs CPU table — user always on the left, CPU on the right.
         _KickTable(kick: kick),
         // Kick history row
-        _PenaltyHistoryRow(kicks: s.penaltyKicks),
+        _PenaltyHistoryRow(kicks: s.kicks),
         // Shootout-over banner OR auto-advance countdown.
-        if (s.penaltyPhaseOver)
-          _WinnerBanner(winner: s.penaltyWinner)
+        if (s.over)
+          _WinnerBanner(winner: s.winner)
         else
           _NextKickCountdown(
-            key: ValueKey('kick-countdown-${s.penaltyKicks.length}'),
+            key: ValueKey('kick-countdown-${s.kicks.length}'),
             scanner: _scanner,
             seconds: 3,
-            onComplete: () => context.read<GameBloc>().add(PenaltyNextKick()),
+            onComplete: () =>
+                context.read<ShootoutBloc>().add(ShootoutNextKick()),
           ),
       ],
     );
   }
 }
 
-// ─── Scenario-style action panel for the choose screen ──────────────────────
+// ─── Shooter-context action panel for the choose screen ─────────────────────
 
-class _PenaltyActionPanel extends StatelessWidget {
-  const _PenaltyActionPanel({required this.playerTaking});
+class _ShooterActionPanel extends StatelessWidget {
+  const _ShooterActionPanel({required this.state});
 
-  final bool playerTaking;
+  final ShootoutState state;
 
   @override
   Widget build(BuildContext context) {
+    final playerTaking = state.playerTaking;
     final Color accent = playerTaking ? Cyber.cyan : Cyber.amber;
     final IconData icon = playerTaking ? Icons.sports_soccer : Icons.pan_tool;
     final String title = playerTaking ? 'TAKE THE SHOT' : 'GO FOR THE SAVE';
+    final shooter = state.currentShooter;
+    final keeper = state.currentKeeper;
     final String description = playerTaking
         ? 'Pick a direction. The keeper will dive — outsmart them.'
         : 'Read the shooter. Dive the right way to make the save.';
-    final String status = playerTaking
-        ? 'YOUR TURN TO SHOOT'
-        : 'OPPONENT SHOOTING';
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
       decoration: BoxDecoration(
         color: accent.withValues(alpha: 0.06),
         border: Border.all(color: accent.withValues(alpha: 0.6), width: 1.2),
@@ -215,22 +191,10 @@ class _PenaltyActionPanel extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 54,
-            height: 54,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: accent.withValues(alpha: 0.12),
-              border: Border.all(color: accent.withValues(alpha: 0.7)),
-            ),
-            child: Icon(icon, color: accent, size: 28),
-          ),
-          const SizedBox(height: 12),
           Text(
             title,
             textAlign: TextAlign.center,
-            style: Cyber.display(24, color: accent, letterSpacing: 1.6)
+            style: Cyber.display(22, color: accent, letterSpacing: 1.6)
                 .copyWith(
                   shadows: [
                     Shadow(
@@ -240,37 +204,83 @@ class _PenaltyActionPanel extends StatelessWidget {
                   ],
                 ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
+          // Whose kick it is: portrait + name + rating, vs the keeper in goal.
+          Row(
+            children: [
+              _ShooterPortrait(card: shooter, accent: accent),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      playerTaking ? 'ON THE SPOT' : 'CPU SHOOTER',
+                      style: Cyber.label(9, color: accent, letterSpacing: 1.6),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      shooter.shortName.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Cyber.display(16, letterSpacing: 0.8),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '${shooter.position.split('/').first} · OVR ${shooter.rating}',
+                      style: const TextStyle(
+                        color: Cyber.muted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        fontFeatures: [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(icon, color: accent, size: 26),
+            ],
+          ),
+          const SizedBox(height: 12),
           Text(
             description,
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Colors.white70,
-              fontSize: 12.5,
+              fontSize: 12,
               height: 1.4,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
+          // The keeper standing between them and the net.
           Container(
+            width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: accent.withValues(alpha: 0.10),
               border: Border.all(color: accent.withValues(alpha: 0.55)),
             ),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, color: accent, size: 14),
+                const Icon(Icons.pan_tool, color: Cyber.gold, size: 13),
                 const SizedBox(width: 8),
-                Text(
-                  status,
-                  style: TextStyle(
-                    color: accent,
-                    fontFamily: 'Orbitron',
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.4,
+                Flexible(
+                  child: Text(
+                    '${playerTaking ? 'CPU KEEPER' : 'YOUR KEEPER'}: '
+                    '${keeper.shortName.toUpperCase()} · OVR ${keeper.rating}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Cyber.gold,
+                      fontFamily: 'Orbitron',
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.1,
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
                   ),
                 ),
               ],
@@ -278,6 +288,37 @@ class _PenaltyActionPanel extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Compact clipped portrait with the card-icon fallback used app-wide.
+class _ShooterPortrait extends StatelessWidget {
+  const _ShooterPortrait({required this.card, required this.accent});
+
+  final PlayerCard card;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final asset = card.resolvedPortraitAsset;
+    return Container(
+      width: 56,
+      height: 66,
+      decoration: BoxDecoration(
+        color: Cyber.bg.withValues(alpha: 0.6),
+        border: Border.all(color: accent.withValues(alpha: 0.55)),
+      ),
+      clipBehavior: Clip.hardEdge,
+      child: asset != null
+          ? Image.asset(
+              asset,
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+              errorBuilder: (_, _, _) =>
+                  Icon(card.icon, color: accent, size: 26),
+            )
+          : Icon(card.icon, color: accent, size: 26),
     );
   }
 }
@@ -308,6 +349,14 @@ class _KickTable extends StatelessWidget {
     final String cpuAction = userShot ? 'DIVED' : 'SHOT';
     final IconData userIcon = userShot ? Icons.sports_soccer : Icons.pan_tool;
     final IconData cpuIcon = userShot ? Icons.pan_tool : Icons.sports_soccer;
+    // Name the player behind each action: the taker on the shooting side, the
+    // keeper on the diving side.
+    final String? userName = userShot
+        ? kick.shooter?.shortName
+        : kick.keeper?.shortName;
+    final String? cpuName = userShot
+        ? kick.keeper?.shortName
+        : kick.shooter?.shortName;
 
     return CyberPanel(
       padding: EdgeInsets.zero,
@@ -321,6 +370,7 @@ class _KickTable extends StatelessWidget {
                 action: userAction,
                 direction: _dirLabel(userDir),
                 icon: userIcon,
+                playerName: userName,
               ),
             ),
             const VerticalDivider(color: Cyber.line, thickness: 1, width: 1),
@@ -331,6 +381,7 @@ class _KickTable extends StatelessWidget {
                 action: cpuAction,
                 direction: _dirLabel(cpuDir),
                 icon: cpuIcon,
+                playerName: cpuName,
               ),
             ),
           ],
@@ -347,6 +398,7 @@ class _KickTableCell extends StatelessWidget {
     required this.action,
     required this.direction,
     required this.icon,
+    this.playerName,
   });
 
   final String heading;
@@ -354,6 +406,7 @@ class _KickTableCell extends StatelessWidget {
   final String action;
   final String direction;
   final IconData icon;
+  final String? playerName;
 
   @override
   Widget build(BuildContext context) {
@@ -372,7 +425,22 @@ class _KickTableCell extends StatelessWidget {
               letterSpacing: 2,
             ),
           ),
-          const SizedBox(height: 10),
+          if (playerName != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              playerName!.toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontFamily: 'Orbitron',
+                fontSize: 9.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
           Icon(icon, color: headingColor, size: 26),
           const SizedBox(height: 8),
           Text(
@@ -468,11 +536,11 @@ class _NextKickCountdownState extends State<_NextKickCountdown> {
   }
 }
 
-// -- Penalty sub-widgets -------------------------------------------------------
+// -- Shootout sub-widgets -----------------------------------------------------
 
-class _PenaltyHeader extends StatelessWidget {
-  const _PenaltyHeader({required this.state, required this.kickLabel});
-  final GameState state;
+class _ShootoutHeader extends StatelessWidget {
+  const _ShootoutHeader({required this.state, required this.kickLabel});
+  final ShootoutState state;
   final String kickLabel;
 
   @override
@@ -483,7 +551,7 @@ class _PenaltyHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '$kickLabel  -  YOU ${state.penaltyPlayerScore} - ${state.penaltyOpponentScore} OPP',
+            '$kickLabel  -  YOU ${state.playerScore} - ${state.opponentScore} OPP',
             style: const TextStyle(
               color: Colors.white,
               fontFamily: 'Orbitron',
@@ -492,9 +560,9 @@ class _PenaltyHeader extends StatelessWidget {
               letterSpacing: 0.6,
             ),
           ),
-          if (state.penaltyKicks.isNotEmpty) ...[
+          if (state.kicks.isNotEmpty) ...[
             const SizedBox(height: 10),
-            _PenaltyHistoryRow(kicks: state.penaltyKicks),
+            _PenaltyHistoryRow(kicks: state.kicks),
           ],
         ],
       ),
@@ -510,7 +578,7 @@ class _PenaltyHistoryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final playerKicks = kicks.where((kick) => kick.byPlayer).toList();
     final opponentKicks = kicks.where((kick) => !kick.byPlayer).toList();
-    final slotCount = max(3, max(playerKicks.length, opponentKicks.length));
+    final slotCount = max(5, max(playerKicks.length, opponentKicks.length));
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -598,16 +666,9 @@ class _PenaltyAttemptIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentKick = kick;
     final bool pending = currentKick == null;
-    final bool playerKick = currentKick?.byPlayer ?? true;
     final bool scored = currentKick?.scored ?? false;
-    final color = pending
-        ? Cyber.muted
-        : playerKick
-        ? (scored ? Cyber.lime : Cyber.red)
-        : (scored ? Cyber.red : Cyber.lime);
-    final icon = pending
-        ? Icons.sports_soccer_outlined
-        : Icons.sports_soccer;
+    final color = pending ? Cyber.muted : (scored ? Cyber.lime : Cyber.red);
+    final icon = pending ? Icons.sports_soccer_outlined : Icons.sports_soccer;
 
     return Container(
       width: 30,
@@ -630,159 +691,6 @@ class _PenaltyAttemptIcon extends StatelessWidget {
   }
 }
 
-class _DirectionButtons extends StatelessWidget {
-  const _DirectionButtons({
-    required this.playerTaking,
-    required this.selected,
-    required this.onSelect,
-  });
-  final bool playerTaking;
-  final PenaltyDirection? selected;
-  final ValueChanged<PenaltyDirection> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        for (int i = 0; i < PenaltyDirection.values.length; i++) ...[
-          if (i > 0) const SizedBox(width: 8),
-          Expanded(
-            child: _DirectionButton(
-              direction: PenaltyDirection.values[i],
-              playerTaking: playerTaking,
-              selected: selected == PenaltyDirection.values[i],
-              onTap: () => onSelect(PenaltyDirection.values[i]),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _DirectionButton extends StatelessWidget {
-  const _DirectionButton({
-    required this.direction,
-    required this.playerTaking,
-    required this.selected,
-    required this.onTap,
-  });
-  final PenaltyDirection direction;
-  final bool playerTaking;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final label = switch (direction) {
-      PenaltyDirection.left => playerTaking ? '< LEFT' : '< DIVE',
-      PenaltyDirection.center => playerTaking ? 'CENTER' : 'STAY',
-      PenaltyDirection.right => playerTaking ? 'RIGHT >' : 'DIVE >',
-    };
-    final icon = switch (direction) {
-      PenaltyDirection.left => Icons.arrow_back,
-      PenaltyDirection.center =>
-        playerTaking ? Icons.sports_soccer : Icons.pan_tool,
-      PenaltyDirection.right => Icons.arrow_forward,
-    };
-
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 140),
-        height: 96,
-        decoration: BoxDecoration(
-          color: selected ? Cyber.cyan.withValues(alpha: 0.12) : Cyber.panel,
-          border: Border.all(
-            color: selected ? Cyber.cyan : Cyber.line,
-            width: selected ? 2 : 1,
-          ),
-          boxShadow: selected
-              ? [
-                  BoxShadow(
-                    color: Cyber.cyan.withValues(alpha: 0.25),
-                    blurRadius: 14,
-                    spreadRadius: 1,
-                  ),
-                ]
-              : null,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 26, color: selected ? Cyber.cyan : Colors.white54),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: selected ? Cyber.cyan : Colors.white54,
-                fontFamily: 'Orbitron',
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.6,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _KickResultCard extends StatelessWidget {
-  const _KickResultCard({required this.kick});
-  final PenaltyKick kick;
-
-  @override
-  Widget build(BuildContext context) {
-    final goal = kick.scored;
-    final color = goal ? Cyber.lime : Cyber.red;
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        border: Border.all(color: color.withValues(alpha: 0.4), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.2),
-            blurRadius: 20,
-            spreadRadius: 4,
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(
-            goal ? Icons.sports_soccer : Icons.pan_tool,
-            size: 52,
-            color: color,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            goal ? 'GOAL' : 'SAVED',
-            style: TextStyle(
-              color: color,
-              fontFamily: 'Orbitron',
-              fontSize: 28,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 3,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            kick.byPlayer ? 'You scored' : 'Opponent scored',
-            style: TextStyle(
-              color: color.withValues(alpha: 0.7),
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _WinnerBanner extends StatelessWidget {
   const _WinnerBanner({required this.winner});
   final String? winner;
@@ -799,7 +707,7 @@ class _WinnerBanner extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Text(
-        playerWon ? 'YOU WIN ON PENALTIES' : 'DEFEAT ON PENALTIES',
+        playerWon ? 'YOU WIN THE SHOOTOUT' : 'DEFEAT IN THE SHOOTOUT',
         textAlign: TextAlign.center,
         style: TextStyle(
           color: color,

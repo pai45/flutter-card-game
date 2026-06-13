@@ -507,6 +507,21 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final compact = constraints.maxHeight < 640;
+                final filters = _FilterBar(
+                  type: _type,
+                  sports: _sports,
+                  selectedSport: _sport,
+                  onSport: (sport) => setState(() => _sport = sport),
+                  scope: _scope,
+                  onScope: (scope) => setState(() => _scope = scope),
+                  tournamentBoard: _tournamentBoard,
+                  onTournamentBoard: (board) =>
+                      setState(() => _tournamentBoard = board),
+                  mode: _mode,
+                  onMode: (mode) => setState(() => _mode = mode),
+                  accent: accent,
+                  compact: compact,
+                );
 
                 return Column(
                   children: [
@@ -519,21 +534,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                       activeTab: _typeTabOrder.indexOf(_type),
                       indicatorAnimation: _typeTabIndicatorAnimation,
                       onTap: _setTypeTab,
-                    ),
-                    _FilterBar(
-                      type: _type,
-                      sports: _sports,
-                      selectedSport: _sport,
-                      onSport: (sport) => setState(() => _sport = sport),
-                      scope: _scope,
-                      onScope: (scope) => setState(() => _scope = scope),
-                      tournamentBoard: _tournamentBoard,
-                      onTournamentBoard: (board) =>
-                          setState(() => _tournamentBoard = board),
-                      mode: _mode,
-                      onMode: (mode) => setState(() => _mode = mode),
-                      accent: accent,
-                      compact: compact,
                     ),
                     Expanded(
                       child: AnimatedSwitcher(
@@ -552,6 +552,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                         child: entries.isEmpty
                             ? _EmptyState(
                                 key: ValueKey('empty-${_type.name}'),
+                                filters: filters,
                                 type: _type,
                                 accent: accent,
                                 onAction: widget.onNavigate,
@@ -560,6 +561,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                                 key: ValueKey(
                                   '${_type.name}-${_tournamentBoard.name}-${_scope.name}-${_mode.name}',
                                 ),
+                                filters: filters,
                                 entries: entries,
                                 type: _type,
                                 accent: accent,
@@ -815,7 +817,7 @@ class _FilterBar extends StatelessWidget {
                     ),
                   ),
                   if (showCountdownInline)
-                    const _CountdownCard(remaining: 'Ends 04h 12m'),
+                    const _CountdownCard(remaining: '04h 12m'),
                 ],
               ),
             ),
@@ -824,7 +826,7 @@ class _FilterBar extends StatelessWidget {
                 padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
                 child: Align(
                   alignment: Alignment.centerRight,
-                  child: _CountdownCard(remaining: 'Ends 04h 12m'),
+                  child: _CountdownCard(remaining: '04h 12m'),
                 ),
               ),
             if (type == LeaderboardType.tournament) ...[
@@ -1147,6 +1149,7 @@ class _ModeTabs extends StatelessWidget {
 
 class _Body extends StatelessWidget {
   const _Body({
+    required this.filters,
     required this.entries,
     required this.type,
     required this.accent,
@@ -1154,6 +1157,7 @@ class _Body extends StatelessWidget {
     super.key,
   });
 
+  final Widget filters;
   final List<LeaderboardEntry> entries;
   final LeaderboardType type;
   final Color accent;
@@ -1168,23 +1172,31 @@ class _Body extends StatelessWidget {
     final remaining = entries.skip(3).toList();
 
     return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(16, compact ? 12 : 18, 16, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _Podium(entries: podium, meta: meta, accent: accent),
-          if (remaining.isNotEmpty) ...[
-            SizedBox(height: compact ? 18 : 24),
-            for (final entry in remaining)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _LeaderboardRow(
-                  entry: entry,
-                  accent: accent,
-                  meta: meta,
-                ),
-              ),
-          ],
+          filters,
+          Padding(
+            padding: EdgeInsets.fromLTRB(16, compact ? 12 : 18, 16, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _Podium(entries: podium, meta: meta, accent: accent),
+                if (remaining.isNotEmpty) ...[
+                  SizedBox(height: compact ? 18 : 24),
+                  for (final entry in remaining)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _LeaderboardRow(
+                        entry: entry,
+                        accent: accent,
+                        meta: meta,
+                      ),
+                    ),
+                ],
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -1857,12 +1869,14 @@ class _Avatar extends StatelessWidget {
 
 class _EmptyState extends StatelessWidget {
   const _EmptyState({
+    required this.filters,
     required this.type,
     required this.accent,
     required this.onAction,
     super.key,
   });
 
+  final Widget filters;
   final LeaderboardType type;
   final Color accent;
   final ValueChanged<AppSection> onAction;
@@ -1909,62 +1923,74 @@ class _EmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final config = _config();
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(32),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(config.icon, color: accent.withValues(alpha: 0.7), size: 48),
-            const SizedBox(height: 18),
-            Text(
-              config.title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontFamily: Cyber.displayFont,
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 1.2,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              config.body,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Cyber.muted,
-                fontFamily: Cyber.bodyFont,
-                fontSize: 13,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 22),
-            GestureDetector(
-              onTap: () => onAction(config.target),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 22,
-                  vertical: 12,
-                ),
-                decoration: _cutDecoration(color: accent, cut: 10),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    config.cta,
-                    maxLines: 1,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          filters,
+          Padding(
+            padding: const EdgeInsets.all(32),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    config.icon,
+                    color: accent.withValues(alpha: 0.7),
+                    size: 48,
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    config.title,
+                    textAlign: TextAlign.center,
                     style: const TextStyle(
-                      color: Cyber.bg,
+                      color: Colors.white,
                       fontFamily: Cyber.displayFont,
-                      fontSize: 12,
+                      fontSize: 16,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.2,
                     ),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  Text(
+                    config.body,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Cyber.muted,
+                      fontFamily: Cyber.bodyFont,
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  GestureDetector(
+                    onTap: () => onAction(config.target),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 22,
+                        vertical: 12,
+                      ),
+                      decoration: _cutDecoration(color: accent, cut: 10),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          config.cta,
+                          maxLines: 1,
+                          style: const TextStyle(
+                            color: Cyber.bg,
+                            fontFamily: Cyber.displayFont,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

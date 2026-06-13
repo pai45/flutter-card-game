@@ -1,0 +1,601 @@
+import 'package:flutter/material.dart';
+
+import '../models/picks.dart';
+import '../models/sport_match.dart';
+
+abstract class PickRepository {
+  Future<List<PickMarket>> markets();
+
+  Future<PickMarket?> marketById(String marketId);
+}
+
+class MockPickRepository implements PickRepository {
+  MockPickRepository() {
+    _markets = _buildMarkets();
+  }
+
+  late final List<PickMarket> _markets;
+  late final DateTime _now = DateTime.now();
+  late final DateTime _today = DateTime(_now.year, _now.month, _now.day);
+
+  DateTime _at(int dayOffset, int hour, [int minute = 0]) =>
+      _today.add(Duration(days: dayOffset, hours: hour, minutes: minute));
+
+  @override
+  Future<List<PickMarket>> markets() async => List.unmodifiable(_markets);
+
+  @override
+  Future<PickMarket?> marketById(String marketId) async {
+    for (final market in _markets) {
+      if (market.id == marketId) return market;
+    }
+    return null;
+  }
+
+  List<PickMarket> _buildMarkets() => [
+    PickMarket(
+      id: 'ipl_pjk_rcb_winner',
+      question: 'Punjab vs Bangalore winner',
+      type: PickMarketType.match,
+      sport: Sport.cricket,
+      leagueId: 'ipl',
+      leagueLabel: 'IPL',
+      status: PickMarketStatus.live,
+      outcomes: const [
+        PickOutcome(
+          id: 'pjk',
+          label: 'Punjab',
+          probabilityPercent: 32,
+          color: Color(0xffdf101d),
+        ),
+        PickOutcome(
+          id: 'rcb',
+          label: 'Bangalore',
+          probabilityPercent: 68,
+          color: Color(0xffffd000),
+        ),
+      ],
+      volumeOz: 2400,
+      closesAt: _now.add(const Duration(minutes: 28)),
+      priceHistory: _history([
+        {'pjk': 41, 'rcb': 59},
+        {'pjk': 38, 'rcb': 62},
+        {'pjk': 34, 'rcb': 66},
+        {'pjk': 32, 'rcb': 68},
+      ]),
+      contextTitle: 'Live chase',
+      contextSubtitle: 'RCB need 42 from 24 balls',
+      homeLabel: 'Punjab',
+      awayLabel: 'Bangalore',
+      homeScore: '221-4 (20 ov)',
+      awayScore: '180-5 (16 ov)',
+      liveLabel: 'LIVE',
+      resultNote: 'Ends after match',
+    ),
+    PickMarket(
+      id: 'epl_liv_mc_winner',
+      question: 'Liverpool vs Man City result',
+      type: PickMarketType.match,
+      sport: Sport.football,
+      leagueId: 'epl',
+      leagueLabel: 'EPL',
+      status: PickMarketStatus.upcoming,
+      outcomes: const [
+        PickOutcome(
+          id: 'liv',
+          label: 'Liverpool',
+          probabilityPercent: 38,
+          color: Color(0xffc8102e),
+        ),
+        PickOutcome(
+          id: 'draw',
+          label: 'Draw',
+          probabilityPercent: 26,
+          color: Color(0xff64748b),
+        ),
+        PickOutcome(
+          id: 'mc',
+          label: 'Man City',
+          probabilityPercent: 36,
+          color: Color(0xff6cabdd),
+        ),
+      ],
+      volumeOz: 1900,
+      closesAt: _at(0, 15),
+      priceHistory: _history([
+        {'liv': 35, 'draw': 28, 'mc': 37},
+        {'liv': 37, 'draw': 27, 'mc': 36},
+        {'liv': 38, 'draw': 26, 'mc': 36},
+      ]),
+      contextTitle: 'Kickoff today',
+      contextSubtitle: 'Winner after 90 minutes',
+      homeLabel: 'Liverpool',
+      awayLabel: 'Man City',
+      resultNote: 'Closes at kickoff',
+    ),
+    PickMarket(
+      id: 'fifa_arg_por_final',
+      question: 'Will Argentina or Portugal reach FIFA 26 Finals?',
+      type: PickMarketType.event,
+      sport: Sport.football,
+      leagueId: 'fifa',
+      leagueLabel: 'FIFA',
+      status: PickMarketStatus.live,
+      outcomes: _fifaFinalsOutcomes(),
+      volumeOz: _fifaFinalsVolumeOz(),
+      closesAt: DateTime(2026, 7, 19, 23, 30),
+      priceHistory: _fifaFinalsHistory(),
+      contextTitle: '${_fifaFinalsBetSeeds.length} real app bets',
+      contextSubtitle: 'Argentina or Portugal to reach the FIFA 26 final',
+      liveLabel: 'LIVE',
+      resultNote: 'Market resolves when the FIFA 26 finalists are confirmed',
+    ),
+    PickMarket(
+      id: 'ipl_sixes_over_12_5',
+      question: 'Total sixes over 12.5?',
+      type: PickMarketType.event,
+      sport: Sport.cricket,
+      leagueId: 'ipl',
+      leagueLabel: 'IPL',
+      status: PickMarketStatus.live,
+      outcomes: const [
+        PickOutcome(
+          id: 'yes',
+          label: 'YES',
+          probabilityPercent: 41,
+          color: Color(0xff36b86a),
+        ),
+        PickOutcome(
+          id: 'no',
+          label: 'NO',
+          probabilityPercent: 59,
+          color: Color(0xffff332e),
+        ),
+      ],
+      volumeOz: 1260,
+      closesAt: _now.add(const Duration(minutes: 16)),
+      priceHistory: _history([
+        {'yes': 33, 'no': 67},
+        {'yes': 36, 'no': 64},
+        {'yes': 39, 'no': 61},
+        {'yes': 41, 'no': 59},
+      ]),
+      contextTitle: '9 sixes hit',
+      contextSubtitle: 'Need 4 more for YES',
+      liveLabel: 'LIVE',
+      resultNote: 'Locks near innings end',
+    ),
+    PickMarket(
+      id: 'ipl_2026_winner',
+      question: 'Who will win IPL 2026?',
+      type: PickMarketType.future,
+      sport: Sport.cricket,
+      leagueId: 'ipl',
+      leagueLabel: 'IPL',
+      status: PickMarketStatus.upcoming,
+      outcomes: const [
+        PickOutcome(
+          id: 'mi',
+          label: 'Mumbai',
+          probabilityPercent: 15,
+          color: Color(0xff2856a5),
+        ),
+        PickOutcome(
+          id: 'csk',
+          label: 'Chennai',
+          probabilityPercent: 13,
+          color: Color(0xffffd400),
+        ),
+        PickOutcome(
+          id: 'rcb',
+          label: 'Bangalore',
+          probabilityPercent: 12,
+          color: Color(0xffd81920),
+        ),
+        PickOutcome(
+          id: 'kkr',
+          label: 'Kolkata',
+          probabilityPercent: 11,
+          color: Color(0xff8b5cf6),
+        ),
+        PickOutcome(
+          id: 'srh',
+          label: 'Hyderabad',
+          probabilityPercent: 10,
+          color: Color(0xffff7a00),
+        ),
+        PickOutcome(
+          id: 'rr',
+          label: 'Rajasthan',
+          probabilityPercent: 9,
+          color: Color(0xffe91e8f),
+        ),
+        PickOutcome(
+          id: 'gt',
+          label: 'Gujarat',
+          probabilityPercent: 9,
+          color: Color(0xff1f3c88),
+        ),
+        PickOutcome(
+          id: 'dc',
+          label: 'Delhi',
+          probabilityPercent: 8,
+          color: Color(0xff174ea6),
+        ),
+        PickOutcome(
+          id: 'lsg',
+          label: 'Lucknow',
+          probabilityPercent: 7,
+          color: Color(0xff16a8d8),
+        ),
+        PickOutcome(
+          id: 'pbks',
+          label: 'Punjab',
+          probabilityPercent: 6,
+          color: Color(0xffdf101d),
+        ),
+      ],
+      volumeOz: 8100,
+      closesAt: _at(35, 20),
+      priceHistory: _history([
+        {
+          'mi': 14,
+          'csk': 14,
+          'rcb': 11,
+          'kkr': 10,
+          'srh': 10,
+          'rr': 10,
+          'gt': 9,
+          'dc': 8,
+          'lsg': 7,
+          'pbks': 7,
+        },
+        {
+          'mi': 15,
+          'csk': 13,
+          'rcb': 12,
+          'kkr': 11,
+          'srh': 10,
+          'rr': 9,
+          'gt': 9,
+          'dc': 8,
+          'lsg': 7,
+          'pbks': 6,
+        },
+        {
+          'mi': 15,
+          'csk': 13,
+          'rcb': 12,
+          'kkr': 11,
+          'srh': 10,
+          'rr': 9,
+          'gt': 9,
+          'dc': 8,
+          'lsg': 7,
+          'pbks': 6,
+        },
+      ]),
+      contextTitle: 'Season future',
+      contextSubtitle: 'All IPL teams priced from current form',
+      resultNote: 'Season open',
+    ),
+    PickMarket(
+      id: 'epl_mu_over_1_5',
+      question: 'Man Utd over 1.5 goals?',
+      type: PickMarketType.event,
+      sport: Sport.football,
+      leagueId: 'epl',
+      leagueLabel: 'EPL',
+      status: PickMarketStatus.settled,
+      outcomes: const [
+        PickOutcome(
+          id: 'yes',
+          label: 'YES',
+          probabilityPercent: 64,
+          color: Color(0xff36b86a),
+        ),
+        PickOutcome(
+          id: 'no',
+          label: 'NO',
+          probabilityPercent: 36,
+          color: Color(0xffff332e),
+        ),
+      ],
+      volumeOz: 760,
+      closesAt: _at(-3, 19, 30),
+      priceHistory: _history([
+        {'yes': 54, 'no': 46},
+        {'yes': 58, 'no': 42},
+        {'yes': 64, 'no': 36},
+      ]),
+      contextTitle: 'Man Utd 2 - 1 West Ham',
+      contextSubtitle: 'Full time',
+      homeLabel: 'Man Utd',
+      awayLabel: 'West Ham',
+      homeScore: '2',
+      awayScore: '1',
+      resultNote: 'Man Utd scored 2',
+      resolvedOutcomeId: 'yes',
+    ),
+    PickMarket(
+      id: 'epl_avl_bha_double_chance',
+      question: 'Brighton or draw?',
+      type: PickMarketType.match,
+      sport: Sport.football,
+      leagueId: 'epl',
+      leagueLabel: 'EPL',
+      status: PickMarketStatus.settled,
+      outcomes: const [
+        PickOutcome(
+          id: 'avl',
+          label: 'Aston Villa',
+          probabilityPercent: 56,
+          color: Color(0xff7a003c),
+        ),
+        PickOutcome(
+          id: 'bha_draw',
+          label: 'Brighton or Draw',
+          probabilityPercent: 44,
+          color: Color(0xff0057b8),
+        ),
+      ],
+      volumeOz: 940,
+      closesAt: _at(-2, 19, 45),
+      priceHistory: _history([
+        {'avl': 49, 'bha_draw': 51},
+        {'avl': 53, 'bha_draw': 47},
+        {'avl': 56, 'bha_draw': 44},
+      ]),
+      contextTitle: 'Aston Villa 2 - 0 Brighton',
+      contextSubtitle: 'Full time',
+      homeLabel: 'Aston Villa',
+      awayLabel: 'Brighton',
+      homeScore: '2',
+      awayScore: '0',
+      resultNote: 'Villa won 2-0',
+      resolvedOutcomeId: 'avl',
+    ),
+    PickMarket(
+      id: 'ipl_opener_50',
+      question: 'Any opener scores 50+?',
+      type: PickMarketType.event,
+      sport: Sport.cricket,
+      leagueId: 'ipl',
+      leagueLabel: 'IPL',
+      status: PickMarketStatus.unresolved,
+      outcomes: const [
+        PickOutcome(
+          id: 'yes',
+          label: 'YES',
+          probabilityPercent: 62,
+          color: Color(0xff36b86a),
+        ),
+        PickOutcome(
+          id: 'no',
+          label: 'NO',
+          probabilityPercent: 38,
+          color: Color(0xffff332e),
+        ),
+      ],
+      volumeOz: 1180,
+      closesAt: _at(-1, 15),
+      priceHistory: _history([
+        {'yes': 57, 'no': 43},
+        {'yes': 61, 'no': 39},
+        {'yes': 62, 'no': 38},
+      ]),
+      contextTitle: 'Chennai vs Mumbai',
+      contextSubtitle: 'Awaiting official scorecard',
+      resultNote: 'Result pending',
+    ),
+    PickMarket(
+      id: 'ipl_rain_delay',
+      question: 'Will rain delay Chennai vs Mumbai?',
+      type: PickMarketType.event,
+      sport: Sport.cricket,
+      leagueId: 'ipl',
+      leagueLabel: 'IPL',
+      status: PickMarketStatus.voided,
+      outcomes: const [
+        PickOutcome(
+          id: 'yes',
+          label: 'YES',
+          probabilityPercent: 22,
+          color: Color(0xff36b86a),
+        ),
+        PickOutcome(
+          id: 'no',
+          label: 'NO',
+          probabilityPercent: 78,
+          color: Color(0xffff332e),
+        ),
+      ],
+      volumeOz: 420,
+      closesAt: _at(-1, 14),
+      priceHistory: _history([
+        {'yes': 28, 'no': 72},
+        {'yes': 24, 'no': 76},
+        {'yes': 22, 'no': 78},
+      ]),
+      contextTitle: 'Market voided',
+      contextSubtitle: 'Official feed did not confirm delay timing',
+      resultNote: 'Stake refunded',
+      voidReason: 'Official timing source unavailable',
+    ),
+  ];
+
+  List<PickOutcome> _fifaFinalsOutcomes() {
+    final yes = _fifaFinalsYesPercent();
+    return [
+      PickOutcome(
+        id: 'yes',
+        label: 'YES',
+        probabilityPercent: yes,
+        color: const Color(0xff36b86a),
+      ),
+      PickOutcome(
+        id: 'no',
+        label: 'NO',
+        probabilityPercent: 100 - yes,
+        color: const Color(0xffff332e),
+      ),
+    ];
+  }
+
+  int _fifaFinalsYesPercent() => _yesPercentFor(_fifaFinalsBetSeeds.last);
+
+  int _fifaFinalsVolumeOz() =>
+      _fifaFinalsBetSeeds.fold(0, (total, seed) => total + seed.coinsBet);
+
+  List<PickPricePoint> _fifaFinalsHistory() => [
+    for (final seed in _fifaFinalsBetSeeds)
+      PickPricePoint(
+        at: DateTime.parse(seed.createdAt),
+        percentsByOutcome: {
+          'yes': _yesPercentFor(seed),
+          'no': 100 - _yesPercentFor(seed),
+        },
+      ),
+  ];
+
+  int _yesPercentFor(_PickTradeSeed seed) {
+    final selected = _cleanPercent(seed.oddsChoice);
+    return seed.choice == 'Y' ? selected : 100 - selected;
+  }
+
+  int _cleanPercent(double value) {
+    final rounded = value.round();
+    if (rounded < 1) return 1;
+    if (rounded > 99) return 99;
+    return rounded;
+  }
+
+  List<PickPricePoint> _history(List<Map<String, int>> values) {
+    final start = _now.subtract(Duration(minutes: values.length * 18));
+    return [
+      for (var i = 0; i < values.length; i++)
+        PickPricePoint(
+          at: start.add(Duration(minutes: i * 18)),
+          percentsByOutcome: values[i],
+        ),
+    ];
+  }
+}
+
+class _PickTradeSeed {
+  const _PickTradeSeed(
+    this.createdAt,
+    this.choice,
+    this.coinsBet,
+    this.oddsChoice,
+  );
+
+  final String createdAt;
+  final String choice;
+  final int coinsBet;
+  final double oddsChoice;
+}
+
+const _fifaFinalsBetSeeds = [
+  _PickTradeSeed('2026-05-31T21:42:11.373Z', 'Y', 250, 55.56),
+  _PickTradeSeed('2026-06-01T01:54:34.779Z', 'N', 10, 44.69),
+  _PickTradeSeed('2026-06-01T11:25:07.454Z', 'Y', 10, 55.51),
+  _PickTradeSeed('2026-06-01T11:52:03.500Z', 'N', 10, 44.74),
+  _PickTradeSeed('2026-06-01T12:08:49.166Z', 'Y', 60, 56.41),
+  _PickTradeSeed('2026-06-01T13:25:53.566Z', 'N', 10, 43.83),
+  _PickTradeSeed('2026-06-01T14:38:09.172Z', 'Y', 10, 56.36),
+  _PickTradeSeed('2026-06-01T15:37:53.944Z', 'N', 1000, 60.42),
+  _PickTradeSeed('2026-06-01T16:51:14.987Z', 'Y', 10, 39.76),
+  _PickTradeSeed('2026-06-01T16:51:22.084Z', 'N', 10, 60.36),
+  _PickTradeSeed('2026-06-01T18:13:40.522Z', 'Y', 910, 52.45),
+  _PickTradeSeed('2026-06-01T19:13:12.761Z', 'Y', 260, 55.16),
+  _PickTradeSeed('2026-06-01T19:13:13.611Z', 'Y', 260, 57.59),
+  _PickTradeSeed('2026-06-01T19:13:29.974Z', 'Y', 10, 57.68),
+  _PickTradeSeed('2026-06-01T22:09:37.807Z', 'Y', 1000, 64.95),
+  _PickTradeSeed('2026-06-02T05:16:39.466Z', 'Y', 10, 65.01),
+  _PickTradeSeed('2026-06-02T05:24:46.026Z', 'Y', 50, 65.31),
+  _PickTradeSeed('2026-06-02T05:24:46.564Z', 'Y', 50, 65.6),
+  _PickTradeSeed('2026-06-02T05:34:35.327Z', 'Y', 200, 66.72),
+  _PickTradeSeed('2026-06-02T06:44:01.734Z', 'N', 1000, 42.64),
+  _PickTradeSeed('2026-06-02T07:28:41.097Z', 'N', 100, 43.43),
+  _PickTradeSeed('2026-06-02T09:44:08.483Z', 'Y', 1000, 61.85),
+  _PickTradeSeed('2026-06-02T20:12:24.191Z', 'N', 1000, 44.85),
+  _PickTradeSeed('2026-06-02T22:54:42.630Z', 'N', 100, 45.44),
+  _PickTradeSeed('2026-06-03T01:22:06.246Z', 'N', 10, 45.5),
+  _PickTradeSeed('2026-06-03T10:51:12.979Z', 'Y', 300, 55.91),
+  _PickTradeSeed('2026-06-03T12:55:01.418Z', 'N', 10, 44.15),
+  _PickTradeSeed('2026-06-03T16:38:31.325Z', 'Y', 60, 56.13),
+  _PickTradeSeed('2026-06-03T21:24:15.451Z', 'N', 1000, 49.11),
+  _PickTradeSeed('2026-06-04T03:48:24.276Z', 'Y', 10, 50.93),
+  _PickTradeSeed('2026-06-04T03:48:25.051Z', 'Y', 10, 50.98),
+  _PickTradeSeed('2026-06-04T03:50:24.040Z', 'Y', 110, 51.48),
+  _PickTradeSeed('2026-06-04T03:50:25.164Z', 'Y', 110, 51.96),
+  _PickTradeSeed('2026-06-04T03:50:25.295Z', 'Y', 110, 52.44),
+  _PickTradeSeed('2026-06-04T04:52:13.295Z', 'Y', 10, 52.48),
+  _PickTradeSeed('2026-06-04T07:18:50.532Z', 'Y', 10, 52.53),
+  _PickTradeSeed('2026-06-04T08:23:47.654Z', 'Y', 10, 52.57),
+  _PickTradeSeed('2026-06-04T08:32:21.319Z', 'Y', 60, 52.83),
+  _PickTradeSeed('2026-06-04T09:28:23.369Z', 'Y', 10, 52.87),
+  _PickTradeSeed('2026-06-04T09:28:23.626Z', 'Y', 10, 52.91),
+  _PickTradeSeed('2026-06-04T09:28:34.212Z', 'Y', 10, 52.95),
+  _PickTradeSeed('2026-06-04T09:28:35.308Z', 'Y', 10, 52.99),
+  _PickTradeSeed('2026-06-04T10:12:29.256Z', 'Y', 10, 53.04),
+  _PickTradeSeed('2026-06-05T07:36:14.288Z', 'Y', 700, 55.8),
+  _PickTradeSeed('2026-06-05T13:47:33.173Z', 'Y', 10, 55.84),
+  _PickTradeSeed('2026-06-05T14:01:14.330Z', 'Y', 10, 55.87),
+  _PickTradeSeed('2026-06-05T14:01:18.545Z', 'Y', 10, 55.91),
+  _PickTradeSeed('2026-06-05T14:41:22.234Z', 'Y', 10, 55.95),
+  _PickTradeSeed('2026-06-06T01:37:04.471Z', 'N', 500, 46.3),
+  _PickTradeSeed('2026-06-06T02:00:51.218Z', 'Y', 10, 53.73),
+  _PickTradeSeed('2026-06-06T02:22:40.344Z', 'N', 10, 46.31),
+  _PickTradeSeed('2026-06-06T07:04:09.739Z', 'Y', 260, 54.64),
+  _PickTradeSeed('2026-06-06T07:04:19.036Z', 'N', 260, 46.46),
+  _PickTradeSeed('2026-06-06T11:50:42.957Z', 'Y', 50, 53.72),
+  _PickTradeSeed('2026-06-06T21:12:25.749Z', 'Y', 10, 53.76),
+  _PickTradeSeed('2026-06-07T09:54:32.690Z', 'Y', 1000, 57.05),
+  _PickTradeSeed('2026-06-07T10:12:57.216Z', 'N', 10, 42.99),
+  _PickTradeSeed('2026-06-07T10:57:23.116Z', 'N', 60, 43.23),
+  _PickTradeSeed('2026-06-07T12:29:51.126Z', 'Y', 10, 56.8),
+  _PickTradeSeed('2026-06-07T12:30:11.787Z', 'N', 10, 43.24),
+  _PickTradeSeed('2026-06-08T06:16:24.577Z', 'N', 10, 43.28),
+  _PickTradeSeed('2026-06-08T07:15:51.209Z', 'Y', 10, 56.75),
+  _PickTradeSeed('2026-06-08T10:03:42.428Z', 'N', 10, 43.29),
+  _PickTradeSeed('2026-06-08T18:24:12.443Z', 'Y', 10, 56.74),
+  _PickTradeSeed('2026-06-08T19:08:47.543Z', 'Y', 10, 56.77),
+  _PickTradeSeed('2026-06-08T19:46:51.010Z', 'Y', 10, 56.8),
+  _PickTradeSeed('2026-06-08T19:54:49.722Z', 'Y', 10, 56.83),
+  _PickTradeSeed('2026-06-09T01:56:56.441Z', 'N', 10, 43.21),
+  _PickTradeSeed('2026-06-09T01:56:56.882Z', 'N', 10, 43.25),
+  _PickTradeSeed('2026-06-09T01:56:57.525Z', 'N', 10, 43.29),
+  _PickTradeSeed('2026-06-09T01:57:15.626Z', 'Y', 10, 56.74),
+  _PickTradeSeed('2026-06-09T01:58:01.310Z', 'Y', 60, 56.92),
+  _PickTradeSeed('2026-06-09T01:59:01.697Z', 'Y', 10, 56.95),
+  _PickTradeSeed('2026-06-09T14:16:42.901Z', 'N', 100, 43.44),
+  _PickTradeSeed('2026-06-09T14:16:50.036Z', 'N', 100, 43.83),
+  _PickTradeSeed('2026-06-09T15:39:00.715Z', 'Y', 200, 56.76),
+  _PickTradeSeed('2026-06-09T20:30:03.476Z', 'Y', 1, 56.77),
+  _PickTradeSeed('2026-06-09T20:30:03.919Z', 'Y', 1, 56.77),
+  _PickTradeSeed('2026-06-09T20:30:03.933Z', 'Y', 1, 56.77),
+  _PickTradeSeed('2026-06-09T20:30:03.953Z', 'Y', 1, 56.78),
+  _PickTradeSeed('2026-06-09T20:30:04.298Z', 'Y', 1, 56.78),
+  _PickTradeSeed('2026-06-09T21:03:52.778Z', 'N', 10, 43.26),
+  _PickTradeSeed('2026-06-09T21:31:45.910Z', 'Y', 10, 56.77),
+  _PickTradeSeed('2026-06-09T21:31:46.377Z', 'Y', 10, 56.8),
+  _PickTradeSeed('2026-06-09T21:31:54.879Z', 'N', 10, 43.24),
+  _PickTradeSeed('2026-06-09T21:32:20.013Z', 'Y', 10, 56.79),
+  _PickTradeSeed('2026-06-09T21:32:26.259Z', 'Y', 10, 56.82),
+  _PickTradeSeed('2026-06-09T21:32:32.417Z', 'N', 10, 43.22),
+  _PickTradeSeed('2026-06-09T21:32:33.010Z', 'N', 10, 43.26),
+  _PickTradeSeed('2026-06-09T22:20:20.497Z', 'Y', 10, 56.77),
+  _PickTradeSeed('2026-06-10T01:00:33.817Z', 'Y', 60, 56.95),
+  _PickTradeSeed('2026-06-10T01:01:36.367Z', 'N', 10, 43.09),
+  _PickTradeSeed('2026-06-10T05:48:22.821Z', 'Y', 10, 56.94),
+  _PickTradeSeed('2026-06-10T07:03:39.449Z', 'Y', 10, 56.97),
+  _PickTradeSeed('2026-06-10T08:55:12.931Z', 'Y', 100, 57.25),
+  _PickTradeSeed('2026-06-10T10:10:38.864Z', 'Y', 360, 58.25),
+  _PickTradeSeed('2026-06-10T10:10:39.417Z', 'Y', 360, 59.21),
+  _PickTradeSeed('2026-06-10T12:00:25.863Z', 'N', 10, 40.83),
+  _PickTradeSeed('2026-06-10T12:00:28.401Z', 'N', 10, 40.86),
+  _PickTradeSeed('2026-06-10T13:41:17.221Z', 'Y', 10, 59.16),
+  _PickTradeSeed('2026-06-10T15:11:13.619Z', 'Y', 10, 59.19),
+];

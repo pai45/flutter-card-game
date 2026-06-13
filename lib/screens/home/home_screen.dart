@@ -10,6 +10,7 @@ import '../../blocs/game/game_state.dart';
 import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../config/tutorial_steps.dart';
+import '../../models/match.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/game_scaffold.dart';
@@ -159,16 +160,16 @@ class HomeScreen extends StatelessWidget {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: _HomeDealtCard(
-                                  key: const ValueKey('home-stat-coins'),
+                                  key: const ValueKey('home-stat-wins'),
                                   index: 2,
                                   initialDelay: const Duration(
                                     milliseconds: 180,
                                   ),
                                   flyDistance: 130,
                                   child: _HudStat(
-                                    label: 'COINS',
-                                    value: _grp(state.coins),
-                                    accent: Cyber.gold,
+                                    label: 'WINS',
+                                    value: _grp(_duelWins(state.matchHistory)),
+                                    accent: Cyber.success,
                                   ),
                                 ),
                               ),
@@ -325,6 +326,16 @@ String _grp(int value) {
     b.write(s[i]);
   }
   return '${value < 0 ? '-' : ''}$b';
+}
+
+int _duelWins(List<MatchHistoryEntry> history) =>
+    history.where(_isDuelWin).length;
+
+bool _isDuelWin(MatchHistoryEntry entry) {
+  if (entry.playerScore != entry.opponentScore) {
+    return entry.playerScore > entry.opponentScore;
+  }
+  return (entry.penaltyPlayerScore ?? 0) > (entry.penaltyOpponentScore ?? 0);
 }
 
 class _HomeSlideUpFadeIn extends StatefulWidget {

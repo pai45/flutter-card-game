@@ -10,7 +10,6 @@ import '../../../blocs/game/game_event.dart';
 import '../../../blocs/game/game_state.dart';
 import '../../../config/enums.dart';
 import '../../../config/theme.dart';
-import '../../../config/tutorial_steps.dart';
 import '../../../models/cards.dart';
 import '../../../utils/label_helpers.dart';
 import '../../../utils/sound_effects.dart';
@@ -18,6 +17,7 @@ import '../../../widgets/cyber/cyber_cta_button.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../../widgets/match_widgets.dart';
 import '../../../widgets/pitch_background.dart';
+import '../../../widgets/spotlight_walkthrough.dart';
 import 'round_result_cinematic.dart';
 
 // ── Toss-phase local colour constants ────────────────────────────────────────
@@ -29,149 +29,670 @@ const Color _kTossMuted = Color(0xFF8FA3B8);
 // ─────────────────────────────────────────────────────────────────────────────
 // TossPhase  –  full HUD redesign
 // ─────────────────────────────────────────────────────────────────────────────
-class TossPhase extends StatefulWidget {
-  const TossPhase({required this.state, required this.onQuit, super.key});
+class CoinTossPhase extends StatefulWidget {
+  const CoinTossPhase({required this.state, required this.onQuit, super.key});
   final GameState state;
   final VoidCallback onQuit;
 
   @override
-  State<TossPhase> createState() => _TossPhaseState();
+  State<CoinTossPhase> createState() => _CoinTossPhaseState();
 }
 
-class _TossPhaseState extends State<TossPhase> with TickerProviderStateMixin {
+class _CoinTossPhaseState extends State<CoinTossPhase>
+    with TickerProviderStateMixin {
+  static const _cpuDecisionDuration = Duration(milliseconds: 3600);
+
+  final _flipKey = GlobalKey();
+
+  // Entrance stagger for the idle state (coin pops in, then the flip CTA).
   late final AnimationController _entry;
-  late final Animation<double> _headerAnim;
-  late final Animation<double> _scoreAnim;
-  late final Animation<double> _coinAnim;
-  late final Animation<double> _buttonsAnim;
+  late final Animation<double> _coinEntry;
+  late final Animation<double> _ctaEntry;
+
+  // Bottom result panel reveal + the CPU "deciding" meter (player lost the toss).
+  late final AnimationController _reveal;
+  late final AnimationController _cpuDecision;
+
+  bool _landed = false;
+  bool _cpuStarted = false;
+  bool _cpuFinalized = false;
+  bool _advanced = false;
+
+  bool get _resolved => widget.state.tossResult != null;
+  bool get _won => widget.state.playerWonToss == true;
+
+  String get _resultCaption {
+    final landed = (widget.state.tossResult ?? '').toUpperCase();
+    final call = widget.state.tossChoice?.toUpperCase();
+    return call == null
+        ? 'IT LANDED $landed'
+        : 'YOU CALLED $call · IT LANDED $landed';
+  }
+
+  List<SpotlightStep> get _tossSpotlightSteps => [
+    SpotlightStep(
+      targetKey: _flipKey,
+      title: 'Call the Toss',
+      body:
+          'Pick HEADS or TAILS to flip the coin. Match the landed face to win '
+          'the toss and choose your role.',
+      icon: Icons.toll,
+      accent: _kTossCyan,
+    ),
+  ];
 
   @override
   void initState() {
     super.initState();
     _entry = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 950),
+      duration: const Duration(milliseconds: 700),
     );
-    _headerAnim = CurvedAnimation(
+    _coinEntry = CurvedAnimation(
       parent: _entry,
-      curve: const Interval(0.00, 0.40, curve: Curves.easeOut),
+      curve: const Interval(0.0, 0.72, curve: Curves.easeOutBack),
     );
-    _scoreAnim = CurvedAnimation(
+    _ctaEntry = CurvedAnimation(
       parent: _entry,
-      curve: const Interval(0.20, 0.55, curve: Curves.easeOut),
-    );
-    _coinAnim = CurvedAnimation(
-      parent: _entry,
-      curve: const Interval(0.35, 0.80, curve: Curves.easeOutBack),
-    );
-    _buttonsAnim = CurvedAnimation(
-      parent: _entry,
-      curve: const Interval(0.62, 1.00, curve: Curves.easeOut),
+      curve: const Interval(0.45, 1.0, curve: Curves.easeOut),
     );
     _entry.forward();
+
+    _reveal = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 620),
+    );
+    _cpuDecision = AnimationController(
+      vsync: this,
+      duration: _cpuDecisionDuration,
+    );
   }
 
   @override
   void dispose() {
     _entry.dispose();
+    _reveal.dispose();
+    _cpuDecision.dispose();
     super.dispose();
+  }
+
+  // Fired by the shared coin once its spin settles on a face.
+  void _onCoinLanded() {
+    if (_landed || !mounted) return;
+    setState(() => _landed = true);
+    final reduce = MediaQuery.of(context).disableAnimations;
+    playSound(SoundEffect.whoosh);
+    if (reduce) {
+      _reveal.value = 1;
+    } else {
+      _reveal.forward();
+    }
+    if (!_won && !_cpuStarted) {
+      _cpuStarted = true;
+      if (!reduce) playSound(SoundEffect.riser);
+      _cpuDecision.duration = reduce
+          ? const Duration(milliseconds: 900)
+          : _cpuDecisionDuration;
+      _cpuDecision.forward().then((_) => _completeCpuDecision());
+    }
+  }
+
+  Future<void> _completeCpuDecision() async {
+    if (_advanced || !mounted) return;
+    setState(() => _cpuFinalized = true);
+    playSound(SoundEffect.commit);
+    HapticFeedback.mediumImpact();
+    await Future<void>.delayed(const Duration(milliseconds: 650));
+    if (!mounted || _advanced) return;
+    _advanced = true;
+    context.read<GameBloc>().add(TossContinued());
   }
 
   @override
   Widget build(BuildContext context) {
-    final round = max(1, widget.state.currentRound);
     return Scaffold(
       backgroundColor: _kTossBg,
       body: Stack(
         children: [
           const Positioned.fill(child: StadiumBackground()),
-          Positioned.fill(
-            child: CustomPaint(
-              painter: _GridPainter(1.0),
-              child: const SizedBox.expand(),
+          SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _TossTopBar(label: 'COIN TOSS', onQuit: widget.onQuit),
+                Expanded(
+                  child: Center(
+                    child: AnimatedBuilder(
+                      animation: _entry,
+                      builder: (context, child) => Transform.scale(
+                        scale: _coinEntry.value.clamp(0.0, 1.05),
+                        child: child,
+                      ),
+                      child: _TossCoin(
+                        result: widget.state.tossResult,
+                        won: widget.state.playerWonToss,
+                        onLanded: _onCoinLanded,
+                      ),
+                    ),
+                  ),
+                ),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 280),
+                  child: _buildBottom(context),
+                ),
+              ],
             ),
           ),
-          SafeArea(
-            child: AnimatedBuilder(
-              animation: _entry,
-              builder: (context, _) => Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+          if (!_resolved)
+            SpotlightTutorial(
+              keyName: 'toss',
+              steps: _tossSpotlightSteps,
+              startDelay: const Duration(milliseconds: 900),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottom(BuildContext context) {
+    if (!_resolved) {
+      return _buildFlipControls(context);
+    }
+    if (!_landed) {
+      return Padding(
+        key: const ValueKey('flipping'),
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 36),
+        child: Text(
+          'FLIPPING…',
+          textAlign: TextAlign.center,
+          style: Cyber.label(12, color: _kTossMuted, letterSpacing: 3),
+        ),
+      );
+    }
+    return KeyedSubtree(
+      key: const ValueKey('result'),
+      child: _buildResultPanel(context),
+    );
+  }
+
+  void _callToss(BuildContext context, String call) {
+    if (_resolved) return;
+    context.read<GameBloc>().add(TossResolved(call));
+  }
+
+  Widget _buildFlipControls(BuildContext context) {
+    return Padding(
+      key: const ValueKey('flip'),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+      child: AnimatedBuilder(
+        animation: _entry,
+        builder: (context, child) => Opacity(
+          opacity: _ctaEntry.value.clamp(0.0, 1.0),
+          child: Transform.translate(
+            offset: Offset(0, 16 * (1 - _ctaEntry.value)),
+            child: child,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'CALL THE TOSS TO SEE WHO ATTACKS',
+              textAlign: TextAlign.center,
+              style: Cyber.body(11, color: _kTossMuted),
+            ),
+            const SizedBox(height: 12),
+            SpotlightTarget(
+              spotlightKey: _flipKey,
+              child: Row(
                 children: [
-                  Opacity(
-                    opacity: _headerAnim.value.clamp(0.0, 1.0),
-                    child: _TossHudHeader(round: round, onQuit: widget.onQuit),
-                  ),
-                  Opacity(
-                    opacity: _scoreAnim.value.clamp(0.0, 1.0),
-                    child: _TossScoreBar(state: widget.state),
-                  ),
                   Expanded(
-                    child: Center(
-                      child: Transform.scale(
-                        scale: _coinAnim.value.clamp(0.0, 1.05),
-                        child: const _HolographicCoin(),
-                      ),
+                    child: _CallChoiceButton(
+                      face: 'H',
+                      label: 'HEADS',
+                      accent: _kTossCyan,
+                      onTap: () => _callToss(context, 'heads'),
                     ),
                   ),
-                  Opacity(
-                    opacity: _buttonsAnim.value.clamp(0.0, 1.0),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Text(
-                        'WIN THE TOSS TO CHOOSE ATTACK OR DEFEND',
-                        textAlign: TextAlign.center,
-                        style: Cyber.body(11, color: _kTossMuted),
-                      ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _CallChoiceButton(
+                      face: 'T',
+                      label: 'TAILS',
+                      accent: const Color(0xFFC084FC),
+                      onTap: () => _callToss(context, 'tails'),
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  Opacity(
-                    opacity: _buttonsAnim.value.clamp(0.0, 1.0),
-                    child: const _HudSectionLabel(label: 'PICK YOUR CALL'),
-                  ),
-                  const SizedBox(height: 10),
-                  Opacity(
-                    opacity: _buttonsAnim.value.clamp(0.0, 1.0),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _CallButton(
-                              label: 'HEADS',
-                              selected: widget.state.tossChoice == 'heads',
-                              onTap: () => context.read<GameBloc>().add(
-                                TossChoiceChanged('heads'),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _CallButton(
-                              label: 'TAILS',
-                              selected: widget.state.tossChoice == 'tails',
-                              onTap: () => context.read<GameBloc>().add(
-                                TossChoiceChanged('tails'),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultPanel(BuildContext context) {
+    return AnimatedBuilder(
+      animation: Listenable.merge([_reveal, _cpuDecision]),
+      builder: (context, _) {
+        final t = Curves.easeOutCubic.transform(_reveal.value.clamp(0.0, 1.0));
+        final panelT = Curves.easeOutBack.transform(
+          _reveal.value.clamp(0.0, 1.0),
+        );
+        return Opacity(
+          opacity: t,
+          child: Transform.translate(
+            offset: Offset(0, 26 * (1 - t)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  _resultCaption,
+                  textAlign: TextAlign.center,
+                  style: Cyber.label(13, color: _kTossMuted, letterSpacing: 2),
+                ),
+                const SizedBox(height: 14),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  child: Transform.translate(
+                    offset: Offset(0, 46 * (1 - panelT)),
+                    child: Opacity(
+                      opacity: t,
+                      child: _won
+                          ? _buildWinnerPanel(context)
+                          : _buildCpuDecisionPanel(),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Opacity(
-                    opacity: _buttonsAnim.value.clamp(0.0, 1.0),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                      child: _TossCta(
-                        label: 'FLIP COIN',
-                        enabled: widget.state.tossChoice != null,
-                        onPressed: () =>
-                            context.read<GameBloc>().add(TossResolved()),
-                      ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildWinnerPanel(BuildContext context) {
+    final round = max(1, widget.state.currentRound);
+    return Column(
+      children: [
+        Text(
+          'YOU WON THE TOSS',
+          textAlign: TextAlign.center,
+          style: Cyber.display(26, color: _kTossCyan, letterSpacing: 2)
+              .copyWith(
+                shadows: [
+                  Shadow(
+                    color: _kTossCyan.withValues(alpha: 0.6),
+                    blurRadius: 18,
+                  ),
+                ],
+              ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'CHOOSE YOUR ROLE FOR ROUND $round',
+          textAlign: TextAlign.center,
+          style: Cyber.body(12, color: _kTossMuted),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _RoleChoiceButton(
+                icon: Icons.sports_soccer,
+                label: 'ATTACK',
+                sub: 'GO FOR GOAL',
+                accent: Cyber.cyan,
+                onTap: () => context.read<GameBloc>().add(RoleChosen(true)),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _RoleChoiceButton(
+                icon: Icons.shield,
+                label: 'DEFEND',
+                sub: 'SHUT THEM OUT',
+                accent: const Color(0xFFC084FC),
+                onTap: () => context.read<GameBloc>().add(RoleChosen(false)),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCpuDecisionPanel() {
+    final progress = _cpuDecision.value.clamp(0.0, 1.0);
+    return Column(
+      children: [
+        Text(
+          'CPU WON THE TOSS',
+          textAlign: TextAlign.center,
+          style: Cyber.display(26, color: _kTossRed, letterSpacing: 2),
+        ),
+        const SizedBox(height: 4),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 220),
+          child: Text(
+            _cpuFinalized
+                ? 'CPU HAS DECIDED'
+                : 'CPU IS DECIDING TO ATTACK OR DEFEND',
+            key: ValueKey(_cpuFinalized),
+            textAlign: TextAlign.center,
+            style: Cyber.body(12, color: _kTossMuted),
+          ),
+        ),
+        const SizedBox(height: 16),
+        _CpuDecisionMeter(progress: progress, finalized: _cpuFinalized),
+      ],
+    );
+  }
+}
+
+// _TossTopBar: slim round caption + close button (replaces the old big header
+// and the [P1] YOU / RD x/4 / VS / ATTACKING / CPU [E1] score bar).
+// [round] is optional — the coin toss happens once, so its caption omits it.
+class _TossTopBar extends StatelessWidget {
+  const _TossTopBar({required this.label, required this.onQuit, this.round});
+  final int? round;
+  final String label;
+  final VoidCallback onQuit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: onQuit,
+            icon: const Icon(Icons.close, color: _kTossCyan, size: 24),
+          ),
+          Expanded(
+            child: Text(
+              round == null ? label : 'ROUND $round · $label',
+              textAlign: TextAlign.center,
+              style: Cyber.label(
+                11,
+                color: _kTossCyan.withValues(alpha: 0.75),
+                letterSpacing: 2,
+              ),
+            ),
+          ),
+          // Balances the close button so the caption stays centred.
+          const SizedBox(width: 48),
+        ],
+      ),
+    );
+  }
+}
+
+// _TossCoin: ONE coin for the whole toss. It idles (float + radar rings), then
+// the SAME coin runs the 3-D flip and lands on the result face. Pass [result]
+// = null to idle, 'heads'/'tails' to flip & land. The win/lose accent ([won]:
+// cyan = player, red = CPU) is applied only AFTER the flip settles — during
+// the spin the coin stays neutral so the outcome isn't telegraphed.
+class _TossCoin extends StatefulWidget {
+  const _TossCoin({required this.result, required this.won, this.onLanded});
+  final String? result;
+  final bool? won;
+  final VoidCallback? onLanded;
+
+  @override
+  State<_TossCoin> createState() => _TossCoinState();
+}
+
+class _TossCoinState extends State<_TossCoin> with TickerProviderStateMixin {
+  static const double _coinSize = 122;
+
+  // Idle motion.
+  late final AnimationController _float;
+  late final AnimationController _ring;
+  late final Animation<double> _floatAnim;
+  late final Animation<double> _ringAnim;
+
+  // Flip + landing burst.
+  late final AnimationController _flip;
+  late final AnimationController _glow;
+  late final Animation<double> _angle;
+  late final Animation<double> _settle;
+  late final Animation<double> _glowPulse;
+
+  bool _flipStarted = false;
+  bool _showFlash = false;
+  // True once the flip has settled — gates the win/lose colour reveal.
+  bool _revealed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _float = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3000),
+    );
+    _floatAnim = Tween<double>(
+      begin: -4,
+      end: 4,
+    ).animate(CurvedAnimation(parent: _float, curve: Curves.easeInOut));
+    _ring = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 20000),
+    );
+    _ringAnim = Tween<double>(begin: 0, end: 2 * pi).animate(_ring);
+
+    _flip = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+    _angle = Tween<double>(
+      begin: 0,
+      end: pi * 6,
+    ).animate(CurvedAnimation(parent: _flip, curve: Curves.easeOut));
+    _settle = Tween<double>(begin: 0.70, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _flip,
+        curve: const Interval(0.6, 1.0, curve: Curves.easeOutBack),
+      ),
+    );
+    _glow = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _glowPulse = Tween<double>(
+      begin: 0.4,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _glow, curve: Curves.easeOut));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.result != null) {
+      _startFlip();
+      return;
+    }
+    if (!MediaQuery.of(context).disableAnimations) {
+      if (!_float.isAnimating) _float.repeat(reverse: true);
+      if (!_ring.isAnimating) _ring.repeat();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _TossCoin old) {
+    super.didUpdateWidget(old);
+    if (old.result == null && widget.result != null) _startFlip();
+  }
+
+  void _startFlip() {
+    if (_flipStarted) return;
+    _flipStarted = true;
+    _float.stop();
+    _ring.stop();
+
+    if (MediaQuery.of(context).disableAnimations) {
+      _flip.value = 1;
+      _glow.value = 1;
+      _revealed = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) widget.onLanded?.call();
+      });
+      return;
+    }
+
+    playSound(SoundEffect.coinFlip);
+    _flip.forward().then((_) {
+      if (!mounted) return;
+      playSound(SoundEffect.coinLand);
+      HapticFeedback.lightImpact();
+      setState(() {
+        _showFlash = true;
+        _revealed = true;
+      });
+      _glow.forward();
+      Future.delayed(const Duration(milliseconds: 180), () {
+        if (mounted) setState(() => _showFlash = false);
+      });
+      widget.onLanded?.call();
+    });
+  }
+
+  @override
+  void dispose() {
+    _float.dispose();
+    _ring.dispose();
+    _flip.dispose();
+    _glow.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final flipping = widget.result != null;
+    // Neutral cyan until the coin settles; only then the outcome accent shows
+    // (cyan = player won the call, red = CPU).
+    final faceColor = _revealed && widget.won == false ? _kTossRed : _kTossCyan;
+    return AnimatedBuilder(
+      animation: Listenable.merge([_float, _ring, _flip, _glow]),
+      builder: (context, _) {
+        final ringOpacity = flipping ? (1 - _flip.value).clamp(0.0, 1.0) : 1.0;
+        return SizedBox(
+          width: 240,
+          height: 240,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Soft radial background glow.
+              Container(
+                width: 240,
+                height: 240,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      faceColor.withValues(alpha: 0.10),
+                      faceColor.withValues(alpha: 0.04),
+                      Colors.transparent,
+                    ],
+                    stops: const [0, 0.5, 1],
+                  ),
+                ),
+              ),
+              // Radar rings — fade out as the flip takes over.
+              if (ringOpacity > 0) ...[
+                Opacity(
+                  opacity: ringOpacity,
+                  child: Transform.rotate(
+                    angle: _ringAnim.value,
+                    child: const CustomPaint(
+                      size: Size(220, 220),
+                      painter: _RadarRingPainter(outer: true),
                     ),
                   ),
+                ),
+                Opacity(
+                  opacity: ringOpacity,
+                  child: Transform.rotate(
+                    angle: -_ringAnim.value * 0.5,
+                    child: const CustomPaint(
+                      size: Size(168, 168),
+                      painter: _RadarRingPainter(outer: false),
+                    ),
+                  ),
+                ),
+              ],
+              if (_showFlash)
+                Container(
+                  width: 180,
+                  height: 180,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.22),
+                  ),
+                ),
+              flipping ? _buildFlipCoin(faceColor) : _buildIdleCoin(),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildIdleCoin() {
+    return Transform.translate(
+      offset: Offset(0, _floatAnim.value),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: _coinSize,
+            height: _coinSize,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const RadialGradient(
+                colors: [Color(0xff1a3040), _kTossBg],
+              ),
+              border: Border.all(color: _kTossCyan, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: _kTossCyan.withValues(alpha: 0.35),
+                  blurRadius: 20,
+                  spreadRadius: 1,
+                ),
+                BoxShadow(
+                  color: _kTossCyan.withValues(alpha: 0.12),
+                  blurRadius: 6,
+                  spreadRadius: -2,
+                ),
+              ],
+            ),
+            child: const CustomPaint(painter: _CoinFacePainter()),
+          ),
+          Container(
+            width: 2,
+            height: 14,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  _kTossCyan.withValues(alpha: 0.55),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+          Container(
+            width: 72,
+            height: 8,
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                colors: [
+                  _kTossCyan.withValues(alpha: 0.28),
+                  _kTossCyan.withValues(alpha: 0.10),
+                  Colors.transparent,
                 ],
               ),
             ),
@@ -180,133 +701,90 @@ class _TossPhaseState extends State<TossPhase> with TickerProviderStateMixin {
       ),
     );
   }
+
+  Widget _buildFlipCoin(Color faceColor) {
+    // While spinning, the visible face alternates every half-turn so the
+    // outcome stays hidden; _angle ends on a whole number of turns, so the
+    // coin settles showing the front face — which carries the actual result.
+    final frontVisible = (((_angle.value + pi / 2) / pi).floor() % 2) == 0;
+    final headsUp = frontVisible == (widget.result == 'heads');
+    final glowBlur = 24.0 + _glowPulse.value * 40.0;
+    final glowAlpha = 0.35 + _glowPulse.value * 0.45;
+    return Transform.scale(
+      scale: _settle.value.clamp(0.0, 1.10),
+      child: Transform(
+        alignment: Alignment.center,
+        transform: Matrix4.identity()
+          ..setEntry(3, 2, 0.001)
+          ..rotateY(_angle.value),
+        child: Container(
+          width: _coinSize,
+          height: _coinSize,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const RadialGradient(
+              colors: [Color(0xff1a3545), _kTossBg],
+            ),
+            border: Border.all(color: faceColor, width: 2.5),
+            boxShadow: [
+              BoxShadow(
+                color: faceColor.withValues(alpha: glowAlpha),
+                blurRadius: glowBlur,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Center(
+            // The back face renders mirrored under the coin's Y-rotation;
+            // counter-rotate it so the letter always reads the right way.
+            child: Transform(
+              alignment: Alignment.center,
+              transform: frontVisible
+                  ? Matrix4.identity()
+                  : (Matrix4.identity()..rotateY(pi)),
+              child: Text(
+                headsUp ? 'H' : 'T',
+                style: Cyber.display(50, color: faceColor),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TossResultPhase  –  HUD redesign
+// _CpuDecisionMeter  –  CPU "deciding" progress bar (player lost the toss)
 // ─────────────────────────────────────────────────────────────────────────────
-class TossResultPhase extends StatelessWidget {
-  const TossResultPhase({required this.state, required this.onQuit, super.key});
-  final GameState state;
-  final VoidCallback onQuit;
+class _CpuDecisionMeter extends StatelessWidget {
+  const _CpuDecisionMeter({required this.progress, required this.finalized});
+
+  final double progress;
+  final bool finalized;
 
   @override
   Widget build(BuildContext context) {
-    final round = max(1, state.currentRound);
-    final won = state.playerWonToss == true;
-    return Scaffold(
-      backgroundColor: _kTossBg,
-      body: Stack(
+    final accent = finalized ? Cyber.success : _kTossCyan;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
         children: [
-          const Positioned.fill(child: StadiumBackground()),
-          Positioned.fill(
-            child: CustomPaint(
-              painter: _GridPainter(1.0),
-              child: const SizedBox.expand(),
-            ),
+          Text(
+            finalized ? 'NEXT: SCENARIO BRIEFING' : 'CPU DECISION PROTOCOL',
+            textAlign: TextAlign.center,
+            style: Cyber.label(10, color: _kTossMuted, letterSpacing: 2),
           ),
-          SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 3,
+            child: Stack(
               children: [
-                _TossHudHeader(round: round, onQuit: onQuit),
-                _TossScoreBar(state: state),
-                Expanded(
-                  child: Center(
-                    child: _CoinFlipReveal(result: state.tossResult ?? ''),
-                  ),
-                ),
-                Text(
-                  'IT LANDED ${(state.tossResult ?? '').toUpperCase()}',
-                  textAlign: TextAlign.center,
-                  style: Cyber.label(13, color: _kTossMuted, letterSpacing: 2),
-                ),
-                const SizedBox(height: 14),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                  child: won
-                      ? Column(
-                          children: [
-                            Text(
-                              'YOU WON THE TOSS',
-                              textAlign: TextAlign.center,
-                              style:
-                                  Cyber.display(
-                                    26,
-                                    color: _kTossCyan,
-                                    letterSpacing: 2,
-                                  ).copyWith(
-                                    shadows: [
-                                      Shadow(
-                                        color: _kTossCyan.withValues(alpha: 0.6),
-                                        blurRadius: 18,
-                                      ),
-                                    ],
-                                  ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'CHOOSE YOUR ROLE FOR ROUND 1',
-                              textAlign: TextAlign.center,
-                              style: Cyber.body(12, color: _kTossMuted),
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _RoleChoiceButton(
-                                    icon: Icons.sports_soccer,
-                                    label: 'ATTACK',
-                                    sub: 'GO FOR GOAL',
-                                    accent: Cyber.cyan,
-                                    onTap: () => context.read<GameBloc>().add(
-                                      RoleChosen(true),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _RoleChoiceButton(
-                                    icon: Icons.shield,
-                                    label: 'DEFEND',
-                                    sub: 'SHUT THEM OUT',
-                                    accent: const Color(0xFFC084FC),
-                                    onTap: () => context.read<GameBloc>().add(
-                                      RoleChosen(false),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        )
-                      : Column(
-                          children: [
-                            Text(
-                              'CPU WON THE TOSS',
-                              textAlign: TextAlign.center,
-                              style: Cyber.display(
-                                26,
-                                color: _kTossRed,
-                                letterSpacing: 2,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'THE CPU WILL CHOOSE TO ATTACK OR DEFEND',
-                              textAlign: TextAlign.center,
-                              style: Cyber.body(12, color: _kTossMuted),
-                            ),
-                            const SizedBox(height: 16),
-                            _TossCta(
-                              label: 'CONTINUE',
-                              enabled: true,
-                              onPressed: () => context.read<GameBloc>().add(
-                                TossContinued(),
-                              ),
-                            ),
-                          ],
-                        ),
+                Container(color: accent.withValues(alpha: 0.14)),
+                FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: progress.clamp(0.0, 1.0),
+                  child: Container(color: accent),
                 ),
               ],
             ),
@@ -340,7 +818,6 @@ class _RoleRevealPhaseState extends State<RoleRevealPhase>
   late final Animation<double> _swapAnim;
   late final Animation<double> _badgeAnim;
   late final Animation<double> _ctaAnim;
-  bool _flash = false;
   bool _badgeFired = false;
   bool _started = false;
   bool _advanced = false;
@@ -365,9 +842,11 @@ class _RoleRevealPhaseState extends State<RoleRevealPhase>
       parent: _c,
       curve: const Interval(0.25, 0.70, curve: Curves.easeInOut),
     );
+    // easeOutBack gives one confident overshoot that settles, instead of the
+    // multi-oscillation wobble of elasticOut that read as jitter on the badge.
     _badgeAnim = CurvedAnimation(
       parent: _c,
-      curve: const Interval(0.55, 0.88, curve: Curves.elasticOut),
+      curve: const Interval(0.55, 0.90, curve: Curves.easeOutBack),
     );
     _ctaAnim = CurvedAnimation(
       parent: _c,
@@ -395,16 +874,21 @@ class _RoleRevealPhaseState extends State<RoleRevealPhase>
     context.read<GameBloc>().add(RoleRevealAcknowledged());
   }
 
-  // Fire the sound/haptic + flash once, as the focal badge lands.
+  // Fire the sound/haptic once, as the focal badge lands. The visual flash is
+  // derived from the animation in [_flashPulse] (no setState), so it fades in
+  // and out in lockstep with the badge rather than popping on a timer.
   void _onTick() {
     if (_badgeFired || _c.value < 0.66) return;
     _badgeFired = true;
     playSound(_attacking ? SoundEffect.attack : SoundEffect.defense);
     HapticFeedback.mediumImpact();
-    if (mounted) setState(() => _flash = true);
-    Future.delayed(const Duration(milliseconds: 180), () {
-      if (mounted) setState(() => _flash = false);
-    });
+  }
+
+  // Smooth 0 → 1 → 0 white bloom synced to the badge landing.
+  double get _flashPulse {
+    const start = 0.62, end = 0.88;
+    final v = ((_c.value - start) / (end - start)).clamp(0.0, 1.0);
+    return sin(v * pi);
   }
 
   @override
@@ -443,111 +927,107 @@ class _RoleRevealPhaseState extends State<RoleRevealPhase>
       body: Stack(
         children: [
           const Positioned.fill(child: StadiumBackground()),
-          Positioned.fill(
-            child: CustomPaint(
-              painter: _GridPainter(1.0),
-              child: const SizedBox.expand(),
-            ),
-          ),
+          // Isolate the per-frame reveal repaint from the ambient background.
           SafeArea(
-            child: AnimatedBuilder(
-              animation: _c,
-              builder: (context, _) => Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _TossHudHeader(
-                    round: round,
-                    onQuit: widget.onQuit,
-                    subtitle: 'ROLE ASSIGNMENT',
-                  ),
-                  _TossScoreBar(state: widget.state),
-                  Expanded(
-                    child: Center(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Opacity(
-                              opacity: _headlineAnim.value.clamp(0.0, 1.0),
-                              child: Transform.translate(
-                                offset: Offset(
-                                  0,
-                                  16 * (1 - _headlineAnim.value),
-                                ),
-                                child: Text(
-                                  headline,
-                                  textAlign: TextAlign.center,
-                                  style: Cyber.display(
-                                    24,
-                                    color: Colors.white,
-                                    letterSpacing: 2.5,
+            child: RepaintBoundary(
+              child: AnimatedBuilder(
+                animation: _c,
+                builder: (context, _) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _TossTopBar(
+                      round: round,
+                      label: 'ROLE ASSIGNMENT',
+                      onQuit: widget.onQuit,
+                    ),
+                    Expanded(
+                      child: Center(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Opacity(
+                                opacity: _headlineAnim.value.clamp(0.0, 1.0),
+                                child: Transform.translate(
+                                  offset: Offset(
+                                    0,
+                                    16 * (1 - _headlineAnim.value),
+                                  ),
+                                  child: Text(
+                                    headline,
+                                    textAlign: TextAlign.center,
+                                    style: Cyber.display(
+                                      24,
+                                      color: Colors.white,
+                                      letterSpacing: 2.5,
+                                    ),
                                   ),
                                 ),
                               ),
+                              const SizedBox(height: 28),
+                              _buildSwapRow(accent),
+                              const SizedBox(height: 32),
+                              _buildBadge(
+                                accent,
+                                roleName,
+                                roleIcon,
+                                badgeCaption,
+                              ),
+                              const SizedBox(height: 16),
+                              Opacity(
+                                opacity: _badgeAnim.value.clamp(0.0, 1.0),
+                                child: Text(
+                                  'PICK CARDS THAT MATCH YOUR ROLE',
+                                  textAlign: TextAlign.center,
+                                  style: Cyber.body(12, color: _kTossMuted),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Opacity(
+                      opacity: _ctaAnim.value.clamp(0.0, 1.0),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(40, 0, 40, 28),
+                        child: Column(
+                          children: [
+                            Text(
+                              'NEXT: SCENARIO BRIEFING',
+                              textAlign: TextAlign.center,
+                              style: Cyber.label(
+                                10,
+                                color: _kTossMuted,
+                                letterSpacing: 2,
+                              ),
                             ),
-                            const SizedBox(height: 28),
-                            _buildSwapRow(accent),
-                            const SizedBox(height: 32),
-                            _buildBadge(
-                              accent,
-                              roleName,
-                              roleIcon,
-                              badgeCaption,
-                            ),
-                            const SizedBox(height: 16),
-                            Opacity(
-                              opacity: _badgeAnim.value.clamp(0.0, 1.0),
-                              child: Text(
-                                'PICK CARDS THAT MATCH YOUR ROLE',
-                                textAlign: TextAlign.center,
-                                style: Cyber.body(12, color: _kTossMuted),
+                            const SizedBox(height: 10),
+                            SizedBox(
+                              height: 3,
+                              child: AnimatedBuilder(
+                                animation: _hold,
+                                builder: (context, _) => Stack(
+                                  children: [
+                                    Container(
+                                      color: accent.withValues(alpha: 0.15),
+                                    ),
+                                    FractionallySizedBox(
+                                      alignment: Alignment.centerLeft,
+                                      widthFactor: _hold.value.clamp(0.0, 1.0),
+                                      child: Container(color: accent),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
-                  ),
-                  Opacity(
-                    opacity: _ctaAnim.value.clamp(0.0, 1.0),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(40, 0, 40, 28),
-                      child: Column(
-                        children: [
-                          Text(
-                            'NEXT: SCENARIO BRIEFING',
-                            textAlign: TextAlign.center,
-                            style: Cyber.label(
-                              10,
-                              color: _kTossMuted,
-                              letterSpacing: 2,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          SizedBox(
-                            height: 3,
-                            child: AnimatedBuilder(
-                              animation: _hold,
-                              builder: (context, _) => Stack(
-                                children: [
-                                  Container(
-                                    color: accent.withValues(alpha: 0.15),
-                                  ),
-                                  FractionallySizedBox(
-                                    alignment: Alignment.centerLeft,
-                                    widthFactor: _hold.value.clamp(0.0, 1.0),
-                                    child: Container(color: accent),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -638,11 +1118,11 @@ class _RoleRevealPhaseState extends State<RoleRevealPhase>
         child: Stack(
           alignment: Alignment.center,
           children: [
-            if (_flash)
+            if (_flashPulse > 0.01)
               Container(
                 width: 240,
                 height: 104,
-                color: Colors.white.withValues(alpha: 0.20),
+                color: Colors.white.withValues(alpha: 0.18 * _flashPulse),
               ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
@@ -746,710 +1226,9 @@ class _RoleRevealChip extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// _CoinFlipReveal  –  3-D flip, glow burst, result flash
-// ─────────────────────────────────────────────────────────────────────────────
-class _CoinFlipReveal extends StatefulWidget {
-  const _CoinFlipReveal({required this.result});
-  final String result;
-
-  @override
-  State<_CoinFlipReveal> createState() => _CoinFlipRevealState();
-}
-
-class _CoinFlipRevealState extends State<_CoinFlipReveal>
-    with TickerProviderStateMixin {
-  late final AnimationController _flip;
-  late final AnimationController _glow;
-  late final Animation<double> _angle;
-  late final Animation<double> _settle;
-  late final Animation<double> _glowPulse;
-  bool _showFlash = false;
-
-  @override
-  void initState() {
-    super.initState();
-    playSound(SoundEffect.coinFlip);
-
-    _flip = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    );
-    _angle = Tween<double>(
-      begin: 0,
-      end: pi * 6,
-    ).animate(CurvedAnimation(parent: _flip, curve: Curves.easeOut));
-    _settle = Tween<double>(begin: 0.70, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _flip,
-        curve: const Interval(0.6, 1.0, curve: Curves.easeOutBack),
-      ),
-    );
-
-    _glow = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-    _glowPulse = Tween<double>(
-      begin: 0.4,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _glow, curve: Curves.easeOut));
-
-    _flip.forward().then((_) {
-      if (!mounted) return;
-      // Resolve the spin's anticipation: the coin lands.
-      playSound(SoundEffect.coinLand);
-      HapticFeedback.lightImpact();
-      setState(() => _showFlash = true);
-      _glow.forward();
-      Future.delayed(const Duration(milliseconds: 180), () {
-        if (mounted) setState(() => _showFlash = false);
-      });
-    });
-  }
-
-  @override
-  void dispose() {
-    _flip.dispose();
-    _glow.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: Listenable.merge([_flip, _glow]),
-      builder: (_, _) {
-        final glowBlur = 24.0 + _glowPulse.value * 40.0;
-        final glowAlpha = 0.35 + _glowPulse.value * 0.45;
-        return SizedBox(
-          width: 180,
-          height: 180,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              if (_showFlash)
-                Container(
-                  width: 180,
-                  height: 180,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.22),
-                  ),
-                ),
-              Transform.scale(
-                scale: _settle.value.clamp(0.0, 1.10),
-                child: Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.identity()
-                    ..setEntry(3, 2, 0.001)
-                    ..rotateY(_angle.value),
-                  child: Container(
-                    width: 130,
-                    height: 130,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: const RadialGradient(
-                        colors: [Color(0xff1a3545), _kTossBg],
-                      ),
-                      border: Border.all(color: _kTossCyan, width: 2.5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: _kTossCyan.withValues(alpha: glowAlpha),
-                          blurRadius: glowBlur,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Text(
-                        widget.result == 'heads' ? 'H' : 'T',
-                        style: Cyber.display(52, color: _kTossCyan),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
 // ══════════════════════════════════════════════════════════════════════════════
 // Sub-widgets
 // ══════════════════════════════════════════════════════════════════════════════
-
-class _TossHudHeader extends StatelessWidget {
-  const _TossHudHeader({
-    required this.round,
-    required this.onQuit,
-    this.subtitle = 'COIN TOSS PROTOCOL',
-  });
-  final int round;
-  final VoidCallback onQuit;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 4, 16, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              IconButton(
-                onPressed: onQuit,
-                icon: const Icon(Icons.close, color: _kTossCyan, size: 28),
-              ),
-              const SizedBox(width: 2),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'ROUND $round',
-                    style: Cyber.display(
-                      28,
-                      color: Colors.white,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: Cyber.label(
-                      11,
-                      color: _kTossCyan.withValues(alpha: 0.75),
-                      letterSpacing: 2,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          CustomPaint(
-            painter: _HudBracketLinePainter(),
-            child: const SizedBox(height: 10),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TossScoreBar extends StatelessWidget {
-  const _TossScoreBar({required this.state});
-  final GameState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final round = max(1, state.currentRound);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Player
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '[P1] YOU',
-                      style: Cyber.label(
-                        11,
-                        color: _kTossCyan,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                    Text(
-                      '${state.playerScore}',
-                      style: Cyber.display(
-                        36,
-                        color: _kTossCyan,
-                        letterSpacing: 0,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              // Centre
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'RD $round / 4',
-                    style: Cyber.label(
-                      10,
-                      color: _kTossMuted,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'VS',
-                    style: Cyber.display(
-                      22,
-                      color: Colors.white,
-                      letterSpacing: 2,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: _kTossCyan, width: 1),
-                    ),
-                    child: Text(
-                      'ATTACKING',
-                      style: Cyber.label(
-                        9,
-                        color: _kTossCyan,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              // CPU
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'CPU [E1]',
-                      style: Cyber.label(
-                        11,
-                        color: _kTossRed,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                    Text(
-                      '${state.opponentScore}',
-                      style: Cyber.display(
-                        36,
-                        color: _kTossRed,
-                        letterSpacing: 0,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          CustomPaint(
-            painter: _ScoreBarDividerPainter(),
-            child: const SizedBox(height: 8),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Holographic coin  –  idle float + ring rotation
-// ─────────────────────────────────────────────────────────────────────────────
-class _HolographicCoin extends StatefulWidget {
-  const _HolographicCoin();
-
-  @override
-  State<_HolographicCoin> createState() => _HolographicCoinState();
-}
-
-class _HolographicCoinState extends State<_HolographicCoin>
-    with TickerProviderStateMixin {
-  late final AnimationController _float;
-  late final AnimationController _ring;
-  late final Animation<double> _floatAnim;
-  late final Animation<double> _ringAnim;
-
-  @override
-  void initState() {
-    super.initState();
-    _float = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 3000),
-    )..repeat(reverse: true);
-    _floatAnim = Tween<double>(
-      begin: -4,
-      end: 4,
-    ).animate(CurvedAnimation(parent: _float, curve: Curves.easeInOut));
-    _ring = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 20000),
-    )..repeat();
-    _ringAnim = Tween<double>(begin: 0, end: 2 * pi).animate(_ring);
-  }
-
-  @override
-  void dispose() {
-    _float.dispose();
-    _ring.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: Listenable.merge([_float, _ring]),
-      builder: (_, _) => SizedBox(
-        width: 240,
-        height: 240,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Soft radial background glow
-            Container(
-              width: 240,
-              height: 240,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    _kTossCyan.withValues(alpha: 0.10),
-                    _kTossCyan.withValues(alpha: 0.04),
-                    Colors.transparent,
-                  ],
-                  stops: const [0, 0.5, 1],
-                ),
-              ),
-            ),
-            // Outer radar ring — slow clockwise
-            Transform.rotate(
-              angle: _ringAnim.value,
-              child: CustomPaint(
-                size: const Size(220, 220),
-                painter: const _RadarRingPainter(outer: true),
-              ),
-            ),
-            // Mid ring — slow counter-rotation
-            Transform.rotate(
-              angle: -_ringAnim.value * 0.5,
-              child: CustomPaint(
-                size: const Size(168, 168),
-                painter: const _RadarRingPainter(outer: false),
-              ),
-            ),
-            // Float group: inner coin + projection beam + base
-            Transform.translate(
-              offset: Offset(0, _floatAnim.value),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 108,
-                    height: 108,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: const RadialGradient(
-                        colors: [Color(0xff1a3040), _kTossBg],
-                      ),
-                      border: Border.all(color: _kTossCyan, width: 2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: _kTossCyan.withValues(alpha: 0.35),
-                          blurRadius: 20,
-                          spreadRadius: 1,
-                        ),
-                        BoxShadow(
-                          color: _kTossCyan.withValues(alpha: 0.12),
-                          blurRadius: 6,
-                          spreadRadius: -2,
-                        ),
-                      ],
-                    ),
-                    child: const CustomPaint(painter: _CoinFacePainter()),
-                  ),
-                  Container(
-                    width: 2,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          _kTossCyan.withValues(alpha: 0.55),
-                          Colors.transparent,
-                        ],
-                      ),
-                    ),
-                  ),
-                  Container(
-                    width: 72,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      gradient: RadialGradient(
-                        colors: [
-                          _kTossCyan.withValues(alpha: 0.28),
-                          _kTossCyan.withValues(alpha: 0.10),
-                          Colors.transparent,
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _HudSectionLabel extends StatelessWidget {
-  const _HudSectionLabel({required this.label});
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              height: 1,
-              color: _kTossCyan.withValues(alpha: 0.28),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '< $label >',
-            style: Cyber.label(
-              11,
-              color: _kTossCyan.withValues(alpha: 0.85),
-              letterSpacing: 2,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Container(
-              height: 1,
-              color: _kTossCyan.withValues(alpha: 0.28),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Heads / Tails choice card
-// ─────────────────────────────────────────────────────────────────────────────
-class _CallButton extends StatefulWidget {
-  const _CallButton({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  State<_CallButton> createState() => _CallButtonState();
-}
-
-class _CallButtonState extends State<_CallButton>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _press;
-  late final Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _press = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 130),
-    );
-    _scale = Tween<double>(
-      begin: 1.0,
-      end: 0.96,
-    ).animate(CurvedAnimation(parent: _press, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _press.dispose();
-    super.dispose();
-  }
-
-  void _onTap() {
-    _press.forward().then((_) {
-      _press.reverse();
-      widget.onTap();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final sel = widget.selected;
-    return AnimatedBuilder(
-      animation: _press,
-      builder: (_, _) => Transform.scale(
-        scale: _scale.value,
-        child: GestureDetector(
-          onTap: _onTap,
-          child: Container(
-            height: 92,
-            decoration: BoxDecoration(
-              color: sel ? _kTossCyan.withValues(alpha: 0.10) : Cyber.panel,
-              border: Border.all(
-                color: sel ? _kTossCyan : _kTossCyan.withValues(alpha: 0.28),
-                width: sel ? 1.5 : 1.0,
-              ),
-              boxShadow: sel
-                  ? [
-                      BoxShadow(
-                        color: _kTossCyan.withValues(alpha: 0.22),
-                        blurRadius: 16,
-                      ),
-                    ]
-                  : const [],
-            ),
-            child: Stack(
-              children: [
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: SizedBox(
-                    height: 18,
-                    child: CustomPaint(painter: _HatchPainter()),
-                  ),
-                ),
-                Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CustomPaint(
-                        size: const Size(38, 38),
-                        painter: _CoinIconPainter(
-                          isHeads: widget.label == 'HEADS',
-                          selected: sel,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        widget.label,
-                        style: Cyber.label(
-                          13,
-                          color: sel ? _kTossCyan : _kTossMuted,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Primary / secondary CTA button with angular clip
-// ─────────────────────────────────────────────────────────────────────────────
-class _TossCta extends StatefulWidget {
-  const _TossCta({
-    required this.label,
-    required this.enabled,
-    required this.onPressed,
-  });
-  final String label;
-  final bool enabled;
-  final VoidCallback onPressed;
-
-  @override
-  State<_TossCta> createState() => _TossCtaState();
-}
-
-class _TossCtaState extends State<_TossCta>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _press;
-  late final Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _press = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 110),
-    );
-    _scale = Tween<double>(
-      begin: 1.0,
-      end: 0.96,
-    ).animate(CurvedAnimation(parent: _press, curve: Curves.easeIn));
-  }
-
-  @override
-  void dispose() {
-    _press.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _press,
-      builder: (_, _) => Opacity(
-        opacity: widget.enabled ? 1.0 : 0.38,
-        child: Transform.scale(
-          scale: _scale.value,
-          child: GestureDetector(
-            onTapDown: widget.enabled ? (_) => _press.forward() : null,
-            onTapUp: widget.enabled
-                ? (_) {
-                    _press.reverse();
-                    widget.onPressed();
-                  }
-                : null,
-            onTapCancel: () => _press.reverse(),
-            child: ClipPath(
-              clipper: const _AngularClipper(),
-              child: Container(
-                width: double.infinity,
-                height: 52,
-                color: _kTossCyan,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Positioned(
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: 36,
-                      child: CustomPaint(painter: _ButtonDecorationPainter()),
-                    ),
-                    Text(
-                      widget.label,
-                      style: Cyber.display(15, color: _kTossBg, letterSpacing: 3),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Big role-choice card for the toss winner (ATTACK / DEFEND)
@@ -1544,58 +1323,111 @@ class _RoleChoiceButtonState extends State<_RoleChoiceButton>
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Heads/Tails call card for the idle toss — same silhouette as the role-choice
+// card, but the glyph is a ringed coin face (H/T) echoing the coin above.
+// ─────────────────────────────────────────────────────────────────────────────
+class _CallChoiceButton extends StatefulWidget {
+  const _CallChoiceButton({
+    required this.face,
+    required this.label,
+    required this.accent,
+    required this.onTap,
+  });
+  final String face;
+  final String label;
+  final Color accent;
+  final VoidCallback onTap;
+
+  @override
+  State<_CallChoiceButton> createState() => _CallChoiceButtonState();
+}
+
+class _CallChoiceButtonState extends State<_CallChoiceButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _press;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _press = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 130),
+    );
+    _scale = Tween<double>(
+      begin: 1.0,
+      end: 0.96,
+    ).animate(CurvedAnimation(parent: _press, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _press.dispose();
+    super.dispose();
+  }
+
+  void _onTap() {
+    _press.forward().then((_) {
+      _press.reverse();
+      widget.onTap();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = widget.accent;
+    return AnimatedBuilder(
+      animation: _press,
+      builder: (_, _) => Transform.scale(
+        scale: _scale.value,
+        child: GestureDetector(
+          onTap: _onTap,
+          child: Container(
+            height: 96,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.08),
+              border: Border.all(
+                color: accent.withValues(alpha: 0.55),
+                width: 1.4,
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: accent.withValues(alpha: 0.7),
+                      width: 1.4,
+                    ),
+                  ),
+                  child: Text(
+                    widget.face,
+                    style: Cyber.display(15, color: accent),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  widget.label,
+                  style: Cyber.display(17, color: accent, letterSpacing: 2),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // Painters & clippers
 // ══════════════════════════════════════════════════════════════════════════════
-
-class _HudBracketLinePainter extends CustomPainter {
-  const _HudBracketLinePainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = _kTossCyan.withValues(alpha: 0.50)
-      ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke;
-    canvas.drawPath(
-      Path()
-        ..moveTo(0, size.height / 2)
-        ..lineTo(size.width - 18, size.height / 2)
-        ..lineTo(size.width, 0),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_HudBracketLinePainter _) => false;
-}
-
-class _ScoreBarDividerPainter extends CustomPainter {
-  const _ScoreBarDividerPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = _kTossCyan.withValues(alpha: 0.35)
-      ..strokeWidth = 1.0
-      ..style = PaintingStyle.stroke;
-    final mid = size.height / 2;
-    canvas.drawPath(
-      Path()
-        ..moveTo(8, 0)
-        ..lineTo(0, mid)
-        ..lineTo(8, size.height)
-        ..lineTo(size.width - 8, size.height)
-        ..lineTo(size.width, mid)
-        ..lineTo(size.width - 8, 0)
-        ..close(),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_ScoreBarDividerPainter _) => false;
-}
 
 class _RadarRingPainter extends CustomPainter {
   const _RadarRingPainter({required this.outer});
@@ -1699,158 +1531,58 @@ class _CoinFacePainter extends CustomPainter {
   bool shouldRepaint(_CoinFacePainter _) => false;
 }
 
-class _CoinIconPainter extends CustomPainter {
-  const _CoinIconPainter({required this.isHeads, required this.selected});
-  final bool isHeads;
-  final bool selected;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 2;
-    final alpha = selected ? 0.9 : 0.45;
-    final stroke = Paint()
-      ..color = _kTossCyan.withValues(alpha: alpha)
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-
-    canvas.drawCircle(center, radius, stroke);
-
-    if (isHeads) {
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius - 1),
-        pi,
-        pi,
-        true,
-        Paint()
-          ..color = _kTossCyan.withValues(alpha: selected ? 0.28 : 0.12)
-          ..style = PaintingStyle.fill,
-      );
-      canvas.drawLine(
-        Offset(center.dx - radius + 2, center.dy),
-        Offset(center.dx + radius - 2, center.dy),
-        stroke,
-      );
-    } else {
-      const segs = 12;
-      for (int i = 0; i < segs; i += 2) {
-        final a1 = (i / segs) * 2 * pi;
-        final a2 = ((i + 0.7) / segs) * 2 * pi;
-        canvas.drawArc(
-          Rect.fromCircle(center: center, radius: radius - 6),
-          a1,
-          a2 - a1,
-          false,
-          Paint()
-            ..color = _kTossCyan.withValues(alpha: alpha)
-            ..strokeWidth = 1.5
-            ..style = PaintingStyle.stroke,
-        );
-      }
-      canvas.drawCircle(
-        center,
-        3,
-        Paint()
-          ..color = _kTossCyan.withValues(alpha: alpha)
-          ..style = PaintingStyle.fill,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_CoinIconPainter old) =>
-      old.selected != selected || old.isHeads != isHeads;
-}
-
-class _HatchPainter extends CustomPainter {
-  const _HatchPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = _kTossCyan.withValues(alpha: 0.11)
-      ..strokeWidth = 1.0;
-    const spacing = 8.0;
-    for (double x = -size.height; x < size.width + size.height; x += spacing) {
-      canvas.drawLine(
-        Offset(x, size.height),
-        Offset(x + size.height, 0),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_HatchPainter _) => false;
-}
-
-class _AngularClipper extends CustomClipper<Path> {
-  const _AngularClipper();
-  static const _n = 10.0;
-
-  @override
-  Path getClip(Size size) => Path()
-    ..moveTo(_n, 0)
-    ..lineTo(size.width - _n, 0)
-    ..lineTo(size.width, _n)
-    ..lineTo(size.width, size.height - _n)
-    ..lineTo(size.width - _n, size.height)
-    ..lineTo(_n, size.height)
-    ..lineTo(0, size.height - _n)
-    ..lineTo(0, _n)
-    ..close();
-
-  @override
-  bool shouldReclip(_AngularClipper _) => false;
-}
-
-class _ButtonDecorationPainter extends CustomPainter {
-  const _ButtonDecorationPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.22)
-      ..strokeWidth = 1.5;
-    const spacing = 6.0;
-    for (double x = 0; x < size.width + size.height; x += spacing) {
-      canvas.drawLine(
-        Offset(x, size.height),
-        Offset(x - size.height, 0),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(_ButtonDecorationPainter _) => false;
-}
-
-class ScenarioPhase extends StatelessWidget {
+class ScenarioPhase extends StatefulWidget {
   const ScenarioPhase({required this.state, required this.onQuit, super.key});
 
   final GameState state;
   final VoidCallback onQuit;
 
   @override
+  State<ScenarioPhase> createState() => _ScenarioPhaseState();
+}
+
+class _ScenarioPhaseState extends State<ScenarioPhase> {
+  final _briefingKey = GlobalKey<_ScenarioBriefingSectionState>();
+
+  List<SpotlightStep> get _spotlightSteps => [
+    SpotlightStep(
+      targetKey: _briefingKey,
+      title: 'Scenario',
+      body: 'Read the scenario. ATK/DEF bonuses apply this round.',
+      icon: Icons.flag,
+      accent: Cyber.lime,
+    ),
+  ];
+
+  @override
   Widget build(BuildContext context) {
-    final scenario = state.currentScenario;
+    final scenario = widget.state.currentScenario;
     if (scenario == null) {
       return const Center(child: CircularProgressIndicator());
     }
+    final roundOne = widget.state.currentRound == 1;
+    final walkthroughMatch =
+        roundOne &&
+        !context.watch<GameBloc>().state.tutorialSeen.contains('scenario');
     return MatchPhaseScaffold(
-      title: 'Round ${max(1, state.currentRound)}',
+      title: 'Round ${max(1, widget.state.currentRound)}',
       subtitle: '// Scenario Briefing',
-      state: state,
-      onQuit: onQuit,
-      tutorialKey: 'scenario',
-      tutorialSteps: scenarioTutorialSteps,
+      state: widget.state,
+      onQuit: widget.onQuit,
+      spotlightKey: walkthroughMatch ? 'scenario' : null,
+      spotlightSteps: walkthroughMatch ? _spotlightSteps : const [],
+      spotlightEnabled: walkthroughMatch,
+      spotlightDelay: const Duration(milliseconds: 450),
+      spotlightOnComplete: () => _briefingKey.currentState?.beginCountdown(),
+      spotlightCardAnchor: SpotlightCardAnchor.bottom,
+      spotlightCardBottomInset: 24,
       children: [
         ScenarioBriefingSection(
+          key: _briefingKey,
           scenario: scenario,
-          attacking: state.playerAttacking,
-          initialSeconds: 2,
-          onComplete: () => context.read<GameBloc>().add(PlayStarted()),
+          attacking: widget.state.playerAttacking,
+          initialSeconds: 3,
+          deferCountdown: walkthroughMatch,
         ),
       ],
     );
@@ -1863,15 +1595,20 @@ class ScenarioBriefingSection extends StatefulWidget {
   const ScenarioBriefingSection({
     required this.scenario,
     required this.attacking,
-    required this.onComplete,
+    this.onComplete,
     this.initialSeconds = 2,
+    this.deferCountdown = false,
     super.key,
   });
 
   final ScenarioCard scenario;
   final bool attacking;
   final int initialSeconds;
-  final VoidCallback onComplete;
+  final VoidCallback? onComplete;
+
+  /// When true, the auto-advance timer waits until [beginCountdown] is called
+  /// (e.g. after the first-match walkthrough is dismissed).
+  final bool deferCountdown;
 
   @override
   State<ScenarioBriefingSection> createState() =>
@@ -1879,31 +1616,86 @@ class ScenarioBriefingSection extends StatefulWidget {
 }
 
 class _ScenarioBriefingSectionState extends State<ScenarioBriefingSection>
-    with SingleTickerProviderStateMixin {
-  late int _seconds = widget.initialSeconds;
+    with TickerProviderStateMixin {
+  late int _seconds;
+  bool _advanced = false;
+  bool _countdownStarted = false;
+  bool _entranceStarted = false;
+  bool _stampFired = false;
+  GameBloc? _bloc;
   late final AnimationController _scanner = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 1800),
   )..repeat();
+  late final AnimationController _entrance = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  );
 
   @override
   void initState() {
     super.initState();
+    _seconds = widget.initialSeconds;
+    if (!widget.deferCountdown) {
+      beginCountdown();
+    }
+  }
+
+  void beginCountdown() {
+    if (_countdownStarted || _advanced) return;
+    _countdownStarted = true;
+    setState(() => _seconds = widget.initialSeconds);
     _tick();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_entranceStarted) {
+      _entranceStarted = true;
+      if (MediaQuery.of(context).disableAnimations) {
+        _stampFired = true;
+        _entrance.value = 1;
+      } else {
+        _entrance.addListener(_onEntranceTick);
+        _entrance.forward();
+      }
+    }
+    if (_bloc != null) return;
+    try {
+      _bloc = context.read<GameBloc>();
+    } catch (_) {
+      // Widget tests may omit a bloc when only [onComplete] is under test.
+    }
+  }
+
+  void _onEntranceTick() {
+    if (_stampFired || _entrance.value < _kBriefingStampStart) return;
+    _stampFired = true;
+    playSound(SoundEffect.commit);
+    HapticFeedback.mediumImpact();
+  }
+
+  void _finishCountdown() {
+    if (_advanced || !mounted) return;
+    _advanced = true;
+    widget.onComplete?.call();
+    _bloc?.add(PlayStarted());
   }
 
   Future<void> _tick() async {
     for (var i = widget.initialSeconds; i > 0; i--) {
       await Future<void>.delayed(const Duration(seconds: 1));
-      if (!mounted) return;
+      if (!mounted || _advanced) return;
       setState(() => _seconds = i - 1);
     }
-    if (mounted) widget.onComplete();
+    _finishCountdown();
   }
 
   @override
   void dispose() {
     _scanner.dispose();
+    _entrance.dispose();
     super.dispose();
   }
 
@@ -1918,23 +1710,21 @@ class _ScenarioBriefingSectionState extends State<ScenarioBriefingSection>
             constraints: BoxConstraints(maxWidth: maxWidth),
             child: Container(
               padding: const EdgeInsets.fromLTRB(12, 14, 12, 24),
-              child: CustomPaint(
-                painter: _ScenarioGridPainter(accent),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ScenarioBriefingCard(
-                      scenario: widget.scenario,
-                      attacking: widget.attacking,
-                    ),
-                    const SizedBox(height: 24),
-                    CountdownBlock(
-                      seconds: _seconds,
-                      scanner: _scanner,
-                      accent: accent,
-                    ),
-                  ],
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ScenarioBriefingCard(
+                    scenario: widget.scenario,
+                    attacking: widget.attacking,
+                    entrance: _entrance,
+                  ),
+                  const SizedBox(height: 24),
+                  CountdownBlock(
+                    seconds: _seconds,
+                    scanner: _scanner,
+                    accent: accent,
+                  ),
+                ],
               ),
             ),
           ),
@@ -1944,20 +1734,71 @@ class _ScenarioBriefingSectionState extends State<ScenarioBriefingSection>
   }
 }
 
+// ── Scenario briefing entrance beats (fractions of the entrance timeline) ───
+const _kBriefingIconEnd = 0.18;
+const _kBriefingDecodeStart = 0.08;
+const _kBriefingDecodeEnd = 0.55;
+const _kBriefingBodyStart = 0.42;
+const _kBriefingBodyEnd = 0.66;
+const _kBriefingChipStart = 0.56;
+const _kBriefingChipEnd = 0.84;
+const _kBriefingStampStart = 0.80;
+
 class ScenarioBriefingCard extends StatelessWidget {
   const ScenarioBriefingCard({
     required this.scenario,
     required this.attacking,
+    this.entrance,
     super.key,
   });
 
   final ScenarioCard scenario;
   final bool attacking;
 
+  /// Drives the staggered decrypt entrance; null renders the settled card.
+  final Animation<double>? entrance;
+
   @override
   Widget build(BuildContext context) {
+    final anim = entrance;
+    if (anim == null) return _buildCard(context, 1);
+    return AnimatedBuilder(
+      animation: anim,
+      builder: (context, _) => _buildCard(context, anim.value),
+    );
+  }
+
+  Widget _buildCard(BuildContext context, double t) {
     final accent = _roleAccent(attacking);
     final status = attacking ? 'ATTACKING THIS ROUND' : 'DEFENDING THIS ROUND';
+
+    double seg(double a, double b, [Curve curve = Curves.easeOut]) {
+      if (t <= a) return 0;
+      if (t >= b) return 1;
+      return curve.transform((t - a) / (b - a));
+    }
+
+    final iconT = seg(0, _kBriefingIconEnd);
+    final decodeT = seg(
+      _kBriefingDecodeStart,
+      _kBriefingDecodeEnd,
+      Curves.linear,
+    );
+    final bodyT = seg(_kBriefingBodyStart, _kBriefingBodyEnd);
+    final chipAT = seg(
+      _kBriefingChipStart,
+      _kBriefingChipStart + 0.18,
+      Curves.easeOutBack,
+    );
+    final chipBT = seg(
+      _kBriefingChipEnd - 0.18,
+      _kBriefingChipEnd,
+      Curves.easeOutBack,
+    );
+    final stampT = seg(_kBriefingStampStart, 1, Curves.easeOutCubic);
+    // Transient pulse behind the role badge as it stamps down (peaks mid-stamp).
+    final stampPulse = 4 * stampT * (1 - stampT);
+
     return CustomPaint(
       painter: _ScenarioPanelPainter(accent),
       child: Container(
@@ -1966,97 +1807,200 @@ class ScenarioBriefingCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _RadarTargetIcon(accent: accent),
+            Opacity(
+              opacity: iconT,
+              child: Transform.scale(
+                scale: 0.6 + 0.4 * iconT,
+                child: _RadarTargetIcon(accent: accent),
+              ),
+            ),
             const SizedBox(height: 16),
-            Text(
-              scenario.title.toUpperCase(),
+            _DecryptText(
+              text: scenario.title.toUpperCase(),
+              t: decodeT,
               textAlign: TextAlign.center,
               maxLines: 2,
-              overflow: TextOverflow.ellipsis,
               style: Cyber.display(26, color: accent, letterSpacing: 1.3)
                   .copyWith(
                     shadows: [
                       Shadow(
-                        color: accent.withValues(alpha: 0.65),
+                        color: accent.withValues(alpha: 0.65 * decodeT),
                         blurRadius: 18,
                       ),
                     ],
                   ),
             ),
             const SizedBox(height: 10),
-            Text(
-              scenario.description,
-              textAlign: TextAlign.center,
-              style: Cyber.body(
-                13,
-                color: Colors.white.withValues(alpha: 0.82),
-                weight: FontWeight.w700,
+            Opacity(
+              opacity: bodyT,
+              child: Transform.translate(
+                offset: Offset(0, 8 * (1 - bodyT)),
+                child: Text(
+                  scenario.description,
+                  textAlign: TextAlign.center,
+                  style: Cyber.body(
+                    13,
+                    color: Colors.white.withValues(alpha: 0.82),
+                    weight: FontWeight.w700,
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 18),
-            Container(
-              height: 1,
-              margin: const EdgeInsets.symmetric(horizontal: 34),
-              color: accent.withValues(alpha: 0.14),
+            Transform.scale(
+              scaleX: bodyT,
+              child: Container(
+                height: 1,
+                margin: const EdgeInsets.symmetric(horizontal: 34),
+                color: accent.withValues(alpha: 0.14),
+              ),
             ),
             const SizedBox(height: 18),
             Row(
               children: [
                 Expanded(
-                  child: BonusChip(
-                    label: 'ATTACK',
-                    value: '+${scenario.attackBonus}',
-                    accent: Cyber.cyan,
+                  child: _ChipPop(
+                    t: chipAT,
+                    child: BonusChip(
+                      label: 'ATTACK',
+                      value: '+${scenario.attackBonus}',
+                      accent: Cyber.cyan,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
-                  child: BonusChip(
-                    label: 'DEFENSE',
-                    value: '+${scenario.defenseBonus}',
-                    accent: accent,
+                  child: _ChipPop(
+                    t: chipBT,
+                    child: BonusChip(
+                      label: 'DEFENSE',
+                      value: '+${scenario.defenseBonus}',
+                      accent: accent,
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.12),
-                border: Border.all(
-                  color: accent.withValues(alpha: 0.6),
-                  width: 1.4,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    attacking ? Icons.sports_soccer : Icons.shield,
-                    color: accent,
-                    size: 22,
+            Opacity(
+              opacity: stampT,
+              child: Transform.scale(
+                scale: 1.55 - 0.55 * stampT,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 10,
                   ),
-                  const SizedBox(width: 10),
-                  Flexible(
-                    child: Text(
-                      status,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Cyber.display(
-                        16,
-                        color: accent,
-                        letterSpacing: 1.5,
-                      ),
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    border: Border.all(
+                      color: accent.withValues(alpha: 0.6),
+                      width: 1.4,
                     ),
+                    boxShadow: stampPulse > 0.01
+                        ? [
+                            BoxShadow(
+                              color: accent.withValues(
+                                alpha: 0.35 * stampPulse,
+                              ),
+                              blurRadius: 20,
+                            ),
+                          ]
+                        : null,
                   ),
-                ],
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        attacking ? Icons.sports_soccer : Icons.shield,
+                        color: accent,
+                        size: 22,
+                      ),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Text(
+                          status,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Cyber.display(
+                            16,
+                            color: accent,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Scale + fade pop-in for the bonus chips (overshoot handled by the curve).
+class _ChipPop extends StatelessWidget {
+  const _ChipPop({required this.t, required this.child});
+
+  final double t;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: t.clamp(0.0, 1.0),
+      child: Transform.scale(scale: 0.75 + 0.25 * t, child: child),
+    );
+  }
+}
+
+/// Headline that decodes left→right: revealed characters are final, the rest
+/// flicker through glitch glyphs (spaces stay fixed so layout barely shifts).
+class _DecryptText extends StatelessWidget {
+  const _DecryptText({
+    required this.text,
+    required this.t,
+    required this.style,
+    this.textAlign,
+    this.maxLines,
+  });
+
+  final String text;
+  final double t;
+  final TextStyle style;
+  final TextAlign? textAlign;
+  final int? maxLines;
+
+  static const _glyphs = r'#$%&@!?<>/\=+*';
+
+  @override
+  Widget build(BuildContext context) {
+    String shown;
+    if (t >= 1) {
+      shown = text;
+    } else {
+      final revealed = (t * text.length).floor();
+      // Quantised seed → glyphs flicker every few frames, not every frame.
+      final rng = Random((t * 12).floor() * 131 + text.length);
+      final buf = StringBuffer();
+      for (var i = 0; i < text.length; i++) {
+        final ch = text[i];
+        buf.write(
+          i < revealed || ch == ' ' ? ch : _glyphs[rng.nextInt(_glyphs.length)],
+        );
+      }
+      shown = buf.toString();
+    }
+    return Text(
+      shown,
+      textAlign: textAlign,
+      maxLines: maxLines,
+      overflow: TextOverflow.ellipsis,
+      style: style,
     );
   }
 }
@@ -2389,30 +2333,6 @@ class _CountdownRingPainter extends CustomPainter {
       oldDelegate.scan != scan || oldDelegate.accent != accent;
 }
 
-class _ScenarioGridPainter extends CustomPainter {
-  const _ScenarioGridPainter(this.accent);
-
-  final Color accent;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = accent.withValues(alpha: 0.035)
-      ..strokeWidth = 0.8;
-    const gap = 22.0;
-    for (double x = 0; x <= size.width; x += gap) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    for (double y = 0; y <= size.height; y += gap) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_ScenarioGridPainter oldDelegate) =>
-      oldDelegate.accent != accent;
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Match-phase entrance animators
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2573,14 +2493,48 @@ class _DealtCardState extends State<_DealtCard>
   }
 }
 
-class PlayPhase extends StatelessWidget {
+class PlayPhase extends StatefulWidget {
   const PlayPhase({required this.state, required this.onQuit, super.key});
 
   final GameState state;
   final VoidCallback onQuit;
 
   @override
+  State<PlayPhase> createState() => _PlayPhaseState();
+}
+
+class _PlayPhaseState extends State<PlayPhase> {
+  final _powerKey = GlobalKey();
+  final _playersKey = GlobalKey();
+  final _actionsKey = GlobalKey();
+
+  List<SpotlightStep> get _spotlightSteps => [
+    SpotlightStep(
+      targetKey: _powerKey,
+      title: 'Power Preview',
+      body: 'OVR + action + bonus. Timing adds up to +20.',
+      icon: Icons.bolt,
+      accent: Cyber.gold,
+    ),
+    SpotlightStep(
+      targetKey: _playersKey,
+      title: 'Player Card',
+      body: 'Pick one player. OVR is base power.',
+      icon: Icons.person,
+      accent: Cyber.cyan,
+    ),
+    SpotlightStep(
+      targetKey: _actionsKey,
+      title: 'Action Card',
+      body: 'Pick one action for your role.',
+      icon: Icons.style,
+      accent: Cyber.magenta,
+    ),
+  ];
+
+  @override
   Widget build(BuildContext context) {
+    final state = widget.state;
     final playerPool = state.playerAttacking
         ? state.deckAttackers
         : state.deckDefenders;
@@ -2605,34 +2559,37 @@ class PlayPhase extends StatelessWidget {
         : state.currentScenario?.defenseBonus ?? 0;
     final selectedAction = state.selectedActionCard;
     final isRisky = selectedAction?.risky ?? false;
-    // Power floor (swing 0) — the Shot Meter lands the player anywhere up to
-    // floor + 20. The preview shows this as an honest range, not a fake total.
     final basePower = !hasCompleteSelection
         ? null
-        : state.selectedPlayerCard!.rating + selectedAction!.power + scenarioBonus;
-    // Honest success odds (goal when attacking, stop when defending), computed
-    // from the same thresholds the engine resolves with.
+        : state.selectedPlayerCard!.rating +
+              selectedAction!.power +
+              scenarioBonus;
     final successChance = basePower == null
         ? null
         : _playerSuccessChance(state, basePower.toDouble());
     final chanceLabel = state.playerAttacking ? 'GOAL CHANCE' : 'STOP CHANCE';
-    final chancePct = successChance == null ? null : (successChance * 100).round();
+    final chancePct = successChance == null
+        ? null
+        : (successChance * 100).round();
+    final roundOne = state.currentRound == 1;
+
     return MatchPhaseScaffold(
       title: 'Round ${max(1, state.currentRound)}',
       subtitle: state.currentScenario?.title ?? '// Play Protocol',
       state: state,
-      onQuit: onQuit,
-      tutorialKey: 'play',
-      tutorialSteps: playTutorialSteps,
+      onQuit: widget.onQuit,
+      spotlightKey: roundOne ? 'play' : null,
+      spotlightSteps: roundOne ? _spotlightSteps : const [],
+      spotlightEnabled: roundOne,
+      spotlightDelay: const Duration(milliseconds: 700),
       bottomAction: hasCompleteSelection
           ? BottomLockButton(
               label: lockLabel,
-              helper: '$chancePct% ${state.playerAttacking ? 'GOAL' : 'STOP'} · TAP TO STRIKE',
+              helper:
+                  '$chancePct% ${state.playerAttacking ? 'GOAL' : 'STOP'} · TAP TO STRIKE',
               accent: roleAccent,
               onPressed: () async {
                 final bloc = context.read<GameBloc>();
-                // Reduced motion: skip the timed meter, fall back to the engine's
-                // random swing.
                 if (MediaQuery.of(context).disableAnimations) {
                   bloc.add(MovePlayed());
                   return;
@@ -2661,33 +2618,42 @@ class PlayPhase extends StatelessWidget {
         ),
         _SlideUpFadeIn(
           delay: const Duration(milliseconds: 90),
-          child: PowerPreviewBar(
-            player: state.selectedPlayerCard,
-            action: state.selectedActionCard,
-            bonus: scenarioBonus,
-            total: basePower,
-            maxPower: basePower == null ? null : basePower + 20,
-            attacking: state.playerAttacking,
-            accent: roleAccent,
+          child: SpotlightTarget(
+            spotlightKey: _powerKey,
+            child: PowerPreviewBar(
+              player: state.selectedPlayerCard,
+              action: state.selectedActionCard,
+              bonus: scenarioBonus,
+              total: basePower,
+              maxPower: basePower == null ? null : basePower + 20,
+              attacking: state.playerAttacking,
+              accent: roleAccent,
+            ),
           ),
         ),
-        DefenderDeckGrid(
-          title: sectionLabel,
-          cards: playerPool,
-          selectedId: state.selectedPlayerCard?.id,
-          redCardedIds: state.redCardedCards,
-          attacking: state.playerAttacking,
-          accent: roleAccent,
-          onSelect: (card) =>
-              context.read<GameBloc>().add(PlayerSelected(card)),
+        SpotlightTarget(
+          spotlightKey: _playersKey,
+          child: DefenderDeckGrid(
+            title: sectionLabel,
+            cards: playerPool,
+            selectedId: state.selectedPlayerCard?.id,
+            redCardedIds: state.redCardedCards,
+            attacking: state.playerAttacking,
+            accent: roleAccent,
+            onSelect: (card) =>
+                context.read<GameBloc>().add(PlayerSelected(card)),
+          ),
         ),
-        ActionCardRail(
-          cards: availableActions,
-          selectedId: state.selectedActionCard?.id,
-          usedIds: state.usedActionCards,
-          accent: roleAccent,
-          onSelect: (card) =>
-              context.read<GameBloc>().add(ActionSelected(card)),
+        SpotlightTarget(
+          spotlightKey: _actionsKey,
+          child: ActionCardRail(
+            cards: availableActions,
+            selectedId: state.selectedActionCard?.id,
+            usedIds: state.usedActionCards,
+            accent: roleAccent,
+            onSelect: (card) =>
+                context.read<GameBloc>().add(ActionSelected(card)),
+          ),
         ),
       ],
     );
@@ -2984,6 +2950,10 @@ class _PlaySelectionBackdrop extends StatelessWidget {
     required this.accent,
     required this.child,
     this.pitchHalf,
+    this.showTint = true,
+    this.horizontalPadding = _listPadding,
+    this.topPadding = 14,
+    this.bottomPadding = 14,
   });
 
   static const _listPadding = 16.0;
@@ -2992,51 +2962,56 @@ class _PlaySelectionBackdrop extends StatelessWidget {
   final Color accent;
   final Widget child;
   final PitchHalf? pitchHalf;
+  final bool showTint;
+  final double horizontalPadding;
+  final double topPadding;
+  final double bottomPadding;
 
   @override
   Widget build(BuildContext context) {
+    // Must match [MatchPhaseScaffold] ListView horizontal padding (16).
     final screenW = MediaQuery.sizeOf(context).width;
     return LayoutBuilder(
       builder: (context, constraints) {
         final sideInset = (screenW - constraints.maxWidth) / 2;
-        return Transform.translate(
-          offset: Offset(-sideInset, 0),
-          child: SizedBox(
-            width: screenW,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: ClipRect(
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        if (pitchHalf != null)
-                          PitchHalfBackground(half: pitchHalf!)
-                        else
-                          ColoredBox(
-                            color: bright
-                                ? accent.withValues(alpha: 0.18)
-                                : accent.withValues(alpha: 0.12),
-                          ),
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            if (showTint)
+              Positioned(
+                left: -sideInset,
+                right: -sideInset,
+                top: 0,
+                bottom: 0,
+                child: ClipRect(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (pitchHalf != null)
+                        PitchHalfBackground(half: pitchHalf!)
+                      else
                         ColoredBox(
-                          color: accent.withValues(alpha: bright ? 0.08 : 0.05),
+                          color: bright
+                              ? accent.withValues(alpha: 0.18)
+                              : accent.withValues(alpha: 0.12),
                         ),
-                      ],
-                    ),
+                      ColoredBox(
+                        color: accent.withValues(alpha: bright ? 0.08 : 0.05),
+                      ),
+                    ],
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    _listPadding,
-                    14,
-                    _listPadding,
-                    14,
-                  ),
-                  child: child,
-                ),
-              ],
+              ),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                horizontalPadding,
+                topPadding,
+                horizontalPadding,
+                bottomPadding,
+              ),
+              child: child,
             ),
-          ),
+          ],
         );
       },
     );
@@ -3072,34 +3047,48 @@ class ActionCardRail extends StatelessWidget {
           offset: 18,
           child: _PlaySectionHeading('SELECT AN ACTION', color: accent),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 4),
         _PlaySelectionBackdrop(
           bright: false,
           accent: accent,
+          showTint: false,
+          horizontalPadding: 0,
+          topPadding: 0,
+          bottomPadding: 0,
           child: SizedBox(
-            height: 158,
+            // lg tile (148) × selection scale (1.12) + hard shadow (6) + lift (5).
+            height: 188,
             child: ListView.separated(
+              clipBehavior: Clip.none,
               scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 14),
               itemCount: cards.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 12),
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
                 final card = cards[index];
                 final used = usedIds.contains(card.id);
-                return _DealtCard(
-                  key: ValueKey('action-${card.id}'),
-                  index: index,
-                  initialDelay: railBaseDelay + const Duration(milliseconds: 80),
-                  staggerMs: 65,
-                  flyDistance: 200,
-                  duration: const Duration(milliseconds: 480),
-                  child: CyberActionCardTile(
-                    card: card,
-                    selected: selectedId == card.id,
-                    disabled: used,
-                    disabledLabel: 'USED',
-                    size: VisualCardSize.lg,
-                    selectedAccent: accent,
-                    onTap: used ? null : () => onSelect(card),
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: _DealtCard(
+                      key: ValueKey('action-${card.id}'),
+                      index: index,
+                      initialDelay:
+                          railBaseDelay + const Duration(milliseconds: 80),
+                      staggerMs: 65,
+                      flyDistance: 200,
+                      duration: const Duration(milliseconds: 480),
+                      child: CyberActionCardTile(
+                        card: card,
+                        selected: selectedId == card.id,
+                        disabled: used,
+                        disabledLabel: 'USED',
+                        size: VisualCardSize.lg,
+                        selectedAccent: accent,
+                        onTap: used ? null : () => onSelect(card),
+                      ),
+                    ),
                   ),
                 );
               },
@@ -3251,6 +3240,19 @@ class _ShotMeterOverlayState extends State<ShotMeterOverlay>
   static const double _sweetCenter = 0.72;
   static const double _halfZone = 0.07;
 
+  final _meterKey = GlobalKey();
+
+  List<SpotlightStep> get _spotlightSteps => [
+    SpotlightStep(
+      targetKey: _meterKey,
+      title: 'Shot Meter',
+      body: 'Tap in the sweet zone for up to +20 power.',
+      icon: Icons.speed,
+      accent: widget.accent,
+      padding: 10,
+    ),
+  ];
+
   late final AnimationController _sweep;
   bool _struck = false;
   double _frozenAt = 0;
@@ -3263,9 +3265,11 @@ class _ShotMeterOverlayState extends State<ShotMeterOverlay>
     super.initState();
     _sweep =
         AnimationController(
-          vsync: this,
-          duration: const Duration(milliseconds: 900),
-        )..addListener(_onSweep)..repeat(reverse: true);
+            vsync: this,
+            duration: const Duration(milliseconds: 900),
+          )
+          ..addListener(_onSweep)
+          ..repeat(reverse: true);
     // Build tension the moment the meter appears.
     playSound(SoundEffect.riser);
   }
@@ -3273,7 +3277,10 @@ class _ShotMeterOverlayState extends State<ShotMeterOverlay>
   void _onSweep() {
     if (_struck) return;
     // Escalating tick as the marker closes on the sweet zone.
-    final near = (1 - (_sweep.value - _sweetCenter).abs() / 0.5).clamp(0.0, 1.0);
+    final near = (1 - (_sweep.value - _sweetCenter).abs() / 0.5).clamp(
+      0.0,
+      1.0,
+    );
     if (near > 0.55) {
       final bucket = (near * 6).floor();
       if (bucket != _lastTickBucket) {
@@ -3336,110 +3343,122 @@ class _ShotMeterOverlayState extends State<ShotMeterOverlay>
     final pct = (widget.successChance * 100).round();
     final minP = widget.base.round();
     final maxP = (widget.base + 20).round();
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: _strike,
-      child: SafeArea(
-        child: Align(
-          alignment: const Alignment(0, 0.55),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: AngularBorderContainer(
-              accent: widget.accent,
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.end,
+    return Stack(
+      children: [
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _strike,
+          child: SafeArea(
+            child: Align(
+              alignment: const Alignment(0, 0.55),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: AngularBorderContainer(
+                  accent: widget.accent,
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.chanceLabel,
-                            style: Cyber.label(
-                              10,
-                              color: widget.accent,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text('$pct%', style: Cyber.display(28)),
-                        ],
-                      ),
-                      Column(
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text(
-                            'POWER',
-                            style: Cyber.label(
-                              10,
-                              color: Cyber.muted,
-                              letterSpacing: 1.2,
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.chanceLabel,
+                                style: Cyber.label(
+                                  10,
+                                  color: widget.accent,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text('$pct%', style: Cyber.display(28)),
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '$minP–$maxP',
-                            style: Cyber.display(22, color: Cyber.gold),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                'POWER',
+                                style: Cyber.label(
+                                  10,
+                                  color: Cyber.muted,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '$minP–$maxP',
+                                style: Cyber.display(22, color: Cyber.gold),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
-                  SizedBox(
-                    height: 30,
-                    width: double.infinity,
-                    child: AnimatedBuilder(
-                      animation: _sweep,
-                      builder: (context, _) => CustomPaint(
-                        painter: _ShotMeterPainter(
-                          progress: _struck ? _frozenAt : _sweep.value,
-                          sweetCenter: _sweetCenter,
-                          halfZone: _halfZone,
-                        ),
-                        child: const SizedBox.expand(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (_struck)
-                    Text(
-                      _tier == 'EARLY' || _tier == 'LATE'
-                          ? '$_tier   +$_surge'
-                          : '$_tier!   +$_surge POWER',
-                      style: Cyber.display(20, color: _resultColor),
-                    )
-                  else ...[
-                    Text(
-                      '— TAP TO STRIKE —',
-                      style: Cyber.label(
-                        13,
-                        color: widget.accent,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                    if (widget.isRisky) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        'RISKY ACTION · 12% FOUL',
-                        style: Cyber.label(
-                          9,
-                          color: Cyber.danger,
-                          letterSpacing: 1.5,
+                      const SizedBox(height: 18),
+                      SpotlightTarget(
+                        spotlightKey: _meterKey,
+                        child: SizedBox(
+                          height: 30,
+                          width: double.infinity,
+                          child: AnimatedBuilder(
+                            animation: _sweep,
+                            builder: (context, _) => CustomPaint(
+                              painter: _ShotMeterPainter(
+                                progress: _struck ? _frozenAt : _sweep.value,
+                                sweetCenter: _sweetCenter,
+                                halfZone: _halfZone,
+                              ),
+                              child: const SizedBox.expand(),
+                            ),
+                          ),
                         ),
                       ),
+                      const SizedBox(height: 16),
+                      if (_struck)
+                        Text(
+                          _tier == 'EARLY' || _tier == 'LATE'
+                              ? '$_tier   +$_surge'
+                              : '$_tier!   +$_surge POWER',
+                          style: Cyber.display(20, color: _resultColor),
+                        )
+                      else ...[
+                        Text(
+                          '— TAP TO STRIKE —',
+                          style: Cyber.label(
+                            13,
+                            color: widget.accent,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                        if (widget.isRisky) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            'RISKY ACTION · 12% FOUL',
+                            style: Cyber.label(
+                              9,
+                              color: Cyber.danger,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                        ],
+                      ],
                     ],
-                  ],
-                ],
+                  ),
+                ),
               ),
             ),
           ),
         ),
-      ),
+        SpotlightTutorial(
+          keyName: 'shot-meter',
+          steps: _spotlightSteps,
+          startDelay: const Duration(milliseconds: 420),
+        ),
+      ],
     );
   }
 }
@@ -3605,17 +3624,38 @@ class RoundResultPhase extends StatefulWidget {
 
 class _RoundResultPhaseState extends State<RoundResultPhase> {
   bool _cinematicDone = false;
+  final _arenaKey = GlobalKey();
+  final _countdownKey = GlobalKey<_NextRoundCountdownState>();
+
+  List<SpotlightStep> get _spotlightSteps => [
+    SpotlightStep(
+      targetKey: _arenaKey,
+      title: 'Round Result',
+      body: 'Goal, Saved, Blocked, Missed, Foul, or Red Card.',
+      icon: Icons.sports_soccer,
+      accent: Cyber.cyan,
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final result = widget.state.roundResults.last;
+    final roundOne = result.round == 1;
+    final walkthroughMatch =
+        roundOne &&
+        !context.watch<GameBloc>().state.tutorialSeen.contains('round-result');
     return MatchPhaseScaffold(
       title: 'Round ${result.round} // Result',
       subtitle: '// Resolution Log',
       state: widget.state,
       onQuit: widget.onQuit,
-      tutorialKey: 'round-result',
-      tutorialSteps: resultTutorialSteps,
+      spotlightKey: walkthroughMatch ? 'round-result' : null,
+      spotlightSteps: walkthroughMatch ? _spotlightSteps : const [],
+      spotlightEnabled: walkthroughMatch && _cinematicDone,
+      spotlightDelay: const Duration(milliseconds: 350),
+      spotlightOnComplete: () => _countdownKey.currentState?.beginCountdown(),
+      spotlightCardAnchor: SpotlightCardAnchor.bottom,
+      spotlightCardBottomInset: 24,
       bottomAction: widget.state.currentRound >= 4
           ? CyberCtaButton(
               label: 'Full-Time Result',
@@ -3624,11 +3664,16 @@ class _RoundResultPhaseState extends State<RoundResultPhase> {
             )
           : null,
       children: [
-        RoundClashArena(
-          result: result,
-          onComplete: () {
-            if (mounted) setState(() => _cinematicDone = true);
-          },
+        SpotlightTarget(
+          spotlightKey: _arenaKey,
+          child: RoundClashArena(
+            result: result,
+            playerScore: widget.state.playerScore,
+            opponentScore: widget.state.opponentScore,
+            onComplete: () {
+              if (mounted) setState(() => _cinematicDone = true);
+            },
+          ),
         ),
         if (widget.state.currentRound < 4)
           AnimatedOpacity(
@@ -3636,6 +3681,8 @@ class _RoundResultPhaseState extends State<RoundResultPhase> {
             duration: const Duration(milliseconds: 400),
             child: _cinematicDone
                 ? _NextRoundCountdown(
+                    key: _countdownKey,
+                    deferCountdown: walkthroughMatch,
                     onComplete: () =>
                         context.read<GameBloc>().add(RoundAdvanced()),
                   )
@@ -3647,9 +3694,14 @@ class _RoundResultPhaseState extends State<RoundResultPhase> {
 }
 
 class _NextRoundCountdown extends StatefulWidget {
-  const _NextRoundCountdown({required this.onComplete});
+  const _NextRoundCountdown({
+    required this.onComplete,
+    this.deferCountdown = false,
+    super.key,
+  });
 
   final VoidCallback onComplete;
+  final bool deferCountdown;
 
   @override
   State<_NextRoundCountdown> createState() => _NextRoundCountdownState();
@@ -3657,10 +3709,19 @@ class _NextRoundCountdown extends StatefulWidget {
 
 class _NextRoundCountdownState extends State<_NextRoundCountdown> {
   int _seconds = 3;
+  bool _started = false;
 
   @override
   void initState() {
     super.initState();
+    if (!widget.deferCountdown) {
+      beginCountdown();
+    }
+  }
+
+  void beginCountdown() {
+    if (_started) return;
+    _started = true;
     _tick();
   }
 
@@ -3678,280 +3739,22 @@ class _NextRoundCountdownState extends State<_NextRoundCountdown> {
     return Column(
       children: [
         Text(
-          _seconds > 0 ? '$_seconds' : 'Go!',
-          style: const TextStyle(
+          'NEXT ROUND // ${_seconds > 0 ? '0$_seconds' : 'GO'}',
+          style: Cyber.label(
+            12,
+            color: Cyber.muted,
+            letterSpacing: 2.2,
+          ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          _seconds > 0 ? '$_seconds' : 'GO!',
+          style: Cyber.display(
+            44,
             color: Cyber.cyan,
-            fontFamily: 'Orbitron',
-            fontWeight: FontWeight.w900,
-            fontSize: 48,
             letterSpacing: 4,
-          ),
+          ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
         ),
-        const SizedBox(height: 4),
-        const Text(
-          'Next round starting...',
-          style: TextStyle(color: Cyber.line, fontSize: 13),
-        ),
-      ],
-    );
-  }
-}
-
-class MatchEndPhase extends StatefulWidget {
-  const MatchEndPhase({required this.state, required this.onQuit, super.key});
-
-  final GameState state;
-  final VoidCallback onQuit;
-
-  @override
-  State<MatchEndPhase> createState() => _MatchEndPhaseState();
-}
-
-class _MatchEndPhaseState extends State<MatchEndPhase>
-    with TickerProviderStateMixin {
-  static const int _penaltyCountdownSeconds = 5;
-  late int _seconds;
-  late final AnimationController _scanner;
-  late final AnimationController _bannerCtrl;
-  late final AnimationController _scoreCtrl;
-  late final AnimationController _shakeCtrl;
-  bool _fired = false;
-
-  bool get _tied => widget.state.playerScore == widget.state.opponentScore;
-
-  @override
-  void initState() {
-    super.initState();
-    _seconds = _penaltyCountdownSeconds;
-    _scanner = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1800),
-    )..repeat();
-
-    _bannerCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-    _scoreCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-    _shakeCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-
-    _bannerCtrl.forward();
-    // The full-time whistle beat — punch the result banner in with weight.
-    playSound(SoundEffect.bannerSlam);
-    HapticFeedback.mediumImpact();
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (mounted) _scoreCtrl.forward();
-    });
-
-    final won = widget.state.playerScore > widget.state.opponentScore;
-    if (!won && !_tied) {
-      Future.delayed(const Duration(milliseconds: 1200), () {
-        if (mounted) _shakeCtrl.forward();
-      });
-    }
-
-    if (_tied) {
-      // Deadlock → shootout: rising tension under the countdown.
-      playSound(SoundEffect.riser);
-      _tick();
-    }
-  }
-
-  Future<void> _tick() async {
-    for (var i = _penaltyCountdownSeconds; i > 0; i--) {
-      await Future<void>.delayed(const Duration(seconds: 1));
-      if (!mounted || _fired) return;
-      setState(() => _seconds = i - 1);
-      playSound(SoundEffect.countdownTick);
-    }
-    if (!mounted || _fired) return;
-    _fired = true;
-    context.read<GameBloc>().add(PenaltyStarted());
-  }
-
-  @override
-  void dispose() {
-    _scanner.dispose();
-    _bannerCtrl.dispose();
-    _scoreCtrl.dispose();
-    _shakeCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tied = _tied;
-    final won = widget.state.playerScore > widget.state.opponentScore;
-    final title = tied ? 'DEADLOCK' : (won ? 'VICTORY' : 'DEFEAT');
-    final accent = tied ? Cyber.amber : (won ? Cyber.success : Cyber.danger);
-    return MatchPhaseScaffold(
-      title: 'Full Time',
-      subtitle: '// Match Archive',
-      state: widget.state,
-      onQuit: widget.onQuit,
-      tutorialKey: 'match-end',
-      tutorialSteps: matchEndTutorialSteps,
-      bottomAction: tied
-          ? null
-          : CyberCtaButton(
-              label: 'Finish Match',
-              primary: true,
-              onPressed: () => context.read<GameBloc>().add(MatchFinished()),
-            ),
-      children: [
-        const SizedBox(height: 8),
-        // Outcome banner with animation.
-        ScaleTransition(
-          scale: Tween<double>(begin: 0, end: 1).animate(
-            CurvedAnimation(parent: _bannerCtrl, curve: Curves.easeOutBack),
-          ),
-          child: SlideTransition(
-            position:
-                Tween<Offset>(
-                  begin: const Offset(0, -0.3),
-                  end: Offset.zero,
-                ).animate(
-                  CurvedAnimation(
-                    parent: _bannerCtrl,
-                    curve: Curves.easeOutBack,
-                  ),
-                ),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.12),
-                border: Border.all(color: accent, width: 1.5),
-                boxShadow: [
-                  BoxShadow(
-                    color: accent.withValues(alpha: 0.3),
-                    blurRadius: 24,
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  ScaleTransition(
-                    scale: Tween<double>(begin: 0, end: 1).animate(
-                      CurvedAnimation(
-                        parent: _bannerCtrl,
-                        curve: Curves.elasticOut,
-                      ),
-                    ),
-                    child: Icon(
-                      tied
-                          ? Icons.balance
-                          : (won
-                                ? Icons.emoji_events
-                                : Icons.sentiment_dissatisfied),
-                      color: accent,
-                      size: 36,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    title,
-                    style: Cyber.display(40, color: accent, letterSpacing: 4),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 4),
-        // Giant scoreline with bounce animation and shake for defeat.
-        AnimatedBuilder(
-          animation: Listenable.merge([_scoreCtrl, _shakeCtrl]),
-          builder: (_, _) {
-            final scoreScale = Tween<double>(begin: 0.5, end: 1)
-                .animate(
-                  CurvedAnimation(
-                    parent: _scoreCtrl,
-                    curve: Curves.easeOutBack,
-                  ),
-                )
-                .value;
-
-            final shakeOffset = won || tied
-                ? 0.0
-                : Tween<double>(begin: -8, end: 8)
-                      .animate(
-                        CurvedAnimation(
-                          parent: _shakeCtrl,
-                          curve: Curves.elasticInOut,
-                        ),
-                      )
-                      .value;
-
-            return Transform.translate(
-              offset: Offset(shakeOffset, 0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Transform.scale(
-                    scale: scoreScale,
-                    child: Text(
-                      '${widget.state.playerScore}',
-                      style: Cyber.display(72, color: Cyber.cyan),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      '-',
-                      style: Cyber.display(48, color: Cyber.muted),
-                    ),
-                  ),
-                  Transform.scale(
-                    scale: scoreScale,
-                    child: Text(
-                      '${widget.state.opponentScore}',
-                      style: Cyber.display(72, color: Cyber.danger),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-        if (tied) ...[
-          const Padding(
-            padding: EdgeInsets.only(top: 4),
-            child: Text(
-              'The match is level - settle it from the spot.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Cyber.muted, fontSize: 12),
-            ),
-          ),
-          const SizedBox(height: 14),
-          Center(
-            child: CountdownRing(
-              seconds: _seconds,
-              scanner: _scanner,
-              accent: accent,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Center(
-            child: Text(
-              'Penalty shootout starting...',
-              textAlign: TextAlign.center,
-              style: Cyber.body(
-                12,
-                color: accent.withValues(alpha: 0.7),
-                weight: FontWeight.w700,
-                letterSpacing: 0.4,
-              ),
-            ),
-          ),
-        ],
       ],
     );
   }
@@ -4061,7 +3864,6 @@ class _MatchIntroPhaseState extends State<MatchIntroPhase>
 
   // ── Stage 0: cinematic reveal ──────────────────────────────────────────────
   Widget _buildReveal(BuildContext context) {
-    final gridIn = _rv(0.00, 0.30);
     final scanLine = _rv(0.08, 0.64);
     final titleIn = _rv(0.22, 0.52, curve: Curves.easeOutCubic);
     final subtitleIn = _rv(0.40, 0.70);
@@ -4071,8 +3873,6 @@ class _MatchIntroPhaseState extends State<MatchIntroPhase>
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Subtle grid
-        CustomPaint(painter: _GridPainter(gridIn)),
         // Horizontal scan sweep
         Positioned(
           top: screenH * scanLine,
@@ -4201,7 +4001,6 @@ class _MatchIntroPhaseState extends State<MatchIntroPhase>
     return Stack(
       fit: StackFit.expand,
       children: [
-        CustomPaint(painter: _GridPainter(0.55)),
         Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -4256,7 +4055,6 @@ class _MatchIntroPhaseState extends State<MatchIntroPhase>
     return Stack(
       fit: StackFit.expand,
       children: [
-        CustomPaint(painter: _GridPainter(0.55)),
         // Flash overlay
         Container(color: Cyber.lime.withValues(alpha: flash.clamp(0.0, 1.0))),
         Center(
@@ -4351,27 +4149,4 @@ class _VsBadge extends StatelessWidget {
       ),
     );
   }
-}
-
-class _GridPainter extends CustomPainter {
-  const _GridPainter(this.opacity);
-
-  final double opacity;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (opacity <= 0) return;
-    final paint = Paint()
-      ..color = Cyber.cyan.withValues(alpha: 0.07 * opacity)
-      ..strokeWidth = 0.5;
-    for (var x = 0.0; x <= size.width; x += 30) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    for (var y = 0.0; y <= size.height; y += 30) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _GridPainter old) => old.opacity != opacity;
 }

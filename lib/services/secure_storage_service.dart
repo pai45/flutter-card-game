@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/deck.dart';
 import '../models/match.dart';
+import '../models/picks.dart';
 import '../models/prediction.dart';
 import '../models/progression.dart';
 
@@ -69,6 +70,7 @@ class SecureGameStorage {
   static const _progressionKey = 'pd_progression_v1';
   static const _walletKey = 'pitch_duel_wallet';
   static const _predictionsKey = 'pd_predictions_v1';
+  static const _pickPositionsKey = 'pd_pick_positions_v1';
   static const _selectedAvatarKey = 'pd_selected_avatar_v1';
 
   final FlutterSecureStorage _storage;
@@ -194,6 +196,26 @@ class SecureGameStorage {
     await _storage.write(
       key: _predictionsKey,
       value: jsonEncode(predictions.map((p) => p.toJson()).toList()),
+    );
+  }
+
+  Future<List<PickPosition>> loadPickPositions() async {
+    try {
+      final raw = await _storage.read(key: _pickPositionsKey);
+      if (raw == null || raw.isEmpty) return const [];
+      final data = jsonDecode(raw) as List;
+      return data
+          .map((item) => PickPosition.fromJson(Map<String, dynamic>.from(item)))
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<void> savePickPositions(List<PickPosition> positions) async {
+    await _storage.write(
+      key: _pickPositionsKey,
+      value: jsonEncode(positions.map((p) => p.toJson()).toList()),
     );
   }
 

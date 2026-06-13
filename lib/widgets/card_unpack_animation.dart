@@ -1398,6 +1398,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
         builder: (_, child) {
           final pos = _shimmerCtrl!.value;
           return ShaderMask(
+            blendMode: BlendMode.srcIn,
             shaderCallback: (bounds) => LinearGradient(
               colors: [
                 Colors.transparent,
@@ -1410,7 +1411,6 @@ class _CardUnpackState extends State<CardUnpackAnimation>
                 (pos + 0.2).clamp(0.0, 1.0),
               ],
             ).createShader(bounds),
-            blendMode: BlendMode.srcATop,
             child: child,
           );
         },
@@ -1612,20 +1612,7 @@ class _BackgroundPainter extends CustomPainter {
         ).createShader(Rect.fromCircle(center: center, radius: radius)),
     );
 
-    // 2) Drifting grid — horizontals scroll downward for a sense of motion.
-    final gridPaint = Paint()
-      ..color = _kCyan.withValues(alpha: 0.05)
-      ..strokeWidth = 1;
-    const spacing = 46.0;
-    final drift = (t * spacing) % spacing;
-    for (double x = 0; x <= w; x += spacing) {
-      canvas.drawLine(Offset(x, 0), Offset(x, h), gridPaint);
-    }
-    for (double y = -spacing + drift; y <= h; y += spacing) {
-      canvas.drawLine(Offset(0, y), Offset(w, y), gridPaint);
-    }
-
-    // 3) Slow scanline sweep — a soft bright band travelling top→bottom.
+    // 2) Slow scanline sweep — a soft bright band travelling top→bottom.
     final sweepY = (t % 1.0) * (h + 120) - 60;
     final sweepRect = Rect.fromLTWH(0, sweepY - 60, w, 120);
     canvas.drawRect(

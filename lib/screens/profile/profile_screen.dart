@@ -3,12 +3,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_state.dart';
+import '../../blocs/picks/picks_cubit.dart';
 import '../../blocs/prediction/prediction_cubit.dart';
 import '../../blocs/prediction/prediction_state.dart';
 import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../models/avatar_option.dart';
-import '../../models/match.dart';
+import '../../models/picks.dart';
 import '../../services/secure_storage_service.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
@@ -16,11 +17,25 @@ import '../../widgets/player_level_badge.dart';
 import '../deck/all_cards_screen.dart';
 import '../deck/deck_builder_screen.dart';
 import '../how_to_play/how_to_play_screen.dart';
-import '../match_history/match_history_pages.dart';
 import '../predictions/prediction_match_history_screen.dart';
+import '../predictions/prediction_picks_history_screen.dart';
 
-/// PROFILE tab — player identity over two record cards: MY MATCHES (the
-/// prediction quiz) and MY PICKS (the Pitch Duel card game), followed by the
+/// Flat pastel fills for profile cards — a 10% accent wash over the panel base.
+abstract final class _ProfilePastel {
+  static const _tint = 0.10;
+
+  static Color _wash(Color accent, [Color base = Cyber.panel]) =>
+      Color.lerp(base, accent, _tint)!;
+
+  static final header = _wash(Cyber.cyan);
+
+  static Color section(Color accent) => _wash(accent);
+
+  static Color statTile(Color accent, int index) => _wash(accent, Cyber.panel2);
+}
+
+/// PROFILE tab — player identity over two record cards: MY MATCHES (matchday
+/// prediction quiz) and MY PICKS (Oz coin markets/events/futures), followed by the
 /// card-game utilities (deck builder, all cards, how to play) and settings.
 ///
 /// The layout mirrors the shared design: a banner-headed identity card, two
@@ -32,9 +47,8 @@ class ProfileScreen extends StatelessWidget {
 
   final ValueChanged<AppSection> onNavigate;
 
-  // Mirrors the player's standing in the (mock) leaderboard, where the current
-  // user sits at rank #12. Surfaced here as MY PICKS · CURRENT RANK.
-  static const int _leaderboardRank = 12;
+  // Mirrors the player's standing in the mock matchday leaderboard.
+  static const int _matchesRank = 122;
 
   @override
   Widget build(BuildContext context) {
@@ -42,9 +56,8 @@ class ProfileScreen extends StatelessWidget {
       backgroundColor: Cyber.bg,
       body: Stack(
         children: [
-          const Positioned.fill(
-            child: CyberPlainBackground(child: SizedBox.expand()),
-          ),
+          const Positioned.fill(child: ColoredBox(color: Cyber.bg)),
+          const Positioned.fill(child: CyberTextureOverlay()),
           SafeArea(
             child: BlocBuilder<GameBloc, GameState>(
               builder: (context, game) {
@@ -58,92 +71,107 @@ class ProfileScreen extends StatelessWidget {
                     final predAccuracy = totalPicks == 0
                         ? 0
                         : (correct / totalPicks * 100).round();
-
-                    final duelsPlayed = game.matchHistory.length;
-                    final duelWins = game.matchHistory.where(_isWin).length;
-                    final winRate = duelsPlayed == 0
+                    final picks = context.watch<PicksCubit>().state;
+                    final settledPicks = picks.positions.values
+                        .where(
+                          (p) =>
+                              p.status == PickPositionStatus.won ||
+                              p.status == PickPositionStatus.lost,
+                        )
+                        .toList();
+                    final wonPicks = settledPicks
+                        .where((p) => p.status == PickPositionStatus.won)
+                        .length;
+                    final pickAccuracy = settledPicks.isEmpty
                         ? 0
-                        : (duelWins / duelsPlayed * 100).round();
+                        : (wonPicks / settledPicks.length * 100).round();
 
                     return ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                      padding: const EdgeInsets.only(bottom: 24),
                       children: [
                         _IdentityHeader(game: game),
-                        const SizedBox(height: 14),
-                        _StatSection(
-                          title: 'MY MATCHES',
-                          accent: Cyber.violet,
-                          icon: const _CrossedSwords(size: 22),
-                          stats: [
-                            _Stat('MATCHES', '${pred.predictionsMade}'),
-                            _Stat('ACCURACY', '$predAccuracy%'),
-                            _Stat('PREDICTIONS', '$totalPicks'),
-                          ],
-                          onViewHistory: () =>
-                              showPredictionMatchHistory(context),
-                        ),
-                        const SizedBox(height: 14),
-                        _StatSection(
-                          title: 'MY PICKS',
-                          accent: Cyber.success,
-                          icon: const Icon(
-                            Icons.keyboard_double_arrow_up,
-                            color: Cyber.success,
-                            size: 22,
-                          ),
-                          stats: [
-                            _Stat('MATCHES', '$duelsPlayed'),
-                            _Stat('ACCURACY', '$winRate%'),
-                            _Stat('CURRENT RANK', '$_leaderboardRank'),
-                          ],
-                          onViewHistory: () => showMatchHistoryArchive(
-                            context,
-                            game.matchHistory,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        _NavRow(
-                          icon: Icons.dashboard_customize,
-                          label: 'Deck Builder',
-                          onTap: () => _push(
-                            context,
-                            (nav) => DeckBuilderScreen(onNavigate: nav),
-                          ),
-                        ),
-                        _NavRow(
-                          icon: Icons.style,
-                          label: 'All Cards',
-                          onTap: () => _push(
-                            context,
-                            (nav) => AllCardsScreen(onNavigate: nav),
-                          ),
-                        ),
-                        _NavRow(
-                          icon: Icons.menu_book,
-                          label: 'How To Play',
-                          onTap: () => _push(
-                            context,
-                            (nav) => HowToPlayScreen(onNavigate: nav),
-                          ),
-                        ),
-                        _NavRow(
-                          icon: Icons.bug_report,
-                          label: 'Report a Bug / Mismatch',
-                          onTap: () => _showBugReportDialog(context),
-                        ),
-                        _NavRow(
-                          icon: Icons.settings,
-                          label: 'Settings',
-                          onTap: () {
-                            ScaffoldMessenger.of(context)
-                              ..hideCurrentSnackBar()
-                              ..showSnackBar(
-                                const SnackBar(
-                                  content: Text('Settings coming soon'),
-                                  duration: Duration(seconds: 2),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                          child: Column(
+                            children: [
+                              _StatSection(
+                                title: 'MY MATCHES',
+                                accent: Cyber.violet,
+                                icon: const _CrossedSwords(size: 22),
+                                stats: [
+                                  _Stat('MATCHES', '${pred.predictionsMade}'),
+                                  _Stat('ACCURACY', '$predAccuracy%'),
+                                  _Stat('CURRENT RANK', '$_matchesRank'),
+                                ],
+                                onViewHistory: () =>
+                                    showPredictionMatchHistory(context),
+                              ),
+                              const SizedBox(height: 14),
+                              _StatSection(
+                                title: 'MY PICKS',
+                                accent: Cyber.success,
+                                icon: const Icon(
+                                  Icons.keyboard_double_arrow_up,
+                                  color: Cyber.success,
+                                  size: 22,
                                 ),
-                              );
-                          },
+                                stats: [
+                                  _Stat('PICKS', '${picks.positions.length}'),
+                                  _Stat('WIN RATE', '$pickAccuracy%'),
+                                  _Stat(
+                                    'ACTIVE',
+                                    '${picks.activePositionCount}',
+                                  ),
+                                ],
+                                onViewHistory: () =>
+                                    showPredictionPicksHistory(context),
+                              ),
+                              const SizedBox(height: 16),
+                              _NavRow(
+                                icon: Icons.dashboard_customize,
+                                label: 'Deck Builder',
+                                onTap: () => _push(
+                                  context,
+                                  (nav) => DeckBuilderScreen(onNavigate: nav),
+                                ),
+                              ),
+                              _NavRow(
+                                icon: Icons.style,
+                                label: 'All Cards',
+                                onTap: () => _push(
+                                  context,
+                                  (nav) => AllCardsScreen(onNavigate: nav),
+                                ),
+                              ),
+                              _NavRow(
+                                icon: Icons.menu_book,
+                                label: 'How To Play',
+                                onTap: () => _push(
+                                  context,
+                                  (nav) => HowToPlayScreen(onNavigate: nav),
+                                ),
+                              ),
+                              _NavRow(
+                                icon: Icons.bug_report,
+                                label: 'Report a Bug / Mismatch',
+                                onTap: () => _showBugReportDialog(context),
+                              ),
+                              _NavRow(
+                                icon: Icons.settings,
+                                label: 'Settings',
+                                onTap: () {
+                                  ScaffoldMessenger.of(context)
+                                    ..hideCurrentSnackBar()
+                                    ..showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Settings coming soon'),
+                                        duration: Duration(seconds: 2),
+                                      ),
+                                    );
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     );
@@ -186,13 +214,6 @@ class ProfileScreen extends StatelessWidget {
           duration: const Duration(seconds: 2),
         ),
       );
-  }
-
-  static bool _isWin(MatchHistoryEntry e) {
-    if (e.playerScore != e.opponentScore) {
-      return e.playerScore > e.opponentScore;
-    }
-    return (e.penaltyPlayerScore ?? 0) > (e.penaltyOpponentScore ?? 0);
   }
 
   void _push(
@@ -429,9 +450,8 @@ class _BugReportAction extends StatelessWidget {
 
 // ─── Identity header ──────────────────────────────────────────────────────────
 
-/// The banner-headed identity card: a glowing emblem strip that fades into the
-/// panel, the player avatar + level badge, and the player name. This is the one
-/// focal (glowing) surface on the screen, per the design glow rule.
+/// The banner-headed identity card: soft pastel header, avatar + level badge,
+/// and player name.
 class _IdentityHeader extends StatelessWidget {
   const _IdentityHeader({required this.game});
 
@@ -439,120 +459,98 @@ class _IdentityHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipPath(
-      clipper: CyberClipper(),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: Cyber.panelGradient(Cyber.cyan),
-          border: Border.all(color: Cyber.border),
-          boxShadow: Cyber.glow(Cyber.cyan, alpha: 0.16, blur: 20, spread: 1),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const _EmblemBanner(),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      _Avatar(),
-                      const Spacer(),
-                      PlayerLevelBadge(progression: game.progression),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    'PLAYER ONE',
-                    style: Cyber.display(24, letterSpacing: 1.2),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'LVL ${game.progression.playerLevel} · ${game.progression.totalXP} XP',
-                    style: Cyber.label(
-                      11,
-                      color: Cyber.muted,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ],
-              ),
+    return SizedBox(
+      width: double.infinity,
+      child: ClipPath(
+        clipper: CyberClipper(),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: _ProfilePastel.header,
+            border: Border(
+              bottom: BorderSide(color: Cyber.border),
             ),
-          ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const _EmblemBanner(),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const _Avatar(),
+                        const Spacer(),
+                        PlayerLevelBadge(
+                          progression: game.progression,
+                          flatStyle: true,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'PLAYER ONE',
+                      style: Cyber.display(24, letterSpacing: 1.2),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'LVL ${game.progression.playerLevel} · ${game.progression.totalXP} XP',
+                      style: Cyber.label(
+                        11,
+                        color: Cyber.muted,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// Decorative banner: a textured cyan→violet glow strip with a centred crest,
-/// fading into the card surface at the bottom.
+/// Full-bleed hero banner; bottom fades into the identity card body.
 class _EmblemBanner extends StatelessWidget {
   const _EmblemBanner();
 
+  static const _asset = 'assets/backgrounds/profile_banner.png';
+
   @override
   Widget build(BuildContext context) {
+    final mergeColor = _ProfilePastel.header;
     return SizedBox(
-      height: 116,
+      height: 148,
       width: double.infinity,
       child: Stack(
         fit: StackFit.expand,
         children: [
+          Image.asset(
+            _asset,
+            fit: BoxFit.cover,
+            alignment: Alignment.topCenter,
+          ),
           DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: const [0.35, 0.72, 1.0],
                 colors: [
-                  Cyber.violet.withValues(alpha: 0.28),
-                  Cyber.cyan.withValues(alpha: 0.10),
                   Colors.transparent,
+                  mergeColor.withValues(alpha: 0.55),
+                  mergeColor,
                 ],
-              ),
-            ),
-          ),
-          const Positioned.fill(child: CyberTextureOverlay(vignette: false)),
-          // Crest emblem, floated to the right like the reference.
-          const Align(alignment: Alignment(0.55, 0.0), child: _Crest()),
-          // Fade the banner into the card surface below it.
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: Container(
-              height: 64,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Cyber.panel2],
-                ),
               ),
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _Crest extends StatelessWidget {
-  const _Crest();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 64,
-      height: 64,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Cyber.bg.withValues(alpha: 0.5),
-        border: Border.all(color: Cyber.border),
-        boxShadow: Cyber.glow(Cyber.cyan, alpha: 0.3, blur: 18, spread: -4),
-      ),
-      child: const Icon(Icons.shield_moon, color: Cyber.cyan, size: 32),
     );
   }
 }
@@ -566,6 +564,7 @@ class _Avatar extends StatefulWidget {
 
 class _AvatarState extends State<_Avatar> {
   String? _selectedAvatarId;
+  final SecureGameStorage _storage = SecureGameStorage();
 
   @override
   void initState() {
@@ -574,25 +573,79 @@ class _AvatarState extends State<_Avatar> {
   }
 
   Future<void> _loadAvatar() async {
-    final avatarId = await SecureGameStorage().loadSelectedAvatarId();
+    final avatarId = await _storage.loadSelectedAvatarId();
     if (!mounted) return;
     setState(() => _selectedAvatarId = avatarId);
+  }
+
+  Future<void> _showAvatarPicker() async {
+    final selectedId = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => _AvatarEditScreen(initialAvatarId: _selectedAvatarId),
+      ),
+    );
+
+    if (selectedId == null) return;
+
+    await _storage.saveSelectedAvatarId(selectedId);
+    if (!mounted) return;
+    setState(() => _selectedAvatarId = selectedId);
   }
 
   @override
   Widget build(BuildContext context) {
     final avatar = avatarOptionById(_selectedAvatarId);
-    return Container(
-      width: 80,
-      height: 80,
-      decoration: BoxDecoration(
-        color: Cyber.panel,
-        border: Border.all(color: Cyber.border, width: 2),
-      ),
-      child: Image.asset(
-        avatar.assetPath,
-        fit: BoxFit.cover,
-        alignment: Alignment.topCenter,
+    return SizedBox(
+      width: 104,
+      height: 104,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            left: 0,
+            bottom: 0,
+            child: Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                color: Cyber.panel,
+                border: Border.all(color: Cyber.border, width: 2),
+              ),
+              child: Image.asset(
+                avatar.assetPath,
+                fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
+              ),
+            ),
+          ),
+          Positioned(
+            top: 0,
+            right: 0,
+            child: Tooltip(
+              message: 'Edit avatar',
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _showAvatarPicker,
+                  customBorder: const RoundedRectangleBorder(),
+                  splashColor: Cyber.cyan.withValues(alpha: 0.18),
+                  highlightColor: Cyber.cyan.withValues(alpha: 0.10),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Cyber.bg,
+                      border: Border.all(color: Cyber.cyan),
+                    ),
+                    child: const Icon(Icons.edit, color: Cyber.cyan, size: 16),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -600,6 +653,310 @@ class _AvatarState extends State<_Avatar> {
 
 // ─── Stat section (MY MATCHES / MY PICKS) ─────────────────────────────────────
 
+// Avatar editing screen.
+class _AvatarEditScreen extends StatefulWidget {
+  const _AvatarEditScreen({required this.initialAvatarId});
+
+  final String? initialAvatarId;
+
+  @override
+  State<_AvatarEditScreen> createState() => _AvatarEditScreenState();
+}
+
+class _AvatarEditScreenState extends State<_AvatarEditScreen> {
+  late String _selectedAvatarId;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedAvatarId = avatarOptionById(widget.initialAvatarId).id;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Cyber.bg,
+      body: Stack(
+        children: [
+          const Positioned.fill(child: ColoredBox(color: Cyber.bg)),
+          const Positioned.fill(child: CyberTextureOverlay()),
+          SafeArea(
+            child: Column(
+              children: [
+                Container(
+                  height: 64,
+                  padding: const EdgeInsets.only(left: 20, right: 8),
+                  decoration: const BoxDecoration(
+                    color: Cyber.panel,
+                    border: Border(
+                      bottom: BorderSide(color: Cyber.border),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'CHOOSE YOUR AVATAR',
+                          style: Cyber.display(19, letterSpacing: 1.1),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Close',
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close, color: Cyber.muted),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 460),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 22, 24, 104),
+                        child: GridView.builder(
+                          itemCount: avatarOptions.length,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                mainAxisSpacing: 16,
+                                crossAxisSpacing: 16,
+                                childAspectRatio: 1,
+                              ),
+                          itemBuilder: (context, index) {
+                            final avatar = avatarOptions[index];
+                            return _EditableAvatarTile(
+                              avatar: avatar,
+                              selected: avatar.id == _selectedAvatarId,
+                              onTap: () =>
+                                  setState(() => _selectedAvatarId = avatar.id),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            left: 24,
+            right: 24,
+            bottom: 18,
+            child: SafeArea(
+              top: false,
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 460),
+                  child: _AvatarTossCta(
+                    label: 'CONTINUE',
+                    onPressed: () =>
+                        Navigator.of(context).pop(_selectedAvatarId),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+const Color _avatarCtaCyan = Color(0xFF5CDFFF);
+const Color _avatarCtaInk = Color(0xFF0D111A);
+
+class _AvatarTossCta extends StatefulWidget {
+  const _AvatarTossCta({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  State<_AvatarTossCta> createState() => _AvatarTossCtaState();
+}
+
+class _AvatarTossCtaState extends State<_AvatarTossCta>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _press;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _press = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 110),
+    );
+    _scale = Tween<double>(
+      begin: 1.0,
+      end: 0.96,
+    ).animate(CurvedAnimation(parent: _press, curve: Curves.easeIn));
+  }
+
+  @override
+  void dispose() {
+    _press.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _press,
+      builder: (_, _) => Transform.scale(
+        scale: _scale.value,
+        child: GestureDetector(
+          onTapDown: (_) => _press.forward(),
+          onTapUp: (_) {
+            _press.reverse();
+            widget.onPressed();
+          },
+          onTapCancel: () => _press.reverse(),
+          child: ClipPath(
+            clipper: const _AvatarCtaClipper(),
+            child: Container(
+              width: double.infinity,
+              height: 52,
+              color: _avatarCtaCyan,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: 36,
+                    child: CustomPaint(painter: _AvatarCtaStripePainter()),
+                  ),
+                  Text(
+                    widget.label,
+                    style: Cyber.display(
+                      15,
+                      color: _avatarCtaInk,
+                      letterSpacing: 3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AvatarCtaClipper extends CustomClipper<Path> {
+  const _AvatarCtaClipper();
+
+  static const _cut = 10.0;
+
+  @override
+  Path getClip(Size size) => Path()
+    ..moveTo(_cut, 0)
+    ..lineTo(size.width - _cut, 0)
+    ..lineTo(size.width, _cut)
+    ..lineTo(size.width, size.height - _cut)
+    ..lineTo(size.width - _cut, size.height)
+    ..lineTo(_cut, size.height)
+    ..lineTo(0, size.height - _cut)
+    ..lineTo(0, _cut)
+    ..close();
+
+  @override
+  bool shouldReclip(_AvatarCtaClipper oldClipper) => false;
+}
+
+class _AvatarCtaStripePainter extends CustomPainter {
+  const _AvatarCtaStripePainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.22)
+      ..strokeWidth = 1.5;
+    const spacing = 6.0;
+    for (double x = 0; x < size.width + size.height; x += spacing) {
+      canvas.drawLine(
+        Offset(x, size.height),
+        Offset(x - size.height, 0),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_AvatarCtaStripePainter oldDelegate) => false;
+}
+
+class _EditableAvatarTile extends StatelessWidget {
+  const _EditableAvatarTile({
+    required this.avatar,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final AvatarOption avatar;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = selected ? Cyber.lime : Cyber.line;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: avatar.label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          decoration: BoxDecoration(
+            color: Cyber.panel,
+            border: Border.all(color: borderColor, width: selected ? 2 : 1),
+            boxShadow: selected
+                ? Cyber.glow(Cyber.lime, alpha: 0.18, blur: 14, spread: -2)
+                : null,
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.asset(
+                avatar.assetPath,
+                fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
+              ),
+              if (selected) const _EditableAvatarSelectedCorner(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EditableAvatarSelectedCorner extends StatelessWidget {
+  const _EditableAvatarSelectedCorner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.topLeft,
+      child: Container(
+        width: 30,
+        height: 30,
+        alignment: Alignment.center,
+        decoration: const BoxDecoration(color: Cyber.lime),
+        child: const Icon(Icons.check, color: Cyber.bg, size: 20),
+      ),
+    );
+  }
+}
+
+// Stat section (MY MATCHES / MY PICKS).
 class _Stat {
   const _Stat(this.label, this.value);
   final String label;
@@ -627,7 +984,7 @@ class _StatSection extends StatelessWidget {
       clipper: CyberClipper(),
       child: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: Cyber.panelGradient(accent),
+          color: _ProfilePastel.section(accent),
           border: Border.all(color: Cyber.border),
         ),
         child: Column(
@@ -664,7 +1021,11 @@ class _StatSection extends StatelessWidget {
                   for (var i = 0; i < stats.length; i++) ...[
                     if (i > 0) const SizedBox(width: 8),
                     Expanded(
-                      child: _StatTile(stat: stats[i], accent: accent),
+                      child: _StatTile(
+                        stat: stats[i],
+                        accent: accent,
+                        index: i,
+                      ),
                     ),
                   ],
                 ],
@@ -680,24 +1041,22 @@ class _StatSection extends StatelessWidget {
 }
 
 class _StatTile extends StatelessWidget {
-  const _StatTile({required this.stat, required this.accent});
+  const _StatTile({
+    required this.stat,
+    required this.accent,
+    required this.index,
+  });
 
   final _Stat stat;
   final Color accent;
+  final int index;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            accent.withValues(alpha: 0.16),
-            Cyber.bg.withValues(alpha: 0.4),
-          ],
-        ),
+        color: _ProfilePastel.statTile(accent, index),
         border: Border.all(color: Cyber.border),
       ),
       child: Column(

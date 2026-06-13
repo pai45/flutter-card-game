@@ -40,11 +40,9 @@ class ScorePredictionPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(2),
-      child: SizedBox(
-        height: _barHeight,
-        child: Row(
+    return SizedBox(
+      height: _barHeight,
+      child: Row(
           children: [
             Expanded(
               child: _TeamHalf(
@@ -74,7 +72,6 @@ class ScorePredictionPicker extends StatelessWidget {
             ),
           ],
         ),
-      ),
     );
   }
 }

@@ -5,7 +5,6 @@ import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_event.dart';
 import '../../blocs/game/game_state.dart';
 import '../../config/enums.dart';
-import '../../config/theme.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
@@ -17,7 +16,6 @@ import '../how_to_play/how_to_play_screen.dart';
 import '../leaderboard/leaderboard_screen.dart';
 import 'widgets/final_result_phase.dart';
 import 'widgets/match_phases.dart';
-import 'widgets/penalty_phase.dart';
 
 class GameTabContent extends StatefulWidget {
   const GameTabContent({required this.onNavigate, super.key});
@@ -137,11 +135,7 @@ class _MatchScreenState extends State<MatchScreen> {
                 onComplete: () => setState(() => _introShown = true),
               )
             : switch (state.phase) {
-                MatchPhase.toss => TossPhase(
-                  state: state,
-                  onQuit: () => _quit(context),
-                ),
-                MatchPhase.tossResult => TossResultPhase(
+                MatchPhase.toss || MatchPhase.tossResult => CoinTossPhase(
                   state: state,
                   onQuit: () => _quit(context),
                 ),
@@ -158,14 +152,6 @@ class _MatchScreenState extends State<MatchScreen> {
                   onQuit: () => _quit(context),
                 ),
                 MatchPhase.roundResult => RoundResultPhase(
-                  state: state,
-                  onQuit: () => _quit(context),
-                ),
-                MatchPhase.matchEnd => MatchEndPhase(
-                  state: state,
-                  onQuit: () => _quit(context),
-                ),
-                MatchPhase.penalty => PenaltyPhase(
                   state: state,
                   onQuit: () => _quit(context),
                 ),
@@ -214,16 +200,18 @@ class _MatchScreenState extends State<MatchScreen> {
             );
           },
           child: KeyedSubtree(
-            key: showIntro ? const ValueKey('intro') : ValueKey(state.phase),
+            key: showIntro
+                ? const ValueKey('intro')
+                // The coin toss and its result share one persistent widget so the
+                // single coin survives the toss → tossResult transition.
+                : (state.phase == MatchPhase.toss ||
+                      state.phase == MatchPhase.tossResult)
+                ? const ValueKey('coinToss')
+                : ValueKey(state.phase),
             child: phaseWidget,
           ),
         );
-        return Stack(
-          children: [
-            switcher,
-            const Positioned(top: 0, right: 0, child: SafeArea(child: _MuteToggle())),
-          ],
-        );
+        return switcher;
       },
     );
   }
@@ -232,9 +220,7 @@ class _MatchScreenState extends State<MatchScreen> {
     final gameBloc = context.read<GameBloc>();
     final phase = gameBloc.state.phase;
     final matchInProgress =
-        phase != MatchPhase.idle &&
-        phase != MatchPhase.finalResult &&
-        phase != MatchPhase.matchEnd;
+        phase != MatchPhase.idle && phase != MatchPhase.finalResult;
 
     if (matchInProgress) {
       final confirmed = await showCyberConfirmDialog(
@@ -250,48 +236,5 @@ class _MatchScreenState extends State<MatchScreen> {
 
     gameBloc.add(MatchReset());
     widget.onNavigate(AppSection.home);
-  }
-}
-
-/// Small in-match audio mute toggle. Observes the global [AudioController.muted]
-/// notifier so it stays in sync wherever it's shown, and the choice persists.
-class _MuteToggle extends StatelessWidget {
-  const _MuteToggle();
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: AudioController.instance.muted,
-      builder: (context, muted, _) {
-        return Padding(
-          padding: const EdgeInsets.all(10),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: AudioController.instance.toggleMute,
-              customBorder: const CircleBorder(),
-              child: Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: const Color(0xCC0A0F1A),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: (muted ? Cyber.muted : Cyber.cyan)
-                        .withValues(alpha: 0.6),
-                  ),
-                ),
-                child: Icon(
-                  muted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
-                  size: 19,
-                  color: muted ? Cyber.muted : Cyber.cyan,
-                  semanticLabel: muted ? 'Unmute sound' : 'Mute sound',
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
   }
 }

@@ -23,8 +23,8 @@ import 'game_state.dart';
 /// Meter overlay. It MUST mirror the goal branches of [GameBloc._resolveRound];
 /// keep the two in lockstep if the resolution table ever changes.
 double goalChanceForDiff(double diff) {
-  if (diff > 15) return 0.75;
-  if (diff > 5) return 0.60;
+  if (diff > 15) return 0.80;
+  if (diff > 5) return 0.65;
   if (diff > -5) return 0.45;
   if (diff > -15) return 0.10;
   return 0.05;
@@ -42,6 +42,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<OwnedCardAdded>(_onOwnedCardAdded);
     on<CoinsAdded>(_onCoinsAdded);
     on<CoinsSpent>(_onCoinsSpent);
+    on<PredictionXpAdded>(_onPredictionXpAdded);
     on<CardPurchased>(_onCardPurchased);
     on<DirectCardPurchased>(_onDirectCardPurchased);
     on<PackOpened>(_onPackOpened);
@@ -79,36 +80,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     );
     on<MovePlayed>(_onMovePlayed);
     on<RoundAdvanced>(_onRoundAdvanced);
-    on<PenaltyStarted>(
-      (_, emit) => emit(
-        state.copyWith(
-          phase: MatchPhase.penalty,
-          penaltyKicks: [],
-          penaltyPlayerScore: 0,
-          penaltyOpponentScore: 0,
-          penaltyRound: 0,
-          penaltyPhaseOver: false,
-          penaltyPlayerDirection: null,
-          penaltyKickPhase: 'choose',
-          penaltySuddenDeath: false,
-          penaltyWinner: null,
-        ),
-      ),
-    );
-    on<PenaltyDirectionSelected>(
-      (event, emit) =>
-          emit(state.copyWith(penaltyPlayerDirection: event.direction)),
-    );
-    on<PenaltyKickConfirmed>(_onPenaltyKickConfirmed);
-    on<PenaltyNextKick>(
-      (_, emit) => emit(
-        state.copyWith(
-          penaltyKickPhase: 'choose',
-          penaltyPlayerDirection: null,
-        ),
-      ),
-    );
     on<MatchFinished>(_onMatchFinished);
+    on<ShootoutFinished>(_onShootoutFinished);
   }
 
   final SecureGameStorage _storage;
@@ -267,6 +240,23 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final coins = state.coins + event.amount;
     emit(state.copyWith(coins: coins));
     await _saveWallet(coins: coins);
+  }
+
+  /// The settlement reveal renders its own level-up moment, so this leaves
+  /// [GameState.pendingLevelUps] untouched (that queue belongs to match flow).
+  Future<void> _onPredictionXpAdded(
+    PredictionXpAdded event,
+    Emitter<GameState> emit,
+  ) async {
+    if (event.amount <= 0) return;
+    final (:updated, levelsGained: _) = state.progression.applyXP(event.amount);
+    emit(
+      state.copyWith(
+        progression: updated,
+        previousProgression: state.progression,
+      ),
+    );
+    await _storage.saveProgression(updated);
   }
 
   Future<void> _onCoinsSpent(CoinsSpent event, Emitter<GameState> emit) async {
@@ -551,13 +541,15 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   }
 
   void _onTossResolved(TossResolved event, Emitter<GameState> emit) {
-    if (state.tossChoice == null) return;
+    // The player calls a face before the flip; the flip itself is random.
+    // They win the toss only when the landed face matches their call.
     final result = _random.nextBool() ? 'heads' : 'tails';
-    final playerWon = result == state.tossChoice;
+    final playerWon = result == event.call;
     if (playerWon) {
       // Winner picks their role on the toss-result screen (RoleChosen).
       emit(
         state.copyWith(
+          tossChoice: event.call,
           tossResult: result,
           playerWonToss: true,
           phase: MatchPhase.tossResult,
@@ -570,6 +562,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final cpuAttacks = _random.nextBool();
     emit(
       state.copyWith(
+        tossChoice: event.call,
         tossResult: result,
         playerWonToss: false,
         playerAttacking: !cpuAttacks,
@@ -730,7 +723,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
 
   void _onRoundAdvanced(RoundAdvanced event, Emitter<GameState> emit) {
     if (state.currentRound >= 4) {
-      emit(state.copyWith(phase: MatchPhase.matchEnd));
+      // A level score after 4 rounds is a draw — no penalties.
+      add(MatchFinished());
       return;
     }
     final nextRound = state.currentRound + 1;
@@ -747,108 +741,15 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     );
   }
 
-  void _onPenaltyKickConfirmed(
-    PenaltyKickConfirmed event,
-    Emitter<GameState> emit,
-  ) {
-    if (state.penaltyPhaseOver || state.penaltyPlayerDirection == null) return;
-    final playerTaking = state.penaltyRound.isEven;
-    final playerDir = state.penaltyPlayerDirection!;
-    final aiDir = PenaltyDirection.values[_random.nextInt(3)];
-
-    final shootDir = playerTaking ? playerDir : aiDir;
-    final diveDir = playerTaking ? aiDir : playerDir;
-    final scored = shootDir != diveDir; // goal when directions differ
-
-    final kick = PenaltyKick(
-      kickNumber: state.penaltyRound + 1,
-      byPlayer: playerTaking,
-      shootDirection: shootDir,
-      diveDirection: diveDir,
-      scored: scored,
-    );
-    final kicks = [...state.penaltyKicks, kick];
-    final playerScore =
-        state.penaltyPlayerScore + (playerTaking && scored ? 1 : 0);
-    final opponentScore =
-        state.penaltyOpponentScore + (!playerTaking && scored ? 1 : 0);
-
-    var over = false;
-    var suddenDeath = state.penaltySuddenDeath;
-    String? winner = state.penaltyWinner;
-
-    if (!suddenDeath) {
-      if (_penaltyEarlyOut(kicks, playerScore, opponentScore)) {
-        over = true;
-        winner = playerScore > opponentScore ? 'player' : 'opponent';
-      } else if (kicks.length >= 6) {
-        if (playerScore != opponentScore) {
-          over = true;
-          winner = playerScore > opponentScore ? 'player' : 'opponent';
-        } else {
-          suddenDeath = true; // tied after 6 > sudden death
-        }
-      }
-    } else {
-      // In sudden death, check each completed pair (2 kicks)
-      final sdDone = kicks.length - 6;
-      if (sdDone > 0 && sdDone.isEven) {
-        final pair = kicks.sublist(kicks.length - 2);
-        final playerGoal = pair.any((k) => k.byPlayer && k.scored);
-        final opponentGoal = pair.any((k) => !k.byPlayer && k.scored);
-        if (playerGoal != opponentGoal) {
-          over = true;
-          winner = playerGoal ? 'player' : 'opponent';
-        }
-      }
-    }
-
-    emit(
-      state.copyWith(
-        penaltyKicks: kicks,
-        penaltyPlayerScore: playerScore,
-        penaltyOpponentScore: opponentScore,
-        penaltyRound: state.penaltyRound + 1,
-        penaltyPhaseOver: over,
-        penaltyWinner: winner,
-        penaltyPlayerDirection: null,
-        penaltyKickPhase: 'result',
-        penaltySuddenDeath: suddenDeath,
-      ),
-    );
-  }
-
-  bool _penaltyEarlyOut(
-    List<PenaltyKick> kicks,
-    int playerScore,
-    int opponentScore,
-  ) {
-    final done = kicks.length;
-    if (done >= 6) return false;
-    var playerLeft = 0;
-    var opponentLeft = 0;
-    for (var i = done; i < 6; i++) {
-      if (i.isEven) {
-        playerLeft++;
-      } else {
-        opponentLeft++;
-      }
-    }
-    return playerScore > opponentScore + opponentLeft ||
-        opponentScore > playerScore + playerLeft;
-  }
-
   Future<void> _onMatchFinished(
     MatchFinished event,
     Emitter<GameState> emit,
   ) async {
-    final wentToPenalties = state.penaltyKicks.isNotEmpty;
     final resultLabel = _resultLabelForState(state);
     final xpDelta = calculateMatchXP(
       resultLabel: resultLabel,
       playerScore: state.playerScore,
       opponentScore: state.opponentScore,
-      wentToPenalties: wentToPenalties,
     );
     final (:updated, :levelsGained) = state.progression.applyXP(xpDelta);
     final coins = state.coins + coinsForResult(resultLabel);
@@ -863,12 +764,6 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       resultLabel: resultLabel,
       playerScore: state.playerScore,
       opponentScore: state.opponentScore,
-      penaltyPlayerScore: state.penaltyKicks.isEmpty
-          ? null
-          : state.penaltyPlayerScore,
-      penaltyOpponentScore: state.penaltyKicks.isEmpty
-          ? null
-          : state.penaltyOpponentScore,
       rounds: state.roundResults
           .map(
             (round) => MatchHistoryRound(
@@ -898,6 +793,48 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _saveWallet(coins: coins);
   }
 
+  Future<void> _onShootoutFinished(
+    ShootoutFinished event,
+    Emitter<GameState> emit,
+  ) async {
+    final won = event.playerGoals > event.cpuGoals;
+    final xpDelta = calculateShootoutXP(
+      won: won,
+      margin: (event.playerGoals - event.cpuGoals).abs(),
+    );
+    final (:updated, :levelsGained) = state.progression.applyXP(xpDelta);
+    final coins = state.coins + shootoutCoins(won);
+
+    final activeDeck = state.deckSlots
+        .where((slot) => slot.id == state.activeDeckId)
+        .firstOrNull;
+    final historyEntry = MatchHistoryEntry(
+      id: 'shootout-${DateTime.now().microsecondsSinceEpoch}',
+      mode: 'shootout',
+      deckName: activeDeck?.name ?? 'Unknown Deck',
+      timestampIso: DateTime.now().toIso8601String(),
+      resultLabel: won ? 'Victory' : 'Defeat',
+      playerScore: event.playerGoals,
+      opponentScore: event.cpuGoals,
+      rounds: const [],
+      xpEarned: xpDelta,
+    );
+    final history = [historyEntry, ...state.matchHistory].take(12).toList();
+    emit(
+      state.copyWith(
+        matchHistory: history,
+        coins: coins,
+        progression: updated,
+        previousProgression: state.progression,
+        pendingLevelUps: levelsGained,
+        lastMatchXP: xpDelta,
+      ),
+    );
+    await _storage.saveMatchHistory(history);
+    await _storage.saveProgression(updated);
+    await _saveWallet(coins: coins);
+  }
+
   RoundOutcome _resolveRound(
     double attackPower,
     double defensePower,
@@ -913,12 +850,12 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final diff = attackPower - defensePower;
     final roll = _random.nextDouble();
     if (diff > 15) {
-      if (roll < 0.75) return RoundOutcome.goal;
+      if (roll < 0.80) return RoundOutcome.goal;
       if (roll < 0.95) return RoundOutcome.saved;
       return RoundOutcome.blocked;
     }
     if (diff > 5) {
-      if (roll < 0.60) return RoundOutcome.goal;
+      if (roll < 0.65) return RoundOutcome.goal;
       if (roll < 0.90) return RoundOutcome.saved;
       return RoundOutcome.missed;
     }
@@ -1184,8 +1121,6 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   String _resultLabelForState(GameState state) {
     if (state.playerScore > state.opponentScore) return 'Victory';
     if (state.playerScore < state.opponentScore) return 'Defeat';
-    if (state.penaltyPlayerScore > state.penaltyOpponentScore) return 'Victory';
-    if (state.penaltyPlayerScore < state.penaltyOpponentScore) return 'Defeat';
     return 'Draw';
   }
 }

@@ -89,8 +89,8 @@ class _TopBarStreak extends StatelessWidget {
       children: [
         SvgPicture.asset(
           'assets/icons/streak.svg',
-          width: 18,
-          height: 18,
+          width: 22,
+          height: 22,
           fit: BoxFit.contain,
         ),
         const SizedBox(width: 6),

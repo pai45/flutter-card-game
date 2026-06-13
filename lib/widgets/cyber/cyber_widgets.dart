@@ -41,6 +41,7 @@ class CyberConfirmDialog extends StatelessWidget {
         child: CyberPanel(
           accent: destructive ? Cyber.magenta : Cyber.cyan,
           padding: EdgeInsets.zero,
+          solidBackground: true,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -367,18 +368,11 @@ class CyberPlainBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        const Positioned.fill(
+        Positioned.fill(
           child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xff101827), Cyber.bg, Cyber.bg2],
-              ),
-            ),
+            decoration: BoxDecoration(gradient: AppTheme.backgroundGradient),
           ),
         ),
-        const Positioned.fill(child: CyberTextureOverlay()),
         child,
       ],
     );
@@ -391,20 +385,7 @@ class CyberGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
-    // Base fill.
     canvas.drawRect(Offset.zero & size, Paint()..color = Cyber.bg);
-
-    // Blueprint grid.
-    final grid = Paint()
-      ..color = Cyber.cyan.withValues(alpha: 0.055)
-      ..strokeWidth = 1;
-    const step = 40.0;
-    for (var x = 0.0; x < size.width; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), grid);
-    }
-    for (var y = 0.0; y < size.height; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
-    }
   }
 
   @override
@@ -556,6 +537,107 @@ class SectionLabel extends StatelessWidget {
         fontWeight: FontWeight.w900,
         letterSpacing: 2,
         fontFeatures: const [FontFeature.tabularFigures()],
+      ),
+    );
+  }
+}
+
+class CyberNoDataState extends StatelessWidget {
+  const CyberNoDataState({
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.accent = Cyber.cyan,
+    this.spark = Icons.auto_awesome,
+    this.actionLabel,
+    this.actionIcon = Icons.arrow_forward,
+    this.onAction,
+    super.key,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final Color accent;
+  final IconData spark;
+  final String? actionLabel;
+  final IconData actionIcon;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final action = actionLabel == null || onAction == null
+        ? null
+        : PressableScale(
+            onTap: onAction,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(actionIcon, color: accent, size: 16),
+                  const SizedBox(width: 7),
+                  Text(
+                    actionLabel!,
+                    style: Cyber.label(9, color: accent, letterSpacing: 1.1),
+                  ),
+                ],
+              ),
+            ),
+          );
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 28),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 310),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 118,
+                height: 96,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Icon(icon, color: accent.withValues(alpha: 0.86), size: 78),
+                    Positioned(
+                      right: 12,
+                      bottom: 6,
+                      child: Icon(
+                        spark,
+                        color: Colors.white.withValues(alpha: 0.82),
+                        size: 25,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                title.toUpperCase(),
+                textAlign: TextAlign.center,
+                style: Cyber.display(
+                  14,
+                  color: Colors.white,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: Cyber.body(
+                  13,
+                  color: Cyber.muted,
+                  weight: FontWeight.w600,
+                  height: 1.35,
+                ),
+              ),
+              if (action != null) ...[const SizedBox(height: 12), action],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -764,6 +846,7 @@ class CyberPanel extends StatelessWidget {
     this.accent = Cyber.cyan,
     this.padding = const EdgeInsets.all(16),
     this.glow = false,
+    this.solidBackground = false,
     super.key,
   });
 
@@ -776,22 +859,51 @@ class CyberPanel extends StatelessWidget {
   /// Reserve [glow] for the panel the user should look at first on a screen.
   final bool glow;
 
+  /// Flat panel fill instead of the accent-tinted gradient. Used for modal chrome
+  /// (confirm dialogs, walkthrough) where the gradient reads too busy.
+  final bool solidBackground;
+
   @override
   Widget build(BuildContext context) {
-    return ClipPath(
-      clipper: CyberClipper(),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: Cyber.panelGradient(accent),
-          border: Border.all(color: accent.withValues(alpha: 0.5)),
-          boxShadow: glow
-              ? Cyber.glow(accent, alpha: 0.18, blur: 18, spread: 1)
-              : null,
+    final borderColor = accent.withValues(alpha: 0.5);
+    return CustomPaint(
+      foregroundPainter: _CyberPanelBorderPainter(color: borderColor),
+      child: ClipPath(
+        clipper: CyberClipper(),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: solidBackground ? Cyber.panel : null,
+            gradient: solidBackground ? null : Cyber.panelGradient(accent),
+            boxShadow: glow
+                ? Cyber.glow(accent, alpha: 0.18, blur: 18, spread: 1)
+                : null,
+          ),
+          child: Padding(padding: padding, child: child),
         ),
-        child: Padding(padding: padding, child: child),
       ),
     );
   }
+}
+
+class _CyberPanelBorderPainter extends CustomPainter {
+  const _CyberPanelBorderPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawPath(
+      CyberClipper.buildPath(size),
+      Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_CyberPanelBorderPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 class RectangleClipper extends CustomClipper<Path> {
@@ -807,9 +919,9 @@ class RectangleClipper extends CustomClipper<Path> {
 }
 
 class CyberClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    const cut = 12.0;
+  static const double cut = 12;
+
+  static Path buildPath(Size size, {double cut = cut}) {
     return Path()
       ..moveTo(0, 0)
       ..lineTo(size.width, 0)
@@ -817,9 +929,11 @@ class CyberClipper extends CustomClipper<Path> {
       ..lineTo(size.width - cut, size.height)
       ..lineTo(cut, size.height)
       ..lineTo(0, size.height - cut)
-      ..lineTo(0, 0)
       ..close();
   }
+
+  @override
+  Path getClip(Size size) => buildPath(size);
 
   @override
   bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
@@ -1386,6 +1500,7 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
                           overflow: TextOverflow.ellipsis,
                           textAlign: TextAlign.center,
                           style: TextStyle(
+                            color: Colors.white,
                             fontFamily: 'Orbitron',
                             fontWeight: FontWeight.w900,
                             fontSize: small ? 9 : (large ? 13 : 12),
@@ -1774,161 +1889,200 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
                           ),
                   ),
                   child: ClipPath(
-                      clipper: RectangleClipper(),
-                      child: Stack(
-                        children: [
-                          // Top accent line (category color).
-                          Positioned(
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            child: Container(height: 2, color: catAccent),
-                          ),
-                          Positioned(
-                            top: 2,
-                            left: 0,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 7,
-                                vertical: 2,
+                    clipper: RectangleClipper(),
+                    child: Stack(
+                      children: [
+                        // Top accent line (category color).
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          child: Container(height: 2, color: catAccent),
+                        ),
+                        Positioned(
+                          top: 2,
+                          left: 0,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 2,
+                            ),
+                            color: catAccent,
+                            child: Text(
+                              actionCode(widget.card.category),
+                              style: const TextStyle(
+                                color: Cyber.bg,
+                                fontSize: 8,
+                                fontWeight: FontWeight.w900,
                               ),
-                              color: catAccent,
-                              child: Text(
-                                actionCode(widget.card.category),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          // Top inset clears the single-line rating badge so
+                          // the centred icon never tucks under it.
+                          padding: EdgeInsets.fromLTRB(
+                            8,
+                            small ? 22 : (large ? 26 : 24),
+                            8,
+                            8,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Icon(
+                                widget.card.icon,
+                                color: color,
+                                size: small ? 20 : (large ? 28 : 24),
+                              ),
+                              Text(
+                                widget.card.title.toUpperCase(),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
                                 style: const TextStyle(
-                                  color: Cyber.bg,
-                                  fontSize: 8,
+                                  color: Colors.white,
+                                  fontFamily: 'Orbitron',
                                   fontWeight: FontWeight.w900,
+                                  fontSize: 9,
                                 ),
                               ),
+                              Text(
+                                widget.card.effect,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: color.withValues(alpha: 0.76),
+                                  fontSize: 7,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (widget.card.risky)
+                          const Positioned(
+                            bottom: 3,
+                            left: 3,
+                            child: Icon(
+                              Icons.dangerous,
+                              color: Cyber.danger,
+                              size: 13,
                             ),
                           ),
-                          Padding(
-                            // Top inset clears the single-line rating badge so
-                            // the centred icon never tucks under it.
-                            padding: EdgeInsets.fromLTRB(
-                              8,
-                              small ? 22 : (large ? 26 : 24),
-                              8,
-                              8,
+                        // Tier strip along the bottom edge so each tiered
+                        // version of an action reads at a glance.
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          child: Container(height: 6, color: stripColor),
+                        ),
+                        // Rating badge — headline stat; stays flat when selected
+                        // (elevation is handled by [PremiumCardShell]).
+                        Positioned(
+                          top: 2,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.fromLTRB(6, 2, 6, 3),
+                            decoration: BoxDecoration(
+                              color: Cyber.bg.withValues(alpha: 0.85),
+                              border: const Border(
+                                left: BorderSide(color: ratingColor, width: 3),
+                                bottom: BorderSide(color: Color(0x73ffd166)),
+                              ),
                             ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            // Single line keeps the badge short so it never
+                            // reaches the centred icon below it.
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
-                                Icon(
-                                  widget.card.icon,
-                                  color: color,
-                                  size: small ? 20 : (large ? 28 : 24),
-                                ),
                                 Text(
-                                  widget.card.title.toUpperCase(),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontFamily: 'Orbitron',
+                                  'PWR',
+                                  style: TextStyle(
+                                    color: ratingColor.withValues(alpha: 0.72),
+                                    fontFamily: Cyber.displayFont,
+                                    fontSize: 6,
                                     fontWeight: FontWeight.w900,
-                                    fontSize: 9,
+                                    height: 1,
+                                    letterSpacing: 1.2,
                                   ),
                                 ),
+                                const SizedBox(width: 3),
                                 Text(
-                                  widget.card.effect,
-                                  overflow: TextOverflow.ellipsis,
-                                  textAlign: TextAlign.center,
+                                  '+${widget.card.power}',
                                   style: TextStyle(
-                                    color: color.withValues(alpha: 0.76),
-                                    fontSize: 7,
-                                    fontWeight: FontWeight.w800,
+                                    color: ratingColor,
+                                    fontFamily: Cyber.displayFont,
+                                    fontSize: small ? 14 : (large ? 18 : 16),
+                                    fontWeight: FontWeight.w900,
+                                    height: 1,
+                                    fontFeatures: const [
+                                      FontFeature.tabularFigures(),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          if (widget.card.risky)
-                            const Positioned(
-                              bottom: 3,
-                              left: 3,
-                              child: Icon(
-                                Icons.dangerous,
-                                color: Cyber.danger,
-                                size: 13,
-                              ),
-                            ),
-                          // Tier strip along the bottom edge so each tiered
-                          // version of an action reads at a glance.
-                          Positioned(
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            child: Container(
-                              height: 6,
-                              color: stripColor,
-                            ),
-                          ),
-                          // Rating badge — headline stat; stays flat when selected
-                          // (elevation is handled by [PremiumCardShell]).
-                          Positioned(
-                            top: 2,
-                            right: 0,
-                            child: Container(
-                              padding: const EdgeInsets.fromLTRB(6, 2, 6, 3),
-                              decoration: BoxDecoration(
-                                color: Cyber.bg.withValues(alpha: 0.85),
-                                border: const Border(
-                                  left: BorderSide(
-                                    color: ratingColor,
-                                    width: 3,
-                                  ),
-                                  bottom: BorderSide(color: Color(0x73ffd166)),
-                                ),
-                              ),
-                              // Single line keeps the badge short so it never
-                              // reaches the centred icon below it.
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    'PWR',
-                                    style: TextStyle(
-                                      color: ratingColor.withValues(
-                                        alpha: 0.72,
-                                      ),
-                                      fontFamily: Cyber.displayFont,
-                                      fontSize: 6,
-                                      fontWeight: FontWeight.w900,
-                                      height: 1,
-                                      letterSpacing: 1.2,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 3),
-                                  Text(
-                                    '+${widget.card.power}',
-                                    style: TextStyle(
-                                      color: ratingColor,
-                                      fontFamily: Cyber.displayFont,
-                                      fontSize: small ? 14 : (large ? 18 : 16),
-                                      fontWeight: FontWeight.w900,
-                                      height: 1,
-                                      fontFeatures: const [
-                                        FontFeature.tabularFigures(),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
+                  ),
                 );
               },
             ),
           ),
         );
       },
+    );
+  }
+}
+
+/// Standard press feedback for tappable HUD surfaces: a quick scale-down to
+/// 0.97 while the pointer is down, matching the action-card tap feel. Wrap the
+/// visual only — supply [onTap] here instead of an outer GestureDetector.
+class PressableScale extends StatefulWidget {
+  const PressableScale({
+    required this.child,
+    required this.onTap,
+    this.enabled = true,
+    super.key,
+  });
+
+  final Widget child;
+  final VoidCallback? onTap;
+  final bool enabled;
+
+  @override
+  State<PressableScale> createState() => _PressableScaleState();
+}
+
+class _PressableScaleState extends State<PressableScale> {
+  bool _pressed = false;
+
+  bool get _active => widget.enabled && widget.onTap != null;
+
+  void _setPressed(bool value) {
+    if (_pressed == value) return;
+    setState(() => _pressed = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _active ? widget.onTap : null,
+      onTapDown: _active ? (_) => _setPressed(true) : null,
+      onTapUp: _active ? (_) => _setPressed(false) : null,
+      onTapCancel: _active ? () => _setPressed(false) : null,
+      child: AnimatedScale(
+        scale: _pressed ? 0.97 : 1,
+        duration: const Duration(milliseconds: 90),
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
     );
   }
 }

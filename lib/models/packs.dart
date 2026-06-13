@@ -120,8 +120,8 @@ CardPack? getProgressionPack(String id) =>
 /// Builds a new user's starter pack: a random, rarity-weighted roll of
 /// 2 strikers, 2 defenders, 1 keeper and [starterDeckActionCount] action cards.
 ///
-/// Rarity follows the pack odds (silver 50% / gold 35% / epic 10% /
-/// legendary 5%) — see [rollStarterPack]. [keeperPool] defaults to the game's
+/// Rarity follows the pack odds (bronze 55% / silver 35% / gold 4% /
+/// platinum 1%) — see [rollStarterPack]. [keeperPool] defaults to the game's
 /// goalkeepers so the existing call sites (which pass attackers/defenders/
 /// actions positionally) keep working.
 PackResult buildStarterPack(
