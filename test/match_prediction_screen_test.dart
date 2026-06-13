@@ -1,3 +1,4 @@
+import 'package:card_game/blocs/achievement/achievement_celebration_controller.dart';
 import 'package:card_game/blocs/game/game_bloc.dart';
 import 'package:card_game/blocs/prediction/prediction_cubit.dart';
 import 'package:card_game/blocs/prediction/prediction_state.dart';
@@ -41,12 +42,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 16));
 
     expect(find.text('1'), findsOneWidget);
-    expect(find.text('WILL'), findsNothing);
+    expect(find.text('Will'), findsNothing);
     expect(find.text('YES'), findsNothing);
 
     await _pumpFrames(tester, const Duration(seconds: 5));
 
-    expect(find.text('WILL'), findsOneWidget);
+    expect(find.text('Will'), findsOneWidget);
     expect(find.text('YES'), findsOneWidget);
   });
 
@@ -57,8 +58,13 @@ void main() {
     addTearDown(cubit.close);
 
     await tester.pumpWidget(
-      BlocProvider.value(
-        value: cubit,
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<PredictionCubit>.value(value: cubit),
+          BlocProvider<AchievementCelebrationController>(
+            create: (_) => AchievementCelebrationController(SecureGameStorage()),
+          ),
+        ],
         child: MaterialApp(home: MatchPredictionScreen(match: _match)),
       ),
     );
@@ -70,7 +76,7 @@ void main() {
     await _tapButton(tester, 'NEXT');
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('SECOND'), findsNothing);
+    expect(find.text('Second'), findsNothing);
     expect(find.text('2'), findsNothing);
   });
 
@@ -87,7 +93,7 @@ void main() {
       find.text('You can update answers until match starts.'),
       findsOneWidget,
     );
-    expect(find.text('WILL HOME WIN'), findsOneWidget);
+    expect(find.text('Will home win'), findsOneWidget);
     expect(find.text('Yes'), findsOneWidget);
     expect(find.text('NEXT'), findsNothing);
     expect(find.text('NO').hitTestable(), findsNothing);
@@ -102,7 +108,7 @@ void main() {
 
     await _pumpPredictionScreen(tester, cubit: cubit, match: _match);
 
-    await tester.tap(find.text('WILL HOME WIN'));
+    await tester.tap(find.text('Will home win'));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('NO'));
     await tester.pumpAndSettle();
@@ -134,8 +140,13 @@ void main() {
     addTearDown(cubit.close);
 
     await tester.pumpWidget(
-      BlocProvider.value(
-        value: cubit,
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<PredictionCubit>.value(value: cubit),
+          BlocProvider<AchievementCelebrationController>(
+            create: (_) => AchievementCelebrationController(SecureGameStorage()),
+          ),
+        ],
         child: MaterialApp(home: MatchPredictionScreen(match: _match)),
       ),
     );
@@ -174,8 +185,13 @@ void main() {
     addTearDown(cubit.close);
 
     await tester.pumpWidget(
-      BlocProvider.value(
-        value: cubit,
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<PredictionCubit>.value(value: cubit),
+          BlocProvider<AchievementCelebrationController>(
+            create: (_) => AchievementCelebrationController(SecureGameStorage()),
+          ),
+        ],
         child: MaterialApp(home: MatchPredictionScreen(match: _match)),
       ),
     );
@@ -209,8 +225,13 @@ void main() {
     addTearDown(cubit.close);
 
     await tester.pumpWidget(
-      BlocProvider.value(
-        value: cubit,
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<PredictionCubit>.value(value: cubit),
+          BlocProvider<AchievementCelebrationController>(
+            create: (_) => AchievementCelebrationController(SecureGameStorage()),
+          ),
+        ],
         child: MaterialApp(home: MatchPredictionScreen(match: _match)),
       ),
     );
@@ -239,6 +260,57 @@ void main() {
     expect(multipliers, {'q1': PredictionMultiplier.x15});
   });
 
+  testWidgets('fresh submit lands on review list with a PREDICT-next dock', (
+    tester,
+  ) async {
+    final nextMatch = SportMatch(
+      id: 'next_match',
+      leagueId: 'test', // same league as _match
+      sport: Sport.football,
+      home: _home,
+      away: _away,
+      kickoff: DateTime.now().add(const Duration(hours: 4)),
+      status: MatchStatus.upcoming,
+    );
+    final cubit = _TestPredictionCubit(_QuizRepo(_quiz));
+    cubit.seedFixtures([_match, nextMatch]);
+    addTearDown(cubit.close);
+
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<PredictionCubit>.value(value: cubit),
+          BlocProvider<AchievementCelebrationController>(
+            create: (_) => AchievementCelebrationController(SecureGameStorage()),
+          ),
+        ],
+        child: MaterialApp(home: MatchPredictionScreen(match: _match)),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 16));
+    await _pumpFrames(tester, const Duration(seconds: 5));
+
+    await _tapOption(tester, 'YES');
+    await tester.pumpAndSettle();
+    await _tapButton(tester, 'NEXT');
+    await _pumpFrames(tester, const Duration(seconds: 5));
+    await _tapOption(tester, 'HOME');
+    await tester.pumpAndSettle();
+    await _tapButton(tester, 'SUBMIT QUIZ');
+    await tester.pump();
+
+    // Drive the ~4.5s SUBMITTED celebration to completion.
+    await _pumpFrames(tester, const Duration(milliseconds: 5200));
+
+    // We stay on the quiz-submitted list (no pop): the celebration is gone, the
+    // dock chains into the next same-league match rather than SAVE UPDATES.
+    expect(find.text('PREDICTION SUBMITTED'), findsNothing);
+    expect(find.text('SAVE UPDATES'), findsNothing);
+    expect(find.text('PREDICT HOM vs AWY'), findsOneWidget);
+  });
+
   testWidgets('submitted review can move multiplier and save updates', (
     tester,
   ) async {
@@ -253,7 +325,7 @@ void main() {
 
     await _pumpPredictionScreen(tester, cubit: cubit, match: _match);
 
-    await _tapOption(tester, 'SECOND QUESTION');
+    await _tapButton(tester, 'Second question');
     await tester.pumpAndSettle();
     expect(find.text('MOVE'), findsNothing);
     await tester.ensureVisible(find.text('2x').last);
@@ -443,12 +515,21 @@ Future<void> _tapButton(WidgetTester tester, String label) {
   );
 }
 
-Future<void> _tapOption(WidgetTester tester, String label) {
-  return tester.tap(
-    find
-        .ancestor(of: find.text(label), matching: find.byType(GestureDetector))
-        .first,
-  );
+Future<void> _tapOption(WidgetTester tester, String label) async {
+  final optionGesture = find
+      .ancestor(
+        of: find.text(label),
+        matching: find.byWidgetPredicate(
+          (widget) =>
+              widget.key is ValueKey<String> &&
+              (widget.key! as ValueKey<String>).value.startsWith(
+                'quiz-option-',
+              ),
+        ),
+      )
+      .first;
+  tester.widget<GestureDetector>(optionGesture).onTap!();
+  await tester.pump();
 }
 
 class _QuizRepo implements PredictionRepository {
@@ -502,6 +583,10 @@ class _TestPredictionCubit extends PredictionCubit {
         predictions: {prediction.matchId: prediction},
       ),
     );
+  }
+
+  void seedFixtures(List<SportMatch> fixtures) {
+    emit(const PredictionState().copyWith(fixtures: fixtures));
   }
 }
 

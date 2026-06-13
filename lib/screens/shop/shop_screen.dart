@@ -12,6 +12,7 @@ import '../../models/cards.dart';
 import '../../models/shop.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/card_unpack_animation.dart';
+import '../../widgets/cyber/cyber_underline_tabs.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/stat_oz_top_bar.dart';
@@ -194,48 +195,25 @@ class ShopScreen extends StatefulWidget {
 
 class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
   late final TabController _tabController;
-  late final AnimationController _indicatorController;
-  late Animation<double> _indicatorAnimation;
   int _activeTab = 0;
-  int _previousTab = 0;
   int? _celebrationCoins;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: _shopTabCount, vsync: this);
-    _indicatorController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-      value: 0,
-    );
-    _indicatorAnimation = AlwaysStoppedAnimation<double>(_activeTab.toDouble());
   }
 
   @override
   void dispose() {
-    _indicatorController.dispose();
     _tabController.dispose();
     super.dispose();
   }
 
   void _setTab(int index) {
     if (index == _activeTab) return;
-    _previousTab = _activeTab;
-    _activeTab = index;
-    _indicatorAnimation =
-        Tween<double>(
-          begin: _previousTab.toDouble(),
-          end: _activeTab.toDouble(),
-        ).animate(
-          CurvedAnimation(
-            parent: _indicatorController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
     _tabController.animateTo(index);
-    _indicatorController.forward(from: 0);
-    setState(() {});
+    setState(() => _activeTab = index);
   }
 
   void _showCelebration(int amount) {
@@ -264,9 +242,15 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                       accent: _cyan,
                       onAddCoins: () => _setTab(2),
                     ),
-                    _ShopTabs(
-                      activeTab: _activeTab,
-                      indicatorAnimation: _indicatorAnimation,
+                    CyberUnderlineTabs(
+                      labels: const [
+                        'AVATAR',
+                        'BANNER',
+                        'COINS',
+                        'PACKS',
+                        'CARDS',
+                      ],
+                      activeIndex: _activeTab,
                       onTap: _setTab,
                     ),
                     Expanded(
@@ -317,119 +301,6 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
       3 => const PacksTab(),
       _ => const CardsTab(),
     };
-  }
-}
-
-class _ShopTabs extends StatelessWidget {
-  const _ShopTabs({
-    required this.activeTab,
-    required this.indicatorAnimation,
-    required this.onTap,
-  });
-
-  final int activeTab;
-  final Animation<double> indicatorAnimation;
-  final ValueChanged<int> onTap;
-
-  static const List<String> _items = [
-    'AVATAR',
-    'BANNER',
-    'COINS',
-    'PACKS',
-    'CARDS',
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 50,
-      decoration: BoxDecoration(
-        color: _bg.withValues(alpha: 0.4),
-        border: Border(
-          bottom: BorderSide(color: _cyan.withValues(alpha: 0.22)),
-        ),
-      ),
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final double tabWidth = constraints.maxWidth / _items.length;
-          return Stack(
-            children: [
-              Row(
-                children: [
-                  for (int index = 0; index < _items.length; index++)
-                    Expanded(
-                      child: _Pressable(
-                        onTap: () => onTap(index),
-                        child: _TabItem(
-                          label: _items[index],
-                          active: activeTab == index,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              AnimatedBuilder(
-                animation: indicatorAnimation,
-                builder: (BuildContext context, Widget? child) {
-                  return Positioned(
-                    left: tabWidth * indicatorAnimation.value + tabWidth * 0.18,
-                    bottom: 0,
-                    width: tabWidth * 0.64,
-                    height: 3,
-                    child: child!,
-                  );
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: _cyan,
-                    boxShadow: [
-                      BoxShadow(
-                        color: _cyan.withValues(alpha: 0.7),
-                        blurRadius: 10,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _TabItem extends StatelessWidget {
-  const _TabItem({required this.label, required this.active});
-
-  final String label;
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    final Color color = active ? _cyan : _secondary;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      decoration: BoxDecoration(
-        color: active ? _cyan.withValues(alpha: 0.07) : Colors.transparent,
-      ),
-      child: Center(
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            label,
-            maxLines: 1,
-            style: TextStyle(
-              color: color,
-              fontFamily: 'Orbitron',
-              fontSize: 9.5,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
 
@@ -1522,6 +1393,7 @@ class _PackTile extends StatelessWidget {
     context.read<GameBloc>().add(ShopPackPurchased(pack.id, spendCoins: false));
   }
 
+  // ignore: unused_element
   void _openPack(BuildContext context) {
     context.read<GameBloc>().add(ShopPackPurchased(pack.id));
   }
@@ -2225,6 +2097,7 @@ class _PurchasableCardTile extends StatelessWidget {
     _showSnack(context, '${card.shortName} added to your cards.');
   }
 
+  // ignore: unused_element
   void _revealCard(BuildContext context) {
     final nav = Navigator.of(context);
     nav.push(
@@ -2730,6 +2603,7 @@ void _showSnack(BuildContext context, String message, [bool success = true]) {
   );
 }
 
+// ignore: unused_element
 List<PlayerCard> _rollPack(ShopPack pack, List<String> ownedIds) {
   final Random random = Random();
   final List<CardTier> tiers = <CardTier>[];

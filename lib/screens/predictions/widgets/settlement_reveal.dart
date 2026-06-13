@@ -459,7 +459,7 @@ class _VerdictRow extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          result.text.toUpperCase(),
+                          result.text,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: Cyber.display(

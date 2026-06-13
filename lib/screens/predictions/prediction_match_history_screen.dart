@@ -9,8 +9,10 @@ import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
 import '../../utils/prediction_helpers.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/cyber/fixture_card.dart';
 import '../../widgets/team_logo.dart';
 import 'match_prediction_screen.dart';
+import 'widgets/history_hud.dart';
 
 void showPredictionMatchHistory(BuildContext context) {
   Navigator.of(context).push(
@@ -95,24 +97,39 @@ class _PredictionMatchHistoryScreenState
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _HistoryHeader(
+                    HistoryHeaderBar(
                       title: 'MY MATCHES HISTORY',
                       accent: Cyber.violet,
                       onBack: () => Navigator.pop(context),
                     ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      child: _HistoryStatsRow(
-                        accent: Cyber.violet,
-                        fills: const [
-                          Color(0xff4d2b7a),
-                          Color(0xff342f63),
-                          Color(0xff243557),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: HistoryStatCell(
+                              label: 'MATCHES',
+                              value: '${state.predictionsMade}',
+                              accent: Cyber.violet,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: HistoryStatCell(
+                              label: 'ACCURACY',
+                              value: '$accuracy%',
+                              accent: Cyber.violet,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: HistoryStatCell(
+                              label: 'RANK',
+                              value: '122',
+                              accent: Cyber.violet,
+                            ),
+                          ),
                         ],
-                        firstLabel: 'MATCHES',
-                        firstValue: '${state.predictionsMade}',
-                        accuracy: accuracy,
-                        rank: 122,
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -131,12 +148,15 @@ class _PredictionMatchHistoryScreenState
                               ),
                             )
                           : filtered.isEmpty
-                          ? _EmptyHistory(hasAnyQuizzes: items.isNotEmpty)
+                          ? _EmptyHistory(
+                              hasAnyQuizzes: items.isNotEmpty,
+                              filterLabel: _filterLabel(_filter),
+                            )
                           : ListView.separated(
-                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                              padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
                               itemCount: filtered.length,
                               separatorBuilder: (context, index) =>
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: 16),
                               itemBuilder: (context, index) {
                                 final item = filtered[index];
                                 return _MatchQuizCard(
@@ -187,6 +207,15 @@ class _PredictionMatchHistoryScreenState
     return entries;
   }
 }
+
+String _filterLabel(_MatchFilter filter) => switch (filter) {
+  _MatchFilter.all => 'ALL',
+  _MatchFilter.won => 'WON',
+  _MatchFilter.lost => 'LOST',
+  _MatchFilter.live => 'LIVE',
+  _MatchFilter.pending => 'PENDING',
+  _MatchFilter.unresolved => 'UNRESOLVED',
+};
 
 class _HistoryEntry {
   const _HistoryEntry({
@@ -254,6 +283,9 @@ class _MatchHistoryItem {
   }
 }
 
+/// Match quiz card on the shared fixture silhouette: status tag in the notch,
+/// league kicker + the mirrored teams/centre-score row, and a state-specific
+/// bottom strip.
 class _MatchQuizCard extends StatelessWidget {
   const _MatchQuizCard({required this.item, required this.onDetails});
 
@@ -262,192 +294,304 @@ class _MatchQuizCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _matchPalette(item.status);
-    final match = item.match;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+    return FixtureCardFrame(
       onTap: onDetails,
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xff10192d),
-          border: Border.all(color: Cyber.border),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.24),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
+      tag: _MatchTag(item: item),
+      body: _MatchCardBody(item: item),
+      bottomStrip: _MatchHistoryStrip(item: item),
+    );
+  }
+}
+
+class _MatchTag extends StatelessWidget {
+  const _MatchTag({required this.item});
+
+  final _MatchHistoryItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    switch (item.status) {
+      case _MatchQuizStatus.pending:
+        return FixtureTagText(
+          text: _kickoffTag(item.match.kickoff),
+          color: kFixtureTimeGold,
+        );
+      case _MatchQuizStatus.live:
+        final minute = item.match.liveMinute;
+        return FixtureLiveTag(label: minute != null ? "LIVE $minute'" : 'LIVE');
+      case _MatchQuizStatus.won:
+        return const FixtureTagText(text: 'WON', color: Cyber.success);
+      case _MatchQuizStatus.lost:
+        return const FixtureTagText(text: 'LOST', color: Cyber.red);
+      case _MatchQuizStatus.unresolved:
+        return const FixtureTagText(text: 'REVIEW', color: Cyber.amber);
+    }
+  }
+}
+
+/// Same-day kickoffs show the time (`19:30`); otherwise the date (`14 JUN`).
+String _kickoffTag(DateTime kickoff) {
+  final local = kickoff.toLocal();
+  final now = DateTime.now();
+  if (local.year == now.year &&
+      local.month == now.month &&
+      local.day == now.day) {
+    final hour = local.hour.toString().padLeft(2, '0');
+    final minute = local.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+  const months = [
+    'JAN',
+    'FEB',
+    'MAR',
+    'APR',
+    'MAY',
+    'JUN',
+    'JUL',
+    'AUG',
+    'SEP',
+    'OCT',
+    'NOV',
+    'DEC',
+  ];
+  return '${local.day} ${months[local.month - 1]}';
+}
+
+class _MatchCardBody extends StatelessWidget {
+  const _MatchCardBody({required this.item});
+
+  final _MatchHistoryItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final match = item.match;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          item.entry.league?.shortCode ?? match.leagueId.toUpperCase(),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Cyber.label(
+            8,
+            color: Cyber.muted.withValues(alpha: 0.85),
+            letterSpacing: 1.2,
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _TeamScoreRow(
-                          team: match.home,
-                          score: match.homeScore,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        item.entry.league?.shortCode ??
-                            match.leagueId.toUpperCase(),
-                        style: Cyber.label(
-                          10,
-                          color: Cyber.muted,
-                          letterSpacing: 0.8,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _TeamScoreRow(
-                          team: match.away,
-                          score: match.awayScore,
-                        ),
-                      ),
-                      _ScheduleLabel(item: item),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            if (item.status != _MatchQuizStatus.pending &&
-                item.status != _MatchQuizStatus.live)
-              _StatusStrip(label: palette.label, color: palette.color),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _Metric(
-                    label: 'QUIZ',
-                    value: '${item.answered}/${item.total}',
-                  ),
-                  const SizedBox(width: 18),
-                  Expanded(
-                    child: _Metric(
-                      label: 'POTENTIAL XP',
-                      value: '${item.potentialXp} XP',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  _Metric(
-                    label: 'STATUS',
-                    value: palette.value(item),
-                    alignEnd: true,
-                    valueColor: palette.color,
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              child: Row(
-                children: [
-                  Text(
-                    formatPredictionTimestamp(item.prediction.submittedAt),
-                    style: Cyber.body(10, color: Cyber.muted),
-                  ),
-                  const Spacer(),
-                  _OutcomeDots(
-                    outcomes: questionOutcomes(item.quiz, item.prediction),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        const SizedBox(height: 10),
+        _TeamsRow(match: match),
+      ],
+    );
+  }
+}
+
+/// Horizontal teams + centre-score layout, lifted from the match prediction
+/// card so the history card reads the same: mirrored badges with the team name
+/// beneath and the football score in the middle.
+class _TeamsRow extends StatelessWidget {
+  const _TeamsRow({required this.match});
+
+  final SportMatch match;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: _TeamColumn(team: match.home, alignEnd: false)),
+        _ScoreCentre(match: match),
+        Expanded(child: _TeamColumn(team: match.away, alignEnd: true)),
+      ],
+    );
+  }
+}
+
+class _TeamColumn extends StatelessWidget {
+  const _TeamColumn({required this.team, required this.alignEnd});
+
+  final SportTeam team;
+  final bool alignEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: alignEnd
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      children: [
+        // Mirror the badge chamfer toward the centre of the card.
+        TeamLogo(team: team, width: 46, height: 46, cutBottomRight: !alignEnd),
+        const SizedBox(height: 8),
+        Text(
+          team.name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Cyber.body(14.5, weight: FontWeight.w700),
+        ),
+      ],
+    );
+  }
+}
+
+class _ScoreCentre extends StatelessWidget {
+  const _ScoreCentre({required this.match});
+
+  final SportMatch match;
+
+  @override
+  Widget build(BuildContext context) {
+    if (match.sport == Sport.football && match.hasScore) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        child: Text(
+          '${match.homeScore ?? '-'}  -  ${match.awayScore ?? '-'}',
+          style: Cyber.display(21, color: Colors.white, letterSpacing: 0.5)
+              .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+        ),
+      );
+    }
+    // Upcoming, or cricket (innings live under each name) → centre dash.
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 12),
+      child: Text(
+        '-',
+        style: TextStyle(
+          color: Cyber.muted,
+          fontFamily: Cyber.displayFont,
+          fontSize: 18,
+          fontWeight: FontWeight.w900,
+          decoration: TextDecoration.none,
         ),
       ),
     );
   }
 }
 
-class _ScheduleLabel extends StatelessWidget {
-  const _ScheduleLabel({required this.item});
+class _MatchHistoryStrip extends StatelessWidget {
+  const _MatchHistoryStrip({required this.item});
 
   final _MatchHistoryItem item;
 
   @override
   Widget build(BuildContext context) {
-    final text = switch (item.status) {
-      _MatchQuizStatus.pending => formatKickoffSchedule(item.match.kickoff),
-      _MatchQuizStatus.live =>
-        item.match.liveMinute == null ? 'Live' : "${item.match.liveMinute}'",
-      _ => item.match.resultLine ?? 'Full time',
-    };
-    final color = switch (item.status) {
-      _MatchQuizStatus.pending => Cyber.gold,
-      _MatchQuizStatus.live => Cyber.red,
-      _MatchQuizStatus.unresolved => Cyber.amber,
-      _MatchQuizStatus.won => Cyber.success,
-      _MatchQuizStatus.lost => Cyber.red,
-    };
-    return Text(
-      text,
-      textAlign: TextAlign.right,
-      style: Cyber.body(11, color: color, weight: FontWeight.w800),
-    );
+    switch (item.status) {
+      case _MatchQuizStatus.pending:
+        return FixtureCardStrip(
+          child: Row(
+            children: [
+              Text(
+                'QUIZ ${item.answered}/${item.total}',
+                style: Cyber.label(
+                  9,
+                  color: Cyber.muted,
+                  letterSpacing: 0.8,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+              const Spacer(),
+              Text(
+                'POTENTIAL +${item.potentialXp} XP',
+                style: Cyber.label(
+                  9,
+                  color: Cyber.cyan.withValues(alpha: 0.85),
+                  letterSpacing: 0.8,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
+        );
+      case _MatchQuizStatus.live:
+        return FixtureCardStrip(
+          child: Text(
+            'LOCKED · ${item.answered}/${item.total} ANSWERS IN',
+            style: Cyber.label(
+              9,
+              color: Cyber.muted,
+              letterSpacing: 0.8,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        );
+      case _MatchQuizStatus.won:
+        return FixtureCardStrip(
+          topBorder: Cyber.success.withValues(alpha: 0.25),
+          child: Row(
+            children: [
+              const Icon(Icons.trending_up, color: Cyber.success, size: 13),
+              const SizedBox(width: 6),
+              Text(
+                '+${item.prediction.rewardEarned} XP',
+                style: Cyber.body(
+                  12,
+                  color: Cyber.success,
+                  weight: FontWeight.w800,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+              const Spacer(),
+              _OutcomeDots(
+                outcomes: questionOutcomes(item.quiz, item.prediction),
+                compact: true,
+              ),
+            ],
+          ),
+        );
+      case _MatchQuizStatus.lost:
+        return FixtureCardStrip(
+          topBorder: Cyber.red.withValues(alpha: 0.18),
+          child: Row(
+            children: [
+              Text(
+                '${item.correct}/${item.total} CORRECT',
+                style: Cyber.label(
+                  9,
+                  color: Cyber.muted,
+                  letterSpacing: 0.8,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+              const Spacer(),
+              _OutcomeDots(
+                outcomes: questionOutcomes(item.quiz, item.prediction),
+                compact: true,
+              ),
+            ],
+          ),
+        );
+      case _MatchQuizStatus.unresolved:
+        return FixtureCardStrip(
+          fill: kFixtureStripGold,
+          topBorder: Cyber.gold.withValues(alpha: 0.35),
+          child: Row(
+            children: [
+              const Icon(Icons.redeem, color: Cyber.gold, size: 14),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  'RESULTS READY — TAP TO REVEAL',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Cyber.label(
+                    9,
+                    color: Cyber.gold,
+                    letterSpacing: 1,
+                  ).copyWith(
+                    shadows: [
+                      Shadow(
+                        color: Cyber.gold.withValues(alpha: 0.45),
+                        blurRadius: 10,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+    }
   }
 }
-
-class _MatchPalette {
-  const _MatchPalette({
-    required this.label,
-    required this.color,
-    required this.value,
-  });
-
-  final String label;
-  final Color color;
-  final String Function(_MatchHistoryItem item) value;
-}
-
-_MatchPalette _matchPalette(_MatchQuizStatus status) {
-  return switch (status) {
-    _MatchQuizStatus.pending => const _MatchPalette(
-      label: 'PENDING',
-      color: Cyber.gold,
-      value: _pendingValue,
-    ),
-    _MatchQuizStatus.live => const _MatchPalette(
-      label: 'LIVE',
-      color: Cyber.red,
-      value: _liveValue,
-    ),
-    _MatchQuizStatus.unresolved => const _MatchPalette(
-      label: 'UNRESOLVED',
-      color: Cyber.amber,
-      value: _reviewValue,
-    ),
-    _MatchQuizStatus.won => const _MatchPalette(
-      label: 'WON',
-      color: Cyber.success,
-      value: _wonValue,
-    ),
-    _MatchQuizStatus.lost => const _MatchPalette(
-      label: 'LOST',
-      color: Cyber.red,
-      value: _lostValue,
-    ),
-  };
-}
-
-String _pendingValue(_MatchHistoryItem item) => 'Pending';
-String _liveValue(_MatchHistoryItem item) => 'Locked';
-String _reviewValue(_MatchHistoryItem item) => 'Review';
-String _wonValue(_MatchHistoryItem item) =>
-    '+${item.prediction.rewardEarned} XP';
-String _lostValue(_MatchHistoryItem item) => '${item.correct}/${item.total}';
 
 class _MatchFilterBar extends StatelessWidget {
   const _MatchFilterBar({
@@ -460,15 +604,6 @@ class _MatchFilterBar extends StatelessWidget {
   final Map<_MatchFilter, int> counts;
   final ValueChanged<_MatchFilter> onSelect;
 
-  String _label(_MatchFilter filter) => switch (filter) {
-    _MatchFilter.all => 'ALL',
-    _MatchFilter.won => 'WON',
-    _MatchFilter.lost => 'LOST',
-    _MatchFilter.live => 'LIVE',
-    _MatchFilter.pending => 'PENDING',
-    _MatchFilter.unresolved => 'UNRESOLVED',
-  };
-
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -477,10 +612,11 @@ class _MatchFilterBar extends StatelessWidget {
       child: Row(
         children: [
           for (final filter in _MatchFilter.values) ...[
-            _FilterChip(
-              label: '${_label(filter)} (${counts[filter] ?? 0})',
+            HistoryFilterChip(
+              label: _filterLabel(filter),
+              count: counts[filter] ?? 0,
               active: active == filter,
-              activeColor: Cyber.violet,
+              accent: Cyber.violet,
               onTap: () => onSelect(filter),
             ),
             if (filter != _MatchFilter.unresolved) const SizedBox(width: 8),
@@ -491,347 +627,21 @@ class _MatchFilterBar extends StatelessWidget {
   }
 }
 
-class _HistoryHeader extends StatelessWidget {
-  const _HistoryHeader({
-    required this.title,
-    required this.accent,
-    required this.onBack,
-  });
-
-  final String title;
-  final Color accent;
-  final VoidCallback onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
-      child: Row(
-        children: [
-          IconButton(
-            tooltip: 'Back',
-            onPressed: onBack,
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-          ),
-          Expanded(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Cyber.display(19, color: accent, letterSpacing: 1.0),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HistoryStatsRow extends StatelessWidget {
-  const _HistoryStatsRow({
-    required this.accent,
-    required this.fills,
-    required this.firstLabel,
-    required this.firstValue,
-    required this.accuracy,
-    required this.rank,
-  });
-
-  final Color accent;
-  final List<Color> fills;
-  final String firstLabel;
-  final String firstValue;
-  final int accuracy;
-  final int rank;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _NotchedStatCard(
-            label: firstLabel,
-            value: firstValue,
-            fill: fills[0],
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _NotchedStatCard(
-            label: 'ACCURACY',
-            value: '$accuracy%',
-            fill: fills[1],
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _NotchedStatCard(
-            label: 'CURRENT RANK',
-            value: '$rank',
-            fill: fills[2],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _NotchedStatCard extends StatelessWidget {
-  const _NotchedStatCard({
-    required this.label,
-    required this.value,
-    required this.fill,
-  });
-
-  final String label;
-  final String value;
-  final Color fill;
-
-  static const _notchW = 9.0;
-  static const _notchH = 7.0;
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _NotchedStatBorderPainter(fill: fill),
-      child: ClipPath(
-        clipper: const _NotchedStatClipper(notchW: _notchW, notchH: _notchH),
-        child: Container(
-          height: 78,
-          alignment: Alignment.center,
-          color: fill,
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 13),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: Cyber.body(
-                  9,
-                  color: Colors.white.withValues(alpha: 0.72),
-                  weight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 8),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  value,
-                  style: Cyber.display(22, letterSpacing: 0).copyWith(
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NotchedStatClipper extends CustomClipper<Path> {
-  const _NotchedStatClipper({required this.notchW, required this.notchH});
-
-  final double notchW;
-  final double notchH;
-
-  @override
-  Path getClip(Size size) => _notchedRect(size, notchW, notchH);
-
-  @override
-  bool shouldReclip(covariant _NotchedStatClipper old) =>
-      old.notchW != notchW || old.notchH != notchH;
-}
-
-Path _notchedRect(Size size, double notchW, double notchH) {
-  final w = size.width;
-  final h = size.height;
-  final cx = w / 2;
-  return Path()
-    ..moveTo(0, 0)
-    ..lineTo(cx - notchW, 0)
-    ..lineTo(cx, notchH)
-    ..lineTo(cx + notchW, 0)
-    ..lineTo(w, 0)
-    ..lineTo(w, h)
-    ..lineTo(cx + notchW, h)
-    ..lineTo(cx, h - notchH)
-    ..lineTo(cx - notchW, h)
-    ..lineTo(0, h)
-    ..close();
-}
-
-class _NotchedStatBorderPainter extends CustomPainter {
-  const _NotchedStatBorderPainter({required this.fill});
-
-  final Color fill;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final path = _notchedRect(
-      size,
-      _NotchedStatCard._notchW,
-      _NotchedStatCard._notchH,
-    );
-    canvas.drawPath(path, Paint()..color = fill);
-    canvas.drawPath(
-      path,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2
-        ..color = Cyber.border,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _NotchedStatBorderPainter old) =>
-      old.fill != fill;
-}
-
-class _FilterChip extends StatelessWidget {
-  const _FilterChip({
-    required this.label,
-    required this.active,
-    required this.activeColor,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool active;
-  final Color activeColor;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 140),
-        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
-        decoration: BoxDecoration(
-          color: active ? activeColor.withValues(alpha: 0.14) : Cyber.panel2,
-          border: Border.all(color: active ? activeColor : Cyber.border),
-        ),
-        child: Text(
-          label,
-          style: Cyber.label(
-            10,
-            color: active ? activeColor : Cyber.muted,
-            letterSpacing: 0.6,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TeamScoreRow extends StatelessWidget {
-  const _TeamScoreRow({required this.team, required this.score});
-
-  final SportTeam team;
-  final String? score;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        TeamLogo(team: team, width: 28, height: 28),
-        const SizedBox(width: 9),
-        Flexible(
-          child: Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(text: team.name),
-                if (score != null) TextSpan(text: '  $score'),
-              ],
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Cyber.body(
-              13,
-              weight: FontWeight.w800,
-            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StatusStrip extends StatelessWidget {
-  const _StatusStrip({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 28,
-      alignment: Alignment.center,
-      color: color.withValues(alpha: 0.22),
-      child: Text(
-        label,
-        style: Cyber.label(10, color: color, letterSpacing: 0.7),
-      ),
-    );
-  }
-}
-
-class _Metric extends StatelessWidget {
-  const _Metric({
-    required this.label,
-    required this.value,
-    this.alignEnd = false,
-    this.valueColor,
-  });
-
-  final String label;
-  final String value;
-  final bool alignEnd;
-  final Color? valueColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: alignEnd
-          ? CrossAxisAlignment.end
-          : CrossAxisAlignment.start,
-      children: [
-        Text(label, style: Cyber.label(8, color: Cyber.muted)),
-        const SizedBox(height: 5),
-        Text(
-          value,
-          textAlign: alignEnd ? TextAlign.right : TextAlign.left,
-          style: Cyber.body(
-            12,
-            color: valueColor ?? Colors.white,
-            weight: FontWeight.w900,
-          ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-        ),
-      ],
-    );
-  }
-}
-
 class _OutcomeDots extends StatelessWidget {
-  const _OutcomeDots({required this.outcomes});
+  const _OutcomeDots({required this.outcomes, this.compact = false});
 
   final List<QuestionOutcome> outcomes;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
+    final gap = compact ? 4.0 : 5.0;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (final outcome in outcomes) ...[
-          _OutcomeDot(outcome: outcome),
-          const SizedBox(width: 5),
+        for (var i = 0; i < outcomes.length; i++) ...[
+          _OutcomeDot(outcome: outcomes[i], compact: compact),
+          if (i != outcomes.length - 1) SizedBox(width: gap),
         ],
       ],
     );
@@ -839,9 +649,10 @@ class _OutcomeDots extends StatelessWidget {
 }
 
 class _OutcomeDot extends StatelessWidget {
-  const _OutcomeDot({required this.outcome});
+  const _OutcomeDot({required this.outcome, required this.compact});
 
   final QuestionOutcome outcome;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -855,29 +666,35 @@ class _OutcomeDot extends StatelessWidget {
       QuestionOutcome.wrong => Icons.close,
       QuestionOutcome.pending => Icons.more_horiz,
     };
+    final box = compact ? 13.0 : 17.0;
+    final iconSize = compact ? 9.0 : 11.0;
     return Container(
-      width: 17,
-      height: 17,
+      width: box,
+      height: box,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         border: Border.all(color: color.withValues(alpha: 0.55)),
       ),
-      child: Icon(icon, size: 11, color: color),
+      child: Icon(icon, size: iconSize, color: color),
     );
   }
 }
 
 class _EmptyHistory extends StatelessWidget {
-  const _EmptyHistory({required this.hasAnyQuizzes});
+  const _EmptyHistory({
+    required this.hasAnyQuizzes,
+    required this.filterLabel,
+  });
 
   final bool hasAnyQuizzes;
+  final String filterLabel;
 
   @override
   Widget build(BuildContext context) {
     return CyberNoDataState(
       icon: hasAnyQuizzes ? Icons.filter_alt_off : Icons.sports_esports,
-      title: hasAnyQuizzes ? 'No quizzes in this filter' : 'Be the 1st to play',
+      title: hasAnyQuizzes ? 'No $filterLabel entries' : 'Be the 1st to play',
       message: hasAnyQuizzes
           ? 'Switch filters to review the quizzes already played.'
           : 'No one has played a prediction quiz yet. Start one and claim the first rank.',

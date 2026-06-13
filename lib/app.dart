@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'blocs/achievement/achievement_celebration_controller.dart';
 import 'blocs/game/game_bloc.dart';
 import 'blocs/game/game_event.dart';
 import 'blocs/game/game_state.dart';
 import 'blocs/picks/picks_cubit.dart';
+import 'blocs/picks/picks_state.dart';
 import 'blocs/prediction/prediction_cubit.dart';
+import 'blocs/prediction/prediction_state.dart';
 import 'config/enums.dart';
 import 'config/theme.dart';
 import 'models/league.dart';
@@ -20,9 +23,11 @@ import 'screens/predictions/prediction_home_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/leaderboard/leaderboard_screen.dart';
 import 'screens/shop/shop_screen.dart';
+import 'services/achievement_progress.dart';
 import 'services/pick_repository.dart';
 import 'services/prediction_repository.dart';
 import 'services/secure_storage_service.dart';
+import 'widgets/achievement_celebration_host.dart';
 
 class PitchDuelApp extends StatelessWidget {
   const PitchDuelApp({super.key});
@@ -43,15 +48,54 @@ class PitchDuelApp extends StatelessWidget {
           create: (_) =>
               PicksCubit(MockPickRepository(), SecureGameStorage())..load(),
         ),
+        BlocProvider(
+          create: (_) => AchievementCelebrationController(SecureGameStorage()),
+        ),
       ],
       child: MaterialApp(
         title: 'Pitch Duel',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
+        // Watch the three source blocs and float the achievement-unlock reveal
+        // above every route. The reveal itself lives in [AchievementCelebrationHost].
+        builder: (context, child) {
+          return MultiBlocListener(
+            listeners: [
+              BlocListener<GameBloc, GameState>(
+                listener: (context, _) => _syncAchievements(context),
+              ),
+              BlocListener<PredictionCubit, PredictionState>(
+                listener: (context, _) => _syncAchievements(context),
+              ),
+              BlocListener<PicksCubit, PicksState>(
+                listener: (context, _) => _syncAchievements(context),
+              ),
+            ],
+            child: Stack(
+              children: [
+                Positioned.fill(child: child ?? const SizedBox.shrink()),
+                const Positioned.fill(child: AchievementCelebrationHost()),
+              ],
+            ),
+          );
+        },
         home: const AppShell(),
       ),
     );
   }
+}
+
+/// Recomputes the live achievement snapshot and hands it to the celebration
+/// controller — but only once all three source blocs have finished loading, so
+/// the silent first-run seed is based on complete data (no launch-time replays).
+void _syncAchievements(BuildContext context) {
+  final gameLoading = context.read<GameBloc>().state.loading;
+  final predLoading = context.read<PredictionCubit>().state.loading;
+  final picksLoading = context.read<PicksCubit>().state.loading;
+  if (gameLoading || predLoading || picksLoading) return;
+  context.read<AchievementCelebrationController>().sync(
+    currentAchievementStats(context),
+  );
 }
 
 class AppShell extends StatefulWidget {

@@ -8,6 +8,7 @@ import '../../blocs/prediction/prediction_cubit.dart';
 import '../../blocs/prediction/prediction_state.dart';
 import '../../config/theme.dart';
 import '../../models/match.dart';
+import '../../models/player_stats.dart';
 import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
 import '../../utils/sound_effects.dart';
@@ -71,7 +72,7 @@ class _StreakCalendarScreenState extends State<StreakCalendarScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _StreakHero(
-                  streak: _currentWinStreak(history),
+                  streak: matchWinStreak(history),
                   onBack: () => Navigator.pop(context),
                 ),
                 Padding(
@@ -944,18 +945,6 @@ DateTime _initialSelectedDay(BuildContext context) {
     return _dayKey(latest.first.submittedAt.toLocal());
   }
   return _dayKey(DateTime.now());
-}
-
-int _currentWinStreak(List<MatchHistoryEntry> history) {
-  var streak = 0;
-  for (final match in history) {
-    if (match.resultLabel == 'Victory') {
-      streak++;
-      continue;
-    }
-    break;
-  }
-  return streak;
 }
 
 List<_PickEvent> _buildPickEvents(PredictionState state) {

@@ -99,6 +99,16 @@ String pickOutcomeCode(String label) {
   return word.substring(0, 3).toUpperCase();
 }
 
+/// Compact countdown to a market close, shown on pending pick tags:
+/// `SOON` / `{m}M` / `{h}H` / `{d}D`.
+String pickClosesLabel(DateTime closesAt) {
+  final diff = closesAt.difference(DateTime.now());
+  if (diff.isNegative) return 'SOON';
+  if (diff.inMinutes < 60) return '${diff.inMinutes}M';
+  if (diff.inHours < 24) return '${diff.inHours}H';
+  return '${diff.inDays}D';
+}
+
 String formatOzCompact(int value) {
   if (value >= 1000) {
     final k = value / 1000;

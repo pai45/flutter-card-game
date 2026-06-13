@@ -2138,3 +2138,163 @@ class CardStripePainter extends CustomPainter {
   bool shouldRepaint(covariant CardStripePainter oldDelegate) =>
       oldDelegate.color != color;
 }
+
+/// A one-shot "slide up + fade in" entrance. Wrap any element to have it rise
+/// into place on first build; stagger siblings by passing increasing [delay]s.
+/// Used for the lobby entrance reveals (home + shootout landing pages).
+class CyberSlideUpFadeIn extends StatefulWidget {
+  const CyberSlideUpFadeIn({
+    required this.child,
+    this.delay = Duration.zero,
+    this.offset = 30,
+    super.key,
+  });
+
+  final Widget child;
+  final Duration delay;
+  final double offset;
+
+  @override
+  State<CyberSlideUpFadeIn> createState() => _CyberSlideUpFadeInState();
+}
+
+class _CyberSlideUpFadeInState extends State<CyberSlideUpFadeIn>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _progress;
+  Timer? _kickoff;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 480),
+    );
+    _progress = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutCubic,
+    );
+    if (widget.delay == Duration.zero) {
+      _controller.forward();
+    } else {
+      _kickoff = Timer(widget.delay, () {
+        if (mounted) _controller.forward();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _kickoff?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _progress,
+      builder: (_, child) => Opacity(
+        opacity: _progress.value.clamp(0.0, 1.0),
+        child: Transform.translate(
+          offset: Offset(0, widget.offset * (1 - _progress.value)),
+          child: child,
+        ),
+      ),
+      child: widget.child,
+    );
+  }
+}
+
+/// A one-shot "dealt card" entrance: the child flies up from below with a slight
+/// alternating tilt and an easeOutBack settle, fading in along the way. Use for
+/// rows of stat cells / action buttons; stagger via [index] + [staggerMs].
+class CyberDealtCard extends StatefulWidget {
+  const CyberDealtCard({
+    required this.index,
+    required this.child,
+    this.initialDelay = const Duration(milliseconds: 220),
+    this.staggerMs = 75,
+    this.flyDistance = 260,
+    this.duration = const Duration(milliseconds: 540),
+    super.key,
+  });
+
+  final int index;
+  final Widget child;
+  final Duration initialDelay;
+  final int staggerMs;
+  final double flyDistance;
+  final Duration duration;
+
+  @override
+  State<CyberDealtCard> createState() => _CyberDealtCardState();
+}
+
+class _CyberDealtCardState extends State<CyberDealtCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _slide;
+  late final Animation<double> _settle;
+  late final Animation<double> _opacity;
+  late final Animation<double> _tilt;
+  Timer? _kickoff;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: widget.duration);
+    _slide = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
+    _settle = Tween<double>(
+      begin: 0.92,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
+    _opacity = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.0, 0.45, curve: Curves.easeIn),
+    );
+    _tilt = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
+
+    final delay =
+        widget.initialDelay +
+        Duration(milliseconds: widget.index * widget.staggerMs);
+    _kickoff = Timer(delay, () {
+      if (mounted) _controller.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _kickoff?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (_, child) {
+        const tiltAmount = 0.07;
+        final tiltAngle =
+            (widget.index.isEven ? -tiltAmount : tiltAmount) *
+            (1 - _tilt.value);
+        return Opacity(
+          opacity: _opacity.value.clamp(0.0, 1.0),
+          child: Transform.translate(
+            offset: Offset(0, widget.flyDistance * (1 - _slide.value)),
+            child: Transform.rotate(
+              angle: tiltAngle,
+              child: Transform.scale(
+                scale: _settle.value.clamp(0.5, 1.2),
+                child: child,
+              ),
+            ),
+          ),
+        );
+      },
+      child: widget.child,
+    );
+  }
+}
