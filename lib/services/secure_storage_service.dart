@@ -72,6 +72,8 @@ class SecureGameStorage {
   static const _predictionsKey = 'pd_predictions_v1';
   static const _pickPositionsKey = 'pd_pick_positions_v1';
   static const _selectedAvatarKey = 'pd_selected_avatar_v1';
+  static const _selectedProfileBannerKey = 'pd_selected_profile_banner_v1';
+  static const _celebratedAchievementsKey = 'pd_celebrated_achievements_v1';
 
   final FlutterSecureStorage _storage;
 
@@ -230,6 +232,39 @@ class SecureGameStorage {
 
   Future<void> saveSelectedAvatarId(String avatarId) async {
     await _storage.write(key: _selectedAvatarKey, value: avatarId);
+  }
+
+  Future<String?> loadSelectedProfileBannerId() async {
+    try {
+      final raw = await _storage.read(key: _selectedProfileBannerKey);
+      return raw == null || raw.isEmpty ? null : raw;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveSelectedProfileBannerId(String bannerId) async {
+    await _storage.write(key: _selectedProfileBannerKey, value: bannerId);
+  }
+
+  /// The set of achievement ids already celebrated. Returns `null` when the key
+  /// has never been written — the watcher uses that to seed silently on first
+  /// run (so badges earned before this feature shipped never replay).
+  Future<Set<String>?> loadCelebratedAchievements() async {
+    try {
+      final raw = await _storage.read(key: _celebratedAchievementsKey);
+      if (raw == null || raw.isEmpty) return null;
+      return Set<String>.from(jsonDecode(raw) as List);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveCelebratedAchievements(Set<String> ids) async {
+    await _storage.write(
+      key: _celebratedAchievementsKey,
+      value: jsonEncode(ids.toList()),
+    );
   }
 
   Future<PlayerProgression> loadProgression() async {

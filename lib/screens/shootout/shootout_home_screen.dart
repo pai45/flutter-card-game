@@ -53,105 +53,131 @@ class ShootoutHomeScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const _ShootoutStatusBar(),
+                      const CyberSlideUpFadeIn(child: _ShootoutStatusBar()),
                       const SizedBox(height: 18),
                       // Hero: targeting emblem + wordmark + deck status.
-                      Row(
-                        children: [
-                          const ShootoutEmblem(size: 92),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'PENALTY\nSHOOTOUT',
-                                  style:
-                                      Cyber.display(24, letterSpacing: 1.2)
-                                          .copyWith(
-                                            height: 1.05,
-                                            shadows: [
-                                              Shadow(
-                                                color: Cyber.lime.withValues(
-                                                  alpha: 0.4,
+                      CyberSlideUpFadeIn(
+                        delay: const Duration(milliseconds: 80),
+                        offset: 24,
+                        child: Row(
+                          children: [
+                            const ShootoutEmblem(size: 92),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'PENALTY\nSHOOTOUT',
+                                    style:
+                                        Cyber.display(24, letterSpacing: 1.2)
+                                            .copyWith(
+                                              height: 1.05,
+                                              shadows: [
+                                                Shadow(
+                                                  color: Cyber.lime.withValues(
+                                                    alpha: 0.4,
+                                                  ),
+                                                  blurRadius: 14,
                                                 ),
-                                                blurRadius: 14,
-                                              ),
-                                            ],
-                                          ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'SUDDEN-DEATH SPOT KICKS',
-                                  style: TextStyle(
-                                    color: Cyber.muted,
-                                    fontFamily: Cyber.displayFont,
-                                    fontSize: 8.5,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 2,
+                                              ],
+                                            ),
                                   ),
-                                ),
-                                const SizedBox(height: 10),
-                                Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: CyberChip(
-                                    label: state.deckReady
-                                        ? 'SQUAD READY'
-                                        : 'SQUAD INCOMPLETE',
-                                    color: state.deckReady
-                                        ? Cyber.lime
-                                        : Cyber.amber,
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'SUDDEN-DEATH SPOT KICKS',
+                                    style: TextStyle(
+                                      color: Cyber.muted,
+                                      fontFamily: Cyber.displayFont,
+                                      fontSize: 8.5,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 2,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 10),
+                                  Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: CyberChip(
+                                      label: state.deckReady
+                                          ? 'SQUAD READY'
+                                          : 'SQUAD INCOMPLETE',
+                                      color: state.deckReady
+                                          ? Cyber.lime
+                                          : Cyber.amber,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 20),
                       // Telemetry row — real data, no glow.
                       Row(
                         children: [
                           Expanded(
-                            child: _HudStat(
-                              label: 'LEVEL',
-                              value: '${state.progression.playerLevel}',
+                            child: CyberDealtCard(
+                              key: const ValueKey('shootout-stat-level'),
+                              index: 0,
+                              initialDelay: const Duration(milliseconds: 180),
+                              flyDistance: 130,
+                              child: _HudStat(
+                                label: 'LEVEL',
+                                value: '${state.progression.playerLevel}',
+                              ),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: _HudStat(
-                              label: 'TOTAL XP',
-                              value: _grp(state.progression.totalXP),
+                            child: CyberDealtCard(
+                              key: const ValueKey('shootout-stat-xp'),
+                              index: 1,
+                              initialDelay: const Duration(milliseconds: 180),
+                              flyDistance: 130,
+                              child: _HudStat(
+                                label: 'TOTAL XP',
+                                value: _grp(state.progression.totalXP),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: _HudStat(
-                              label: 'WON',
-                              value: '${_shootoutWins(state.matchHistory)}',
-                              accent: Cyber.lime,
+                            child: CyberDealtCard(
+                              key: const ValueKey('shootout-stat-won'),
+                              index: 2,
+                              initialDelay: const Duration(milliseconds: 180),
+                              flyDistance: 130,
+                              child: _HudStat(
+                                label: 'WON',
+                                value: '${_shootoutWins(state.matchHistory)}',
+                                accent: Cyber.lime,
+                              ),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 24),
                       // PLAY SHOOTOUT — hero CTA, gated on a ready squad.
-                      state.deckReady
-                          ? HudCtaButton(
-                              label: 'PLAY SHOOTOUT',
-                              onTap: () => onNavigate(AppSection.shootout),
-                            )
-                          : Opacity(
-                              opacity: 0.45,
-                              child: IgnorePointer(
-                                child: HudCtaButton(
-                                  label: 'PLAY SHOOTOUT',
-                                  onTap: () {},
+                      CyberSlideUpFadeIn(
+                        delay: const Duration(milliseconds: 390),
+                        offset: 22,
+                        child: state.deckReady
+                            ? HudCtaButton(
+                                label: 'PLAY SHOOTOUT',
+                                onTap: () => onNavigate(AppSection.shootout),
+                              )
+                            : Opacity(
+                                opacity: 0.45,
+                                child: IgnorePointer(
+                                  child: HudCtaButton(
+                                    label: 'PLAY SHOOTOUT',
+                                    onTap: () {},
+                                  ),
                                 ),
                               ),
-                            ),
+                      ),
                       if (!state.deckReady) ...[
                         const SizedBox(height: 10),
                         Text(
@@ -168,20 +194,36 @@ class ShootoutHomeScreen extends StatelessWidget {
                       Row(
                         children: [
                           Expanded(
-                            child: CyberCtaButton(
-                              label: 'Deck Builder',
-                              clip: false,
-                              onPressed: () => onNavigate(AppSection.deck),
+                            child: CyberDealtCard(
+                              key: const ValueKey('shootout-action-deck'),
+                              index: 0,
+                              initialDelay: const Duration(milliseconds: 470),
+                              staggerMs: 85,
+                              flyDistance: 95,
+                              duration: const Duration(milliseconds: 500),
+                              child: CyberCtaButton(
+                                label: 'Deck Builder',
+                                clip: false,
+                                onPressed: () => onNavigate(AppSection.deck),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: CyberCtaButton(
-                              label: 'Match History',
-                              clip: false,
-                              onPressed: () => showMatchHistoryArchive(
-                                context,
-                                state.matchHistory,
+                            child: CyberDealtCard(
+                              key: const ValueKey('shootout-action-history'),
+                              index: 1,
+                              initialDelay: const Duration(milliseconds: 470),
+                              staggerMs: 85,
+                              flyDistance: 95,
+                              duration: const Duration(milliseconds: 500),
+                              child: CyberCtaButton(
+                                label: 'Match History',
+                                clip: false,
+                                onPressed: () => showMatchHistoryArchive(
+                                  context,
+                                  state.matchHistory,
+                                ),
                               ),
                             ),
                           ),

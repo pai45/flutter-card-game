@@ -12,6 +12,7 @@ import '../../models/sport_match.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
+import '../../widgets/staggered_card_entrance.dart';
 import '../../widgets/stat_oz_top_bar.dart';
 import '../shop/shop_screen.dart' show CoinIcon;
 import 'streak_calendar_screen.dart';
@@ -44,6 +45,8 @@ class PredictionHomeScreen extends StatefulWidget {
 }
 
 class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
+  final Set<int> _introPlayedTabs = <int>{};
+
   @override
   Widget build(BuildContext context) {
     final tab = widget.activeTab;
@@ -88,13 +91,26 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
       0 => _MatchesTab(
         onOpenMatch: widget.onOpenMatch,
         onOpenLeague: widget.onOpenLeague,
+        animateIntro: _shouldAnimateIntro(0),
+        onIntroPlayed: () => _markIntroPlayed(0),
       ),
-      1 => const _PickTab(),
+      1 => _PickTab(
+        animateIntro: _shouldAnimateIntro(1),
+        onIntroPlayed: () => _markIntroPlayed(1),
+      ),
       _ => _GamesTab(
         onOpenGame: widget.onOpenGame,
         onOpenShootout: widget.onOpenShootout,
+        animateIntro: _shouldAnimateIntro(2),
+        onIntroPlayed: () => _markIntroPlayed(2),
       ),
     };
+  }
+
+  bool _shouldAnimateIntro(int tab) => !_introPlayedTabs.contains(tab);
+
+  void _markIntroPlayed(int tab) {
+    _introPlayedTabs.add(tab);
   }
 }
 
@@ -297,10 +313,17 @@ abstract final class _TopBarMetrics {
 }
 
 class _MatchesTab extends StatefulWidget {
-  const _MatchesTab({required this.onOpenMatch, required this.onOpenLeague});
+  const _MatchesTab({
+    required this.onOpenMatch,
+    required this.onOpenLeague,
+    required this.animateIntro,
+    required this.onIntroPlayed,
+  });
 
   final ValueChanged<SportMatch> onOpenMatch;
   final ValueChanged<League> onOpenLeague;
+  final bool animateIntro;
+  final VoidCallback? onIntroPlayed;
 
   @override
   State<_MatchesTab> createState() => _MatchesTabState();
@@ -308,6 +331,7 @@ class _MatchesTab extends StatefulWidget {
 
 class _MatchesTabState extends State<_MatchesTab> {
   late DateTime _selectedDay = _startOfDay(DateTime.now());
+  bool _introPlayed = false;
 
   Future<void> _openCalendar(List<DateTime> days) async {
     final today = _startOfDay(DateTime.now());
@@ -352,6 +376,16 @@ class _MatchesTabState extends State<_MatchesTab> {
             .where((fixture) => _sameDay(fixture.kickoff, _selectedDay))
             .toList();
         final grouped = _groupByLeague(state.leagues, selectedFixtures);
+        final animateIntro =
+            widget.animateIntro && !_introPlayed && selectedFixtures.isNotEmpty;
+        if (animateIntro) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _introPlayed = true;
+            widget.onIntroPlayed?.call();
+          });
+        }
+        var cardEntranceIndex = 0;
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
           children: [
@@ -435,14 +469,18 @@ class _MatchesTabState extends State<_MatchesTab> {
                   ),
                 ),
                 for (final match in entry.value) ...[
-                  MatchPredictionCard(
-                    match: match,
-                    prediction: state.predictionFor(match.id),
-                    onTap:
-                        (match.predictable ||
-                            state.predictionFor(match.id) != null)
-                        ? () => widget.onOpenMatch(match)
-                        : null,
+                  StaggeredCardEntrance(
+                    index: cardEntranceIndex++,
+                    animate: animateIntro,
+                    child: MatchPredictionCard(
+                      match: match,
+                      prediction: state.predictionFor(match.id),
+                      onTap:
+                          (match.predictable ||
+                              state.predictionFor(match.id) != null)
+                          ? () => widget.onOpenMatch(match)
+                          : null,
+                    ),
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -542,12 +580,17 @@ String _monthDayLabel(DateTime day) {
 }
 
 class _PickTab extends StatelessWidget {
-  const _PickTab();
+  const _PickTab({required this.animateIntro, required this.onIntroPlayed});
+
+  final bool animateIntro;
+  final VoidCallback? onIntroPlayed;
 
   @override
-  Widget build(BuildContext context) => const PicksHomeView();
+  Widget build(BuildContext context) =>
+      PicksHomeView(animateIntro: animateIntro, onIntroPlayed: onIntroPlayed);
 }
 
+// ignore: unused_element
 class _SportsTabs extends StatelessWidget {
   const _SportsTabs();
 
@@ -582,6 +625,7 @@ class _SportsTabs extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _MarketFilterTabs extends StatelessWidget {
   const _MarketFilterTabs();
 
@@ -649,6 +693,7 @@ typedef _PickHandler =
       required Color color,
     });
 
+// ignore: unused_element
 class _MatchMarketCard extends StatelessWidget {
   const _MatchMarketCard({required this.selectedKey, required this.onPick});
 
@@ -813,6 +858,7 @@ class _ScoreRow extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _BinaryMarketCard extends StatelessWidget {
   const _BinaryMarketCard({
     required this.badge,
@@ -920,6 +966,7 @@ class _BinaryMarketCard extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _FuturesMarketCard extends StatelessWidget {
   const _FuturesMarketCard({required this.selectedKey, required this.onPick});
 
@@ -1696,49 +1743,87 @@ class _PickSkeleton extends StatelessWidget {
   }
 }
 
-class _GamesTab extends StatelessWidget {
-  const _GamesTab({required this.onOpenGame, required this.onOpenShootout});
+class _GamesTab extends StatefulWidget {
+  const _GamesTab({
+    required this.onOpenGame,
+    required this.onOpenShootout,
+    required this.animateIntro,
+    required this.onIntroPlayed,
+  });
 
   final VoidCallback onOpenGame;
   final VoidCallback onOpenShootout;
+  final bool animateIntro;
+  final VoidCallback? onIntroPlayed;
+
+  @override
+  State<_GamesTab> createState() => _GamesTabState();
+}
+
+class _GamesTabState extends State<_GamesTab> {
+  bool _introPlayed = false;
 
   @override
   Widget build(BuildContext context) {
+    final animateIntro = widget.animateIntro && !_introPlayed;
+    if (animateIntro) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _introPlayed = true;
+        widget.onIntroPlayed?.call();
+      });
+    }
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
-        _GameTile(
-          title: 'PITCH DUEL',
-          subtitle: 'TACTICAL CARD GAME',
-          icon: Icons.sports_soccer,
-          accent: Cyber.cyan,
-          featured: true,
-          onTap: onOpenGame,
+        StaggeredCardEntrance(
+          index: 0,
+          animate: animateIntro,
+          child: _GameTile(
+            title: 'PITCH DUEL',
+            subtitle: 'TACTICAL CARD GAME',
+            icon: Icons.sports_soccer,
+            accent: Cyber.cyan,
+            featured: true,
+            onTap: widget.onOpenGame,
+          ),
         ),
         const SizedBox(height: 12),
-        _GameTile(
-          title: 'PENALTY SHOOTOUT',
-          subtitle: 'SUDDEN-DEATH SPOT KICKS',
-          icon: Icons.gps_fixed,
-          accent: Cyber.lime,
-          featured: true,
-          onTap: onOpenShootout,
+        StaggeredCardEntrance(
+          index: 1,
+          animate: animateIntro,
+          child: _GameTile(
+            title: 'PENALTY SHOOTOUT',
+            subtitle: 'SUDDEN-DEATH SPOT KICKS',
+            icon: Icons.gps_fixed,
+            accent: Cyber.lime,
+            featured: true,
+            onTap: widget.onOpenShootout,
+          ),
         ),
         const SizedBox(height: 12),
-        const _GameTile(
-          title: 'QUIZ STREAK',
-          subtitle: 'COMING SOON',
-          icon: Icons.bolt,
-          accent: Cyber.violet,
-          locked: true,
+        StaggeredCardEntrance(
+          index: 2,
+          animate: animateIntro,
+          child: const _GameTile(
+            title: 'QUIZ STREAK',
+            subtitle: 'COMING SOON',
+            icon: Icons.bolt,
+            accent: Cyber.violet,
+            locked: true,
+          ),
         ),
         const SizedBox(height: 12),
-        const _GameTile(
-          title: 'ACCURACY CHALLENGE',
-          subtitle: 'COMING SOON',
-          icon: Icons.track_changes,
-          accent: Cyber.gold,
-          locked: true,
+        StaggeredCardEntrance(
+          index: 3,
+          animate: animateIntro,
+          child: const _GameTile(
+            title: 'ACCURACY CHALLENGE',
+            subtitle: 'COMING SOON',
+            icon: Icons.track_changes,
+            accent: Cyber.gold,
+            locked: true,
+          ),
         ),
       ],
     );

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -62,10 +61,10 @@ class HomeScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const _HomeSlideUpFadeIn(child: _LobbyStatusBar()),
+                          const CyberSlideUpFadeIn(child: _LobbyStatusBar()),
                           const SizedBox(height: 18),
                           // Asymmetric HUD hero: logo emblem + identity block.
-                          _HomeSlideUpFadeIn(
+                          CyberSlideUpFadeIn(
                             delay: const Duration(milliseconds: 80),
                             offset: 24,
                             child: Row(
@@ -129,7 +128,7 @@ class HomeScreen extends StatelessWidget {
                           Row(
                             children: [
                               Expanded(
-                                child: _HomeDealtCard(
+                                child: CyberDealtCard(
                                   key: const ValueKey('home-stat-level'),
                                   index: 0,
                                   initialDelay: const Duration(
@@ -144,7 +143,7 @@ class HomeScreen extends StatelessWidget {
                               ),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: _HomeDealtCard(
+                                child: CyberDealtCard(
                                   key: const ValueKey('home-stat-xp'),
                                   index: 1,
                                   initialDelay: const Duration(
@@ -159,7 +158,7 @@ class HomeScreen extends StatelessWidget {
                               ),
                               const SizedBox(width: 8),
                               Expanded(
-                                child: _HomeDealtCard(
+                                child: CyberDealtCard(
                                   key: const ValueKey('home-stat-wins'),
                                   index: 2,
                                   initialDelay: const Duration(
@@ -177,7 +176,7 @@ class HomeScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 24),
                           // PLAY MATCH — hero CTA, unchanged.
-                          _HomeSlideUpFadeIn(
+                          CyberSlideUpFadeIn(
                             delay: const Duration(milliseconds: 390),
                             offset: 22,
                             child: state.deckReady
@@ -204,7 +203,7 @@ class HomeScreen extends StatelessWidget {
                           Row(
                             children: [
                               Expanded(
-                                child: _HomeDealtCard(
+                                child: CyberDealtCard(
                                   key: const ValueKey('home-action-deck'),
                                   index: 0,
                                   initialDelay: const Duration(
@@ -223,7 +222,7 @@ class HomeScreen extends StatelessWidget {
                               ),
                               const SizedBox(width: 12),
                               Expanded(
-                                child: _HomeDealtCard(
+                                child: CyberDealtCard(
                                   key: const ValueKey('home-action-history'),
                                   index: 1,
                                   initialDelay: const Duration(
@@ -246,7 +245,7 @@ class HomeScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 16),
                           // Secondary links (preserved): how-to-play + replay.
-                          _HomeSlideUpFadeIn(
+                          CyberSlideUpFadeIn(
                             delay: const Duration(milliseconds: 650),
                             offset: 14,
                             child: Wrap(
@@ -295,7 +294,7 @@ class HomeScreen extends StatelessWidget {
                   left: 0,
                   right: 0,
                   bottom: 0,
-                  child: _HomeSlideUpFadeIn(
+                  child: CyberSlideUpFadeIn(
                     delay: const Duration(milliseconds: 720),
                     offset: 36,
                     child: const DailyDropButton(),
@@ -336,159 +335,6 @@ bool _isDuelWin(MatchHistoryEntry entry) {
     return entry.playerScore > entry.opponentScore;
   }
   return (entry.penaltyPlayerScore ?? 0) > (entry.penaltyOpponentScore ?? 0);
-}
-
-class _HomeSlideUpFadeIn extends StatefulWidget {
-  const _HomeSlideUpFadeIn({
-    required this.child,
-    this.delay = Duration.zero,
-    this.offset = 30,
-  });
-
-  final Widget child;
-  final Duration delay;
-  final double offset;
-
-  @override
-  State<_HomeSlideUpFadeIn> createState() => _HomeSlideUpFadeInState();
-}
-
-class _HomeSlideUpFadeInState extends State<_HomeSlideUpFadeIn>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _progress;
-  Timer? _kickoff;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 480),
-    );
-    _progress = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutCubic,
-    );
-    if (widget.delay == Duration.zero) {
-      _controller.forward();
-    } else {
-      _kickoff = Timer(widget.delay, () {
-        if (mounted) _controller.forward();
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _kickoff?.cancel();
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _progress,
-      builder: (_, child) => Opacity(
-        opacity: _progress.value.clamp(0.0, 1.0),
-        child: Transform.translate(
-          offset: Offset(0, widget.offset * (1 - _progress.value)),
-          child: child,
-        ),
-      ),
-      child: widget.child,
-    );
-  }
-}
-
-class _HomeDealtCard extends StatefulWidget {
-  const _HomeDealtCard({
-    required this.index,
-    required this.child,
-    this.initialDelay = const Duration(milliseconds: 220),
-    this.staggerMs = 75,
-    this.flyDistance = 260,
-    this.duration = const Duration(milliseconds: 540),
-    super.key,
-  });
-
-  final int index;
-  final Widget child;
-  final Duration initialDelay;
-  final int staggerMs;
-  final double flyDistance;
-  final Duration duration;
-
-  @override
-  State<_HomeDealtCard> createState() => _HomeDealtCardState();
-}
-
-class _HomeDealtCardState extends State<_HomeDealtCard>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-  late final Animation<double> _slide;
-  late final Animation<double> _settle;
-  late final Animation<double> _opacity;
-  late final Animation<double> _tilt;
-  Timer? _kickoff;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(vsync: this, duration: widget.duration);
-    _slide = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
-    _settle = Tween<double>(
-      begin: 0.92,
-      end: 1,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
-    _opacity = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.0, 0.45, curve: Curves.easeIn),
-    );
-    _tilt = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
-
-    final delay =
-        widget.initialDelay +
-        Duration(milliseconds: widget.index * widget.staggerMs);
-    _kickoff = Timer(delay, () {
-      if (mounted) _controller.forward();
-    });
-  }
-
-  @override
-  void dispose() {
-    _kickoff?.cancel();
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (_, child) {
-        const tiltAmount = 0.07;
-        final tiltAngle =
-            (widget.index.isEven ? -tiltAmount : tiltAmount) *
-            (1 - _tilt.value);
-        return Opacity(
-          opacity: _opacity.value.clamp(0.0, 1.0),
-          child: Transform.translate(
-            offset: Offset(0, widget.flyDistance * (1 - _slide.value)),
-            child: Transform.rotate(
-              angle: tiltAngle,
-              child: Transform.scale(
-                scale: _settle.value.clamp(0.5, 1.2),
-                child: child,
-              ),
-            ),
-          ),
-        );
-      },
-      child: widget.child,
-    );
-  }
 }
 
 /// Greeble status strip above the hero: a live "ONLINE" indicator and a system

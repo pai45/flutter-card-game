@@ -443,7 +443,7 @@ class MockPredictionRepository implements PredictionRepository {
         ),
         QuizQuestion(
           id: 'q3',
-          text: 'Who will win PUNJAB vs KKR?',
+          text: 'Who will win Punjab vs KKR?',
           options: ['Punjab', 'Tie', 'KKR'],
           reward: 100,
         ),
@@ -524,7 +524,7 @@ class MockPredictionRepository implements PredictionRepository {
         ),
         QuizQuestion(
           id: 'q5',
-          text: 'Who wins PUNJAB vs RCB?',
+          text: 'Who wins Punjab vs RCB?',
           options: ['Punjab', 'Tie', 'Bangalore'],
           reward: 5,
           settledOptionIndex: 0,

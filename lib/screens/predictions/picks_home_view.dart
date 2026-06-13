@@ -9,6 +9,7 @@ import '../../config/theme.dart';
 import '../../models/picks.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/staggered_card_entrance.dart';
 import 'market_detail_screen.dart';
 import 'widgets/pick_market_card.dart';
 import 'widgets/pick_settlement_reveal.dart';
@@ -16,7 +17,14 @@ import 'widgets/pick_status_style.dart';
 import 'widgets/pick_trade_sheet.dart';
 
 class PicksHomeView extends StatefulWidget {
-  const PicksHomeView({super.key});
+  const PicksHomeView({
+    this.animateIntro = true,
+    this.onIntroPlayed,
+    super.key,
+  });
+
+  final bool animateIntro;
+  final VoidCallback? onIntroPlayed;
 
   @override
   State<PicksHomeView> createState() => _PicksHomeViewState();
@@ -33,10 +41,13 @@ class _PicksHomeViewState extends State<PicksHomeView> {
       builder: (context, state) {
         if (state.loading) return const _PicksSkeleton();
         final markets = state.filteredMarkets;
-        final stagger = !_introPlayed;
+        final stagger =
+            widget.animateIntro && !_introPlayed && markets.isNotEmpty;
         if (stagger) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
             _introPlayed = true;
+            widget.onIntroPlayed?.call();
           });
         }
         return CustomScrollView(
@@ -72,7 +83,7 @@ class _PicksHomeViewState extends State<PicksHomeView> {
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     for (var i = 0; i < markets.length; i++) ...[
-                      _CardEntrance(
+                      StaggeredCardEntrance(
                         index: i,
                         animate: stagger,
                         child: PickMarketCard(
@@ -119,42 +130,6 @@ class _PicksHomeViewState extends State<PicksHomeView> {
         result: result,
         winStreak: picks.state.winStreak,
       ),
-    );
-  }
-}
-
-/// Staggered slide-up entrance for the first screenful of cards.
-class _CardEntrance extends StatelessWidget {
-  const _CardEntrance({
-    required this.index,
-    required this.animate,
-    required this.child,
-  });
-
-  final int index;
-  final bool animate;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    if (!animate || index > 7) return child;
-    final delayFactor = index * 0.16;
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: Duration(milliseconds: (300 * (1 + delayFactor)).round()),
-      curve: Interval(
-        delayFactor / (1 + delayFactor),
-        1,
-        curve: Curves.easeOutCubic,
-      ),
-      builder: (context, t, child) => Opacity(
-        opacity: t,
-        child: Transform.translate(
-          offset: Offset(0, 12 * (1 - t)),
-          child: child,
-        ),
-      ),
-      child: child,
     );
   }
 }
@@ -331,6 +306,7 @@ class _PositionChip extends StatelessWidget {
   }
 }
 
+/// League filter with the same cut-corner CTA chip style used on leaderboard.
 class _LeagueSettingsRow extends StatelessWidget {
   const _LeagueSettingsRow({required this.active});
 
@@ -349,14 +325,16 @@ class _LeagueSettingsRow extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.only(right: 18),
               itemCount: filters.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 18),
+              separatorBuilder: (_, _) => const SizedBox(width: 7),
               itemBuilder: (context, index) {
                 final filter = filters[index];
-                return _TextFilter(
-                  label: _sportLabel(filter),
-                  active: filter == active,
-                  onTap: () =>
-                      context.read<PicksCubit>().setSportFilter(filter),
+                return Center(
+                  child: _TabCtaChip(
+                    label: _sportLabel(filter),
+                    active: filter == active,
+                    onTap: () =>
+                        context.read<PicksCubit>().setSportFilter(filter),
+                  ),
                 );
               },
             ),
@@ -408,9 +386,7 @@ class _SettingsButton extends StatelessWidget {
   }
 }
 
-/// Market-type filter, styled like the leaderboard league chips: cut-corner
-/// chips with an accent-tinted fill + border when active, in a horizontal
-/// scroll so they never crowd.
+/// Market-type filter with leaderboard-style cut-corner CTA chips.
 class _TypeFilterBar extends StatelessWidget {
   const _TypeFilterBar({required this.active});
 
@@ -429,7 +405,7 @@ class _TypeFilterBar extends StatelessWidget {
       child: Row(
         children: [
           for (var i = 0; i < items.length; i++) ...[
-            _TypeChip(
+            _TabCtaChip(
               label: items[i].label,
               active: items[i].value == active,
               onTap: () =>
@@ -443,9 +419,9 @@ class _TypeFilterBar extends StatelessWidget {
   }
 }
 
-/// A leaderboard-style cut-corner chip (mirrors `_SportChip`).
-class _TypeChip extends StatelessWidget {
-  const _TypeChip({
+/// Leaderboard-style cut-corner CTA chip used by both pick filter rows.
+class _TabCtaChip extends StatelessWidget {
+  const _TabCtaChip({
     required this.label,
     required this.active,
     required this.onTap,
@@ -461,7 +437,7 @@ class _TypeChip extends StatelessWidget {
     return PressableScale(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
         decoration: ShapeDecoration(
           color: active
               ? Cyber.cyan.withValues(alpha: 0.14)
@@ -490,7 +466,7 @@ class _TypeChip extends StatelessWidget {
   }
 }
 
-/// Symmetric four-corner cut-corner outline, matching the leaderboard chips.
+/// Top-left / bottom-right cut outline, matching the leaderboard chips.
 class _CutChipBorder extends ShapeBorder {
   const _CutChipBorder({required this.cut, this.side = BorderSide.none});
 
@@ -513,12 +489,10 @@ class _CutChipBorder extends ShapeBorder {
     final c = cut.clamp(0, rect.shortestSide / 2).toDouble();
     return Path()
       ..moveTo(rect.left + c, rect.top)
-      ..lineTo(rect.right - c, rect.top)
-      ..lineTo(rect.right, rect.top + c)
+      ..lineTo(rect.right, rect.top)
       ..lineTo(rect.right, rect.bottom - c)
       ..lineTo(rect.right - c, rect.bottom)
-      ..lineTo(rect.left + c, rect.bottom)
-      ..lineTo(rect.left, rect.bottom - c)
+      ..lineTo(rect.left, rect.bottom)
       ..lineTo(rect.left, rect.top + c)
       ..close();
   }
@@ -540,47 +514,6 @@ class _CutChipBorder extends ShapeBorder {
 
   @override
   ShapeBorder? lerpTo(ShapeBorder? b, double t) => this;
-}
-
-/// Sport filter label with a sliding cyan underline marking the active one.
-class _TextFilter extends StatelessWidget {
-  const _TextFilter({
-    required this.label,
-    required this.active,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            label,
-            style: Cyber.label(
-              10,
-              color: active ? Colors.white : Cyber.muted.withValues(alpha: 0.8),
-              letterSpacing: 0.9,
-            ),
-          ),
-          const SizedBox(height: 4),
-          AnimatedScale(
-            scale: active ? 1 : 0,
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOutCubic,
-            child: Container(width: 18, height: 2, color: Cyber.cyan),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _BoxFilter extends StatelessWidget {

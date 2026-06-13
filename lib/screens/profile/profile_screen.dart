@@ -10,45 +10,35 @@ import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../models/avatar_option.dart';
 import '../../models/picks.dart';
+import '../../models/player_stats.dart';
+import '../../models/profile_banner_option.dart';
+import '../../models/progression.dart';
+import '../../services/achievement_progress.dart';
 import '../../services/secure_storage_service.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
-import '../../widgets/player_level_badge.dart';
 import '../deck/all_cards_screen.dart';
 import '../deck/deck_builder_screen.dart';
 import '../how_to_play/how_to_play_screen.dart';
+import '../match_history/match_history_pages.dart';
 import '../predictions/prediction_match_history_screen.dart';
 import '../predictions/prediction_picks_history_screen.dart';
+import '../predictions/widgets/history_hud.dart' show CutChipBorder;
+import 'achievements_screen.dart';
+import 'widgets/achievement_grid.dart';
+import 'widgets/profile_card.dart';
+import 'widgets/profile_stat_band.dart';
 
-/// Flat pastel fills for profile cards — a 10% accent wash over the panel base.
-abstract final class _ProfilePastel {
-  static const _tint = 0.10;
-
-  static Color _wash(Color accent, [Color base = Cyber.panel]) =>
-      Color.lerp(base, accent, _tint)!;
-
-  static final header = _wash(Cyber.cyan);
-
-  static Color section(Color accent) => _wash(accent);
-
-  static Color statTile(Color accent, int index) => _wash(accent, Cyber.panel2);
-}
-
-/// PROFILE tab — player identity over two record cards: MY MATCHES (matchday
-/// prediction quiz) and MY PICKS (Oz coin markets/events/futures), followed by the
-/// card-game utilities (deck builder, all cards, how to play) and settings.
-///
-/// The layout mirrors the shared design: a banner-headed identity card, two
-/// accent-coded stat sections each with a "View History" footer, and a stack of
-/// HUD navigation rows. All chrome is built from the shared `Cyber.*` tokens and
-/// components so it stays on-brand with the rest of the app.
+/// PROFILE tab — a game-style "player dossier": a player-card hero (avatar,
+/// banner, level + XP), a derived achievements showcase, and honest career /
+/// prediction / picks telemetry bands, followed by the card-game utilities and
+/// settings. All chrome is gradient-free — depth comes from flat fills, borders
+/// and hard drop shadows (the FixtureCard language); the only focal glow is the
+/// hero's level chip + XP meter, per the design system's glow rule.
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({required this.onNavigate, super.key});
 
   final ValueChanged<AppSection> onNavigate;
-
-  // Mirrors the player's standing in the mock matchday leaderboard.
-  static const int _matchesRank = 122;
 
   @override
   Widget build(BuildContext context) {
@@ -59,19 +49,27 @@ class ProfileScreen extends StatelessWidget {
           const Positioned.fill(child: ColoredBox(color: Cyber.bg)),
           const Positioned.fill(child: CyberTextureOverlay()),
           SafeArea(
+            top: false,
+            left: false,
+            right: false,
             child: BlocBuilder<GameBloc, GameState>(
               builder: (context, game) {
                 return BlocBuilder<PredictionCubit, PredictionState>(
                   builder: (context, pred) {
-                    final totalPicks = pred.predictions.values.fold<int>(
+                    final picks = context.watch<PicksCubit>().state;
+                    final record = MatchRecord.fromHistory(game.matchHistory);
+
+                    // Prediction-quiz accuracy: correct answers / answers given.
+                    final answersGiven = pred.predictions.values.fold<int>(
                       0,
                       (sum, p) => sum + p.answers.length,
                     );
-                    final correct = pred.correctPredictions;
-                    final predAccuracy = totalPicks == 0
+                    final predAccuracy = answersGiven == 0
                         ? 0
-                        : (correct / totalPicks * 100).round();
-                    final picks = context.watch<PicksCubit>().state;
+                        : (pred.correctPredictions / answersGiven * 100)
+                              .round();
+
+                    // Picks win rate over settled (won/lost) positions only.
                     final settledPicks = picks.positions.values
                         .where(
                           (p) =>
@@ -86,47 +84,107 @@ class ProfileScreen extends StatelessWidget {
                         ? 0
                         : (wonPicks / settledPicks.length * 100).round();
 
+                    // Single source of truth, shared with the app-root
+                    // achievement-unlock watcher (services/achievement_progress).
+                    final stats = currentAchievementStats(context);
+
                     return ListView(
-                      padding: const EdgeInsets.only(bottom: 24),
+                      padding: EdgeInsets.zero,
                       children: [
-                        _IdentityHeader(game: game),
+                        _ProfileHeroCard(progression: game.progression),
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
                           child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              _StatSection(
-                                title: 'MY MATCHES',
-                                accent: Cyber.violet,
-                                icon: const _CrossedSwords(size: 22),
+                              AchievementGrid(
+                                stats: stats,
+                                onViewAll: () =>
+                                    showAchievementsScreen(context, stats),
+                              ),
+                              const SizedBox(height: 14),
+                              ProfileStatBand(
+                                title: 'CAREER',
+                                accent: Cyber.cyan,
+                                icon: const _CrossedSwords(
+                                  size: 20,
+                                  color: Cyber.cyan,
+                                ),
                                 stats: [
-                                  _Stat('MATCHES', '${pred.predictionsMade}'),
-                                  _Stat('ACCURACY', '$predAccuracy%'),
-                                  _Stat('CURRENT RANK', '$_matchesRank'),
+                                  ProfileStat.number('MATCHES', record.played),
+                                  ProfileStat.number(
+                                    'WIN %',
+                                    record.winRate,
+                                    suffix: '%',
+                                  ),
+                                  ProfileStat.text(
+                                    'STREAK',
+                                    '${record.currentStreak}',
+                                    valueColor: record.currentStreak > 0
+                                        ? Cyber.amber
+                                        : null,
+                                  ),
+                                ],
+                                onViewHistory: () => showMatchHistoryArchive(
+                                  context,
+                                  game.matchHistory,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              ProfileStatBand(
+                                title: 'PREDICTIONS',
+                                accent: Cyber.violet,
+                                icon: const Icon(
+                                  Icons.insights,
+                                  color: Cyber.violet,
+                                  size: 20,
+                                ),
+                                stats: [
+                                  ProfileStat.number(
+                                    'PLAYED',
+                                    pred.predictionsMade,
+                                  ),
+                                  ProfileStat.number(
+                                    'ACCURACY',
+                                    predAccuracy,
+                                    suffix: '%',
+                                  ),
+                                  ProfileStat.number(
+                                    'CORRECT',
+                                    pred.correctPredictions,
+                                  ),
                                 ],
                                 onViewHistory: () =>
                                     showPredictionMatchHistory(context),
                               ),
-                              const SizedBox(height: 14),
-                              _StatSection(
+                              const SizedBox(height: 12),
+                              ProfileStatBand(
                                 title: 'MY PICKS',
                                 accent: Cyber.success,
                                 icon: const Icon(
                                   Icons.keyboard_double_arrow_up,
                                   color: Cyber.success,
-                                  size: 22,
+                                  size: 20,
                                 ),
                                 stats: [
-                                  _Stat('PICKS', '${picks.positions.length}'),
-                                  _Stat('WIN RATE', '$pickAccuracy%'),
-                                  _Stat(
+                                  ProfileStat.number(
+                                    'PICKS',
+                                    picks.positions.length,
+                                  ),
+                                  ProfileStat.number(
+                                    'WIN RATE',
+                                    pickAccuracy,
+                                    suffix: '%',
+                                  ),
+                                  ProfileStat.number(
                                     'ACTIVE',
-                                    '${picks.activePositionCount}',
+                                    picks.activePositionCount,
                                   ),
                                 ],
                                 onViewHistory: () =>
                                     showPredictionPicksHistory(context),
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 18),
                               _NavRow(
                                 icon: Icons.dashboard_customize,
                                 label: 'Deck Builder',
@@ -199,15 +257,12 @@ class ProfileScreen extends StatelessWidget {
 
     if (!context.mounted || report == null) return;
 
-    final hasContent = report.content.isNotEmpty;
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
           content: Text(
-            hasContent
-                ? 'Report submitted: ${report.description}'
-                : 'Report submitted',
+            'Report submitted: ${report.description}',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
@@ -226,6 +281,172 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 }
+
+// ─── Player-card hero ─────────────────────────────────────────────────────────
+
+/// The dossier hero: a chamfered elevated card with a banner strip, an
+/// overlapping avatar, the player name + a greeble telemetry line, a glowing
+/// level chip (the focal element) and the XP meter.
+class _ProfileHeroCard extends StatelessWidget {
+  const _ProfileHeroCard({required this.progression});
+
+  final PlayerProgression progression;
+
+  @override
+  Widget build(BuildContext context) {
+    final level = progression.playerLevel;
+    return SizedBox(
+      height: 300,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 206,
+            child: _EmblemBanner(height: 206),
+          ),
+          Positioned(
+            top: 120,
+            left: 8,
+            right: 8,
+            child: ProfileCard(
+              padding: EdgeInsets.zero,
+              child: SizedBox(
+                height: 172,
+                child: Stack(
+                  children: [
+                    Positioned(
+                      right: 16,
+                      top: 18,
+                      child: _LevelChip(level: level),
+                    ),
+                    Positioned(
+                      left: 20,
+                      right: 20,
+                      top: 76,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'PLAYER ONE',
+                            style: Cyber.display(24, letterSpacing: 1.2),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'OPERATIVE // ID 0001',
+                            style: Cyber.label(
+                              10,
+                              color: Cyber.muted,
+                              letterSpacing: 1.6,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          _XpMeter(progression: progression),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const Positioned(left: 28, top: 72, child: _Avatar()),
+        ],
+      ),
+    );
+  }
+}
+
+/// Glowing level chip — the one focal element on the profile (it's "you" and
+/// primary, so it earns the glow).
+class _LevelChip extends StatelessWidget {
+  const _LevelChip({required this.level});
+
+  final int level;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+      decoration: ShapeDecoration(
+        color: Cyber.card,
+        shape: CutChipBorder(
+          cut: 7,
+          side: BorderSide(
+            color: Cyber.cyan.withValues(alpha: 0.85),
+            width: 1.4,
+          ),
+        ),
+        shadows: Cyber.glow(Cyber.cyan, alpha: 0.45, blur: 16, spread: 0),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'LVL',
+            style: Cyber.label(
+              9,
+              color: Cyber.cyan.withValues(alpha: 0.85),
+              letterSpacing: 1.6,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '$level',
+            style: Cyber.display(
+              20,
+              color: Cyber.cyan,
+            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _XpMeter extends StatelessWidget {
+  const _XpMeter({required this.progression});
+
+  final PlayerProgression progression;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = levelProgress(progression.totalXP);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'XP',
+              style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1.4),
+            ),
+            const Spacer(),
+            Text(
+              '${p.intoLevel} / ${p.levelSpan}',
+              style: Cyber.label(
+                10,
+                color: Cyber.muted,
+                letterSpacing: 0.6,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 7),
+        CyberProgressBar(
+          value: p.pct,
+          accent: Cyber.cyan,
+          trackColor: Cyber.bg,
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Bug report dialog ────────────────────────────────────────────────────────
 
 class _BugReport {
   const _BugReport({required this.description, required this.content});
@@ -448,104 +669,103 @@ class _BugReportAction extends StatelessWidget {
   }
 }
 
-// ─── Identity header ──────────────────────────────────────────────────────────
+// ─── Banner + avatar (with edit flows) ────────────────────────────────────────
 
-/// The banner-headed identity card: soft pastel header, avatar + level badge,
-/// and player name.
-class _IdentityHeader extends StatelessWidget {
-  const _IdentityHeader({required this.game});
+/// Banner strip for the hero. Gradient-free: a flat banner visual with a thin
+/// bottom blend into the profile background; the edit button floats top-right.
+class _EmblemBanner extends StatefulWidget {
+  const _EmblemBanner({this.height = 148});
 
-  final GameState game;
+  final double height;
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ClipPath(
-        clipper: CyberClipper(),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: _ProfilePastel.header,
-            border: Border(
-              bottom: BorderSide(color: Cyber.border),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const _EmblemBanner(),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const _Avatar(),
-                        const Spacer(),
-                        PlayerLevelBadge(
-                          progression: game.progression,
-                          flatStyle: true,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      'PLAYER ONE',
-                      style: Cyber.display(24, letterSpacing: 1.2),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'LVL ${game.progression.playerLevel} · ${game.progression.totalXP} XP',
-                      style: Cyber.label(
-                        11,
-                        color: Cyber.muted,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  State<_EmblemBanner> createState() => _EmblemBannerState();
 }
 
-/// Full-bleed hero banner; bottom fades into the identity card body.
-class _EmblemBanner extends StatelessWidget {
-  const _EmblemBanner();
+class _EmblemBannerState extends State<_EmblemBanner> {
+  String? _selectedBannerId;
+  final SecureGameStorage _storage = SecureGameStorage();
 
-  static const _asset = 'assets/backgrounds/profile_banner.png';
+  @override
+  void initState() {
+    super.initState();
+    _loadBanner();
+  }
+
+  Future<void> _loadBanner() async {
+    final bannerId = await _storage.loadSelectedProfileBannerId();
+    if (!mounted) return;
+    setState(() => _selectedBannerId = bannerId);
+  }
+
+  Future<void> _showBannerPicker() async {
+    final selectedId = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => _BannerEditScreen(initialBannerId: _selectedBannerId),
+      ),
+    );
+
+    if (selectedId == null) return;
+
+    await _storage.saveSelectedProfileBannerId(selectedId);
+    if (!mounted) return;
+    setState(() => _selectedBannerId = selectedId);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final mergeColor = _ProfilePastel.header;
+    final banner = profileBannerOptionById(_selectedBannerId);
     return SizedBox(
-      height: 148,
+      height: widget.height,
       width: double.infinity,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset(
-            _asset,
-            fit: BoxFit.cover,
-            alignment: Alignment.topCenter,
+          _ProfileBannerVisual(option: banner),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 76,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Cyber.bg.withValues(alpha: 0),
+                    Cyber.bg.withValues(alpha: 0.72),
+                    Cyber.bg,
+                  ],
+                  stops: const [0, 0.62, 1],
+                ),
+              ),
+            ),
           ),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                stops: const [0.35, 0.72, 1.0],
-                colors: [
-                  Colors.transparent,
-                  mergeColor.withValues(alpha: 0.55),
-                  mergeColor,
-                ],
+          Positioned(
+            top: 12,
+            right: 12,
+            child: Tooltip(
+              message: 'Edit banner',
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _showBannerPicker,
+                  customBorder: const RoundedRectangleBorder(),
+                  splashColor: Cyber.cyan.withValues(alpha: 0.18),
+                  highlightColor: Cyber.cyan.withValues(alpha: 0.10),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Cyber.bg.withValues(alpha: 0.86),
+                      border: Border.all(color: Cyber.cyan),
+                    ),
+                    child: const Icon(Icons.edit, color: Cyber.cyan, size: 16),
+                  ),
+                ),
               ),
             ),
           ),
@@ -553,6 +773,72 @@ class _EmblemBanner extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ProfileBannerVisual extends StatelessWidget {
+  const _ProfileBannerVisual({required this.option});
+
+  final ProfileBannerOption option;
+
+  @override
+  Widget build(BuildContext context) {
+    final assetPath = option.assetPath;
+    if (assetPath != null) {
+      return Image.asset(
+        assetPath,
+        fit: BoxFit.cover,
+        alignment: Alignment.center,
+      );
+    }
+    return CustomPaint(
+      painter: _ProfileBannerPlaceholderPainter(option: option),
+      child: const SizedBox.expand(),
+    );
+  }
+}
+
+/// Gradient-free banner art: a solid accent base with a chevron motif and faint
+/// scanlines for texture.
+class _ProfileBannerPlaceholderPainter extends CustomPainter {
+  const _ProfileBannerPlaceholderPainter({required this.option});
+
+  final ProfileBannerOption option;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final base = Color.lerp(
+      option.colors.first,
+      const Color(0xff05070d),
+      0.18,
+    )!;
+    canvas.drawRect(rect, Paint()..color = base);
+
+    final darkPaint = Paint()..color = Colors.black.withValues(alpha: 0.20);
+    final lightPaint = Paint()..color = Colors.white.withValues(alpha: 0.06);
+    final accentPaint = Paint()
+      ..color = option.accent.withValues(alpha: 0.30)
+      ..strokeWidth = 1.4;
+
+    for (var i = -2; i < 6; i++) {
+      final start = size.width * (i / 5);
+      final path = Path()
+        ..moveTo(start, 0)
+        ..lineTo(start + size.width * 0.34, 0)
+        ..lineTo(start + size.width * 0.12, size.height)
+        ..lineTo(start - size.width * 0.22, size.height)
+        ..close();
+      canvas.drawPath(path, i.isEven ? lightPaint : darkPaint);
+    }
+
+    for (var y = 18.0; y < size.height; y += 26) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y - 40), accentPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_ProfileBannerPlaceholderPainter oldDelegate) =>
+      oldDelegate.option != option;
 }
 
 class _Avatar extends StatefulWidget {
@@ -610,7 +896,10 @@ class _AvatarState extends State<_Avatar> {
               height: 96,
               decoration: BoxDecoration(
                 color: Cyber.panel,
-                border: Border.all(color: Cyber.border, width: 2),
+                border: Border.all(color: Cyber.cyan, width: 2),
+                boxShadow: const [
+                  BoxShadow(color: Color(0xff04060b), offset: Offset(0, 4)),
+                ],
               ),
               child: Image.asset(
                 avatar.assetPath,
@@ -651,8 +940,6 @@ class _AvatarState extends State<_Avatar> {
   }
 }
 
-// ─── Stat section (MY MATCHES / MY PICKS) ─────────────────────────────────────
-
 // Avatar editing screen.
 class _AvatarEditScreen extends StatefulWidget {
   const _AvatarEditScreen({required this.initialAvatarId});
@@ -688,9 +975,7 @@ class _AvatarEditScreenState extends State<_AvatarEditScreen> {
                   padding: const EdgeInsets.only(left: 20, right: 8),
                   decoration: const BoxDecoration(
                     color: Cyber.panel,
-                    border: Border(
-                      bottom: BorderSide(color: Cyber.border),
-                    ),
+                    border: Border(bottom: BorderSide(color: Cyber.border)),
                   ),
                   child: Row(
                     children: [
@@ -753,6 +1038,114 @@ class _AvatarEditScreenState extends State<_AvatarEditScreen> {
                     label: 'CONTINUE',
                     onPressed: () =>
                         Navigator.of(context).pop(_selectedAvatarId),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BannerEditScreen extends StatefulWidget {
+  const _BannerEditScreen({required this.initialBannerId});
+
+  final String? initialBannerId;
+
+  @override
+  State<_BannerEditScreen> createState() => _BannerEditScreenState();
+}
+
+class _BannerEditScreenState extends State<_BannerEditScreen> {
+  late String _selectedBannerId;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedBannerId = profileBannerOptionById(widget.initialBannerId).id;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Cyber.bg,
+      body: Stack(
+        children: [
+          const Positioned.fill(child: ColoredBox(color: Cyber.bg)),
+          const Positioned.fill(child: CyberTextureOverlay()),
+          SafeArea(
+            child: Column(
+              children: [
+                Container(
+                  height: 64,
+                  padding: const EdgeInsets.only(left: 20, right: 8),
+                  decoration: const BoxDecoration(
+                    color: Cyber.panel,
+                    border: Border(bottom: BorderSide(color: Cyber.border)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'CHOOSE YOUR BANNER',
+                          style: Cyber.display(19, letterSpacing: 1.1),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Close',
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close, color: Cyber.muted),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 520),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 22, 20, 104),
+                        child: GridView.builder(
+                          itemCount: profileBannerOptions.length,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 1,
+                                mainAxisSpacing: 16,
+                                crossAxisSpacing: 16,
+                                childAspectRatio: 2.35,
+                              ),
+                          itemBuilder: (context, index) {
+                            final banner = profileBannerOptions[index];
+                            return _EditableBannerTile(
+                              banner: banner,
+                              selected: banner.id == _selectedBannerId,
+                              onTap: () =>
+                                  setState(() => _selectedBannerId = banner.id),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            left: 24,
+            right: 24,
+            bottom: 18,
+            child: SafeArea(
+              top: false,
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 460),
+                  child: _AvatarTossCta(
+                    label: 'CONTINUE',
+                    onPressed: () =>
+                        Navigator.of(context).pop(_selectedBannerId),
                   ),
                 ),
               ),
@@ -938,6 +1331,71 @@ class _EditableAvatarTile extends StatelessWidget {
   }
 }
 
+class _EditableBannerTile extends StatelessWidget {
+  const _EditableBannerTile({
+    required this.banner,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final ProfileBannerOption banner;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = selected ? Cyber.lime : Cyber.line;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: banner.label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          decoration: BoxDecoration(
+            color: Cyber.panel,
+            border: Border.all(color: borderColor, width: selected ? 2 : 1),
+            boxShadow: selected
+                ? Cyber.glow(Cyber.lime, alpha: 0.18, blur: 14, spread: -2)
+                : null,
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              _ProfileBannerVisual(option: banner),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: 30,
+                child: ColoredBox(color: Cyber.bg.withValues(alpha: 0.5)),
+              ),
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: 10,
+                child: Text(
+                  banner.label.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Cyber.label(
+                    10,
+                    color: Colors.white,
+                    letterSpacing: 1.3,
+                  ),
+                ),
+              ),
+              if (selected) const _EditableAvatarSelectedCorner(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _EditableAvatarSelectedCorner extends StatelessWidget {
   const _EditableAvatarSelectedCorner();
 
@@ -956,181 +1414,10 @@ class _EditableAvatarSelectedCorner extends StatelessWidget {
   }
 }
 
-// Stat section (MY MATCHES / MY PICKS).
-class _Stat {
-  const _Stat(this.label, this.value);
-  final String label;
-  final String value;
-}
-
-class _StatSection extends StatelessWidget {
-  const _StatSection({
-    required this.title,
-    required this.accent,
-    required this.icon,
-    required this.stats,
-    required this.onViewHistory,
-  });
-
-  final String title;
-  final Color accent;
-  final Widget icon;
-  final List<_Stat> stats;
-  final VoidCallback onViewHistory;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipPath(
-      clipper: CyberClipper(),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: _ProfilePastel.section(accent),
-          border: Border.all(color: Cyber.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header bar.
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.2),
-                border: Border(
-                  bottom: BorderSide(
-                    color: Colors.white.withValues(alpha: 0.1),
-                  ),
-                ),
-              ),
-              child: Row(
-                children: [
-                  SizedBox(width: 24, height: 24, child: Center(child: icon)),
-                  const SizedBox(width: 10),
-                  Text(
-                    title,
-                    style: Cyber.display(20, color: accent, letterSpacing: 1),
-                  ),
-                ],
-              ),
-            ),
-            // Stat tiles.
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 14, 12, 4),
-              child: Row(
-                children: [
-                  for (var i = 0; i < stats.length; i++) ...[
-                    if (i > 0) const SizedBox(width: 8),
-                    Expanded(
-                      child: _StatTile(
-                        stat: stats[i],
-                        accent: accent,
-                        index: i,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            // View History footer.
-            _ViewHistoryRow(accent: accent, onTap: onViewHistory),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatTile extends StatelessWidget {
-  const _StatTile({
-    required this.stat,
-    required this.accent,
-    required this.index,
-  });
-
-  final _Stat stat;
-  final Color accent;
-  final int index;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 16),
-      decoration: BoxDecoration(
-        color: _ProfilePastel.statTile(accent, index),
-        border: Border.all(color: Cyber.border),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            stat.label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: Cyber.body(
-              10,
-              color: Colors.white.withValues(alpha: 0.8),
-              weight: FontWeight.w600,
-              letterSpacing: 0.6,
-            ),
-          ),
-          const SizedBox(height: 10),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              stat.value,
-              style: Cyber.display(
-                24,
-                letterSpacing: 0.5,
-              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ViewHistoryRow extends StatelessWidget {
-  const _ViewHistoryRow({required this.accent, required this.onTap});
-
-  final Color accent;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.history, color: accent, size: 20),
-                const SizedBox(width: 12),
-                Text(
-                  'View History',
-                  style: Cyber.body(15, weight: FontWeight.w600),
-                ),
-              ],
-            ),
-            const Icon(Icons.chevron_right, color: Cyber.muted, size: 20),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 // ─── HUD navigation rows ──────────────────────────────────────────────────────
 
 class _NavRow extends StatelessWidget {
   const _NavRow({required this.icon, required this.label, required this.onTap});
-
-  static const _borderColor = Cyber.border;
 
   final IconData icon;
   final String label;
@@ -1147,7 +1434,7 @@ class _NavRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           decoration: BoxDecoration(
             color: Cyber.panel.withValues(alpha: 0.5),
-            border: Border.all(color: _borderColor),
+            border: Border.all(color: Cyber.border),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1168,21 +1455,22 @@ class _NavRow extends StatelessWidget {
   }
 }
 
-// ─── Crossed-swords glyph (MY MATCHES) ────────────────────────────────────────
+// ─── Crossed-swords glyph (CAREER) ────────────────────────────────────────────
 
-/// The crossed-swords glyph used for the MATCHES tab on the prediction hub,
-/// reused here so MY MATCHES carries the same icon language as the design.
+/// The crossed-swords glyph from the prediction hub's MATCHES tab, reused here
+/// for the CAREER band so it carries the same icon language.
 class _CrossedSwords extends StatelessWidget {
-  const _CrossedSwords({required this.size});
+  const _CrossedSwords({required this.size, this.color = Cyber.violet});
 
   final double size;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: size,
       height: size,
-      child: CustomPaint(painter: _CrossedSwordsPainter(Cyber.violet)),
+      child: CustomPaint(painter: _CrossedSwordsPainter(color)),
     );
   }
 }

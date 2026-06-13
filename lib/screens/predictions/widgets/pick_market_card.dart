@@ -78,59 +78,63 @@ class _PickMarketCardState extends State<PickMarketCard>
           _Strip(market: market, position: widget.position),
         ],
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            '${market.leagueLabel} · ${pickMarketTypeLabel(market.type)}',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Cyber.label(
-              8,
-              color: Cyber.muted.withValues(alpha: 0.85),
-              letterSpacing: 1.2,
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _LeagueMark(
+                  label: market.leagueLabel,
+                  color: _leaguePrimaryColor(market.leagueId),
+                ),
+                const Spacer(),
+                _PickTypePill(type: market.type),
+              ],
             ),
-          ),
-          const SizedBox(height: 7),
-          Text(
-            market.question,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: Cyber.body(15.5, weight: FontWeight.w900, height: 1.15),
-          ),
-          if (_contextLine(market) != null) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Text(
-              _contextLine(market)!,
-              maxLines: 1,
+              market.question,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.body(
-                11,
-                color: const Color(0xff9fb0c2),
-                weight: FontWeight.w600,
-                fontFeatures: const [FontFeature.tabularFigures()],
+              style: Cyber.body(18, weight: FontWeight.w900, height: 1.12),
+            ),
+            if (_contextLine(market) != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                _contextLine(market)!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Cyber.body(
+                  11,
+                  color: const Color(0xff9fb0c2),
+                  weight: FontWeight.w600,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
               ),
+            ],
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                for (var i = 0; i < visibleOutcomes.length; i++) ...[
+                  Expanded(
+                    child: _OutcomeBadge(
+                      market: market,
+                      outcome: visibleOutcomes[i],
+                      held: widget.position?.outcomeId == visibleOutcomes[i].id,
+                      onTap: market.canBuy
+                          ? () => _buy(visibleOutcomes[i])
+                          : null,
+                    ),
+                  ),
+                  if (i != visibleOutcomes.length - 1) const SizedBox(width: 8),
+                ],
+              ],
             ),
           ],
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              for (var i = 0; i < visibleOutcomes.length; i++) ...[
-                Expanded(
-                  child: _OutcomeBadge(
-                    market: market,
-                    outcome: visibleOutcomes[i],
-                    held: widget.position?.outcomeId == visibleOutcomes[i].id,
-                    onTap: market.canBuy
-                        ? () => _buy(visibleOutcomes[i])
-                        : null,
-                  ),
-                ),
-                if (i != visibleOutcomes.length - 1) const SizedBox(width: 8),
-              ],
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -227,6 +231,107 @@ class _StatusTag extends StatelessWidget {
       ).copyWith(letterSpacing: 0.6),
     );
   }
+}
+
+class _LeagueMark extends StatelessWidget {
+  const _LeagueMark({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final ink = color.computeLuminance() > 0.48
+        ? const Color(0xff07111e)
+        : Colors.white;
+    return SizedBox(
+      height: 28,
+      child: CustomPaint(
+        painter: _LeagueMarkPainter(color: color),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(11, 5, 11, 6),
+          child: Text(
+            _leagueCode(label),
+            maxLines: 1,
+            overflow: TextOverflow.clip,
+            style: Cyber.display(12, color: ink, letterSpacing: 0.6).copyWith(
+              height: 1,
+              shadows: [
+                Shadow(
+                  color: Colors.black.withValues(alpha: 0.22),
+                  blurRadius: 6,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PickTypePill extends StatelessWidget {
+  const _PickTypePill({required this.type});
+
+  final PickMarketType type;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 24,
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 9),
+      decoration: BoxDecoration(
+        color: const Color(0xff0f1826),
+        border: Border.all(color: Cyber.border.withValues(alpha: 0.78)),
+      ),
+      child: Text(
+        pickMarketTypeLabel(type),
+        style: Cyber.label(
+          8.5,
+          color: Cyber.muted.withValues(alpha: 0.9),
+          letterSpacing: 1.1,
+        ),
+      ),
+    );
+  }
+}
+
+class _LeagueMarkPainter extends CustomPainter {
+  const _LeagueMarkPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const cut = 6.0;
+    final rect = Offset.zero & size;
+    final path = Path()
+      ..moveTo(rect.left + cut, rect.top)
+      ..lineTo(rect.right, rect.top)
+      ..lineTo(rect.right, rect.bottom - cut)
+      ..lineTo(rect.right - cut, rect.bottom)
+      ..lineTo(rect.left, rect.bottom)
+      ..lineTo(rect.left, rect.top + cut)
+      ..close();
+    canvas
+      ..drawPath(
+        path.shift(const Offset(0, 3)),
+        Paint()..color = Color.lerp(color, Colors.black, 0.58)!,
+      )
+      ..drawPath(path, Paint()..color = color)
+      ..drawPath(
+        path,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1
+          ..color = Colors.white.withValues(alpha: 0.2),
+      );
+  }
+
+  @override
+  bool shouldRepaint(covariant _LeagueMarkPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 /// A filled, team-logo-style outcome CTA: octagon-cut color fill with a hard
@@ -532,4 +637,20 @@ String _closesLabel(DateTime closesAt) {
   if (diff.inMinutes < 60) return '${diff.inMinutes}M';
   if (diff.inHours < 24) return '${diff.inHours}H';
   return '${diff.inDays}D';
+}
+
+String _leagueCode(String label) {
+  final compact = label.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
+  if (compact.isEmpty) return 'LGE';
+  if (compact.length <= 3) return compact.padRight(3, ' ');
+  return compact.substring(0, 3);
+}
+
+Color _leaguePrimaryColor(String leagueId) {
+  return switch (leagueId.toLowerCase()) {
+    'ipl' => const Color(0xff5cdfff),
+    'epl' => const Color(0xffa855f7),
+    'fifa' => const Color(0xff2856ff),
+    _ => Cyber.cyan,
+  };
 }
