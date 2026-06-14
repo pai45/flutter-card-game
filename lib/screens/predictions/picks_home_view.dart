@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../blocs/game/game_bloc.dart';
-import '../../blocs/game/game_event.dart';
 import '../../blocs/picks/picks_cubit.dart';
 import '../../blocs/picks/picks_state.dart';
 import '../../config/theme.dart';
@@ -12,8 +10,6 @@ import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/staggered_card_entrance.dart';
 import 'market_detail_screen.dart';
 import 'widgets/pick_market_card.dart';
-import 'widgets/pick_settlement_reveal.dart';
-import 'widgets/pick_status_style.dart';
 import 'widgets/pick_trade_sheet.dart';
 
 class PicksHomeView extends StatefulWidget {
@@ -56,16 +52,7 @@ class _PicksHomeViewState extends State<PicksHomeView> {
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  _LeagueSettingsRow(active: state.sportFilter),
-                  const SizedBox(height: 9),
-                  _TypeFilterBar(active: state.typeFilter),
-                  if (state.positionList.isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    _MyPicksStrip(
-                      state: state,
-                      onClaimAll: () => _claimAll(context),
-                    ),
-                  ],
+                  _PickFiltersHeader(),
                 ]),
               ),
             ),
@@ -88,7 +75,7 @@ class _PicksHomeViewState extends State<PicksHomeView> {
                         animate: stagger,
                         child: PickMarketCard(
                           market: markets[i],
-                          position: state.positionForMarket(markets[i].id),
+                          positions: state.positionsForMarket(markets[i].id),
                           onOpen: () => _openMarket(context, markets[i].id),
                           onBuy: (outcome) => showPickTradeSheet(
                             context: context,
@@ -115,250 +102,27 @@ class _PicksHomeViewState extends State<PicksHomeView> {
       ),
     );
   }
-
-  Future<void> _claimAll(BuildContext context) async {
-    playSound(SoundEffect.uiTap);
-    final picks = context.read<PicksCubit>();
-    final result = await picks.settleAllClaimable();
-    if (!context.mounted || result.settledCount == 0) return;
-    if (result.payoutOz > 0) {
-      context.read<GameBloc>().add(CoinsAdded(result.payoutOz));
-    }
-    await showPickSettlementReveal(
-      context,
-      PickSettlementRevealData.batch(
-        result: result,
-        winStreak: picks.state.winStreak,
-      ),
-    );
-  }
 }
 
-/// Portfolio presence on the hub: net P&L, win streak, claimables, and a
-/// horizontally scrolling rail of open positions.
-class _MyPicksStrip extends StatelessWidget {
-  const _MyPicksStrip({required this.state, required this.onClaimAll});
-
-  final PicksState state;
-  final VoidCallback onClaimAll;
+/// Market-type filters with settings (league + status/sort live in the sheet).
+class _PickFiltersHeader extends StatelessWidget {
+  const _PickFiltersHeader();
 
   @override
   Widget build(BuildContext context) {
-    final net = state.realizedProfitOz;
-    final netColor = net > 0
-        ? Cyber.lime
-        : net < 0
-        ? Cyber.red
-        : Cyber.muted;
-    final streak = state.winStreak;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            const SectionLabel(label: 'MY PICKS'),
-            const SizedBox(width: 10),
-            Text(
-              'NET ${net >= 0 ? '+' : '−'}${formatOzCompact(net.abs())} OZ',
-              style: Cyber.label(
-                8,
-                color: netColor,
-                letterSpacing: 0.8,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-            if (streak >= 2) ...[
-              const SizedBox(width: 10),
-              const Icon(
-                Icons.local_fire_department,
-                color: Cyber.gold,
-                size: 12,
-              ),
-              Text(
-                '×$streak',
-                style: Cyber.label(
-                  8,
-                  color: Cyber.gold,
-                  letterSpacing: 0.4,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
+    return BlocBuilder<PicksCubit, PicksState>(
+      builder: (context, state) {
+        return SizedBox(
+          height: 32,
+          child: Row(
+            children: [
+              Expanded(child: _TypeFilterBar(active: state.typeFilter)),
+              const SizedBox(width: 8),
+              _SettingsButton(onTap: () => _showPickSettings(context)),
             ],
-            const Spacer(),
-            if (state.hasClaimable)
-              _ClaimAllButton(count: state.claimableCount, onTap: onClaimAll),
-          ],
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 36,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: state.positionList.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 8),
-            itemBuilder: (context, index) =>
-                _PositionChip(position: state.positionList[index]),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// The one glowing element on the hub when present — claimable coins waiting.
-class _ClaimAllButton extends StatelessWidget {
-  const _ClaimAllButton({required this.count, required this.onTap});
-
-  final int count;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return PressableScale(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: Cyber.gold.withValues(alpha: 0.14),
-          border: Border.all(color: Cyber.gold),
-          boxShadow: Cyber.glow(Cyber.gold, alpha: 0.35, blur: 12),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.redeem, color: Cyber.gold, size: 13),
-            const SizedBox(width: 6),
-            Text(
-              'CLAIM $count',
-              style: Cyber.label(
-                9,
-                color: Cyber.gold,
-                letterSpacing: 1,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PositionChip extends StatelessWidget {
-  const _PositionChip({required this.position});
-
-  final PickPosition position;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = pickPositionColor(position.status);
-    final claimable = position.canSettle;
-    return PressableScale(
-      onTap: () {
-        playSound(SoundEffect.uiTap);
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => MarketDetailScreen(marketId: position.marketId),
           ),
         );
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: const Color(0xff111b30),
-          border: Border.all(
-            color: claimable ? Cyber.gold : const Color(0xff243654),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 7,
-              height: 7,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-            ),
-            const SizedBox(width: 7),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 96),
-              child: Text(
-                position.outcomeLabel.toUpperCase(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Cyber.label(8, letterSpacing: 0.6),
-              ),
-            ),
-            const SizedBox(width: 7),
-            Text(
-              '${formatOzCompact(position.stakeOz)} OZ',
-              style: Cyber.label(
-                8,
-                color: Cyber.muted,
-                letterSpacing: 0.4,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// League filter with the same cut-corner CTA chip style used on leaderboard.
-class _LeagueSettingsRow extends StatelessWidget {
-  const _LeagueSettingsRow({required this.active});
-
-  final PickSportFilter active;
-
-  @override
-  Widget build(BuildContext context) {
-    const filters = PickSportFilter.values;
-    return SizedBox(
-      height: 32,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            right: 42,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.only(right: 18),
-              itemCount: filters.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 7),
-              itemBuilder: (context, index) {
-                final filter = filters[index];
-                return Center(
-                  child: _TabCtaChip(
-                    label: _sportLabel(filter),
-                    active: filter == active,
-                    onTap: () =>
-                        context.read<PicksCubit>().setSportFilter(filter),
-                  ),
-                );
-              },
-            ),
-          ),
-          Positioned(
-            right: 0,
-            top: 0,
-            bottom: 0,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                  colors: [Cyber.bg.withValues(alpha: 0), Cyber.bg, Cyber.bg],
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.only(left: 16),
-                child: _SettingsButton(onTap: () => _showPickSettings(context)),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -395,7 +159,7 @@ class _TypeFilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = <({String label, PickMarketType? value})>[
-      (label: 'ALL PICKS', value: null),
+      (label: 'ALL', value: null),
       (label: 'MATCHES', value: PickMarketType.match),
       (label: 'EVENT', value: PickMarketType.event),
       (label: 'FUTURES', value: PickMarketType.future),
@@ -516,56 +280,6 @@ class _CutChipBorder extends ShapeBorder {
   ShapeBorder? lerpTo(ShapeBorder? b, double t) => this;
 }
 
-class _BoxFilter extends StatelessWidget {
-  const _BoxFilter({
-    required this.label,
-    required this.active,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final box = AnimatedContainer(
-      duration: const Duration(milliseconds: 140),
-      height: 31,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: active
-            ? const Color(0xff12304a)
-            : const Color(0xff111827).withValues(alpha: 0.86),
-        border: Border.all(
-          color: active
-              ? Cyber.cyan.withValues(alpha: 0.7)
-              : const Color(0xff273654),
-        ),
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          label,
-          style: Cyber.label(
-            9,
-            color: active ? Cyber.cyan : Cyber.muted.withValues(alpha: 0.72),
-            letterSpacing: 0.7,
-          ),
-        ),
-      ),
-    );
-    return PressableScale(
-      onTap: onTap,
-      child: active
-          ? ClipPath(
-              clipper: const HudChamferClipper(bigCut: 9, smallCut: 2),
-              child: box,
-            )
-          : box,
-    );
-  }
-}
 
 class _EmptyMarkets extends StatelessWidget {
   const _EmptyMarkets({
@@ -680,14 +394,14 @@ Future<void> _showPickSettings(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
+    useSafeArea: true,
     backgroundColor: Colors.transparent,
     barrierColor: Colors.black.withValues(alpha: 0.72),
     builder: (_) => const _PickSettingsSheet(),
   );
 }
 
-/// Compact chip-based filter sheet: STATUS as a segmented row, SORT as a chip
-/// grid. Sport selection lives on the main filter row, not here.
+/// Compact chip-based filter sheet: LEAGUE, STATUS, and SORT.
 class _PickSettingsSheet extends StatelessWidget {
   const _PickSettingsSheet();
 
@@ -698,134 +412,141 @@ class _PickSettingsSheet extends StatelessWidget {
       builder: (context, state) {
         final cubit = context.read<PicksCubit>();
         return Padding(
-          padding: EdgeInsets.fromLTRB(8, 0, 8, bottom + 8),
+          padding: EdgeInsets.fromLTRB(0, 0, 0, bottom + 12),
           child: ClipPath(
-            clipper: const HudChamferClipper(bigCut: 16, smallCut: 3),
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xff10192d),
-                border: Border.all(color: Cyber.border),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const HudLine(),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'MARKET FILTERS',
-                          style: Cyber.label(
-                            12,
-                            color: Cyber.cyan,
-                            letterSpacing: 1.8,
+            clipper: const HudChamferClipper(bigCut: 18, smallCut: 4),
+            child: CustomPaint(
+              foregroundPainter: const HudSheetFramePainter(),
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xff152139), Color(0xff0b101c)],
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const HudLine(),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'MARKET FILTERS',
+                            style: Cyber.label(
+                              12,
+                              color: Cyber.cyan,
+                              letterSpacing: 1.8,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'STATUS',
-                          style: Cyber.label(
-                            8,
-                            color: Cyber.muted,
-                            letterSpacing: 1.4,
+                          const SizedBox(height: 16),
+                          Text(
+                            'LEAGUE',
+                            style: Cyber.label(
+                              8,
+                              color: Cyber.muted,
+                              letterSpacing: 1.4,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            for (final entry in const [
-                              (label: 'ALL', value: PickMarketStatusFilter.all),
-                              (
-                                label: 'OPEN',
-                                value: PickMarketStatusFilter.open,
-                              ),
-                              (
-                                label: 'CLOSED',
-                                value: PickMarketStatusFilter.closed,
-                              ),
-                            ]) ...[
-                              Expanded(
-                                child: _BoxFilter(
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 7,
+                            runSpacing: 7,
+                            children: [
+                              for (final filter in PickSportFilter.values)
+                                _TabCtaChip(
+                                  label: _sportLabel(filter),
+                                  active: state.sportFilter == filter,
+                                  onTap: () => cubit.setSportFilter(filter),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'STATUS',
+                            style: Cyber.label(
+                              8,
+                              color: Cyber.muted,
+                              letterSpacing: 1.4,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 7,
+                            runSpacing: 7,
+                            children: [
+                              for (final entry in const [
+                                (
+                                  label: 'ALL',
+                                  value: PickMarketStatusFilter.all,
+                                ),
+                                (
+                                  label: 'OPEN',
+                                  value: PickMarketStatusFilter.open,
+                                ),
+                                (
+                                  label: 'CLOSED',
+                                  value: PickMarketStatusFilter.closed,
+                                ),
+                              ])
+                                _TabCtaChip(
                                   label: entry.label,
                                   active: state.statusFilter == entry.value,
                                   onTap: () =>
                                       cubit.setStatusFilter(entry.value),
                                 ),
-                              ),
-                              if (entry.value != PickMarketStatusFilter.closed)
-                                const SizedBox(width: 7),
                             ],
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'SORT BY',
-                          style: Cyber.label(
-                            8,
-                            color: Cyber.muted,
-                            letterSpacing: 1.4,
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            for (final entry in const [
-                              (label: 'NEW', value: PickSortOption.newest),
-                              (
-                                label: 'START TIME',
-                                value: PickSortOption.startTime,
-                              ),
-                              (
-                                label: 'CLOSING',
-                                value: PickSortOption.closingSoon,
-                              ),
-                            ]) ...[
-                              Expanded(
-                                child: _BoxFilter(
+                          const SizedBox(height: 16),
+                          Text(
+                            'SORT BY',
+                            style: Cyber.label(
+                              8,
+                              color: Cyber.muted,
+                              letterSpacing: 1.4,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 7,
+                            runSpacing: 7,
+                            children: [
+                              for (final entry in const [
+                                (label: 'NEW', value: PickSortOption.newest),
+                                (
+                                  label: 'START TIME',
+                                  value: PickSortOption.startTime,
+                                ),
+                                (
+                                  label: 'CLOSING',
+                                  value: PickSortOption.closingSoon,
+                                ),
+                                (
+                                  label: 'VOLUME',
+                                  value: PickSortOption.volume,
+                                ),
+                                (
+                                  label: 'TRENDING',
+                                  value: PickSortOption.trending,
+                                ),
+                              ])
+                                _TabCtaChip(
                                   label: entry.label,
                                   active: state.sortOption == entry.value,
-                                  onTap: () => cubit.setSortOption(entry.value),
+                                  onTap: () =>
+                                      cubit.setSortOption(entry.value),
                                 ),
-                              ),
-                              if (entry.value != PickSortOption.closingSoon)
-                                const SizedBox(width: 7),
                             ],
-                          ],
-                        ),
-                        const SizedBox(height: 7),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _BoxFilter(
-                                label: 'VOLUME',
-                                active:
-                                    state.sortOption == PickSortOption.volume,
-                                onTap: () =>
-                                    cubit.setSortOption(PickSortOption.volume),
-                              ),
-                            ),
-                            const SizedBox(width: 7),
-                            Expanded(
-                              child: _BoxFilter(
-                                label: 'TRENDING',
-                                active:
-                                    state.sortOption == PickSortOption.trending,
-                                onTap: () => cubit.setSortOption(
-                                  PickSortOption.trending,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 7),
-                            const Expanded(child: SizedBox()),
-                          ],
-                        ),
-                      ],
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

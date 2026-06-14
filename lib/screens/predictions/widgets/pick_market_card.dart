@@ -14,14 +14,14 @@ import 'pick_status_style.dart';
 class PickMarketCard extends StatefulWidget {
   const PickMarketCard({
     required this.market,
-    required this.position,
+    required this.positions,
     required this.onOpen,
     required this.onBuy,
     super.key,
   });
 
   final PickMarket market;
-  final PickPosition? position;
+  final List<PickPosition> positions;
   final VoidCallback onOpen;
   final void Function(PickOutcome outcome) onBuy;
 
@@ -64,6 +64,11 @@ class _PickMarketCardState extends State<PickMarketCard>
   Widget build(BuildContext context) {
     final market = widget.market;
     final visibleOutcomes = market.outcomes.take(3).toList();
+    final showMatchTeams =
+        market.type == PickMarketType.match &&
+        market.homeLabel != null &&
+        market.awayLabel != null &&
+        visibleOutcomes.length >= 2;
     return FixtureCardFrame(
       onTap: () {
         playSound(SoundEffect.uiTap);
@@ -75,31 +80,36 @@ class _PickMarketCardState extends State<PickMarketCard>
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _OutcomeShareBar(outcomes: market.outcomes),
-          _Strip(market: market, position: widget.position),
+          _Strip(market: market, positions: widget.positions),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _LeagueMark(
-                  label: market.leagueLabel,
-                  color: _leaguePrimaryColor(market.leagueId),
-                ),
-                const Spacer(),
-                _PickTypePill(type: market.type),
-              ],
-            ),
-            const SizedBox(height: 8),
+      bodyPadding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _LeagueMark(
+                label: market.leagueLabel,
+                color: _leaguePrimaryColor(market.leagueId),
+              ),
+              const Spacer(),
+              _PickTypePill(type: market.type),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (showMatchTeams)
+            _MatchTeamsLine(
+              leftLabel: visibleOutcomes.first.label,
+              rightLabel: visibleOutcomes.last.label,
+            )
+          else ...[
             Text(
               market.question,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.body(18, weight: FontWeight.w900, height: 1.12),
+              style: Cyber.body(18, weight: FontWeight.w700, height: 1.12),
             ),
             if (_contextLine(market) != null) ...[
               const SizedBox(height: 4),
@@ -115,7 +125,15 @@ class _PickMarketCardState extends State<PickMarketCard>
                 ),
               ),
             ],
-            const SizedBox(height: 12),
+          ],
+          const SizedBox(height: 20),
+          if (market.type == PickMarketType.future)
+            _FutureOutcomeRail(
+              market: market,
+              positions: widget.positions,
+              onBuy: market.canBuy ? _buy : null,
+            )
+          else
             Row(
               children: [
                 for (var i = 0; i < visibleOutcomes.length; i++) ...[
@@ -123,18 +141,20 @@ class _PickMarketCardState extends State<PickMarketCard>
                     child: _OutcomeBadge(
                       market: market,
                       outcome: visibleOutcomes[i],
-                      held: widget.position?.outcomeId == visibleOutcomes[i].id,
+                      held: widget.positions.any(
+                        (p) => p.outcomeId == visibleOutcomes[i].id,
+                      ),
                       onTap: market.canBuy
                           ? () => _buy(visibleOutcomes[i])
                           : null,
                     ),
                   ),
-                  if (i != visibleOutcomes.length - 1) const SizedBox(width: 8),
+                  if (i != visibleOutcomes.length - 1)
+                    const SizedBox(width: 8),
                 ],
               ],
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -159,6 +179,117 @@ class _PickMarketCardState extends State<PickMarketCard>
       market.contextSubtitle,
     ].whereType<String>();
     return parts.isEmpty ? null : parts.join(' · ');
+  }
+}
+
+class _FutureOutcomeRail extends StatelessWidget {
+  const _FutureOutcomeRail({
+    required this.market,
+    required this.positions,
+    required this.onBuy,
+  });
+
+  static const _gap = 8.0;
+  static const _visibleBadges = 3.5;
+
+  final PickMarket market;
+  final List<PickPosition> positions;
+  final void Function(PickOutcome outcome)? onBuy;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        final minBadgeWidth = availableWidth < 56.0 ? availableWidth : 56.0;
+        final badgeWidth = ((availableWidth - _gap * 3) / _visibleBadges)
+            .clamp(minBadgeWidth, availableWidth)
+            .toDouble();
+
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (var i = 0; i < market.outcomes.length; i++) ...[
+                SizedBox(
+                  width: badgeWidth,
+                  child: _OutcomeBadge(
+                    market: market,
+                    outcome: market.outcomes[i],
+                    held: positions.any(
+                      (p) => p.outcomeId == market.outcomes[i].id,
+                    ),
+                    onTap: onBuy == null
+                        ? null
+                        : () => onBuy!(market.outcomes[i]),
+                  ),
+                ),
+                if (i != market.outcomes.length - 1)
+                  const SizedBox(width: _gap),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _MatchTeamsLine extends StatelessWidget {
+  const _MatchTeamsLine({required this.leftLabel, required this.rightLabel});
+
+  final String leftLabel;
+  final String rightLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _TeamNameText(
+            label: leftLabel,
+            alignment: Alignment.centerLeft,
+            textAlign: TextAlign.left,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _TeamNameText(
+            label: rightLabel,
+            alignment: Alignment.centerRight,
+            textAlign: TextAlign.right,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TeamNameText extends StatelessWidget {
+  const _TeamNameText({
+    required this.label,
+    required this.alignment,
+    required this.textAlign,
+  });
+
+  final String label;
+  final Alignment alignment;
+  final TextAlign textAlign;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: alignment,
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        textAlign: textAlign,
+        style: Cyber.body(18, weight: FontWeight.w700, height: 1.12),
+      ),
+    );
   }
 }
 
@@ -473,15 +604,14 @@ class _DeltaArrow extends StatelessWidget {
 /// Bottom strip mirroring the fixture card: a focal gold CTA when a result is
 /// claimable, a calm "you hold" line when positioned, otherwise volume + close.
 class _Strip extends StatelessWidget {
-  const _Strip({required this.market, required this.position});
+  const _Strip({required this.market, required this.positions});
 
   final PickMarket market;
-  final PickPosition? position;
+  final List<PickPosition> positions;
 
   @override
   Widget build(BuildContext context) {
-    final held = position;
-    if (held != null && held.canSettle) {
+    if (positions.any((p) => p.canSettle)) {
       return FixtureCardStrip(
         focal: true,
         topBorder: Colors.transparent,
@@ -505,7 +635,14 @@ class _Strip extends StatelessWidget {
         ),
       );
     }
-    if (held != null) {
+    if (positions.isNotEmpty) {
+      // One backed side → show its code + stake; several → a compact count of
+      // sides with the combined stake so 4-5 picks on one market still read.
+      final totalStake = positions.fold<int>(0, (sum, p) => sum + p.stakeOz);
+      final heldLabel = positions.length == 1
+          ? '${pickOutcomeCode(positions.first.outcomeLabel)} · '
+                '$totalStake OZ'
+          : '${positions.length} PICKS · $totalStake OZ';
       return FixtureCardStrip(
         topBorder: Colors.transparent,
         child: Column(
@@ -518,7 +655,7 @@ class _Strip extends StatelessWidget {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    '${pickOutcomeCode(held.outcomeLabel)} · ${held.stakeOz} OZ',
+                    heldLabel,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Cyber.label(
@@ -544,7 +681,8 @@ class _Strip extends StatelessWidget {
         ),
       );
     }
-    final more = market.outcomes.length > 3
+    final more =
+        market.type != PickMarketType.future && market.outcomes.length > 3
         ? '${market.outcomes.length - 3} MORE · '
         : '';
     return FixtureCardStrip(

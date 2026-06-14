@@ -2,6 +2,7 @@ import '../../config/enums.dart';
 import '../../models/cards.dart';
 import '../../models/deck.dart';
 import '../../models/match.dart';
+import '../../models/oz_coin_ledger.dart';
 import '../../models/packs.dart';
 import '../../models/progression.dart';
 import '../../utils/card_helpers.dart';
@@ -148,6 +149,7 @@ class GameState {
     required this.deckActions,
     required this.deckKeeper,
     required this.coins,
+    required this.coinLedger,
     required this.ownedCardIds,
     required this.ownedActionCardIds,
     required this.ownedCardBackIds,
@@ -195,6 +197,7 @@ class GameState {
       [defaultDeckSlots.first.keeper].whereType<String>().toList(),
     ).firstOrNull,
     coins: 0,
+    coinLedger: const [],
     ownedCardIds: const [],
     ownedActionCardIds: const [],
     ownedCardBackIds: const ['default'],
@@ -238,6 +241,7 @@ class GameState {
   final List<ActionCard> deckActions;
   final PlayerCard? deckKeeper;
   final int coins;
+  final List<OzCoinLedgerEntry> coinLedger;
   final List<String> ownedCardIds;
   final List<String> ownedActionCardIds;
   final List<String> ownedCardBackIds;
@@ -293,6 +297,7 @@ class GameState {
     List<ActionCard>? deckActions,
     Object? deckKeeper = _sentinel,
     int? coins,
+    List<OzCoinLedgerEntry>? coinLedger,
     List<String>? ownedCardIds,
     List<String>? ownedActionCardIds,
     List<String>? ownedCardBackIds,
@@ -337,6 +342,7 @@ class GameState {
         ? this.deckKeeper
         : deckKeeper as PlayerCard?,
     coins: coins ?? this.coins,
+    coinLedger: coinLedger ?? this.coinLedger,
     ownedCardIds: ownedCardIds ?? this.ownedCardIds,
     ownedActionCardIds: ownedActionCardIds ?? this.ownedActionCardIds,
     ownedCardBackIds: ownedCardBackIds ?? this.ownedCardBackIds,

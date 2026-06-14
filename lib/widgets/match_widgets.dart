@@ -147,12 +147,17 @@ class MatchPhaseScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     // No score to show when neither a label nor match state is supplied.
     final showScore = scoreLabel != null || state != null;
+    // Lift the docked action + scroll tail above the gesture/nav bar; the
+    // full-bleed StadiumBackground keeps reaching the screen edge (we opt out of
+    // GameScaffold's own bottom SafeArea).
+    final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
     return GameScaffold(
       title: title,
       subtitle: null,
       showShop: false,
       compactHeader: true,
       grain: true,
+      safeAreaBottom: false,
       titleUnderlay:
           scoreLabel == null &&
               state != null &&
@@ -180,7 +185,7 @@ class MatchPhaseScaffold extends StatelessWidget {
               16,
               16,
               16,
-              bottomAction == null ? 16 : 128,
+              (bottomAction == null ? 16 : 128) + bottomInset,
             ),
             itemBuilder: (_, index) => children[index],
             separatorBuilder: (_, _) => const SizedBox(height: 14),
@@ -214,7 +219,7 @@ class MatchPhaseScaffold extends StatelessWidget {
             Positioned(
               left: 16,
               right: 16,
-              bottom: 32,
+              bottom: 32 + bottomInset,
               child: bottomActionKey == null
                   ? bottomAction!
                   : SpotlightTarget(
@@ -369,7 +374,7 @@ class _ScoreDigit extends StatelessWidget {
           color: color,
           fontFamily: Cyber.displayFont,
           fontSize: 15,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w700,
           letterSpacing: 0.5,
           fontFeatures: const [FontFeature.tabularFigures()],
         ),
@@ -688,7 +693,7 @@ class _PendingSelectionBox extends StatelessWidget {
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.65),
               fontSize: 10,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
               letterSpacing: 1.2,
             ),
           ),
@@ -775,7 +780,7 @@ class LoadoutStatusPanel extends StatelessWidget {
             style: TextStyle(
               color: Cyber.cyan.withValues(alpha: 0.68),
               fontSize: 10,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
               letterSpacing: 2,
             ),
           ),
@@ -833,7 +838,7 @@ class MatchHistoryPanel extends StatelessWidget {
                   style: TextStyle(
                     color: Cyber.cyan.withValues(alpha: 0.68),
                     fontSize: 10,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 2,
                   ),
                 ),
@@ -932,7 +937,7 @@ class MatchHistoryHeaderButton extends StatelessWidget {
                   style: TextStyle(
                     color: history.isEmpty ? Cyber.muted : Cyber.cyan,
                     fontSize: 10,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 1.4,
                   ),
                 ),
@@ -1449,7 +1454,7 @@ class _RoleBadge extends StatelessWidget {
           color: color,
           fontFamily: Cyber.bodyFont,
           fontSize: 8,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w700,
           letterSpacing: 1,
         ),
       ),
@@ -1510,7 +1515,7 @@ class _HudIdentityState extends State<_HudIdentity>
             style: TextStyle(
               color: widget.color,
               fontFamily: 'Onest',
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
               fontSize: 11,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
@@ -1610,7 +1615,7 @@ class PlayerCardTile extends StatelessWidget {
         ),
         trailing: Text(
           '${card.rating}',
-          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
         ),
       ),
     );
@@ -1645,7 +1650,7 @@ class ActionCardTile extends StatelessWidget {
         ),
         trailing: Text(
           '+${card.power}',
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
         ),
       ),
     );

@@ -7,6 +7,7 @@ import '../../models/sport_match.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/stat_oz_top_bar.dart';
+import '../../widgets/staggered_card_entrance.dart';
 import '../../widgets/team_logo.dart';
 
 // ─── Domain ──────────────────────────────────────────────────────────────────
@@ -503,6 +504,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
           const Positioned.fill(child: ColoredBox(color: Cyber.bg)),
           const Positioned.fill(child: CyberTextureOverlay()),
           SafeArea(
+            top: false,
             bottom: false,
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -1181,16 +1183,26 @@ class _Body extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _Podium(entries: podium, meta: meta, accent: accent),
+                _Podium(
+                  entries: podium,
+                  meta: meta,
+                  accent: accent,
+                  animateCards: true,
+                ),
                 if (remaining.isNotEmpty) ...[
                   SizedBox(height: compact ? 18 : 24),
-                  for (final entry in remaining)
+                  for (var i = 0; i < remaining.length; i++)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 10),
-                      child: _LeaderboardRow(
-                        entry: entry,
-                        accent: accent,
-                        meta: meta,
+                      child: StaggeredCardEntrance(
+                        index: i + podium.length,
+                        animate: true,
+                        maxAnimatedIndex: entries.length,
+                        child: _LeaderboardRow(
+                          entry: remaining[i],
+                          accent: accent,
+                          meta: meta,
+                        ),
                       ),
                     ),
                 ],
@@ -1305,8 +1317,9 @@ class _UserRankBar extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  _formatInt(user.score),
+                _AnimatedScoreText(
+                  key: ValueKey('user-${type.name}-${user.score}-${meta.unit}'),
+                  value: user.score,
                   style: TextStyle(
                     color: accent,
                     fontFamily: Cyber.displayFont,
@@ -1341,11 +1354,13 @@ class _Podium extends StatelessWidget {
     required this.entries,
     required this.meta,
     required this.accent,
+    required this.animateCards,
   });
 
   final List<LeaderboardEntry> entries;
   final ScoreMeta meta;
   final Color accent;
+  final bool animateCards;
 
   @override
   Widget build(BuildContext context) {
@@ -1355,31 +1370,46 @@ class _Podium extends StatelessWidget {
     final third = entries[2];
     return Column(
       children: [
-        _WinnerTile(
-          entry: first,
-          meta: meta,
-          color: Cyber.gold,
-          avatarSize: 86,
-          primary: true,
+        StaggeredCardEntrance(
+          index: 0,
+          animate: animateCards,
+          maxAnimatedIndex: entries.length,
+          child: _WinnerTile(
+            entry: first,
+            meta: meta,
+            color: Cyber.gold,
+            avatarSize: 86,
+            primary: true,
+          ),
         ),
         const SizedBox(height: 10),
         Row(
           children: [
             Expanded(
-              child: _WinnerTile(
-                entry: second,
-                meta: meta,
-                color: accent,
-                avatarSize: 66,
+              child: StaggeredCardEntrance(
+                index: 1,
+                animate: animateCards,
+                maxAnimatedIndex: entries.length,
+                child: _WinnerTile(
+                  entry: second,
+                  meta: meta,
+                  color: accent,
+                  avatarSize: 66,
+                ),
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: _WinnerTile(
-                entry: third,
-                meta: meta,
-                color: Cyber.amber,
-                avatarSize: 66,
+              child: StaggeredCardEntrance(
+                index: 2,
+                animate: animateCards,
+                maxAnimatedIndex: entries.length,
+                child: _WinnerTile(
+                  entry: third,
+                  meta: meta,
+                  color: Cyber.amber,
+                  avatarSize: 66,
+                ),
               ),
             ),
           ],
@@ -1406,8 +1436,6 @@ class _WinnerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scoreText = _formatInt(entry.score);
-
     return Container(
       padding: EdgeInsets.all(primary ? 16 : 12),
       decoration: _cutDecoration(
@@ -1431,7 +1459,7 @@ class _WinnerTile extends StatelessWidget {
                   child: _WinnerCopy(entry: entry, color: color),
                 ),
                 const SizedBox(width: 12),
-                _WinnerScore(score: scoreText, unit: meta.unit, color: color),
+                _WinnerScore(score: entry.score, unit: meta.unit, color: color),
               ],
             )
           : Column(
@@ -1482,8 +1510,12 @@ class _WinnerTile extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            '$scoreText ${meta.unit}',
+                          _AnimatedScoreText(
+                            key: ValueKey(
+                              'winner-${entry.rank}-${entry.score}-${meta.unit}',
+                            ),
+                            value: entry.score,
+                            suffix: ' ${meta.unit}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -1545,7 +1577,7 @@ class _WinnerCopy extends StatelessWidget {
             color: Colors.white,
             fontFamily: Cyber.bodyFont,
             fontSize: 20,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w700,
             height: 1.05,
           ),
         ),
@@ -1565,7 +1597,7 @@ class _WinnerScore extends StatelessWidget {
     required this.color,
   });
 
-  final String score;
+  final int score;
   final String unit;
   final Color color;
 
@@ -1578,8 +1610,9 @@ class _WinnerScore extends StatelessWidget {
         children: [
           FittedBox(
             fit: BoxFit.scaleDown,
-            child: Text(
-              score,
+            child: _AnimatedScoreText(
+              key: ValueKey('podium-$score-$unit'),
+              value: score,
               maxLines: 1,
               style: TextStyle(
                 color: color,
@@ -1701,8 +1734,11 @@ class _LeaderboardRow extends StatelessWidget {
               children: [
                 FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: Text(
-                    _formatInt(entry.score),
+                  child: _AnimatedScoreText(
+                    key: ValueKey(
+                      'row-${entry.rank}-${entry.score}-${meta.unit}',
+                    ),
+                    value: entry.score,
                     maxLines: 1,
                     style: TextStyle(
                       color: accent,
@@ -1728,6 +1764,47 @@ class _LeaderboardRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AnimatedScoreText extends StatelessWidget {
+  const _AnimatedScoreText({
+    required this.value,
+    required this.style,
+    this.suffix = '',
+    this.maxLines,
+    this.overflow,
+    super.key,
+  });
+
+  final int value;
+  final TextStyle style;
+  final String suffix;
+  final int? maxLines;
+  final TextOverflow? overflow;
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.maybeOf(context);
+    if (mediaQuery?.disableAnimations ?? false) {
+      return _buildText(value);
+    }
+
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: value.toDouble()),
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.easeOutCubic,
+      builder: (context, current, _) => _buildText(current.round()),
+    );
+  }
+
+  Widget _buildText(int current) {
+    return Text(
+      '${_formatInt(current)}$suffix',
+      maxLines: maxLines,
+      overflow: overflow,
+      style: style,
     );
   }
 }
@@ -1842,23 +1919,30 @@ class _Avatar extends StatelessWidget {
 
     final color = ring ?? (highlight ? Cyber.cyan : Cyber.line);
     final avatar = _avatarForName(name);
-    return Container(
+    final borderWidth = highlight ? 2.0 : 1.2;
+    final borderColor = color.withValues(alpha: highlight ? 0.9 : 0.42);
+
+    return SizedBox(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        color: Cyber.panel,
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: color.withValues(alpha: highlight ? 0.9 : 0.42),
-          width: highlight ? 2 : 1.2,
-        ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: ClipOval(
-        child: Image.asset(
-          avatar.assetPath,
-          fit: BoxFit.cover,
-          alignment: Alignment.topCenter,
+      child: ClipPath(
+        clipper: const OctagonClipper(),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const ColoredBox(color: Cyber.panel),
+            Image.asset(
+              avatar.assetPath,
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+            ),
+            CustomPaint(
+              painter: OctagonBorderPainter(
+                color: borderColor,
+                strokeWidth: borderWidth,
+              ),
+            ),
+          ],
         ),
       ),
     );

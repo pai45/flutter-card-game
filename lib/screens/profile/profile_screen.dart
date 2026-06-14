@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_state.dart';
@@ -25,7 +26,9 @@ import '../predictions/prediction_match_history_screen.dart';
 import '../predictions/prediction_picks_history_screen.dart';
 import '../predictions/widgets/history_hud.dart' show CutChipBorder;
 import 'achievements_screen.dart';
+import 'oz_coin_history_screen.dart';
 import 'widgets/achievement_grid.dart';
+import 'widgets/oz_coin_tracker_card.dart';
 import 'widgets/profile_card.dart';
 import 'widgets/profile_stat_band.dart';
 
@@ -97,6 +100,12 @@ class ProfileScreen extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
+                              OzCoinTrackerCard(
+                                balance: game.coins,
+                                ledger: game.coinLedger,
+                                onViewHistory: () => showOzCoinHistory(context),
+                              ),
+                              const SizedBox(height: 14),
                               AchievementGrid(
                                 stats: stats,
                                 onViewAll: () =>
@@ -104,40 +113,16 @@ class ProfileScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 14),
                               ProfileStatBand(
-                                title: 'CAREER',
+                                title: 'PREDICTS',
                                 accent: Cyber.cyan,
-                                icon: const _CrossedSwords(
-                                  size: 20,
-                                  color: Cyber.cyan,
-                                ),
-                                stats: [
-                                  ProfileStat.number('MATCHES', record.played),
-                                  ProfileStat.number(
-                                    'WIN %',
-                                    record.winRate,
-                                    suffix: '%',
+                                icon: SvgPicture.asset(
+                                  'assets/icons/match.svg',
+                                  colorFilter: const ColorFilter.mode(
+                                    Cyber.cyan,
+                                    BlendMode.srcIn,
                                   ),
-                                  ProfileStat.text(
-                                    'STREAK',
-                                    '${record.currentStreak}',
-                                    valueColor: record.currentStreak > 0
-                                        ? Cyber.amber
-                                        : null,
-                                  ),
-                                ],
-                                onViewHistory: () => showMatchHistoryArchive(
-                                  context,
-                                  game.matchHistory,
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              ProfileStatBand(
-                                title: 'PREDICTIONS',
-                                accent: Cyber.violet,
-                                icon: const Icon(
-                                  Icons.insights,
-                                  color: Cyber.violet,
-                                  size: 20,
+                                  width: 20,
+                                  height: 20,
                                 ),
                                 stats: [
                                   ProfileStat.number(
@@ -159,12 +144,16 @@ class ProfileScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 12),
                               ProfileStatBand(
-                                title: 'MY PICKS',
-                                accent: Cyber.success,
-                                icon: const Icon(
-                                  Icons.keyboard_double_arrow_up,
-                                  color: Cyber.success,
-                                  size: 20,
+                                title: 'PICKS',
+                                accent: Cyber.lime,
+                                icon: SvgPicture.asset(
+                                  'assets/icons/pick.svg',
+                                  colorFilter: const ColorFilter.mode(
+                                    Cyber.lime,
+                                    BlendMode.srcIn,
+                                  ),
+                                  width: 20,
+                                  height: 20,
                                 ),
                                 stats: [
                                   ProfileStat.number(
@@ -183,6 +172,39 @@ class ProfileScreen extends StatelessWidget {
                                 ],
                                 onViewHistory: () =>
                                     showPredictionPicksHistory(context),
+                              ),
+                              const SizedBox(height: 12),
+                              ProfileStatBand(
+                                title: 'GAMES',
+                                accent: Cyber.amber,
+                                icon: SvgPicture.asset(
+                                  'assets/icons/game.svg',
+                                  colorFilter: const ColorFilter.mode(
+                                    Cyber.amber,
+                                    BlendMode.srcIn,
+                                  ),
+                                  width: 20,
+                                  height: 20,
+                                ),
+                                stats: [
+                                  ProfileStat.number('MATCHES', record.played),
+                                  ProfileStat.number(
+                                    'WIN %',
+                                    record.winRate,
+                                    suffix: '%',
+                                  ),
+                                  ProfileStat.text(
+                                    'STREAK',
+                                    '${record.currentStreak}',
+                                    valueColor: record.currentStreak > 0
+                                        ? Cyber.amber
+                                        : null,
+                                  ),
+                                ],
+                                onViewHistory: () => showMatchHistoryArchive(
+                                  context,
+                                  game.matchHistory,
+                                ),
                               ),
                               const SizedBox(height: 18),
                               _NavRow(
@@ -744,7 +766,9 @@ class _EmblemBannerState extends State<_EmblemBanner> {
             ),
           ),
           Positioned(
-            top: 12,
+            // +32 to clear the status bar now that the banner full-bleeds behind
+            // it under edge-to-edge.
+            top: 44,
             right: 12,
             child: Tooltip(
               message: 'Edit banner',
@@ -1455,68 +1479,3 @@ class _NavRow extends StatelessWidget {
   }
 }
 
-// ─── Crossed-swords glyph (CAREER) ────────────────────────────────────────────
-
-/// The crossed-swords glyph from the prediction hub's MATCHES tab, reused here
-/// for the CAREER band so it carries the same icon language.
-class _CrossedSwords extends StatelessWidget {
-  const _CrossedSwords({required this.size, this.color = Cyber.violet});
-
-  final double size;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: CustomPaint(painter: _CrossedSwordsPainter(color)),
-    );
-  }
-}
-
-class _CrossedSwordsPainter extends CustomPainter {
-  const _CrossedSwordsPainter(this.color);
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final blade = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.8
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    final guard = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-      Offset(w * 0.22, h * 0.84),
-      Offset(w * 0.82, h * 0.18),
-      blade,
-    );
-    canvas.drawLine(
-      Offset(w * 0.78, h * 0.84),
-      Offset(w * 0.18, h * 0.18),
-      blade,
-    );
-    canvas.drawLine(
-      Offset(w * 0.12, h * 0.66),
-      Offset(w * 0.34, h * 0.84),
-      guard,
-    );
-    canvas.drawLine(
-      Offset(w * 0.66, h * 0.84),
-      Offset(w * 0.88, h * 0.66),
-      guard,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _CrossedSwordsPainter old) => old.color != color;
-}

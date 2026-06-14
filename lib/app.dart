@@ -106,7 +106,7 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
-  // Default landing is the new prediction HOME.
+  // Default landing is Matches; its first internal tab is Predict.
   AppSection section = AppSection.predictions;
   int _predictionTab = 0;
   // A game flow to push once the starter-pack reveal finishes (first launch).

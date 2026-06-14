@@ -233,7 +233,7 @@ class _PickSettlementOverlayState extends State<_PickSettlementOverlay>
                               overflow: TextOverflow.ellipsis,
                               style: Cyber.body(
                                 15,
-                                weight: FontWeight.w900,
+                                weight: FontWeight.w700,
                                 height: 1.25,
                               ),
                             ),

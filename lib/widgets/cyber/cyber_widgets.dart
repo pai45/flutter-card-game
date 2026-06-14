@@ -534,7 +534,7 @@ class SectionLabel extends StatelessWidget {
       style: TextStyle(
         color: Cyber.cyan.withValues(alpha: 0.7),
         fontSize: 10,
-        fontWeight: FontWeight.w900,
+        fontWeight: FontWeight.w700,
         letterSpacing: 2,
         fontFeatures: const [FontFeature.tabularFigures()],
       ),
@@ -1913,7 +1913,7 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
                               style: const TextStyle(
                                 color: Cyber.bg,
                                 fontSize: 8,
-                                fontWeight: FontWeight.w900,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
@@ -2107,7 +2107,7 @@ class CyberChip extends StatelessWidget {
           color: color,
           fontFamily: 'Onest',
           fontSize: 10,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w700,
           fontFeatures: const [FontFeature.tabularFigures()],
         ),
       ),
@@ -2297,4 +2297,51 @@ class _CyberDealtCardState extends State<CyberDealtCard>
       child: widget.child,
     );
   }
+}
+
+/// Frame painter for HUD bottom sheets: chamfered border + cyan→magenta accent
+/// stripe along the top edge. Used by order-ticket and filter sheets.
+class HudSheetFramePainter extends CustomPainter {
+  const HudSheetFramePainter({this.bigCut = 18, this.smallCut = 4});
+
+  final double bigCut;
+  final double smallCut;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path =
+        HudChamferClipper(bigCut: bigCut, smallCut: smallCut).buildPath(size);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..color = Cyber.border,
+    );
+
+    final topPath = Path()
+      ..moveTo(0, bigCut)
+      ..lineTo(bigCut, 0)
+      ..lineTo(size.width - smallCut, 0)
+      ..lineTo(size.width, smallCut);
+    canvas.drawPath(
+      topPath,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..shader = LinearGradient(
+          colors: const [
+            Colors.transparent,
+            Cyber.cyan,
+            Cyber.magenta,
+            Colors.transparent,
+          ],
+          stops: const [0, 0.28, 0.72, 1],
+        ).createShader(Rect.fromLTWH(0, 0, size.width, bigCut + smallCut)),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant HudSheetFramePainter old) =>
+      old.bigCut != bigCut || old.smallCut != smallCut;
 }

@@ -15,6 +15,7 @@ class GameScaffold extends StatelessWidget {
     this.showShop = false,
     this.showTitle = true,
     this.grain = false,
+    this.safeAreaBottom = true,
     super.key,
   });
 
@@ -29,6 +30,11 @@ class GameScaffold extends StatelessWidget {
 
   /// Film-grain noise backdrop — reserved for the in-match (card game) screens.
   final bool grain;
+
+  /// Inset the body content above the navigation bar (keeps the textured
+  /// background full-bleed). Off for screens that manage their own bottom
+  /// insets behind a full-bleed layout (e.g. [MatchPhaseScaffold]).
+  final bool safeAreaBottom;
   final Widget child;
 
   @override
@@ -45,7 +51,10 @@ class GameScaffold extends StatelessWidget {
         showShop: showShop,
         showTitle: showTitle,
       ),
-      body: CyberBackground(grain: grain, child: child),
+      body: CyberBackground(
+        grain: grain,
+        child: safeAreaBottom ? SafeArea(top: false, child: child) : child,
+      ),
     );
   }
 }
@@ -84,6 +93,15 @@ class ReactHeaderBar extends StatelessWidget implements PreferredSizeWidget {
       automaticallyImplyLeading: false,
       toolbarHeight: barHeight,
       titleSpacing: 0,
+      // The gradient lives in flexibleSpace so it paints the whole AppBar —
+      // status-bar inset included — instead of just the toolbar.
+      flexibleSpace: const DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xff0b1120), Color(0xff070b14)],
+          ),
+        ),
+      ),
       title: Container(
         height: barHeight,
         padding: EdgeInsets.symmetric(
@@ -91,9 +109,6 @@ class ReactHeaderBar extends StatelessWidget implements PreferredSizeWidget {
           vertical: compact ? 6 : 8,
         ),
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xff0b1120), Color(0xff070b14)],
-          ),
           border: Border(bottom: BorderSide(color: Color(0xff1e2538))),
         ),
         child: Row(

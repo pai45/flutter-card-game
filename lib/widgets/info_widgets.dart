@@ -184,7 +184,7 @@ class MiniStat extends StatelessWidget {
           style: const TextStyle(
             color: Colors.grey,
             fontSize: 9,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w700,
             letterSpacing: 1.4,
           ),
         ),

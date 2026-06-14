@@ -33,6 +33,7 @@ class FixtureCardFrame extends StatelessWidget {
     this.tag,
     this.bodyFooter,
     this.bottomStrip,
+    this.bodyPadding,
     this.onTap,
     super.key,
   });
@@ -41,6 +42,7 @@ class FixtureCardFrame extends StatelessWidget {
   final Widget? tag;
   final Widget? bodyFooter;
   final Widget? bottomStrip;
+  final EdgeInsetsGeometry? bodyPadding;
   final VoidCallback? onTap;
 
   bool get _notched => tag != null;
@@ -82,12 +84,9 @@ class FixtureCardFrame extends StatelessWidget {
                     ),
                   ),
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      14,
-                      _notched ? 28 : 14,
-                      14,
-                      12,
-                    ),
+                    padding:
+                        bodyPadding ??
+                        EdgeInsets.fromLTRB(14, _notched ? 28 : 14, 14, 12),
                     child: body,
                   ),
                 ),

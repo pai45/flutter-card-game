@@ -2,16 +2,19 @@ import 'package:flutter/material.dart';
 
 import '../../../config/theme.dart';
 import '../../../models/achievement.dart';
-import '../../../widgets/cyber/cyber_widgets.dart';
 import 'achievement_badge.dart';
 import 'profile_card.dart';
 
 /// The achievements teaser on the profile: a header with the unlocked/total
-/// count and an arrow into the full achievements page, a thin completion meter,
-/// and a single row of badges led by the ones you've already achieved. Badges
+/// count and an arrow into the full achievements page, and a single row of
+/// badges led by the ones you've already achieved. Badges
 /// stagger in on first build (the gratification beat).
 class AchievementGrid extends StatefulWidget {
-  const AchievementGrid({required this.stats, required this.onViewAll, super.key});
+  const AchievementGrid({
+    required this.stats,
+    required this.onViewAll,
+    super.key,
+  });
 
   final AchievementStats stats;
   final VoidCallback onViewAll;
@@ -96,13 +99,7 @@ class _AchievementGridState extends State<AchievementGrid>
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          CyberProgressBar(
-            value: total == 0 ? 0 : unlocked / total,
-            accent: Cyber.gold,
-            trackColor: Cyber.bg,
-          ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           AchievementBadgeGrid(
             badges: _previewBadges(stats),
             stats: stats,

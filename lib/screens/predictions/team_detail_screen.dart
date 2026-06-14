@@ -107,7 +107,7 @@ class TeamDetailScreen extends StatelessWidget {
                                 for (final market in markets) ...[
                                   PickMarketCard(
                                     market: market,
-                                    position: picksState.positionForMarket(
+                                    positions: picksState.positionsForMarket(
                                       market.id,
                                     ),
                                     onOpen: () =>

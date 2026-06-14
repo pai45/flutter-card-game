@@ -6,6 +6,7 @@ import '../../blocs/game/game_event.dart';
 import '../../blocs/picks/picks_cubit.dart';
 import '../../blocs/picks/picks_state.dart';
 import '../../config/theme.dart';
+import '../../models/oz_coin_ledger.dart';
 import '../../models/picks.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
@@ -186,7 +187,14 @@ class _PredictionPicksHistoryScreenState
       return;
     }
     if (result.payoutOz > 0) {
-      context.read<GameBloc>().add(CoinsAdded(result.payoutOz));
+      context.read<GameBloc>().add(
+        CoinsAdded(
+          result.payoutOz,
+          source: OzCoinTransactionSource.pickPayout,
+          title: 'PICK PAYOUT',
+          subtitle: settled.marketQuestion,
+        ),
+      );
     }
     await showPickSettlementReveal(
       context,
@@ -342,7 +350,7 @@ class _PickCardBody extends StatelessWidget {
           position.marketQuestion,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: Cyber.body(15, weight: FontWeight.w900, height: 1.15),
+          style: Cyber.body(15, weight: FontWeight.w700, height: 1.15),
         ),
         if (context0 != null) ...[
           const SizedBox(height: 4),
@@ -394,11 +402,7 @@ class _PickCardBody extends StatelessWidget {
               children: [
                 Text(
                   'TO WIN',
-                  style: Cyber.label(
-                    7,
-                    color: Cyber.muted,
-                    letterSpacing: 1.2,
-                  ),
+                  style: Cyber.label(7, color: Cyber.muted, letterSpacing: 1.2),
                 ),
                 const SizedBox(height: 3),
                 Row(
@@ -410,7 +414,7 @@ class _PickCardBody extends StatelessWidget {
                       '${position.stakeOz} → ${position.maxPayoutOz}',
                       style: Cyber.body(
                         12.5,
-                        weight: FontWeight.w900,
+                        weight: FontWeight.w700,
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
@@ -502,18 +506,15 @@ class _PickHistoryStrip extends StatelessWidget {
                     'RESULT READY — TAP TO CLAIM',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.label(
-                      9,
-                      color: Cyber.gold,
-                      letterSpacing: 1,
-                    ).copyWith(
-                      shadows: [
-                        Shadow(
-                          color: Cyber.gold.withValues(alpha: 0.45),
-                          blurRadius: 10,
+                    style: Cyber.label(9, color: Cyber.gold, letterSpacing: 1)
+                        .copyWith(
+                          shadows: [
+                            Shadow(
+                              color: Cyber.gold.withValues(alpha: 0.45),
+                              blurRadius: 10,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
                   ),
                 ),
                 const SizedBox(width: 8),

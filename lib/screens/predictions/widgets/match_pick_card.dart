@@ -44,6 +44,7 @@ class _MatchPickCardState extends State<MatchPickCard> {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withValues(alpha: 0.72),
       builder: (_) => _PickConfirmSheet(
@@ -409,7 +410,7 @@ class _PickConfirmSheetState extends State<_PickConfirmSheet> {
                       widget.question,
                       style: Cyber.body(
                         16,
-                        weight: FontWeight.w900,
+                        weight: FontWeight.w700,
                         height: 1.2,
                       ),
                     ),

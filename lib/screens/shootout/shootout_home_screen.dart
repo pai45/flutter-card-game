@@ -45,7 +45,11 @@ class ShootoutHomeScreen extends StatelessWidget {
             rightSlot: PlayerLevelBadge(progression: state.progression),
           ),
           body: _ShootoutArenaBackground(
-            child: Center(
+            // Arena art stays full-bleed; inset the scroll content above the
+            // gesture bar so the PLAY CTA isn't clipped.
+            child: SafeArea(
+              top: false,
+              child: Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(24, 22, 24, 36),
                 child: ConstrainedBox(
@@ -233,6 +237,7 @@ class ShootoutHomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
             ),
           ),
         );

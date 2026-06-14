@@ -547,7 +547,7 @@ class _Op extends StatelessWidget {
       style: const TextStyle(
         color: Cyber.muted,
         fontSize: 18,
-        fontWeight: FontWeight.w900,
+        fontWeight: FontWeight.w700,
       ),
     );
   }
