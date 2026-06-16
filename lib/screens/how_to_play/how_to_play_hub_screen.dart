@@ -1,9 +1,57 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
+
+/// The four playable modes that have a How To Play guide. Order matches the
+/// [_guides] table so a mode maps straight to its guide by index.
+enum HowToPlayMode { predict, pick, pitchDuel, penaltyShootout }
+
+/// Opens the standalone How To Play guide for a single [mode]. Used by the in-
+/// context help affordances inside the Predict and Pick surfaces.
+void showHowToPlayGuide(BuildContext context, HowToPlayMode mode) {
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => _HowToPlayGuideScreen(guide: _guides[mode.index]),
+    ),
+  );
+}
+
+/// A compact, flat help affordance that drops a player straight into the guide
+/// for [mode]. Secondary chrome — flat fill + accent border, never glows.
+class HowToPlayButton extends StatelessWidget {
+  const HowToPlayButton({
+    required this.mode,
+    this.accent = Cyber.cyan,
+    super.key,
+  });
+
+  final HowToPlayMode mode;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return PressableScale(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        showHowToPlayGuide(context, mode);
+      },
+      child: Container(
+        width: 32,
+        height: 32,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: accent.withValues(alpha: 0.08),
+          border: Border.all(color: accent.withValues(alpha: 0.4)),
+        ),
+        child: Icon(Icons.help_outline, color: accent, size: 18),
+      ),
+    );
+  }
+}
 
 /// How To Play hub: one card per playable mode (Predict, Pick, Pitch Duel,
 /// Penalty Shootout). Each card opens a flat reference guide built from the

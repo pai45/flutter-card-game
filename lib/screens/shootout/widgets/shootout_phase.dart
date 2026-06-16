@@ -13,7 +13,6 @@ import '../../../models/match.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../../widgets/match_widgets.dart';
 import '../../../widgets/spotlight_walkthrough.dart';
-import '../../game/widgets/match_phases.dart' show CountdownRing;
 import 'penalty_goal_frame.dart';
 
 class ShootoutPhase extends StatefulWidget {

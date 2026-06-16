@@ -110,6 +110,8 @@ class AppTheme {
   static const Color indigo950 = Color.fromRGBO(30, 26, 77, 1);
   static const Color slate800 = Color.fromRGBO(29, 41, 61, 1);
   static const Color slate400 = Color.fromRGBO(148, 163, 184, 1);
+  static const Color onboardingPanelFill = Color.fromRGBO(16, 23, 44, 1);
+  static const Color onboardingPanelBorder = Color.fromRGBO(32, 41, 62, 1);
   static const Color whitea80 = Color.fromRGBO(255, 255, 255, 0.8);
   static const Color profileBackgroundColor = Color.fromRGBO(15, 22, 42, 1);
   static const Color blackA20 = Color.fromRGBO(0, 0, 0, 0.2);

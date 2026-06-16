@@ -4,6 +4,7 @@ import '../models/league.dart';
 import '../models/prediction.dart';
 import '../models/sport_match.dart';
 import '../models/team_standing.dart';
+import 'football_question_bank.dart';
 
 /// Data seam for the prediction hub. The UI/cubit only ever talk to this
 /// interface, so swapping [MockPredictionRepository] for an HTTP/Firebase
@@ -521,123 +522,16 @@ class MockPredictionRepository implements PredictionRepository {
   ];
 
   late final Map<String, PredictionQuiz> _quizzes = {
-    'fifa_fra_sen': _fifaQuiz(
-      'fifa_fra_sen',
-      'France',
-      'Senegal',
-      'Will France keep a clean sheet?',
-    ),
-    'fifa_irq_nor': _fifaQuiz(
-      'fifa_irq_nor',
-      'Iraq',
-      'Norway',
-      'Will Norway score in both halves?',
-    ),
-    'fifa_arg_alg': _fifaQuiz(
-      'fifa_arg_alg',
-      'Argentina',
-      'Algeria',
-      'Will Argentina have 55%+ possession?',
-    ),
-    'fifa_aut_jor': _fifaQuiz(
-      'fifa_aut_jor',
-      'Austria',
-      'Jordan',
-      'Will either team receive 3+ cards?',
-    ),
-    'fifa_gha_pan': _fifaQuiz(
-      'fifa_gha_pan',
-      'Ghana',
-      'Panama',
-      'Will Ghana score first?',
-    ),
-    'fifa_eng_cro': _fifaQuiz(
-      'fifa_eng_cro',
-      'England',
-      'Croatia',
-      'Will England win the corner count?',
-    ),
-    'fifa_por_cod': _fifaQuiz(
-      'fifa_por_cod',
-      'Portugal',
-      'Congo DR',
-      'Will Portugal score before 30 minutes?',
-    ),
-    'fifa_uzb_col': _fifaQuiz(
-      'fifa_uzb_col',
-      'Uzbekistan',
-      'Colombia',
-      'Will Colombia have 5+ shots on target?',
-    ),
-    'epl_mu_ars': const PredictionQuiz(
-      matchId: 'epl_mu_ars',
-      questions: [
-        QuizQuestion(
-          id: 'q1',
-          text: 'Predict the full-time score',
-          type: QuizQuestionType.exactScore,
-          reward: 100,
-          backgroundAsset: 'assets/backgrounds/predictions/mu_ars_q1.png',
-        ),
-        QuizQuestion(
-          id: 'q2',
-          text: 'There will be more than 8 corner kicks in the match.',
-          options: ['Yes', 'No'],
-          reward: 75,
-          backgroundAsset: 'assets/backgrounds/predictions/mu_ars_q2.png',
-        ),
-        QuizQuestion(
-          id: 'q3',
-          text:
-              'The first goal of the match will be scored before the 30-minute mark.',
-          options: ['Yes', 'No'],
-          reward: 75,
-          backgroundAsset: 'assets/backgrounds/predictions/mu_ars_q3.png',
-        ),
-        QuizQuestion(
-          id: 'q4',
-          text: 'Will Man Utd concede a red card?',
-          options: ['Yes', 'No'],
-          reward: 50,
-          backgroundAsset: 'assets/backgrounds/predictions/mu_ars_q4.png',
-        ),
-      ],
-    ),
-    'epl_liv_mc': const PredictionQuiz(
-      matchId: 'epl_liv_mc',
-      questions: [
-        QuizQuestion(
-          id: 'q1',
-          text: 'Predict the full-time score',
-          type: QuizQuestionType.exactScore,
-          reward: 100,
-        ),
-        QuizQuestion(
-          id: 'q2',
-          text: 'Both teams to score?',
-          options: ['Yes', 'No'],
-          reward: 50,
-        ),
-        QuizQuestion(
-          id: 'q3',
-          text: 'Total goals over/under 2.5?',
-          options: ['Over 2.5', 'Under 2.5'],
-          reward: 75,
-        ),
-        QuizQuestion(
-          id: 'q4',
-          text: 'Which side scores first?',
-          options: ['Man City', 'Liverpool', 'No goal'],
-          reward: 75,
-        ),
-        QuizQuestion(
-          id: 'q5',
-          text: 'Will a red card be shown?',
-          options: ['Yes', 'No'],
-          reward: 50,
-        ),
-      ],
-    ),
+    'fifa_fra_sen': _footballQuiz('fifa_fra_sen', 'France', 'Senegal'),
+    'fifa_irq_nor': _footballQuiz('fifa_irq_nor', 'Iraq', 'Norway'),
+    'fifa_arg_alg': _footballQuiz('fifa_arg_alg', 'Argentina', 'Algeria'),
+    'fifa_aut_jor': _footballQuiz('fifa_aut_jor', 'Austria', 'Jordan'),
+    'fifa_gha_pan': _footballQuiz('fifa_gha_pan', 'Ghana', 'Panama'),
+    'fifa_eng_cro': _footballQuiz('fifa_eng_cro', 'England', 'Croatia'),
+    'fifa_por_cod': _footballQuiz('fifa_por_cod', 'Portugal', 'Congo DR'),
+    'fifa_uzb_col': _footballQuiz('fifa_uzb_col', 'Uzbekistan', 'Colombia'),
+    'epl_mu_ars': _footballQuiz('epl_mu_ars', 'Man Utd', 'Arsenal'),
+    'epl_liv_mc': _footballQuiz('epl_liv_mc', 'Liverpool', 'Man City'),
     'epl_cfc_new': const PredictionQuiz(
       matchId: 'epl_cfc_new',
       questions: [
@@ -841,80 +735,11 @@ class MockPredictionRepository implements PredictionRepository {
     'ipl_mi_pjk': _cricketQuiz('ipl_mi_pjk', 'Mumbai', 'Punjab'),
   };
 
-  static PredictionQuiz _fifaQuiz(
-    String matchId,
-    String home,
-    String away,
-    String eventQuestion,
-  ) => PredictionQuiz(
-    matchId: matchId,
-    questions: [
-      const QuizQuestion(
-        id: 'q1',
-        text: 'Predict the full-time score',
-        type: QuizQuestionType.exactScore,
-        reward: 125,
-      ),
-      const QuizQuestion(
-        id: 'q2',
-        text: 'Both teams to score?',
-        options: ['Yes', 'No'],
-        reward: 75,
-      ),
-      QuizQuestion(
-        id: 'q3',
-        text: 'Which side scores first?',
-        options: [home, away, 'No goal'],
-        reward: 90,
-      ),
-      const QuizQuestion(
-        id: 'q4',
-        text: 'Total goals over/under 2.5?',
-        options: ['Over 2.5', 'Under 2.5'],
-        reward: 90,
-      ),
-      QuizQuestion(
-        id: 'q5',
-        text: eventQuestion,
-        options: const ['Yes', 'No'],
-        reward: 70,
-      ),
-    ],
-  );
-
-  static PredictionQuiz _footballQuiz(
-    String matchId,
-    String home,
-    String away,
-  ) => PredictionQuiz(
-    matchId: matchId,
-    questions: [
-      const QuizQuestion(
-        id: 'q1',
-        text: 'Predict the full-time score',
-        type: QuizQuestionType.exactScore,
-        reward: 100,
-      ),
-      const QuizQuestion(
-        id: 'q2',
-        text: 'Both teams to score?',
-        options: ['Yes', 'No'],
-        reward: 50,
-      ),
-      QuizQuestion(
-        id: 'q3',
-        text: 'Which side scores first?',
-        options: [home, away, 'No goal'],
-        reward: 75,
-      ),
-      const QuizQuestion(
-        id: 'q4',
-        text: 'Total goals over/under 2.5?',
-        options: ['Over 2.5', 'Under 2.5'],
-        reward: 75,
-      ),
-    ],
-  );
+  /// Football quizzes are built from the shared bank ([buildFootballQuiz]) so
+  /// every upcoming football fixture draws a gamified, per-match subset of the
+  /// canonical question set with per-question background art.
+  static PredictionQuiz _footballQuiz(String matchId, String home, String away) =>
+      buildFootballQuiz(matchId: matchId, home: home, away: away);
 
   static PredictionQuiz _cricketQuiz(
     String matchId,

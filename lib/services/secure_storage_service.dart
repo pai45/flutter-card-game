@@ -288,7 +288,10 @@ class SecureGameStorage {
   }
 
   Future<void> saveFollowedLeagueIds(List<String> leagueIds) async {
-    await _storage.write(key: _followedLeaguesKey, value: jsonEncode(leagueIds));
+    await _storage.write(
+      key: _followedLeaguesKey,
+      value: jsonEncode(leagueIds),
+    );
   }
 
   /// Favourite team per league as a leagueId → teamId map.
@@ -320,6 +323,16 @@ class SecureGameStorage {
       key: _onboardingCompleteKey,
       value: complete ? 'true' : 'false',
     );
+  }
+
+  Future<void> resetProfileSetup() async {
+    await Future.wait([
+      _storage.delete(key: _selectedAvatarKey),
+      _storage.delete(key: _selectedProfileBannerKey),
+      _storage.delete(key: _followedLeaguesKey),
+      _storage.delete(key: _favoriteTeamsKey),
+      _storage.write(key: _onboardingCompleteKey, value: 'false'),
+    ]);
   }
 
   /// The set of achievement ids already celebrated. Returns `null` when the key

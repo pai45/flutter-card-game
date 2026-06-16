@@ -148,6 +148,18 @@ class _AppShellState extends State<AppShell> {
     });
   }
 
+  Future<void> _logoutFromProfile() async {
+    await _storage.resetProfileSetup();
+    if (!mounted) return;
+    setState(() {
+      section = AppSection.predictions;
+      _predictionTab = 0;
+      _pendingGameLaunch = null;
+      _selectedAvatarId = null;
+      _onboardingComplete = false;
+    });
+  }
+
   /// Enter the card game ("Pitch Duel") as a full-screen pushed flow from the
   /// GAMES tab. App-level destinations selected inside it pop back and switch
   /// the shell; card-game-internal sections are handled within GameTabContent.
@@ -264,7 +276,10 @@ class _AppShellState extends State<AppShell> {
           return switch (section) {
             AppSection.shop => ShopScreen(onNavigate: _go),
             AppSection.leaderboard => LeaderboardScreen(onNavigate: _go),
-            AppSection.profile => ProfileScreen(onNavigate: _go),
+            AppSection.profile => ProfileScreen(
+              onNavigate: _go,
+              onLogout: _logoutFromProfile,
+            ),
             _ => PredictionHomeScreen(
               activeTab: _predictionTab,
               onTabChanged: (tab) => setState(() => _predictionTab = tab),
