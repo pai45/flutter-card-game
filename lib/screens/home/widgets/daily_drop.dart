@@ -188,7 +188,7 @@ class _DailyDropButtonState extends State<DailyDropButton>
                                           ? Cyber.bg.withValues(alpha: 0.72)
                                           : Cyber.muted,
                                       fontSize: 10,
-                                      fontWeight: FontWeight.w900,
+                                      fontWeight: FontWeight.w700,
                                       letterSpacing: 2,
                                     ),
                                   ),

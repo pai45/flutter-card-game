@@ -13,7 +13,7 @@ class CyberTab {
   final Widget Function(Color color, double size) icon;
 }
 
-/// Top segmented tab bar (MATCHES / PICK / GAMES). A calm dark bar with the
+/// Top segmented tab bar (PREDICT / PICK / GAMES). A calm dark bar with the
 /// ACTIVE tab raised as a bright, glowing trapezoid — square top, chamfered
 /// bottom — that dips below the bar baseline. Per the glow rule, only the
 /// active tab glows; the inactive tabs are plain icon + label.

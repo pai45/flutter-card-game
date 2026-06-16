@@ -922,7 +922,7 @@ class FiveSideDeckPanel extends StatelessWidget {
                     style: TextStyle(
                       color: Cyber.cyan.withValues(alpha: 0.65),
                       fontSize: 10,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                       letterSpacing: 2,
                     ),
                   ),
@@ -970,7 +970,7 @@ class FiveSideDeckPanel extends StatelessWidget {
               style: TextStyle(
                 color: Cyber.cyan.withValues(alpha: 0.65),
                 fontSize: 10,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
                 letterSpacing: 1.7,
               ),
             ),

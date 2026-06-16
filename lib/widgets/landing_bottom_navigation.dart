@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../config/enums.dart';
 import '../config/theme.dart';
@@ -232,7 +233,10 @@ class _NavIcon extends StatelessWidget {
       return SizedBox(
         width: 20,
         height: 20,
-        child: CustomPaint(painter: _MatchesIconPainter(color)),
+        child: SvgPicture.string(
+          _matchesFooterIconSvg,
+          colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+        ),
       );
     }
 
@@ -240,63 +244,7 @@ class _NavIcon extends StatelessWidget {
   }
 }
 
-class _MatchesIconPainter extends CustomPainter {
-  const _MatchesIconPainter(this.color);
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final stroke = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.7
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    final lightStroke = Paint()
-      ..color = color.withValues(alpha: 0.82)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.35
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    canvas.drawLine(
-      Offset(w * 0.22, h * 0.22),
-      Offset(w * 0.77, h * 0.78),
-      stroke,
-    );
-    canvas.drawLine(
-      Offset(w * 0.78, h * 0.22),
-      Offset(w * 0.23, h * 0.78),
-      stroke,
-    );
-    canvas.drawLine(
-      Offset(w * 0.13, h * 0.62),
-      Offset(w * 0.32, h * 0.82),
-      lightStroke,
-    );
-    canvas.drawLine(
-      Offset(w * 0.68, h * 0.82),
-      Offset(w * 0.87, h * 0.62),
-      lightStroke,
-    );
-    canvas.drawLine(
-      Offset(w * 0.30, h * 0.13),
-      Offset(w * 0.40, h * 0.24),
-      lightStroke,
-    );
-    canvas.drawLine(
-      Offset(w * 0.70, h * 0.13),
-      Offset(w * 0.60, h * 0.24),
-      lightStroke,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _MatchesIconPainter oldDelegate) =>
-      oldDelegate.color != color;
-}
+const _matchesFooterIconSvg =
+    '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M580-360v-240h180v240H580Zm60-60h60v-120h-60v120Zm-440 60v-140h120v-40H200v-60h180v140H260v40h120v60H200Zm250-160v-60h60v60h-60Zm0 140v-60h60v60h-60ZM80-160v-640h200v-80h80v80h240v-80h80v80h200v640H80Zm80-80h290v-60h60v60h290v-480H510v60h-60v-60H160v480Zm0 0v-480 480Z"/></svg>';
 
 const _inactive = Color(0xff6a7282);

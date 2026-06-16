@@ -366,7 +366,7 @@ class _DayCell extends StatelessWidget {
                 color: textColor,
                 fontFamily: Cyber.bodyFont,
                 fontSize: 13,
-                fontWeight: selected ? FontWeight.w900 : FontWeight.w700,
+                fontWeight: FontWeight.w700,
                 height: 1,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),

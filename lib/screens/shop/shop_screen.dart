@@ -9,6 +9,7 @@ import '../../blocs/game/game_event.dart';
 import '../../blocs/game/game_state.dart';
 import '../../config/enums.dart';
 import '../../models/cards.dart';
+import '../../models/oz_coin_ledger.dart';
 import '../../models/shop.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/card_unpack_animation.dart';
@@ -235,6 +236,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
               const Positioned.fill(child: _AnimatedShopBackground()),
               const Positioned.fill(child: CyberTextureOverlay()),
               SafeArea(
+                top: false,
                 child: Column(
                   children: [
                     StatOzTopBar(
@@ -877,7 +879,15 @@ class _CoinTierTile extends StatelessWidget {
                       preview: CoinIcon(size: 42),
                     );
                     if (!context.mounted || !confirmed) return;
-                    context.read<GameBloc>().add(CoinsAdded(tier.coins));
+                    context.read<GameBloc>().add(
+                      CoinsAdded(
+                        tier.coins,
+                        source: OzCoinTransactionSource.shopTopUp,
+                        type: OzCoinTransactionType.topUp,
+                        title: 'COIN TOP-UP',
+                        subtitle: tier.name,
+                      ),
+                    );
                     onPurchased(tier.coins);
                     _showSnack(
                       context,
@@ -1274,7 +1284,7 @@ class _PackTile extends StatelessWidget {
                         '${pack.cardCount} CARDS',
                         style: const TextStyle(
                           color: _cyan,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w700,
                           fontSize: 10,
                           letterSpacing: 1.2,
                         ),
@@ -1303,7 +1313,7 @@ class _PackTile extends StatelessWidget {
                             style: TextStyle(
                               color: accent,
                               fontSize: 9,
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w700,
                               letterSpacing: 0.6,
                             ),
                           ),
@@ -1800,7 +1810,7 @@ class _PackDesignPainter extends CustomPainter {
               ? const Color(0xffff3df7)
               : accent.withValues(alpha: 0.90),
           fontSize: 11,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w700,
           letterSpacing: 1.5,
         ),
       ),
@@ -2266,7 +2276,7 @@ class _FilterChipButton extends StatelessWidget {
           label,
           style: TextStyle(
             color: active ? _bg : _cyan,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w700,
             fontSize: 11,
           ),
         ),

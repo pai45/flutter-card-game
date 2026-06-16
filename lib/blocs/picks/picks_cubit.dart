@@ -93,16 +93,11 @@ class PicksCubit extends Cubit<PicksState> {
       stakeOz: stakeOz,
       probabilityPercent: outcome.probabilityPercent,
     );
-    final existing = state.positionForMarket(marketId);
+    final existing = state.positionForOutcome(marketId, outcomeId);
     late final PickPosition position;
     if (existing != null) {
       if (existing.isFinal || existing.canSettle) {
         return PickPlacementResult.failure('This pick is no longer open');
-      }
-      if (existing.outcomeId != outcomeId) {
-        return PickPlacementResult.failure(
-          'You already hold ${existing.outcomeLabel}',
-        );
       }
       position = existing.addBuy(
         stakeOz: stakeOz,

@@ -9,6 +9,7 @@ import '../../blocs/game/game_event.dart';
 import '../../blocs/picks/picks_cubit.dart';
 import '../../blocs/picks/picks_state.dart';
 import '../../config/theme.dart';
+import '../../models/oz_coin_ledger.dart';
 import '../../models/picks.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
@@ -43,10 +44,11 @@ class _MarketDetailScreenState extends State<MarketDetailScreen> {
               if (market == null) {
                 return const _MissingMarket();
               }
-              final position = state.positionForMarket(market.id);
+              final positions = state.positionsForMarket(market.id);
+              final heldIds = positions.map((p) => p.outcomeId).toSet();
               final selectedId =
                   _selectedOutcomeId ??
-                  position?.outcomeId ??
+                  positions.firstOrNull?.outcomeId ??
                   market.outcomes.first.id;
               final selected =
                   market.outcomeFor(selectedId) ?? market.outcomes.first;
@@ -72,6 +74,7 @@ class _MarketDetailScreenState extends State<MarketDetailScreen> {
                         _OutcomeList(
                           market: market,
                           selectedId: selected.id,
+                          heldIds: heldIds,
                           onSelect: (outcome) {
                             setState(() => _selectedOutcomeId = outcome.id);
                           },
@@ -82,13 +85,17 @@ class _MarketDetailScreenState extends State<MarketDetailScreen> {
                           ),
                         ),
                         const SizedBox(height: 14),
-                        _PositionPanel(
-                          market: market,
-                          position: position,
-                          onSettle: position == null
-                              ? null
-                              : () => _settle(context, position),
-                        ),
+                        if (positions.isEmpty)
+                          _NoPositionPanel(market: market)
+                        else
+                          for (var i = 0; i < positions.length; i++) ...[
+                            if (i > 0) const SizedBox(height: 10),
+                            _PositionPanel(
+                              market: market,
+                              position: positions[i],
+                              onSettle: () => _settle(context, positions[i]),
+                            ),
+                          ],
                         const SizedBox(height: 14),
                         _RulesPanel(outcome: selected),
                       ],
@@ -119,7 +126,14 @@ class _MarketDetailScreenState extends State<MarketDetailScreen> {
       return;
     }
     if (result.payoutOz > 0) {
-      context.read<GameBloc>().add(CoinsAdded(result.payoutOz));
+      context.read<GameBloc>().add(
+        CoinsAdded(
+          result.payoutOz,
+          source: OzCoinTransactionSource.pickPayout,
+          title: 'PICK PAYOUT',
+          subtitle: settled.marketQuestion,
+        ),
+      );
     }
     await showPickSettlementReveal(
       context,
@@ -333,7 +347,7 @@ class _ScoreRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Text(label, style: Cyber.body(13, weight: FontWeight.w900)),
+          child: Text(label, style: Cyber.body(13, weight: FontWeight.w700)),
         ),
         Text(
           score ?? '-',
@@ -672,7 +686,7 @@ class _SelectedChartValues extends StatelessWidget {
                 style: Cyber.body(
                   10,
                   color: item.color,
-                  weight: FontWeight.w900,
+                  weight: FontWeight.w700,
                   fontFeatures: const [FontFeature.tabularFigures()],
                 ),
               ),
@@ -687,12 +701,14 @@ class _OutcomeList extends StatelessWidget {
   const _OutcomeList({
     required this.market,
     required this.selectedId,
+    required this.heldIds,
     required this.onSelect,
     required this.onBuy,
   });
 
   final PickMarket market;
   final String selectedId;
+  final Set<String> heldIds;
   final ValueChanged<PickOutcome> onSelect;
   final ValueChanged<PickOutcome> onBuy;
 
@@ -707,6 +723,7 @@ class _OutcomeList extends StatelessWidget {
           _OutcomeRow(
             outcome: outcome,
             selected: outcome.id == selectedId,
+            held: heldIds.contains(outcome.id),
             canBuy: market.canBuy,
             onSelect: () => onSelect(outcome),
             onBuy: () => onBuy(outcome),
@@ -722,6 +739,7 @@ class _OutcomeRow extends StatelessWidget {
   const _OutcomeRow({
     required this.outcome,
     required this.selected,
+    required this.held,
     required this.canBuy,
     required this.onSelect,
     required this.onBuy,
@@ -729,6 +747,7 @@ class _OutcomeRow extends StatelessWidget {
 
   final PickOutcome outcome;
   final bool selected;
+  final bool held;
   final bool canBuy;
   final VoidCallback onSelect;
   final VoidCallback onBuy;
@@ -752,11 +771,34 @@ class _OutcomeRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    outcome.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Cyber.body(13, weight: FontWeight.w900),
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          outcome.label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Cyber.body(13, weight: FontWeight.w700),
+                        ),
+                      ),
+                      if (held) ...[
+                        const SizedBox(width: 7),
+                        const Icon(
+                          Icons.check_rounded,
+                          color: Cyber.cyan,
+                          size: 13,
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          'BACKED',
+                          style: Cyber.label(
+                            8,
+                            color: Cyber.cyan,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 5),
                   CyberProgressBar(
@@ -813,6 +855,38 @@ class _OutcomeRow extends StatelessWidget {
   }
 }
 
+/// Shown when the player holds no ticket on this market yet.
+class _NoPositionPanel extends StatelessWidget {
+  const _NoPositionPanel({required this.market});
+
+  final PickMarket market;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xff10192d),
+        border: Border.all(color: Cyber.border),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.confirmation_number_outlined, color: Cyber.muted),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              market.canBuy
+                  ? 'Pick an outcome to create your ticket.'
+                  : 'Market is closed with no ticket held.',
+              style: Cyber.body(12, color: Cyber.muted),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PositionPanel extends StatelessWidget {
   const _PositionPanel({
     required this.market,
@@ -821,35 +895,12 @@ class _PositionPanel extends StatelessWidget {
   });
 
   final PickMarket market;
-  final PickPosition? position;
+  final PickPosition position;
   final VoidCallback? onSettle;
 
   @override
   Widget build(BuildContext context) {
-    if (position == null) {
-      return Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: const Color(0xff10192d),
-          border: Border.all(color: Cyber.border),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.confirmation_number_outlined, color: Cyber.muted),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                market.canBuy
-                    ? 'Pick an outcome to create your ticket.'
-                    : 'Market is closed with no ticket held.',
-                style: Cyber.body(12, color: Cyber.muted),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-    final statusColor = pickPositionColor(position!.status);
+    final statusColor = pickPositionColor(position.status);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -864,30 +915,30 @@ class _PositionPanel extends StatelessWidget {
               Text('YOUR TICKET', style: Cyber.label(11, color: statusColor)),
               const Spacer(),
               Text(
-                pickPositionLabel(position!.status),
+                pickPositionLabel(position.status),
                 style: Cyber.label(9, color: statusColor),
               ),
             ],
           ),
           const SizedBox(height: 12),
           Text(
-            position!.outcomeLabel,
+            position.outcomeLabel,
             style: Cyber.display(16, letterSpacing: 0.5),
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              _TicketMetric(label: 'STAKE', value: '${position!.stakeOz} Oz'),
+              _TicketMetric(label: 'STAKE', value: '${position.stakeOz} Oz'),
               const SizedBox(width: 8),
-              _TicketMetric(label: 'SHARES', value: '${position!.shareCount}'),
+              _TicketMetric(label: 'SHARES', value: '${position.shareCount}'),
               const SizedBox(width: 8),
               _TicketMetric(
                 label: 'MAX PAYOUT',
-                value: '${position!.maxPayoutOz} Oz',
+                value: '${position.maxPayoutOz} Oz',
               ),
             ],
           ),
-          if (position!.canSettle) ...[
+          if (position.canSettle) ...[
             const SizedBox(height: 12),
             FilledButton.icon(
               onPressed: onSettle,
@@ -898,18 +949,18 @@ class _PositionPanel extends StatelessWidget {
                     : 'REVEAL RESULT',
               ),
             ),
-          ] else if (position!.isFinal) ...[
+          ] else if (position.isFinal) ...[
             const SizedBox(height: 10),
             Text(
-              position!.status == PickPositionStatus.won
-                  ? '+${position!.realizedProfit} Oz profit'
-                  : position!.status == PickPositionStatus.voided
+              position.status == PickPositionStatus.won
+                  ? '+${position.realizedProfit} Oz profit'
+                  : position.status == PickPositionStatus.voided
                   ? 'Stake refunded'
-                  : '${position!.stakeOz} Oz spent',
+                  : '${position.stakeOz} Oz spent',
               style: Cyber.body(
                 12,
                 color: statusColor,
-                weight: FontWeight.w900,
+                weight: FontWeight.w700,
               ),
             ),
           ],
@@ -969,7 +1020,7 @@ class _MiniMetric extends StatelessWidget {
               value,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.body(11, weight: FontWeight.w900),
+              style: Cyber.body(11, weight: FontWeight.w700),
             ),
           ],
         ),
@@ -998,7 +1049,7 @@ class _TicketMetric extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: Cyber.body(
               12,
-              weight: FontWeight.w900,
+              weight: FontWeight.w700,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),

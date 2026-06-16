@@ -1,6 +1,6 @@
 enum AppSection {
   // App-level destinations (bottom nav).
-  predictions, // HOME — the sports-prediction hub
+  predictions, // MATCHES - app home and sports-prediction hub
   leaderboard,
   shop,
   profile,

@@ -7,6 +7,7 @@ class StaggeredCardEntrance extends StatelessWidget {
     required this.child,
     this.maxAnimatedIndex = 7,
     this.slideOffset = 48,
+    this.slideFromLeft = true,
     super.key,
   });
 
@@ -14,6 +15,7 @@ class StaggeredCardEntrance extends StatelessWidget {
   final bool animate;
   final int maxAnimatedIndex;
   final double slideOffset;
+  final bool slideFromLeft;
   final Widget child;
 
   static const _baseDuration = Duration(milliseconds: 320);
@@ -40,7 +42,10 @@ class StaggeredCardEntrance extends StatelessWidget {
         return Opacity(
           opacity: value,
           child: Transform.translate(
-            offset: Offset(-slideOffset * (1 - value), 0),
+            offset: Offset(
+              (slideFromLeft ? -slideOffset : slideOffset) * (1 - value),
+              0,
+            ),
             child: animatedChild,
           ),
         );

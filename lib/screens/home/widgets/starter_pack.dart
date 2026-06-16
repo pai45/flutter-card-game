@@ -27,7 +27,7 @@ class StarterPackHomePanel extends StatelessWidget {
             style: TextStyle(
               color: Cyber.amber.withValues(alpha: 0.9),
               fontSize: 10,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
               letterSpacing: 1.8,
             ),
           ),
@@ -105,7 +105,7 @@ class StarterPackRevealDialog extends StatelessWidget {
                 style: TextStyle(
                   color: Cyber.amber.withValues(alpha: 0.92),
                   fontSize: 11,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                   letterSpacing: 2.2,
                 ),
               ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class AppTheme {
   static const Color whiteColor = Color(0xFFFFFFFF);
@@ -327,7 +328,7 @@ class AppTheme {
         fontFamily: 'Onest',
         color: whiteColor,
         fontSize: 24,
-        fontWeight: FontWeight.w900,
+        fontWeight: FontWeight.w700,
       ),
       headlineMedium: TextStyle(
         fontFamily: 'Onest',
@@ -437,6 +438,16 @@ class AppTheme {
         titleSpacing: 0,
         iconTheme: const IconThemeData(color: whiteColor),
         titleTextStyle: Cyber.label(20),
+        // Keep the app-wide transparent/light overlay (AppBar would otherwise
+        // reset the status bar to its own computed style).
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: Brightness.dark,
+          systemNavigationBarColor: Colors.transparent,
+          systemNavigationBarIconBrightness: Brightness.light,
+          systemNavigationBarContrastEnforced: false,
+        ),
       ),
       cardTheme: const CardThemeData(
         color: backgroundSecondary,

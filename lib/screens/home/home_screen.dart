@@ -51,8 +51,12 @@ class HomeScreen extends StatelessWidget {
             rightSlot: PlayerLevelBadge(progression: state.progression),
           ),
           body: _HomeArenaBackground(
-            child: Stack(
-              children: [
+            // Keep the arena art full-bleed behind the bars; inset the content
+            // (incl. the bottom-pinned daily drop) above the gesture bar.
+            child: SafeArea(
+              top: false,
+              child: Stack(
+                children: [
                 Center(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(24, 22, 24, 144),
@@ -302,6 +306,7 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const TutorialTip(keyName: 'home', steps: homeTutorialSteps),
               ],
+            ),
             ),
           ),
           bottomNavigationBar: showBottomNavigation

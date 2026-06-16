@@ -30,9 +30,13 @@ class StatOzTopBar extends StatelessWidget {
       ),
     );
 
+    // Fold the status-bar inset into the bar so its fill covers the status bar
+    // (the host screen wraps this in SafeArea(top: false)). Content stays 54px.
+    final topInset = MediaQuery.viewPaddingOf(context).top;
+
     return Container(
-      height: 78,
-      padding: const EdgeInsets.fromLTRB(16, 12, 14, 12),
+      height: 78 + topInset,
+      padding: EdgeInsets.fromLTRB(16, 12 + topInset, 14, 12),
       decoration: BoxDecoration(
         color: const Color(0xff1a253a),
         border: Border(

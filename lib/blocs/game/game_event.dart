@@ -1,5 +1,6 @@
 import '../../models/cards.dart';
 import '../../models/deck.dart';
+import '../../models/oz_coin_ledger.dart';
 
 sealed class GameEvent {}
 
@@ -32,13 +33,35 @@ class OwnedCardAdded extends GameEvent {
 }
 
 class CoinsAdded extends GameEvent {
-  CoinsAdded(this.amount);
+  CoinsAdded(
+    this.amount, {
+    this.source = OzCoinTransactionSource.manual,
+    this.type,
+    this.title,
+    this.subtitle,
+  });
+
   final int amount;
+  final OzCoinTransactionSource source;
+  final OzCoinTransactionType? type;
+  final String? title;
+  final String? subtitle;
 }
 
 class CoinsSpent extends GameEvent {
-  CoinsSpent(this.amount);
+  CoinsSpent(
+    this.amount, {
+    this.source = OzCoinTransactionSource.manual,
+    this.type,
+    this.title,
+    this.subtitle,
+  });
+
   final int amount;
+  final OzCoinTransactionSource source;
+  final OzCoinTransactionType? type;
+  final String? title;
+  final String? subtitle;
 }
 
 /// XP earned outside Pitch Duel matches (prediction settlements).

@@ -94,6 +94,28 @@ class PicksState {
     return null;
   }
 
+  /// Every position held on [marketId], newest first. A player may now back
+  /// several outcomes of the same market, so callers should prefer this over
+  /// [positionForMarket].
+  List<PickPosition> positionsForMarket(String marketId) {
+    final items = [
+      for (final position in positions.values)
+        if (position.marketId == marketId) position,
+    ]..sort((a, b) => b.submittedAt.compareTo(a.submittedAt));
+    return items;
+  }
+
+  /// The open position on a specific outcome of a market, if one exists — used
+  /// to pyramid (add stake to) the same side rather than open a duplicate.
+  PickPosition? positionForOutcome(String marketId, String outcomeId) {
+    for (final position in positions.values) {
+      if (position.marketId == marketId && position.outcomeId == outcomeId) {
+        return position;
+      }
+    }
+    return null;
+  }
+
   bool _matchesFilters(PickMarket market) {
     if (typeFilter != null && market.type != typeFilter) return false;
     if (!_matchesSport(market)) return false;

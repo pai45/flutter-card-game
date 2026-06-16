@@ -34,8 +34,15 @@ void main() {
     await tester.pumpWidget(const PitchDuelApp());
     await tester.pump(const Duration(seconds: 3));
 
-    expect(find.text('MATCHES'), findsAtLeastNWidgets(1));
+    expect(find.text('PREDICT'), findsAtLeastNWidgets(1));
     expect(find.text('PICK'), findsAtLeastNWidgets(1));
+    expect(
+      find.descendant(
+        of: find.byType(LandingBottomNavigation),
+        matching: find.text('MATCHES'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('TOP'), findsAtLeastNWidgets(1));
     expect(find.text('PROFILE'), findsAtLeastNWidgets(1));
   });

@@ -1385,7 +1385,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
       style: TextStyle(
         color: color,
         fontSize: widget.rarity == 'platinum' ? 24 : 20,
-        fontWeight: FontWeight.w900,
+        fontWeight: FontWeight.w700,
         letterSpacing: ls,
         decoration: TextDecoration.none,
       ),
@@ -1524,7 +1524,7 @@ class _CardUnpackState extends State<CardUnpackAnimation>
             style: const TextStyle(
               color: _kMuted,
               fontSize: 36,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
               decoration: TextDecoration.none,
             ),
           ),
