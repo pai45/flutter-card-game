@@ -44,100 +44,10 @@ Color _tierAccent(String id) => switch (id) {
 
 const int _shopTabCount = 5;
 
-const List<
-  ({
-    String id,
-    int price,
-    Color background,
-    Color skin,
-    Color hair,
-    Color kit,
-    Color accent,
-  })
->
-_avatarPlaceholders = [
-  (
-    id: 'captain',
-    price: 25,
-    background: Color(0xff2ca45f),
-    skin: Color(0xffffbe91),
-    hair: Color(0xff171b25),
-    kit: Color(0xff24344a),
-    accent: Color(0xffff4b52),
-  ),
-  (
-    id: 'playmaker',
-    price: 25,
-    background: Color(0xffffa600),
-    skin: Color(0xfff1a574),
-    hair: Color(0xff432d34),
-    kit: Color(0xff16335f),
-    accent: Color(0xffd83c46),
-  ),
-  (
-    id: 'keeper',
-    price: 25,
-    background: Color(0xff36455f),
-    skin: Color(0xfff2b085),
-    hair: Color(0xff4a2434),
-    kit: Color(0xff7b274f),
-    accent: Color(0xff22c1ff),
-  ),
-  (
-    id: 'blank-red',
-    price: 25,
-    background: Color(0xffe91414),
-    skin: Color(0xffffc09a),
-    hair: Color(0xff141820),
-    kit: Color(0xff0d111a),
-    accent: Color(0xffffd700),
-  ),
-  (
-    id: 'striker',
-    price: 25,
-    background: Color(0xffffd22e),
-    skin: Color(0xffcc8a62),
-    hair: Color(0xff17202e),
-    kit: Color(0xff2856a5),
-    accent: Color(0xfff5f7ff),
-  ),
-  (
-    id: 'speedster',
-    price: 25,
-    background: Color(0xff4d89e5),
-    skin: Color(0xfff0aa79),
-    hair: Color(0xffffd16a),
-    kit: Color(0xff3b2351),
-    accent: Color(0xfff05d7b),
-  ),
-  (
-    id: 'academy',
-    price: 25,
-    background: Color(0xffd900d9),
-    skin: Color(0xffd79369),
-    hair: Color(0xff12151f),
-    kit: Color(0xff1d68be),
-    accent: Color(0xffffffff),
-  ),
-  (
-    id: 'midfield',
-    price: 25,
-    background: Color(0xffb75b00),
-    skin: Color(0xfff1b486),
-    hair: Color(0xff4a2830),
-    kit: Color(0xff262d44),
-    accent: Color(0xfff0edf5),
-  ),
-  (
-    id: 'finisher',
-    price: 25,
-    background: Color(0xff28456f),
-    skin: Color(0xffc8865f),
-    hair: Color(0xff15171e),
-    kit: Color(0xffba2330),
-    accent: Color(0xffdfe8ff),
-  ),
-];
+final List<({String shortName, String imagePath, int price})>
+    _playerAvatarItems = playerPortraitAssets.entries
+        .map((e) => (shortName: e.key, imagePath: e.value, price: 25))
+        .toList();
 
 const List<
   ({String id, int price, Color start, Color end, Color accent, IconData icon})
@@ -320,15 +230,15 @@ class AvatarsTab extends StatelessWidget {
             : 3;
         return GridView.builder(
           padding: const EdgeInsets.all(16),
-          itemCount: _avatarPlaceholders.length,
+          itemCount: _playerAvatarItems.length,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: columns,
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
-            childAspectRatio: 0.78,
+            childAspectRatio: 0.72,
           ),
           itemBuilder: (BuildContext context, int index) {
-            return _AvatarShopTile(item: _avatarPlaceholders[index]);
+            return _AvatarShopTile(item: _playerAvatarItems[index]);
           },
         );
       },
@@ -360,16 +270,7 @@ class BannersTab extends StatelessWidget {
 class _AvatarShopTile extends StatelessWidget {
   const _AvatarShopTile({required this.item});
 
-  final ({
-    String id,
-    int price,
-    Color background,
-    Color skin,
-    Color hair,
-    Color kit,
-    Color accent,
-  })
-  item;
+  final ({String shortName, String imagePath, int price}) item;
 
   @override
   Widget build(BuildContext context) {
@@ -378,20 +279,24 @@ class _AvatarShopTile extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: _bg,
-          border: Border.all(color: item.accent.withValues(alpha: 0.28)),
+          border: Border.all(color: _cyan.withValues(alpha: 0.20)),
         ),
         child: Stack(
           fit: StackFit.expand,
           children: [
             Positioned.fill(
-              bottom: 32,
-              child: CustomPaint(
-                painter: _AvatarPlaceholderPainter(
-                  background: item.background,
-                  skin: item.skin,
-                  hair: item.hair,
-                  kit: item.kit,
-                  accent: item.accent,
+              bottom: 50,
+              child: Image.asset(
+                item.imagePath,
+                fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
+                errorBuilder: (_, _, _) => Container(
+                  color: _surface,
+                  child: Icon(
+                    Icons.person,
+                    color: _cyan.withValues(alpha: 0.3),
+                    size: 32,
+                  ),
                 ),
               ),
             ),
@@ -399,8 +304,49 @@ class _AvatarShopTile extends StatelessWidget {
               left: 0,
               right: 0,
               bottom: 0,
-              height: 34,
-              child: _CosmeticPriceStrip(price: item.price),
+              height: 50,
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.88),
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      item.shortName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontFamily: 'Orbitron',
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CoinIcon(size: 11),
+                        const SizedBox(width: 4),
+                        Text(
+                          _formatInt(item.price),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontFamily: 'Orbitron',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            fontFeatures: [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),
@@ -524,109 +470,6 @@ class _BannerCrest extends StatelessWidget {
       ),
     );
   }
-}
-
-class _AvatarPlaceholderPainter extends CustomPainter {
-  const _AvatarPlaceholderPainter({
-    required this.background,
-    required this.skin,
-    required this.hair,
-    required this.kit,
-    required this.accent,
-  });
-
-  final Color background;
-  final Color skin;
-  final Color hair;
-  final Color kit;
-  final Color accent;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Rect bounds = Offset.zero & size;
-    canvas.drawRect(
-      bounds,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [background, background.withValues(alpha: 0.72)],
-        ).createShader(bounds),
-    );
-
-    final Paint line = Paint()
-      ..color = Colors.white.withValues(alpha: 0.10)
-      ..strokeWidth = 1;
-    for (double x = -size.height; x < size.width; x += 18) {
-      canvas.drawLine(Offset(x, 0), Offset(x + size.height, size.height), line);
-    }
-
-    final double w = size.width;
-    final double h = size.height;
-    final Offset headCenter = Offset(w * 0.5, h * 0.38);
-
-    final Path shoulders = Path()
-      ..moveTo(w * 0.13, h)
-      ..quadraticBezierTo(w * 0.24, h * 0.70, w * 0.41, h * 0.66)
-      ..lineTo(w * 0.59, h * 0.66)
-      ..quadraticBezierTo(w * 0.76, h * 0.70, w * 0.87, h)
-      ..close();
-    canvas.drawPath(shoulders, Paint()..color = kit);
-
-    final Path stripe = Path()
-      ..moveTo(w * 0.44, h * 0.70)
-      ..lineTo(w * 0.56, h * 0.70)
-      ..lineTo(w * 0.62, h)
-      ..lineTo(w * 0.38, h)
-      ..close();
-    canvas.drawPath(stripe, Paint()..color = accent.withValues(alpha: 0.78));
-
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromCenter(
-          center: Offset(w * 0.5, h * 0.64),
-          width: w * 0.17,
-          height: h * 0.18,
-        ),
-        Radius.circular(w * 0.04),
-      ),
-      Paint()..color = skin,
-    );
-
-    canvas.drawOval(
-      Rect.fromCenter(center: headCenter, width: w * 0.36, height: h * 0.42),
-      Paint()..color = skin,
-    );
-
-    final Path hairPath = Path()
-      ..moveTo(w * 0.31, h * 0.34)
-      ..quadraticBezierTo(w * 0.36, h * 0.15, w * 0.54, h * 0.16)
-      ..quadraticBezierTo(w * 0.70, h * 0.20, w * 0.70, h * 0.38)
-      ..quadraticBezierTo(w * 0.58, h * 0.31, w * 0.49, h * 0.30)
-      ..quadraticBezierTo(w * 0.42, h * 0.31, w * 0.31, h * 0.34)
-      ..close();
-    canvas.drawPath(hairPath, Paint()..color = hair);
-
-    final Paint eye = Paint()..color = const Color(0xff111827);
-    canvas.drawCircle(Offset(w * 0.43, h * 0.39), w * 0.018, eye);
-    canvas.drawCircle(Offset(w * 0.57, h * 0.39), w * 0.018, eye);
-    canvas.drawLine(
-      Offset(w * 0.45, h * 0.51),
-      Offset(w * 0.55, h * 0.51),
-      Paint()
-        ..color = const Color(0xff7f1d1d).withValues(alpha: 0.55)
-        ..strokeWidth = 1.5
-        ..strokeCap = StrokeCap.round,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_AvatarPlaceholderPainter old) =>
-      old.background != background ||
-      old.skin != skin ||
-      old.hair != hair ||
-      old.kit != kit ||
-      old.accent != accent;
 }
 
 class _BannerPlaceholderPainter extends CustomPainter {
@@ -1175,7 +1018,7 @@ class _PackRevealSequenceScreenState extends State<_PackRevealSequenceScreen> {
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontFamily: 'Orbitron',
-                                  fontSize: 8,
+                                  fontSize: 9,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),

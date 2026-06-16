@@ -341,7 +341,7 @@ class _StatusStrip extends StatelessWidget {
         topBorder: Cyber.gold.withValues(alpha: 0.28),
         child: Text(
           'Results ready — tap to reveal',
-          style: Cyber.body(12.5, color: Cyber.gold, weight: FontWeight.w700)
+          style: Cyber.body(13, color: Cyber.gold, weight: FontWeight.w700)
               .copyWith(
                 shadows: [
                   Shadow(
@@ -407,7 +407,7 @@ class _StatusStrip extends StatelessWidget {
         topBorder: Cyber.cyan.withValues(alpha: 0.28),
         child: Text(
           'Make prediction and ${match.prizeLabel}',
-          style: Cyber.body(12.5, color: Cyber.cyan, weight: FontWeight.w700)
+          style: Cyber.body(13, color: Cyber.cyan, weight: FontWeight.w700)
               .copyWith(
                 shadows: [
                   Shadow(

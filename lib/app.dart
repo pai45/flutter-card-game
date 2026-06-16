@@ -16,7 +16,7 @@ import 'models/sport_match.dart';
 import 'screens/game/game_screen.dart';
 import 'screens/shootout/shootout_hub.dart';
 import 'screens/home/widgets/starter_pack_onboarding.dart';
-import 'screens/onboarding/avatar_selection_screen.dart';
+import 'screens/onboarding/profile_setup_screen.dart';
 import 'screens/predictions/league_detail_screen.dart';
 import 'screens/predictions/match_prediction_screen.dart';
 import 'screens/predictions/prediction_home_screen.dart';
@@ -112,30 +112,40 @@ class _AppShellState extends State<AppShell> {
   // A game flow to push once the starter-pack reveal finishes (first launch).
   VoidCallback? _pendingGameLaunch;
   final SecureGameStorage _storage = SecureGameStorage();
-  bool _avatarLoading = true;
+  bool _onboardingLoading = true;
+  bool _onboardingComplete = false;
   String? _selectedAvatarId;
 
   @override
   void initState() {
     super.initState();
-    _loadSelectedAvatar();
+    _loadOnboardingState();
   }
 
-  Future<void> _loadSelectedAvatar() async {
+  Future<void> _loadOnboardingState() async {
     final avatarId = await _storage.loadSelectedAvatarId();
+    final complete = await _storage.loadOnboardingComplete();
     if (!mounted) return;
     setState(() {
       _selectedAvatarId = avatarId;
-      _avatarLoading = false;
+      _onboardingComplete = complete;
+      _onboardingLoading = false;
     });
   }
 
   void _go(AppSection next) => setState(() => section = next);
 
-  Future<void> _completeAvatarSelection(String avatarId) async {
-    await _storage.saveSelectedAvatarId(avatarId);
+  Future<void> _completeProfileSetup(ProfileSetupResult result) async {
+    await _storage.saveSelectedAvatarId(result.avatarId);
+    await _storage.saveSelectedProfileBannerId(result.bannerId);
+    await _storage.saveFollowedLeagueIds(result.followedLeagueIds);
+    await _storage.saveFavoriteTeams(result.favoriteTeams);
+    await _storage.saveOnboardingComplete(true);
     if (!mounted) return;
-    setState(() => _selectedAvatarId = avatarId);
+    setState(() {
+      _selectedAvatarId = result.avatarId;
+      _onboardingComplete = true;
+    });
   }
 
   /// Enter the card game ("Pitch Duel") as a full-screen pushed flow from the
@@ -218,7 +228,7 @@ class _AppShellState extends State<AppShell> {
           }
         },
         builder: (context, state) {
-          if (state.loading || _avatarLoading) {
+          if (state.loading || _onboardingLoading) {
             return Container(
               color: Cyber.bg,
               child: Center(
@@ -238,8 +248,11 @@ class _AppShellState extends State<AppShell> {
               ),
             );
           }
-          if (_selectedAvatarId == null) {
-            return AvatarSelectionScreen(onComplete: _completeAvatarSelection);
+          if (!_onboardingComplete) {
+            return ProfileSetupScreen(
+              initialAvatarId: _selectedAvatarId,
+              onComplete: _completeProfileSetup,
+            );
           }
           final packReveal = state.pendingPackReveal;
           if (packReveal != null && packReveal.items.isNotEmpty) {

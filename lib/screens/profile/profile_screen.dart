@@ -9,18 +9,22 @@ import '../../blocs/prediction/prediction_cubit.dart';
 import '../../blocs/prediction/prediction_state.dart';
 import '../../config/enums.dart';
 import '../../config/theme.dart';
+import '../../data/followable_leagues.dart';
 import '../../models/avatar_option.dart';
 import '../../models/picks.dart';
 import '../../models/player_stats.dart';
+import '../../models/sport_match.dart';
 import '../../models/profile_banner_option.dart';
 import '../../models/progression.dart';
 import '../../services/achievement_progress.dart';
 import '../../services/secure_storage_service.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
+import '../../widgets/profile_banner_visual.dart';
+import '../../widgets/team_logo.dart';
 import '../deck/all_cards_screen.dart';
 import '../deck/deck_builder_screen.dart';
-import '../how_to_play/how_to_play_screen.dart';
+import '../how_to_play/how_to_play_hub_screen.dart';
 import '../match_history/match_history_pages.dart';
 import '../predictions/prediction_match_history_screen.dart';
 import '../predictions/prediction_picks_history_screen.dart';
@@ -100,6 +104,7 @@ class ProfileScreen extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
+                              const _FollowingBand(),
                               OzCoinTrackerCard(
                                 balance: game.coins,
                                 ledger: game.coinLedger,
@@ -228,7 +233,7 @@ class ProfileScreen extends StatelessWidget {
                                 label: 'How To Play',
                                 onTap: () => _push(
                                   context,
-                                  (nav) => HowToPlayScreen(onNavigate: nav),
+                                  (nav) => HowToPlayHubScreen(onNavigate: nav),
                                 ),
                               ),
                               _NavRow(
@@ -744,7 +749,7 @@ class _EmblemBannerState extends State<_EmblemBanner> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          _ProfileBannerVisual(option: banner),
+          ProfileBannerVisual(option: banner),
           Positioned(
             left: 0,
             right: 0,
@@ -797,72 +802,6 @@ class _EmblemBannerState extends State<_EmblemBanner> {
       ),
     );
   }
-}
-
-class _ProfileBannerVisual extends StatelessWidget {
-  const _ProfileBannerVisual({required this.option});
-
-  final ProfileBannerOption option;
-
-  @override
-  Widget build(BuildContext context) {
-    final assetPath = option.assetPath;
-    if (assetPath != null) {
-      return Image.asset(
-        assetPath,
-        fit: BoxFit.cover,
-        alignment: Alignment.center,
-      );
-    }
-    return CustomPaint(
-      painter: _ProfileBannerPlaceholderPainter(option: option),
-      child: const SizedBox.expand(),
-    );
-  }
-}
-
-/// Gradient-free banner art: a solid accent base with a chevron motif and faint
-/// scanlines for texture.
-class _ProfileBannerPlaceholderPainter extends CustomPainter {
-  const _ProfileBannerPlaceholderPainter({required this.option});
-
-  final ProfileBannerOption option;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final base = Color.lerp(
-      option.colors.first,
-      const Color(0xff05070d),
-      0.18,
-    )!;
-    canvas.drawRect(rect, Paint()..color = base);
-
-    final darkPaint = Paint()..color = Colors.black.withValues(alpha: 0.20);
-    final lightPaint = Paint()..color = Colors.white.withValues(alpha: 0.06);
-    final accentPaint = Paint()
-      ..color = option.accent.withValues(alpha: 0.30)
-      ..strokeWidth = 1.4;
-
-    for (var i = -2; i < 6; i++) {
-      final start = size.width * (i / 5);
-      final path = Path()
-        ..moveTo(start, 0)
-        ..lineTo(start + size.width * 0.34, 0)
-        ..lineTo(start + size.width * 0.12, size.height)
-        ..lineTo(start - size.width * 0.22, size.height)
-        ..close();
-      canvas.drawPath(path, i.isEven ? lightPaint : darkPaint);
-    }
-
-    for (var y = 18.0; y < size.height; y += 26) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y - 40), accentPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_ProfileBannerPlaceholderPainter oldDelegate) =>
-      oldDelegate.option != option;
 }
 
 class _Avatar extends StatefulWidget {
@@ -1142,7 +1081,7 @@ class _BannerEditScreenState extends State<_BannerEditScreen> {
                               ),
                           itemBuilder: (context, index) {
                             final banner = profileBannerOptions[index];
-                            return _EditableBannerTile(
+                            return SelectableBannerTile(
                               banner: banner,
                               selected: banner.id == _selectedBannerId,
                               onTap: () =>
@@ -1355,71 +1294,6 @@ class _EditableAvatarTile extends StatelessWidget {
   }
 }
 
-class _EditableBannerTile extends StatelessWidget {
-  const _EditableBannerTile({
-    required this.banner,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final ProfileBannerOption banner;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final borderColor = selected ? Cyber.lime : Cyber.line;
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: banner.label,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          decoration: BoxDecoration(
-            color: Cyber.panel,
-            border: Border.all(color: borderColor, width: selected ? 2 : 1),
-            boxShadow: selected
-                ? Cyber.glow(Cyber.lime, alpha: 0.18, blur: 14, spread: -2)
-                : null,
-          ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              _ProfileBannerVisual(option: banner),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: 30,
-                child: ColoredBox(color: Cyber.bg.withValues(alpha: 0.5)),
-              ),
-              Positioned(
-                left: 12,
-                right: 12,
-                bottom: 10,
-                child: Text(
-                  banner.label.toUpperCase(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Cyber.label(
-                    10,
-                    color: Colors.white,
-                    letterSpacing: 1.3,
-                  ),
-                ),
-              ),
-              if (selected) const _EditableAvatarSelectedCorner(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _EditableAvatarSelectedCorner extends StatelessWidget {
   const _EditableAvatarSelectedCorner();
 
@@ -1433,6 +1307,90 @@ class _EditableAvatarSelectedCorner extends StatelessWidget {
         alignment: Alignment.center,
         decoration: const BoxDecoration(color: Cyber.lime),
         child: const Icon(Icons.check, color: Cyber.bg, size: 20),
+      ),
+    );
+  }
+}
+
+// ─── Following band ───────────────────────────────────────────────────────────
+
+/// Compact "FOLLOWING" strip under the hero: the favourite-team badges picked
+/// during profile setup, with their league code. Static chrome — no glow.
+/// Renders nothing until at least one favourite is set.
+class _FollowingBand extends StatefulWidget {
+  const _FollowingBand();
+
+  @override
+  State<_FollowingBand> createState() => _FollowingBandState();
+}
+
+class _FollowingBandState extends State<_FollowingBand> {
+  final SecureGameStorage _storage = SecureGameStorage();
+
+  /// (team, leagueCode) pairs for each followed league with a favourite team.
+  List<(SportTeam, String)> _favourites = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final followed = await _storage.loadFollowedLeagueIds();
+    final teams = await _storage.loadFavoriteTeams();
+    final result = <(SportTeam, String)>[];
+    for (final leagueId in followed) {
+      final entry = followableLeagueById(leagueId);
+      final teamId = teams[leagueId];
+      if (entry == null || teamId == null) continue;
+      final team = followableTeam(leagueId, teamId);
+      if (team != null) result.add((team, entry.league.shortCode));
+    }
+    if (!mounted) return;
+    setState(() => _favourites = result);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_favourites.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+        decoration: BoxDecoration(
+          color: Cyber.panel,
+          border: Border.all(color: Cyber.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SectionLabel(label: 'FOLLOWING'),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 18,
+              runSpacing: 12,
+              children: [
+                for (final (team, code) in _favourites)
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TeamLogo(team: team, width: 40, height: 44),
+                      const SizedBox(height: 6),
+                      Text(
+                        code,
+                        style: Cyber.label(
+                          9,
+                          color: Cyber.muted,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

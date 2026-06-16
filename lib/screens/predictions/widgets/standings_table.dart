@@ -125,7 +125,7 @@ class StandingsTable extends StatelessWidget {
     if (rows.isEmpty) {
       return Text(
         'Standings unavailable.',
-        style: Cyber.body(12.5, color: Cyber.muted),
+        style: Cyber.body(13, color: Cyber.muted),
       );
     }
     final cricket = rows.first.drawn == null;
@@ -184,7 +184,7 @@ class _HeaderRow extends StatelessWidget {
     Widget label(String t, {TextAlign align = TextAlign.center}) => Text(
       t,
       textAlign: align,
-      style: Cyber.label(8.5, color: Cyber.muted, letterSpacing: 0.8),
+      style: Cyber.label(9, color: Cyber.muted, letterSpacing: 0.8),
     );
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
@@ -260,7 +260,7 @@ class _DataRow extends StatelessWidget {
                 row.team.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.body(12.5, weight: FontWeight.w700, height: 1),
+                style: Cyber.body(13, weight: FontWeight.w700, height: 1),
               ),
             ),
             for (final c in cols)

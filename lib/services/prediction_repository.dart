@@ -46,8 +46,110 @@ class MockPredictionRepository implements PredictionRepository {
     shortCode: 'IPL',
     accent: Color(0xff5cdfff),
   );
+  static const _fifa = League(
+    id: 'fifa',
+    name: 'FIFA World Cup 26',
+    shortCode: 'FIFA',
+    accent: Color(0xff00d084),
+  );
 
   // ── Teams ──────────────────────────────────────────────────────────────────
+  static const _france = SportTeam(
+    id: 'fra',
+    name: 'France',
+    shortName: 'FRA',
+    color: Color(0xff1d4ed8),
+  );
+  static const _senegal = SportTeam(
+    id: 'sen',
+    name: 'Senegal',
+    shortName: 'SEN',
+    color: Color(0xff16a34a),
+  );
+  static const _iraq = SportTeam(
+    id: 'irq',
+    name: 'Iraq',
+    shortName: 'IRQ',
+    color: Color(0xffdc2626),
+  );
+  static const _norway = SportTeam(
+    id: 'nor',
+    name: 'Norway',
+    shortName: 'NOR',
+    color: Color(0xff0f4c81),
+  );
+  static const _argentina = SportTeam(
+    id: 'arg',
+    name: 'Argentina',
+    shortName: 'ARG',
+    color: Color(0xff74acdf),
+  );
+  static const _algeria = SportTeam(
+    id: 'alg',
+    name: 'Algeria',
+    shortName: 'ALG',
+    color: Color(0xff059669),
+  );
+  static const _austria = SportTeam(
+    id: 'aut',
+    name: 'Austria',
+    shortName: 'AUT',
+    color: Color(0xffef4444),
+  );
+  static const _jordan = SportTeam(
+    id: 'jor',
+    name: 'Jordan',
+    shortName: 'JOR',
+    color: Color(0xffb91c1c),
+  );
+  static const _ghana = SportTeam(
+    id: 'gha',
+    name: 'Ghana',
+    shortName: 'GHA',
+    color: Color(0xfffacc15),
+  );
+  static const _panama = SportTeam(
+    id: 'pan',
+    name: 'Panama',
+    shortName: 'PAN',
+    color: Color(0xff2563eb),
+  );
+  static const _england = SportTeam(
+    id: 'eng',
+    name: 'England',
+    shortName: 'ENG',
+    color: Color(0xffffffff),
+  );
+  static const _croatia = SportTeam(
+    id: 'cro',
+    name: 'Croatia',
+    shortName: 'CRO',
+    color: Color(0xff1d4ed8),
+  );
+  static const _portugal = SportTeam(
+    id: 'por',
+    name: 'Portugal',
+    shortName: 'POR',
+    color: Color(0xffb91c1c),
+  );
+  static const _congoDr = SportTeam(
+    id: 'cod',
+    name: 'Congo DR',
+    shortName: 'COD',
+    color: Color(0xff38bdf8),
+  );
+  static const _uzbekistan = SportTeam(
+    id: 'uzb',
+    name: 'Uzbekistan',
+    shortName: 'UZB',
+    color: Color(0xff22d3ee),
+  );
+  static const _colombia = SportTeam(
+    id: 'col',
+    name: 'Colombia',
+    shortName: 'COL',
+    color: Color(0xfffacc15),
+  );
   static const _liv = SportTeam(
     id: 'liv',
     name: 'Liverpool',
@@ -161,6 +263,87 @@ class MockPredictionRepository implements PredictionRepository {
       _today.add(Duration(days: dayOffset, hours: hour, minutes: minute));
 
   late final List<SportMatch> _fixtures = [
+    // FIFA World Cup 26 - group-stage fixtures from the live tournament window.
+    SportMatch(
+      id: 'fifa_fra_sen',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _france,
+      away: _senegal,
+      kickoff: DateTime(2026, 6, 16, 18),
+      status: MatchStatus.upcoming,
+      prizeLabel: 'Win 5000 coins',
+    ),
+    SportMatch(
+      id: 'fifa_irq_nor',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _iraq,
+      away: _norway,
+      kickoff: DateTime(2026, 6, 16, 20, 30),
+      status: MatchStatus.upcoming,
+      prizeLabel: 'Win 4000 coins',
+    ),
+    SportMatch(
+      id: 'fifa_arg_alg',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _argentina,
+      away: _algeria,
+      kickoff: DateTime(2026, 6, 16, 23),
+      status: MatchStatus.upcoming,
+      prizeLabel: 'Win 6000 coins',
+    ),
+    SportMatch(
+      id: 'fifa_aut_jor',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _austria,
+      away: _jordan,
+      kickoff: DateTime(2026, 6, 16, 23, 30),
+      status: MatchStatus.upcoming,
+      prizeLabel: 'Win 3500 coins',
+    ),
+    SportMatch(
+      id: 'fifa_gha_pan',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _ghana,
+      away: _panama,
+      kickoff: DateTime(2026, 6, 17, 18),
+      status: MatchStatus.upcoming,
+      prizeLabel: 'Win 3500 coins',
+    ),
+    SportMatch(
+      id: 'fifa_eng_cro',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _england,
+      away: _croatia,
+      kickoff: DateTime(2026, 6, 17, 20, 30),
+      status: MatchStatus.upcoming,
+      prizeLabel: 'Win 6000 coins',
+    ),
+    SportMatch(
+      id: 'fifa_por_cod',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _portugal,
+      away: _congoDr,
+      kickoff: DateTime(2026, 6, 17, 23),
+      status: MatchStatus.upcoming,
+      prizeLabel: 'Win 5000 coins',
+    ),
+    SportMatch(
+      id: 'fifa_uzb_col',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _uzbekistan,
+      away: _colombia,
+      kickoff: DateTime(2026, 6, 17, 23, 30),
+      status: MatchStatus.upcoming,
+      prizeLabel: 'Win 4000 coins',
+    ),
     // EPL — today's headline fixture: Man Utd vs Arsenal.
     SportMatch(
       id: 'epl_mu_ars',
@@ -338,6 +521,54 @@ class MockPredictionRepository implements PredictionRepository {
   ];
 
   late final Map<String, PredictionQuiz> _quizzes = {
+    'fifa_fra_sen': _fifaQuiz(
+      'fifa_fra_sen',
+      'France',
+      'Senegal',
+      'Will France keep a clean sheet?',
+    ),
+    'fifa_irq_nor': _fifaQuiz(
+      'fifa_irq_nor',
+      'Iraq',
+      'Norway',
+      'Will Norway score in both halves?',
+    ),
+    'fifa_arg_alg': _fifaQuiz(
+      'fifa_arg_alg',
+      'Argentina',
+      'Algeria',
+      'Will Argentina have 55%+ possession?',
+    ),
+    'fifa_aut_jor': _fifaQuiz(
+      'fifa_aut_jor',
+      'Austria',
+      'Jordan',
+      'Will either team receive 3+ cards?',
+    ),
+    'fifa_gha_pan': _fifaQuiz(
+      'fifa_gha_pan',
+      'Ghana',
+      'Panama',
+      'Will Ghana score first?',
+    ),
+    'fifa_eng_cro': _fifaQuiz(
+      'fifa_eng_cro',
+      'England',
+      'Croatia',
+      'Will England win the corner count?',
+    ),
+    'fifa_por_cod': _fifaQuiz(
+      'fifa_por_cod',
+      'Portugal',
+      'Congo DR',
+      'Will Portugal score before 30 minutes?',
+    ),
+    'fifa_uzb_col': _fifaQuiz(
+      'fifa_uzb_col',
+      'Uzbekistan',
+      'Colombia',
+      'Will Colombia have 5+ shots on target?',
+    ),
     'epl_mu_ars': const PredictionQuiz(
       matchId: 'epl_mu_ars',
       questions: [
@@ -610,6 +841,47 @@ class MockPredictionRepository implements PredictionRepository {
     'ipl_mi_pjk': _cricketQuiz('ipl_mi_pjk', 'Mumbai', 'Punjab'),
   };
 
+  static PredictionQuiz _fifaQuiz(
+    String matchId,
+    String home,
+    String away,
+    String eventQuestion,
+  ) => PredictionQuiz(
+    matchId: matchId,
+    questions: [
+      const QuizQuestion(
+        id: 'q1',
+        text: 'Predict the full-time score',
+        type: QuizQuestionType.exactScore,
+        reward: 125,
+      ),
+      const QuizQuestion(
+        id: 'q2',
+        text: 'Both teams to score?',
+        options: ['Yes', 'No'],
+        reward: 75,
+      ),
+      QuizQuestion(
+        id: 'q3',
+        text: 'Which side scores first?',
+        options: [home, away, 'No goal'],
+        reward: 90,
+      ),
+      const QuizQuestion(
+        id: 'q4',
+        text: 'Total goals over/under 2.5?',
+        options: ['Over 2.5', 'Under 2.5'],
+        reward: 90,
+      ),
+      QuizQuestion(
+        id: 'q5',
+        text: eventQuestion,
+        options: const ['Yes', 'No'],
+        reward: 70,
+      ),
+    ],
+  );
+
   static PredictionQuiz _footballQuiz(
     String matchId,
     String home,
@@ -682,6 +954,96 @@ class MockPredictionRepository implements PredictionRepository {
   // Football: diffLabel is goal difference, points = W*3 + D*1.
   // Cricket: diffLabel is net run rate, points = W*2, no drawn column.
   static const _standings = <String, List<TeamStanding>>{
+    'fifa': [
+      TeamStanding(
+        team: _france,
+        rank: 1,
+        played: 0,
+        won: 0,
+        drawn: 0,
+        lost: 0,
+        points: 0,
+        diffLabel: '0',
+        form: '-----',
+      ),
+      TeamStanding(
+        team: _argentina,
+        rank: 2,
+        played: 0,
+        won: 0,
+        drawn: 0,
+        lost: 0,
+        points: 0,
+        diffLabel: '0',
+        form: '-----',
+      ),
+      TeamStanding(
+        team: _england,
+        rank: 3,
+        played: 0,
+        won: 0,
+        drawn: 0,
+        lost: 0,
+        points: 0,
+        diffLabel: '0',
+        form: '-----',
+      ),
+      TeamStanding(
+        team: _portugal,
+        rank: 4,
+        played: 0,
+        won: 0,
+        drawn: 0,
+        lost: 0,
+        points: 0,
+        diffLabel: '0',
+        form: '-----',
+      ),
+      TeamStanding(
+        team: _senegal,
+        rank: 5,
+        played: 0,
+        won: 0,
+        drawn: 0,
+        lost: 0,
+        points: 0,
+        diffLabel: '0',
+        form: '-----',
+      ),
+      TeamStanding(
+        team: _norway,
+        rank: 6,
+        played: 0,
+        won: 0,
+        drawn: 0,
+        lost: 0,
+        points: 0,
+        diffLabel: '0',
+        form: '-----',
+      ),
+      TeamStanding(
+        team: _croatia,
+        rank: 7,
+        played: 0,
+        won: 0,
+        drawn: 0,
+        lost: 0,
+        points: 0,
+        diffLabel: '0',
+        form: '-----',
+      ),
+      TeamStanding(
+        team: _colombia,
+        rank: 8,
+        played: 0,
+        won: 0,
+        drawn: 0,
+        lost: 0,
+        points: 0,
+        diffLabel: '0',
+        form: '-----',
+      ),
+    ],
     'epl': [
       TeamStanding(
         team: _liv,
@@ -870,7 +1232,7 @@ class MockPredictionRepository implements PredictionRepository {
   };
 
   @override
-  Future<List<League>> leagues() async => const [_epl, _ipl];
+  Future<List<League>> leagues() async => const [_fifa, _epl, _ipl];
 
   @override
   Future<List<SportMatch>> fixtures({DateTime? day}) async =>

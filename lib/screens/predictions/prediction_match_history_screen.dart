@@ -426,7 +426,7 @@ class _TeamColumn extends StatelessWidget {
           team.name,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: Cyber.body(14.5, weight: FontWeight.w700),
+          style: Cyber.body(15, weight: FontWeight.w700),
         ),
       ],
     );

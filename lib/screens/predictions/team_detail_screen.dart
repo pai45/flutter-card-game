@@ -186,7 +186,7 @@ class _EmptyNote extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 14),
-      child: Text(text, style: Cyber.body(12.5, color: Cyber.muted)),
+      child: Text(text, style: Cyber.body(13, color: Cyber.muted)),
     );
   }
 }

@@ -1328,7 +1328,7 @@ class EmptyActionSlot extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: highlighted ? Cyber.lime : Cyber.muted,
-                fontSize: 8,
+                fontSize: 9,
                 fontWeight: FontWeight.w800,
               ),
             ),

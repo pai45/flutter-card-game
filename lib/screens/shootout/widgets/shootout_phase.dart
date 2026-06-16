@@ -434,7 +434,7 @@ class _KickTableCell extends StatelessWidget {
               style: const TextStyle(
                 color: Colors.white70,
                 fontFamily: 'Orbitron',
-                fontSize: 9.5,
+                fontSize: 10,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.8,
               ),

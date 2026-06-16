@@ -534,7 +534,7 @@ class _XpStamp extends StatelessWidget {
       ),
       child: Text(
         boosted ? '+$earned XP ${multiplier!.label}' : '+$earned XP',
-        style: Cyber.display(9.5, color: accent).copyWith(
+        style: Cyber.display(10, color: accent).copyWith(
           fontFeatures: const [FontFeature.tabularFigures()],
         ),
       ),

@@ -19,13 +19,17 @@ deck building, match history, picks, wallet coins, and player progression.
   read-only vote/result review once matches are live or finished.
 - Prediction quizzes include one `2x` and one `1.5x` booster that can be moved
   between answered questions until the fixture locks.
-- First-time users must choose a profile avatar before entering the app. The
-  avatar options live in `assets/avatar_options/` as WebP images and are saved
-  with `SecureGameStorage`.
+- First-time users complete Profile Setup before entering the app: choose an
+  avatar, choose a banner, optionally follow leagues, and optionally pick a
+  favorite team for each followed league. Avatar, banner, followed league,
+  favorite team, and onboarding completion preferences are saved through
+  `SecureGameStorage`.
 - Profile and leaderboard avatars use the same avatar option set. Leaderboard
   players are assigned a stable pseudo-random avatar from their player name, so
   each row, podium card, and the user's sticky rank bar share the same portrait
   mapping.
+- The Shop avatar tab now displays player portrait assets from
+  `assets/player_images/` instead of generated placeholder avatar drawings.
 
 ## Getting Started
 

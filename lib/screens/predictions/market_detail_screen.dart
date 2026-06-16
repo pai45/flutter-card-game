@@ -1014,7 +1014,7 @@ class _MiniMetric extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: Cyber.label(8, color: Cyber.muted)),
+            Text(label, style: Cyber.label(9, color: Cyber.muted)),
             const SizedBox(height: 5),
             Text(
               value,
@@ -1041,7 +1041,7 @@ class _TicketMetric extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: Cyber.label(8, color: Cyber.muted)),
+          Text(label, style: Cyber.label(9, color: Cyber.muted)),
           const SizedBox(height: 5),
           Text(
             value,
@@ -1094,7 +1094,7 @@ class _TypePill extends StatelessWidget {
       ),
       child: Text(
         pickMarketTypeLabel(type),
-        style: Cyber.label(8, color: color),
+        style: Cyber.label(9, color: color),
       ),
     );
   }
@@ -1116,7 +1116,7 @@ class _StatusPill extends StatelessWidget {
       ),
       child: Text(
         pickMarketStatusLabel(status),
-        style: Cyber.label(8, color: color),
+        style: Cyber.label(9, color: color),
       ),
     );
   }

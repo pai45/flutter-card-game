@@ -180,7 +180,7 @@ class _ShooterRow extends StatelessWidget {
             style: const TextStyle(
               color: Colors.white,
               fontFamily: 'Orbitron',
-              fontSize: 11.5,
+              fontSize: 12,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.7,
             ),

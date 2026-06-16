@@ -50,7 +50,7 @@ class StarterPackHomePanel extends StatelessWidget {
                         style: TextStyle(
                           color: tierColor(card.tier),
                           fontFamily: 'Orbitron',
-                          fontSize: 8,
+                          fontSize: 9,
                           fontWeight: FontWeight.w900,
                         ),
                       ),

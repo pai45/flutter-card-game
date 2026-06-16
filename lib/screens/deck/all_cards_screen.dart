@@ -848,7 +848,7 @@ class _StatBadge extends StatelessWidget {
             style: TextStyle(
               color: color.withValues(alpha: 0.75),
               fontFamily: 'Orbitron',
-              fontSize: 8,
+              fontSize: 9,
               fontWeight: FontWeight.w900,
               letterSpacing: 1.2,
             ),
