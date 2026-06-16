@@ -1,13 +1,15 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../config/theme.dart';
 import '../../data/followable_leagues.dart';
 import '../../models/avatar_option.dart';
 import '../../models/profile_banner_option.dart';
 import '../../models/sport_match.dart';
-import '../../widgets/cyber/cyber_cta_button.dart';
+import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/profile_banner_visual.dart';
 import '../../widgets/team_logo.dart';
@@ -159,7 +161,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               children: [
                 _SetupTopBar(skipLabel: _skipLabel, onSkip: _skip),
                 Expanded(
-                  child: Center(
+                  child: Align(
+                    alignment: Alignment.topLeft,
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 520),
                       child: KeyedSubtree(
@@ -183,15 +186,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             ),
           ),
           if (_completing)
-            Positioned.fill(
-              child: _ProfileLockedReveal(
-                avatarId: _avatarId,
-                bannerId: _bannerId,
-                followed: _followed,
-                favoriteTeams: _favoriteTeams,
-                onEnter: _emit,
-              ),
-            ),
+            Positioned.fill(child: _LaunchSequence(onEnter: _emit)),
         ],
       ),
     );
@@ -617,10 +612,10 @@ class _LeaguesStep extends StatelessWidget {
       child: GridView.builder(
         itemCount: followableLeagues.length,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 18,
-          crossAxisSpacing: 18,
-          childAspectRatio: 1.18,
+          crossAxisCount: 3,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 0.88,
         ),
         itemBuilder: (context, index) {
           final entry = followableLeagues[index];
@@ -638,8 +633,10 @@ class _LeaguesStep extends StatelessWidget {
   }
 }
 
-/// A league pick — no panel/border. Just the picks-page-style league mark and
-/// name; selection glows and brightens, unselected reads dim.
+/// A league pick — an avatar-style panel tile. Unselected reads as a calm but
+/// fully-enabled surface (panel fill + line border); selected gets a lime
+/// border, soft glow and the corner check seal — same language as the avatar
+/// and banner steps.
 class _LeagueTile extends StatelessWidget {
   const _LeagueTile({
     required this.entry,
@@ -654,113 +651,93 @@ class _LeagueTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final league = entry.league;
-    return PressableScale(
-      onTap: onTap,
-      child: AnimatedOpacity(
-        duration: const Duration(milliseconds: 160),
-        opacity: selected ? 1 : 0.55,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedScale(
-              duration: const Duration(milliseconds: 160),
-              scale: selected ? 1.06 : 1,
-              child: _LeagueMark(
-                code: league.shortCode,
-                color: league.accent,
-                selected: selected,
+    final borderColor = selected ? Cyber.lime : AppTheme.onboardingPanelBorder;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: league.name,
+      child: PressableScale(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          decoration: BoxDecoration(
+            color: AppTheme.onboardingPanelFill,
+            border: Border.all(color: borderColor, width: selected ? 2 : 1),
+            boxShadow: selected
+                ? Cyber.glow(Cyber.lime, alpha: 0.18, blur: 14, spread: -2)
+                : null,
+          ),
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _LeagueMark(code: league.shortCode, color: league.accent),
+                    const SizedBox(height: 8),
+                    Text(
+                      league.name.toUpperCase(),
+                      maxLines: 2,
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      style: Cyber.display(
+                        10,
+                        color: selected ? Colors.white : Cyber.muted,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '${entry.teams.length} TEAMS',
+                      style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.0),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              league.name.toUpperCase(),
-              maxLines: 2,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-              style: Cyber.display(
-                12,
-                color: selected ? Colors.white : Cyber.muted,
-                letterSpacing: 0.6,
-              ),
-            ),
-            const SizedBox(height: 3),
-            Text(
-              '${entry.teams.length} TEAMS',
-              style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.2),
-            ),
-          ],
+              if (selected) const SelectedCheckCorner(size: 24),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// Angled-cut, hard-base league badge — the picks-page `_LeagueMark` look,
-/// scaled up for selection. Selected adds a lime check + glow.
+/// Angled-cut, hard-base league badge — the picks-page `_LeagueMark` look. The
+/// selection affordance now lives on the surrounding panel tile, so the mark
+/// itself stays neutral.
 class _LeagueMark extends StatelessWidget {
-  const _LeagueMark({
-    required this.code,
-    required this.color,
-    required this.selected,
-  });
+  const _LeagueMark({required this.code, required this.color});
 
   final String code;
   final Color color;
-  final bool selected;
 
   @override
   Widget build(BuildContext context) {
     final ink = color.computeLuminance() > 0.48
         ? const Color(0xff07111e)
         : Colors.white;
-    return SizedBox(
-      width: 64,
-      height: 56,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          DecoratedBox(
-            decoration: BoxDecoration(
-              boxShadow: selected
-                  ? Cyber.glow(Cyber.lime, alpha: 0.3, blur: 16, spread: -2)
-                  : null,
-            ),
-            child: CustomPaint(
-              size: const Size(64, 56),
-              painter: _LeagueMarkPainter(color: color),
-              child: Center(
-                child: Text(
-                  code,
-                  style: Cyber.display(20, color: ink, letterSpacing: 0.5)
-                      .copyWith(
-                        height: 1,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black.withValues(alpha: 0.22),
-                            blurRadius: 6,
-                          ),
-                        ],
-                      ),
+    return CustomPaint(
+      size: const Size(52, 46),
+      painter: _LeagueMarkPainter(color: color),
+      child: SizedBox(
+        width: 52,
+        height: 46,
+        child: Center(
+          child: Text(
+            code,
+            style: Cyber.display(17, color: ink, letterSpacing: 0.5).copyWith(
+              height: 1,
+              shadows: [
+                Shadow(
+                  color: Colors.black.withValues(alpha: 0.22),
+                  blurRadius: 6,
                 ),
-              ),
+              ],
             ),
           ),
-          if (selected)
-            Positioned(
-              top: -6,
-              right: -6,
-              child: Container(
-                width: 22,
-                height: 22,
-                alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  color: Cyber.lime,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.check, color: Cyber.bg, size: 15),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
@@ -829,10 +806,10 @@ class _TeamsStep extends StatelessWidget {
       child: GridView.builder(
         itemCount: league.teams.length,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 14,
-          childAspectRatio: 0.84,
+          crossAxisCount: 4,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 10,
+          childAspectRatio: 0.8,
         ),
         itemBuilder: (context, i) {
           final team = league.teams[i];
@@ -850,8 +827,9 @@ class _TeamsStep extends StatelessWidget {
   }
 }
 
-/// A team pick — no panel/border. Just the team badge + name; selection glows,
-/// scales up and adds a check, unselected reads dim.
+/// A team pick — an avatar-style panel tile. Unselected reads as a calm but
+/// fully-enabled surface; selected gets the lime border, soft glow and corner
+/// check seal — same language as the avatar and banner steps.
 class _TeamTile extends StatelessWidget {
   const _TeamTile({
     required this.team,
@@ -865,71 +843,46 @@ class _TeamTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderColor = selected ? Cyber.lime : AppTheme.onboardingPanelBorder;
     return Semantics(
       button: true,
       selected: selected,
       label: team.name,
       child: PressableScale(
         onTap: onTap,
-        child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 160),
-          opacity: selected ? 1 : 0.58,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          decoration: BoxDecoration(
+            color: AppTheme.onboardingPanelFill,
+            border: Border.all(color: borderColor, width: selected ? 2 : 1),
+            boxShadow: selected
+                ? Cyber.glow(Cyber.lime, alpha: 0.18, blur: 14, spread: -2)
+                : null,
+          ),
+          child: Stack(
             children: [
-              AnimatedScale(
-                duration: const Duration(milliseconds: 160),
-                scale: selected ? 1.1 : 1,
-                child: Stack(
-                  clipBehavior: Clip.none,
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 8),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        boxShadow: selected
-                            ? Cyber.glow(
-                                Cyber.lime,
-                                alpha: 0.32,
-                                blur: 16,
-                                spread: -3,
-                              )
-                            : null,
+                    TeamLogo(team: team, width: 40, height: 44),
+                    const SizedBox(height: 7),
+                    Text(
+                      team.name.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: Cyber.label(
+                        8,
+                        color: selected ? Colors.white : Cyber.muted,
+                        letterSpacing: 0.3,
                       ),
-                      child: TeamLogo(team: team, width: 52, height: 56),
                     ),
-                    if (selected)
-                      Positioned(
-                        top: -6,
-                        right: -8,
-                        child: Container(
-                          width: 20,
-                          height: 20,
-                          alignment: Alignment.center,
-                          decoration: const BoxDecoration(
-                            color: Cyber.lime,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.check,
-                            color: Cyber.bg,
-                            size: 13,
-                          ),
-                        ),
-                      ),
                   ],
                 ),
               ),
-              const SizedBox(height: 10),
-              Text(
-                team.name.toUpperCase(),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: Cyber.label(
-                  9,
-                  color: selected ? Colors.white : Cyber.muted,
-                  letterSpacing: 0.8,
-                ),
-              ),
+              if (selected) const SelectedCheckCorner(size: 20),
             ],
           ),
         ),
@@ -944,187 +897,361 @@ class _TeamTile extends StatelessWidget {
 /// glow burst + shockwave ring, the headline drops, the favourite badges deal
 /// in, then the ENTER CTA fades up. Mirrors the language of
 /// `CardUnpackAnimation` without its full machinery.
-class _ProfileLockedReveal extends StatefulWidget {
-  const _ProfileLockedReveal({
-    required this.avatarId,
-    required this.bannerId,
-    required this.followed,
-    required this.favoriteTeams,
-    required this.onEnter,
-  });
+/// The completion cinematic: a 3·2·1 launch countdown (reusing the match-screen
+/// [CountdownRing]) that auto-advances into the WELCOME TO STATOZ reveal, which
+/// then drops the player into the app. No CTA — tap anywhere to skip ahead.
+class _LaunchSequence extends StatefulWidget {
+  const _LaunchSequence({required this.onEnter});
 
-  final String avatarId;
-  final String bannerId;
-  final List<FollowableLeague> followed;
-  final Map<String, String> favoriteTeams;
   final VoidCallback onEnter;
 
   @override
-  State<_ProfileLockedReveal> createState() => _ProfileLockedRevealState();
+  State<_LaunchSequence> createState() => _LaunchSequenceState();
 }
 
-class _ProfileLockedRevealState extends State<_ProfileLockedReveal>
+class _LaunchSequenceState extends State<_LaunchSequence>
     with SingleTickerProviderStateMixin {
+  // Drives the sweeping radar ring on the countdown.
+  late final AnimationController _scanner = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1800),
+  )..repeat();
+
+  Timer? _tick;
+  int _seconds = 3;
+  bool _welcome = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _cue();
+    _scheduleNext();
+  }
+
+  void _cue() {
+    HapticFeedback.mediumImpact();
+    playSound(_seconds > 0 ? SoundEffect.commit : SoundEffect.riser);
+  }
+
+  void _scheduleNext() {
+    // Hold on each number, then a shorter beat on GO before handing off.
+    _tick = Timer(Duration(milliseconds: _seconds > 0 ? 850 : 600), () {
+      if (!mounted) return;
+      if (_seconds <= 0) {
+        _toWelcome();
+        return;
+      }
+      setState(() => _seconds--);
+      _cue();
+      _scheduleNext();
+    });
+  }
+
+  void _toWelcome() {
+    _tick?.cancel();
+    if (mounted && !_welcome) setState(() => _welcome = true);
+  }
+
+  @override
+  void dispose() {
+    _tick?.cancel();
+    _scanner.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        const Positioned.fill(child: ColoredBox(color: Cyber.bg)),
+        const Positioned.fill(child: _OnboardingArenaBackground()),
+        Positioned.fill(
+          child: _welcome
+              ? _WelcomeToStatozReveal(onDone: widget.onEnter)
+              : GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _toWelcome,
+                  child: SafeArea(
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'SYS://LAUNCH-SEQUENCE',
+                            style: Cyber.label(
+                              10,
+                              color: Cyber.cyan,
+                              letterSpacing: 2.6,
+                            ),
+                          ),
+                          const SizedBox(height: 28),
+                          CountdownRing(
+                            seconds: _seconds,
+                            scanner: _scanner,
+                            accent: Cyber.cyan,
+                          ),
+                          const SizedBox(height: 22),
+                          Text(
+                            'ENTERING STATOZ…',
+                            style: Cyber.body(
+                              12,
+                              color: Cyber.cyan.withValues(alpha: 0.7),
+                              weight: FontWeight.w700,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A cyberpunk brand reveal: a glowing soccer-ball HUD emblem slams in over a
+/// cyan shockwave, then `WELCOME TO` and the `STATOZ` wordmark land. Auto-enters
+/// the app when the sequence finishes; tap to skip straight in.
+class _WelcomeToStatozReveal extends StatefulWidget {
+  const _WelcomeToStatozReveal({required this.onDone});
+
+  final VoidCallback onDone;
+
+  @override
+  State<_WelcomeToStatozReveal> createState() => _WelcomeToStatozRevealState();
+}
+
+class _WelcomeToStatozRevealState extends State<_WelcomeToStatozReveal>
+    with TickerProviderStateMixin {
   late final AnimationController _ctrl = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 1500),
-  )..forward();
+    duration: const Duration(milliseconds: 2600),
+  );
+  // Continuous ball spin inside the emblem.
+  late final AnimationController _spin = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 5200),
+  )..repeat();
 
-  late final Animation<double> _cardScale = Tween<double>(
-    begin: 1.55,
-    end: 1,
-  ).animate(
-    CurvedAnimation(parent: _ctrl, curve: const Interval(0, 0.5, curve: Curves.elasticOut)),
-  );
-  late final Animation<double> _cardOpacity = CurvedAnimation(
-    parent: _ctrl,
-    curve: const Interval(0, 0.12),
-  );
+  bool _done = false;
+
+  late final Animation<double> _emblemScale =
+      Tween<double>(begin: 0, end: 1).animate(
+        CurvedAnimation(
+          parent: _ctrl,
+          curve: const Interval(0, 0.34, curve: Curves.easeOutBack),
+        ),
+      );
   late final Animation<double> _shock = CurvedAnimation(
     parent: _ctrl,
-    curve: const Interval(0, 0.45, curve: Curves.easeOut),
+    curve: const Interval(0.04, 0.5, curve: Curves.easeOut),
   );
-  late final Animation<double> _titleOpacity = CurvedAnimation(
+  late final Animation<double> _kickerOpacity = CurvedAnimation(
     parent: _ctrl,
-    curve: const Interval(0.16, 0.42),
+    curve: const Interval(0.34, 0.5),
   );
-  late final Animation<double> _titleSlide = Tween<double>(
-    begin: -22,
-    end: 0,
-  ).animate(
-    CurvedAnimation(parent: _ctrl, curve: const Interval(0.16, 0.5, curve: Curves.easeOutBack)),
-  );
-  late final Animation<double> _ctaOpacity = CurvedAnimation(
+  late final Animation<double> _kickerSlide =
+      Tween<double>(begin: 12, end: 0).animate(
+        CurvedAnimation(
+          parent: _ctrl,
+          curve: const Interval(0.34, 0.54, curve: Curves.easeOut),
+        ),
+      );
+  late final Animation<double> _wordScale =
+      Tween<double>(begin: 0.72, end: 1).animate(
+        CurvedAnimation(
+          parent: _ctrl,
+          curve: const Interval(0.46, 0.72, curve: Curves.easeOutBack),
+        ),
+      );
+  late final Animation<double> _wordOpacity = CurvedAnimation(
     parent: _ctrl,
-    curve: const Interval(0.72, 1),
+    curve: const Interval(0.46, 0.62),
   );
+  late final Animation<double> _tagOpacity = CurvedAnimation(
+    parent: _ctrl,
+    curve: const Interval(0.78, 0.92),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    playSound(SoundEffect.playMatch);
+    HapticFeedback.heavyImpact();
+    _ctrl.forward();
+    _ctrl.addStatusListener((status) {
+      if (status == AnimationStatus.completed) _finish();
+    });
+  }
+
+  void _finish() {
+    if (_done) return;
+    _done = true;
+    widget.onDone();
+  }
 
   @override
   void dispose() {
     _ctrl.dispose();
+    _spin.dispose();
     super.dispose();
   }
 
-  List<SportTeam> get _favTeams => [
-    for (final entry in widget.followed)
-      if (widget.favoriteTeams[entry.league.id] != null)
-        followableTeam(entry.league.id, widget.favoriteTeams[entry.league.id]!)!,
-  ];
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _finish,
+      child: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 176,
+                height: 176,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Positioned.fill(
+                      child: AnimatedBuilder(
+                        animation: _shock,
+                        builder: (_, _) => CustomPaint(
+                          painter: _RevealShockwavePainter(
+                            progress: _shock.value,
+                            color: Cyber.cyan,
+                          ),
+                        ),
+                      ),
+                    ),
+                    AnimatedBuilder(
+                      animation: Listenable.merge([_ctrl, _spin]),
+                      builder: (_, _) => Transform.scale(
+                        scale: _emblemScale.value.clamp(0.0, 1.2),
+                        child: _LaunchEmblem(spin: _spin.value),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 26),
+              AnimatedBuilder(
+                animation: _ctrl,
+                builder: (_, _) => Opacity(
+                  opacity: _kickerOpacity.value.clamp(0.0, 1.0),
+                  child: Transform.translate(
+                    offset: Offset(0, _kickerSlide.value),
+                    child: Text(
+                      'WELCOME TO',
+                      style: Cyber.label(
+                        13,
+                        color: Cyber.muted,
+                        letterSpacing: 4.0,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              AnimatedBuilder(
+                animation: _ctrl,
+                builder: (_, _) => Opacity(
+                  opacity: _wordOpacity.value.clamp(0.0, 1.0),
+                  child: Transform.scale(
+                    scale: _wordScale.value,
+                    child: Text(
+                      'STATOZ',
+                      style:
+                          Cyber.display(
+                            54,
+                            color: Cyber.cyan,
+                            letterSpacing: 4.0,
+                          ).copyWith(
+                            shadows: [
+                              Shadow(
+                                color: Cyber.cyan.withValues(alpha: 0.85),
+                                blurRadius: 28,
+                              ),
+                              Shadow(
+                                color: Cyber.cyan.withValues(alpha: 0.4),
+                                blurRadius: 54,
+                              ),
+                            ],
+                          ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 30),
+              AnimatedBuilder(
+                animation: _ctrl,
+                builder: (_, _) => Opacity(
+                  opacity: _tagOpacity.value.clamp(0.0, 1.0),
+                  child: Text(
+                    'TAP TO ENTER',
+                    style: Cyber.label(
+                      10,
+                      color: Cyber.muted,
+                      letterSpacing: 2.4,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A compact rotating soccer-ball HUD emblem — the brand lockup for the welcome
+/// reveal. Single focal cyan glow, in the spirit of the home hero emblem.
+class _LaunchEmblem extends StatelessWidget {
+  const _LaunchEmblem({required this.spin});
+
+  final double spin;
 
   @override
   Widget build(BuildContext context) {
-    final avatar = avatarOptionById(widget.avatarId);
-    final banner = profileBannerOptionById(widget.bannerId);
-    final teams = _favTeams;
-    return ColoredBox(
-      color: Cyber.bg.withValues(alpha: 0.95),
-      child: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  AnimatedBuilder(
-                    animation: _ctrl,
-                    builder: (_, _) => Transform.translate(
-                      offset: Offset(0, _titleSlide.value),
-                      child: Opacity(
-                        opacity: _titleOpacity.value.clamp(0.0, 1.0),
-                        child: Text(
-                          'PROFILE LOCKED IN',
-                          textAlign: TextAlign.center,
-                          style: Cyber.display(
-                            26,
-                            color: Cyber.lime,
-                            letterSpacing: 1.6,
-                          ).copyWith(
-                            shadows: [
-                              const Shadow(color: Cyber.lime, blurRadius: 20),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 26),
-                  // Shockwave ring + the slamming identity card.
-                  SizedBox(
-                    height: 150,
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Positioned.fill(
-                          child: AnimatedBuilder(
-                            animation: _shock,
-                            builder: (_, _) => CustomPaint(
-                              painter: _RevealShockwavePainter(
-                                progress: _shock.value,
-                                color: Cyber.lime,
-                              ),
-                            ),
-                          ),
-                        ),
-                        AnimatedBuilder(
-                          animation: _ctrl,
-                          builder: (_, child) => Opacity(
-                            opacity: _cardOpacity.value.clamp(0.0, 1.0),
-                            child: Transform.scale(
-                              scale: _cardScale.value,
-                              child: child,
-                            ),
-                          ),
-                          child: _IdentityCard(avatar: avatar, banner: banner),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (teams.isNotEmpty) ...[
-                    const SizedBox(height: 22),
-                    Text(
-                      'FOLLOWING',
-                      style: Cyber.label(
-                        11,
-                        color: Cyber.muted,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 14,
-                      runSpacing: 12,
-                      children: [
-                        for (var i = 0; i < teams.length; i++)
-                          CyberDealtCard(
-                            index: i,
-                            initialDelay: const Duration(milliseconds: 620),
-                            child: TeamLogo(
-                              team: teams[i],
-                              width: 44,
-                              height: 48,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                  const SizedBox(height: 32),
-                  FadeTransition(
-                    opacity: _ctaOpacity,
-                    child: HudCtaButton(
-                      label: 'ENTER PITCH DUEL',
-                      icon: Icons.sports_soccer,
-                      glow: false,
-                      onTap: widget.onEnter,
-                    ),
-                  ),
-                ],
+    return SizedBox(
+      width: 132,
+      height: 132,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 132,
+            height: 132,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Cyber.cyan.withValues(alpha: 0.4),
+                width: 1.2,
               ),
             ),
           ),
-        ),
+          Container(
+            width: 96,
+            height: 96,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Cyber.panel,
+              border: Border.all(color: Cyber.cyan, width: 2),
+              boxShadow: Cyber.glow(Cyber.cyan, alpha: 0.45, blur: 26),
+            ),
+          ),
+          Transform.rotate(
+            angle: spin * 2 * math.pi,
+            child: const Icon(
+              Icons.sports_soccer,
+              size: 52,
+              color: Cyber.cyan,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1156,53 +1283,4 @@ class _RevealShockwavePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _RevealShockwavePainter oldDelegate) =>
       oldDelegate.progress != progress || oldDelegate.color != color;
-}
-
-class _IdentityCard extends StatelessWidget {
-  const _IdentityCard({required this.avatar, required this.banner});
-
-  final AvatarOption avatar;
-  final ProfileBannerOption banner;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 300,
-      height: 132,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                border: Border.all(color: Cyber.cyan, width: 1.4),
-                boxShadow: Cyber.glow(Cyber.cyan, alpha: 0.3, blur: 22),
-              ),
-              child: ProfileBannerVisual(option: banner),
-            ),
-          ),
-          Positioned(
-            left: 16,
-            bottom: 14,
-            child: Container(
-              width: 76,
-              height: 76,
-              decoration: BoxDecoration(
-                color: Cyber.panel,
-                border: Border.all(color: Cyber.cyan, width: 2),
-                boxShadow: Cyber.glow(Cyber.cyan, alpha: 0.35),
-              ),
-              child: ClipRect(
-                child: Image.asset(
-                  avatar.assetPath,
-                  fit: BoxFit.cover,
-                  alignment: Alignment.topCenter,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

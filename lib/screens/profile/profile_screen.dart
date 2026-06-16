@@ -43,9 +43,14 @@ import 'widgets/profile_stat_band.dart';
 /// and hard drop shadows (the FixtureCard language); the only focal glow is the
 /// hero's level chip + XP meter, per the design system's glow rule.
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({required this.onNavigate, super.key});
+  const ProfileScreen({
+    required this.onNavigate,
+    required this.onLogout,
+    super.key,
+  });
 
   final ValueChanged<AppSection> onNavigate;
+  final Future<void> Function() onLogout;
 
   @override
   Widget build(BuildContext context) {
@@ -244,16 +249,7 @@ class ProfileScreen extends StatelessWidget {
                               _NavRow(
                                 icon: Icons.settings,
                                 label: 'Settings',
-                                onTap: () {
-                                  ScaffoldMessenger.of(context)
-                                    ..hideCurrentSnackBar()
-                                    ..showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Settings coming soon'),
-                                        duration: Duration(seconds: 2),
-                                      ),
-                                    );
-                                },
+                                onTap: () => _showSettings(context),
                               ),
                             ],
                           ),
@@ -273,6 +269,33 @@ class ProfileScreen extends StatelessWidget {
         includeShop: false,
       ),
     );
+  }
+
+  Future<void> _showSettings(BuildContext context) {
+    return showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.74),
+      builder: (sheetContext) {
+        return _ProfileSettingsSheet(
+          onLogout: () async {
+            final shouldLogout = await _confirmLogout(sheetContext);
+            if (!sheetContext.mounted || !shouldLogout) return;
+            Navigator.of(sheetContext).pop();
+            await onLogout();
+          },
+        );
+      },
+    );
+  }
+
+  Future<bool> _confirmLogout(BuildContext context) async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.8),
+      builder: (context) => const _LogoutConfirmDialog(),
+    );
+    return result ?? false;
   }
 
   Future<void> _showBugReportDialog(BuildContext context) async {
@@ -689,6 +712,201 @@ class _BugReportAction extends StatelessWidget {
             label.toUpperCase(),
             textAlign: TextAlign.center,
             style: Cyber.label(11, color: color, letterSpacing: 2),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Settings sheet.
+class _ProfileSettingsSheet extends StatelessWidget {
+  const _ProfileSettingsSheet({required this.onLogout});
+
+  final Future<void> Function() onLogout;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: CyberPanel(
+          accent: Cyber.cyan,
+          padding: EdgeInsets.zero,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
+                child: Row(
+                  children: [
+                    const Icon(Icons.settings, color: Cyber.cyan, size: 17),
+                    const SizedBox(width: 9),
+                    Text(
+                      'SETTINGS',
+                      style: Cyber.label(
+                        11,
+                        color: Cyber.cyan,
+                        letterSpacing: 2.1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const HudLine(),
+              _SettingsActionRow(
+                icon: Icons.logout,
+                label: 'Log Out',
+                subtitle: 'Return to avatar selection',
+                color: Cyber.red,
+                onTap: onLogout,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsActionRow extends StatelessWidget {
+  const _SettingsActionRow({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final Color color;
+  final Future<void> Function() onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () async {
+          await onTap();
+        },
+        splashColor: color.withValues(alpha: 0.12),
+        highlightColor: color.withValues(alpha: 0.08),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  border: Border.all(color: color.withValues(alpha: 0.55)),
+                ),
+                child: Icon(icon, color: color, size: 18),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label.toUpperCase(),
+                      style: Cyber.label(12, color: color, letterSpacing: 1.6),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(subtitle, style: Cyber.body(12, color: Cyber.muted)),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: color, size: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LogoutConfirmDialog extends StatelessWidget {
+  const _LogoutConfirmDialog();
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      elevation: 0,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+      backgroundColor: Colors.transparent,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 380),
+        child: CyberPanel(
+          accent: Cyber.red,
+          padding: EdgeInsets.zero,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.logout, color: Cyber.red, size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          'LOG OUT',
+                          style: Cyber.label(
+                            11,
+                            color: Cyber.red,
+                            letterSpacing: 2.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'RETURN TO AVATAR SELECTION?',
+                      style: Cyber.display(16, letterSpacing: 1.1),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Your profile setup choices will be cleared. Your cards, coins, matches, predictions, and picks stay saved.',
+                      style: Cyber.body(13, color: Cyber.muted, height: 1.35),
+                    ),
+                  ],
+                ),
+              ),
+              const HudLine(),
+              SizedBox(
+                height: 50,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _BugReportAction(
+                        label: 'Cancel',
+                        color: Cyber.muted,
+                        onTap: () => Navigator.of(context).pop(false),
+                      ),
+                    ),
+                    Container(width: 1, color: const Color(0xff2a303c)),
+                    Expanded(
+                      child: _BugReportAction(
+                        label: 'Log Out >',
+                        color: Cyber.red,
+                        onTap: () => Navigator.of(context).pop(true),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -1436,4 +1654,3 @@ class _NavRow extends StatelessWidget {
     );
   }
 }
-
