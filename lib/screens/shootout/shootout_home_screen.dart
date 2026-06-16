@@ -94,7 +94,7 @@ class ShootoutHomeScreen extends StatelessWidget {
                                     style: TextStyle(
                                       color: Cyber.muted,
                                       fontFamily: Cyber.displayFont,
-                                      fontSize: 8.5,
+                                      fontSize: 9,
                                       fontWeight: FontWeight.w800,
                                       letterSpacing: 2,
                                     ),
@@ -302,7 +302,7 @@ class _ShootoutStatusBar extends StatelessWidget {
           style: TextStyle(
             color: Cyber.muted,
             fontFamily: Cyber.displayFont,
-            fontSize: 8.5,
+            fontSize: 9,
             fontWeight: FontWeight.w800,
             letterSpacing: 1.2,
           ),
@@ -356,7 +356,7 @@ class _HudStat extends StatelessWidget {
             style: TextStyle(
               color: Cyber.muted,
               fontFamily: Cyber.displayFont,
-              fontSize: 7.5,
+              fontSize: 9,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.8,
             ),

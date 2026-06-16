@@ -109,6 +109,7 @@ class AppTheme {
   static const Color indigo900 = Color.fromRGBO(49, 44, 133, 1);
   static const Color indigo950 = Color.fromRGBO(30, 26, 77, 1);
   static const Color slate800 = Color.fromRGBO(29, 41, 61, 1);
+  static const Color slate400 = Color.fromRGBO(148, 163, 184, 1);
   static const Color whitea80 = Color.fromRGBO(255, 255, 255, 0.8);
   static const Color profileBackgroundColor = Color.fromRGBO(15, 22, 42, 1);
   static const Color blackA20 = Color.fromRGBO(0, 0, 0, 0.2);
@@ -123,6 +124,15 @@ class AppTheme {
   static const Color roseMint900 = Color.fromRGBO(0, 84, 80, 1);
   static const Color text2 = Color.fromRGBO(209, 213, 220, 1);
   static const Color futureLost = Color.fromRGBO(33, 35, 39, 1);
+
+  // Predictions home tokens (exact values lifted from inline literals).
+  static const Color darkInk = Color(0xFF081019); // ink on bright accent plates
+  static const Color calendarOnPrimary = Color(0xFF101826);
+  static const Color calendarSurface = Color(0xFF162235);
+  static const Color skeletonFill = Color(0xFF111827);
+  static const Color borderMuted = Color(0xFF243654);
+  static const Color gameCtaFill = Color(0xFF0F3E4F);
+  static const Color gameCtaBorder = Color(0xFF087B95);
 
   static LinearGradient get backgroundGradient {
     return const LinearGradient(

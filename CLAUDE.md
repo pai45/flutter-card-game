@@ -10,9 +10,13 @@ For any non-trivial task in this project you MUST, every time:
 1. **Apply the Planning rules below** when scoping the work — reuse existing UI,
    make it gamified, build in gratification, keep theme/style intact, plan for
    gamers. This holds whether or not you are formally in plan mode.
-2. **Invoke the `cyber-ui` skill** before writing or changing any visual code
-   (screens, widgets, cards, dialogs, meters, buttons, layout, colour, type).
-   Don't rely on memory of the design system — load the skill.
+2. **Invoke BOTH the `theme` and `cyber-ui` skills** before writing or changing
+   any visual code (screens, widgets, cards, dialogs, meters, buttons, layout,
+   colour, type) — for ALL UI requests, not just big ones. `theme` is the build
+   guide (file location, scaffold, AppTheme/Cyber tokens, BlocBuilder, verify);
+   `cyber-ui` is the aesthetic guide (glow rule, shape language, components).
+   `theme` assembles the screen, `cyber-ui` makes it look right. Don't rely on
+   memory of the design system — load the skills.
 
 Skip this only for genuinely trivial, non-visual edits (typo fixes, a one-line
 logic tweak, answering a question). When in doubt, treat it as a major task and
@@ -44,13 +48,15 @@ call it out and propose a gamified alternative before planning the literal ask.
    the *feedback*, not just the function. Reuse existing moment patterns
    (settlement reveal, pack unpack, level-up celebration, round-result beats).
 
-4. **Keep the theme and style intact.** All visual work follows the **cyber-ui**
-   skill (`.claude/skills/cyber-ui/SKILL.md`) — the esports / cyberpunk HUD
-   design system. Pull colours/type from `Cyber.*` (never raw hex or stock
-   `TextStyle`). Honour THE GLOW RULE (glow = live/selected/primary, and it's
-   scarce). Use the diagonal corner-cut shape language. New UI must look like it
-   belongs in the existing app, not like a generic template. **Invoke the
-   cyber-ui skill whenever a plan touches anything visual.**
+4. **Keep the theme and style intact.** All visual work follows the **`theme`**
+   skill (`.claude/skills/theme/SKILL.md`) — the build guide (file location,
+   scaffold, tokenised `AppTheme`/`Cyber` colour/type, BlocBuilder, verify) — and
+   the **`cyber-ui`** skill (`.claude/skills/cyber-ui/SKILL.md`) — the esports /
+   cyberpunk HUD aesthetic. Pull colours/type from `AppTheme`/`Cyber.*` (never raw
+   hex or stock `TextStyle`). Honour THE GLOW RULE (glow = live/selected/primary,
+   and it's scarce). Use the diagonal corner-cut shape language. New UI must look
+   like it belongs in the existing app, not like a generic template. **Invoke both
+   the `theme` and `cyber-ui` skills whenever a plan touches anything visual.**
 
 5. **Plan for gamers.** Optimize for the player's experience: speed to fun, low
    friction, clear feedback, a sense of reward and mastery. Avoid enterprise/

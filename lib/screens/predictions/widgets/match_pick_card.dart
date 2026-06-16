@@ -512,7 +512,7 @@ class _SummaryTile extends StatelessWidget {
           children: [
             Text(
               label,
-              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1),
+              style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1),
             ),
             const SizedBox(height: 4),
             child,

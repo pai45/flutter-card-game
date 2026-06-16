@@ -892,7 +892,7 @@ class _VerdictHero extends StatelessWidget {
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.body(12.5, color: Cyber.muted, height: 1.25),
+                      style: Cyber.body(13, color: Cyber.muted, height: 1.25),
                     ),
                   ],
                 ),
@@ -1024,7 +1024,7 @@ class _ScoreCell extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.2),
+          style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.2),
         ),
         const SizedBox(height: 2),
         Transform.scale(

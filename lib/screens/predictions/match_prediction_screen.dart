@@ -1293,7 +1293,7 @@ class _ReviewNotice extends StatelessWidget {
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: Cyber.body(12.5, color: const Color(0xffbed7ee)),
+        style: Cyber.body(13, color: const Color(0xffbed7ee)),
       ),
     );
   }
@@ -1725,7 +1725,7 @@ class _PollResultRow extends StatelessWidget {
                 padding: const EdgeInsets.only(right: 6),
                 child: Text(
                   'YOU',
-                  style: Cyber.label(8, color: Cyber.cyan, letterSpacing: 0.8),
+                  style: Cyber.label(9, color: Cyber.cyan, letterSpacing: 0.8),
                 ),
               ),
             if (correct)
@@ -1779,7 +1779,7 @@ class _ReviewSaveDock extends StatelessWidget {
       top: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 22),
-        child: _QuizButton(
+        child: HudPagerButton(
           label: saving ? 'SAVING...' : 'SAVE UPDATES',
           focal: enabled,
           enabled: enabled,
@@ -1808,7 +1808,7 @@ class _PredictNextDock extends StatelessWidget {
       top: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 22),
-        child: _QuizButton(
+        child: HudPagerButton(
           label: label,
           focal: true,
           enabled: true,
@@ -1845,7 +1845,7 @@ class _SettleDock extends StatelessWidget {
       top: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 22),
-        child: _QuizButton(
+        child: HudPagerButton(
           label: 'REVEAL RESULTS',
           focal: true,
           enabled: true,
@@ -2292,7 +2292,7 @@ class _LeaderboardStatCard extends StatelessWidget {
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.7),
+              style: Cyber.label(9, color: Cyber.muted, letterSpacing: 0.7),
             ),
             const Spacer(),
             Text(
@@ -3185,7 +3185,7 @@ class _BottomDock extends StatelessWidget {
                 for (var i = 0; i < questions.length; i++) ...[
                   if (i > 0) const SizedBox(width: 8),
                   Expanded(
-                    child: _ProgressSegment(
+                    child: HudProgressSegment(
                       answered:
                           answers.containsKey(questions[i].id) ||
                           questions[i].isScorePrediction,
@@ -3200,7 +3200,7 @@ class _BottomDock extends StatelessWidget {
               children: [
                 if (canGoPrevious) ...[
                   Expanded(
-                    child: _QuizButton(
+                    child: HudPagerButton(
                       label: 'PREVIOUS',
                       leadingIcon: Icons.arrow_back,
                       focal: false,
@@ -3211,7 +3211,7 @@ class _BottomDock extends StatelessWidget {
                   const SizedBox(width: 14),
                 ],
                 Expanded(
-                  child: _QuizButton(
+                  child: HudPagerButton(
                     label: primary.label,
                     trailingIcon: primary.isNext ? Icons.arrow_forward : null,
                     focal: primary.enabled,
@@ -3234,142 +3234,6 @@ class _BottomDock extends StatelessWidget {
   }
 }
 
-class _ProgressSegment extends StatelessWidget {
-  const _ProgressSegment({required this.answered, required this.current});
-  final bool answered;
-  final bool current;
-
-  @override
-  Widget build(BuildContext context) {
-    // Current = amber "you are here"; already-answered+left = green; else slate.
-    final Gradient? gradient = current
-        ? const LinearGradient(colors: [_segAmberA, _segAmberB])
-        : answered
-        ? const LinearGradient(colors: [_segGreenA, _segGreenB])
-        : null;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      height: 8,
-      decoration: BoxDecoration(
-        gradient: gradient,
-        color: gradient == null ? _segTrack : null,
-        boxShadow: current
-            ? Cyber.glow(Cyber.amber, alpha: 0.35, blur: 8)
-            : null,
-      ),
-    );
-  }
-}
-
-// ── PREVIOUS / NEXT button (angular HUD silhouette) ───────────────────────────
-class _QuizButton extends StatelessWidget {
-  const _QuizButton({
-    required this.label,
-    required this.focal,
-    required this.enabled,
-    required this.onTap,
-    this.leadingIcon,
-    this.trailingIcon,
-  });
-
-  final String label;
-  final bool focal;
-  final bool enabled;
-  final VoidCallback? onTap;
-  final IconData? leadingIcon;
-  final IconData? trailingIcon;
-
-  @override
-  Widget build(BuildContext context) {
-    final Color content = !enabled
-        ? Cyber.muted
-        : focal
-        ? const Color(0xff06121b)
-        : Cyber.cyan;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: enabled ? onTap : null,
-      child: SizedBox(
-        height: 56,
-        child: CustomPaint(
-          painter: _HudBtnPainter(focal: focal, enabled: enabled),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (leadingIcon != null) ...[
-                Icon(leadingIcon, color: content, size: 20),
-                const SizedBox(width: 8),
-              ],
-              Text(
-                label,
-                style: Cyber.body(
-                  16,
-                  color: content,
-                  weight: FontWeight.w800,
-                ).copyWith(letterSpacing: 0.8),
-              ),
-              if (trailingIcon != null) ...[
-                const SizedBox(width: 8),
-                Icon(trailingIcon, color: content, size: 20),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _HudBtnPainter extends CustomPainter {
-  const _HudBtnPainter({required this.focal, required this.enabled});
-  final bool focal;
-  final bool enabled;
-
-  static const _clipper = HudChamferClipper(bigCut: 14, smallCut: 7);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final path = _clipper.buildPath(size);
-    if (focal) {
-      // Bright glowing forward CTA (NEXT / SUBMIT).
-      canvas.drawPath(
-        path,
-        Paint()
-          ..color = Cyber.cyan.withValues(alpha: 0.5)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 13),
-      );
-      canvas.drawPath(
-        path,
-        Paint()
-          ..shader = LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color.lerp(Cyber.cyan, Colors.white, 0.28)!, Cyber.cyan],
-          ).createShader(Offset.zero & size),
-      );
-    } else {
-      // Calm dark plate (PREVIOUS, or a disabled SUBMIT).
-      canvas.drawPath(
-        path,
-        Paint()
-          ..color = enabled ? const Color(0xff1b2336) : const Color(0xff141a26),
-      );
-      canvas.drawPath(
-        path,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.4
-          ..color = enabled
-              ? Cyber.cyan.withValues(alpha: 0.45)
-              : Cyber.line.withValues(alpha: 0.3),
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _HudBtnPainter old) =>
-      old.focal != focal || old.enabled != enabled;
-}
 
 // ── SUBMITTED celebration overlay ─────────────────────────────────────────────
 class _SubmittedOverlay extends StatefulWidget {
@@ -3878,10 +3742,3 @@ const _quizSurfaceOpacity = 0.90;
 const _optionFill = Color(0xff0f1826);
 const _optionBorder = Color(0xff283448);
 const _letterFill = Color(0xff1a2434);
-
-// Progress-segment palette (green = done, amber = current, slate = pending).
-const _segGreenA = Color(0xFF00C850);
-const _segGreenB = Color(0xFF009865);
-const _segAmberA = Color(0xFFFFB13D);
-const _segAmberB = Color(0xFFFF7A1A);
-const _segTrack = Color(0xFF314158);

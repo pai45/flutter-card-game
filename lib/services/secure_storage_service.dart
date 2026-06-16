@@ -75,6 +75,9 @@ class SecureGameStorage {
   static const _pickPositionsKey = 'pd_pick_positions_v1';
   static const _selectedAvatarKey = 'pd_selected_avatar_v1';
   static const _selectedProfileBannerKey = 'pd_selected_profile_banner_v1';
+  static const _followedLeaguesKey = 'pd_followed_leagues_v1';
+  static const _favoriteTeamsKey = 'pd_favorite_teams_v1';
+  static const _onboardingCompleteKey = 'pd_onboarding_complete_v1';
   static const _celebratedAchievementsKey = 'pd_celebrated_achievements_v1';
 
   final FlutterSecureStorage _storage;
@@ -272,6 +275,51 @@ class SecureGameStorage {
 
   Future<void> saveSelectedProfileBannerId(String bannerId) async {
     await _storage.write(key: _selectedProfileBannerKey, value: bannerId);
+  }
+
+  Future<List<String>> loadFollowedLeagueIds() async {
+    try {
+      final raw = await _storage.read(key: _followedLeaguesKey);
+      if (raw == null || raw.isEmpty) return const [];
+      return List<String>.from(jsonDecode(raw) as List);
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<void> saveFollowedLeagueIds(List<String> leagueIds) async {
+    await _storage.write(key: _followedLeaguesKey, value: jsonEncode(leagueIds));
+  }
+
+  /// Favourite team per league as a leagueId → teamId map.
+  Future<Map<String, String>> loadFavoriteTeams() async {
+    try {
+      final raw = await _storage.read(key: _favoriteTeamsKey);
+      if (raw == null || raw.isEmpty) return const {};
+      return Map<String, String>.from(jsonDecode(raw) as Map);
+    } catch (_) {
+      return const {};
+    }
+  }
+
+  Future<void> saveFavoriteTeams(Map<String, String> teams) async {
+    await _storage.write(key: _favoriteTeamsKey, value: jsonEncode(teams));
+  }
+
+  Future<bool> loadOnboardingComplete() async {
+    try {
+      final raw = await _storage.read(key: _onboardingCompleteKey);
+      return raw == 'true';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> saveOnboardingComplete(bool complete) async {
+    await _storage.write(
+      key: _onboardingCompleteKey,
+      value: complete ? 'true' : 'false',
+    );
   }
 
   /// The set of achievement ids already celebrated. Returns `null` when the key

@@ -339,13 +339,12 @@ class _TopBarTab extends StatelessWidget {
           AnimatedDefaultTextStyle(
             duration: const Duration(milliseconds: 220),
             curve: Curves.easeOutCubic,
-            style: TextStyle(
+            style: Cyber.label(
+              active ? 12 : 10,
               color: color,
-              fontFamily: Cyber.displayFont,
-              fontSize: active ? 12 : 10,
-              fontWeight: active ? FontWeight.w900 : FontWeight.w600,
-              height: active ? 1.25 : 1.5,
+              weight: active ? FontWeight.w900 : FontWeight.w600,
               letterSpacing: active ? 0.5 : 0.3,
+              height: active ? 1.25 : 1.5,
             ),
             child: Text(data.label, textAlign: TextAlign.center),
           ),
@@ -429,9 +428,9 @@ abstract final class _TopBarMetrics {
   static const rowHeight = 61.0;
   static const chamfer = 16.0; // bottom corner cut on the active plate
 
-  static const fill = Color(0xff1a253a);
-  static const activeInk = Color(0xff081019); // dark ink on the bright plate
-  static const mutedInk = Color(0xff90a1b8);
+  static const fill = AppTheme.unselectedColor;
+  static const activeInk = AppTheme.darkInk; // dark ink on the bright plate
+  static const mutedInk = AppTheme.textMedium;
 }
 
 class _MatchesTab extends StatefulWidget {
@@ -513,8 +512,8 @@ class _MatchesTabState extends State<_MatchesTab> {
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.dark(
               primary: Cyber.cyan,
-              onPrimary: Color(0xff101826),
-              surface: Color(0xff162235),
+              onPrimary: AppTheme.calendarOnPrimary,
+              surface: AppTheme.calendarSurface,
               onSurface: Colors.white,
             ),
           ),
@@ -598,16 +597,16 @@ class _MatchesTabState extends State<_MatchesTab> {
                         children: [
                           Text(
                             entry.key.shortCode,
-                            style: TextStyle(
-                              color: Cyber.cyan.withValues(alpha: 0.85),
-                              fontFamily: Cyber.displayFont,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 2,
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ),
+                            style:
+                                Cyber.display(
+                                  18,
+                                  color: Cyber.cyan.withValues(alpha: 0.85),
+                                  letterSpacing: 2,
+                                ).copyWith(
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
+                                  ],
+                                ),
                           ),
                           const SizedBox(width: 10),
                           Text(
@@ -1622,7 +1621,7 @@ class _TinyBadge extends StatelessWidget {
         fit: BoxFit.scaleDown,
         child: Text(
           label,
-          style: Cyber.label(8, color: textColor, letterSpacing: 0.2),
+          style: Cyber.label(9, color: textColor, letterSpacing: 0.2),
         ),
       ),
     );
@@ -1993,8 +1992,8 @@ class _PickSkeleton extends StatelessWidget {
           height: index == 3 ? 174 : 118,
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xff111827),
-            border: Border.all(color: const Color(0xff243654)),
+            color: AppTheme.skeletonFill,
+            border: Border.all(color: AppTheme.borderMuted),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -2352,8 +2351,8 @@ class _GameFreeButton extends StatelessWidget {
 
   final VoidCallback? onTap;
 
-  static const _fillColor = Color(0xFF0F3E4F);
-  static const _borderColor = Color(0xFF087B95);
+  static const _fillColor = AppTheme.gameCtaFill;
+  static const _borderColor = AppTheme.gameCtaBorder;
   static const _bigCut = 10.0;
   static const _smallCut = 3.0;
 

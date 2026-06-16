@@ -390,7 +390,7 @@ class _PickCardBody extends StatelessWidget {
                     position.outcomeLabel,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.body(12.5, weight: FontWeight.w800),
+                    style: Cyber.body(13, weight: FontWeight.w800),
                   ),
                 ],
               ),

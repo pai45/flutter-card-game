@@ -119,6 +119,11 @@ class HudCtaButton extends StatefulWidget {
   /// Optional small sub-line rendered under [label] (e.g. an odds readout).
   final String? helper;
 
+  /// When true (default) the button carries the pulsing neon halo. Set false
+  /// for a calmer, elevated treatment (crisp border + a plain drop shadow, no
+  /// neon glow) — e.g. on the profile-setup flow.
+  final bool glow;
+
   const HudCtaButton({
     super.key,
     this.label = 'PLAY MATCH',
@@ -128,6 +133,7 @@ class HudCtaButton extends StatefulWidget {
     this.accent = Cyber.cyan,
     this.tapSound = SoundEffect.playMatch,
     this.helper,
+    this.glow = true,
   });
 
   @override
@@ -186,23 +192,36 @@ class _HudCtaButtonState extends State<HudCtaButton>
           animation: _pulse,
           builder: (context, _) {
             // Idle pulse (0..1); fully lit while pressed for clear feedback.
-            final glow = _pressed ? 1.0 : 0.25 + 0.45 * _pulse.value;
+            // With glow off the halo is dropped (a faint press tick only) and
+            // the border stays crisp.
+            final glow = widget.glow
+                ? (_pressed ? 1.0 : 0.25 + 0.45 * _pulse.value)
+                : (_pressed ? 0.3 : 0.0);
             return Container(
               height: widget.height,
               width: double.infinity,
               decoration: BoxDecoration(
-                boxShadow: [
-                  BoxShadow(
-                    color: accent.withValues(alpha: 0.18 + 0.22 * glow),
-                    blurRadius: 24 + 16 * glow,
-                    spreadRadius: 1,
-                  ),
-                  BoxShadow(
-                    color: secondary.withValues(alpha: 0.12 + 0.18 * glow),
-                    blurRadius: 40 + 22 * glow,
-                    spreadRadius: 2,
-                  ),
-                ],
+                boxShadow: widget.glow
+                    ? [
+                        BoxShadow(
+                          color: accent.withValues(alpha: 0.18 + 0.22 * glow),
+                          blurRadius: 24 + 16 * glow,
+                          spreadRadius: 1,
+                        ),
+                        BoxShadow(
+                          color: secondary.withValues(alpha: 0.12 + 0.18 * glow),
+                          blurRadius: 40 + 22 * glow,
+                          spreadRadius: 2,
+                        ),
+                      ]
+                    : const [
+                        // Elevation, not glow: a plain dark drop shadow.
+                        BoxShadow(
+                          color: Color(0x99000000),
+                          blurRadius: 18,
+                          offset: Offset(0, 9),
+                        ),
+                      ],
               ),
               child: CustomPaint(
                 foregroundPainter: _HudBorderPainter(

@@ -1837,7 +1837,6 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
     final stripColor = widget.card.tier == CardTier.bronze
         ? const Color(0xffa85f25)
         : tierColor(widget.card.tier);
-    final small = widget.size == VisualCardSize.sm;
     final large = widget.size == VisualCardSize.lg;
 
     final scaleAnim = Tween<double>(begin: 1.0, end: 1.12).animate(
@@ -1855,8 +1854,8 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
           child: Transform.rotate(
             angle: rotateAnim.value,
             child: PremiumCardShell(
-              width: small ? 80 : (large ? 112 : 96),
-              height: small ? 96 : (large ? 148 : 128),
+              width: large ? 116 : 96,
+              height: large ? 162 : 128,
               selected: widget.selected,
               disabled: widget.disabled,
               disabledLabel: widget.disabledLabel,
@@ -1912,7 +1911,7 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
                               actionCode(widget.card.category),
                               style: const TextStyle(
                                 color: Cyber.bg,
-                                fontSize: 8,
+                                fontSize: 9,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -1923,7 +1922,7 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
                           // the centred icon never tucks under it.
                           padding: EdgeInsets.fromLTRB(
                             8,
-                            small ? 22 : (large ? 26 : 24),
+                            large ? 26 : 24,
                             8,
                             8,
                           ),
@@ -1933,7 +1932,7 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
                               Icon(
                                 widget.card.icon,
                                 color: color,
-                                size: small ? 20 : (large ? 28 : 24),
+                                size: large ? 28 : 24,
                               ),
                               Text(
                                 widget.card.title.toUpperCase(),
@@ -2015,7 +2014,7 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
                                   style: TextStyle(
                                     color: ratingColor,
                                     fontFamily: Cyber.displayFont,
-                                    fontSize: small ? 14 : (large ? 18 : 16),
+                                    fontSize: large ? 18 : 16,
                                     fontWeight: FontWeight.w900,
                                     height: 1,
                                     fontFeatures: const [
@@ -2344,4 +2343,160 @@ class HudSheetFramePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant HudSheetFramePainter old) =>
       old.bigCut != bigCut || old.smallCut != smallCut;
+}
+
+// ── Pager dock: PREVIOUS / NEXT button + progress segments ────────────────────
+// Shared by the prediction quiz and the profile-setup wizard so the paginated
+// "one step at a time" dock looks identical everywhere.
+
+/// An angular HUD pager button on the [HudChamferClipper] silhouette.
+/// [focal] = the bright glowing forward CTA (NEXT/SUBMIT); otherwise a calm dark
+/// plate (PREVIOUS). Disabled state dims content and calms the plate.
+class HudPagerButton extends StatelessWidget {
+  const HudPagerButton({
+    required this.label,
+    required this.focal,
+    required this.enabled,
+    required this.onTap,
+    this.leadingIcon,
+    this.trailingIcon,
+    super.key,
+  });
+
+  final String label;
+  final bool focal;
+  final bool enabled;
+  final VoidCallback? onTap;
+  final IconData? leadingIcon;
+  final IconData? trailingIcon;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color content = !enabled
+        ? Cyber.muted
+        : focal
+        ? const Color(0xff06121b)
+        : Cyber.cyan;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: enabled ? onTap : null,
+      child: SizedBox(
+        height: 56,
+        child: CustomPaint(
+          painter: _HudPagerButtonPainter(focal: focal, enabled: enabled),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (leadingIcon != null) ...[
+                Icon(leadingIcon, color: content, size: 20),
+                const SizedBox(width: 8),
+              ],
+              Text(
+                label,
+                style: Cyber.body(
+                  16,
+                  color: content,
+                  weight: FontWeight.w800,
+                ).copyWith(letterSpacing: 0.8),
+              ),
+              if (trailingIcon != null) ...[
+                const SizedBox(width: 8),
+                Icon(trailingIcon, color: content, size: 20),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HudPagerButtonPainter extends CustomPainter {
+  const _HudPagerButtonPainter({required this.focal, required this.enabled});
+  final bool focal;
+  final bool enabled;
+
+  static const _clipper = HudChamferClipper(bigCut: 14, smallCut: 7);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = _clipper.buildPath(size);
+    if (focal) {
+      // Bright glowing forward CTA (NEXT / SUBMIT).
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = Cyber.cyan.withValues(alpha: 0.5)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 13),
+      );
+      canvas.drawPath(
+        path,
+        Paint()
+          ..shader = LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color.lerp(Cyber.cyan, Colors.white, 0.28)!, Cyber.cyan],
+          ).createShader(Offset.zero & size),
+      );
+    } else {
+      // Calm dark plate (PREVIOUS, or a disabled forward action).
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = enabled ? const Color(0xff1b2336) : const Color(0xff141a26),
+      );
+      canvas.drawPath(
+        path,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.4
+          ..color = enabled
+              ? Cyber.cyan.withValues(alpha: 0.45)
+              : Cyber.line.withValues(alpha: 0.3),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _HudPagerButtonPainter old) =>
+      old.focal != focal || old.enabled != enabled;
+}
+
+// Progress-segment palette (green = done, amber = current, slate = pending).
+const _segGreenA = Color(0xFF00C850);
+const _segGreenB = Color(0xFF009865);
+const _segAmberA = Color(0xFFFFB13D);
+const _segAmberB = Color(0xFFFF7A1A);
+const _segTrack = Color(0xFF314158);
+
+/// One bar in a paginated progress row: amber "you are here" for [current],
+/// green for already-[answered]/passed, slate otherwise. Only the current
+/// segment glows.
+class HudProgressSegment extends StatelessWidget {
+  const HudProgressSegment({
+    required this.answered,
+    required this.current,
+    super.key,
+  });
+
+  final bool answered;
+  final bool current;
+
+  @override
+  Widget build(BuildContext context) {
+    final Gradient? gradient = current
+        ? const LinearGradient(colors: [_segAmberA, _segAmberB])
+        : answered
+        ? const LinearGradient(colors: [_segGreenA, _segGreenB])
+        : null;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      height: 8,
+      decoration: BoxDecoration(
+        gradient: gradient,
+        color: gradient == null ? _segTrack : null,
+        boxShadow: current ? Cyber.glow(Cyber.amber, alpha: 0.35, blur: 8) : null,
+      ),
+    );
+  }
 }

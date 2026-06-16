@@ -803,7 +803,7 @@ class _TeamLine extends StatelessWidget {
             style: TextStyle(
               color: light ? const Color(0xff111827) : Colors.white,
               fontFamily: Cyber.displayFont,
-              fontSize: 8,
+              fontSize: 9,
               fontWeight: FontWeight.w900,
               letterSpacing: 0,
             ),
@@ -868,7 +868,7 @@ class _MiniStat extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1),
+          style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1),
         ),
         const SizedBox(height: 4),
         Text(value, style: Cyber.body(11, weight: FontWeight.w800)),

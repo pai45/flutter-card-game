@@ -15,9 +15,9 @@ import '../../widgets/team_logo.dart';
 enum LeaderboardType { matchDay, tournament, coins, games }
 
 // Matches shop tab styling (_ShopTabs / _TabItem).
-const Color _tabBarBg = Color(0xff0d111a);
-const Color _tabCyan = Color(0xff5cdfff);
-const Color _tabSecondary = Color(0xff94a3b8);
+const Color _tabBarBg = Cyber.bg;
+const Color _tabCyan = Cyber.cyan;
+const Color _tabSecondary = AppTheme.slate400;
 
 const List<LeaderboardType> _typeTabOrder = [
   LeaderboardType.matchDay,
@@ -684,11 +684,10 @@ class _LeaderboardTabItem extends StatelessWidget {
           child: Text(
             label,
             maxLines: 1,
-            style: TextStyle(
+            style: Cyber.label(
+              10,
               color: color,
-              fontFamily: 'Orbitron',
-              fontSize: 9.5,
-              fontWeight: FontWeight.w900,
+              weight: FontWeight.w900,
               letterSpacing: 1.2,
             ),
           ),
@@ -1754,7 +1753,7 @@ class _LeaderboardRow extends StatelessWidget {
                   style: TextStyle(
                     color: Cyber.muted.withValues(alpha: 0.82),
                     fontFamily: Cyber.displayFont,
-                    fontSize: 8,
+                    fontSize: 9,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.4,
                   ),
@@ -1829,7 +1828,7 @@ class _Tag extends StatelessWidget {
         style: TextStyle(
           color: color,
           fontFamily: Cyber.displayFont,
-          fontSize: 8,
+          fontSize: 9,
           fontWeight: FontWeight.w900,
           letterSpacing: 0.8,
         ),

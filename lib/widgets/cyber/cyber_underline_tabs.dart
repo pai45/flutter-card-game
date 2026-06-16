@@ -136,7 +136,7 @@ class _UnderlineTabState extends State<_UnderlineTab> {
                 style: TextStyle(
                   color: color,
                   fontFamily: Cyber.displayFont,
-                  fontSize: 9.5,
+                  fontSize: 10,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.2,
                 ),

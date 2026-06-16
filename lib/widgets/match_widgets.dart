@@ -1453,7 +1453,7 @@ class _RoleBadge extends StatelessWidget {
         style: TextStyle(
           color: color,
           fontFamily: Cyber.bodyFont,
-          fontSize: 8,
+          fontSize: 9,
           fontWeight: FontWeight.w700,
           letterSpacing: 1,
         ),

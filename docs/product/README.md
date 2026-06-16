@@ -1,22 +1,23 @@
 # StatOz Product Documentation
 
-StatOz is a sports prediction and game app built around three connected product loops:
+StatOz is a sports prediction and game app built around four connected product loops:
 
 - users predict real-world-style matches, submit answers, and claim rewards when results settle
 - users collect cards, build squads, and play the Pitch Duel tactical card game for XP and coins
 - users compare progress through leaderboard surfaces across match day, tournaments, coins, and games
+- users set up a profile identity with avatar, banner, followed leagues, and favorite teams
 
 This documentation is the product source of truth. It explains how the app works from the user experience outward, so future changes can update the product behavior before implementation details drift.
 
 ## App Map
 
-The app opens into the Predictions experience. From there, users move between:
+On first launch, the app opens into Profile Setup until onboarding is complete. After setup, the app opens into the Predictions experience. From there, users move between:
 
 - **Matches**: fixture cards grouped by league, with prediction quizzes for individual matches.
 - **Pick**: a market-style picks surface where users choose outcomes and confirm an Oz Coin amount.
 - **Games**: entry point for Pitch Duel, plus placeholders for future game modes.
 - **Leaderboard**: ranking surfaces for match day, tournaments, coins, and games.
-- **Shop and Profile**: supporting areas for collection, wallet, card backs, and player identity.
+- **Shop and Profile**: supporting areas for identity setup, avatar and banner display, followed leagues, favorite teams, wallet, collection, card backs, and cosmetic browsing.
 
 The main navigation keeps Predictions, Pick, Leaderboard, Shop, and Profile as app-level destinations. Pitch Duel opens as a full-screen game hub from the Games tab, then handles its own internal destinations such as home, deck, all cards, how to play, match, and match history.
 
@@ -28,6 +29,7 @@ The main navigation keeps Predictions, Pick, Leaderboard, Shop, and Profile as a
 - [Pitch Duel Card Game](pitch-duel-card-game.md)
 - [Pitch Duel Leveling System](pitch-duel-leveling.md)
 - [Leaderboard](leaderboard.md)
+- [Profile And Identity](profile-and-identity.md)
 
 ## Product Loops
 
@@ -57,12 +59,20 @@ The main navigation keeps Predictions, Pick, Leaderboard, Shop, and Profile as a
 2. Activity earns XP, wins, coins, and visible progress.
 3. Leaderboards convert that progress into rank, movement, podiums, and the user's current position.
 
+**Identity loop**
+
+1. First-time user chooses an avatar and profile banner.
+2. User optionally follows leagues and picks favorite teams for those leagues.
+3. Profile displays the selected identity and a Following band for favorite team badges.
+4. Shop supports the identity layer with cosmetic browsing, including player portrait avatar tiles.
+
 ## Current Product Notes
 
 - Match fixtures, quizzes, vote results, and match leaderboard rows are currently mock-backed but written as product behavior so the surface can later connect to live data.
 - The Pick tab currently behaves like a product prototype: users can choose a market and confirm an amount, but the confirmed pick is not yet a persisted portfolio position.
 - Leaderboard entries are seeded to demonstrate ranking states, user highlighting, podiums, movement, and team boards.
 - Pitch Duel gameplay, deck ownership, progression, wallet, daily drop, and match history are persistent product experiences.
+- Profile setup and identity preferences are persistent local product state: avatar, banner, followed leagues, favorite teams, and onboarding completion.
 - The prediction gamification layer (streaks, settlement reveal, achievements, prediction XP, daily quests) is a designed-not-yet-built system documented in [Prediction Gamification](prediction-gamification.md).
 
 ## How To Maintain These Docs
