@@ -28,6 +28,7 @@ import 'services/pick_repository.dart';
 import 'services/prediction_repository.dart';
 import 'services/secure_storage_service.dart';
 import 'widgets/achievement_celebration_host.dart';
+import 'widgets/streak_celebration_host.dart';
 
 class PitchDuelApp extends StatelessWidget {
   const PitchDuelApp({super.key});
@@ -75,6 +76,7 @@ class PitchDuelApp extends StatelessWidget {
               children: [
                 Positioned.fill(child: child ?? const SizedBox.shrink()),
                 const Positioned.fill(child: AchievementCelebrationHost()),
+                const Positioned.fill(child: StreakCelebrationHost()),
               ],
             ),
           );
@@ -109,6 +111,7 @@ class _AppShellState extends State<AppShell> {
   // Default landing is Matches; its first internal tab is Predict.
   AppSection section = AppSection.predictions;
   int _predictionTab = 0;
+  int _shopInitialTab = 0;
   // A game flow to push once the starter-pack reveal finishes (first launch).
   VoidCallback? _pendingGameLaunch;
   final SecureGameStorage _storage = SecureGameStorage();
@@ -133,7 +136,15 @@ class _AppShellState extends State<AppShell> {
     });
   }
 
-  void _go(AppSection next) => setState(() => section = next);
+  void _go(AppSection next) => setState(() {
+    section = next;
+    if (next == AppSection.shop) _shopInitialTab = 0;
+  });
+
+  void _openShopCoins() => setState(() {
+    _shopInitialTab = 2;
+    section = AppSection.shop;
+  });
 
   Future<void> _completeProfileSetup(ProfileSetupResult result) async {
     await _storage.saveSelectedAvatarId(result.avatarId);
@@ -274,8 +285,14 @@ class _AppShellState extends State<AppShell> {
             );
           }
           return switch (section) {
-            AppSection.shop => ShopScreen(onNavigate: _go),
-            AppSection.leaderboard => LeaderboardScreen(onNavigate: _go),
+            AppSection.shop => ShopScreen(
+              onNavigate: _go,
+              initialTab: _shopInitialTab,
+            ),
+            AppSection.leaderboard => LeaderboardScreen(
+              onNavigate: _go,
+              onAddCoins: _openShopCoins,
+            ),
             AppSection.profile => ProfileScreen(
               onNavigate: _go,
               onLogout: _logoutFromProfile,
@@ -288,6 +305,7 @@ class _AppShellState extends State<AppShell> {
               onOpenLeague: _openLeague,
               onOpenGame: _openGame,
               onOpenShootout: _openShootout,
+              onAddCoins: _openShopCoins,
             ),
           };
         },

@@ -733,3 +733,164 @@ class Cyber {
     );
   }
 }
+
+/// Design tokens for every daily-streak surface. Streak widgets should only
+/// consume this facade (plus the shared [Cyber] typography helpers) so the
+/// feature remains visually tunable from one place.
+class StreakTheme {
+  static const Color primary = Cyber.gold;
+  static const Color secondary = Cyber.amber;
+  static const Color background = Cyber.bg;
+  static const Color surface = Cyber.card;
+  static const Color elevatedSurface = Cyber.panel;
+  static const Color text = AppTheme.whiteColor;
+  static const Color mutedText = Cyber.muted;
+  static const Color success = Cyber.success;
+  static const Color locked = Cyber.line;
+  static const Color inactiveCategoryBorder = AppTheme.slate400;
+  static const Color border = Cyber.border;
+  static const Color selectedInk = AppTheme.darkInk;
+  static const Color overlayBarrier = Color.fromRGBO(0, 0, 0, 0.84);
+  static const Color missed = Cyber.danger;
+  static const Color predict = Cyber.cyan;
+  static const Color pick = Cyber.lime;
+  static const Color pitchDuel = Cyber.amber;
+  static const Color penaltyShootout = Cyber.violet;
+  static Color get activeDayFill => primary.withValues(alpha: 0.18);
+  static Color get selectedDayFill => primary.withValues(alpha: 0.92);
+  static Color get todayBorder => secondary.withValues(alpha: 0.9);
+  static Color get inactiveDayText => mutedText.withValues(alpha: 0.5);
+  static Color get subtleBorder => border.withValues(alpha: 0.62);
+  static Color get mutedSurface => surface.withValues(alpha: 0.72);
+
+  static LinearGradient get fireGradient => const LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [primary, secondary],
+  );
+
+  static LinearGradient get fireBackgroundGradient => LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [secondary.withValues(alpha: 0.22), background, background],
+  );
+
+  static LinearGradient get milestoneGradient => LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [primary.withValues(alpha: 0.24), surface, elevatedSurface],
+  );
+
+  static List<BoxShadow> get fireGlow =>
+      Cyber.glow(primary, alpha: 0.38, blur: 24, spread: -2);
+  static List<BoxShadow> get compactGlow =>
+      Cyber.glow(secondary, alpha: 0.26, blur: 12, spread: -3);
+  static const Color hardShadow = Color.fromRGBO(4, 6, 11, 1);
+  static const Color tabBarBackground = Cyber.bg;
+  static const double hardShadowDrop = 5;
+  static const double tabBarHeight = 50;
+  static const double tabIndicatorHeight = 3;
+  static const double tabIndicatorWidthFactor = 0.64;
+  static const double tabIndicatorInsetFactor = 0.18;
+  static const double tabIndicatorGlowBlur = 10;
+  static const double tabIndicatorGlowAlpha = 0.7;
+
+  static const double space2 = 2;
+  static const double space4 = 4;
+  static const double space6 = 6;
+  static const double space8 = 8;
+  static const double space10 = 10;
+  static const double space12 = 12;
+  static const double space14 = 14;
+  static const double space16 = 16;
+  static const double space20 = 20;
+  static const double space24 = 24;
+  static const double space28 = 28;
+  static const double space32 = 32;
+
+  static const EdgeInsets screenPadding = EdgeInsets.fromLTRB(
+    space16,
+    space12,
+    space16,
+    space28,
+  );
+  static const EdgeInsets heroSectionPadding = EdgeInsets.fromLTRB(
+    space16,
+    space12,
+    space16,
+    space16,
+  );
+  static const EdgeInsets tabContentPadding = EdgeInsets.fromLTRB(
+    space16,
+    space16,
+    space16,
+    space28,
+  );
+  static const EdgeInsets sectionPadding = EdgeInsets.all(space16);
+  static const EdgeInsets cardPadding = EdgeInsets.all(space14);
+  static const EdgeInsets compactPadding = EdgeInsets.symmetric(
+    horizontal: space8,
+    vertical: space4,
+  );
+  static const EdgeInsets celebrationPadding = EdgeInsets.symmetric(
+    horizontal: space24,
+    vertical: space28,
+  );
+  static const EdgeInsets buttonPadding = EdgeInsets.symmetric(
+    horizontal: space20,
+    vertical: space14,
+  );
+  static const EdgeInsets calendarCellPadding = EdgeInsets.all(space4);
+
+  static const double smallCut = 4;
+  static const double cardCut = 10;
+  static const double heroCut = 16;
+  static const double borderWidth = 1;
+  static const double activeBorderWidth = 1.5;
+  static const double badgeHeight = 26;
+  static const double badgeIconSize = 16;
+  static const double markerSize = 6;
+  static const double heroIconSize = 108;
+  static const double celebrationIconSize = 132;
+  static const double calendarCellExtent = 42;
+  static const double calendarCellAspectRatio = 1;
+  static const double progressHeight = 8;
+  static const double buttonHeight = 48;
+  static const double maxContentWidth = 520;
+  static const double entryScale = 0.92;
+
+  static const Duration fastDuration = Duration(milliseconds: 160);
+  static const Duration standardDuration = Duration(milliseconds: 280);
+  static const Duration countDuration = Duration(milliseconds: 650);
+  static const Duration celebrationDuration = Duration(milliseconds: 720);
+  static const Duration autoDismissDuration = Duration(milliseconds: 2600);
+
+  static TextStyle heroNumber({Color color = primary}) =>
+      Cyber.display(42, color: color, letterSpacing: 0);
+  static TextStyle celebrationNumber({Color color = primary}) =>
+      Cyber.display(54, color: color, letterSpacing: 0);
+  static TextStyle title({Color color = text}) =>
+      Cyber.display(20, color: color, letterSpacing: 0.7);
+  static TextStyle sectionTitle({Color color = text}) =>
+      Cyber.display(15, color: color, letterSpacing: 0.9);
+  static TextStyle badge({Color color = text}) =>
+      Cyber.label(11, color: color, letterSpacing: 0.4);
+  static TextStyle label({Color color = mutedText}) =>
+      Cyber.label(9, color: color, letterSpacing: 1);
+  static TextStyle body({Color color = mutedText}) =>
+      Cyber.body(13, color: color, height: 1.4);
+  static TextStyle bodyStrong({Color color = text}) =>
+      Cyber.body(13, color: color, weight: FontWeight.w800, height: 1.3);
+
+  static Color activityColor(StreakActivityVisual activity) =>
+      switch (activity) {
+        StreakActivityVisual.predict => predict,
+        StreakActivityVisual.pick => pick,
+        StreakActivityVisual.pitchDuel => pitchDuel,
+        StreakActivityVisual.penaltyShootout => penaltyShootout,
+      };
+}
+
+/// Theme-only activity identity, kept independent from the streak domain model
+/// so `theme.dart` remains a foundational dependency.
+enum StreakActivityVisual { predict, pick, pitchDuel, penaltyShootout }

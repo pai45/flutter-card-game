@@ -1939,11 +1939,14 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(
+                                // Scale the headline with the card (frozen at 9
+                                // it read tiny on the lg reveal face), mirroring
+                                // CyberPlayerCardTile's size-aware text.
+                                style: TextStyle(
                                   color: Colors.white,
                                   fontFamily: 'Orbitron',
                                   fontWeight: FontWeight.w900,
-                                  fontSize: 9,
+                                  fontSize: large ? 14 : 9,
                                 ),
                               ),
                               Text(
@@ -1952,7 +1955,7 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: color.withValues(alpha: 0.76),
-                                  fontSize: 7,
+                                  fontSize: large ? 10 : 7,
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
@@ -2668,4 +2671,307 @@ class _CountdownRingPainter extends CustomPainter {
   @override
   bool shouldRepaint(_CountdownRingPainter oldDelegate) =>
       oldDelegate.scan != scan || oldDelegate.accent != accent;
+}
+
+// ─── Gliding colour-morphing tab bar ─────────────────────────────────────────
+/// One tab in a [CyberGlidingTabs] bar: a label, its own identity [accent], and
+/// an [icon] builder so the active/inactive tint stays centralised (pass an
+/// `Icon`, `SvgPicture`, or a `CustomPaint` glyph).
+class CyberGlidingTab {
+  const CyberGlidingTab({
+    required this.label,
+    required this.accent,
+    required this.icon,
+  });
+
+  final String label;
+
+  /// Each tab owns its identity colour; the active plate morphs between them as
+  /// it glides.
+  final Color accent;
+
+  /// `(color) => glyph` — receives the resolved tint for the tab's current state.
+  final Widget Function(Color color) icon;
+}
+
+/// A calm dark tab strip with ONE raised, glowing plate that GLIDES — and
+/// colour-morphs between the per-tab accents — as you switch tabs. Per the glow
+/// rule only that active plate glows; resting tabs stay colour-coded in a calm,
+/// desaturated take on their OWN accent so each identity reads at a glance. The
+/// active tab's icon pops with an elastic bounce.
+///
+/// This is the match-hub bar (PREDICT / PICK / GAMES); reuse it for any top tab
+/// row that wants the same travel feel (e.g. the shop catalogue tabs).
+class CyberGlidingTabs extends StatefulWidget {
+  const CyberGlidingTabs({
+    required this.tabs,
+    required this.activeIndex,
+    required this.onTap,
+    super.key,
+  });
+
+  final List<CyberGlidingTab> tabs;
+  final int activeIndex;
+  final ValueChanged<int> onTap;
+
+  @override
+  State<CyberGlidingTabs> createState() => _CyberGlidingTabsState();
+}
+
+class _CyberGlidingTabsState extends State<CyberGlidingTabs>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final CurvedAnimation _curve;
+
+  // The continuously-interpolated tab index that drives the plate's position
+  // and accent as it slides between tabs. Whole values land on a tab; the
+  // fractional range in between is where the colour morphs.
+  late double _displayIndex = widget.activeIndex.toDouble();
+  double _fromIndex = 0;
+
+  static const _rowHeight = 61.0;
+  static const _chamfer = 16.0; // bottom corner cut on the active plate
+  static const _fill = AppTheme.unselectedColor;
+  static const _activeInk = AppTheme.darkInk; // dark ink on the bright plate
+  static const _mutedInk = AppTheme.textMedium;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+    )..addListener(_onTick);
+    _curve = CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic);
+  }
+
+  void _onTick() {
+    final target = widget.activeIndex.toDouble();
+    setState(() {
+      _displayIndex = _fromIndex + (target - _fromIndex) * _curve.value;
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant CyberGlidingTabs old) {
+    super.didUpdateWidget(old);
+    if (old.activeIndex != widget.activeIndex) {
+      _fromIndex = _displayIndex;
+      _ctrl.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _curve.dispose();
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  /// Lerps across the per-tab accents so the plate morphs colour while it glides.
+  Color _accentAt(double t) {
+    final tabs = widget.tabs;
+    final clamped = t.clamp(0.0, (tabs.length - 1).toDouble());
+    final i = clamped.floor();
+    if (i >= tabs.length - 1) return tabs.last.accent;
+    return Color.lerp(tabs[i].accent, tabs[i + 1].accent, clamped - i)!;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final plateAccent = _accentAt(_displayIndex);
+    return SizedBox(
+      height: _rowHeight,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // The uniform dark tab row — every tab fills this full height.
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: _fill,
+                border: Border(
+                  top: BorderSide(color: Colors.black.withValues(alpha: 0.16)),
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final tabWidth = constraints.maxWidth / widget.tabs.length;
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    // The active plate — flush, the SAME height as every tab. It
+                    // stands out via its bright fill + glow + chamfer, not size.
+                    Positioned(
+                      left: tabWidth * _displayIndex,
+                      top: 0,
+                      width: tabWidth,
+                      height: _rowHeight,
+                      child: CustomPaint(
+                        painter: _GlidingActiveTabPainter(
+                          accent: plateAccent,
+                          chamfer: _chamfer,
+                        ),
+                      ),
+                    ),
+                    // Tab content — every tab fills the row and centres its
+                    // icon+label on the same baseline.
+                    Positioned.fill(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (var i = 0; i < widget.tabs.length; i++)
+                            Expanded(
+                              child: _GlidingTab(
+                                key: ValueKey('cyber_gliding_tab_$i'),
+                                data: widget.tabs[i],
+                                active: i == widget.activeIndex,
+                                activeInk: _activeInk,
+                                mutedInk: _mutedInk,
+                                onTap: () {
+                                  if (i == widget.activeIndex) return;
+                                  playSound(SoundEffect.uiTap);
+                                  HapticFeedback.selectionClick();
+                                  widget.onTap(i);
+                                },
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GlidingTab extends StatelessWidget {
+  const _GlidingTab({
+    super.key,
+    required this.data,
+    required this.active,
+    required this.activeInk,
+    required this.mutedInk,
+    required this.onTap,
+  });
+
+  final CyberGlidingTab data;
+  final bool active;
+  final Color activeInk;
+  final Color mutedInk;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    // Active: dark ink reads on the bright accent plate. Resting: a calm,
+    // desaturated take on the tab's OWN accent so each tab stays colour-coded.
+    final Color color = active
+        ? activeInk
+        : Color.lerp(data.accent, mutedInk, 0.32)!;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Icon pops with an elastic bounce as its tab takes focus.
+          AnimatedScale(
+            scale: active ? 1.0 : 0.84,
+            duration: const Duration(milliseconds: 380),
+            curve: active ? Curves.elasticOut : Curves.easeOutCubic,
+            child: SizedBox(width: 18, height: 18, child: data.icon(color)),
+          ),
+          const SizedBox(height: 5),
+          AnimatedDefaultTextStyle(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            style: Cyber.label(
+              active ? 12 : 10,
+              color: color,
+              weight: active ? FontWeight.w900 : FontWeight.w600,
+              letterSpacing: active ? 0.5 : 0.3,
+              height: active ? 1.25 : 1.5,
+            ),
+            child: Text(data.label, textAlign: TextAlign.center),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Paints the active tab as a FLUSH bright plate — the same height as every tab,
+/// no overhang. A square-topped, chamfered-bottom trapezoid (floating with a
+/// small side gap) filled with a bright vertical accent gradient, a crisp accent
+/// edge and top sheen, and — as the one focal, "live" element — wrapped in a soft
+/// accent glow halo so it stands out by light, not size. Accent morphs in as the
+/// plate glides.
+class _GlidingActiveTabPainter extends CustomPainter {
+  const _GlidingActiveTabPainter({required this.accent, required this.chamfer});
+
+  final Color accent;
+  final double chamfer;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const sideInset = 7.0;
+    final bottom = size.height;
+    final path = Path()
+      ..moveTo(sideInset, 0)
+      ..lineTo(size.width - sideInset, 0)
+      ..lineTo(size.width - sideInset, bottom - chamfer)
+      ..lineTo(size.width - sideInset - chamfer, bottom)
+      ..lineTo(sideInset + chamfer, bottom)
+      ..lineTo(sideInset, bottom - chamfer)
+      ..close();
+
+    // Focal "live" element → a scarce accent glow halo is allowed (and wanted).
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = accent.withValues(alpha: 0.45)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14),
+    );
+
+    // Bright vertical accent gradient fill.
+    canvas.drawPath(
+      path,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color.lerp(accent, Colors.white, 0.30)!, accent],
+        ).createShader(Offset.zero & size),
+    );
+
+    // Crisp brightened accent edge.
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = Color.lerp(accent, Colors.white, 0.45)!,
+    );
+
+    // Top sheen highlight.
+    canvas.drawLine(
+      const Offset(sideInset + 2, 1.5),
+      Offset(size.width - sideInset - 2, 1.5),
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.5)
+        ..strokeWidth = 1.5,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _GlidingActiveTabPainter old) =>
+      old.accent != accent || old.chamfer != chamfer;
 }

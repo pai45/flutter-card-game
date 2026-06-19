@@ -8,14 +8,18 @@ import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_event.dart';
 import '../../blocs/game/game_state.dart';
 import '../../config/enums.dart';
+import '../../models/avatar_border_option.dart';
 import '../../models/cards.dart';
 import '../../models/oz_coin_ledger.dart';
 import '../../models/shop.dart';
 import '../../utils/sound_effects.dart';
+import '../../widgets/avatar_border_ring.dart';
 import '../../widgets/card_unpack_animation.dart';
+import '../../widgets/cyber/cyber_filter_chips.dart';
 import '../../widgets/cyber/cyber_underline_tabs.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
+import '../../widgets/staggered_card_entrance.dart';
 import '../../widgets/stat_oz_top_bar.dart';
 
 String _tierString(CardTier t) => t.name;
@@ -42,15 +46,33 @@ Color _tierAccent(String id) => switch (id) {
   _ => _cyan,
 };
 
-const int _shopTabCount = 5;
+const int _shopTabCount = 6;
+
+// Sport-filter chips shared by the BORDER and BANNER tabs (mirrors the
+// leaderboard's sport strip). NBA/F1 have no items seeded yet → empty state.
+const List<String> _shopSportFilters = ['ALL', 'FIFA', 'IPL', 'UCL', 'NBA', 'F1'];
+
+// shortName → countryCode, built once from the card catalogue, so the AVATAR
+// tab can filter player portraits by nation.
+final Map<String, String> _avatarNationByShortName = {
+  for (final card in allPlayerCards) card.shortName: card.countryCode,
+};
 
 final List<({String shortName, String imagePath, int price})>
-    _playerAvatarItems = playerPortraitAssets.entries
-        .map((e) => (shortName: e.key, imagePath: e.value, price: 25))
-        .toList();
+_playerAvatarItems = playerPortraitAssets.entries
+    .map((e) => (shortName: e.key, imagePath: e.value, price: 25))
+    .toList();
 
 const List<
-  ({String id, int price, Color start, Color end, Color accent, IconData icon})
+  ({
+    String id,
+    int price,
+    Color start,
+    Color end,
+    Color accent,
+    IconData icon,
+    String sport,
+  })
 >
 _bannerPlaceholders = [
   (
@@ -60,6 +82,7 @@ _bannerPlaceholders = [
     end: Color(0xff050b1e),
     accent: Color(0xff5cdfff),
     icon: Icons.waves,
+    sport: 'FIFA',
   ),
   (
     id: 'sunburst',
@@ -68,6 +91,7 @@ _bannerPlaceholders = [
     end: Color(0xffff5a00),
     accent: Color(0xffffd700),
     icon: Icons.flash_on,
+    sport: 'F1',
   ),
   (
     id: 'night',
@@ -76,6 +100,7 @@ _bannerPlaceholders = [
     end: Color(0xff130018),
     accent: Color(0xffff3df7),
     icon: Icons.nightlight_round,
+    sport: 'UCL',
   ),
   (
     id: 'inferno',
@@ -84,6 +109,7 @@ _bannerPlaceholders = [
     end: Color(0xff1b0207),
     accent: Color(0xffffd166),
     icon: Icons.local_fire_department,
+    sport: 'IPL',
   ),
   (
     id: 'flare',
@@ -92,13 +118,15 @@ _bannerPlaceholders = [
     end: Color(0xffffc02e),
     accent: Color(0xffffffff),
     icon: Icons.wb_sunny,
+    sport: 'NBA',
   ),
 ];
 
 class ShopScreen extends StatefulWidget {
-  const ShopScreen({required this.onNavigate, super.key});
+  const ShopScreen({required this.onNavigate, this.initialTab = 0, super.key});
 
   final ValueChanged<AppSection> onNavigate;
+  final int initialTab;
 
   @override
   State<ShopScreen> createState() => _ShopScreenState();
@@ -112,7 +140,12 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _shopTabCount, vsync: this);
+    _activeTab = widget.initialTab.clamp(0, _shopTabCount - 1);
+    _tabController = TabController(
+      length: _shopTabCount,
+      initialIndex: _activeTab,
+      vsync: this,
+    );
   }
 
   @override
@@ -152,11 +185,12 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                     StatOzTopBar(
                       title: 'Shop',
                       accent: _cyan,
-                      onAddCoins: () => _setTab(2),
+                      onAddCoins: () => _setTab(3),
                     ),
                     CyberUnderlineTabs(
                       labels: const [
                         'AVATAR',
+                        'BORDER',
                         'BANNER',
                         'COINS',
                         'PACKS',
@@ -208,61 +242,318 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
   Widget _buildTab(GameState state) {
     return switch (_activeTab) {
       0 => const AvatarsTab(),
-      1 => const BannersTab(),
-      2 => CoinsTab(onPurchased: _showCelebration),
-      3 => const PacksTab(),
+      1 => const BordersTab(),
+      2 => const BannersTab(),
+      3 => CoinsTab(onPurchased: _showCelebration),
+      4 => const PacksTab(),
       _ => const CardsTab(),
     };
   }
 }
 
-class AvatarsTab extends StatelessWidget {
+// Nation chips for the AVATAR tab — ['ALL', …distinct country codes present].
+final List<String> _avatarNationFilters = () {
+  final seen = <String>{};
+  for (final item in _playerAvatarItems) {
+    final code = _avatarNationByShortName[item.shortName];
+    if (code != null && code.isNotEmpty) seen.add(code);
+  }
+  final sorted = seen.toList()..sort();
+  return ['ALL', ...sorted];
+}();
+
+class AvatarsTab extends StatefulWidget {
   const AvatarsTab({super.key});
 
   @override
+  State<AvatarsTab> createState() => _AvatarsTabState();
+}
+
+class _AvatarsTabState extends State<AvatarsTab> {
+  String _nation = 'ALL';
+
+  @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final int columns = constraints.maxWidth >= 720
-            ? 5
-            : constraints.maxWidth >= 480
-            ? 4
-            : 3;
-        return GridView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: _playerAvatarItems.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: columns,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 0.72,
+    final items = _nation == 'ALL'
+        ? _playerAvatarItems
+        : _playerAvatarItems
+              .where((e) => _avatarNationByShortName[e.shortName] == _nation)
+              .toList();
+    return Column(
+      children: [
+        CyberFilterChips(
+          labels: _avatarNationFilters,
+          selected: _nation,
+          accent: _cyan,
+          onSelect: (value) => setState(() => _nation = value),
+        ),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final int columns = constraints.maxWidth >= 720
+                  ? 5
+                  : constraints.maxWidth >= 480
+                  ? 4
+                  : 3;
+              return GridView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                itemCount: items.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columns,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 0.72,
+                ),
+                itemBuilder: (BuildContext context, int index) {
+                  // Same cascade entrance the match cards use — each tile slides
+                  // + fades in on a per-index stagger so the grid fills the page.
+                  return StaggeredCardEntrance(
+                    index: index,
+                    animate: true,
+                    child: _AvatarShopTile(item: items[index]),
+                  );
+                },
+              );
+            },
           ),
-          itemBuilder: (BuildContext context, int index) {
-            return _AvatarShopTile(item: _playerAvatarItems[index]);
-          },
-        );
+        ),
+      ],
+    );
+  }
+}
+
+class BannersTab extends StatefulWidget {
+  const BannersTab({super.key});
+
+  @override
+  State<BannersTab> createState() => _BannersTabState();
+}
+
+class _BannersTabState extends State<BannersTab> {
+  String _sport = 'ALL';
+
+  @override
+  Widget build(BuildContext context) {
+    final items = _sport == 'ALL'
+        ? _bannerPlaceholders
+        : _bannerPlaceholders.where((e) => e.sport == _sport).toList();
+    return Column(
+      children: [
+        CyberFilterChips(
+          labels: _shopSportFilters,
+          selected: _sport,
+          accent: _cyan,
+          onSelect: (value) => setState(() => _sport = value),
+        ),
+        Expanded(
+          child: items.isEmpty
+              ? _ShopEmptyFilter(sport: _sport)
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+                  itemCount: items.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  itemBuilder: (BuildContext context, int index) {
+                    // Each banner cascades in (slide + fade, per-index stagger).
+                    return StaggeredCardEntrance(
+                      index: index,
+                      animate: true,
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 560),
+                          child: _BannerShopTile(item: items[index]),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Borders tab ─────────────────────────────────────────────────────────────
+class BordersTab extends StatefulWidget {
+  const BordersTab({super.key});
+
+  @override
+  State<BordersTab> createState() => _BordersTabState();
+}
+
+class _BordersTabState extends State<BordersTab> {
+  String _sport = 'ALL';
+
+  @override
+  Widget build(BuildContext context) {
+    final items = _sport == 'ALL'
+        ? avatarBorderOptions
+        : avatarBorderOptions.where((b) => b.sports.contains(_sport)).toList();
+    return Column(
+      children: [
+        CyberFilterChips(
+          labels: _shopSportFilters,
+          selected: _sport,
+          accent: _cyan,
+          onSelect: (value) => setState(() => _sport = value),
+        ),
+        Expanded(
+          child: items.isEmpty
+              ? _ShopEmptyFilter(sport: _sport)
+              : BlocBuilder<GameBloc, GameState>(
+                  builder: (BuildContext context, GameState state) {
+                    return GridView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                      itemCount: items.length,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount:
+                            MediaQuery.sizeOf(context).width >= 720 ? 3 : 2,
+                        mainAxisSpacing: 12,
+                        crossAxisSpacing: 12,
+                        childAspectRatio: 0.78,
+                      ),
+                      itemBuilder: (BuildContext context, int index) {
+                        final border = items[index];
+                        return StaggeredCardEntrance(
+                          index: index,
+                          animate: true,
+                          child: _BorderShopTile(
+                            border: border,
+                            owned: state.ownedAvatarBorderIds.contains(
+                              border.id,
+                            ),
+                            equipped:
+                                state.equippedAvatarBorderId == border.id,
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BorderShopTile extends StatelessWidget {
+  const _BorderShopTile({
+    required this.border,
+    required this.owned,
+    required this.equipped,
+  });
+
+  final AvatarBorderOption border;
+  final bool owned;
+  final bool equipped;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color primary = border.primary;
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [primary.withValues(alpha: 0.12), _bg],
+        ),
+        // Only the equipped tile reads as "live" (brighter edge); its ring glow
+        // is the single focal accent (glow rule) — resting tiles stay calm.
+        border: Border.all(
+          color: primary.withValues(alpha: equipped ? 0.9 : 0.4),
+          width: equipped ? 1.6 : 1.0,
+        ),
+      ),
+      child: Column(
+        children: [
+          Expanded(
+            child: Center(
+              child: SizedBox(
+                width: 66,
+                height: 66,
+                child: AvatarBorderRing(
+                  border: border,
+                  glow: equipped,
+                  child: Container(
+                    color: _surface,
+                    alignment: Alignment.center,
+                    child: Icon(
+                      Icons.person,
+                      color: Colors.white.withValues(alpha: 0.45),
+                      size: 30,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            border.label.toUpperCase(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontFamily: 'Orbitron',
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.6,
+            ),
+          ),
+          const SizedBox(height: 8),
+          _action(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _action(BuildContext context) {
+    if (equipped) {
+      return _ShopButton(label: 'EQUIPPED', filled: true, onTap: () {});
+    }
+    if (owned) {
+      return _ShopButton(
+        label: 'EQUIP',
+        filled: false,
+        onTap: () {
+          playSound(SoundEffect.uiTap);
+          context.read<GameBloc>().add(AvatarBorderEquipped(border.id));
+        },
+      );
+    }
+    return _ShopButton(
+      label: _formatInt(border.coinPrice),
+      filled: true,
+      icon: CoinIcon(size: 14),
+      onTap: () {
+        final GameBloc bloc = context.read<GameBloc>();
+        if (bloc.state.coins < border.coinPrice) {
+          _showSnack(context, 'Not enough coins — top up in the Coins tab.', false);
+          return;
+        }
+        playSound(SoundEffect.uiTap);
+        bloc.add(AvatarBorderPurchased(border.id));
       },
     );
   }
 }
 
-class BannersTab extends StatelessWidget {
-  const BannersTab({super.key});
+class _ShopEmptyFilter extends StatelessWidget {
+  const _ShopEmptyFilter({required this.sport});
+
+  final String sport;
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
-      itemCount: _bannerPlaceholders.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
-      itemBuilder: (BuildContext context, int index) {
-        return Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 560),
-            child: _BannerShopTile(item: _bannerPlaceholders[index]),
-          ),
-        );
-      },
+    return Center(
+      child: CyberNoDataState(
+        icon: Icons.storefront_outlined,
+        title: 'No $sport drops yet',
+        message: 'New cosmetics land here soon — check back.',
+        accent: _cyan,
+        spark: Icons.bolt,
+      ),
     );
   }
 }
@@ -365,6 +656,7 @@ class _BannerShopTile extends StatelessWidget {
     Color end,
     Color accent,
     IconData icon,
+    String sport,
   })
   item;
 
@@ -589,7 +881,13 @@ class CoinsTab extends StatelessWidget {
       ),
       itemBuilder: (BuildContext context, int index) {
         final CoinTier tier = coinTiers[index];
-        return _CoinTierTile(tier: tier, onPurchased: onPurchased);
+        // Same match-card cascade — each coin tier slides + fades in to fill the
+        // page on a per-index stagger.
+        return StaggeredCardEntrance(
+          index: index,
+          animate: true,
+          child: _CoinTierTile(tier: tier, onPurchased: onPurchased),
+        );
       },
     );
   }
@@ -762,9 +1060,15 @@ class PacksTab extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       itemCount: shopPacks.length,
       itemBuilder: (BuildContext context, int index) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _PackTile(pack: shopPacks[index]),
+        // Each pack cascades in (slide + fade, per-index stagger) to fill the
+        // page — the same entrance the match cards use.
+        return StaggeredCardEntrance(
+          index: index,
+          animate: true,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _PackTile(pack: shopPacks[index]),
+          ),
         );
       },
     );
@@ -1724,13 +2028,19 @@ class _CardsTabState extends State<CardsTab> with TickerProviderStateMixin {
                 ),
                 itemBuilder: (BuildContext context, int index) {
                   final PlayerCard card = cards[index];
-                  return _PurchasableCardTile(
-                    card: card,
-                    owned: state.ownedCardIds.contains(card.id),
-                    shake: _shakingCardId == card.id,
-                    flash: _flashingCardId == card.id,
-                    onInsufficient: () => _shake(card.id),
-                    onPurchased: () => _flash(card.id),
+                  // Same match-card cascade — each card slides + fades in to fill
+                  // the page on a per-index stagger.
+                  return StaggeredCardEntrance(
+                    index: index,
+                    animate: true,
+                    child: _PurchasableCardTile(
+                      card: card,
+                      owned: state.ownedCardIds.contains(card.id),
+                      shake: _shakingCardId == card.id,
+                      flash: _flashingCardId == card.id,
+                      onInsufficient: () => _shake(card.id),
+                      onPurchased: () => _flash(card.id),
+                    ),
                   );
                 },
               ),

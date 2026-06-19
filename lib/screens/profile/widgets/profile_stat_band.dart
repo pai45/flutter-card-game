@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../config/theme.dart';
 import '../../predictions/widgets/history_hud.dart' show HistoryStatCell;
 import 'profile_card.dart';
+import '../../../widgets/streak_widgets.dart';
 
 /// One cell of a [ProfileStatBand]. Pass [value] for an animated count-up
 /// number (with an optional [suffix] like `%`), or [text] for a static string
@@ -35,6 +36,7 @@ class ProfileStatBand extends StatelessWidget {
     required this.accent,
     required this.icon,
     required this.stats,
+    this.streak = 0,
     this.onViewHistory,
     super.key,
   });
@@ -43,6 +45,7 @@ class ProfileStatBand extends StatelessWidget {
   final Color accent;
   final Widget icon;
   final List<ProfileStat> stats;
+  final int streak;
   final VoidCallback? onViewHistory;
 
   @override
@@ -60,6 +63,10 @@ class ProfileStatBand extends StatelessWidget {
                 title,
                 style: Cyber.display(15, color: accent, letterSpacing: 1),
               ),
+              if (streak > 0) ...[
+                const SizedBox(width: StreakTheme.space8),
+                StreakBadge(value: streak),
+              ],
               const Spacer(),
               if (onViewHistory != null)
                 GestureDetector(
@@ -86,7 +93,9 @@ class ProfileStatBand extends StatelessWidget {
             children: [
               for (var i = 0; i < stats.length; i++) ...[
                 if (i > 0) const SizedBox(width: 8),
-                Expanded(child: _StatCell(stat: stats[i], accent: accent)),
+                Expanded(
+                  child: _StatCell(stat: stats[i], accent: accent),
+                ),
               ],
             ],
           ),

@@ -5,12 +5,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../config/enums.dart';
 import '../../config/tutorial_steps.dart';
+import '../../models/avatar_border_option.dart';
 import '../../models/cards.dart';
 import '../../models/deck.dart';
 import '../../models/match.dart';
 import '../../models/oz_coin_ledger.dart';
 import '../../models/packs.dart';
 import '../../models/progression.dart';
+import '../../models/streak.dart';
 import '../../services/secure_storage_service.dart';
 import '../../utils/card_helpers.dart';
 import '../../utils/label_helpers.dart';
@@ -53,9 +55,14 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<ShopPackPurchased>(_onShopPackPurchased);
     on<CardBackPurchased>(_onCardBackPurchased);
     on<CardBackEquipped>(_onCardBackEquipped);
+    on<AvatarBorderPurchased>(_onAvatarBorderPurchased);
+    on<AvatarBorderEquipped>(_onAvatarBorderEquipped);
     on<PackRevealSeen>(
       (_, emit) => emit(state.copyWith(pendingPackReveal: null)),
     );
+    on<StreakActivityRecorded>(_onStreakActivityRecorded);
+    on<StreakCelebrationConsumed>(_onStreakCelebrationConsumed);
+    on<StreakMilestoneClaimed>(_onStreakMilestoneClaimed);
     on<MatchReset>((_, emit) => emit(_resetMatch(state)));
     on<MatchStarted>(_onMatchStarted);
     on<TossChoiceChanged>(
@@ -123,6 +130,16 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       developer.log(
         'GameLoaded: Loaded progression (level ${progression.playerLevel})',
       );
+
+      var streak = await _storage.loadStreak().timeout(
+        const Duration(seconds: 2),
+        onTimeout: () => null,
+      );
+      if (streak == null) {
+        streak = StreakSnapshot.seeded(DateTime.now());
+        await _storage.saveStreak(streak);
+      }
+      developer.log('GameLoaded: Loaded daily streak');
 
       final starterPackClaimed = await _storage
           .loadStarterPackClaimed()
@@ -200,6 +217,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
               ? wallet.ownedCardBackIds
               : ['default', ...wallet.ownedCardBackIds],
           equippedCardBackId: wallet.equippedCardBackId,
+          ownedAvatarBorderIds: wallet.ownedAvatarBorderIds,
+          equippedAvatarBorderId: wallet.equippedAvatarBorderId,
           dailyDropLastClaimedAtMillis: wallet.dailyDropLastClaimedAtMillis,
         ),
       );
@@ -222,12 +241,15 @@ class GameBloc extends Bloc<GameEvent, GameState> {
               ? wallet.ownedCardBackIds
               : ['default', ...wallet.ownedCardBackIds],
           equippedCardBackId: wallet.equippedCardBackId,
+          ownedAvatarBorderIds: wallet.ownedAvatarBorderIds,
+          equippedAvatarBorderId: wallet.equippedAvatarBorderId,
           matchHistory: history,
           tutorialSeen: seen,
           pendingPackReveal: null,
           starterPackClaimed: migratedStarterClaimed,
           dailyDropLastClaimedAt: dailyDropLastClaimedAt,
           progression: migratedProgression,
+          streak: streak,
         ),
       );
       developer.log('GameLoaded: Complete');
@@ -255,6 +277,140 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       type: event.type ?? _defaultPositiveType(event.source),
       title: event.title ?? _defaultCoinTitle(event.source, true),
       subtitle: event.subtitle,
+    );
+  }
+
+  Future<void> _onStreakActivityRecorded(
+    StreakActivityRecorded event,
+    Emitter<GameState> emit,
+  ) async {
+    final now = DateTime.now();
+    if (dateOnly(event.occurredAt).isAfter(dateOnly(now))) return;
+    final next = state.streak.record(event.activity, event.occurredAt);
+    if (identical(next, state.streak)) return;
+    emit(state.copyWith(streak: next));
+    await _storage.saveStreak(next);
+  }
+
+  Future<void> _onStreakCelebrationConsumed(
+    StreakCelebrationConsumed event,
+    Emitter<GameState> emit,
+  ) async {
+    if (state.streak.celebrationQueue.isEmpty) return;
+    final next = state.streak.copyWith(
+      celebrationQueue: state.streak.celebrationQueue.sublist(1),
+    );
+    emit(state.copyWith(streak: next));
+    await _storage.saveStreak(next);
+  }
+
+  Future<void> _onStreakMilestoneClaimed(
+    StreakMilestoneClaimed event,
+    Emitter<GameState> emit,
+  ) async {
+    final milestone = streakMilestones
+        .where((item) => item.days == event.days)
+        .firstOrNull;
+    if (milestone == null ||
+        !state.streak.announcedMilestones.contains(milestone.days) ||
+        state.streak.claimedMilestones.contains(milestone.days)) {
+      return;
+    }
+
+    final claimed = {...state.streak.claimedMilestones, milestone.days};
+    final remainingQueue = [
+      for (final celebration in state.streak.celebrationQueue)
+        if (!(celebration.type == StreakCelebrationType.milestone &&
+            celebration.milestoneDays == milestone.days))
+          celebration,
+    ];
+    final nextStreak = state.streak.copyWith(
+      claimedMilestones: claimed,
+      celebrationQueue: remainingQueue,
+    );
+    emit(state.copyWith(streak: nextStreak));
+    await _storage.saveStreak(nextStreak);
+
+    switch (milestone.rewardType) {
+      case StreakRewardType.coins:
+        await _applyCoinDelta(
+          delta: milestone.coins!,
+          emit: emit,
+          source: OzCoinTransactionSource.streakReward,
+          type: OzCoinTransactionType.earn,
+          title: 'STREAK REWARD',
+          subtitle: '${milestone.days} DAY MILESTONE',
+        );
+      case StreakRewardType.card:
+        await _claimStreakCard(milestone, emit);
+      case StreakRewardType.pack:
+        await _claimStreakPack(milestone, emit);
+    }
+  }
+
+  Future<void> _claimStreakCard(
+    StreakMilestone milestone,
+    Emitter<GameState> emit,
+  ) async {
+    final tier = milestone.cardTier!;
+    final playerPool = allPlayerCards
+        .where(
+          (card) => card.tier == tier && !state.ownedCardIds.contains(card.id),
+        )
+        .toList();
+    final actionPool = actionCards
+        .where(
+          (card) =>
+              card.tier == tier && !state.ownedActionCardIds.contains(card.id),
+        )
+        .toList();
+    if (playerPool.isEmpty && actionPool.isEmpty) {
+      await _applyCoinDelta(
+        delta: tier == CardTier.platinum ? 1500 : 500,
+        emit: emit,
+        source: OzCoinTransactionSource.duplicateRefund,
+        type: OzCoinTransactionType.refund,
+        title: 'STREAK CARD REFUND',
+        subtitle: milestone.rewardLabel,
+      );
+      return;
+    }
+    final choosePlayer =
+        playerPool.isNotEmpty && (actionPool.isEmpty || _random.nextBool());
+    final result = choosePlayer
+        ? singlePlayerUnlock(playerPool[_random.nextInt(playerPool.length)])
+        : singleActionUnlock(actionPool[_random.nextInt(actionPool.length)]);
+    await _unlockPack(
+      result: result,
+      emit: emit,
+      revealBuilder: (levels) => PackRevealData.streakReward(
+        rewardName: milestone.rewardLabel,
+        result: result,
+        levelsGained: levels,
+      ),
+    );
+  }
+
+  Future<void> _claimStreakPack(
+    StreakMilestone milestone,
+    Emitter<GameState> emit,
+  ) async {
+    final pack = getProgressionPack(milestone.packId!);
+    if (pack == null) return;
+    final result = rollPack(
+      pack,
+      [...attackers, ...defenders],
+      actionCards,
+      random: _random,
+    );
+    await _unlockPack(
+      result: result,
+      emit: emit,
+      revealBuilder: (levels) => PackRevealData.streakReward(
+        rewardName: milestone.rewardLabel,
+        result: result,
+        levelsGained: levels,
+      ),
     );
   }
 
@@ -460,6 +616,40 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     if (!state.ownedCardBackIds.contains(event.cardBackId)) return;
     emit(state.copyWith(equippedCardBackId: event.cardBackId));
     await _saveWallet(equippedCardBackId: event.cardBackId);
+  }
+
+  Future<void> _onAvatarBorderPurchased(
+    AvatarBorderPurchased event,
+    Emitter<GameState> emit,
+  ) async {
+    if (state.ownedAvatarBorderIds.contains(event.borderId)) return;
+    final border = avatarBorderOptionById(event.borderId);
+    if (border == null || state.coins < border.coinPrice) return;
+    // Spend coins (with ledger entry), then unlock the border.
+    await _applyCoinDelta(
+      delta: -border.coinPrice,
+      emit: emit,
+      source: OzCoinTransactionSource.directCardPurchase,
+      type: OzCoinTransactionType.spend,
+      title: 'BORDER PURCHASE',
+      subtitle: border.label,
+    );
+    final owned = {...state.ownedAvatarBorderIds, event.borderId}.toList();
+    emit(state.copyWith(ownedAvatarBorderIds: owned));
+    await _saveWallet(ownedAvatarBorderIds: owned);
+  }
+
+  Future<void> _onAvatarBorderEquipped(
+    AvatarBorderEquipped event,
+    Emitter<GameState> emit,
+  ) async {
+    // An empty id un-equips (back to the default ring).
+    if (event.borderId.isNotEmpty &&
+        !state.ownedAvatarBorderIds.contains(event.borderId)) {
+      return;
+    }
+    emit(state.copyWith(equippedAvatarBorderId: event.borderId));
+    await _saveWallet(equippedAvatarBorderId: event.borderId);
   }
 
   Future<void> _onDeckSaved(DeckSaved event, Emitter<GameState> emit) async {
@@ -859,6 +1049,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       xpEarned: xpDelta,
     );
     final history = [historyEntry, ...state.matchHistory].take(12).toList();
+    final streak = state.streak.record(
+      StreakActivity.pitchDuel,
+      DateTime.now(),
+    );
     emit(
       state.copyWith(
         phase: MatchPhase.finalResult,
@@ -869,12 +1063,14 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         previousProgression: state.progression,
         pendingLevelUps: levelsGained,
         lastMatchXP: xpDelta,
+        streak: streak,
       ),
     );
     await _storage.saveMatchHistory(history);
     await _storage.saveProgression(updated);
     await _saveWallet(coins: coins);
     await _storage.saveCoinLedger(coinLedger);
+    await _storage.saveStreak(streak);
   }
 
   Future<void> _onShootoutFinished(
@@ -913,6 +1109,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       xpEarned: xpDelta,
     );
     final history = [historyEntry, ...state.matchHistory].take(12).toList();
+    final streak = state.streak.record(
+      StreakActivity.penaltyShootout,
+      DateTime.now(),
+    );
     emit(
       state.copyWith(
         matchHistory: history,
@@ -922,12 +1122,14 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         previousProgression: state.progression,
         pendingLevelUps: levelsGained,
         lastMatchXP: xpDelta,
+        streak: streak,
       ),
     );
     await _storage.saveMatchHistory(history);
     await _storage.saveProgression(updated);
     await _saveWallet(coins: coins);
     await _storage.saveCoinLedger(coinLedger);
+    await _storage.saveStreak(streak);
   }
 
   RoundOutcome _resolveRound(
@@ -1129,6 +1331,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     ownedActionCardIds: old.ownedActionCardIds,
     ownedCardBackIds: old.ownedCardBackIds,
     equippedCardBackId: old.equippedCardBackId,
+    ownedAvatarBorderIds: old.ownedAvatarBorderIds,
+    equippedAvatarBorderId: old.equippedAvatarBorderId,
+    streak: old.streak,
     matchHistory: old.matchHistory,
     tutorialSeen: old.tutorialSeen,
     pendingPackReveal: old.pendingPackReveal,
@@ -1143,6 +1348,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     List<String>? ownedActionCardIds,
     List<String>? ownedCardBackIds,
     String? equippedCardBackId,
+    List<String>? ownedAvatarBorderIds,
+    String? equippedAvatarBorderId,
     DateTime? dailyDropLastClaimedAt,
   }) => _storage.saveWallet(
     WalletSnapshot(
@@ -1151,6 +1358,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       ownedActionCardIds: ownedActionCardIds ?? state.ownedActionCardIds,
       ownedCardBackIds: ownedCardBackIds ?? state.ownedCardBackIds,
       equippedCardBackId: equippedCardBackId ?? state.equippedCardBackId,
+      ownedAvatarBorderIds:
+          ownedAvatarBorderIds ?? state.ownedAvatarBorderIds,
+      equippedAvatarBorderId:
+          equippedAvatarBorderId ?? state.equippedAvatarBorderId,
       dailyDropLastClaimedAtMillis:
           (dailyDropLastClaimedAt ?? state.dailyDropLastClaimedAt)
               ?.millisecondsSinceEpoch,
@@ -1277,6 +1488,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       OzCoinTransactionSource.duplicateRefund => 'DUPLICATE REFUND',
       OzCoinTransactionSource.directCardPurchase => 'CARD PURCHASE',
       OzCoinTransactionSource.shopTopUp => 'COIN TOP-UP',
+      OzCoinTransactionSource.streakReward => 'STREAK REWARD',
       OzCoinTransactionSource.openingBalance => 'OPENING BALANCE',
       OzCoinTransactionSource.manual =>
         positive ? 'COINS ADDED' : 'COINS SPENT',

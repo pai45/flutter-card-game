@@ -10,14 +10,17 @@ import '../../blocs/prediction/prediction_state.dart';
 import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../data/followable_leagues.dart';
+import '../../models/avatar_border_option.dart';
 import '../../models/avatar_option.dart';
 import '../../models/picks.dart';
 import '../../models/player_stats.dart';
 import '../../models/sport_match.dart';
+import '../../models/streak.dart';
 import '../../models/profile_banner_option.dart';
 import '../../models/progression.dart';
 import '../../services/achievement_progress.dart';
 import '../../services/secure_storage_service.dart';
+import '../../widgets/avatar_border_ring.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/profile_banner_visual.dart';
@@ -124,6 +127,9 @@ class ProfileScreen extends StatelessWidget {
                               const SizedBox(height: 14),
                               ProfileStatBand(
                                 title: 'PREDICTS',
+                                streak: game.streak.current(
+                                  StreakCategory.predict,
+                                ),
                                 accent: Cyber.cyan,
                                 icon: SvgPicture.asset(
                                   'assets/icons/match.svg',
@@ -155,6 +161,9 @@ class ProfileScreen extends StatelessWidget {
                               const SizedBox(height: 12),
                               ProfileStatBand(
                                 title: 'PICKS',
+                                streak: game.streak.current(
+                                  StreakCategory.pick,
+                                ),
                                 accent: Cyber.lime,
                                 icon: SvgPicture.asset(
                                   'assets/icons/pick.svg',
@@ -186,6 +195,9 @@ class ProfileScreen extends StatelessWidget {
                               const SizedBox(height: 12),
                               ProfileStatBand(
                                 title: 'GAMES',
+                                streak: game.streak.current(
+                                  StreakCategory.games,
+                                ),
                                 accent: Cyber.amber,
                                 icon: SvgPicture.asset(
                                   'assets/icons/game.svg',
@@ -203,13 +215,7 @@ class ProfileScreen extends StatelessWidget {
                                     record.winRate,
                                     suffix: '%',
                                   ),
-                                  ProfileStat.text(
-                                    'STREAK',
-                                    '${record.currentStreak}',
-                                    valueColor: record.currentStreak > 0
-                                        ? Cyber.amber
-                                        : null,
-                                  ),
+                                  ProfileStat.number('DRAWS', record.draws),
                                 ],
                                 onViewHistory: () => showMatchHistoryArchive(
                                   context,
@@ -1008,7 +1014,7 @@ class _EmblemBannerState extends State<_EmblemBanner> {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: Cyber.bg.withValues(alpha: 0.86),
-                      border: Border.all(color: Cyber.cyan),
+                      border: Border.all(color: AppTheme.gameCtaBorder),
                     ),
                     child: const Icon(Icons.edit, color: Cyber.cyan, size: 16),
                   ),
@@ -1072,21 +1078,38 @@ class _AvatarState extends State<_Avatar> {
           Positioned(
             left: 0,
             bottom: 0,
-            child: Container(
-              width: 96,
-              height: 96,
-              decoration: BoxDecoration(
-                color: Cyber.panel,
-                border: Border.all(color: Cyber.cyan, width: 2),
-                boxShadow: const [
-                  BoxShadow(color: Color(0xff04060b), offset: Offset(0, 4)),
-                ],
-              ),
-              child: Image.asset(
-                avatar.assetPath,
-                fit: BoxFit.cover,
-                alignment: Alignment.topCenter,
-              ),
+            child: BlocBuilder<GameBloc, GameState>(
+              buildWhen: (a, b) =>
+                  a.equippedAvatarBorderId != b.equippedAvatarBorderId,
+              builder: (context, state) {
+                final equipped = avatarBorderOptionById(
+                  state.equippedAvatarBorderId,
+                );
+                return Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    color: Cyber.panel,
+                    // The equipped border's ring replaces the default cyan edge.
+                    border: equipped == null
+                        ? Border.all(color: Cyber.cyan, width: 2)
+                        : null,
+                    boxShadow: const [
+                      BoxShadow(color: Color(0xff04060b), offset: Offset(0, 4)),
+                    ],
+                  ),
+                  child: AvatarBorderRing(
+                    border: equipped,
+                    // The user's own avatar is a legitimate focal element.
+                    glow: true,
+                    child: Image.asset(
+                      avatar.assetPath,
+                      fit: BoxFit.cover,
+                      alignment: Alignment.topCenter,
+                    ),
+                  ),
+                );
+              },
             ),
           ),
           Positioned(
@@ -1107,7 +1130,7 @@ class _AvatarState extends State<_Avatar> {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: Cyber.bg,
-                      border: Border.all(color: Cyber.cyan),
+                      border: Border.all(color: AppTheme.gameCtaBorder),
                     ),
                     child: const Icon(Icons.edit, color: Cyber.cyan, size: 16),
                   ),
@@ -1547,6 +1570,8 @@ class _FollowingBandState extends State<_FollowingBand> {
 
   /// (team, leagueCode) pairs for each followed league with a favourite team.
   List<(SportTeam, String)> _favourites = const [];
+  List<String> _followedLeagueIds = const [];
+  Map<String, String> _favoriteTeams = const {};
 
   @override
   void initState() {
@@ -1566,46 +1591,365 @@ class _FollowingBandState extends State<_FollowingBand> {
       if (team != null) result.add((team, entry.league.shortCode));
     }
     if (!mounted) return;
-    setState(() => _favourites = result);
+    setState(() {
+      _favourites = result;
+      _followedLeagueIds = followed;
+      _favoriteTeams = teams;
+    });
+  }
+
+  Future<void> _openEditor() async {
+    final changed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _FollowingEditorSheet(
+        storage: _storage,
+        followedLeagueIds: _followedLeagueIds,
+        favoriteTeams: _favoriteTeams,
+      ),
+    );
+    if (changed == true) {
+      await _load();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_favourites.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
-      child: Container(
+      child: ProfileCard(
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: _favourites.isEmpty
+                  ? Text(
+                      'Pick the teams and clubs you follow.',
+                      style: Cyber.body(13, color: Cyber.muted),
+                    )
+                  : Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        for (final (team, code) in _favourites)
+                          _FollowedTeamChip(team: team, leagueCode: code),
+                      ],
+                    ),
+            ),
+            const SizedBox(width: 10),
+            _FollowingEditButton(onTap: _openEditor),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Following editor controls ────────────────────────────────────────────────
+
+class _FollowedTeamChip extends StatelessWidget {
+  const _FollowedTeamChip({required this.team, required this.leagueCode});
+
+  final SportTeam team;
+  final String leagueCode;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 86),
+      padding: const EdgeInsets.fromLTRB(9, 8, 10, 8),
+      decoration: BoxDecoration(
+        color: Cyber.panel.withValues(alpha: 0.56),
+        border: Border.all(color: Cyber.line),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TeamLogo(team: team, width: 30, height: 32),
+          const SizedBox(width: 8),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 58),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  team.shortName.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Cyber.display(12, color: Colors.white),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  leagueCode,
+                  style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.1),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FollowingEditButton extends StatelessWidget {
+  const _FollowingEditButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Edit followed teams',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          width: 32,
+          height: 32,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Cyber.cyan.withValues(alpha: 0.12),
+            border: Border.all(color: AppTheme.gameCtaBorder),
+          ),
+          child: const Icon(Icons.edit, color: Cyber.cyan, size: 16),
+        ),
+      ),
+    );
+  }
+}
+
+class _FollowingEditorSheet extends StatefulWidget {
+  const _FollowingEditorSheet({
+    required this.storage,
+    required this.followedLeagueIds,
+    required this.favoriteTeams,
+  });
+
+  final SecureGameStorage storage;
+  final List<String> followedLeagueIds;
+  final Map<String, String> favoriteTeams;
+
+  @override
+  State<_FollowingEditorSheet> createState() => _FollowingEditorSheetState();
+}
+
+class _FollowingEditorSheetState extends State<_FollowingEditorSheet> {
+  late final Set<String> _followedLeagueIds = widget.followedLeagueIds.toSet();
+  late final Map<String, String> _favoriteTeams = Map.of(widget.favoriteTeams);
+  late String _activeLeagueId = _followedLeagueIds.isNotEmpty
+      ? _followedLeagueIds.first
+      : followableLeagues.first.league.id;
+  bool _saving = false;
+
+  FollowableLeague get _activeLeague =>
+      followableLeagueById(_activeLeagueId) ?? followableLeagues.first;
+
+  void _toggleLeague(FollowableLeague entry) {
+    setState(() {
+      if (_followedLeagueIds.remove(entry.league.id)) {
+        _favoriteTeams.remove(entry.league.id);
+        if (_activeLeagueId == entry.league.id) {
+          _activeLeagueId = _followedLeagueIds.isNotEmpty
+              ? _followedLeagueIds.first
+              : followableLeagues.first.league.id;
+        }
+      } else {
+        _followedLeagueIds.add(entry.league.id);
+        _favoriteTeams[entry.league.id] = entry.teams.first.id;
+        _activeLeagueId = entry.league.id;
+      }
+    });
+  }
+
+  void _selectTeam(String teamId) {
+    setState(() {
+      _followedLeagueIds.add(_activeLeague.league.id);
+      _favoriteTeams[_activeLeague.league.id] = teamId;
+    });
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    final orderedLeagueIds = [
+      for (final entry in followableLeagues)
+        if (_followedLeagueIds.contains(entry.league.id)) entry.league.id,
+    ];
+    final teams = {
+      for (final leagueId in orderedLeagueIds)
+        if (_favoriteTeams[leagueId] != null)
+          leagueId: _favoriteTeams[leagueId]!,
+    };
+    await widget.storage.saveFollowedLeagueIds(orderedLeagueIds);
+    await widget.storage.saveFavoriteTeams(teams);
+    if (mounted) Navigator.of(context).pop(true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedTeamId = _favoriteTeams[_activeLeague.league.id];
+    return FractionallySizedBox(
+      heightFactor: 0.86,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(color: Cyber.bg),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                child: Row(
+                  children: [
+                    Text(
+                      'EDIT CLUBS',
+                      style: Cyber.display(16, color: Cyber.cyan),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => Navigator.of(context).pop(false),
+                      icon: const Icon(Icons.close, color: Cyber.muted),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 96,
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  scrollDirection: Axis.horizontal,
+                  itemBuilder: (context, index) {
+                    final entry = followableLeagues[index];
+                    return _EditableLeaguePill(
+                      entry: entry,
+                      active: entry.league.id == _activeLeagueId,
+                      selected: _followedLeagueIds.contains(entry.league.id),
+                      onTap: () =>
+                          setState(() => _activeLeagueId = entry.league.id),
+                      onToggle: () => _toggleLeague(entry),
+                    );
+                  },
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 10),
+                  itemCount: followableLeagues.length,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Expanded(
+                child: GridView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  itemCount: _activeLeague.teams.length,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    mainAxisSpacing: 10,
+                    crossAxisSpacing: 10,
+                    childAspectRatio: 0.92,
+                  ),
+                  itemBuilder: (context, index) {
+                    final team = _activeLeague.teams[index];
+                    return _EditableFollowTeamTile(
+                      team: team,
+                      selected: team.id == selectedTeamId,
+                      enabled: _followedLeagueIds.contains(
+                        _activeLeague.league.id,
+                      ),
+                      onTap: () => _selectTeam(team.id),
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Cyber.cyan,
+                    foregroundColor: Cyber.bg,
+                    disabledBackgroundColor: Cyber.line,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: const RoundedRectangleBorder(),
+                  ),
+                  onPressed: _saving ? null : _save,
+                  child: Text(
+                    _saving ? 'SAVING' : 'SAVE',
+                    style: Cyber.display(13, color: Cyber.bg),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EditableLeaguePill extends StatelessWidget {
+  const _EditableLeaguePill({
+    required this.entry,
+    required this.active,
+    required this.selected,
+    required this.onTap,
+    required this.onToggle,
+  });
+
+  final FollowableLeague entry;
+  final bool active;
+  final bool selected;
+  final VoidCallback onTap;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = selected ? Cyber.lime : Cyber.cyan;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        width: 106,
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: Cyber.panel,
-          border: Border.all(color: Cyber.border),
+          color: active ? Cyber.panel : Cyber.panel.withValues(alpha: 0.58),
+          border: Border.all(
+            color: active ? accent : Cyber.line,
+            width: active ? 1.5 : 1,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SectionLabel(label: 'FOLLOWING'),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 18,
-              runSpacing: 12,
+            Row(
               children: [
-                for (final (team, code) in _favourites)
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TeamLogo(team: team, width: 40, height: 44),
-                      const SizedBox(height: 6),
-                      Text(
-                        code,
-                        style: Cyber.label(
-                          9,
-                          color: Cyber.muted,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ],
+                Expanded(
+                  child: Text(
+                    entry.league.shortCode,
+                    style: Cyber.display(
+                      13,
+                      color: active ? accent : Cyber.muted,
+                    ),
                   ),
+                ),
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: onToggle,
+                  child: Icon(
+                    selected ? Icons.check_box : Icons.check_box_outline_blank,
+                    color: accent,
+                    size: 18,
+                  ),
+                ),
               ],
+            ),
+            const Spacer(),
+            Text(
+              entry.league.name.toUpperCase(),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.4),
             ),
           ],
         ),
@@ -1614,7 +1958,70 @@ class _FollowingBandState extends State<_FollowingBand> {
   }
 }
 
-// ─── HUD navigation rows ──────────────────────────────────────────────────────
+class _EditableFollowTeamTile extends StatelessWidget {
+  const _EditableFollowTeamTile({
+    required this.team,
+    required this.selected,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final SportTeam team;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = selected ? Cyber.lime : Cyber.line;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: team.name,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+          decoration: BoxDecoration(
+            color: enabled
+                ? Cyber.panel.withValues(alpha: 0.72)
+                : Cyber.panel.withValues(alpha: 0.38),
+            border: Border.all(color: borderColor, width: selected ? 2 : 1),
+          ),
+          child: Stack(
+            children: [
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TeamLogo(team: team, width: 40, height: 44),
+                  const SizedBox(height: 7),
+                  Text(
+                    team.name.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: Cyber.label(
+                      8,
+                      color: selected ? Colors.white : Cyber.muted,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
+              ),
+              if (selected)
+                const Align(
+                  alignment: Alignment.topLeft,
+                  child: _EditableAvatarSelectedCorner(),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _NavRow extends StatelessWidget {
   const _NavRow({required this.icon, required this.label, required this.onTap});
