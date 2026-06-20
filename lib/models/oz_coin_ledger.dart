@@ -10,6 +10,7 @@ enum OzCoinTransactionSource {
   duplicateRefund,
   directCardPurchase,
   shopTopUp,
+  streakReward,
   manual,
 }
 

@@ -63,6 +63,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   // Within the team step, which followed league we're picking a team for.
   int _teamLeagueIndex = 0;
   bool _completing = false;
+  // First-run brand splash + WELCOME reveal, shown before the setup steps.
+  bool _intro = true;
 
   List<FollowableLeague> get _followed => [
     for (final entry in followableLeagues)
@@ -187,6 +189,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           ),
           if (_completing)
             Positioned.fill(child: _LaunchSequence(onEnter: _emit)),
+          if (_intro)
+            Positioned.fill(
+              child: _LaunchIntro(
+                onDone: () => setState(() => _intro = false),
+              ),
+            ),
         ],
       ),
     );
@@ -919,7 +927,7 @@ class _LaunchSequenceState extends State<_LaunchSequence>
 
   Timer? _tick;
   int _seconds = 3;
-  bool _welcome = false;
+  bool _entered = false;
 
   @override
   void initState() {
@@ -934,11 +942,11 @@ class _LaunchSequenceState extends State<_LaunchSequence>
   }
 
   void _scheduleNext() {
-    // Hold on each number, then a shorter beat on GO before handing off.
+    // Hold on each number, then a shorter beat on GO before entering the app.
     _tick = Timer(Duration(milliseconds: _seconds > 0 ? 850 : 600), () {
       if (!mounted) return;
       if (_seconds <= 0) {
-        _toWelcome();
+        _enter();
         return;
       }
       setState(() => _seconds--);
@@ -947,9 +955,13 @@ class _LaunchSequenceState extends State<_LaunchSequence>
     });
   }
 
-  void _toWelcome() {
+  // The WELCOME reveal now plays up front (see [_LaunchIntro]); the countdown
+  // drops straight into the app.
+  void _enter() {
+    if (_entered) return;
+    _entered = true;
     _tick?.cancel();
-    if (mounted && !_welcome) setState(() => _welcome = true);
+    widget.onEnter();
   }
 
   @override
@@ -966,124 +978,130 @@ class _LaunchSequenceState extends State<_LaunchSequence>
         const Positioned.fill(child: ColoredBox(color: Cyber.bg)),
         const Positioned.fill(child: _OnboardingArenaBackground()),
         Positioned.fill(
-          child: _welcome
-              ? _WelcomeToStatozReveal(onDone: widget.onEnter)
-              : GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: _toWelcome,
-                  child: SafeArea(
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'SYS://LAUNCH-SEQUENCE',
-                            style: Cyber.label(
-                              10,
-                              color: Cyber.cyan,
-                              letterSpacing: 2.6,
-                            ),
-                          ),
-                          const SizedBox(height: 28),
-                          CountdownRing(
-                            seconds: _seconds,
-                            scanner: _scanner,
-                            accent: Cyber.cyan,
-                          ),
-                          const SizedBox(height: 22),
-                          Text(
-                            'ENTERING STATOZ…',
-                            style: Cyber.body(
-                              12,
-                              color: Cyber.cyan.withValues(alpha: 0.7),
-                              weight: FontWeight.w700,
-                              letterSpacing: 0.4,
-                            ),
-                          ),
-                        ],
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _enter,
+            child: SafeArea(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'SYS://LAUNCH-SEQUENCE',
+                      style: Cyber.label(
+                        10,
+                        color: Cyber.cyan,
+                        letterSpacing: 2.6,
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 28),
+                    CountdownRing(
+                      seconds: _seconds,
+                      scanner: _scanner,
+                      accent: Cyber.cyan,
+                    ),
+                    const SizedBox(height: 22),
+                    Text(
+                      'ENTERING STATOZ…',
+                      style: Cyber.body(
+                        12,
+                        color: Cyber.cyan.withValues(alpha: 0.7),
+                        weight: FontWeight.w700,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+            ),
+          ),
         ),
       ],
     );
   }
 }
 
-/// A cyberpunk brand reveal: a glowing soccer-ball HUD emblem slams in over a
-/// cyan shockwave, then `WELCOME TO` and the `STATOZ` wordmark land. Auto-enters
-/// the app when the sequence finishes; tap to skip straight in.
-class _WelcomeToStatozReveal extends StatefulWidget {
-  const _WelcomeToStatozReveal({required this.onDone});
+/// The first-run brand splash: the StatOz logo pops in (scale 0→1) and spins to
+/// rest, sitting above the WELCOME TO STATOZ wordmark, which then animates in.
+/// Auto-advances into profile setup when done; tap to skip straight ahead.
+class _LaunchIntro extends StatefulWidget {
+  const _LaunchIntro({required this.onDone});
 
   final VoidCallback onDone;
 
   @override
-  State<_WelcomeToStatozReveal> createState() => _WelcomeToStatozRevealState();
+  State<_LaunchIntro> createState() => _LaunchIntroState();
 }
 
-class _WelcomeToStatozRevealState extends State<_WelcomeToStatozReveal>
-    with TickerProviderStateMixin {
+class _LaunchIntroState extends State<_LaunchIntro>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 2600),
+    duration: const Duration(milliseconds: 3000),
   );
-  // Continuous ball spin inside the emblem.
-  late final AnimationController _spin = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 5200),
-  )..repeat();
 
   bool _done = false;
+  bool _settled = false;
 
-  late final Animation<double> _emblemScale =
+  // ── Logo: scale pop-in + spin to rest (no opacity fade, no zoom) ──
+  late final Animation<double> _appearScale =
       Tween<double>(begin: 0, end: 1).animate(
         CurvedAnimation(
           parent: _ctrl,
-          curve: const Interval(0, 0.34, curve: Curves.easeOutBack),
+          curve: const Interval(0, 0.22, curve: Curves.easeOutBack),
         ),
       );
-  late final Animation<double> _shock = CurvedAnimation(
-    parent: _ctrl,
-    curve: const Interval(0.04, 0.5, curve: Curves.easeOut),
-  );
+  late final Animation<double> _spinTurns = Tween<double>(begin: 0, end: 3)
+      .animate(
+        CurvedAnimation(
+          parent: _ctrl,
+          curve: const Interval(0, 0.55, curve: Curves.easeOut),
+        ),
+      );
+
+  // ── WELCOME TO STATOZ: each line fades + slides up after the spin settles ──
   late final Animation<double> _kickerOpacity = CurvedAnimation(
     parent: _ctrl,
-    curve: const Interval(0.34, 0.5),
+    curve: const Interval(0.52, 0.66),
   );
   late final Animation<double> _kickerSlide =
       Tween<double>(begin: 12, end: 0).animate(
         CurvedAnimation(
           parent: _ctrl,
-          curve: const Interval(0.34, 0.54, curve: Curves.easeOut),
-        ),
-      );
-  late final Animation<double> _wordScale =
-      Tween<double>(begin: 0.72, end: 1).animate(
-        CurvedAnimation(
-          parent: _ctrl,
-          curve: const Interval(0.46, 0.72, curve: Curves.easeOutBack),
+          curve: const Interval(0.52, 0.68, curve: Curves.easeOut),
         ),
       );
   late final Animation<double> _wordOpacity = CurvedAnimation(
     parent: _ctrl,
-    curve: const Interval(0.46, 0.62),
+    curve: const Interval(0.64, 0.80),
   );
-  late final Animation<double> _tagOpacity = CurvedAnimation(
-    parent: _ctrl,
-    curve: const Interval(0.78, 0.92),
-  );
+  late final Animation<double> _wordSlide =
+      Tween<double>(begin: 16, end: 0).animate(
+        CurvedAnimation(
+          parent: _ctrl,
+          curve: const Interval(0.64, 0.82, curve: Curves.easeOut),
+        ),
+      );
 
   @override
   void initState() {
     super.initState();
-    playSound(SoundEffect.playMatch);
+    playSound(SoundEffect.riser);
     HapticFeedback.heavyImpact();
     _ctrl.forward();
+    _ctrl.addListener(_maybeSettle);
     _ctrl.addStatusListener((status) {
       if (status == AnimationStatus.completed) _finish();
     });
+  }
+
+  // A light beat as the spin settles and the wordmark reveals.
+  void _maybeSettle() {
+    if (!_settled && _ctrl.value >= 0.55) {
+      _settled = true;
+      HapticFeedback.mediumImpact();
+      playSound(SoundEffect.commit);
+    }
   }
 
   void _finish() {
@@ -1095,7 +1113,6 @@ class _WelcomeToStatozRevealState extends State<_WelcomeToStatozReveal>
   @override
   void dispose() {
     _ctrl.dispose();
-    _spin.dispose();
     super.dispose();
   }
 
@@ -1104,150 +1121,119 @@ class _WelcomeToStatozRevealState extends State<_WelcomeToStatozReveal>
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: _finish,
-      child: SafeArea(
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: 176,
-                height: 176,
-                child: Stack(
-                  alignment: Alignment.center,
+      child: Stack(
+        children: [
+          const Positioned.fill(child: ColoredBox(color: Cyber.bg)),
+          const Positioned.fill(child: _OnboardingArenaBackground()),
+          Positioned.fill(
+            child: SafeArea(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Positioned.fill(
-                      child: AnimatedBuilder(
-                        animation: _shock,
-                        builder: (_, _) => CustomPaint(
-                          painter: _RevealShockwavePainter(
-                            progress: _shock.value,
-                            color: Cyber.cyan,
+                    // Logo: pops in and spins to rest in place (no fade, no zoom).
+                    AnimatedBuilder(
+                      animation: _ctrl,
+                      builder: (_, _) => Transform.scale(
+                        scale: _appearScale.value.clamp(0.0, 1.2),
+                        child: Transform.rotate(
+                          angle: _spinTurns.value * 2 * math.pi,
+                          child: const _LogoMark(size: 150),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 26),
+                    AnimatedBuilder(
+                      animation: _ctrl,
+                      builder: (_, _) => Opacity(
+                        opacity: _kickerOpacity.value.clamp(0.0, 1.0),
+                        child: Transform.translate(
+                          offset: Offset(0, _kickerSlide.value),
+                          child: Text(
+                            'WELCOME TO',
+                            style: Cyber.label(
+                              13,
+                              color: Cyber.muted,
+                              letterSpacing: 4.0,
+                            ),
                           ),
                         ),
                       ),
                     ),
+                    const SizedBox(height: 12),
                     AnimatedBuilder(
-                      animation: Listenable.merge([_ctrl, _spin]),
-                      builder: (_, _) => Transform.scale(
-                        scale: _emblemScale.value.clamp(0.0, 1.2),
-                        child: _LaunchEmblem(spin: _spin.value),
+                      animation: _ctrl,
+                      builder: (_, _) => Opacity(
+                        opacity: _wordOpacity.value.clamp(0.0, 1.0),
+                        child: Transform.translate(
+                          offset: Offset(0, _wordSlide.value),
+                          child: Text(
+                            'STATOZ',
+                            style:
+                                Cyber.display(
+                                  54,
+                                  color: Cyber.cyan,
+                                  letterSpacing: 4.0,
+                                ).copyWith(
+                                  shadows: [
+                                    Shadow(
+                                      color: Cyber.cyan.withValues(alpha: 0.85),
+                                      blurRadius: 28,
+                                    ),
+                                    Shadow(
+                                      color: Cyber.cyan.withValues(alpha: 0.4),
+                                      blurRadius: 54,
+                                    ),
+                                  ],
+                                ),
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 26),
-              AnimatedBuilder(
-                animation: _ctrl,
-                builder: (_, _) => Opacity(
-                  opacity: _kickerOpacity.value.clamp(0.0, 1.0),
-                  child: Transform.translate(
-                    offset: Offset(0, _kickerSlide.value),
-                    child: Text(
-                      'WELCOME TO',
-                      style: Cyber.label(
-                        13,
-                        color: Cyber.muted,
-                        letterSpacing: 4.0,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              AnimatedBuilder(
-                animation: _ctrl,
-                builder: (_, _) => Opacity(
-                  opacity: _wordOpacity.value.clamp(0.0, 1.0),
-                  child: Transform.scale(
-                    scale: _wordScale.value,
-                    child: Text(
-                      'STATOZ',
-                      style:
-                          Cyber.display(
-                            54,
-                            color: Cyber.cyan,
-                            letterSpacing: 4.0,
-                          ).copyWith(
-                            shadows: [
-                              Shadow(
-                                color: Cyber.cyan.withValues(alpha: 0.85),
-                                blurRadius: 28,
-                              ),
-                              Shadow(
-                                color: Cyber.cyan.withValues(alpha: 0.4),
-                                blurRadius: 54,
-                              ),
-                            ],
-                          ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 30),
-              AnimatedBuilder(
-                animation: _ctrl,
-                builder: (_, _) => Opacity(
-                  opacity: _tagOpacity.value.clamp(0.0, 1.0),
-                  child: Text(
-                    'TAP TO ENTER',
-                    style: Cyber.label(
-                      10,
-                      color: Cyber.muted,
-                      letterSpacing: 2.4,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 }
 
-/// A compact rotating soccer-ball HUD emblem — the brand lockup for the welcome
-/// reveal. Single focal cyan glow, in the spirit of the home hero emblem.
-class _LaunchEmblem extends StatelessWidget {
-  const _LaunchEmblem({required this.spin});
+/// The StatOz brand logo with a single focal cyan glow — the lockup for the
+/// launch splash and welcome reveal. Falls back to the soccer glyph if the
+/// asset is missing so it never crashes.
+class _LogoMark extends StatelessWidget {
+  const _LogoMark({required this.size});
 
-  final double spin;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 132,
-      height: 132,
+      width: size,
+      height: size,
       child: Stack(
         alignment: Alignment.center,
         children: [
           Container(
-            width: 132,
-            height: 132,
+            width: size * 0.84,
+            height: size * 0.84,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Cyber.cyan.withValues(alpha: 0.4),
-                width: 1.2,
-              ),
+              borderRadius: BorderRadius.circular(size * 0.22),
+              boxShadow: Cyber.glow(Cyber.cyan, alpha: 0.5, blur: size * 0.3),
             ),
           ),
-          Container(
-            width: 96,
-            height: 96,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Cyber.panel,
-              border: Border.all(color: Cyber.cyan, width: 2),
-              boxShadow: Cyber.glow(Cyber.cyan, alpha: 0.45, blur: 26),
-            ),
-          ),
-          Transform.rotate(
-            angle: spin * 2 * math.pi,
-            child: const Icon(
+          Image.asset(
+            'assets/icons/app_logo.png',
+            width: size,
+            height: size,
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.medium,
+            errorBuilder: (_, _, _) => Icon(
               Icons.sports_soccer,
-              size: 52,
+              size: size * 0.5,
               color: Cyber.cyan,
             ),
           ),
@@ -1257,30 +1243,3 @@ class _LaunchEmblem extends StatelessWidget {
   }
 }
 
-class _RevealShockwavePainter extends CustomPainter {
-  const _RevealShockwavePainter({required this.progress, required this.color});
-
-  final double progress;
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (progress <= 0 || progress >= 1) return;
-    final center = size.center(Offset.zero);
-    final maxR = size.longestSide * 0.62;
-    final radius = maxR * progress;
-    final alpha = (1 - progress) * 0.5;
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5 * (1 - progress) + 0.6
-        ..color = color.withValues(alpha: alpha),
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _RevealShockwavePainter oldDelegate) =>
-      oldDelegate.progress != progress || oldDelegate.color != color;
-}

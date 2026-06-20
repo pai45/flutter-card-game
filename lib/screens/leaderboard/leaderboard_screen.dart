@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../blocs/game/game_bloc.dart';
 import '../../config/enums.dart';
 import '../../config/theme.dart';
+import '../../models/avatar_border_option.dart';
 import '../../models/avatar_option.dart';
 import '../../models/sport_match.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
@@ -427,9 +430,14 @@ AvatarOption _avatarForName(String name) {
 // ─── Screen ──────────────────────────────────────────────────────────────────
 
 class LeaderboardScreen extends StatefulWidget {
-  const LeaderboardScreen({required this.onNavigate, super.key});
+  const LeaderboardScreen({
+    required this.onNavigate,
+    this.onAddCoins,
+    super.key,
+  });
 
   final ValueChanged<AppSection> onNavigate;
+  final VoidCallback? onAddCoins;
 
   @override
   State<LeaderboardScreen> createState() => _LeaderboardScreenState();
@@ -530,7 +538,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                     StatOzTopBar(
                       title: 'Leaderboard',
                       accent: accent,
-                      onAddCoins: () => widget.onNavigate(AppSection.shop),
+                      onAddCoins:
+                          widget.onAddCoins ??
+                          () => widget.onNavigate(AppSection.shop),
                     ),
                     _LeaderboardTabs(
                       activeTab: _typeTabOrder.indexOf(_type),
@@ -1435,6 +1445,16 @@ class _WinnerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Reflect the user's equipped avatar border on their podium card too.
+    List<Color>? userBorderColors;
+    if (entry.isUser) {
+      final equipped = avatarBorderOptionById(
+        context.select<GameBloc, String>((b) => b.state.equippedAvatarBorderId),
+      );
+      if (equipped != null) {
+        userBorderColors = borderRingColors(equipped.primary);
+      }
+    }
     return Container(
       padding: EdgeInsets.all(primary ? 16 : 12),
       decoration: _cutDecoration(
@@ -1452,6 +1472,7 @@ class _WinnerTile extends StatelessWidget {
                   size: avatarSize,
                   ring: color,
                   team: entry.team,
+                  borderColors: userBorderColors,
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -1491,6 +1512,7 @@ class _WinnerTile extends StatelessWidget {
                       size: avatarSize,
                       ring: color,
                       team: entry.team,
+                      borderColors: userBorderColors,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -1655,6 +1677,17 @@ class _LeaderboardRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isUser = entry.isUser;
     final rankColor = entry.rank <= 3 ? Cyber.gold : Cyber.muted;
+    // Reflect the user's equipped avatar border on their own row.
+    List<Color>? userBorderColors;
+    if (isUser) {
+      final equippedId = context.select<GameBloc, String>(
+        (b) => b.state.equippedAvatarBorderId,
+      );
+      final equipped = avatarBorderOptionById(equippedId);
+      if (equipped != null) {
+        userBorderColors = borderRingColors(equipped.primary);
+      }
+    }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
       decoration: _cutDecoration(
@@ -1688,6 +1721,7 @@ class _LeaderboardRow extends StatelessWidget {
             size: 48,
             highlight: isUser,
             team: entry.team,
+            borderColors: userBorderColors,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1891,6 +1925,7 @@ class _Avatar extends StatelessWidget {
     this.highlight = false,
     this.ring,
     this.team,
+    this.borderColors,
   });
 
   final String name;
@@ -1899,26 +1934,45 @@ class _Avatar extends StatelessWidget {
   final Color? ring;
   final SportTeam? team;
 
+  /// The equipped avatar border's 4px gradient, drawn as the octagon ring. Set
+  /// only for the user's own row so their cosmetic reflects on the board.
+  final List<Color>? borderColors;
+
   @override
   Widget build(BuildContext context) {
+    final hasBorder = borderColors != null && borderColors!.length >= 2;
+
     if (team != null) {
       return SizedBox(
         width: size,
         height: size,
-        child: Center(
-          child: TeamLogo(
-            team: team!,
-            width: size,
-            height: size,
-            cutBottomRight: false,
-          ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Center(
+              child: TeamLogo(
+                team: team!,
+                width: size,
+                height: size,
+                cutBottomRight: false,
+              ),
+            ),
+            if (hasBorder)
+              CustomPaint(
+                painter: OctagonBorderPainter(
+                  color: Cyber.cyan,
+                  strokeWidth: 4,
+                  gradientColors: borderColors,
+                ),
+              ),
+          ],
         ),
       );
     }
 
     final color = ring ?? (highlight ? Cyber.cyan : Cyber.line);
     final avatar = _avatarForName(name);
-    final borderWidth = highlight ? 2.0 : 1.2;
+    final borderWidth = hasBorder ? 4.0 : (highlight ? 2.0 : 1.2);
     final borderColor = color.withValues(alpha: highlight ? 0.9 : 0.42);
 
     return SizedBox(
@@ -1939,6 +1993,7 @@ class _Avatar extends StatelessWidget {
               painter: OctagonBorderPainter(
                 color: borderColor,
                 strokeWidth: borderWidth,
+                gradientColors: hasBorder ? borderColors : null,
               ),
             ),
           ],

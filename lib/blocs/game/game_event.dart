@@ -1,6 +1,7 @@
 import '../../models/cards.dart';
 import '../../models/deck.dart';
 import '../../models/oz_coin_ledger.dart';
+import '../../models/streak.dart';
 
 sealed class GameEvent {}
 
@@ -124,7 +125,32 @@ class CardBackEquipped extends GameEvent {
   final String cardBackId;
 }
 
+class AvatarBorderPurchased extends GameEvent {
+  AvatarBorderPurchased(this.borderId);
+  final String borderId;
+}
+
+class AvatarBorderEquipped extends GameEvent {
+  AvatarBorderEquipped(this.borderId);
+  final String borderId;
+}
+
 class PackRevealSeen extends GameEvent {}
+
+class StreakActivityRecorded extends GameEvent {
+  StreakActivityRecorded(this.activity, {DateTime? occurredAt})
+    : occurredAt = occurredAt ?? DateTime.now();
+
+  final StreakActivity activity;
+  final DateTime occurredAt;
+}
+
+class StreakCelebrationConsumed extends GameEvent {}
+
+class StreakMilestoneClaimed extends GameEvent {
+  StreakMilestoneClaimed(this.days);
+  final int days;
+}
 
 class MatchReset extends GameEvent {}
 

@@ -5,6 +5,7 @@ import '../../models/match.dart';
 import '../../models/oz_coin_ledger.dart';
 import '../../models/packs.dart';
 import '../../models/progression.dart';
+import '../../models/streak.dart';
 import '../../utils/card_helpers.dart';
 
 class PackRevealItem {
@@ -109,6 +110,21 @@ class PackRevealData {
     levelsGained: levelsGained,
   );
 
+  factory PackRevealData.streakReward({
+    required String rewardName,
+    required PackResult result,
+    required List<int> levelsGained,
+  }) => PackRevealData(
+    playerCards: result.playerCards,
+    actionCards: result.actionCards,
+    headline: 'STREAK\nREWARD',
+    statusLabel: 'CLAIMED',
+    ctaLabel: 'CONTINUE',
+    summaryLabel: rewardName.toUpperCase(),
+    xpGained: result.xpGained,
+    levelsGained: levelsGained,
+  );
+
   final List<PlayerCard> playerCards;
   final List<ActionCard> actionCards;
   final String headline;
@@ -154,6 +170,8 @@ class GameState {
     required this.ownedActionCardIds,
     required this.ownedCardBackIds,
     required this.equippedCardBackId,
+    required this.ownedAvatarBorderIds,
+    required this.equippedAvatarBorderId,
     required this.matchHistory,
     required this.tutorialSeen,
     required this.pendingPackReveal,
@@ -183,6 +201,7 @@ class GameState {
     required this.previousProgression,
     required this.pendingLevelUps,
     required this.lastMatchXP,
+    required this.streak,
   });
 
   factory GameState.initial() => GameState(
@@ -202,6 +221,8 @@ class GameState {
     ownedActionCardIds: const [],
     ownedCardBackIds: const ['default'],
     equippedCardBackId: 'default',
+    ownedAvatarBorderIds: const [],
+    equippedAvatarBorderId: '',
     matchHistory: const [],
     tutorialSeen: const {},
     pendingPackReveal: null,
@@ -231,6 +252,7 @@ class GameState {
     previousProgression: null,
     pendingLevelUps: const [],
     lastMatchXP: null,
+    streak: StreakSnapshot.seeded(DateTime.now()),
   );
 
   final bool loading;
@@ -246,6 +268,8 @@ class GameState {
   final List<String> ownedActionCardIds;
   final List<String> ownedCardBackIds;
   final String equippedCardBackId;
+  final List<String> ownedAvatarBorderIds;
+  final String equippedAvatarBorderId;
   final List<MatchHistoryEntry> matchHistory;
   final Set<String> tutorialSeen;
   final PackRevealData? pendingPackReveal;
@@ -275,6 +299,7 @@ class GameState {
   final PlayerProgression? previousProgression;
   final List<int> pendingLevelUps;
   final int? lastMatchXP;
+  final StreakSnapshot streak;
 
   bool get hasLevelUp => pendingLevelUps.isNotEmpty;
 
@@ -302,6 +327,8 @@ class GameState {
     List<String>? ownedActionCardIds,
     List<String>? ownedCardBackIds,
     String? equippedCardBackId,
+    List<String>? ownedAvatarBorderIds,
+    String? equippedAvatarBorderId,
     List<MatchHistoryEntry>? matchHistory,
     Set<String>? tutorialSeen,
     Object? pendingPackReveal = _sentinel,
@@ -331,6 +358,7 @@ class GameState {
     Object? previousProgression = _sentinel,
     List<int>? pendingLevelUps,
     Object? lastMatchXP = _sentinel,
+    StreakSnapshot? streak,
   }) => GameState(
     loading: loading ?? this.loading,
     deckSlots: deckSlots ?? this.deckSlots,
@@ -347,6 +375,9 @@ class GameState {
     ownedActionCardIds: ownedActionCardIds ?? this.ownedActionCardIds,
     ownedCardBackIds: ownedCardBackIds ?? this.ownedCardBackIds,
     equippedCardBackId: equippedCardBackId ?? this.equippedCardBackId,
+    ownedAvatarBorderIds: ownedAvatarBorderIds ?? this.ownedAvatarBorderIds,
+    equippedAvatarBorderId:
+        equippedAvatarBorderId ?? this.equippedAvatarBorderId,
     matchHistory: matchHistory ?? this.matchHistory,
     tutorialSeen: tutorialSeen ?? this.tutorialSeen,
     pendingPackReveal: pendingPackReveal == _sentinel
@@ -398,6 +429,7 @@ class GameState {
     lastMatchXP: lastMatchXP == _sentinel
         ? this.lastMatchXP
         : lastMatchXP as int?,
+    streak: streak ?? this.streak,
   );
 }
 

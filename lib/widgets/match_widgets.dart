@@ -114,6 +114,7 @@ class MatchPhaseScaffold extends StatelessWidget {
     this.bottomAction,
     this.bottomActionKey,
     this.showStadium = true,
+    this.centerContent = false,
     super.key,
   });
 
@@ -142,6 +143,11 @@ class MatchPhaseScaffold extends StatelessWidget {
   /// Whether to lay the ambient stadium image behind the content. Off for
   /// non-match flows that want a clean HUD backdrop (e.g. the shootout lineup).
   final bool showStadium;
+
+  /// Vertically centre the content in the visible band (between header and the
+  /// docked action) instead of top-aligning it. For compact "moment" screens
+  /// like the shootout face-off; still scrolls if it can't fit.
+  final bool centerContent;
 
   @override
   Widget build(BuildContext context) {
@@ -179,18 +185,25 @@ class MatchPhaseScaffold extends StatelessWidget {
       child: Stack(
         children: [
           if (showStadium) const Positioned.fill(child: StadiumBackground()),
-          ListView.separated(
-            clipBehavior: Clip.none,
-            padding: EdgeInsets.fromLTRB(
-              16,
-              16,
-              16,
-              (bottomAction == null ? 16 : 128) + bottomInset,
+          if (centerContent)
+            _CenteredPhaseBody(
+              bottomInset: bottomInset,
+              hasBottomAction: bottomAction != null,
+              children: children,
+            )
+          else
+            ListView.separated(
+              clipBehavior: Clip.none,
+              padding: EdgeInsets.fromLTRB(
+                16,
+                16,
+                16,
+                (bottomAction == null ? 16 : 128) + bottomInset,
+              ),
+              itemBuilder: (_, index) => children[index],
+              separatorBuilder: (_, _) => const SizedBox(height: 14),
+              itemCount: children.length,
             ),
-            itemBuilder: (_, index) => children[index],
-            separatorBuilder: (_, _) => const SizedBox(height: 14),
-            itemCount: children.length,
-          ),
           Positioned(
             left: 0,
             right: 0,
@@ -229,6 +242,52 @@ class MatchPhaseScaffold extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Scrollable body that vertically centres a phase's content in the band
+/// between the header and the docked action. Falls back to scrolling when the
+/// content is taller than the visible band (short screens).
+class _CenteredPhaseBody extends StatelessWidget {
+  const _CenteredPhaseBody({
+    required this.children,
+    required this.bottomInset,
+    required this.hasBottomAction,
+  });
+
+  final List<Widget> children;
+  final double bottomInset;
+  final bool hasBottomAction;
+
+  @override
+  Widget build(BuildContext context) {
+    const topPad = 16.0;
+    final bottomPad = (hasBottomAction ? 128.0 : 16.0) + bottomInset;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          clipBehavior: Clip.none,
+          padding: EdgeInsets.fromLTRB(16, topPad, 16, bottomPad),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: (constraints.maxHeight - topPad - bottomPad).clamp(
+                0.0,
+                double.infinity,
+              ),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                for (var i = 0; i < children.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 14),
+                  children[i],
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

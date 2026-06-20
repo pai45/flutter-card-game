@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -10,11 +9,13 @@ import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../models/league.dart';
 import '../../models/sport_match.dart';
+import '../../models/streak.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/staggered_card_entrance.dart';
 import '../../widgets/stat_oz_top_bar.dart';
+import '../../widgets/streak_widgets.dart';
 import '../shop/shop_screen.dart' show CoinIcon;
 import 'streak_calendar_screen.dart';
 import 'picks_home_view.dart';
@@ -30,6 +31,7 @@ class PredictionHomeScreen extends StatefulWidget {
     required this.onOpenLeague,
     required this.onOpenGame,
     required this.onOpenShootout,
+    this.onAddCoins,
     super.key,
   });
 
@@ -40,6 +42,7 @@ class PredictionHomeScreen extends StatefulWidget {
   final ValueChanged<League> onOpenLeague;
   final VoidCallback onOpenGame;
   final VoidCallback onOpenShootout;
+  final VoidCallback? onAddCoins;
 
   @override
   State<PredictionHomeScreen> createState() => _PredictionHomeScreenState();
@@ -62,10 +65,16 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
               children: [
                 StatOzTopBar(
                   title: 'StatOz',
-                  onAddCoins: () => widget.onNavigate(AppSection.shop),
+                  onAddCoins:
+                      widget.onAddCoins ??
+                      () => widget.onNavigate(AppSection.shop),
                   onStreakTap: () => showStreakCalendar(context),
                 ),
-                _PredictionTopBar(activeIndex: tab, onTap: widget.onTabChanged),
+                CyberGlidingTabs(
+                  tabs: _predictionTopTabs,
+                  activeIndex: tab,
+                  onTap: widget.onTabChanged,
+                ),
                 Expanded(
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 240),
@@ -125,313 +134,43 @@ class _PredictionBackground extends StatelessWidget {
   }
 }
 
-/// Top tab bar (PREDICT / PICK / GAMES). A calm dark strip with one raised,
-/// glowing plate that GLIDES — and colour-morphs cyan → green → orange — between
-/// tabs as you switch. Per the glow rule only that active plate glows; the
-/// resting tabs stay colour-coded in a calm, desaturated version of their own
-/// accent so the three identities read at a glance.
-class _PredictionTopBar extends StatefulWidget {
-  const _PredictionTopBar({required this.activeIndex, required this.onTap});
-
-  final int activeIndex;
-  final ValueChanged<int> onTap;
-
-  @override
-  State<_PredictionTopBar> createState() => _PredictionTopBarState();
-}
-
-class _PredictionTopBarState extends State<_PredictionTopBar>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl;
-  late final CurvedAnimation _curve;
-
-  // The continuously-interpolated tab index that drives the plate's position
-  // and accent as it slides between tabs. Whole values land on a tab; the
-  // fractional range in between is where the colour morphs.
-  late double _displayIndex = widget.activeIndex.toDouble();
-  double _fromIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 320),
-    )..addListener(_onTick);
-    _curve = CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic);
-  }
-
-  void _onTick() {
-    final target = widget.activeIndex.toDouble();
-    setState(() {
-      _displayIndex = _fromIndex + (target - _fromIndex) * _curve.value;
-    });
-  }
-
-  @override
-  void didUpdateWidget(covariant _PredictionTopBar old) {
-    super.didUpdateWidget(old);
-    if (old.activeIndex != widget.activeIndex) {
-      _fromIndex = _displayIndex;
-      _ctrl.forward(from: 0);
-    }
-  }
-
-  @override
-  void dispose() {
-    _curve.dispose();
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  /// Lerps across the per-tab accents so the plate morphs colour while it glides.
-  Color _accentAt(double t) {
-    final tabs = _TopBarTabData.tabs;
-    final clamped = t.clamp(0.0, (tabs.length - 1).toDouble());
-    final i = clamped.floor();
-    if (i >= tabs.length - 1) return tabs.last.accent;
-    return Color.lerp(tabs[i].accent, tabs[i + 1].accent, clamped - i)!;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final plateAccent = _accentAt(_displayIndex);
-    return SizedBox(
-      height: _TopBarMetrics.rowHeight,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          // The uniform dark tab row — every tab fills this full height.
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: _TopBarMetrics.fill,
-                border: Border(
-                  top: BorderSide(color: Colors.black.withValues(alpha: 0.16)),
-                ),
-              ),
-            ),
-          ),
-          Positioned.fill(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final tabWidth =
-                    constraints.maxWidth / _TopBarTabData.tabs.length;
-                return Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    // The active plate — flush, the SAME height as every tab. It
-                    // stands out via its bright fill + glow + chamfer, not size.
-                    Positioned(
-                      left: tabWidth * _displayIndex,
-                      top: 0,
-                      width: tabWidth,
-                      height: _TopBarMetrics.rowHeight,
-                      child: CustomPaint(
-                        painter: _TopBarActiveTabPainter(accent: plateAccent),
-                      ),
-                    ),
-                    // Tab content — every tab fills the row and centres its
-                    // icon+label on the same baseline.
-                    Positioned.fill(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          for (var i = 0; i < _TopBarTabData.tabs.length; i++)
-                            Expanded(
-                              child: _TopBarTab(
-                                key: ValueKey('prediction_top_tab_$i'),
-                                data: _TopBarTabData.tabs[i],
-                                active: i == widget.activeIndex,
-                                onTap: () {
-                                  if (i == widget.activeIndex) return;
-                                  playSound(SoundEffect.uiTap);
-                                  HapticFeedback.selectionClick();
-                                  widget.onTap(i);
-                                },
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TopBarTabData {
-  const _TopBarTabData({
-    required this.label,
-    required this.asset,
-    required this.accent,
-  });
-
-  final String label;
-  final String asset;
-
-  /// Each tab owns its identity colour: cyan / green / orange.
-  final Color accent;
-
-  static const tabs = [
-    _TopBarTabData(
-      label: 'PREDICT',
-      asset: 'assets/icons/match.svg',
-      accent: Cyber.cyan,
+/// The match-hub tabs (PREDICT / PICK / GAMES). Each owns its identity colour —
+/// cyan / green / orange — which the gliding active plate morphs between.
+final List<CyberGlidingTab> _predictionTopTabs = <CyberGlidingTab>[
+  CyberGlidingTab(
+    label: 'PREDICT',
+    accent: Cyber.cyan,
+    icon: (color) => SvgPicture.asset(
+      'assets/icons/match.svg',
+      width: 18,
+      height: 18,
+      fit: BoxFit.contain,
+      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
     ),
-    _TopBarTabData(
-      label: 'PICK',
-      asset: 'assets/icons/pick.svg',
-      accent: Cyber.lime,
+  ),
+  CyberGlidingTab(
+    label: 'PICK',
+    accent: Cyber.lime,
+    icon: (color) => SvgPicture.asset(
+      'assets/icons/pick.svg',
+      width: 18,
+      height: 18,
+      fit: BoxFit.contain,
+      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
     ),
-    _TopBarTabData(
-      label: 'GAMES',
-      asset: 'assets/icons/game.svg',
-      accent: Cyber.amber,
+  ),
+  CyberGlidingTab(
+    label: 'GAMES',
+    accent: Cyber.amber,
+    icon: (color) => SvgPicture.asset(
+      'assets/icons/game.svg',
+      width: 18,
+      height: 18,
+      fit: BoxFit.contain,
+      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
     ),
-  ];
-}
-
-class _TopBarTab extends StatelessWidget {
-  const _TopBarTab({
-    super.key,
-    required this.data,
-    required this.active,
-    required this.onTap,
-  });
-
-  final _TopBarTabData data;
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    // Active: dark ink reads on the bright accent plate. Resting: a calm,
-    // desaturated take on the tab's OWN accent so each tab stays colour-coded.
-    final Color color = active
-        ? _TopBarMetrics.activeInk
-        : Color.lerp(data.accent, _TopBarMetrics.mutedInk, 0.32)!;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Icon pops with an elastic bounce as its tab takes focus.
-          AnimatedScale(
-            scale: active ? 1.0 : 0.84,
-            duration: const Duration(milliseconds: 380),
-            curve: active ? Curves.elasticOut : Curves.easeOutCubic,
-            child: SvgPicture.asset(
-              data.asset,
-              width: 18,
-              height: 18,
-              fit: BoxFit.contain,
-              colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-            ),
-          ),
-          const SizedBox(height: 5),
-          AnimatedDefaultTextStyle(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
-            style: Cyber.label(
-              active ? 12 : 10,
-              color: color,
-              weight: active ? FontWeight.w900 : FontWeight.w600,
-              letterSpacing: active ? 0.5 : 0.3,
-              height: active ? 1.25 : 1.5,
-            ),
-            child: Text(data.label, textAlign: TextAlign.center),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Paints the active tab as a FLUSH bright plate — the same height as every tab,
-/// no overhang. A square-topped, chamfered-bottom trapezoid (floating with a small
-/// side gap) filled with a bright vertical accent gradient, a crisp accent edge and
-/// top sheen, and — as the one focal, "live" element — wrapped in a soft accent glow
-/// halo so it stands out by light, not size. Accent morphs in from the bar.
-class _TopBarActiveTabPainter extends CustomPainter {
-  const _TopBarActiveTabPainter({required this.accent});
-
-  final Color accent;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const sideInset = 7.0;
-    const chamfer = _TopBarMetrics.chamfer;
-    final bottom = size.height;
-    final path = Path()
-      ..moveTo(sideInset, 0)
-      ..lineTo(size.width - sideInset, 0)
-      ..lineTo(size.width - sideInset, bottom - chamfer)
-      ..lineTo(size.width - sideInset - chamfer, bottom)
-      ..lineTo(sideInset + chamfer, bottom)
-      ..lineTo(sideInset, bottom - chamfer)
-      ..close();
-
-    // Focal "live" element → a scarce accent glow halo is allowed (and wanted).
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = accent.withValues(alpha: 0.45)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14),
-    );
-
-    // Bright vertical accent gradient fill.
-    canvas.drawPath(
-      path,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color.lerp(accent, Colors.white, 0.30)!, accent],
-        ).createShader(Offset.zero & size),
-    );
-
-    // Crisp brightened accent edge.
-    canvas.drawPath(
-      path,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5
-        ..color = Color.lerp(accent, Colors.white, 0.45)!,
-    );
-
-    // Top sheen highlight.
-    canvas.drawLine(
-      const Offset(sideInset + 2, 1.5),
-      Offset(size.width - sideInset - 2, 1.5),
-      Paint()
-        ..color = Colors.white.withValues(alpha: 0.5)
-        ..strokeWidth = 1.5,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _TopBarActiveTabPainter old) =>
-      old.accent != accent;
-}
-
-abstract final class _TopBarMetrics {
-  // Every tab — active or not — shares this height. The active plate is a flush,
-  // same-height bright accent plate; it stands out via fill + glow + chamfer, not
-  // by overhanging the row.
-  static const rowHeight = 61.0;
-  static const chamfer = 16.0; // bottom corner cut on the active plate
-
-  static const fill = AppTheme.unselectedColor;
-  static const activeInk = AppTheme.darkInk; // dark ink on the bright plate
-  static const mutedInk = AppTheme.textMedium;
-}
+  ),
+];
 
 class _MatchesTab extends StatefulWidget {
   const _MatchesTab({
@@ -609,6 +348,13 @@ class _MatchesTabState extends State<_MatchesTab> {
                                 ),
                           ),
                           const SizedBox(width: 10),
+                          Expanded(
+                            child: Container(
+                              height: 1,
+                              color: entry.key.accent.withValues(alpha: 0.25),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
                           Text(
                             'STANDINGS',
                             style: Cyber.label(
@@ -616,19 +362,6 @@ class _MatchesTabState extends State<_MatchesTab> {
                               color: Cyber.muted,
                               letterSpacing: 1.2,
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Container(
-                              height: 1,
-                              color: entry.key.accent.withValues(alpha: 0.25),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Icon(
-                            Icons.chevron_right,
-                            color: entry.key.accent.withValues(alpha: 0.8),
-                            size: 18,
                           ),
                         ],
                       ),
@@ -2046,6 +1779,12 @@ class _GamesTabState extends State<_GamesTab> {
   @override
   Widget build(BuildContext context) {
     final animateIntro = widget.animateIntro && !_introPlayed;
+    final streaks = context.select<GameBloc, ({int pitch, int penalty})>(
+      (bloc) => (
+        pitch: bloc.state.streak.current(StreakCategory.pitchDuel),
+        penalty: bloc.state.streak.current(StreakCategory.penaltyShootout),
+      ),
+    );
     if (animateIntro) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -2064,6 +1803,7 @@ class _GamesTabState extends State<_GamesTab> {
             subtitle: 'TACTICAL CARD GAME',
             icon: Icons.sports_soccer,
             accent: Cyber.cyan,
+            streak: streaks.pitch,
             featured: true,
             onTap: widget.onOpenGame,
           ),
@@ -2077,6 +1817,7 @@ class _GamesTabState extends State<_GamesTab> {
             subtitle: 'SUDDEN-DEATH SPOT KICKS',
             icon: Icons.gps_fixed,
             accent: Cyber.lime,
+            streak: streaks.penalty,
             featured: true,
             onTap: widget.onOpenShootout,
           ),
@@ -2121,6 +1862,7 @@ class _GameTile extends StatelessWidget {
     this.onTap,
     this.locked = false,
     this.featured = false,
+    this.streak = 0,
   });
 
   final String title;
@@ -2130,6 +1872,7 @@ class _GameTile extends StatelessWidget {
   final VoidCallback? onTap;
   final bool locked;
   final bool featured;
+  final int streak;
 
   static const _bigCut = 14.0;
   static const _smallCut = 4.0;
@@ -2163,6 +1906,7 @@ class _GameTile extends StatelessWidget {
                     subtitle: subtitle,
                     icon: icon,
                     accent: accent,
+                    streak: streak,
                     onTap: onTap,
                   )
                 : _CompactBody(
@@ -2250,6 +1994,7 @@ class _FeaturedBody extends StatelessWidget {
     required this.icon,
     required this.accent,
     required this.onTap,
+    required this.streak,
   });
 
   final String title;
@@ -2257,6 +2002,7 @@ class _FeaturedBody extends StatelessWidget {
   final IconData icon;
   final Color accent;
   final VoidCallback? onTap;
+  final int streak;
 
   @override
   Widget build(BuildContext context) {
@@ -2289,9 +2035,21 @@ class _FeaturedBody extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          title,
-                          style: Cyber.display(18, letterSpacing: 1.1),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Cyber.display(18, letterSpacing: 1.1),
+                              ),
+                            ),
+                            if (streak > 0) ...[
+                              const SizedBox(width: StreakTheme.space8),
+                              StreakBadge(value: streak),
+                            ],
+                          ],
                         ),
                         const SizedBox(height: 4),
                         Text(

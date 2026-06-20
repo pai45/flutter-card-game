@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../blocs/game/game_bloc.dart';
-import '../models/match.dart';
+import '../models/streak.dart';
 import '../utils/sound_effects.dart';
 import '../config/theme.dart';
 
@@ -26,7 +26,7 @@ class StatOzTopBar extends StatelessWidget {
     final wallet = context.select<GameBloc, ({int coins, int streak})>(
       (bloc) => (
         coins: bloc.state.coins,
-        streak: _currentWinStreak(bloc.state.matchHistory),
+        streak: bloc.state.streak.current(StreakCategory.overall),
       ),
     );
 
@@ -141,10 +141,6 @@ class _TopBarCoinPill extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(9, 5, 5, 5),
-      decoration: BoxDecoration(
-        color: const Color(0xff0d111a).withValues(alpha: 0.72),
-        border: Border.all(color: accent.withValues(alpha: 0.5)),
-      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -181,15 +177,7 @@ class _TopBarCoinPill extends StatelessWidget {
               width: 28,
               height: 28,
               alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: accent,
-                boxShadow: [
-                  BoxShadow(
-                    color: accent.withValues(alpha: 0.45),
-                    blurRadius: 10,
-                  ),
-                ],
-              ),
+              decoration: BoxDecoration(color: accent),
               child: const Icon(Icons.add, color: Color(0xff0d111a), size: 17),
             ),
           ),
@@ -197,18 +185,6 @@ class _TopBarCoinPill extends StatelessWidget {
       ),
     );
   }
-}
-
-int _currentWinStreak(List<MatchHistoryEntry> history) {
-  var streak = 0;
-  for (final match in history) {
-    if (match.resultLabel == 'Victory') {
-      streak++;
-      continue;
-    }
-    break;
-  }
-  return streak;
 }
 
 String _formatInt(int value) {

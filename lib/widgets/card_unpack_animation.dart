@@ -233,6 +233,7 @@ class CardUnpackAnimation extends StatefulWidget {
     this.showSkip = true,
     this.packBackAsset,
     this.frontFace, // optional: override the built-in card design
+    this.frontFaceChamfered = true,
   });
 
   final String playerName;
@@ -249,6 +250,12 @@ class CardUnpackAnimation extends StatefulWidget {
 
   /// If provided, displayed as the card front face instead of the built-in design.
   final Widget? frontFace;
+
+  /// Whether [frontFace] uses the chamfered (player-card) silhouette. When false
+  /// the holographic shimmer is clipped to a plain rectangle so it matches a
+  /// square-cornered face (e.g. an action card) instead of bleeding past its
+  /// corners. Ignored when [frontFace] is null (built-in face is rectangular).
+  final bool frontFaceChamfered;
 
   @override
   State<CardUnpackAnimation> createState() => _CardUnpackState();
@@ -1063,13 +1070,16 @@ class _CardUnpackState extends State<CardUnpackAnimation>
   Widget _cardWithGlow(Widget child, Color glowColor) {
     Widget inner = child;
     // Topps-style holographic shine sweeping diagonally across the card face.
-    // When a frontFace is provided (CyberPlayerCardTile), a LayoutBuilder reads
+    // A chamfered frontFace (CyberPlayerCardTile) uses a LayoutBuilder that reads
     // the actual card dimensions and applies a matching HudChamferClipper so the
     // shimmer is clipped to the chamfered corners and never paints outside them.
+    // A square-cornered frontFace (CyberActionCardTile) and the built-in face use
+    // the plain rectangular sweep below — the painter clips to its own rect, so it
+    // can't extend past the card edges.
     if (_sweepCtrl != null) {
       Widget shimmerLayer;
 
-      if (widget.frontFace != null) {
+      if (widget.frontFace != null && widget.frontFaceChamfered) {
         // frontFace has a HudChamfer clip — derive the same chamfer from the
         // layout width so the shimmer matches the card shape exactly.
         shimmerLayer = LayoutBuilder(
@@ -1103,8 +1113,8 @@ class _CardUnpackState extends State<CardUnpackAnimation>
           },
         );
       } else {
-        // Built-in card is a plain rectangle — rectangular clipRect in the
-        // painter is sufficient.
+        // Square-cornered face (built-in design or an action card) — the
+        // painter's own rectangular clipRect keeps the sweep inside the card.
         shimmerLayer = AnimatedBuilder(
           animation: _sweepCtrl!,
           builder: (_, ignored) {

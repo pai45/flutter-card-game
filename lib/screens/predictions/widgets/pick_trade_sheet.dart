@@ -8,6 +8,7 @@ import '../../../blocs/picks/picks_cubit.dart';
 import '../../../config/theme.dart';
 import '../../../models/oz_coin_ledger.dart';
 import '../../../models/picks.dart';
+import '../../../models/streak.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../shop/shop_screen.dart' show CoinIcon;
@@ -299,6 +300,7 @@ class _PickTradeSheetState extends State<_PickTradeSheet> {
         subtitle: widget.market.question,
       ),
     );
+    context.read<GameBloc>().add(StreakActivityRecorded(StreakActivity.pick));
     playSound(SoundEffect.coins);
     Navigator.of(context).pop(
       _PickTradeSuccess(
@@ -311,7 +313,6 @@ class _PickTradeSheetState extends State<_PickTradeSheet> {
     );
   }
 }
-
 
 /// The hero of the ticket: what this pick pays if it hits. The number
 /// retargets smoothly as the stake changes.
@@ -330,51 +331,52 @@ class _ToWinHero extends StatelessWidget {
         child: Container(
           height: 48,
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: Cyber.bg.withValues(alpha: 0.44),
-          ),
+          decoration: BoxDecoration(color: Cyber.bg.withValues(alpha: 0.44)),
           child: Row(
             children: [
               Text(
                 'TO WIN',
-              style: Cyber.label(
-                8,
-                color: Cyber.lime.withValues(alpha: 0.68),
-                letterSpacing: 1.4,
-              ),
-            ),
-            const Spacer(),
-            const CoinIcon(size: 16),
-            const SizedBox(width: 6),
-            TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: payoutOz.toDouble()),
-              duration: const Duration(milliseconds: 320),
-              curve: Curves.easeOutCubic,
-              builder: (context, v, _) => Text(
-                formatOzGrouped(v.round()),
-                style: Cyber.display(
-                  18,
-                  color: Cyber.lime,
-                  letterSpacing: 0.2,
-                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-              decoration: BoxDecoration(
-                color: Cyber.gold.withValues(alpha: 0.12),
-                border: Border.all(color: Cyber.gold.withValues(alpha: 0.45)),
-              ),
-              child: Text(
-                _multiplierLabel(price),
                 style: Cyber.label(
-                  8.5,
-                  color: Cyber.gold,
-                  letterSpacing: 0.4,
-                  fontFeatures: const [FontFeature.tabularFigures()],
+                  8,
+                  color: Cyber.lime.withValues(alpha: 0.68),
+                  letterSpacing: 1.4,
                 ),
               ),
+              const Spacer(),
+              const CoinIcon(size: 16),
+              const SizedBox(width: 6),
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: payoutOz.toDouble()),
+                duration: const Duration(milliseconds: 320),
+                curve: Curves.easeOutCubic,
+                builder: (context, v, _) => Text(
+                  formatOzGrouped(v.round()),
+                  style:
+                      Cyber.display(
+                        18,
+                        color: Cyber.lime,
+                        letterSpacing: 0.2,
+                      ).copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Cyber.gold.withValues(alpha: 0.12),
+                  border: Border.all(color: Cyber.gold.withValues(alpha: 0.45)),
+                ),
+                child: Text(
+                  _multiplierLabel(price),
+                  style: Cyber.label(
+                    8.5,
+                    color: Cyber.gold,
+                    letterSpacing: 0.4,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
               ),
             ],
           ),
@@ -391,9 +393,10 @@ class _ToWinFramePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final path = const HudChamferClipper(bigCut: 8, smallCut: 2).buildPath(
-      size,
-    );
+    final path = const HudChamferClipper(
+      bigCut: 8,
+      smallCut: 2,
+    ).buildPath(size);
     canvas.drawPath(
       path,
       Paint()

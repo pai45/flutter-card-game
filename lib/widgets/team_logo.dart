@@ -35,19 +35,33 @@ class OctagonBorderPainter extends CustomPainter {
     required this.color,
     required this.strokeWidth,
     this.cutRatio = 0.15,
+    this.gradientColors,
   });
 
   final Color color;
   final double strokeWidth;
   final double cutRatio;
 
+  /// When set (2+ colours), the stroke uses a top-left→bottom-right gradient
+  /// instead of the flat [color] — used to reflect an equipped avatar border.
+  final List<Color>? gradientColors;
+
   @override
   void paint(Canvas canvas, Size size) {
     if (strokeWidth <= 0) return;
     final paint = Paint()
-      ..color = color
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth;
+    final gradient = gradientColors;
+    if (gradient != null && gradient.length >= 2) {
+      paint.shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: gradient,
+      ).createShader(Offset.zero & size);
+    } else {
+      paint.color = color;
+    }
     canvas.drawPath(
       buildOctagonPath(Offset.zero & size, cutRatio: cutRatio),
       paint,
@@ -58,7 +72,8 @@ class OctagonBorderPainter extends CustomPainter {
   bool shouldRepaint(covariant OctagonBorderPainter oldDelegate) =>
       oldDelegate.color != color ||
       oldDelegate.strokeWidth != strokeWidth ||
-      oldDelegate.cutRatio != cutRatio;
+      oldDelegate.cutRatio != cutRatio ||
+      !identical(oldDelegate.gradientColors, gradientColors);
 }
 
 class TeamLogo extends StatelessWidget {

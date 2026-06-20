@@ -13,6 +13,7 @@ import '../../blocs/prediction/prediction_state.dart';
 import '../../config/theme.dart';
 import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
+import '../../models/streak.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/staggered_card_entrance.dart';
@@ -339,11 +340,14 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
 
   Future<void> _submit() async {
     if (!_allAnswered || _submitting) return;
+    final isFresh =
+        context.read<PredictionCubit>().state.predictions[_match.id] == null;
     _ensureScoreDefaults();
     playSound(SoundEffect.matchWin);
     // Hold the global achievement reveal so the post-submit cinematic plays
     // first; the cinematic releases it on completion (see the overlay onDone).
-    _heldCelebrations = context.read<AchievementCelebrationController>()..hold();
+    _heldCelebrations = context.read<AchievementCelebrationController>()
+      ..hold();
     setState(() => _submitting = true);
     await context.read<PredictionCubit>().submit(
       _match.id,
@@ -351,6 +355,11 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
       multipliersByQuestion: Map.of(_multipliersByQuestion),
     );
     if (!mounted) return;
+    if (isFresh) {
+      context.read<GameBloc?>()?.add(
+        StreakActivityRecorded(StreakActivity.predict),
+      );
+    }
     // Snapshot what we just submitted as the saved baseline so the post-submit
     // review list opens with no pending draft — that's what surfaces the
     // PREDICT-next dock. Editing an answer afterwards flips _hasDraftChanges
@@ -398,10 +407,9 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
         .toList();
     if (fixtures.isEmpty) return null;
     int byKickoff(SportMatch a, SportMatch b) => a.kickoff.compareTo(b.kickoff);
-    final sameLeague = fixtures
-        .where((m) => m.leagueId == _match.leagueId)
-        .toList()
-      ..sort(byKickoff);
+    final sameLeague =
+        fixtures.where((m) => m.leagueId == _match.leagueId).toList()
+          ..sort(byKickoff);
     if (sameLeague.isNotEmpty) return sameLeague.first;
     fixtures.sort(byKickoff);
     return fixtures.first;
@@ -662,7 +670,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
                           )
                         : SingleChildScrollView(
                             key: ValueKey(question.id),
-                            padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
                             child: _QuestionPanel(
                               index: _index + 1,
                               question: question,
@@ -2506,7 +2514,7 @@ class _QuestionPanel extends StatelessWidget {
       children: [
         _QuizQuestionPanelFrame(
           backgroundAsset: question.backgroundAsset,
-          margin: const EdgeInsets.only(top: 42),
+          margin: const EdgeInsets.only(top: 30),
           padding: const EdgeInsets.fromLTRB(18, 28, 18, 18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -2580,7 +2588,7 @@ class _QuestionPanel extends StatelessWidget {
         // The numbered tab, dipping over the panel's top-left edge.
         Positioned(
           left: 14,
-          top: 30,
+          top: 18,
           child: Container(
             width: 30,
             height: 30,
@@ -2709,13 +2717,13 @@ class _ScoreQuestionPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           _QuizQuestionPanelFrame(
             backgroundAsset: question.backgroundAsset,
-            margin: const EdgeInsets.only(top: 42),
+            margin: const EdgeInsets.only(top: 30),
             padding: const EdgeInsets.fromLTRB(18, 30, 18, 22),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2802,7 +2810,7 @@ class _ScoreQuestionPanel extends StatelessWidget {
           ),
           Positioned(
             left: 14,
-            top: 30,
+            top: 18,
             child: Container(
               width: 30,
               height: 30,
@@ -3234,7 +3242,6 @@ class _BottomDock extends StatelessWidget {
   }
 }
 
-
 // ── SUBMITTED celebration overlay ─────────────────────────────────────────────
 class _SubmittedOverlay extends StatefulWidget {
   const _SubmittedOverlay({
@@ -3296,7 +3303,10 @@ class _SubmittedOverlayState extends State<_SubmittedOverlay>
         // sequenced beats — no radial rays, no confetti.
         final pop = Curves.elasticOut.transform((t / 0.18).clamp(0.0, 1.0));
         final flash = (1 - t / 0.10).clamp(0.0, 1.0); // soft cyan lock flash
-        final pulse = ((t - 0.06) / 0.24).clamp(0.0, 1.0); // single confirm ring
+        final pulse = ((t - 0.06) / 0.24).clamp(
+          0.0,
+          1.0,
+        ); // single confirm ring
         final sweep = Curves.easeOutCubic.transform(
           ((t - 0.08) / 0.34).clamp(0.0, 1.0),
         );
@@ -3306,10 +3316,15 @@ class _SubmittedOverlayState extends State<_SubmittedOverlay>
         // The headline reveals one letter at a time across this window.
         final headlineT = ((t - 0.14) / 0.26).clamp(0.0, 1.0);
         final textIn = ((t - 0.18) / 0.12).clamp(0.0, 1.0);
-        final xpT = Curves.easeOut.transform(((t - 0.24) / 0.30).clamp(0.0, 1.0));
+        final xpT = Curves.easeOut.transform(
+          ((t - 0.24) / 0.30).clamp(0.0, 1.0),
+        );
         final xpValue = (widget.potentialXp * xpT).round();
         // A long satisfying hold on the locked seal before the scrim fades.
-        final scrim = (t < 0.86 ? 1.0 : (1 - (t - 0.86) / 0.14)).clamp(0.0, 1.0);
+        final scrim = (t < 0.86 ? 1.0 : (1 - (t - 0.86) / 0.14)).clamp(
+          0.0,
+          1.0,
+        );
         return Opacity(
           opacity: scrim,
           child: Stack(
@@ -3373,7 +3388,10 @@ class _SubmittedOverlayState extends State<_SubmittedOverlay>
                         // radar sweep ring and the checkmark drawing itself in.
                         CustomPaint(
                           size: const Size(240, 240),
-                          painter: _SubmitSealPainter(sweep: sweep, check: check),
+                          painter: _SubmitSealPainter(
+                            sweep: sweep,
+                            check: check,
+                          ),
                         ),
                       ],
                     ),
@@ -3429,7 +3447,9 @@ class _SubmittedOverlayState extends State<_SubmittedOverlay>
                               color: Cyber.gold,
                               letterSpacing: 1.6,
                             ).copyWith(
-                              fontFeatures: const [FontFeature.tabularFigures()],
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
                             ),
                       ),
                     ),
@@ -3489,9 +3509,7 @@ class _SubmitSealPainter extends CustomPainter {
             Cyber.cyan.withValues(alpha: 0.20),
             Cyber.cyan.withValues(alpha: 0.05),
           ],
-        ).createShader(
-          Rect.fromCircle(center: center, radius: half),
-        ),
+        ).createShader(Rect.fromCircle(center: center, radius: half)),
     );
     canvas.drawPath(
       plate,
@@ -3611,8 +3629,8 @@ class _SubmittedHeadline extends StatelessWidget {
   Widget build(BuildContext context) {
     final chars = text.split('');
     final n = chars.length;
-    final style =
-        Cyber.display(22, color: Colors.white, letterSpacing: 1.5).copyWith(
+    final style = Cyber.display(22, color: Colors.white, letterSpacing: 1.5)
+        .copyWith(
           shadows: [
             Shadow(color: Cyber.cyan.withValues(alpha: 0.55), blurRadius: 14),
           ],
@@ -3641,11 +3659,7 @@ class _SubmittedHeadline extends StatelessWidget {
 }
 
 class _Letter extends StatelessWidget {
-  const _Letter({
-    required this.char,
-    required this.style,
-    required this.local,
-  });
+  const _Letter({required this.char, required this.style, required this.local});
 
   final String char;
   final TextStyle style;

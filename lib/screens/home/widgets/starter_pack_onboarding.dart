@@ -330,15 +330,28 @@ class _PackOnboardingScreenState extends State<PackOnboardingScreen>
           onComplete: _onCardComplete,
           showTapCountdown: false,
           showSkip: false,
-          // SizedBox + FittedBox gives layout size = visual size (192×288),
-          // which lets the shimmer overlay in CardUnpackAnimation cover the
-          // full card via Positioned.fill (Transform.scale wouldn't work
-          // because it leaves layout size at the pre-scale 128×192 bounds).
+          // SizedBox + FittedBox gives layout size = visual size, which lets the
+          // shimmer overlay in CardUnpackAnimation cover the full card via
+          // Positioned.fill (Transform.scale wouldn't work because it leaves
+          // layout size at the pre-scale bounds). Player cards are chamfered 2:3
+          // (192×288); action cards are square-cornered ~5:7 (192×268, the lg
+          // action-tile ratio). Sizing the frame to each card's real ratio makes
+          // the FittedBox fill it exactly (no margins) so the shimmer can't bleed
+          // past the card edges.
           frontFace: SizedBox(
             width: 192,
-            height: 288,
-            child: FittedBox(child: _RevealItemFace(item)),
+            height: item.isPlayer ? 288 : 268,
+            child: FittedBox(
+              child: _RevealItemFace(
+                item,
+                // Action tiles use their lg layout (bigger insets/text) for the
+                // reveal; players keep md (fills the 2:3 frame at 1.5x).
+                size: item.isPlayer ? VisualCardSize.md : VisualCardSize.lg,
+              ),
+            ),
           ),
+          // Action cards are square-cornered → use the rectangular shimmer.
+          frontFaceChamfered: item.isPlayer,
         ),
         // Progress indicator overlay at top
         Positioned(

@@ -9,6 +9,7 @@ import '../models/oz_coin_ledger.dart';
 import '../models/picks.dart';
 import '../models/prediction.dart';
 import '../models/progression.dart';
+import '../models/streak.dart';
 
 class WalletSnapshot {
   const WalletSnapshot({
@@ -17,6 +18,8 @@ class WalletSnapshot {
     required this.ownedActionCardIds,
     required this.ownedCardBackIds,
     required this.equippedCardBackId,
+    required this.ownedAvatarBorderIds,
+    required this.equippedAvatarBorderId,
     required this.dailyDropLastClaimedAtMillis,
   });
 
@@ -26,6 +29,8 @@ class WalletSnapshot {
     ownedActionCardIds: [],
     ownedCardBackIds: ['default'],
     equippedCardBackId: 'default',
+    ownedAvatarBorderIds: [],
+    equippedAvatarBorderId: '',
     dailyDropLastClaimedAtMillis: null,
   );
 
@@ -39,6 +44,10 @@ class WalletSnapshot {
       json['ownedCardBackIds'] as List? ?? const ['default'],
     ),
     equippedCardBackId: json['equippedCardBackId'] as String? ?? 'default',
+    ownedAvatarBorderIds: List<String>.from(
+      json['ownedAvatarBorderIds'] as List? ?? const [],
+    ),
+    equippedAvatarBorderId: json['equippedAvatarBorderId'] as String? ?? '',
     dailyDropLastClaimedAtMillis: json['dailyDropLastClaimedAtMillis'] as int?,
   );
 
@@ -47,6 +56,8 @@ class WalletSnapshot {
   final List<String> ownedActionCardIds;
   final List<String> ownedCardBackIds;
   final String equippedCardBackId;
+  final List<String> ownedAvatarBorderIds;
+  final String equippedAvatarBorderId;
   final int? dailyDropLastClaimedAtMillis;
 
   Map<String, dynamic> toJson() => {
@@ -55,6 +66,8 @@ class WalletSnapshot {
     'ownedActionCardIds': ownedActionCardIds,
     'ownedCardBackIds': ownedCardBackIds,
     'equippedCardBackId': equippedCardBackId,
+    'ownedAvatarBorderIds': ownedAvatarBorderIds,
+    'equippedAvatarBorderId': equippedAvatarBorderId,
     'dailyDropLastClaimedAtMillis': dailyDropLastClaimedAtMillis,
   };
 }
@@ -79,6 +92,7 @@ class SecureGameStorage {
   static const _favoriteTeamsKey = 'pd_favorite_teams_v1';
   static const _onboardingCompleteKey = 'pd_onboarding_complete_v1';
   static const _celebratedAchievementsKey = 'pd_celebrated_achievements_v1';
+  static const _streakKey = 'pd_daily_streak_v1';
 
   final FlutterSecureStorage _storage;
 
@@ -353,6 +367,22 @@ class SecureGameStorage {
       key: _celebratedAchievementsKey,
       value: jsonEncode(ids.toList()),
     );
+  }
+
+  Future<StreakSnapshot?> loadStreak() async {
+    try {
+      final raw = await _storage.read(key: _streakKey);
+      if (raw == null || raw.isEmpty) return null;
+      return StreakSnapshot.fromJson(
+        Map<String, dynamic>.from(jsonDecode(raw) as Map),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveStreak(StreakSnapshot streak) async {
+    await _storage.write(key: _streakKey, value: jsonEncode(streak.toJson()));
   }
 
   Future<PlayerProgression> loadProgression() async {
