@@ -154,7 +154,17 @@ class StreakMilestoneClaimed extends GameEvent {
 
 class MatchReset extends GameEvent {}
 
-class MatchStarted extends GameEvent {}
+class MatchStarted extends GameEvent {
+  MatchStarted({this.opponentName, this.opponentLevel});
+
+  /// When launched as a leaderboard CHALLENGE, the rival's display name shown
+  /// on the VS screen. Null for a normal match (renders as "Opponent").
+  final String? opponentName;
+
+  /// Optional difficulty override (the rival's level); falls back to the
+  /// player's level when null.
+  final int? opponentLevel;
+}
 
 class TossChoiceChanged extends GameEvent {
   TossChoiceChanged(this.choice);

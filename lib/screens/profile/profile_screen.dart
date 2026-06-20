@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../blocs/friends/friends_cubit.dart';
 import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_state.dart';
 import '../../blocs/picks/picks_cubit.dart';
@@ -10,6 +12,7 @@ import '../../blocs/prediction/prediction_state.dart';
 import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../data/followable_leagues.dart';
+import '../../data/rival_roster.dart';
 import '../../models/avatar_border_option.dart';
 import '../../models/avatar_option.dart';
 import '../../models/picks.dart';
@@ -27,14 +30,16 @@ import '../../widgets/profile_banner_visual.dart';
 import '../../widgets/team_logo.dart';
 import '../deck/all_cards_screen.dart';
 import '../deck/deck_builder_screen.dart';
+import '../friends/friends_arena_screen.dart';
 import '../how_to_play/how_to_play_hub_screen.dart';
+import '../leaderboard/widgets/rank_widgets.dart';
 import '../match_history/match_history_pages.dart';
 import '../predictions/prediction_match_history_screen.dart';
 import '../predictions/prediction_picks_history_screen.dart';
-import '../predictions/widgets/history_hud.dart' show CutChipBorder;
 import 'achievements_screen.dart';
 import 'oz_coin_history_screen.dart';
 import 'widgets/achievement_grid.dart';
+import 'widgets/level_progress.dart';
 import 'widgets/oz_coin_tracker_card.dart';
 import 'widgets/profile_card.dart';
 import 'widgets/profile_stat_band.dart';
@@ -49,11 +54,16 @@ class ProfileScreen extends StatelessWidget {
   const ProfileScreen({
     required this.onNavigate,
     required this.onLogout,
+    required this.onChallenge,
     super.key,
   });
 
   final ValueChanged<AppSection> onNavigate;
   final Future<void> Function() onLogout;
+
+  /// Launches a card match against a CPU themed as the given rival (name,
+  /// level). Threaded into the Friends Arena so a friend can be challenged.
+  final void Function(String opponentName, int opponentLevel) onChallenge;
 
   @override
   Widget build(BuildContext context) {
@@ -106,7 +116,10 @@ class ProfileScreen extends StatelessWidget {
                     return ListView(
                       padding: EdgeInsets.zero,
                       children: [
-                        _ProfileHeroCard(progression: game.progression),
+                        _ProfileHeroCard(
+                          progression: game.progression,
+                          onChallenge: onChallenge,
+                        ),
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
                           child: Column(
@@ -344,15 +357,19 @@ class ProfileScreen extends StatelessWidget {
 /// overlapping avatar, the player name + a greeble telemetry line, a glowing
 /// level chip (the focal element) and the XP meter.
 class _ProfileHeroCard extends StatelessWidget {
-  const _ProfileHeroCard({required this.progression});
+  const _ProfileHeroCard({
+    required this.progression,
+    required this.onChallenge,
+  });
 
   final PlayerProgression progression;
+  final void Function(String opponentName, int opponentLevel) onChallenge;
 
   @override
   Widget build(BuildContext context) {
     final level = progression.playerLevel;
     return SizedBox(
-      height: 300,
+      height: 352,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -370,13 +387,13 @@ class _ProfileHeroCard extends StatelessWidget {
             child: ProfileCard(
               padding: EdgeInsets.zero,
               child: SizedBox(
-                height: 172,
+                height: 228,
                 child: Stack(
                   children: [
                     Positioned(
                       right: 16,
                       top: 18,
-                      child: _LevelChip(level: level),
+                      child: LevelChip(level: level),
                     ),
                     Positioned(
                       left: 20,
@@ -399,7 +416,15 @@ class _ProfileHeroCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 14),
-                          _XpMeter(progression: progression),
+                          XpMeter(progression: progression),
+                          const SizedBox(height: 14),
+                          Row(
+                            children: [
+                              const Flexible(child: _PlayerTagPill()),
+                              const SizedBox(width: 10),
+                              _FriendsPill(onChallenge: onChallenge),
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -415,89 +440,197 @@ class _ProfileHeroCard extends StatelessWidget {
   }
 }
 
-/// Glowing level chip — the one focal element on the profile (it's "you" and
-/// primary, so it earns the glow).
-class _LevelChip extends StatelessWidget {
-  const _LevelChip({required this.level});
+/// The player's own shareable tag (e.g. `PL4Y-X7K9`), generated once and
+/// persisted. Tap to copy it; another player pastes it in their Friends Arena
+/// search to find and add you. Calm chamfered chip — no glow (the hero's focal
+/// glow stays the level chip + XP meter).
+class _PlayerTagPill extends StatefulWidget {
+  const _PlayerTagPill();
 
-  final int level;
+  @override
+  State<_PlayerTagPill> createState() => _PlayerTagPillState();
+}
+
+class _PlayerTagPillState extends State<_PlayerTagPill> {
+  final SecureGameStorage _storage = SecureGameStorage();
+  String? _tag;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTag();
+  }
+
+  Future<void> _loadTag() async {
+    var tag = await _storage.loadPlayerTag();
+    if (tag == null) {
+      tag = randomPlayerTag();
+      await _storage.savePlayerTag(tag);
+    }
+    if (!mounted) return;
+    setState(() => _tag = tag);
+  }
+
+  Future<void> _copy() async {
+    final tag = _tag;
+    if (tag == null) return;
+    await Clipboard.setData(ClipboardData(text: tag));
+    if (!mounted) return;
+    HapticFeedback.selectionClick();
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('Player tag copied · $tag'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
-      decoration: ShapeDecoration(
-        color: Cyber.card,
-        shape: CutChipBorder(
-          cut: 7,
-          side: BorderSide(
-            color: Cyber.cyan.withValues(alpha: 0.85),
-            width: 1.4,
-          ),
+    final tag = _tag ?? '••••-••••';
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _tag == null ? null : _copy,
+      child: Container(
+        height: 34,
+        padding: const EdgeInsets.fromLTRB(11, 0, 5, 0),
+        decoration: cutCornerDecoration(
+          color: Cyber.panel.withValues(alpha: 0.55),
+          borderColor: Cyber.line,
+          cut: 9,
         ),
-        shadows: Cyber.glow(Cyber.cyan, alpha: 0.45, blur: 16, spread: 0),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'LVL',
-            style: Cyber.label(
-              9,
-              color: Cyber.cyan.withValues(alpha: 0.85),
-              letterSpacing: 1.6,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'ID',
+              style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.4),
             ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            '$level',
-            style: Cyber.display(
-              20,
-              color: Cyber.cyan,
-            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-          ),
-        ],
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                tag,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Cyber.label(
+                  13,
+                  letterSpacing: 1.4,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ),
+            const SizedBox(width: 2),
+            Icon(
+              Icons.copy_rounded,
+              size: 16,
+              color: Cyber.cyan.withValues(alpha: 0.85),
+            ),
+            const SizedBox(width: 6),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _XpMeter extends StatelessWidget {
-  const _XpMeter({required this.progression});
+/// Hero entry point to the Friends Arena: total friend count + a live online
+/// count. Faint cyan interactive border (it's tappable) but no glow, keeping the
+/// hero's glow scarce.
+class _FriendsPill extends StatelessWidget {
+  const _FriendsPill({required this.onChallenge});
 
-  final PlayerProgression progression;
+  final void Function(String opponentName, int opponentLevel) onChallenge;
+
+  void _openArena(BuildContext context) {
+    HapticFeedback.selectionClick();
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => FriendsArenaScreen(onChallenge: onChallenge),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final p = levelProgress(progression.totalXP);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              'XP',
-              style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1.4),
+    return BlocBuilder<FriendsCubit, FriendsState>(
+      builder: (context, state) {
+        final friends = state.friends;
+        final online = friends.where(rivalIsOnline).length;
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => _openArena(context),
+          child: Container(
+            height: 34,
+            padding: const EdgeInsets.fromLTRB(11, 0, 8, 0),
+            decoration: cutCornerDecoration(
+              color: Cyber.panel.withValues(alpha: 0.55),
+              borderColor: Cyber.cyan.withValues(alpha: 0.42),
+              cut: 9,
             ),
-            const Spacer(),
-            Text(
-              '${p.intoLevel} / ${p.levelSpan}',
-              style: Cyber.label(
-                10,
-                color: Cyber.muted,
-                letterSpacing: 0.6,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.groups_rounded, color: Cyber.cyan, size: 17),
+                const SizedBox(width: 7),
+                Text('FRIENDS', style: Cyber.display(12, letterSpacing: 1)),
+                const SizedBox(width: 8),
+                _CountBadge(value: friends.length, color: Cyber.violet),
+                if (online > 0) ...[
+                  const SizedBox(width: 6),
+                  _CountBadge(value: online, color: Cyber.success, dot: true),
+                ],
+                const SizedBox(width: 3),
+                const Icon(Icons.chevron_right, color: Cyber.muted, size: 16),
+              ],
             ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Small count chip used inside [_FriendsPill] (violet = total, green dot =
+/// online).
+class _CountBadge extends StatelessWidget {
+  const _CountBadge({required this.value, required this.color, this.dot = false});
+
+  final int value;
+  final Color color;
+  final bool dot;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(dot ? 5 : 7, 2, 7, 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.16),
+        border: Border.all(color: color.withValues(alpha: 0.55)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (dot) ...[
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 4),
           ],
-        ),
-        const SizedBox(height: 7),
-        CyberProgressBar(
-          value: p.pct,
-          accent: Cyber.cyan,
-          trackColor: Cyber.bg,
-        ),
-      ],
+          Text(
+            '$value',
+            style: Cyber.label(
+              11,
+              color: color,
+              letterSpacing: 0.5,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

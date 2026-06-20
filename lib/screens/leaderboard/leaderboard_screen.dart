@@ -1,17 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../blocs/friends/friends_cubit.dart';
 import '../../blocs/game/game_bloc.dart';
 import '../../config/enums.dart';
 import '../../config/theme.dart';
+import '../../data/rival_roster.dart';
 import '../../models/avatar_border_option.dart';
-import '../../models/avatar_option.dart';
 import '../../models/sport_match.dart';
+import '../../utils/sound_effects.dart';
+import '../../widgets/cyber/cyber_filter_chips.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/stat_oz_top_bar.dart';
 import '../../widgets/staggered_card_entrance.dart';
-import '../../widgets/team_logo.dart';
+import '../profile/rival_profile_screen.dart';
+import 'widgets/rank_widgets.dart';
+
+/// Whether the board shows everyone or just the player + their added friends.
+enum LeaderboardScope { global, friends }
 
 // ─── Domain ──────────────────────────────────────────────────────────────────
 
@@ -45,6 +53,7 @@ class LeaderboardEntry {
     this.badge,
     this.isUser = false,
     this.team,
+    this.xp = 0,
   });
 
   /// >0 climbed, <0 dropped, 0 held.
@@ -56,24 +65,10 @@ class LeaderboardEntry {
   final String? badge;
   final bool isUser;
   final SportTeam? team;
-}
 
-class _Seed {
-  const _Seed(
-    this.name,
-    this.base,
-    this.movement, {
-    this.isNew = false,
-    this.badge,
-    this.isUser = false,
-  });
-
-  final String name;
-  final int base;
-  final int movement;
-  final bool isNew;
-  final String? badge;
-  final bool isUser;
+  /// The player's canonical XP (their `_Seed.base`), independent of the active
+  /// board type/scope — drives the rival dossier's level and XP meter.
+  final int xp;
 }
 
 class _TeamSeed {
@@ -89,35 +84,6 @@ class _TeamSeed {
   final int movement;
   final bool isUser;
 }
-
-// Named users keep the exact scores from the brief; filler rivals are inserted
-// above so the current user ("pai", 3870 XP, ↑3) lands at rank #12.
-const List<_Seed> _board = [
-  _Seed('jarvis', 3910, -1, badge: 'PRO'),
-  _Seed('Vortex', 3905, 2),
-  _Seed('NeoStrike', 3901, -1, badge: 'PRO'),
-  _Seed('PhantomX', 3897, 1),
-  _Seed('Blaze', 3893, 4),
-  _Seed('Titan', 3889, -2),
-  _Seed('EchoZero', 3885, 1, badge: 'PRO'),
-  _Seed('Reaper', 3881, -3),
-  _Seed('NovaQ', 3878, 2),
-  _Seed('Falcon9', 3874, -1),
-  _Seed('Striker', 3872, 5, isNew: true),
-  _Seed('pai', 3870, 3, isUser: true), // rank 12 — current user
-  _Seed('Diwakar', 3860, -2),
-  _Seed('monika', 3830, 1, badge: 'PRO'),
-  _Seed('Raja2000', 3740, -1),
-  _Seed('Invincible51', 3670, 4),
-  _Seed('rocky', 3380, -2),
-  _Seed('Mirage', 3120, 1),
-  _Seed('Zenith', 2980, -1, isNew: true),
-  _Seed('Ghost', 2810, 2),
-  _Seed('Drift', 2640, -3),
-  _Seed('Volt', 2470, 1),
-  _Seed('Comet', 2300, -1),
-  _Seed('Rookie7', 1980, 0, isNew: true),
-];
 
 const List<_TeamSeed> _teams = [
   _TeamSeed(
@@ -322,15 +288,16 @@ List<LeaderboardEntry> _entriesFor(
   GameMode mode,
 ) {
   return [
-    for (var i = 0; i < _board.length; i++)
+    for (var i = 0; i < kRivalRoster.length; i++)
       LeaderboardEntry(
         rank: i + 1,
-        name: _board[i].name,
-        score: _scoreFor(type, _board[i].base, scope, mode),
-        movement: _board[i].movement,
-        isNew: _board[i].isNew,
-        badge: _board[i].badge,
-        isUser: _board[i].isUser,
+        name: kRivalRoster[i].name,
+        score: _scoreFor(type, kRivalRoster[i].base, scope, mode),
+        movement: kRivalRoster[i].movement,
+        isNew: kRivalRoster[i].isNew,
+        badge: kRivalRoster[i].badge,
+        isUser: kRivalRoster[i].isUser,
+        xp: kRivalRoster[i].base,
       ),
   ];
 }
@@ -354,6 +321,48 @@ List<LeaderboardEntry> _teamEntriesFor() {
 LeaderboardEntry _userEntry(List<LeaderboardEntry> entries) =>
     entries.firstWhere((e) => e.isUser, orElse: () => entries.last);
 
+/// Pushes the cinematic dossier for a known leaderboard rival [name]. Reused by
+/// the leaderboard rows/podium and the profile friends roster; a no-op for an
+/// unknown name. [onChallenge] enables the dossier's CHALLENGE action (null
+/// hides it — e.g. when opened from the profile roster).
+void showRivalDossier(
+  BuildContext context,
+  String name, {
+  void Function(String opponentName, int opponentLevel)? onChallenge,
+}) {
+  final index = kRivalRoster.indexWhere((s) => s.name == name);
+  if (index < 0) return;
+  final seed = kRivalRoster[index];
+  final userIndex = kRivalRoster.indexWhere((s) => s.isUser);
+  Navigator.of(context).push(
+    PageRouteBuilder<void>(
+      transitionDuration: const Duration(milliseconds: 360),
+      reverseTransitionDuration: const Duration(milliseconds: 240),
+      pageBuilder: (_, _, _) => RivalProfileScreen(
+        name: seed.name,
+        rank: index + 1,
+        xp: seed.base,
+        pro: seed.badge == 'PRO',
+        userRank: userIndex < 0 ? index + 1 : userIndex + 1,
+        onChallenge: onChallenge,
+      ),
+      transitionsBuilder: (_, animation, _, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.94, end: 1).animate(curved),
+            child: child,
+          ),
+        );
+      },
+    ),
+  );
+}
+
 String _formatInt(int value) {
   final digits = value.abs().toString();
   final buffer = StringBuffer();
@@ -364,80 +373,23 @@ String _formatInt(int value) {
   return '${value < 0 ? '-' : ''}$buffer';
 }
 
-ShapeDecoration _cutDecoration({
-  required Color color,
-  Color borderColor = Colors.transparent,
-  double borderWidth = 1,
-  double cut = 14,
-}) {
-  return ShapeDecoration(
-    color: color,
-    shape: _CutCornerBorder(
-      cut: cut,
-      side: BorderSide(color: borderColor, width: borderWidth),
-    ),
-  );
-}
-
-class _CutCornerBorder extends ShapeBorder {
-  const _CutCornerBorder({required this.cut, this.side = BorderSide.none});
-
-  final double cut;
-  final BorderSide side;
-
-  @override
-  EdgeInsetsGeometry get dimensions => EdgeInsets.all(side.width);
-
-  @override
-  ShapeBorder scale(double t) {
-    return _CutCornerBorder(cut: cut * t, side: side.scale(t));
-  }
-
-  @override
-  Path getInnerPath(Rect rect, {TextDirection? textDirection}) {
-    return getOuterPath(rect.deflate(side.width), textDirection: textDirection);
-  }
-
-  @override
-  Path getOuterPath(Rect rect, {TextDirection? textDirection}) {
-    final safeCut = cut.clamp(0, rect.shortestSide / 2).toDouble();
-    return Path()
-      ..moveTo(rect.left + safeCut, rect.top)
-      ..lineTo(rect.right, rect.top)
-      ..lineTo(rect.right, rect.bottom - safeCut)
-      ..lineTo(rect.right - safeCut, rect.bottom)
-      ..lineTo(rect.left, rect.bottom)
-      ..lineTo(rect.left, rect.top + safeCut)
-      ..close();
-  }
-
-  @override
-  void paint(Canvas canvas, Rect rect, {TextDirection? textDirection}) {
-    if (side.style == BorderStyle.none || side.width <= 0) return;
-    final paint = side.toPaint()..style = PaintingStyle.stroke;
-    canvas.drawPath(getOuterPath(rect, textDirection: textDirection), paint);
-  }
-}
-
-AvatarOption _avatarForName(String name) {
-  var hash = 0;
-  for (final unit in name.codeUnits) {
-    hash = (hash * 31 + unit) & 0x7fffffff;
-  }
-  return avatarOptions[hash % avatarOptions.length];
-}
-
 // ─── Screen ──────────────────────────────────────────────────────────────────
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({
     required this.onNavigate,
     this.onAddCoins,
+    this.onChallenge,
     super.key,
   });
 
   final ValueChanged<AppSection> onNavigate;
   final VoidCallback? onAddCoins;
+
+  /// Launches a card match against a CPU themed as the given rival
+  /// (name, level). Null when challenge isn't available (e.g. the in-game
+  /// leaderboard), in which case the dossier hides its CHALLENGE action.
+  final void Function(String opponentName, int opponentLevel)? onChallenge;
 
   @override
   State<LeaderboardScreen> createState() => _LeaderboardScreenState();
@@ -450,6 +402,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   String _sport = 'FIFA';
   TournamentScope _scope = TournamentScope.weekly;
   GameMode _mode = GameMode.quiz;
+  LeaderboardScope _leaderboardScope = LeaderboardScope.global;
 
   static const List<String> _sports = ['FIFA', 'IPL', 'UCL', 'NBA', 'F1'];
 
@@ -494,16 +447,40 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     setState(() => _type = type);
   }
 
+  /// Open a rival's dossier (or jump to your own profile if it's you). Team
+  /// rows have no player profile, so they're inert.
+  void _openRival(LeaderboardEntry entry) {
+    if (entry.team != null) return;
+    if (entry.isUser) {
+      playSound(SoundEffect.uiTap);
+      HapticFeedback.selectionClick();
+      widget.onNavigate(AppSection.profile);
+      return;
+    }
+    showRivalDossier(context, entry.name, onChallenge: widget.onChallenge);
+  }
+
   @override
   Widget build(BuildContext context) {
     final accent = _accentFor(_type);
     final isTeamTournament =
         _type == LeaderboardType.tournament &&
         _tournamentBoard == TournamentBoard.teams;
-    final entries = isTeamTournament
+    final allEntries = isTeamTournament
         ? _teamEntriesFor()
         : _entriesFor(_type, _scope, _mode);
-    final user = _userEntry(entries);
+    final user = _userEntry(allEntries);
+    // FRIENDS scope (player boards only): show just you + your added rivals,
+    // keeping their global rank numbers.
+    final friends = context.watch<FriendsCubit>().state.friends;
+    final showFriendsToggle = !isTeamTournament;
+    final friendsScope =
+        showFriendsToggle && _leaderboardScope == LeaderboardScope.friends;
+    final entries = friendsScope
+        ? allEntries
+              .where((e) => e.isUser || friends.contains(e.name))
+              .toList()
+        : allEntries;
 
     return Scaffold(
       backgroundColor: Cyber.bg,
@@ -547,6 +524,30 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                       indicatorAnimation: _typeTabIndicatorAnimation,
                       onTap: _setTypeTab,
                     ),
+                    if (showFriendsToggle) ...[
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: CyberFilterChips(
+                          labels: const ['GLOBAL', 'FRIENDS'],
+                          selected: friendsScope ? 'FRIENDS' : 'GLOBAL',
+                          accent: accent,
+                          padding: const EdgeInsets.fromLTRB(16, 8, 12, 8),
+                          onSelect: (label) => setState(
+                            () => _leaderboardScope = label == 'FRIENDS'
+                                ? LeaderboardScope.friends
+                                : LeaderboardScope.global,
+                          ),
+                        ),
+                      ),
+                      if (friendsScope && friends.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                          child: Text(
+                            'Tap a rival and ADD FRIEND to build your board.',
+                            style: Cyber.body(12, color: Cyber.muted),
+                          ),
+                        ),
+                    ],
                     Expanded(
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 280),
@@ -571,13 +572,14 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                               )
                             : _Body(
                                 key: ValueKey(
-                                  '${_type.name}-${_tournamentBoard.name}-${_scope.name}-${_mode.name}',
+                                  '${_type.name}-${_tournamentBoard.name}-${_scope.name}-${_mode.name}-${_leaderboardScope.name}',
                                 ),
                                 filters: filters,
                                 entries: entries,
                                 type: _type,
                                 accent: accent,
                                 compact: compact,
+                                onTapEntry: isTeamTournament ? null : _openRival,
                               ),
                       ),
                     ),
@@ -886,7 +888,7 @@ class _SportChip extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-        decoration: _cutDecoration(
+        decoration: cutCornerDecoration(
           color: active ? accent.withValues(alpha: 0.14) : Colors.transparent,
           borderColor: active
               ? accent.withValues(alpha: 0.72)
@@ -910,7 +912,7 @@ class _SportChip extends StatelessWidget {
               const SizedBox(width: 5),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                decoration: _cutDecoration(color: Cyber.danger, cut: 3),
+                decoration: cutCornerDecoration(color: Cyber.danger, cut: 3),
                 child: const Text(
                   'LIVE',
                   style: TextStyle(
@@ -939,7 +941,7 @@ class _CountdownCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: _cutDecoration(
+      decoration: cutCornerDecoration(
         color: Cyber.amber.withValues(alpha: 0.14),
         borderColor: Cyber.amber.withValues(alpha: 0.55),
         cut: 8,
@@ -997,7 +999,7 @@ class _TournamentBoardTabs extends StatelessWidget {
                   margin: const EdgeInsets.only(right: 6),
                   padding: const EdgeInsets.symmetric(vertical: 7),
                   alignment: Alignment.center,
-                  decoration: _cutDecoration(
+                  decoration: cutCornerDecoration(
                     color: active == item.board
                         ? accent.withValues(alpha: 0.14)
                         : Cyber.panel.withValues(alpha: 0.5),
@@ -1061,7 +1063,7 @@ class _ScopeToggle extends StatelessWidget {
                   margin: const EdgeInsets.only(right: 6),
                   padding: const EdgeInsets.symmetric(vertical: 7),
                   alignment: Alignment.center,
-                  decoration: _cutDecoration(
+                  decoration: cutCornerDecoration(
                     color: scope == item.scope
                         ? accent.withValues(alpha: 0.14)
                         : Cyber.panel.withValues(alpha: 0.5),
@@ -1128,7 +1130,7 @@ class _ModeTabs extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   alignment: Alignment.center,
-                  decoration: _cutDecoration(
+                  decoration: cutCornerDecoration(
                     color: mode == item.mode
                         ? accent.withValues(alpha: 0.16)
                         : Colors.transparent,
@@ -1165,6 +1167,7 @@ class _Body extends StatelessWidget {
     required this.type,
     required this.accent,
     required this.compact,
+    this.onTapEntry,
     super.key,
   });
 
@@ -1173,14 +1176,21 @@ class _Body extends StatelessWidget {
   final LeaderboardType type;
   final Color accent;
   final bool compact;
+  final ValueChanged<LeaderboardEntry>? onTapEntry;
 
   @override
   Widget build(BuildContext context) {
     final meta = entries.isNotEmpty && entries.first.team != null
         ? (unit: 'PTS')
         : _scoreMeta(type);
-    final podium = entries.take(3).toList();
-    final remaining = entries.skip(3).toList();
+    // A short FRIENDS board (< 3) skips the podium and lists everyone as rows.
+    final usePodium = entries.length >= 3;
+    final List<LeaderboardEntry> podium = usePodium
+        ? entries.take(3).toList()
+        : const [];
+    final List<LeaderboardEntry> remaining = usePodium
+        ? entries.skip(3).toList()
+        : entries;
 
     return SingleChildScrollView(
       child: Column(
@@ -1197,6 +1207,7 @@ class _Body extends StatelessWidget {
                   meta: meta,
                   accent: accent,
                   animateCards: true,
+                  onTapEntry: onTapEntry,
                 ),
                 if (remaining.isNotEmpty) ...[
                   SizedBox(height: compact ? 18 : 24),
@@ -1211,6 +1222,9 @@ class _Body extends StatelessWidget {
                           entry: remaining[i],
                           accent: accent,
                           meta: meta,
+                          onTap: onTapEntry == null
+                              ? null
+                              : () => onTapEntry!(remaining[i]),
                         ),
                       ),
                     ),
@@ -1252,14 +1266,14 @@ class _UserRankBar extends StatelessWidget {
       ),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: _cutDecoration(
+        decoration: cutCornerDecoration(
           color: accent.withValues(alpha: 0.1),
           borderColor: accent.withValues(alpha: 0.34),
           cut: 18,
         ),
         child: Row(
           children: [
-            _Avatar(
+            RivalAvatar(
               name: user.name,
               size: 54,
               highlight: true,
@@ -1364,12 +1378,17 @@ class _Podium extends StatelessWidget {
     required this.meta,
     required this.accent,
     required this.animateCards,
+    this.onTapEntry,
   });
 
   final List<LeaderboardEntry> entries;
   final ScoreMeta meta;
   final Color accent;
   final bool animateCards;
+  final ValueChanged<LeaderboardEntry>? onTapEntry;
+
+  VoidCallback? _tap(LeaderboardEntry entry) =>
+      onTapEntry == null ? null : () => onTapEntry!(entry);
 
   @override
   Widget build(BuildContext context) {
@@ -1389,6 +1408,7 @@ class _Podium extends StatelessWidget {
             color: Cyber.gold,
             avatarSize: 86,
             primary: true,
+            onTap: _tap(first),
           ),
         ),
         const SizedBox(height: 10),
@@ -1404,6 +1424,7 @@ class _Podium extends StatelessWidget {
                   meta: meta,
                   color: accent,
                   avatarSize: 66,
+                  onTap: _tap(second),
                 ),
               ),
             ),
@@ -1418,6 +1439,7 @@ class _Podium extends StatelessWidget {
                   meta: meta,
                   color: Cyber.amber,
                   avatarSize: 66,
+                  onTap: _tap(third),
                 ),
               ),
             ),
@@ -1435,6 +1457,7 @@ class _WinnerTile extends StatelessWidget {
     required this.color,
     required this.avatarSize,
     this.primary = false,
+    this.onTap,
   });
 
   final LeaderboardEntry entry;
@@ -1442,6 +1465,7 @@ class _WinnerTile extends StatelessWidget {
   final Color color;
   final double avatarSize;
   final bool primary;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1455,9 +1479,9 @@ class _WinnerTile extends StatelessWidget {
         userBorderColors = borderRingColors(equipped.primary);
       }
     }
-    return Container(
+    final tile = Container(
       padding: EdgeInsets.all(primary ? 16 : 12),
-      decoration: _cutDecoration(
+      decoration: cutCornerDecoration(
         color: primary
             ? Cyber.panel.withValues(alpha: 0.84)
             : Cyber.panel.withValues(alpha: 0.58),
@@ -1467,7 +1491,7 @@ class _WinnerTile extends StatelessWidget {
       child: primary
           ? Row(
               children: [
-                _Avatar(
+                RivalAvatar(
                   name: entry.name,
                   size: avatarSize,
                   ring: color,
@@ -1507,7 +1531,7 @@ class _WinnerTile extends StatelessWidget {
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    _Avatar(
+                    RivalAvatar(
                       name: entry.name,
                       size: avatarSize,
                       ring: color,
@@ -1556,6 +1580,12 @@ class _WinnerTile extends StatelessWidget {
                 ),
               ],
             ),
+    );
+    if (onTap == null) return tile;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: tile,
     );
   }
 }
@@ -1667,11 +1697,13 @@ class _LeaderboardRow extends StatelessWidget {
     required this.entry,
     required this.accent,
     required this.meta,
+    this.onTap,
   });
 
   final LeaderboardEntry entry;
   final Color accent;
   final ScoreMeta meta;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -1688,9 +1720,9 @@ class _LeaderboardRow extends StatelessWidget {
         userBorderColors = borderRingColors(equipped.primary);
       }
     }
-    return Container(
+    final row = Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-      decoration: _cutDecoration(
+      decoration: cutCornerDecoration(
         color: isUser
             ? accent.withValues(alpha: 0.1)
             : Cyber.panel.withValues(alpha: 0.34),
@@ -1716,7 +1748,7 @@ class _LeaderboardRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          _Avatar(
+          RivalAvatar(
             name: entry.name,
             size: 48,
             highlight: isUser,
@@ -1798,6 +1830,12 @@ class _LeaderboardRow extends StatelessWidget {
         ],
       ),
     );
+    if (onTap == null) return row;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: row,
+    );
   }
 }
 
@@ -1852,7 +1890,7 @@ class _Tag extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-      decoration: _cutDecoration(
+      decoration: cutCornerDecoration(
         color: color.withValues(alpha: 0.16),
         borderColor: color.withValues(alpha: 0.7),
         cut: 4,
@@ -1917,91 +1955,6 @@ class _MovementBadge extends StatelessWidget {
 }
 
 // ─── Avatar ──────────────────────────────────────────────────────────────────
-
-class _Avatar extends StatelessWidget {
-  const _Avatar({
-    required this.name,
-    required this.size,
-    this.highlight = false,
-    this.ring,
-    this.team,
-    this.borderColors,
-  });
-
-  final String name;
-  final double size;
-  final bool highlight;
-  final Color? ring;
-  final SportTeam? team;
-
-  /// The equipped avatar border's 4px gradient, drawn as the octagon ring. Set
-  /// only for the user's own row so their cosmetic reflects on the board.
-  final List<Color>? borderColors;
-
-  @override
-  Widget build(BuildContext context) {
-    final hasBorder = borderColors != null && borderColors!.length >= 2;
-
-    if (team != null) {
-      return SizedBox(
-        width: size,
-        height: size,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Center(
-              child: TeamLogo(
-                team: team!,
-                width: size,
-                height: size,
-                cutBottomRight: false,
-              ),
-            ),
-            if (hasBorder)
-              CustomPaint(
-                painter: OctagonBorderPainter(
-                  color: Cyber.cyan,
-                  strokeWidth: 4,
-                  gradientColors: borderColors,
-                ),
-              ),
-          ],
-        ),
-      );
-    }
-
-    final color = ring ?? (highlight ? Cyber.cyan : Cyber.line);
-    final avatar = _avatarForName(name);
-    final borderWidth = hasBorder ? 4.0 : (highlight ? 2.0 : 1.2);
-    final borderColor = color.withValues(alpha: highlight ? 0.9 : 0.42);
-
-    return SizedBox(
-      width: size,
-      height: size,
-      child: ClipPath(
-        clipper: const OctagonClipper(),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            const ColoredBox(color: Cyber.panel),
-            Image.asset(
-              avatar.assetPath,
-              fit: BoxFit.cover,
-              alignment: Alignment.topCenter,
-            ),
-            CustomPaint(
-              painter: OctagonBorderPainter(
-                color: borderColor,
-                strokeWidth: borderWidth,
-                gradientColors: hasBorder ? borderColors : null,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 // ─── Empty states ────────────────────────────────────────────────────────────
 
@@ -2107,7 +2060,7 @@ class _EmptyState extends StatelessWidget {
                         horizontal: 22,
                         vertical: 12,
                       ),
-                      decoration: _cutDecoration(color: accent, cut: 10),
+                      decoration: cutCornerDecoration(color: accent, cut: 10),
                       child: FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text(

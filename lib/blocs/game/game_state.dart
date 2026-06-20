@@ -197,6 +197,7 @@ class GameState {
     required this.opponentDefenders,
     required this.opponentActions,
     required this.opponentRedCarded,
+    this.opponentName,
     required this.progression,
     required this.previousProgression,
     required this.pendingLevelUps,
@@ -295,6 +296,10 @@ class GameState {
   final List<PlayerCard> opponentDefenders;
   final List<ActionCard> opponentActions;
   final List<String> opponentRedCarded;
+
+  /// The rival's display name when this match was launched as a leaderboard
+  /// CHALLENGE; null for a normal match.
+  final String? opponentName;
   final PlayerProgression progression;
   final PlayerProgression? previousProgression;
   final List<int> pendingLevelUps;
@@ -354,6 +359,7 @@ class GameState {
     List<PlayerCard>? opponentDefenders,
     List<ActionCard>? opponentActions,
     List<String>? opponentRedCarded,
+    Object? opponentName = _sentinel,
     PlayerProgression? progression,
     Object? previousProgression = _sentinel,
     List<int>? pendingLevelUps,
@@ -421,6 +427,9 @@ class GameState {
     opponentDefenders: opponentDefenders ?? this.opponentDefenders,
     opponentActions: opponentActions ?? this.opponentActions,
     opponentRedCarded: opponentRedCarded ?? this.opponentRedCarded,
+    opponentName: opponentName == _sentinel
+        ? this.opponentName
+        : opponentName as String?,
     progression: progression ?? this.progression,
     previousProgression: previousProgression == _sentinel
         ? this.previousProgression

@@ -7,8 +7,9 @@ import '../models/prediction.dart';
 /// own hardcoded settled answers in [MockPredictionRepository]).
 ///
 /// [buildFootballQuiz] assembles a gamified per-fixture quiz: an exact-score
-/// centerpiece, the compulsory match-winner pick, then one seeded question from
-/// each of four category buckets so every match plays a varied but stable set.
+/// centerpiece, the compulsory match-winner pick, then one seeded match-level
+/// question and one seeded team-level question so every match stays varied
+/// while fitting a tighter 4-question flow.
 ///
 /// Each question carries a full-bleed [QuizQuestion.backgroundAsset] (see
 /// [_backgroundFor]); the art lives in `assets/backgrounds/predictions/` and is
@@ -322,14 +323,16 @@ _BankQuestion _pick(int seed, int salt, _Cat cat) {
 }
 
 /// Build the gamified per-fixture football quiz from the shared bank:
-/// exact-score centerpiece + compulsory winner + one seeded question from each
-/// of the four category buckets (6 questions total).
+/// exact-score centerpiece + compulsory winner + one seeded match question +
+/// one seeded team question (4 questions total).
 PredictionQuiz buildFootballQuiz({
   required String matchId,
   required String home,
   required String away,
 }) {
   final seed = _stableSeed(matchId);
+  final matchCat = seed.isEven ? _Cat.matchMcq : _Cat.matchBool;
+  final teamCat = seed.isEven ? _Cat.teamBool : _Cat.teamMcq;
   return PredictionQuiz(
     matchId: matchId,
     questions: [
@@ -341,10 +344,8 @@ PredictionQuiz buildFootballQuiz({
         backgroundAsset: _backgroundFor('exact_score'),
       ),
       _toQuestion(_matchResult, home, away),
-      _toQuestion(_pick(seed, 1, _Cat.matchMcq), home, away),
-      _toQuestion(_pick(seed, 2, _Cat.matchBool), home, away),
-      _toQuestion(_pick(seed, 3, _Cat.teamBool), home, away),
-      _toQuestion(_pick(seed, 4, _Cat.teamMcq), home, away),
+      _toQuestion(_pick(seed, 1, matchCat), home, away),
+      _toQuestion(_pick(seed, 2, teamCat), home, away),
     ],
   );
 }

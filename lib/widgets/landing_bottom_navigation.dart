@@ -173,17 +173,6 @@ class _NavItem extends StatelessWidget {
         curve: Curves.easeOutCubic,
         height: 60,
         padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 6),
-        decoration: BoxDecoration(
-          color: active
-              ? spec.accent.withValues(alpha: 0.035)
-              : Colors.transparent,
-          border: Border.all(
-            color: active
-                ? spec.accent.withValues(alpha: 0.10)
-                : Colors.white.withValues(alpha: 0.035),
-            width: active ? 1 : 1.1,
-          ),
-        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

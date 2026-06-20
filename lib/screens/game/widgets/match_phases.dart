@@ -3603,11 +3603,15 @@ class MatchIntroPhase extends StatefulWidget {
   const MatchIntroPhase({
     required this.deckName,
     required this.onComplete,
+    this.opponentName,
     super.key,
   });
 
   final String deckName;
   final VoidCallback onComplete;
+
+  /// Rival name for a leaderboard CHALLENGE; null shows the generic "Opponent".
+  final String? opponentName;
 
   @override
   State<MatchIntroPhase> createState() => _MatchIntroPhaseState();
@@ -3799,9 +3803,9 @@ class _MatchIntroPhaseState extends State<MatchIntroPhase>
                     ),
                     Transform.translate(
                       offset: Offset(38 * (1 - sidesIn), 0),
-                      child: const _VsBadge(
+                      child: _VsBadge(
                         label: 'CPU',
-                        sub: 'Opponent',
+                        sub: widget.opponentName ?? 'Opponent',
                         color: Cyber.amber,
                       ),
                     ),

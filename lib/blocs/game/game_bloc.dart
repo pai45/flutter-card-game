@@ -786,7 +786,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   void _onMatchStarted(MatchStarted event, Emitter<GameState> emit) {
     if (!state.deckReady) return;
     final opponent = generateOpponentDeck(
-      state.progression.playerLevel,
+      event.opponentLevel ?? state.progression.playerLevel,
       attackers,
       defenders,
       actionCards,
@@ -799,6 +799,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         opponentAttackers: opponent.attackers,
         opponentDefenders: opponent.defenders,
         opponentActions: opponent.actions,
+        opponentName: event.opponentName,
       ),
     );
   }

@@ -93,6 +93,8 @@ class SecureGameStorage {
   static const _onboardingCompleteKey = 'pd_onboarding_complete_v1';
   static const _celebratedAchievementsKey = 'pd_celebrated_achievements_v1';
   static const _streakKey = 'pd_daily_streak_v1';
+  static const _friendsKey = 'pd_friends_v1';
+  static const _playerTagKey = 'pd_player_tag_v1';
 
   final FlutterSecureStorage _storage;
 
@@ -306,6 +308,37 @@ class SecureGameStorage {
       key: _followedLeaguesKey,
       value: jsonEncode(leagueIds),
     );
+  }
+
+  /// The rivals the player has added as friends, by leaderboard display name.
+  Future<List<String>> loadFriends() async {
+    try {
+      final raw = await _storage.read(key: _friendsKey);
+      if (raw == null || raw.isEmpty) return const [];
+      return List<String>.from(jsonDecode(raw) as List);
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<void> saveFriends(List<String> friendNames) async {
+    await _storage.write(key: _friendsKey, value: jsonEncode(friendNames));
+  }
+
+  /// The player's own shareable tag (e.g. `PL4Y-X7K9`). Generated once on first
+  /// view and persisted so it stays stable across sessions.
+  Future<String?> loadPlayerTag() async {
+    try {
+      final raw = await _storage.read(key: _playerTagKey);
+      if (raw == null || raw.isEmpty) return null;
+      return raw;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> savePlayerTag(String tag) async {
+    await _storage.write(key: _playerTagKey, value: tag);
   }
 
   /// Favourite team per league as a leagueId → teamId map.

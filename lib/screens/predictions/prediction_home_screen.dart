@@ -1805,6 +1805,7 @@ class _GamesTabState extends State<_GamesTab> {
             accent: Cyber.cyan,
             streak: streaks.pitch,
             featured: true,
+            showTrailingIcon: false,
             onTap: widget.onOpenGame,
           ),
         ),
@@ -1819,6 +1820,7 @@ class _GamesTabState extends State<_GamesTab> {
             accent: Cyber.lime,
             streak: streaks.penalty,
             featured: true,
+            showTrailingIcon: false,
             onTap: widget.onOpenShootout,
           ),
         ),
@@ -1863,6 +1865,7 @@ class _GameTile extends StatelessWidget {
     this.locked = false,
     this.featured = false,
     this.streak = 0,
+    this.showTrailingIcon = true,
   });
 
   final String title;
@@ -1873,6 +1876,7 @@ class _GameTile extends StatelessWidget {
   final bool locked;
   final bool featured;
   final int streak;
+  final bool showTrailingIcon;
 
   static const _bigCut = 14.0;
   static const _smallCut = 4.0;
@@ -1908,6 +1912,7 @@ class _GameTile extends StatelessWidget {
                     accent: accent,
                     streak: streak,
                     onTap: onTap,
+                    showTrailingIcon: showTrailingIcon,
                   )
                 : _CompactBody(
                     title: title,
@@ -1915,6 +1920,7 @@ class _GameTile extends StatelessWidget {
                     icon: icon,
                     accent: accent,
                     locked: locked,
+                    showTrailingIcon: showTrailingIcon,
                   ),
           ),
         ),
@@ -1930,6 +1936,7 @@ class _CompactBody extends StatelessWidget {
     required this.icon,
     required this.accent,
     required this.locked,
+    required this.showTrailingIcon,
   });
 
   final String title;
@@ -1937,6 +1944,7 @@ class _CompactBody extends StatelessWidget {
   final IconData icon;
   final Color accent;
   final bool locked;
+  final bool showTrailingIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -1974,11 +1982,12 @@ class _CompactBody extends StatelessWidget {
               ],
             ),
           ),
-          Icon(
-            locked ? Icons.lock_outline : Icons.chevron_right,
-            color: locked ? accent.withValues(alpha: 0.55) : accent,
-            size: 22,
-          ),
+          if (showTrailingIcon || locked)
+            Icon(
+              locked ? Icons.lock_outline : Icons.chevron_right,
+              color: locked ? accent.withValues(alpha: 0.55) : accent,
+              size: 22,
+            ),
         ],
       ),
     );
@@ -1995,6 +2004,7 @@ class _FeaturedBody extends StatelessWidget {
     required this.accent,
     required this.onTap,
     required this.streak,
+    required this.showTrailingIcon,
   });
 
   final String title;
@@ -2003,6 +2013,7 @@ class _FeaturedBody extends StatelessWidget {
   final Color accent;
   final VoidCallback? onTap;
   final int streak;
+  final bool showTrailingIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -2063,7 +2074,8 @@ class _FeaturedBody extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Icon(Icons.chevron_right, color: accent, size: 22),
+                  if (showTrailingIcon)
+                    Icon(Icons.chevron_right, color: accent, size: 22),
                 ],
               ),
               const SizedBox(height: 14),

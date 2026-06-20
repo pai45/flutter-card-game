@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'blocs/achievement/achievement_celebration_controller.dart';
+import 'blocs/friends/friends_cubit.dart';
 import 'blocs/game/game_bloc.dart';
 import 'blocs/game/game_event.dart';
 import 'blocs/game/game_state.dart';
@@ -51,6 +52,9 @@ class PitchDuelApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (_) => AchievementCelebrationController(SecureGameStorage()),
+        ),
+        BlocProvider(
+          create: (_) => FriendsCubit(SecureGameStorage())..load(),
         ),
       ],
       child: MaterialApp(
@@ -145,6 +149,30 @@ class _AppShellState extends State<AppShell> {
     _shopInitialTab = 2;
     section = AppSection.shop;
   });
+
+  /// Launch a card match against a CPU themed as a leaderboard rival. Reuses the
+  /// starter-pack gate, then opens the game flow straight into the match.
+  void _openChallenge(String opponentName, int opponentLevel) {
+    _enterGameFlow(() => _pushChallengeMatch(opponentName, opponentLevel));
+  }
+
+  void _pushChallengeMatch(String opponentName, int opponentLevel) {
+    final navigator = Navigator.of(context);
+    context.read<GameBloc>().add(
+      MatchStarted(opponentName: opponentName, opponentLevel: opponentLevel),
+    );
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => GameTabContent(
+          initialSection: AppSection.match,
+          onNavigate: (next) {
+            navigator.pop();
+            _go(next);
+          },
+        ),
+      ),
+    );
+  }
 
   Future<void> _completeProfileSetup(ProfileSetupResult result) async {
     await _storage.saveSelectedAvatarId(result.avatarId);
@@ -292,10 +320,12 @@ class _AppShellState extends State<AppShell> {
             AppSection.leaderboard => LeaderboardScreen(
               onNavigate: _go,
               onAddCoins: _openShopCoins,
+              onChallenge: _openChallenge,
             ),
             AppSection.profile => ProfileScreen(
               onNavigate: _go,
               onLogout: _logoutFromProfile,
+              onChallenge: _openChallenge,
             ),
             _ => PredictionHomeScreen(
               activeTab: _predictionTab,
