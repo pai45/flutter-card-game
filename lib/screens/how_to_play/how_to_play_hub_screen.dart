@@ -254,14 +254,16 @@ class _OverviewStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (var i = 0; i < stats.length; i++) ...[
-          Expanded(child: _GuideStatCell(stat: stats[i])),
-          if (i < stats.length - 1) const SizedBox(width: 8),
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < stats.length; i++) ...[
+            Expanded(child: _GuideStatCell(stat: stats[i])),
+            if (i < stats.length - 1) const SizedBox(width: 8),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
