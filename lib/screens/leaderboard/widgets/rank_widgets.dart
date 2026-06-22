@@ -7,7 +7,7 @@ import '../../../widgets/team_logo.dart';
 
 /// Octagon-clipped player (or team) avatar used on ranked rows and podiums.
 /// Shows a deterministic face for a display [name] (or a [team] crest), with an
-/// optional equipped-border ring ([borderColors]). Shared by the leaderboard and
+/// optional equipped-frame ring ([frameColors]). Shared by the leaderboard and
 /// the friends arena so a rival looks identical wherever they appear.
 class RivalAvatar extends StatelessWidget {
   const RivalAvatar({
@@ -16,7 +16,7 @@ class RivalAvatar extends StatelessWidget {
     this.highlight = false,
     this.ring,
     this.team,
-    this.borderColors,
+    this.frameColors,
     super.key,
   });
 
@@ -26,13 +26,13 @@ class RivalAvatar extends StatelessWidget {
   final Color? ring;
   final SportTeam? team;
 
-  /// The equipped avatar border's gradient, drawn as the octagon ring. Set only
+  /// The equipped avatar frame's gradient, drawn as the octagon ring. Set only
   /// for the user's own row so their cosmetic reflects on the board.
-  final List<Color>? borderColors;
+  final List<Color>? frameColors;
 
   @override
   Widget build(BuildContext context) {
-    final hasBorder = borderColors != null && borderColors!.length >= 2;
+    final hasFrame = frameColors != null && frameColors!.length >= 2;
 
     if (team != null) {
       return SizedBox(
@@ -49,12 +49,12 @@ class RivalAvatar extends StatelessWidget {
                 cutBottomRight: false,
               ),
             ),
-            if (hasBorder)
+            if (hasFrame)
               CustomPaint(
                 painter: OctagonBorderPainter(
                   color: Cyber.cyan,
                   strokeWidth: 4,
-                  gradientColors: borderColors,
+                  gradientColors: frameColors,
                 ),
               ),
           ],
@@ -64,7 +64,7 @@ class RivalAvatar extends StatelessWidget {
 
     final color = ring ?? (highlight ? Cyber.cyan : Cyber.line);
     final avatar = avatarForName(name);
-    final borderWidth = hasBorder ? 4.0 : (highlight ? 2.0 : 1.2);
+    final borderWidth = hasFrame ? 4.0 : (highlight ? 2.0 : 1.2);
     final borderColor = color.withValues(alpha: highlight ? 0.9 : 0.42);
 
     return SizedBox(
@@ -85,7 +85,7 @@ class RivalAvatar extends StatelessWidget {
               painter: OctagonBorderPainter(
                 color: borderColor,
                 strokeWidth: borderWidth,
-                gradientColors: hasBorder ? borderColors : null,
+                gradientColors: hasFrame ? frameColors : null,
               ),
             ),
           ],

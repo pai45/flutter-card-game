@@ -12,7 +12,7 @@ void main() {
       expect(a.predictionAccuracy, b.predictionAccuracy);
       expect(a.pickWinRate, b.pickWinRate);
       expect(a.ownedCards, b.ownedCards);
-      expect(a.border?.id, b.border?.id);
+      expect(a.frame?.id, b.frame?.id);
     });
 
     test('higher XP scales up level and win rate for the same rival', () {
@@ -23,11 +23,11 @@ void main() {
       expect(strong.winRate, greaterThanOrEqualTo(weak.winRate));
     });
 
-    test('PRO gates the equipped border', () {
+    test('PRO gates the equipped frame', () {
       final pro = RivalDossier.fromSeed(name: 'jarvis', xp: 3910, pro: true);
       final amateur = RivalDossier.fromSeed(name: 'jarvis', xp: 3910);
-      expect(pro.border, isNotNull);
-      expect(amateur.border, isNull);
+      expect(pro.frame, isNotNull);
+      expect(amateur.frame, isNull);
     });
 
     test('numbers stay self-consistent and in believable bounds', () {

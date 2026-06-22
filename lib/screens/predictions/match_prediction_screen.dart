@@ -455,7 +455,12 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     final earnedXp = await context.read<PredictionCubit>().settle(_match.id);
     if (!mounted) return;
     if (earnedXp > 0) {
-      context.read<GameBloc>().add(PredictionXpAdded(earnedXp));
+      context.read<GameBloc>().add(
+        PredictionXpAdded(
+          earnedXp,
+          details: '${_match.home.shortName} vs ${_match.away.shortName}',
+        ),
+      );
     }
     setState(() {
       _settlementResults = results;

@@ -6,6 +6,7 @@ import '../../models/oz_coin_ledger.dart';
 import '../../models/packs.dart';
 import '../../models/progression.dart';
 import '../../models/streak.dart';
+import '../../models/xp_ledger.dart';
 import '../../utils/card_helpers.dart';
 
 class PackRevealItem {
@@ -166,12 +167,15 @@ class GameState {
     required this.deckKeeper,
     required this.coins,
     required this.coinLedger,
+    required this.xpLedger,
     required this.ownedCardIds,
     required this.ownedActionCardIds,
     required this.ownedCardBackIds,
     required this.equippedCardBackId,
-    required this.ownedAvatarBorderIds,
-    required this.equippedAvatarBorderId,
+    required this.ownedAvatarFrameIds,
+    required this.equippedAvatarFrameId,
+    required this.ownedAvatarIds,
+    required this.ownedBannerIds,
     required this.matchHistory,
     required this.tutorialSeen,
     required this.pendingPackReveal,
@@ -218,12 +222,15 @@ class GameState {
     ).firstOrNull,
     coins: 0,
     coinLedger: const [],
+    xpLedger: const [],
     ownedCardIds: const [],
     ownedActionCardIds: const [],
     ownedCardBackIds: const ['default'],
     equippedCardBackId: 'default',
-    ownedAvatarBorderIds: const [],
-    equippedAvatarBorderId: '',
+    ownedAvatarFrameIds: const [],
+    equippedAvatarFrameId: '',
+    ownedAvatarIds: const [],
+    ownedBannerIds: const [],
     matchHistory: const [],
     tutorialSeen: const {},
     pendingPackReveal: null,
@@ -265,12 +272,17 @@ class GameState {
   final PlayerCard? deckKeeper;
   final int coins;
   final List<OzCoinLedgerEntry> coinLedger;
+  final List<XpLedgerEntry> xpLedger;
   final List<String> ownedCardIds;
   final List<String> ownedActionCardIds;
   final List<String> ownedCardBackIds;
   final String equippedCardBackId;
-  final List<String> ownedAvatarBorderIds;
-  final String equippedAvatarBorderId;
+  final List<String> ownedAvatarFrameIds;
+  final String equippedAvatarFrameId;
+  // Shop cosmetics bought with coins (BUY → OWNED). Avatar ids are player
+  // portrait short-names; banner ids are the shop banner placeholder ids.
+  final List<String> ownedAvatarIds;
+  final List<String> ownedBannerIds;
   final List<MatchHistoryEntry> matchHistory;
   final Set<String> tutorialSeen;
   final PackRevealData? pendingPackReveal;
@@ -328,12 +340,15 @@ class GameState {
     Object? deckKeeper = _sentinel,
     int? coins,
     List<OzCoinLedgerEntry>? coinLedger,
+    List<XpLedgerEntry>? xpLedger,
     List<String>? ownedCardIds,
     List<String>? ownedActionCardIds,
     List<String>? ownedCardBackIds,
     String? equippedCardBackId,
-    List<String>? ownedAvatarBorderIds,
-    String? equippedAvatarBorderId,
+    List<String>? ownedAvatarFrameIds,
+    String? equippedAvatarFrameId,
+    List<String>? ownedAvatarIds,
+    List<String>? ownedBannerIds,
     List<MatchHistoryEntry>? matchHistory,
     Set<String>? tutorialSeen,
     Object? pendingPackReveal = _sentinel,
@@ -377,13 +392,16 @@ class GameState {
         : deckKeeper as PlayerCard?,
     coins: coins ?? this.coins,
     coinLedger: coinLedger ?? this.coinLedger,
+    xpLedger: xpLedger ?? this.xpLedger,
     ownedCardIds: ownedCardIds ?? this.ownedCardIds,
     ownedActionCardIds: ownedActionCardIds ?? this.ownedActionCardIds,
     ownedCardBackIds: ownedCardBackIds ?? this.ownedCardBackIds,
     equippedCardBackId: equippedCardBackId ?? this.equippedCardBackId,
-    ownedAvatarBorderIds: ownedAvatarBorderIds ?? this.ownedAvatarBorderIds,
-    equippedAvatarBorderId:
-        equippedAvatarBorderId ?? this.equippedAvatarBorderId,
+    ownedAvatarFrameIds: ownedAvatarFrameIds ?? this.ownedAvatarFrameIds,
+    equippedAvatarFrameId:
+        equippedAvatarFrameId ?? this.equippedAvatarFrameId,
+    ownedAvatarIds: ownedAvatarIds ?? this.ownedAvatarIds,
+    ownedBannerIds: ownedBannerIds ?? this.ownedBannerIds,
     matchHistory: matchHistory ?? this.matchHistory,
     tutorialSeen: tutorialSeen ?? this.tutorialSeen,
     pendingPackReveal: pendingPackReveal == _sentinel

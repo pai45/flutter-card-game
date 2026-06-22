@@ -9,7 +9,16 @@ import '../models/oz_coin_ledger.dart';
 import '../models/picks.dart';
 import '../models/prediction.dart';
 import '../models/progression.dart';
+import '../models/quiz_trivia.dart';
+import '../models/referral.dart';
 import '../models/streak.dart';
+import '../models/xp_ledger.dart';
+import '../data/rival_roster.dart' show randomPlayerTag;
+
+/// Maps a legacy `border_*` avatar-frame id to the renamed `frame_*` form so a
+/// player's pre-rename owned/equipped frames keep resolving after the migration.
+String _migrateFrameId(String id) =>
+    id.startsWith('border_') ? id.replaceFirst('border_', 'frame_') : id;
 
 class WalletSnapshot {
   const WalletSnapshot({
@@ -18,8 +27,10 @@ class WalletSnapshot {
     required this.ownedActionCardIds,
     required this.ownedCardBackIds,
     required this.equippedCardBackId,
-    required this.ownedAvatarBorderIds,
-    required this.equippedAvatarBorderId,
+    required this.ownedAvatarFrameIds,
+    required this.equippedAvatarFrameId,
+    required this.ownedAvatarIds,
+    required this.ownedBannerIds,
     required this.dailyDropLastClaimedAtMillis,
   });
 
@@ -29,8 +40,10 @@ class WalletSnapshot {
     ownedActionCardIds: [],
     ownedCardBackIds: ['default'],
     equippedCardBackId: 'default',
-    ownedAvatarBorderIds: [],
-    equippedAvatarBorderId: '',
+    ownedAvatarFrameIds: [],
+    equippedAvatarFrameId: '',
+    ownedAvatarIds: [],
+    ownedBannerIds: [],
     dailyDropLastClaimedAtMillis: null,
   );
 
@@ -44,10 +57,24 @@ class WalletSnapshot {
       json['ownedCardBackIds'] as List? ?? const ['default'],
     ),
     equippedCardBackId: json['equippedCardBackId'] as String? ?? 'default',
-    ownedAvatarBorderIds: List<String>.from(
-      json['ownedAvatarBorderIds'] as List? ?? const [],
+    // Reads the new keys, falling back to the legacy `*Border*` keys, and
+    // migrates legacy `border_*` ids to the `frame_*` form (rename safety net).
+    ownedAvatarFrameIds: List<String>.from(
+      json['ownedAvatarFrameIds'] as List? ??
+          json['ownedAvatarBorderIds'] as List? ??
+          const [],
+    ).map(_migrateFrameId).toList(),
+    equippedAvatarFrameId: _migrateFrameId(
+      json['equippedAvatarFrameId'] as String? ??
+          json['equippedAvatarBorderId'] as String? ??
+          '',
     ),
-    equippedAvatarBorderId: json['equippedAvatarBorderId'] as String? ?? '',
+    ownedAvatarIds: List<String>.from(
+      json['ownedAvatarIds'] as List? ?? const [],
+    ),
+    ownedBannerIds: List<String>.from(
+      json['ownedBannerIds'] as List? ?? const [],
+    ),
     dailyDropLastClaimedAtMillis: json['dailyDropLastClaimedAtMillis'] as int?,
   );
 
@@ -56,8 +83,10 @@ class WalletSnapshot {
   final List<String> ownedActionCardIds;
   final List<String> ownedCardBackIds;
   final String equippedCardBackId;
-  final List<String> ownedAvatarBorderIds;
-  final String equippedAvatarBorderId;
+  final List<String> ownedAvatarFrameIds;
+  final String equippedAvatarFrameId;
+  final List<String> ownedAvatarIds;
+  final List<String> ownedBannerIds;
   final int? dailyDropLastClaimedAtMillis;
 
   Map<String, dynamic> toJson() => {
@@ -66,8 +95,10 @@ class WalletSnapshot {
     'ownedActionCardIds': ownedActionCardIds,
     'ownedCardBackIds': ownedCardBackIds,
     'equippedCardBackId': equippedCardBackId,
-    'ownedAvatarBorderIds': ownedAvatarBorderIds,
-    'equippedAvatarBorderId': equippedAvatarBorderId,
+    'ownedAvatarFrameIds': ownedAvatarFrameIds,
+    'equippedAvatarFrameId': equippedAvatarFrameId,
+    'ownedAvatarIds': ownedAvatarIds,
+    'ownedBannerIds': ownedBannerIds,
     'dailyDropLastClaimedAtMillis': dailyDropLastClaimedAtMillis,
   };
 }
@@ -84,6 +115,7 @@ class SecureGameStorage {
   static const _progressionKey = 'pd_progression_v1';
   static const _walletKey = 'pitch_duel_wallet';
   static const _coinLedgerKey = 'pd_oz_coin_ledger_v1';
+  static const _xpLedgerKey = 'pd_xp_ledger_v1';
   static const _predictionsKey = 'pd_predictions_v1';
   static const _pickPositionsKey = 'pd_pick_positions_v1';
   static const _selectedAvatarKey = 'pd_selected_avatar_v1';
@@ -95,6 +127,8 @@ class SecureGameStorage {
   static const _streakKey = 'pd_daily_streak_v1';
   static const _friendsKey = 'pd_friends_v1';
   static const _playerTagKey = 'pd_player_tag_v1';
+  static const _referralEntriesKey = 'pd_referral_entries_v1';
+  static const _quizProgressKey = 'pd_quiz_progress_v1';
 
   final FlutterSecureStorage _storage;
 
@@ -225,6 +259,30 @@ class SecureGameStorage {
     );
   }
 
+  Future<List<XpLedgerEntry>> loadXpLedger() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_xpLedgerKey);
+      if (raw == null || raw.isEmpty) return const [];
+      final data = jsonDecode(raw) as List;
+      return data
+          .map(
+            (item) => XpLedgerEntry.fromJson(Map<String, dynamic>.from(item)),
+          )
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<void> saveXpLedger(List<XpLedgerEntry> ledger) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _xpLedgerKey,
+      jsonEncode(ledger.map((entry) => entry.toJson()).toList()),
+    );
+  }
+
   Future<List<UserPrediction>> loadPredictions() async {
     try {
       final raw = await _storage.read(key: _predictionsKey);
@@ -341,6 +399,39 @@ class SecureGameStorage {
     await _storage.write(key: _playerTagKey, value: tag);
   }
 
+  Future<String> loadOrCreatePlayerTag() async {
+    final existing = await loadPlayerTag();
+    if (existing != null) return existing;
+    final tag = randomPlayerTag();
+    await savePlayerTag(tag);
+    return tag;
+  }
+
+  /// Returns `null` until the frontend referral demo has been seeded.
+  Future<List<ReferralEntry>?> loadReferralEntries() async {
+    try {
+      final raw = await _storage.read(key: _referralEntriesKey);
+      if (raw == null || raw.isEmpty) return null;
+      final data = jsonDecode(raw) as List;
+      return data
+          .map(
+            (item) => ReferralEntry.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveReferralEntries(List<ReferralEntry> entries) async {
+    await _storage.write(
+      key: _referralEntriesKey,
+      value: jsonEncode(entries.map((entry) => entry.toJson()).toList()),
+    );
+  }
+
   /// Favourite team per league as a leagueId → teamId map.
   Future<Map<String, String>> loadFavoriteTeams() async {
     try {
@@ -434,6 +525,27 @@ class SecureGameStorage {
     await _storage.write(
       key: _progressionKey,
       value: jsonEncode(progression.toJson()),
+    );
+  }
+
+  /// Football Quiz per-mode progress (cleared flags + best runs). Drives the
+  /// progression-gated unlocks in the quiz lobby.
+  Future<QuizProgress> loadQuizProgress() async {
+    try {
+      final raw = await _storage.read(key: _quizProgressKey);
+      if (raw == null || raw.isEmpty) return QuizProgress.initial();
+      return QuizProgress.fromJson(
+        Map<String, dynamic>.from(jsonDecode(raw) as Map),
+      );
+    } catch (_) {
+      return QuizProgress.initial();
+    }
+  }
+
+  Future<void> saveQuizProgress(QuizProgress progress) async {
+    await _storage.write(
+      key: _quizProgressKey,
+      value: jsonEncode(progress.toJson()),
     );
   }
 }

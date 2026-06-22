@@ -67,8 +67,10 @@ class CoinsSpent extends GameEvent {
 
 /// XP earned outside Pitch Duel matches (prediction settlements).
 class PredictionXpAdded extends GameEvent {
-  PredictionXpAdded(this.amount);
+  PredictionXpAdded(this.amount, {this.details});
+
   final int amount;
+  final String? details;
 }
 
 class CardPurchased extends GameEvent {
@@ -125,14 +127,40 @@ class CardBackEquipped extends GameEvent {
   final String cardBackId;
 }
 
-class AvatarBorderPurchased extends GameEvent {
-  AvatarBorderPurchased(this.borderId);
-  final String borderId;
+class AvatarFramePurchased extends GameEvent {
+  AvatarFramePurchased(this.frameId);
+  final String frameId;
 }
 
-class AvatarBorderEquipped extends GameEvent {
-  AvatarBorderEquipped(this.borderId);
-  final String borderId;
+class AvatarFrameEquipped extends GameEvent {
+  AvatarFrameEquipped(this.frameId);
+  final String frameId;
+}
+
+/// Buy a shop avatar (player portrait) with coins — BUY → OWNED, no equip.
+class ShopAvatarPurchased extends GameEvent {
+  ShopAvatarPurchased({
+    required this.avatarId,
+    required this.price,
+    required this.name,
+  });
+
+  final String avatarId;
+  final int price;
+  final String name;
+}
+
+/// Buy a shop banner with coins — BUY → OWNED, no equip.
+class ShopBannerPurchased extends GameEvent {
+  ShopBannerPurchased({
+    required this.bannerId,
+    required this.price,
+    required this.name,
+  });
+
+  final String bannerId;
+  final int price;
+  final String name;
 }
 
 class PackRevealSeen extends GameEvent {}

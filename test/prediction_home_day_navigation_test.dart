@@ -120,6 +120,7 @@ Future<void> _pumpHome(WidgetTester tester, PredictionCubit cubit) async {
           onOpenLeague: (_) {},
           onOpenGame: () {},
           onOpenShootout: () {},
+          onOpenQuiz: () {},
         ),
       ),
     ),

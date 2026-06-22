@@ -84,7 +84,7 @@ class _PicksHomeViewState extends State<PicksHomeView> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                     ],
                   ]),
                 ),
@@ -347,7 +347,7 @@ class _PicksSkeletonState extends State<_PicksSkeleton>
       child: ListView.separated(
         padding: const EdgeInsets.fromLTRB(12, 16, 12, 28),
         itemCount: 4,
-        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        separatorBuilder: (_, _) => const SizedBox(height: 16),
         itemBuilder: (_, index) => ClipPath(
           clipper: const HudChamferClipper(bigCut: 15, smallCut: 2),
           child: Container(

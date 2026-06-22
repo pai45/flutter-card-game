@@ -11,6 +11,7 @@ enum OzCoinTransactionSource {
   directCardPurchase,
   shopTopUp,
   streakReward,
+  referralReward,
   manual,
 }
 

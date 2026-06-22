@@ -10,7 +10,7 @@ import '../../models/avatar_option.dart';
 import '../../models/player_stats.dart';
 import '../../models/rival_dossier.dart';
 import '../../utils/sound_effects.dart';
-import '../../widgets/avatar_border_ring.dart';
+import '../../widgets/avatar_frame_ring.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
 import '../../widgets/team_logo.dart' show OctagonClipper;
@@ -189,10 +189,10 @@ class _RivalHero extends StatelessWidget {
               SizedBox(
                 width: 76,
                 height: 76,
-                child: AvatarBorderRing(
-                  border: dossier.border,
+                child: AvatarFrameRing(
+                  frame: dossier.frame,
                   glow: true,
-                  shape: AvatarBorderShape.octagon,
+                  shape: AvatarFrameShape.octagon,
                   child: ClipPath(
                     clipper: const OctagonClipper(),
                     child: Stack(

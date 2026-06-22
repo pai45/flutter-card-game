@@ -1,5 +1,5 @@
 import 'achievement.dart';
-import 'avatar_border_option.dart';
+import 'avatar_frame_option.dart';
 import 'progression.dart';
 
 /// A deterministic, fabricated profile for a leaderboard rival. There is no
@@ -11,7 +11,7 @@ class RivalDossier {
   const RivalDossier({
     required this.name,
     required this.progression,
-    required this.border,
+    required this.frame,
     required this.matchesPlayed,
     required this.matchWins,
     required this.draws,
@@ -31,7 +31,7 @@ class RivalDossier {
   });
 
   /// Builds a rival from their leaderboard seed. [pro] (the PRO badge) gates the
-  /// equipped avatar border so the cosmetic reads as earned.
+  /// equipped avatar frame so the cosmetic reads as earned.
   factory RivalDossier.fromSeed({
     required String name,
     required int xp,
@@ -68,14 +68,14 @@ class RivalDossier {
     final ownedCards = 14 + (strength * 70).round() + rng.nextInt(20);
     final platinumOwned = strength > 0.6 ? rng.nextInt(4) : rng.nextInt(2);
 
-    final border = pro
-        ? avatarBorderOptions[rng.nextInt(avatarBorderOptions.length)]
+    final frame = pro
+        ? avatarFrameOptions[rng.nextInt(avatarFrameOptions.length)]
         : null;
 
     return RivalDossier(
       name: name,
       progression: PlayerProgression(totalXP: xp),
-      border: border,
+      frame: frame,
       matchesPlayed: matchesPlayed,
       matchWins: matchWins,
       draws: draws,
@@ -97,7 +97,7 @@ class RivalDossier {
 
   final String name;
   final PlayerProgression progression;
-  final AvatarBorderOption? border;
+  final AvatarFrameOption? frame;
   final int matchesPlayed;
   final int matchWins;
   final int draws;

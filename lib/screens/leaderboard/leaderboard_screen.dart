@@ -2,24 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../blocs/friends/friends_cubit.dart';
 import '../../blocs/game/game_bloc.dart';
 import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../data/rival_roster.dart';
-import '../../models/avatar_border_option.dart';
+import '../../models/avatar_frame_option.dart';
 import '../../models/sport_match.dart';
 import '../../utils/sound_effects.dart';
-import '../../widgets/cyber/cyber_filter_chips.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/stat_oz_top_bar.dart';
 import '../../widgets/staggered_card_entrance.dart';
 import '../profile/rival_profile_screen.dart';
 import 'widgets/rank_widgets.dart';
-
-/// Whether the board shows everyone or just the player + their added friends.
-enum LeaderboardScope { global, friends }
 
 // ─── Domain ──────────────────────────────────────────────────────────────────
 
@@ -402,7 +397,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   String _sport = 'FIFA';
   TournamentScope _scope = TournamentScope.weekly;
   GameMode _mode = GameMode.quiz;
-  LeaderboardScope _leaderboardScope = LeaderboardScope.global;
 
   static const List<String> _sports = ['FIFA', 'IPL', 'UCL', 'NBA', 'F1'];
 
@@ -470,17 +464,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
         ? _teamEntriesFor()
         : _entriesFor(_type, _scope, _mode);
     final user = _userEntry(allEntries);
-    // FRIENDS scope (player boards only): show just you + your added rivals,
-    // keeping their global rank numbers.
-    final friends = context.watch<FriendsCubit>().state.friends;
-    final showFriendsToggle = !isTeamTournament;
-    final friendsScope =
-        showFriendsToggle && _leaderboardScope == LeaderboardScope.friends;
-    final entries = friendsScope
-        ? allEntries
-              .where((e) => e.isUser || friends.contains(e.name))
-              .toList()
-        : allEntries;
+    final entries = allEntries;
 
     return Scaffold(
       backgroundColor: Cyber.bg,
@@ -524,30 +508,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                       indicatorAnimation: _typeTabIndicatorAnimation,
                       onTap: _setTypeTab,
                     ),
-                    if (showFriendsToggle) ...[
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: CyberFilterChips(
-                          labels: const ['GLOBAL', 'FRIENDS'],
-                          selected: friendsScope ? 'FRIENDS' : 'GLOBAL',
-                          accent: accent,
-                          padding: const EdgeInsets.fromLTRB(16, 8, 12, 8),
-                          onSelect: (label) => setState(
-                            () => _leaderboardScope = label == 'FRIENDS'
-                                ? LeaderboardScope.friends
-                                : LeaderboardScope.global,
-                          ),
-                        ),
-                      ),
-                      if (friendsScope && friends.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                          child: Text(
-                            'Tap a rival and ADD FRIEND to build your board.',
-                            style: Cyber.body(12, color: Cyber.muted),
-                          ),
-                        ),
-                    ],
                     Expanded(
                       child: AnimatedSwitcher(
                         duration: const Duration(milliseconds: 280),
@@ -572,7 +532,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                               )
                             : _Body(
                                 key: ValueKey(
-                                  '${_type.name}-${_tournamentBoard.name}-${_scope.name}-${_mode.name}-${_leaderboardScope.name}',
+                                  '${_type.name}-${_tournamentBoard.name}-${_scope.name}-${_mode.name}',
                                 ),
                                 filters: filters,
                                 entries: entries,
@@ -1469,14 +1429,14 @@ class _WinnerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Reflect the user's equipped avatar border on their podium card too.
-    List<Color>? userBorderColors;
+    // Reflect the user's equipped avatar frame on their podium card too.
+    List<Color>? userFrameColors;
     if (entry.isUser) {
-      final equipped = avatarBorderOptionById(
-        context.select<GameBloc, String>((b) => b.state.equippedAvatarBorderId),
+      final equipped = avatarFrameOptionById(
+        context.select<GameBloc, String>((b) => b.state.equippedAvatarFrameId),
       );
       if (equipped != null) {
-        userBorderColors = borderRingColors(equipped.primary);
+        userFrameColors = frameRingColors(equipped.primary);
       }
     }
     final tile = Container(
@@ -1496,7 +1456,7 @@ class _WinnerTile extends StatelessWidget {
                   size: avatarSize,
                   ring: color,
                   team: entry.team,
-                  borderColors: userBorderColors,
+                  frameColors: userFrameColors,
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -1536,7 +1496,7 @@ class _WinnerTile extends StatelessWidget {
                       size: avatarSize,
                       ring: color,
                       team: entry.team,
-                      borderColors: userBorderColors,
+                      frameColors: userFrameColors,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -1709,15 +1669,15 @@ class _LeaderboardRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isUser = entry.isUser;
     final rankColor = entry.rank <= 3 ? Cyber.gold : Cyber.muted;
-    // Reflect the user's equipped avatar border on their own row.
-    List<Color>? userBorderColors;
+    // Reflect the user's equipped avatar frame on their own row.
+    List<Color>? userFrameColors;
     if (isUser) {
       final equippedId = context.select<GameBloc, String>(
-        (b) => b.state.equippedAvatarBorderId,
+        (b) => b.state.equippedAvatarFrameId,
       );
-      final equipped = avatarBorderOptionById(equippedId);
+      final equipped = avatarFrameOptionById(equippedId);
       if (equipped != null) {
-        userBorderColors = borderRingColors(equipped.primary);
+        userFrameColors = frameRingColors(equipped.primary);
       }
     }
     final row = Container(
@@ -1753,7 +1713,7 @@ class _LeaderboardRow extends StatelessWidget {
             size: 48,
             highlight: isUser,
             team: entry.team,
-            borderColors: userBorderColors,
+            frameColors: userFrameColors,
           ),
           const SizedBox(width: 12),
           Expanded(

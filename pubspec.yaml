@@ -39,6 +39,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   audioplayers: ^6.7.0
   lottie: ^3.3.3
+  share_plus: ^11.1.0
 
 dev_dependencies:
   flutter_test:

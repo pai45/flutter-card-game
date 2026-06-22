@@ -9,45 +9,58 @@ import '../../predictions/widgets/history_hud.dart' show CutChipBorder;
 /// primary, so it earns the glow). Shared by the profile hero and the rival
 /// dossier hero.
 class LevelChip extends StatelessWidget {
-  const LevelChip({required this.level, super.key});
+  const LevelChip({required this.level, this.onTap, super.key});
 
   final int level;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
-      decoration: ShapeDecoration(
-        color: Cyber.card,
-        shape: CutChipBorder(
-          cut: 7,
-          side: BorderSide(
-            color: Cyber.cyan.withValues(alpha: 0.85),
-            width: 1.4,
+    return Semantics(
+      button: onTap != null,
+      label: onTap == null ? 'Level $level' : 'Level $level, view XP history',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
+          decoration: ShapeDecoration(
+            color: Cyber.card,
+            shape: CutChipBorder(
+              cut: 7,
+              side: BorderSide(
+                color: Cyber.cyan.withValues(alpha: 0.85),
+                width: 1.4,
+              ),
+            ),
+            shadows: Cyber.glow(Cyber.cyan, alpha: 0.45, blur: 16, spread: 0),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'LVL',
+                style: Cyber.label(
+                  9,
+                  color: Cyber.cyan.withValues(alpha: 0.85),
+                  letterSpacing: 1.6,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '$level',
+                style: Cyber.display(
+                  20,
+                  color: Cyber.cyan,
+                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+              ),
+              if (onTap != null) ...[
+                const SizedBox(width: 3),
+                const Icon(Icons.chevron_right, size: 16, color: Cyber.cyan),
+              ],
+            ],
           ),
         ),
-        shadows: Cyber.glow(Cyber.cyan, alpha: 0.45, blur: 16, spread: 0),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'LVL',
-            style: Cyber.label(
-              9,
-              color: Cyber.cyan.withValues(alpha: 0.85),
-              letterSpacing: 1.6,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            '$level',
-            style: Cyber.display(
-              20,
-              color: Cyber.cyan,
-            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-          ),
-        ],
       ),
     );
   }

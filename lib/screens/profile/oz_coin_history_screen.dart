@@ -303,6 +303,7 @@ IconData _sourceIcon(OzCoinTransactionSource source) {
     OzCoinTransactionSource.matchReward ||
     OzCoinTransactionSource.shootoutReward => Icons.sports_soccer,
     OzCoinTransactionSource.streakReward => Icons.local_fire_department,
+    OzCoinTransactionSource.referralReward => Icons.card_giftcard_rounded,
     OzCoinTransactionSource.pickStake ||
     OzCoinTransactionSource.pickPayout => Icons.keyboard_double_arrow_up,
     OzCoinTransactionSource.packPurchase ||

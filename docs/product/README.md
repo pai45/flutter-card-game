@@ -30,6 +30,7 @@ The main navigation keeps Predictions, Pick, Leaderboard, Shop, and Profile as a
 - [Pitch Duel Leveling System](pitch-duel-leveling.md)
 - [Leaderboard](leaderboard.md)
 - [Profile And Identity](profile-and-identity.md)
+- [Friends Referral System](friends-referral-system.md)
 
 ## Product Loops
 

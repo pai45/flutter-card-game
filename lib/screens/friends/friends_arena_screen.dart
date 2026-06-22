@@ -6,13 +6,15 @@ import '../../blocs/friends/friends_cubit.dart';
 import '../../blocs/game/game_bloc.dart';
 import '../../config/theme.dart';
 import '../../data/rival_roster.dart';
-import '../../models/avatar_border_option.dart';
+import '../../models/avatar_frame_option.dart';
 import '../../services/secure_storage_service.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
 import '../leaderboard/leaderboard_screen.dart' show showRivalDossier;
 import '../leaderboard/widgets/rank_widgets.dart';
+import 'referral_screen.dart';
+import 'widgets/referral_invite_card.dart';
 
 /// FRIENDS ARENA — search the rival network by tag or username, then add and
 /// challenge friends from a single friends-scoped leaderboard. Reaches the same
@@ -41,7 +43,7 @@ class _FriendsArenaScreenState extends State<FriendsArenaScreen> {
   }
 
   Future<void> _loadMyTag() async {
-    final tag = await _storage.loadPlayerTag();
+    final tag = await _storage.loadOrCreatePlayerTag();
     if (!mounted) return;
     setState(() => _myTag = tag);
   }
@@ -62,6 +64,13 @@ class _FriendsArenaScreenState extends State<FriendsArenaScreen> {
   void _openDossier(String name) {
     playSound(SoundEffect.uiTap);
     showRivalDossier(context, name, onChallenge: widget.onChallenge);
+  }
+
+  void _openReferrals() {
+    HapticFeedback.selectionClick();
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const ReferralScreen()),
+    );
   }
 
   Future<void> _toggleFriend(String name) async {
@@ -110,7 +119,11 @@ class _FriendsArenaScreenState extends State<FriendsArenaScreen> {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 2),
+            child: ReferralInviteCard(onTap: _openReferrals),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
             child: _SearchField(
               controller: _searchController,
               onChanged: (value) => setState(() => _query = value),
@@ -412,13 +425,13 @@ class _FriendLeaderRow extends StatelessWidget {
     final isUser = seed.isUser;
     final rankColor = rank <= 3 ? Cyber.gold : Cyber.muted;
 
-    List<Color>? userBorder;
+    List<Color>? userFrame;
     if (isUser) {
       final equippedId = context.select<GameBloc, String>(
-        (b) => b.state.equippedAvatarBorderId,
+        (b) => b.state.equippedAvatarFrameId,
       );
-      final equipped = avatarBorderOptionById(equippedId);
-      if (equipped != null) userBorder = borderRingColors(equipped.primary);
+      final equipped = avatarFrameOptionById(equippedId);
+      if (equipped != null) userFrame = frameRingColors(equipped.primary);
     }
 
     return GestureDetector(
@@ -454,7 +467,7 @@ class _FriendLeaderRow extends StatelessWidget {
               name: seed.name,
               size: 46,
               highlight: isUser,
-              borderColors: userBorder,
+              frameColors: userFrame,
             ),
             const SizedBox(width: 12),
             Expanded(

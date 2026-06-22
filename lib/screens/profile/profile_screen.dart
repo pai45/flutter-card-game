@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../blocs/friends/friends_cubit.dart';
 import '../../blocs/game/game_bloc.dart';
+import '../../blocs/game/game_event.dart';
 import '../../blocs/game/game_state.dart';
 import '../../blocs/picks/picks_cubit.dart';
 import '../../blocs/prediction/prediction_cubit.dart';
@@ -13,7 +14,7 @@ import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../data/followable_leagues.dart';
 import '../../data/rival_roster.dart';
-import '../../models/avatar_border_option.dart';
+import '../../models/avatar_frame_option.dart';
 import '../../models/avatar_option.dart';
 import '../../models/picks.dart';
 import '../../models/player_stats.dart';
@@ -23,7 +24,7 @@ import '../../models/profile_banner_option.dart';
 import '../../models/progression.dart';
 import '../../services/achievement_progress.dart';
 import '../../services/secure_storage_service.dart';
-import '../../widgets/avatar_border_ring.dart';
+import '../../widgets/avatar_frame_ring.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/profile_banner_visual.dart';
@@ -38,6 +39,7 @@ import '../predictions/prediction_match_history_screen.dart';
 import '../predictions/prediction_picks_history_screen.dart';
 import 'achievements_screen.dart';
 import 'oz_coin_history_screen.dart';
+import 'xp_history_screen.dart';
 import 'widgets/achievement_grid.dart';
 import 'widgets/level_progress.dart';
 import 'widgets/oz_coin_tracker_card.dart';
@@ -393,7 +395,10 @@ class _ProfileHeroCard extends StatelessWidget {
                     Positioned(
                       right: 16,
                       top: 18,
-                      child: LevelChip(level: level),
+                      child: LevelChip(
+                        level: level,
+                        onTap: () => showXpHistory(context),
+                      ),
                     ),
                     Positioned(
                       left: 20,
@@ -462,11 +467,7 @@ class _PlayerTagPillState extends State<_PlayerTagPill> {
   }
 
   Future<void> _loadTag() async {
-    var tag = await _storage.loadPlayerTag();
-    if (tag == null) {
-      tag = randomPlayerTag();
-      await _storage.savePlayerTag(tag);
-    }
+    final tag = await _storage.loadOrCreatePlayerTag();
     if (!mounted) return;
     setState(() => _tag = tag);
   }
@@ -493,43 +494,29 @@ class _PlayerTagPillState extends State<_PlayerTagPill> {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: _tag == null ? null : _copy,
-      child: Container(
-        height: 34,
-        padding: const EdgeInsets.fromLTRB(11, 0, 5, 0),
-        decoration: cutCornerDecoration(
-          color: Cyber.panel.withValues(alpha: 0.55),
-          borderColor: Cyber.line,
-          cut: 9,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'ID',
-              style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.4),
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                tag,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Cyber.label(
-                  13,
-                  letterSpacing: 1.4,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text(
+              tag,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Cyber.body(
+                16,
+                weight: FontWeight.w600,
+                height: 1,
+                fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
-            const SizedBox(width: 2),
-            Icon(
-              Icons.copy_rounded,
-              size: 16,
-              color: Cyber.cyan.withValues(alpha: 0.85),
-            ),
-            const SizedBox(width: 6),
-          ],
-        ),
+          ),
+          const SizedBox(width: 6),
+          Icon(
+            Icons.copy_rounded,
+            size: 16,
+            color: Cyber.cyan.withValues(alpha: 0.85),
+          ),
+        ],
       ),
     );
   }
@@ -595,7 +582,11 @@ class _FriendsPill extends StatelessWidget {
 /// Small count chip used inside [_FriendsPill] (violet = total, green dot =
 /// online).
 class _CountBadge extends StatelessWidget {
-  const _CountBadge({required this.value, required this.color, this.dot = false});
+  const _CountBadge({
+    required this.value,
+    required this.color,
+    this.dot = false,
+  });
 
   final int value;
   final Color color;
@@ -1213,10 +1204,10 @@ class _AvatarState extends State<_Avatar> {
             bottom: 0,
             child: BlocBuilder<GameBloc, GameState>(
               buildWhen: (a, b) =>
-                  a.equippedAvatarBorderId != b.equippedAvatarBorderId,
+                  a.equippedAvatarFrameId != b.equippedAvatarFrameId,
               builder: (context, state) {
-                final equipped = avatarBorderOptionById(
-                  state.equippedAvatarBorderId,
+                final equipped = avatarFrameOptionById(
+                  state.equippedAvatarFrameId,
                 );
                 return Container(
                   width: 96,
@@ -1231,8 +1222,8 @@ class _AvatarState extends State<_Avatar> {
                       BoxShadow(color: Color(0xff04060b), offset: Offset(0, 4)),
                     ],
                   ),
-                  child: AvatarBorderRing(
-                    border: equipped,
+                  child: AvatarFrameRing(
+                    frame: equipped,
                     // The user's own avatar is a legitimate focal element.
                     glow: true,
                     child: Image.asset(
@@ -1249,7 +1240,7 @@ class _AvatarState extends State<_Avatar> {
             top: 0,
             right: 0,
             child: Tooltip(
-              message: 'Edit avatar',
+              message: 'Edit avatar & frame',
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
@@ -1277,7 +1268,10 @@ class _AvatarState extends State<_Avatar> {
   }
 }
 
-// Avatar editing screen.
+// Avatar + frame editing screen — an AVATAR | FRAME segmented editor with a live
+// preview. The AVATAR tab picks a portrait (committed on CONTINUE); the FRAME tab
+// equips one of your owned frames instantly (persisted by GameBloc); buying more
+// frames stays in the Shop.
 class _AvatarEditScreen extends StatefulWidget {
   const _AvatarEditScreen({required this.initialAvatarId});
 
@@ -1287,17 +1281,49 @@ class _AvatarEditScreen extends StatefulWidget {
   State<_AvatarEditScreen> createState() => _AvatarEditScreenState();
 }
 
-class _AvatarEditScreenState extends State<_AvatarEditScreen> {
+class _AvatarEditScreenState extends State<_AvatarEditScreen>
+    with SingleTickerProviderStateMixin {
   late String _selectedAvatarId;
+  int _tab = 0;
+
+  late final AnimationController _tabIndicatorController;
+  late Animation<double> _tabIndicatorAnimation;
 
   @override
   void initState() {
     super.initState();
     _selectedAvatarId = avatarOptionById(widget.initialAvatarId).id;
+    _tabIndicatorController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+      value: 0,
+    );
+    _tabIndicatorAnimation = AlwaysStoppedAnimation<double>(0);
+  }
+
+  @override
+  void dispose() {
+    _tabIndicatorController.dispose();
+    super.dispose();
+  }
+
+  void _setTab(int index) {
+    if (index == _tab) return;
+    _tabIndicatorAnimation = Tween<double>(
+      begin: _tab.toDouble(),
+      end: index.toDouble(),
+    ).animate(CurvedAnimation(
+      parent: _tabIndicatorController,
+      curve: Curves.easeOutCubic,
+    ));
+    _tabIndicatorController.forward(from: 0);
+    HapticFeedback.selectionClick();
+    setState(() => _tab = index);
   }
 
   @override
   Widget build(BuildContext context) {
+    final avatar = avatarOptionById(_selectedAvatarId);
     return Scaffold(
       backgroundColor: Cyber.bg,
       body: Stack(
@@ -1318,7 +1344,7 @@ class _AvatarEditScreenState extends State<_AvatarEditScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          'CHOOSE YOUR AVATAR',
+                          'CUSTOMISE PROFILE',
                           style: Cyber.display(19, letterSpacing: 1.1),
                         ),
                       ),
@@ -1330,33 +1356,52 @@ class _AvatarEditScreenState extends State<_AvatarEditScreen> {
                     ],
                   ),
                 ),
+                _AvatarEditorTabs(
+                  activeTab: _tab,
+                  indicatorAnimation: _tabIndicatorAnimation,
+                  onTap: _setTab,
+                ),
                 Expanded(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 460),
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 22, 24, 104),
-                        child: GridView.builder(
-                          itemCount: avatarOptions.length,
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,
-                                mainAxisSpacing: 16,
-                                crossAxisSpacing: 16,
-                                childAspectRatio: 1,
+                  child: BlocBuilder<GameBloc, GameState>(
+                    buildWhen: (a, b) =>
+                        a.equippedAvatarFrameId != b.equippedAvatarFrameId ||
+                        a.ownedAvatarFrameIds != b.ownedAvatarFrameIds,
+                    builder: (context, state) {
+                      final equipped = avatarFrameOptionById(
+                        state.equippedAvatarFrameId,
+                      );
+                      return Column(
+                        children: [
+                          const SizedBox(height: 18),
+                          _PreviewAvatar(avatar: avatar, frame: equipped),
+                          const SizedBox(height: 14),
+                          const Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: Cyber.border,
+                          ),
+                          Expanded(
+                            child: Center(
+                              child: ConstrainedBox(
+                                constraints:
+                                    const BoxConstraints(maxWidth: 460),
+                                child: Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    24,
+                                    6,
+                                    24,
+                                    104,
+                                  ),
+                                  child: _tab == 0
+                                      ? _avatarGrid()
+                                      : _frameGrid(context, state, avatar),
+                                ),
                               ),
-                          itemBuilder: (context, index) {
-                            final avatar = avatarOptions[index];
-                            return _EditableAvatarTile(
-                              avatar: avatar,
-                              selected: avatar.id == _selectedAvatarId,
-                              onTap: () =>
-                                  setState(() => _selectedAvatarId = avatar.id),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ],
@@ -1372,7 +1417,7 @@ class _AvatarEditScreenState extends State<_AvatarEditScreen> {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 460),
                   child: _AvatarTossCta(
-                    label: 'CONTINUE',
+                    label: 'DONE',
                     onPressed: () =>
                         Navigator.of(context).pop(_selectedAvatarId),
                   ),
@@ -1381,6 +1426,281 @@ class _AvatarEditScreenState extends State<_AvatarEditScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _avatarGrid() => GridView.builder(
+    itemCount: avatarOptions.length,
+    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: 3,
+      mainAxisSpacing: 16,
+      crossAxisSpacing: 16,
+      childAspectRatio: 1,
+    ),
+    itemBuilder: (context, index) {
+      final avatar = avatarOptions[index];
+      return _EditableAvatarTile(
+        avatar: avatar,
+        selected: avatar.id == _selectedAvatarId,
+        onTap: () => setState(() => _selectedAvatarId = avatar.id),
+      );
+    },
+  );
+
+  Widget _frameGrid(
+    BuildContext context,
+    GameState state,
+    AvatarOption avatar,
+  ) {
+    final owned = state.ownedAvatarFrameIds
+        .map(avatarFrameOptionById)
+        .whereType<AvatarFrameOption>()
+        .toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: GridView.builder(
+            // A leading "NONE" tile (un-equip) + every owned frame.
+            itemCount: owned.length + 1,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16,
+              childAspectRatio: 1,
+            ),
+            itemBuilder: (context, index) {
+              final frame = index == 0 ? null : owned[index - 1];
+              final selected = frame == null
+                  ? state.equippedAvatarFrameId.isEmpty
+                  : state.equippedAvatarFrameId == frame.id;
+              return _EditableFrameTile(
+                frame: frame,
+                avatar: avatar,
+                selected: selected,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  context.read<GameBloc>().add(
+                    AvatarFrameEquipped(frame?.id ?? ''),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.storefront, size: 14, color: Cyber.muted),
+            const SizedBox(width: 6),
+            Text(
+              owned.isEmpty
+                  ? 'UNLOCK TEAM FRAMES IN THE SHOP'
+                  : 'GET MORE TEAM FRAMES IN THE SHOP',
+              style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1.1),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Avatar editor tab bar (matches leaderboard MATCH DAY / TOURNEY style) ───
+
+class _AvatarEditorTabs extends StatelessWidget {
+  const _AvatarEditorTabs({
+    required this.activeTab,
+    required this.indicatorAnimation,
+    required this.onTap,
+  });
+
+  final int activeTab;
+  final Animation<double> indicatorAnimation;
+  final ValueChanged<int> onTap;
+
+  static const List<String> _labels = ['AVATAR', 'FRAME'];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 50,
+      decoration: BoxDecoration(
+        color: Cyber.bg.withValues(alpha: 0.4),
+        border: const Border(
+          bottom: BorderSide(color: Color(0x38ffffff)),
+        ),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final double tabWidth = constraints.maxWidth / _labels.length;
+          return Stack(
+            children: [
+              Row(
+                children: [
+                  for (int i = 0; i < _labels.length; i++)
+                    Expanded(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => onTap(i),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 220),
+                          color: activeTab == i
+                              ? Cyber.cyan.withValues(alpha: 0.07)
+                              : Colors.transparent,
+                          alignment: Alignment.center,
+                          child: Text(
+                            _labels[i],
+                            style: Cyber.label(
+                              10,
+                              color: activeTab == i
+                                  ? Cyber.cyan
+                                  : AppTheme.slate400,
+                              weight: FontWeight.w900,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              AnimatedBuilder(
+                animation: indicatorAnimation,
+                builder: (context, child) => Positioned(
+                  left: tabWidth * indicatorAnimation.value + tabWidth * 0.18,
+                  bottom: 0,
+                  width: tabWidth * 0.64,
+                  height: 3,
+                  child: child!,
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Cyber.cyan,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Cyber.cyan.withValues(alpha: 0.7),
+                        blurRadius: 10,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Live avatar + equipped-frame preview at the top of the editor.
+class _PreviewAvatar extends StatelessWidget {
+  const _PreviewAvatar({required this.avatar, required this.frame});
+
+  final AvatarOption avatar;
+  final AvatarFrameOption? frame;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 110,
+      height: 110,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Cyber.panel,
+          border: frame == null
+              ? Border.all(color: Cyber.cyan, width: 2)
+              : null,
+        ),
+        child: AvatarFrameRing(
+          frame: frame,
+          glow: true,
+          child: Image.asset(
+            avatar.assetPath,
+            fit: BoxFit.cover,
+            alignment: Alignment.topCenter,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One frame option in the FRAME tab — the selected avatar wrapped in the
+/// frame's ring (or no ring for the "NONE" tile), with a label caption and the
+/// equipped tile carrying the lime select treatment.
+class _EditableFrameTile extends StatelessWidget {
+  const _EditableFrameTile({
+    required this.frame,
+    required this.avatar,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final AvatarFrameOption? frame;
+  final AvatarOption avatar;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = selected ? Cyber.lime : Cyber.line;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: frame?.label ?? 'No frame',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          decoration: BoxDecoration(
+            color: Cyber.panel,
+            border: Border.all(color: accent, width: selected ? 2 : 1),
+            boxShadow: selected
+                ? Cyber.glow(Cyber.lime, alpha: 0.18, blur: 14, spread: -2)
+                : null,
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 22),
+                child: AvatarFrameRing(
+                  frame: frame,
+                  child: Image.asset(
+                    avatar.assetPath,
+                    fit: BoxFit.cover,
+                    alignment: Alignment.topCenter,
+                  ),
+                ),
+              ),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 3),
+                  color: Cyber.bg.withValues(alpha: 0.8),
+                  child: Text(
+                    (frame?.label ?? 'NONE').toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: Cyber.label(
+                      8,
+                      color: selected ? Cyber.lime : Cyber.muted,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                ),
+              ),
+              if (selected) const _EditableAvatarSelectedCorner(),
+            ],
+          ),
+        ),
       ),
     );
   }

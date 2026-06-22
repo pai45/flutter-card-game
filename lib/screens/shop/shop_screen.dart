@@ -2,18 +2,17 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_event.dart';
 import '../../blocs/game/game_state.dart';
 import '../../config/enums.dart';
-import '../../models/avatar_border_option.dart';
+import '../../models/avatar_frame_option.dart';
 import '../../models/cards.dart';
 import '../../models/oz_coin_ledger.dart';
 import '../../models/shop.dart';
 import '../../utils/sound_effects.dart';
-import '../../widgets/avatar_border_ring.dart';
+import '../../widgets/avatar_frame_ring.dart';
 import '../../widgets/card_unpack_animation.dart';
 import '../../widgets/cyber/cyber_filter_chips.dart';
 import '../../widgets/cyber/cyber_underline_tabs.dart';
@@ -21,8 +20,25 @@ import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/staggered_card_entrance.dart';
 import '../../widgets/stat_oz_top_bar.dart';
+import 'widgets/shop_acquire_overlay.dart';
+import 'widgets/shop_card.dart';
+
+// CoinIcon now lives in shop_card.dart; re-export so the many screens that
+// import it from here keep working unchanged.
+export 'widgets/shop_card.dart' show CoinIcon;
 
 String _tierString(CardTier t) => t.name;
+
+/// Fired by a tile when a coin purchase succeeds — drives the one shared
+/// full-screen ACQUIRED reveal. [preview] is the item's own art so the moment
+/// denotes *this* item.
+typedef OnAcquired =
+    void Function({
+      required Widget preview,
+      required String name,
+      required Color accent,
+      required int coinsSpent,
+    });
 
 const Color _bg = Color(0xff0d111a);
 const Color _surface = Color(0xff1e2538);
@@ -48,7 +64,7 @@ Color _tierAccent(String id) => switch (id) {
 
 const int _shopTabCount = 6;
 
-// Sport-filter chips shared by the BORDER and BANNER tabs (mirrors the
+// Sport-filter chips shared by the FRAME and BANNER tabs (mirrors the
 // leaderboard's sport strip). NBA/F1 have no items seeded yet → empty state.
 const List<String> _shopSportFilters = ['ALL', 'FIFA', 'IPL', 'UCL', 'NBA', 'F1'];
 
@@ -136,6 +152,8 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
   late final TabController _tabController;
   int _activeTab = 0;
   int? _celebrationCoins;
+  // The one shared "ACQUIRED" reveal, shown over the whole shop on any coin buy.
+  Widget? _acquireOverlay;
 
   @override
   void initState() {
@@ -168,6 +186,26 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
     });
   }
 
+  // Shown when any cosmetic / pack is bought with coins — one reveal for all.
+  void _showAcquired({
+    required Widget preview,
+    required String name,
+    required Color accent,
+    required int coinsSpent,
+  }) {
+    setState(() {
+      _acquireOverlay = ShopAcquireOverlay(
+        preview: preview,
+        name: name,
+        accent: accent,
+        coinsSpent: coinsSpent,
+        onDismissed: () {
+          if (mounted) setState(() => _acquireOverlay = null);
+        },
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<GameBloc, GameState>(
@@ -190,7 +228,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                     CyberUnderlineTabs(
                       labels: const [
                         'AVATAR',
-                        'BORDER',
+                        'FRAME',
                         'BANNER',
                         'COINS',
                         'PACKS',
@@ -227,6 +265,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
               ),
               if (_celebrationCoins != null)
                 _CelebrationOverlay(amount: _celebrationCoins!),
+              if (_acquireOverlay != null) Positioned.fill(child: _acquireOverlay!),
             ],
           ),
           bottomNavigationBar: LandingBottomNavigation(
@@ -241,12 +280,13 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
 
   Widget _buildTab(GameState state) {
     return switch (_activeTab) {
-      0 => const AvatarsTab(),
-      1 => const BordersTab(),
-      2 => const BannersTab(),
+      0 => AvatarsTab(onAcquired: _showAcquired),
+      1 => FramesTab(onAcquired: _showAcquired),
+      2 => BannersTab(onAcquired: _showAcquired),
       3 => CoinsTab(onPurchased: _showCelebration),
+      // Packs keep their own richer 5-card reveal as the acquire moment.
       4 => const PacksTab(),
-      _ => const CardsTab(),
+      _ => CardsTab(onAcquired: _showAcquired),
     };
   }
 }
@@ -263,7 +303,9 @@ final List<String> _avatarNationFilters = () {
 }();
 
 class AvatarsTab extends StatefulWidget {
-  const AvatarsTab({super.key});
+  const AvatarsTab({required this.onAcquired, super.key});
+
+  final OnAcquired onAcquired;
 
   @override
   State<AvatarsTab> createState() => _AvatarsTabState();
@@ -288,29 +330,38 @@ class _AvatarsTabState extends State<AvatarsTab> {
           onSelect: (value) => setState(() => _nation = value),
         ),
         Expanded(
-          child: LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              final int columns = constraints.maxWidth >= 720
-                  ? 5
-                  : constraints.maxWidth >= 480
-                  ? 4
-                  : 3;
-              return GridView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                itemCount: items.length,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: columns,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 0.72,
-                ),
-                itemBuilder: (BuildContext context, int index) {
-                  // Same cascade entrance the match cards use — each tile slides
-                  // + fades in on a per-index stagger so the grid fills the page.
-                  return StaggeredCardEntrance(
-                    index: index,
-                    animate: true,
-                    child: _AvatarShopTile(item: items[index]),
+          child: BlocBuilder<GameBloc, GameState>(
+            builder: (BuildContext context, GameState state) {
+              return LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  final int columns = constraints.maxWidth >= 720
+                      ? 5
+                      : constraints.maxWidth >= 480
+                      ? 4
+                      : 3;
+                  return GridView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                    itemCount: items.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: columns,
+                      mainAxisSpacing: 12,
+                      crossAxisSpacing: 12,
+                      childAspectRatio: 0.72,
+                    ),
+                    itemBuilder: (BuildContext context, int index) {
+                      final item = items[index];
+                      // Same cascade entrance the match cards use — each tile
+                      // slides + fades in on a per-index stagger.
+                      return StaggeredCardEntrance(
+                        index: index,
+                        animate: true,
+                        child: _AvatarShopTile(
+                          item: item,
+                          owned: state.ownedAvatarIds.contains(item.shortName),
+                          onAcquired: widget.onAcquired,
+                        ),
+                      );
+                    },
                   );
                 },
               );
@@ -323,7 +374,9 @@ class _AvatarsTabState extends State<AvatarsTab> {
 }
 
 class BannersTab extends StatefulWidget {
-  const BannersTab({super.key});
+  const BannersTab({required this.onAcquired, super.key});
+
+  final OnAcquired onAcquired;
 
   @override
   State<BannersTab> createState() => _BannersTabState();
@@ -348,21 +401,30 @@ class _BannersTabState extends State<BannersTab> {
         Expanded(
           child: items.isEmpty
               ? _ShopEmptyFilter(sport: _sport)
-              : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
-                  itemCount: items.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 12),
-                  itemBuilder: (BuildContext context, int index) {
-                    // Each banner cascades in (slide + fade, per-index stagger).
-                    return StaggeredCardEntrance(
-                      index: index,
-                      animate: true,
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 560),
-                          child: _BannerShopTile(item: items[index]),
-                        ),
-                      ),
+              : BlocBuilder<GameBloc, GameState>(
+                  builder: (BuildContext context, GameState state) {
+                    return ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+                      itemCount: items.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 12),
+                      itemBuilder: (BuildContext context, int index) {
+                        final item = items[index];
+                        // Each banner cascades in (slide + fade, per-index).
+                        return StaggeredCardEntrance(
+                          index: index,
+                          animate: true,
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 560),
+                              child: _BannerShopTile(
+                                item: item,
+                                owned: state.ownedBannerIds.contains(item.id),
+                                onAcquired: widget.onAcquired,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
@@ -373,21 +435,23 @@ class _BannersTabState extends State<BannersTab> {
 }
 
 // ─── Borders tab ─────────────────────────────────────────────────────────────
-class BordersTab extends StatefulWidget {
-  const BordersTab({super.key});
+class FramesTab extends StatefulWidget {
+  const FramesTab({required this.onAcquired, super.key});
+
+  final OnAcquired onAcquired;
 
   @override
-  State<BordersTab> createState() => _BordersTabState();
+  State<FramesTab> createState() => _FramesTabState();
 }
 
-class _BordersTabState extends State<BordersTab> {
+class _FramesTabState extends State<FramesTab> {
   String _sport = 'ALL';
 
   @override
   Widget build(BuildContext context) {
     final items = _sport == 'ALL'
-        ? avatarBorderOptions
-        : avatarBorderOptions.where((b) => b.sports.contains(_sport)).toList();
+        ? avatarFrameOptions
+        : avatarFrameOptions.where((b) => b.sports.contains(_sport)).toList();
     return Column(
       children: [
         CyberFilterChips(
@@ -412,17 +476,18 @@ class _BordersTabState extends State<BordersTab> {
                         childAspectRatio: 0.78,
                       ),
                       itemBuilder: (BuildContext context, int index) {
-                        final border = items[index];
+                        final frame = items[index];
                         return StaggeredCardEntrance(
                           index: index,
                           animate: true,
-                          child: _BorderShopTile(
-                            border: border,
-                            owned: state.ownedAvatarBorderIds.contains(
-                              border.id,
+                          child: _FrameShopTile(
+                            frame: frame,
+                            owned: state.ownedAvatarFrameIds.contains(
+                              frame.id,
                             ),
                             equipped:
-                                state.equippedAvatarBorderId == border.id,
+                                state.equippedAvatarFrameId == frame.id,
+                            onAcquired: widget.onAcquired,
                           ),
                         );
                       },
@@ -435,105 +500,103 @@ class _BordersTabState extends State<BordersTab> {
   }
 }
 
-class _BorderShopTile extends StatelessWidget {
-  const _BorderShopTile({
-    required this.border,
+class _FrameShopTile extends StatelessWidget {
+  const _FrameShopTile({
+    required this.frame,
     required this.owned,
     required this.equipped,
+    required this.onAcquired,
   });
 
-  final AvatarBorderOption border;
+  final AvatarFrameOption frame;
   final bool owned;
   final bool equipped;
+  final OnAcquired onAcquired;
+
+  Widget _ring({required bool glow}) => SizedBox(
+    width: 66,
+    height: 66,
+    child: AvatarFrameRing(
+      frame: frame,
+      glow: glow,
+      child: Container(
+        color: _surface,
+        alignment: Alignment.center,
+        child: Icon(
+          Icons.person,
+          color: Colors.white.withValues(alpha: 0.45),
+          size: 30,
+        ),
+      ),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
-    final Color primary = border.primary;
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [primary.withValues(alpha: 0.12), _bg],
-        ),
-        // Only the equipped tile reads as "live" (brighter edge); its ring glow
-        // is the single focal accent (glow rule) — resting tiles stay calm.
-        border: Border.all(
-          color: primary.withValues(alpha: equipped ? 0.9 : 0.4),
-          width: equipped ? 1.6 : 1.0,
-        ),
-      ),
-      child: Column(
-        children: [
-          Expanded(
-            child: Center(
-              child: SizedBox(
-                width: 66,
-                height: 66,
-                child: AvatarBorderRing(
-                  border: border,
-                  glow: equipped,
-                  child: Container(
-                    color: _surface,
-                    alignment: Alignment.center,
-                    child: Icon(
-                      Icons.person,
-                      color: Colors.white.withValues(alpha: 0.45),
-                      size: 30,
-                    ),
-                  ),
-                ),
+    final Color primary = frame.primary;
+    // Only the equipped tile is "live" — it's the single focal glow (glow rule).
+    return ShopCardFrame(
+      accent: primary,
+      focal: equipped,
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          children: [
+            Expanded(child: Center(child: _ring(glow: equipped))),
+            const SizedBox(height: 8),
+            Text(
+              frame.label.toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontFamily: 'Orbitron',
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.6,
               ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            border.label.toUpperCase(),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
-              fontFamily: 'Orbitron',
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.6,
-            ),
-          ),
-          const SizedBox(height: 8),
-          _action(context),
-        ],
+            const SizedBox(height: 8),
+            _action(context, primary),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _action(BuildContext context) {
+  Widget _action(BuildContext context, Color primary) {
     if (equipped) {
-      return _ShopButton(label: 'EQUIPPED', filled: true, onTap: () {});
+      return ShopActionButton(label: 'EQUIPPED', filled: true, onTap: () {});
     }
     if (owned) {
-      return _ShopButton(
+      return ShopActionButton(
         label: 'EQUIP',
         filled: false,
         onTap: () {
           playSound(SoundEffect.uiTap);
-          context.read<GameBloc>().add(AvatarBorderEquipped(border.id));
+          context.read<GameBloc>().add(AvatarFrameEquipped(frame.id));
         },
       );
     }
-    return _ShopButton(
-      label: _formatInt(border.coinPrice),
+    return ShopActionButton(
+      label: _formatInt(frame.coinPrice),
       filled: true,
-      icon: CoinIcon(size: 14),
+      icon: const CoinIcon(size: 14),
       onTap: () {
         final GameBloc bloc = context.read<GameBloc>();
-        if (bloc.state.coins < border.coinPrice) {
+        if (bloc.state.coins < frame.coinPrice) {
           _showSnack(context, 'Not enough coins — top up in the Coins tab.', false);
           return;
         }
         playSound(SoundEffect.uiTap);
-        bloc.add(AvatarBorderPurchased(border.id));
+        bloc.add(AvatarFramePurchased(frame.id));
+        onAcquired(
+          preview: _ring(glow: true),
+          name: frame.label,
+          accent: primary,
+          coinsSpent: frame.coinPrice,
+        );
       },
     );
   }
@@ -559,95 +622,115 @@ class _ShopEmptyFilter extends StatelessWidget {
 }
 
 class _AvatarShopTile extends StatelessWidget {
-  const _AvatarShopTile({required this.item});
+  const _AvatarShopTile({
+    required this.item,
+    required this.owned,
+    required this.onAcquired,
+  });
 
   final ({String shortName, String imagePath, int price}) item;
+  final bool owned;
+  final OnAcquired onAcquired;
+
+  Widget _portrait() => Image.asset(
+    item.imagePath,
+    fit: BoxFit.cover,
+    alignment: Alignment.topCenter,
+    errorBuilder: (_, _, _) => Container(
+      color: _surface,
+      child: Icon(Icons.person, color: _cyan.withValues(alpha: 0.3), size: 32),
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
-    return _Pressable(
-      onTap: () => _showSnack(context, 'Avatar placeholder reserved.'),
-      child: Container(
-        decoration: BoxDecoration(
-          color: _bg,
-          border: Border.all(color: _cyan.withValues(alpha: 0.20)),
-        ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Positioned.fill(
-              bottom: 50,
-              child: Image.asset(
-                item.imagePath,
-                fit: BoxFit.cover,
-                alignment: Alignment.topCenter,
-                errorBuilder: (_, _, _) => Container(
-                  color: _surface,
-                  child: Icon(
-                    Icons.person,
-                    color: _cyan.withValues(alpha: 0.3),
-                    size: 32,
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              height: 50,
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.88),
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      item.shortName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
+    return ShopCardFrame(
+      accent: _cyan,
+      stamp: owned ? const ShopStateStamp(kind: ShopStampKind.owned) : null,
+      child: Column(
+        children: [
+          Expanded(child: SizedBox.expand(child: _portrait())),
+          // Tappable price footer = the buy control (coin buys are instant,
+          // matching borders/cards). Shows OWNED once collected.
+          ShopPressable(
+            onTap: owned ? () {} : () => _buy(context),
+            child: Container(
+              height: 36,
+              color: Colors.black.withValues(alpha: 0.88),
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: owned
+                  ? const Text(
+                      'OWNED',
+                      style: TextStyle(
+                        color: _cyan,
                         fontFamily: 'Orbitron',
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.5,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.4,
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
+                    )
+                  : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        CoinIcon(size: 11),
-                        const SizedBox(width: 4),
-                        Text(
-                          _formatInt(item.price),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontFamily: 'Orbitron',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w900,
-                            fontFeatures: [FontFeature.tabularFigures()],
+                        Flexible(
+                          child: Text(
+                            item.shortName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: _secondary,
+                              fontFamily: 'Orbitron',
+                              fontSize: 8,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 8),
+                        ShopPricePill(coins: item.price, size: 11),
                       ],
                     ),
-                  ],
-                ),
-              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
+    );
+  }
+
+  void _buy(BuildContext context) {
+    final GameBloc bloc = context.read<GameBloc>();
+    if (bloc.state.coins < item.price) {
+      _showSnack(context, 'Not enough coins — top up in the Coins tab.', false);
+      return;
+    }
+    bloc.add(
+      ShopAvatarPurchased(
+        avatarId: item.shortName,
+        price: item.price,
+        name: item.shortName,
+      ),
+    );
+    onAcquired(
+      preview: SizedBox(
+        width: 120,
+        height: 150,
+        child: ShopCardFrame(accent: _cyan, child: _portrait()),
+      ),
+      name: item.shortName,
+      accent: _cyan,
+      coinsSpent: item.price,
     );
   }
 }
 
 class _BannerShopTile extends StatelessWidget {
-  const _BannerShopTile({required this.item});
+  const _BannerShopTile({
+    required this.item,
+    required this.owned,
+    required this.onAcquired,
+  });
 
   final ({
     String id,
@@ -659,76 +742,86 @@ class _BannerShopTile extends StatelessWidget {
     String sport,
   })
   item;
+  final bool owned;
+  final OnAcquired onAcquired;
+
+  // The banner's own gradient art + crest — this is what it denotes. The shared
+  // frame supplies the chamfer + border, so the banner drops its bespoke notch.
+  Widget _art() => CustomPaint(
+    painter: _BannerPlaceholderPainter(
+      start: item.start,
+      end: item.end,
+      accent: item.accent,
+    ),
+    child: Stack(
+      children: [
+        Positioned(
+          right: 22,
+          top: 18,
+          bottom: 18,
+          child: _BannerCrest(icon: item.icon, color: item.accent),
+        ),
+      ],
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
-    return _Pressable(
-      onTap: () => _showSnack(context, 'Banner placeholder reserved.'),
+    return ShopCardFrame(
+      accent: item.accent,
+      stamp: owned
+          ? ShopStateStamp(kind: ShopStampKind.owned, accent: item.accent)
+          : null,
       child: SizedBox(
         height: 112,
-        child: ClipPath(
-          clipper: const _BannerNotchClipper(),
-          child: CustomPaint(
-            painter: _BannerPlaceholderPainter(
-              start: item.start,
-              end: item.end,
-              accent: item.accent,
+        child: Stack(
+          children: [
+            Positioned.fill(child: _art()),
+            Positioned(
+              top: 8,
+              left: 10,
+              child: ShopTag(label: item.sport, accent: item.accent),
             ),
-            foregroundPainter: _BannerBorderPainter(item.accent),
-            child: Stack(
-              children: [
-                Positioned(
-                  right: 22,
-                  top: 18,
-                  bottom: 18,
-                  child: _BannerCrest(icon: item.icon, color: item.accent),
+            if (!owned)
+              Positioned(
+                left: 0,
+                bottom: 0,
+                child: ShopPressable(
+                  onTap: () => _buy(context),
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.56),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 9,
+                    ),
+                    child: ShopPricePill(coins: item.price, size: 15),
+                  ),
                 ),
-                Positioned(
-                  left: 0,
-                  bottom: 0,
-                  width: 92,
-                  height: 38,
-                  child: _CosmeticPriceStrip(price: item.price, compact: true),
-                ),
-              ],
-            ),
-          ),
+              ),
+          ],
         ),
       ),
     );
   }
-}
 
-class _CosmeticPriceStrip extends StatelessWidget {
-  const _CosmeticPriceStrip({required this.price, this.compact = false});
-
-  final int price;
-  final bool compact;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Colors.black.withValues(alpha: compact ? 0.56 : 0.86),
-      alignment: Alignment.center,
-      padding: EdgeInsets.symmetric(horizontal: compact ? 10 : 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CoinIcon(size: compact ? 16 : 14),
-          const SizedBox(width: 6),
-          Text(
-            _formatInt(price),
-            style: TextStyle(
-              color: Colors.white,
-              fontFamily: 'Orbitron',
-              fontSize: compact ? 15 : 14,
-              fontWeight: FontWeight.w900,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-        ],
+  void _buy(BuildContext context) {
+    final GameBloc bloc = context.read<GameBloc>();
+    if (bloc.state.coins < item.price) {
+      _showSnack(context, 'Not enough coins — top up in the Coins tab.', false);
+      return;
+    }
+    bloc.add(
+      ShopBannerPurchased(bannerId: item.id, price: item.price, name: item.id),
+    );
+    onAcquired(
+      preview: SizedBox(
+        width: 240,
+        height: 96,
+        child: ShopCardFrame(accent: item.accent, child: _art()),
       ),
+      name: item.id,
+      accent: item.accent,
+      coinsSpent: item.price,
     );
   }
 }
@@ -825,44 +918,6 @@ class _BannerPlaceholderPainter extends CustomPainter {
       old.start != start || old.end != end || old.accent != accent;
 }
 
-class _BannerBorderPainter extends CustomPainter {
-  const _BannerBorderPainter(this.color);
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawPath(
-      const _BannerNotchClipper().getClip(size),
-      Paint()
-        ..color = color.withValues(alpha: 0.45)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_BannerBorderPainter old) => old.color != color;
-}
-
-class _BannerNotchClipper extends CustomClipper<Path> {
-  const _BannerNotchClipper();
-
-  @override
-  Path getClip(Size size) {
-    return Path()
-      ..moveTo(0, 0)
-      ..lineTo(size.width, 0)
-      ..lineTo(size.width, size.height - 24)
-      ..lineTo(size.width - 24, size.height)
-      ..lineTo(0, size.height)
-      ..close();
-  }
-
-  @override
-  bool shouldReclip(_BannerNotchClipper oldClipper) => false;
-}
-
 class CoinsTab extends StatelessWidget {
   const CoinsTab({required this.onPurchased, super.key});
 
@@ -902,68 +957,41 @@ class _CoinTierTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color accent = _tierAccent(tier.id);
+    // Premium tiers (champion/legendary) are the one focal glow per the glow rule.
     final bool premium = tier.id == 'champion' || tier.id == 'legendary';
-    final bool hasRibbon = tier.tag != null;
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [accent.withValues(alpha: 0.14), _bg],
-        ),
-        border: Border.all(
-          color: accent.withValues(alpha: premium ? 0.95 : 0.55),
-          width: premium ? 1.8 : 1.0,
-        ),
-        // Only premium (champion/legendary) tiers glow; standard tiers rely on
-        // the gradient + border so the premium tiers stand out.
-        boxShadow: premium
-            ? [
-                BoxShadow(
-                  color: accent.withValues(alpha: 0.45),
-                  blurRadius: 24,
-                  spreadRadius: 1,
-                ),
-              ]
-            : null,
-      ),
+    return ShopCardFrame(
+      accent: accent,
+      focal: premium,
       child: Stack(
-        clipBehavior: Clip.none,
         children: [
           Positioned.fill(
             child: CustomPaint(painter: _TierBackgroundPainter(accent)),
           ),
-          if (hasRibbon)
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                color: accent,
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Text(
-                  tier.tag!,
-                  style: TextStyle(
-                    color: _bg,
-                    fontFamily: 'Orbitron',
-                    fontWeight: FontWeight.w900,
-                    fontSize: 9,
-                    letterSpacing: 1.6,
-                  ),
-                ),
-              ),
-            ),
           Padding(
-            padding: EdgeInsets.fromLTRB(12, hasRibbon ? 32 : 14, 12, 12),
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // The old ribbon + rotated bonus sticker collapse into one calm
+                // header row of chips.
                 SizedBox(
-                  height: 64,
+                  height: 18,
+                  child: Row(
+                    children: [
+                      if (tier.bonusPercent > 0)
+                        ShopTag(label: '+${tier.bonusPercent}%', accent: accent),
+                      const Spacer(),
+                      if (tier.tag != null)
+                        ShopTag(label: tier.tag!, accent: accent),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                SizedBox(
+                  height: 58,
                   child: Center(child: _CoinStackArt(accent: accent)),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Center(
                   child: Text(
                     _formatInt(tier.coins),
@@ -1009,45 +1037,38 @@ class _CoinTierTile extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                _ShopButton(
+                ShopActionButton(
                   label: '₹${_formatInt(tier.inrPrice)}',
                   filled: true,
-                  onTap: () async {
-                    final bool confirmed = await _confirmPurchase(
-                      context,
-                      name: tier.name,
-                      price: '₹${_formatInt(tier.inrPrice)}',
-                      preview: CoinIcon(size: 42),
-                    );
-                    if (!context.mounted || !confirmed) return;
-                    context.read<GameBloc>().add(
-                      CoinsAdded(
-                        tier.coins,
-                        source: OzCoinTransactionSource.shopTopUp,
-                        type: OzCoinTransactionType.topUp,
-                        title: 'COIN TOP-UP',
-                        subtitle: tier.name,
-                      ),
-                    );
-                    onPurchased(tier.coins);
-                    _showSnack(
-                      context,
-                      '+${_formatInt(tier.coins)} coins added',
-                    );
-                  },
+                  onTap: () => _buy(context),
                 ),
               ],
             ),
           ),
-          if (tier.bonusPercent > 0)
-            Positioned(
-              top: hasRibbon ? -10 : -12,
-              right: -8,
-              child: _BonusSticker(percent: tier.bonusPercent, color: accent),
-            ),
         ],
       ),
     );
+  }
+
+  Future<void> _buy(BuildContext context) async {
+    final bool confirmed = await _confirmPurchase(
+      context,
+      name: tier.name,
+      price: '₹${_formatInt(tier.inrPrice)}',
+      preview: const CoinIcon(size: 42),
+    );
+    if (!context.mounted || !confirmed) return;
+    context.read<GameBloc>().add(
+      CoinsAdded(
+        tier.coins,
+        source: OzCoinTransactionSource.shopTopUp,
+        type: OzCoinTransactionType.topUp,
+        title: 'COIN TOP-UP',
+        subtitle: tier.name,
+      ),
+    );
+    onPurchased(tier.coins);
+    _showSnack(context, '+${_formatInt(tier.coins)} coins added');
   }
 }
 
@@ -1336,7 +1357,7 @@ class _PackRevealSequenceScreenState extends State<_PackRevealSequenceScreen> {
               const SizedBox(height: 24),
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
-                child: _ShopButton(
+                child: ShopActionButton(
                   label: 'COLLECT ALL',
                   filled: true,
                   onTap: () {
@@ -1363,15 +1384,10 @@ class _PackTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color accent = pack.gradientAccent ? _magenta : pack.accent;
-    final Widget inner = Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [accent.withValues(alpha: 0.10), _bg.withValues(alpha: 0.95)],
-        ),
-        border: Border.all(color: accent.withValues(alpha: 0.55), width: 1.2),
-      ),
+    // The elite (gradient-accent) pack is the one focal glow per the glow rule.
+    return ShopCardFrame(
+      accent: accent,
+      focal: pack.gradientAccent,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1379,24 +1395,9 @@ class _PackTile extends StatelessWidget {
             padding: const EdgeInsets.all(10),
             child: Stack(
               children: [
-                Container(
-                  decoration: BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                        color: accent.withValues(alpha: 0.55),
-                        blurRadius: 26,
-                        spreadRadius: -2,
-                      ),
-                    ],
-                  ),
-                  child: PackDesignWidget(pack: pack, width: 120, height: 172),
-                ),
+                PackDesignWidget(pack: pack, width: 120, height: 172),
                 if (pack.gradientAccent)
-                  Positioned(
-                    top: -4,
-                    right: -4,
-                    child: _CornerStar(color: _gold),
-                  ),
+                  Positioned(top: -4, right: -4, child: _CornerStar(color: _gold)),
               ],
             ),
           ),
@@ -1439,6 +1440,7 @@ class _PackTile extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 8),
+                  // Guarantee → the shared tag chip (with room to wrap).
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 6,
@@ -1446,7 +1448,7 @@ class _PackTile extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: accent.withValues(alpha: 0.10),
-                      border: Border.all(color: accent.withValues(alpha: 0.6)),
+                      border: Border.all(color: accent.withValues(alpha: 0.55)),
                     ),
                     child: Row(
                       children: [
@@ -1479,12 +1481,14 @@ class _PackTile extends StatelessWidget {
                         children: [
                           Opacity(
                             opacity: isDisabled ? 0.5 : 1.0,
-                            child: _ShopButton(
+                            child: ShopActionButton(
                               label: isStarterPack
                                   ? (isDisabled ? 'CLAIMED' : 'FREE')
                                   : _formatInt(pack.coinPrice),
                               filled: false,
-                              icon: isStarterPack ? null : CoinIcon(size: 14),
+                              icon: isStarterPack
+                                  ? null
+                                  : const CoinIcon(size: 14),
                               onTap: isDisabled
                                   ? () {}
                                   : () => _buyWithCoins(context),
@@ -1492,7 +1496,7 @@ class _PackTile extends StatelessWidget {
                           ),
                           const SizedBox(height: 6),
                           if (!isStarterPack)
-                            _ShopButton(
+                            ShopActionButton(
                               label: '₹${_formatInt(pack.inrPrice)}',
                               filled: true,
                               onTap: () => _buyWithInr(context),
@@ -1507,20 +1511,6 @@ class _PackTile extends StatelessWidget {
           ),
         ],
       ),
-    );
-
-    if (!pack.gradientAccent) return inner;
-    return Container(
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xffff3df7), Color(0xff8a5cff), Color(0xffff3df7)],
-        ),
-        boxShadow: [
-          BoxShadow(color: _magenta.withValues(alpha: 0.45), blurRadius: 22),
-        ],
-      ),
-      child: inner,
     );
   }
 
@@ -1975,7 +1965,9 @@ class _PackDesignPainter extends CustomPainter {
 }
 
 class CardsTab extends StatefulWidget {
-  const CardsTab({super.key});
+  const CardsTab({required this.onAcquired, super.key});
+
+  final OnAcquired onAcquired;
 
   @override
   State<CardsTab> createState() => _CardsTabState();
@@ -2040,6 +2032,7 @@ class _CardsTabState extends State<CardsTab> with TickerProviderStateMixin {
                       flash: _flashingCardId == card.id,
                       onInsufficient: () => _shake(card.id),
                       onPurchased: () => _flash(card.id),
+                      onAcquired: widget.onAcquired,
                     ),
                   );
                 },
@@ -2089,6 +2082,7 @@ class _PurchasableCardTile extends StatelessWidget {
     required this.flash,
     required this.onInsufficient,
     required this.onPurchased,
+    required this.onAcquired,
   });
 
   final PlayerCard card;
@@ -2097,16 +2091,19 @@ class _PurchasableCardTile extends StatelessWidget {
   final bool flash;
   final VoidCallback onInsufficient;
   final VoidCallback onPurchased;
+  final OnAcquired onAcquired;
+
+  Color get _rarityColor => switch (card.tier) {
+    CardTier.bronze => _secondary,
+    CardTier.silver => _cyan,
+    CardTier.gold => _violet,
+    CardTier.platinum => _gold,
+  };
 
   @override
   Widget build(BuildContext context) {
     final int coinPrice = _cardCoinPrice(card);
-    final Color rarityColor = switch (card.tier) {
-      CardTier.bronze => _secondary,
-      CardTier.silver => _cyan,
-      CardTier.gold => _violet,
-      CardTier.platinum => _gold,
-    };
+    final Color rarityColor = _rarityColor;
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0, end: shake ? 1 : 0),
       duration: const Duration(milliseconds: 400),
@@ -2114,118 +2111,58 @@ class _PurchasableCardTile extends StatelessWidget {
         final double x = sin(value * pi * 4) * 4;
         return Transform.translate(offset: Offset(x, 0), child: child);
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 600),
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [rarityColor.withValues(alpha: 0.10), _bg],
-          ),
-          border: Border.all(
-            color: flash ? _cyan : rarityColor.withValues(alpha: 0.55),
-            width: flash ? 2 : 1.2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: rarityColor.withValues(alpha: flash ? 0.5 : 0.18),
-              blurRadius: flash ? 22 : 14,
-            ),
-          ],
-        ),
-        child: Stack(
+      // A successful buy flashes the tile as the single focal glow.
+      child: ShopCardFrame(
+        accent: rarityColor,
+        focal: flash,
+        stamp: owned ? const ShopStateStamp(kind: ShopStampKind.owned) : null,
+        child: Column(
           children: [
-            Column(
-              children: [
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 4),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 1,
-                  ),
-                  decoration: BoxDecoration(
-                    color: rarityColor.withValues(alpha: 0.18),
-                    border: Border.all(
-                      color: rarityColor.withValues(alpha: 0.55),
-                    ),
-                  ),
-                  child: Text(
-                    _tierString(card.tier).toUpperCase(),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: rarityColor,
-                      fontFamily: 'Orbitron',
-                      fontSize: 9,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.4,
-                    ),
-                  ),
-                ),
-                CyberPlayerCardTile(
-                  card: card,
-                  selected: flash,
-                  size: VisualCardSize.md,
-                ),
-                if (!owned) ...[
-                  const SizedBox(height: 6),
-                  _ShopButton(
-                    label: _formatInt(coinPrice),
-                    filled: false,
-                    icon: CoinIcon(size: 14),
-                    onTap: () => _buyWithCoins(context, coinPrice),
-                  ),
-                  const SizedBox(height: 4),
-                  _ShopButton(
-                    label: '₹${_formatInt(_cardInrPrice(card))}',
-                    filled: true,
-                    onTap: () => _buyWithInr(context),
-                  ),
-                ],
-              ],
-            ),
-            if (owned)
-              Positioned.fill(
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.70),
-                  alignment: Alignment.center,
-                  child: Transform.rotate(
-                    angle: -0.14,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _cyan.withValues(alpha: 0.14),
-                        border: Border.all(color: _cyan, width: 1.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: _cyan.withValues(alpha: 0.45),
-                            blurRadius: 18,
-                          ),
-                        ],
-                      ),
-                      child: const Text(
-                        'OWNED',
-                        style: TextStyle(
-                          color: _cyan,
-                          fontFamily: 'Orbitron',
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+            ShopHeaderStrip(
+              tag: ShopTag(
+                label: _tierString(card.tier),
+                accent: rarityColor,
               ),
+            ),
+            const SizedBox(height: 2),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(6, 0, 6, 6),
+              child: Column(
+                children: [
+                  CyberPlayerCardTile(
+                    card: card,
+                    selected: flash,
+                    size: VisualCardSize.md,
+                  ),
+                  if (!owned) ...[
+                    const SizedBox(height: 6),
+                    ShopActionButton(
+                      label: _formatInt(coinPrice),
+                      filled: false,
+                      icon: const CoinIcon(size: 14),
+                      onTap: () => _buyWithCoins(context, coinPrice),
+                    ),
+                    const SizedBox(height: 4),
+                    ShopActionButton(
+                      label: '₹${_formatInt(_cardInrPrice(card))}',
+                      filled: true,
+                      onTap: () => _buyWithInr(context),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+
+  Widget _revealPreview() => CyberPlayerCardTile(
+    card: card,
+    selected: true,
+    size: VisualCardSize.md,
+  );
 
   void _buyWithCoins(BuildContext context, int price) {
     final GameBloc bloc = context.read<GameBloc>();
@@ -2237,7 +2174,12 @@ class _PurchasableCardTile extends StatelessWidget {
     playSound(SoundEffect.coins);
     bloc.add(DirectCardPurchased(cardId: card.id, price: price));
     onPurchased();
-    _showSnack(context, '${card.shortName} added to your cards.');
+    onAcquired(
+      preview: _revealPreview(),
+      name: card.name,
+      accent: _rarityColor,
+      coinsSpent: price,
+    );
   }
 
   Future<void> _buyWithInr(BuildContext context) async {
@@ -2257,7 +2199,12 @@ class _PurchasableCardTile extends StatelessWidget {
       DirectCardPurchased(cardId: card.id, price: 0, spendCoins: false),
     );
     onPurchased();
-    _showSnack(context, '${card.shortName} added to your cards.');
+    onAcquired(
+      preview: _revealPreview(),
+      name: card.name,
+      accent: _rarityColor,
+      coinsSpent: 0,
+    );
   }
 
   // ignore: unused_element
@@ -2284,123 +2231,8 @@ class _PurchasableCardTile extends StatelessWidget {
 }
 
 // PackOpeningOverlay removed — replaced by _PackRevealSequence + CardUnpackAnimation
-
-class CoinIcon extends StatelessWidget {
-  const CoinIcon({this.size = 24, super.key});
-
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: SvgPicture.asset(
-        'assets/icons/oz_coins.svg',
-        width: size,
-        height: size,
-        fit: BoxFit.contain,
-      ),
-    );
-  }
-}
-
-class _Pressable extends StatefulWidget {
-  const _Pressable({required this.child, required this.onTap});
-
-  final Widget child;
-  final VoidCallback onTap;
-
-  @override
-  State<_Pressable> createState() => _PressableState();
-}
-
-class _PressableState extends State<_Pressable> {
-  bool _pressed = false;
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTapDown: (_) => setState(() => _pressed = true),
-        onTapCancel: () => setState(() => _pressed = false),
-        onTapUp: (_) => setState(() => _pressed = false),
-        onTap: widget.onTap,
-        child: AnimatedScale(
-          duration: const Duration(milliseconds: 150),
-          scale: _pressed ? 0.97 : 1,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.zero,
-              boxShadow: _hovered
-                  ? [
-                      BoxShadow(
-                        color: _cyan.withValues(alpha: 0.25),
-                        blurRadius: 16,
-                      ),
-                    ]
-                  : null,
-            ),
-            child: widget.child,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ShopButton extends StatelessWidget {
-  const _ShopButton({
-    required this.label,
-    required this.filled,
-    required this.onTap,
-    this.icon,
-  });
-
-  final String label;
-  final bool filled;
-  final VoidCallback onTap;
-  final Widget? icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return _Pressable(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        height: 38,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: filled ? _cyan : Colors.transparent,
-          border: Border.all(color: _cyan),
-          borderRadius: BorderRadius.zero,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[icon!, const SizedBox(width: 6)],
-            Text(
-              label,
-              style: TextStyle(
-                color: filled ? _bg : _cyan,
-                fontFamily: 'Orbitron',
-                fontWeight: FontWeight.w900,
-                fontSize: 12,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+// CoinIcon, the pressable and the shop button now live in widgets/shop_card.dart
+// (CoinIcon, ShopPressable, ShopActionButton) and are shared across the shop.
 
 class _FilterChipButton extends StatelessWidget {
   const _FilterChipButton({
@@ -2415,7 +2247,7 @@ class _FilterChipButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _Pressable(
+    return ShopPressable(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -2556,57 +2388,6 @@ class _CoinStackArt extends StatelessWidget {
   }
 }
 
-class _BonusSticker extends StatelessWidget {
-  const _BonusSticker({required this.percent, required this.color});
-
-  final int percent;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Transform.rotate(
-      angle: 0.22,
-      child: Container(
-        width: 52,
-        height: 52,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: color,
-          border: Border.all(color: Colors.white, width: 1.4),
-          boxShadow: [
-            BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 16),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '+$percent%',
-              style: const TextStyle(
-                color: _bg,
-                fontFamily: 'Orbitron',
-                fontWeight: FontWeight.w900,
-                fontSize: 12,
-              ),
-            ),
-            const Text(
-              'BONUS',
-              style: TextStyle(
-                color: _bg,
-                fontFamily: 'Orbitron',
-                fontWeight: FontWeight.w900,
-                fontSize: 7,
-                letterSpacing: 0.8,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _CornerStar extends StatelessWidget {
   const _CornerStar({required this.color});
   final Color color;
@@ -2719,7 +2500,7 @@ Future<bool> _confirmPurchase(
                 Row(
                   children: [
                     Expanded(
-                      child: _ShopButton(
+                      child: ShopActionButton(
                         label: 'CANCEL',
                         filled: false,
                         onTap: () => Navigator.pop(context, false),
@@ -2727,7 +2508,7 @@ Future<bool> _confirmPurchase(
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: _ShopButton(
+                      child: ShopActionButton(
                         label: 'CONFIRM',
                         filled: true,
                         onTap: () => Navigator.pop(context, true),

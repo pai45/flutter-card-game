@@ -10,6 +10,7 @@ import 'blocs/picks/picks_cubit.dart';
 import 'blocs/picks/picks_state.dart';
 import 'blocs/prediction/prediction_cubit.dart';
 import 'blocs/prediction/prediction_state.dart';
+import 'blocs/quiz/quiz_cubit.dart';
 import 'config/enums.dart';
 import 'config/theme.dart';
 import 'models/league.dart';
@@ -21,6 +22,7 @@ import 'screens/onboarding/profile_setup_screen.dart';
 import 'screens/predictions/league_detail_screen.dart';
 import 'screens/predictions/match_prediction_screen.dart';
 import 'screens/predictions/prediction_home_screen.dart';
+import 'screens/quiz/quiz_hub.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/leaderboard/leaderboard_screen.dart';
 import 'screens/shop/shop_screen.dart';
@@ -55,6 +57,9 @@ class PitchDuelApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (_) => FriendsCubit(SecureGameStorage())..load(),
+        ),
+        BlocProvider(
+          create: (_) => QuizCubit(SecureGameStorage())..load(),
         ),
       ],
       child: MaterialApp(
@@ -247,6 +252,22 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
+  /// Open the Football Quiz from the GAMES tab. Unlike the card games it needs
+  /// no starter deck, so it pushes straight in (no starter-pack gate).
+  void _openQuiz() {
+    final navigator = Navigator.of(context);
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => QuizTabContent(
+          onNavigate: (next) {
+            navigator.pop();
+            _go(next);
+          },
+        ),
+      ),
+    );
+  }
+
   void _openMatch(SportMatch match) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -335,6 +356,7 @@ class _AppShellState extends State<AppShell> {
               onOpenLeague: _openLeague,
               onOpenGame: _openGame,
               onOpenShootout: _openShootout,
+              onOpenQuiz: _openQuiz,
               onAddCoins: _openShopCoins,
             ),
           };

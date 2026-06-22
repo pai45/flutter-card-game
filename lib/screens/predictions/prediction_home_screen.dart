@@ -31,6 +31,7 @@ class PredictionHomeScreen extends StatefulWidget {
     required this.onOpenLeague,
     required this.onOpenGame,
     required this.onOpenShootout,
+    required this.onOpenQuiz,
     this.onAddCoins,
     super.key,
   });
@@ -42,6 +43,7 @@ class PredictionHomeScreen extends StatefulWidget {
   final ValueChanged<League> onOpenLeague;
   final VoidCallback onOpenGame;
   final VoidCallback onOpenShootout;
+  final VoidCallback onOpenQuiz;
   final VoidCallback? onAddCoins;
 
   @override
@@ -112,6 +114,7 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
       _ => _GamesTab(
         onOpenGame: widget.onOpenGame,
         onOpenShootout: widget.onOpenShootout,
+        onOpenQuiz: widget.onOpenQuiz,
         animateIntro: _shouldAnimateIntro(2),
         onIntroPlayed: () => _markIntroPlayed(2),
       ),
@@ -383,7 +386,7 @@ class _MatchesTabState extends State<_MatchesTab> {
                             : null,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                   ],
                 ],
             ],
@@ -1718,7 +1721,7 @@ class _PickSkeleton extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(12, 16, 12, 28),
       itemCount: 4,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: 16),
       itemBuilder: (_, index) => ClipPath(
         clipper: const HudChamferClipper(bigCut: 15, smallCut: 2),
         child: Container(
@@ -1760,12 +1763,14 @@ class _GamesTab extends StatefulWidget {
   const _GamesTab({
     required this.onOpenGame,
     required this.onOpenShootout,
+    required this.onOpenQuiz,
     required this.animateIntro,
     required this.onIntroPlayed,
   });
 
   final VoidCallback onOpenGame;
   final VoidCallback onOpenShootout;
+  final VoidCallback onOpenQuiz;
   final bool animateIntro;
   final VoidCallback? onIntroPlayed;
 
@@ -1828,12 +1833,14 @@ class _GamesTabState extends State<_GamesTab> {
         StaggeredCardEntrance(
           index: 2,
           animate: animateIntro,
-          child: const _GameTile(
-            title: 'QUIZ STREAK',
-            subtitle: 'COMING SOON',
-            icon: Icons.bolt,
+          child: _GameTile(
+            title: 'FOOTBALL QUIZ',
+            subtitle: 'TRIVIA GAUNTLET',
+            icon: Icons.quiz,
             accent: Cyber.violet,
-            locked: true,
+            featured: true,
+            showTrailingIcon: false,
+            onTap: widget.onOpenQuiz,
           ),
         ),
         const SizedBox(height: 12),
@@ -2079,7 +2086,7 @@ class _FeaturedBody extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 14),
-              _GameFreeButton(onTap: onTap),
+              _GameFreeButton(onTap: onTap, accent: accent),
             ],
           ),
         ),
@@ -2117,12 +2124,11 @@ class _GameIconBox extends StatelessWidget {
 }
 
 class _GameFreeButton extends StatelessWidget {
-  const _GameFreeButton({required this.onTap});
+  const _GameFreeButton({required this.onTap, required this.accent});
 
   final VoidCallback? onTap;
+  final Color accent;
 
-  static const _fillColor = AppTheme.gameCtaFill;
-  static const _borderColor = AppTheme.gameCtaBorder;
   static const _bigCut = 10.0;
   static const _smallCut = 3.0;
 
@@ -2135,8 +2141,8 @@ class _GameFreeButton extends StatelessWidget {
         painter: _HudChamferCardPainter(
           bigCut: _bigCut,
           smallCut: _smallCut,
-          fillColor: _fillColor,
-          borderColor: _borderColor,
+          fillColor: accent,
+          borderColor: Colors.transparent,
         ),
         child: ClipPath(
           clipper: const HudChamferClipper(
@@ -2149,9 +2155,20 @@ class _GameFreeButton extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CoinIcon(size: 18),
+                const Icon(
+                  Icons.toll_rounded,
+                  size: 18,
+                  color: AppTheme.darkInk,
+                ),
                 const SizedBox(width: 8),
-                Text('Free', style: Cyber.display(16, letterSpacing: 0.8)),
+                Text(
+                  'Free',
+                  style: Cyber.display(
+                    16,
+                    color: AppTheme.darkInk,
+                    letterSpacing: 0.8,
+                  ),
+                ),
               ],
             ),
           ),
