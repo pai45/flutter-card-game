@@ -31,6 +31,7 @@ import 'services/pick_repository.dart';
 import 'services/prediction_repository.dart';
 import 'services/secure_storage_service.dart';
 import 'widgets/achievement_celebration_host.dart';
+import 'widgets/reward_settlement_popup.dart';
 import 'widgets/streak_celebration_host.dart';
 
 class PitchDuelApp extends StatelessWidget {
@@ -55,12 +56,8 @@ class PitchDuelApp extends StatelessWidget {
         BlocProvider(
           create: (_) => AchievementCelebrationController(SecureGameStorage()),
         ),
-        BlocProvider(
-          create: (_) => FriendsCubit(SecureGameStorage())..load(),
-        ),
-        BlocProvider(
-          create: (_) => QuizCubit(SecureGameStorage())..load(),
-        ),
+        BlocProvider(create: (_) => FriendsCubit(SecureGameStorage())..load()),
+        BlocProvider(create: (_) => QuizCubit(SecureGameStorage())..load()),
       ],
       child: MaterialApp(
         title: 'Pitch Duel',
@@ -126,6 +123,7 @@ class _AppShellState extends State<AppShell> {
   final SecureGameStorage _storage = SecureGameStorage();
   bool _onboardingLoading = true;
   bool _onboardingComplete = false;
+  bool _demoRewardSettlementSeen = true;
   String? _selectedAvatarId;
 
   @override
@@ -137,10 +135,12 @@ class _AppShellState extends State<AppShell> {
   Future<void> _loadOnboardingState() async {
     final avatarId = await _storage.loadSelectedAvatarId();
     final complete = await _storage.loadOnboardingComplete();
+    final demoRewardSeen = await _storage.loadDemoRewardSettlementSeen();
     if (!mounted) return;
     setState(() {
       _selectedAvatarId = avatarId;
       _onboardingComplete = complete;
+      _demoRewardSettlementSeen = demoRewardSeen;
       _onboardingLoading = false;
     });
   }
@@ -189,7 +189,14 @@ class _AppShellState extends State<AppShell> {
     setState(() {
       _selectedAvatarId = result.avatarId;
       _onboardingComplete = true;
+      _demoRewardSettlementSeen = false;
     });
+  }
+
+  Future<void> _dismissDemoRewardSettlement() async {
+    if (_demoRewardSettlementSeen) return;
+    setState(() => _demoRewardSettlementSeen = true);
+    await _storage.saveDemoRewardSettlementSeen();
   }
 
   Future<void> _logoutFromProfile() async {
@@ -201,6 +208,7 @@ class _AppShellState extends State<AppShell> {
       _pendingGameLaunch = null;
       _selectedAvatarId = null;
       _onboardingComplete = false;
+      _demoRewardSettlementSeen = false;
     });
   }
 
@@ -333,7 +341,7 @@ class _AppShellState extends State<AppShell> {
               reveal: packReveal,
             );
           }
-          return switch (section) {
+          final content = switch (section) {
             AppSection.shop => ShopScreen(
               onNavigate: _go,
               initialTab: _shopInitialTab,
@@ -360,6 +368,18 @@ class _AppShellState extends State<AppShell> {
               onAddCoins: _openShopCoins,
             ),
           };
+          return Stack(
+            children: [
+              Positioned.fill(child: content),
+              if (!_demoRewardSettlementSeen)
+                Positioned.fill(
+                  child: RewardSettlementPopup(
+                    data: RewardSettlementDemoData.demo(),
+                    onDismiss: _dismissDemoRewardSettlement,
+                  ),
+                ),
+            ],
+          );
         },
       ),
     );

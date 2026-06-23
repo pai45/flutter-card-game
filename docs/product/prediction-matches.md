@@ -1,45 +1,77 @@
-# Prediction Matches
+# Predict Tab
 
-Prediction Matches is the fixture-based prediction experience. It is separate from the Pick marketplace: Matches asks users to answer a quiz tied to a specific sports fixture, while Pick is a market-style outcome selection surface.
+The **Predict** tab is the fixture-based prediction experience inside the StatOz sports hub. It replaces the older "Matches" naming in the product surface: users now enter the top-level **PREDICT / PICK / GAMES** hub and land on **PREDICT** by default.
+
+Predict is separate from **Pick**. Predict asks users to answer a short quiz tied to a specific sports fixture and rewards accuracy with XP. Pick is the market-style outcome surface and uses Oz Coins.
 
 ## Product Purpose
 
-Prediction Matches gives users a reason to engage with upcoming and live sports fixtures. The user studies a fixture, answers a short set of match questions, and later receives rewards when the prediction is settled.
+Predict turns upcoming fixtures into a lightweight game loop:
 
-The experience supports football and cricket fixture formats today.
+1. Scan today's fixtures.
+2. Open a fixture.
+3. Answer a staged prediction quiz.
+4. Bank a potential XP pot.
+5. Return later for a cinematic settlement reveal.
+6. Use the XP result to progress the player's level.
+
+The feature supports football and cricket fixture formats today.
 
 ## Where It Lives
 
-Prediction Matches is the default landing tab inside the Predictions area.
+Predict is the first tab in the StatOz prediction hub:
 
-The tab label is **MATCHES**. Fixture cards are grouped by league, such as EPL and IPL. League headers also act as entry points into league standings.
+- **PREDICT**: fixture quizzes and XP prediction rewards.
+- **PICK**: market-style picks, stake/payout, and Oz Coin settlement.
+- **GAMES**: game modes such as Pitch Duel, Shootout, and Quiz.
+
+The Predict tab sits under the StatOz top bar and above the main app bottom navigation. The top bar shows the player context, including streak access and wallet context, but Predict itself does not spend or award coins.
+
+## Predict Tab Layout
+
+The Predict tab is built as a gamified fixture board:
+
+- a HUD-styled StatOz top bar
+- gliding top tabs for **PREDICT / PICK / GAMES**
+- a match-day selector with previous/next controls and calendar access
+- league sections such as FIFA, EPL, or IPL
+- fixture cards grouped under league headers
+- standings entry points from league headers
+- animated card entrances when the tab first opens
+
+Fixture cards use the shared cyber fixture-card language: notched status tag, team badges, score/result context, and a bottom strip that changes based on prediction state.
 
 ## Fixture States
 
-Fixtures can appear in three product states:
+Fixtures can appear in these product states:
 
-- **Upcoming**: prediction is open if the match has not started.
-- **Live**: prediction is locked, and the card can show live score/minute context.
-- **Finished**: result context and earned reward messaging can be shown.
+- **Upcoming, not predicted**: quiz is open; card invites the user to predict for XP.
+- **Upcoming, predicted**: answers are saved and editable until kickoff.
+- **Live / locked**: prediction is read-only; live score/minute context can appear.
+- **Finished, settleable**: results are known and the user has not revealed the outcome; card shows the gold "Results ready" strip.
+- **Settled**: XP has been credited; card shows the earned XP result.
 
-For football, cards use compact score display. For cricket, cards support innings-style score lines and result copy.
+Football cards use compact score display. Cricket cards support innings-style score lines and result copy.
 
 ## Main User Flow
 
-1. User opens the Matches tab.
-2. User scans today's fixtures grouped by league.
-3. User taps a predictable upcoming match without an existing prediction.
+1. User opens the **Predict** tab.
+2. User scans the selected match day and league-grouped fixture cards.
+3. User taps an upcoming fixture without an existing prediction.
 4. Match Prediction opens as a focused animated quiz flow.
-5. User answers one question at a time and submits the quiz on the final question.
-6. Submission shows a celebration overlay and returns the user to the match list.
-7. If the user opens a match they already predicted, Match Prediction opens as a review screen instead of replaying the quiz.
-8. Before kickoff, the review screen lets the user update answers until the match starts.
-9. Once the match is live, the review screen becomes read-only and shows crowd vote results.
-10. When the match is finished, the review screen shows vote results, correct answers, and settlement context.
+5. User answers one question at a time.
+6. The quiz builds a visible potential-XP pot as answers and boosters are placed.
+7. User submits on the final question.
+8. Submission plays a gamified confirmation moment and keeps the user in the prediction context.
+9. If the user opens a predicted upcoming match, the screen opens in review/edit mode.
+10. Before kickoff, the user can update answers and save changes.
+11. Once the match is live, review becomes read-only and shows crowd vote context.
+12. When the match is finished and settleable, the user taps **REVEAL RESULTS**.
+13. The settlement cinematic reveals each answer, credits XP, and can trigger level-up celebration.
 
-## Prediction Quiz Experience
+## Quiz Experience
 
-First-time predictions use a staged one-question flow. On entry, and after each forward **NEXT**, the screen plays a single large number burst for the current question number. The timing follows the Pitch Duel countdown style, but displays only the current question number instead of a 3, 2, 1 sequence.
+First-time predictions use a staged, one-question-at-a-time quiz. The flow borrows the arcade timing of Pitch Duel without feeling like a form.
 
 The reveal order is:
 
@@ -48,88 +80,140 @@ The reveal order is:
 3. Question text reveals word by word.
 4. Answer controls reveal sequentially.
 
-Each first-time match quiz has:
+Each quiz has:
 
-- a fixture header with team badges, match status, and visual team split
+- a fixture header with team badges and match context
 - a countdown or lock line showing when predictions close
 - one question per page
-- progress segments showing answered/current/pending questions
+- progress segments for answered/current/pending questions
 - previous and next navigation
 - a final submit action
+- a running potential-XP ticker
+- optional multiplier boosters
 
 Question types currently include:
 
 - **Exact score**: user chooses home and away scores.
 - **Multiple choice**: user chooses one listed answer.
 
-Multiple-choice option tiles reveal one by one. Exact-score controls reveal as one staged control after the question text.
+Forward navigation is gated during reveal and until the current question is answered. A non-final **NEXT** action stays dimmed until an answer exists, then becomes the highlighted forward CTA. **PREVIOUS** remains available and does not replay the number burst.
 
-Forward navigation is gated during reveal and until the current question is answered. A non-final **NEXT** action stays dimmed until an answer exists, then becomes the highlighted cyan CTA. **PREVIOUS** remains immediate and does not replay the number burst.
+## XP Pot And Boosters
 
-Each question can carry a reward value. The quiz shows the possible reward outside the question box while answering and shows correct count/reward after settlement.
+Predict rewards XP only. Coins are never involved in Predict rewards.
 
-## Quiz Multipliers
+Each quiz includes two optional boosters:
 
-Each quiz includes two optional boosters: one **2x** multiplier and one **1.5x** multiplier. A user can place each booster on one answered question, with only one booster allowed per question.
+- one **2x** multiplier
+- one **1.5x** multiplier
 
-Boosters can be moved or removed until predictions lock. Tapping an active booster removes it. Tapping a booster that is already on another question moves it to the current answered question.
+A booster can be placed on one answered question, with only one booster allowed per question. Boosters can be moved or removed until the prediction locks. Tapping an active booster removes it; tapping a booster that is already on another question moves it to the current answered question.
 
-The question XP display updates immediately when a booster is applied. Boosted XP is awarded only if that question is correct after settlement. The 1.5x booster rounds up fractional XP.
+The potential-XP ticker updates as the user answers and places boosters. Boosted XP is awarded only if that question is correct after settlement. The 1.5x booster rounds up fractional XP.
 
 ## Submitted Prediction Review
 
-Matches with an existing prediction open in review mode.
+Fixtures with an existing prediction open in review mode.
 
-For upcoming editable matches, the review screen shows helper copy that answers can be updated until the match starts. Questions appear as a dense scrollable list of collapsed rows. Each row shows the question and the user's selected answer or score. Tapping a row expands it:
+For upcoming editable matches, the review screen explains that answers can be updated until kickoff. Questions appear as a dense list of collapsed rows. Each row shows the question and the user's selected answer or score. Tapping a row expands it:
 
 - multiple-choice questions show alternate options
 - exact-score questions show the score picker
-- multiplier chips show which boosters are unused, active, or movable from another question
+- multiplier chips show unused, active, or movable boosters
 - changing an answer marks the draft dirty
 - a sticky **SAVE UPDATES** action appears when there are unsaved changes
 
-Saving updates replaces the stored prediction answers without showing the first-time submission celebration.
+Saving updates replaces the stored prediction answers without replaying the first-time submission celebration.
 
-For live matches, review mode is read-only. Rows show the user's answer plus vote counts and percentages for each option. Exact-score questions can show a score distribution when mock vote data exists.
+For live matches, review mode is read-only. Rows show the user's answer plus vote counts and percentages for each option. Exact-score questions can show score distribution when mock vote data exists.
 
 For finished matches, review mode stays read-only and adds result feedback. Correct answers are highlighted in green, incorrect selected answers are highlighted in red, and vote distribution remains visible.
 
-The top-right action in Match Prediction opens a compact match leaderboard sheet. It shows rank rows for that match so users can compare prediction performance in context.
+The top-right action in Match Prediction opens a compact match leaderboard sheet so users can compare prediction performance in fixture context.
+
+## Settlement Reveal
+
+Finished, settleable predictions expose a focal **REVEAL RESULTS** action. Settlement is not a flat claim step; it is a cinematic payoff.
+
+The reveal:
+
+- shows "RESULTS ARE IN"
+- recaps the fixture and final score
+- flips each question verdict in quiz order
+- marks correct answers green and wrong answers red
+- ticks the XP total upward as correct answers resolve
+- highlights booster-earned XP
+- shows correct count and crowd comparison
+- fills the level progress bar from the pre-settlement position
+- triggers the level-up celebration if the settlement crosses a level
+
+Tapping during the reveal can skip ahead to the summary. Rewards are credited once; watching or skipping the animation does not change the XP outcome.
 
 ## Prediction Lifecycle
 
 **Open**
 
-The user has submitted answers for an upcoming match. Answers remain editable before kickoff through the submitted prediction review list.
+The user has submitted answers for an upcoming match. Answers remain editable before kickoff through review mode.
 
 **Locked**
 
 The match is live or no longer predictable. The user can review answers and crowd vote results, but cannot change them.
 
+**Settleable**
+
+The match is finished and results are known, but the user has not revealed the outcome. The fixture card shows a gold results-ready strip.
+
 **Settled**
 
-The app compares stored answers against known results. Correct answers are highlighted in review, generate reward value, and the earned XP is credited to the user's progression. Settlement is triggered from the review screen's **REVEAL RESULTS** action, which plays the settlement reveal cinematic (see [Prediction Gamification](prediction-gamification.md)).
+The app has compared stored answers against known results. Correct answers generated XP, the XP was credited to progression, and the review screen shows final correct/wrong highlighting.
 
 ## League And Standings Mapping
 
-League headers in Matches give users a lightweight path from fixtures to standings. This supports the mental model that predictions happen inside league context, not as isolated cards.
+League headers in Predict give users a lightweight path from fixtures to standings. This reinforces that predictions happen inside league context, not as isolated cards.
 
 Standings show team ranking context for the selected league. Team and league detail surfaces should continue to reinforce:
 
 - who is playing
-- where they sit in the competition
+- where teams sit in the competition
 - what match context matters before prediction
 
 ## Rewards
 
-Predictions reward **XP only — coins are never involved**. Settlement credits the earned XP into the same progression track used by Pitch Duel; a level crossed by a settlement plays the level-up celebration inside the settlement reveal. The match quiz displays potential XP per question and summary copy after results are known.
+Predict rewards **XP only**.
 
-The staged settlement reveal and prediction XP are built; the rest of the gamified reward layer — accuracy streaks, achievements, daily quests — is designed but not yet built. See [Prediction Gamification](prediction-gamification.md).
+- Correct answers grant their question XP value.
+- Boosters multiply XP only when the boosted answer is correct.
+- Wrong answers grant nothing.
+- Predict never subtracts XP.
+- Predict never awards Oz Coins.
+- Predict never spends Oz Coins.
+
+XP is credited into the same progression track used by Pitch Duel. If a settlement crosses a level threshold, the level-up celebration plays after the reveal.
+
+## Relationship To Gamification
+
+The shipped Predict flow already includes:
+
+- staged quiz reveal
+- animated submission moment
+- potential-XP ticker
+- boosters
+- settleable result state
+- settlement reveal cinematic
+- XP crediting
+- level progress and level-up moment
+- match leaderboard sheet
+- mock crowd vote context
+
+The broader gamification layer is documented in [Prediction Gamification](prediction-gamification.md). Accuracy streaks, daily quests, and some badge-wall mechanics are still product-layer extensions around this core Predict flow.
 
 ## Current Product Notes
 
-- Fixtures, leagues, standings, and quizzes are currently mock-backed.
-- Match-level vote breakdowns and leaderboard entries are mock-backed through the prediction repository, keyed by match and question so they can later be replaced by backend data.
+- Fixtures, leagues, standings, quizzes, vote breakdowns, and match leaderboard rows are currently mock-backed.
+- Predict is the default landing tab in the prediction hub.
+- The old user-facing "Matches" tab name has been replaced by **Predict**.
 - One IPL fixture is seeded as already predicted to demonstrate the predicted-card state on a fresh install.
-- One finished EPL fixture (Man Utd vs West Ham) is seeded with an unsettled prediction so the settlement reveal can be demonstrated; its card shows the gold "Results ready" strip. One finished IPL fixture is seeded already settled to show the settled state.
-- Demo predictions never overwrite stored ones, so settling a demo fixture persists across relaunches.
+- One finished EPL fixture is seeded with an unsettled prediction so the settlement reveal can be demonstrated; its card shows the gold results-ready strip.
+- One finished IPL fixture is seeded already settled to show the settled state.
+- Demo predictions never overwrite stored predictions, so settling a demo fixture persists across relaunches.
+- The one-time reward-settlement bottom sheet used for onboarding/UI feedback is a demo surface only. It can show Predict and Pick rows together, but it does not credit real Predict XP or Pick coins.

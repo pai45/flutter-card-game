@@ -123,6 +123,8 @@ class SecureGameStorage {
   static const _followedLeaguesKey = 'pd_followed_leagues_v1';
   static const _favoriteTeamsKey = 'pd_favorite_teams_v1';
   static const _onboardingCompleteKey = 'pd_onboarding_complete_v1';
+  static const _demoRewardSettlementSeenKey =
+      'pd_demo_reward_settlement_seen_v1';
   static const _celebratedAchievementsKey = 'pd_celebrated_achievements_v1';
   static const _streakKey = 'pd_daily_streak_v1';
   static const _friendsKey = 'pd_friends_v1';
@@ -463,12 +465,30 @@ class SecureGameStorage {
     );
   }
 
+  Future<bool> loadDemoRewardSettlementSeen() async {
+    try {
+      final raw = await _storage.read(key: _demoRewardSettlementSeenKey);
+      return raw == 'true';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> saveDemoRewardSettlementSeen() async {
+    await _storage.write(key: _demoRewardSettlementSeenKey, value: 'true');
+  }
+
+  Future<void> resetDemoRewardSettlementSeen() async {
+    await _storage.delete(key: _demoRewardSettlementSeenKey);
+  }
+
   Future<void> resetProfileSetup() async {
     await Future.wait([
       _storage.delete(key: _selectedAvatarKey),
       _storage.delete(key: _selectedProfileBannerKey),
       _storage.delete(key: _followedLeaguesKey),
       _storage.delete(key: _favoriteTeamsKey),
+      resetDemoRewardSettlementSeen(),
       _storage.write(key: _onboardingCompleteKey, value: 'false'),
     ]);
   }
