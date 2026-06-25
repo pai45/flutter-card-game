@@ -17,14 +17,314 @@ List<TriviaQuestion> buildQuizSession(
   int count = 8,
   int? seed,
 }) {
-  final pool = _bank.where((q) => q.mode == mode).toList();
+  final pool = List<TriviaQuestion>.generate(
+    kQuizQuestionPoolPerMode,
+    (index) => _questionAt(mode, index + 1),
+  );
   final rng = Random(seed ?? DateTime.now().microsecondsSinceEpoch);
   pool.shuffle(rng);
   return pool.take(count.clamp(1, pool.length)).toList(growable: false);
 }
 
 /// How many questions exist for [mode] — used by the lobby to size sessions.
-int quizPoolSize(QuizMode mode) => _bank.where((q) => q.mode == mode).length;
+int quizPoolSize(QuizMode mode) => kQuizQuestionPoolPerMode;
+
+List<TriviaQuestion> buildQuizSet(QuizMode mode, int setNumber) {
+  final clampedSet = setNumber.clamp(1, kQuizSetCount);
+  final start = (clampedSet - 1) * kQuizQuestionsPerSet + 1;
+  return List<TriviaQuestion>.generate(
+    kQuizQuestionsPerSet,
+    (offset) => _questionAt(mode, start + offset),
+    growable: false,
+  );
+}
+
+TriviaQuestion _questionAt(QuizMode mode, int number) {
+  final authored = _bank.where((q) => q.mode == mode).toList(growable: false);
+  if (number <= authored.length) {
+    final q = authored[number - 1];
+    return TriviaQuestion(
+      id: '${mode.name}_q${number.toString().padLeft(3, '0')}',
+      mode: mode,
+      prompt: q.prompt,
+      options: q.options,
+      correctIndex: q.correctIndex,
+      backgroundAsset: q.backgroundAsset,
+    );
+  }
+  return _generatedQuestion(mode, number);
+}
+
+TriviaQuestion _generatedQuestion(QuizMode mode, int number) {
+  final serial = number.toString().padLeft(3, '0');
+  final variant = (number - 1) % 10;
+  final cycle = ((number - 1) ~/ 10) + 1;
+  final id = '${mode.name}_q$serial';
+
+  final (:prompt, :options, :correctIndex) = switch (mode) {
+    QuizMode.easy => _easyScaffold(variant, cycle),
+    QuizMode.medium => _mediumScaffold(variant, cycle),
+    QuizMode.hard => _hardScaffold(variant, cycle),
+    QuizMode.global => _globalScaffold(variant, cycle),
+  };
+
+  return TriviaQuestion(
+    id: id,
+    mode: mode,
+    prompt: prompt,
+    options: options,
+    correctIndex: correctIndex,
+  );
+}
+
+({String prompt, List<String> options, int correctIndex}) _easyScaffold(
+  int variant,
+  int cycle,
+) {
+  return switch (variant) {
+    0 => (
+      prompt: 'Set $cycle: how many players does a football team start with?',
+      options: ['9', '10', '11', '12'],
+      correctIndex: 2,
+    ),
+    1 => (
+      prompt: 'Set $cycle: which card sends a player off?',
+      options: ['Yellow', 'Blue', 'Red', 'White'],
+      correctIndex: 2,
+    ),
+    2 => (
+      prompt: 'Set $cycle: what does a goalkeeper protect?',
+      options: ['The halfway line', 'The goal', 'The corner flag', 'The bench'],
+      correctIndex: 1,
+    ),
+    3 => (
+      prompt: 'Set $cycle: how many points is a league win usually worth?',
+      options: ['1', '2', '3', '5'],
+      correctIndex: 2,
+    ),
+    4 => (
+      prompt: 'Set $cycle: a foul in the box can lead to what?',
+      options: ['Throw-in', 'Penalty', 'Goal kick', 'Drop ball'],
+      correctIndex: 1,
+    ),
+    5 => (
+      prompt: 'Set $cycle: football matches are split into how many halves?',
+      options: ['1', '2', '3', '4'],
+      correctIndex: 1,
+    ),
+    6 => (
+      prompt: 'Set $cycle: what shape is a standard football?',
+      options: ['Cube', 'Sphere', 'Pyramid', 'Disc'],
+      correctIndex: 1,
+    ),
+    7 => (
+      prompt: 'Set $cycle: what restarts play from the side line?',
+      options: ['Corner', 'Throw-in', 'Penalty', 'Kick-off'],
+      correctIndex: 1,
+    ),
+    8 => (
+      prompt: 'Set $cycle: which body part is restricted for outfield players?',
+      options: ['Head', 'Foot', 'Hand', 'Chest'],
+      correctIndex: 2,
+    ),
+    _ => (
+      prompt: 'Set $cycle: what starts each half?',
+      options: ['Kick-off', 'Penalty', 'Corner', 'Goal kick'],
+      correctIndex: 0,
+    ),
+  };
+}
+
+({String prompt, List<String> options, int correctIndex}) _mediumScaffold(
+  int variant,
+  int cycle,
+) {
+  return switch (variant) {
+    0 => (
+      prompt: 'Set $cycle: which competition is Europe\'s top club tournament?',
+      options: ['Champions League', 'FA Cup', 'Copa America', 'AFCON'],
+      correctIndex: 0,
+    ),
+    1 => (
+      prompt: 'Set $cycle: El Clasico features Real Madrid and which club?',
+      options: ['Valencia', 'Barcelona', 'Sevilla', 'Villarreal'],
+      correctIndex: 1,
+    ),
+    2 => (
+      prompt: 'Set $cycle: the Premier League is based in which country?',
+      options: ['England', 'Spain', 'Italy', 'Germany'],
+      correctIndex: 0,
+    ),
+    3 => (
+      prompt: 'Set $cycle: Camp Nou is associated with which club?',
+      options: ['Chelsea', 'Barcelona', 'Inter Milan', 'Benfica'],
+      correctIndex: 1,
+    ),
+    4 => (
+      prompt: 'Set $cycle: which country won the 2018 World Cup?',
+      options: ['Brazil', 'France', 'Croatia', 'Belgium'],
+      correctIndex: 1,
+    ),
+    5 => (
+      prompt: 'Set $cycle: Bayern Munich play in which country?',
+      options: ['Germany', 'France', 'Portugal', 'Netherlands'],
+      correctIndex: 0,
+    ),
+    6 => (
+      prompt: 'Set $cycle: Serie A is the top league of which country?',
+      options: ['Italy', 'England', 'Spain', 'Scotland'],
+      correctIndex: 0,
+    ),
+    7 => (
+      prompt:
+          'Set $cycle: which trophy is awarded in English knockout football?',
+      options: ['FA Cup', 'AFC Cup', 'Gold Cup', 'Leagues Cup'],
+      correctIndex: 0,
+    ),
+    8 => (
+      prompt: 'Set $cycle: which club is known for the red liver bird crest?',
+      options: ['Liverpool', 'Arsenal', 'Napoli', 'Porto'],
+      correctIndex: 0,
+    ),
+    _ => (
+      prompt: 'Set $cycle: UEFA governs football on which continent?',
+      options: ['Europe', 'Africa', 'Asia', 'South America'],
+      correctIndex: 0,
+    ),
+  };
+}
+
+({String prompt, List<String> options, int correctIndex}) _hardScaffold(
+  int variant,
+  int cycle,
+) {
+  return switch (variant) {
+    0 => (
+      prompt: 'Set $cycle: who scored the Hand of God goal?',
+      options: ['Pele', 'Diego Maradona', 'Zinedine Zidane', 'Ronaldo'],
+      correctIndex: 1,
+    ),
+    1 => (
+      prompt:
+          'Set $cycle: Leicester City won the Premier League in which season?',
+      options: ['2013-14', '2014-15', '2015-16', '2016-17'],
+      correctIndex: 2,
+    ),
+    2 => (
+      prompt: 'Set $cycle: I Nerazzurri is the nickname of which club?',
+      options: ['Inter Milan', 'AC Milan', 'Juventus', 'Roma'],
+      correctIndex: 0,
+    ),
+    3 => (
+      prompt: 'Set $cycle: who won the 1966 men\'s World Cup?',
+      options: ['Brazil', 'England', 'Argentina', 'Italy'],
+      correctIndex: 1,
+    ),
+    4 => (
+      prompt: 'Set $cycle: La Albiceleste refers to which national team?',
+      options: ['Argentina', 'Uruguay', 'Chile', 'Paraguay'],
+      correctIndex: 0,
+    ),
+    5 => (
+      prompt:
+          'Set $cycle: Arsenal\'s unbeaten Premier League side is called what?',
+      options: ['Centurions', 'Invincibles', 'Galacticos', 'Busby Babes'],
+      correctIndex: 1,
+    ),
+    6 => (
+      prompt:
+          'Set $cycle: which club did Sergio Aguero score the 2012 title goal for?',
+      options: ['Manchester City', 'Chelsea', 'Arsenal', 'Liverpool'],
+      correctIndex: 0,
+    ),
+    7 => (
+      prompt: 'Set $cycle: who managed Inter Milan to the 2009-10 treble?',
+      options: [
+        'Jose Mourinho',
+        'Pep Guardiola',
+        'Carlo Ancelotti',
+        'Rafa Benitez',
+      ],
+      correctIndex: 0,
+    ),
+    8 => (
+      prompt: 'Set $cycle: who knocked Brazil out of the 2022 World Cup?',
+      options: ['Croatia', 'France', 'Morocco', 'England'],
+      correctIndex: 0,
+    ),
+    _ => (
+      prompt: 'Set $cycle: which striker won the 2022 World Cup Golden Boot?',
+      options: [
+        'Kylian Mbappe',
+        'Lionel Messi',
+        'Harry Kane',
+        'Julian Alvarez',
+      ],
+      correctIndex: 0,
+    ),
+  };
+}
+
+({String prompt, List<String> options, int correctIndex}) _globalScaffold(
+  int variant,
+  int cycle,
+) {
+  return switch (variant) {
+    0 => (
+      prompt:
+          'Set $cycle: the World Cup is normally held every how many years?',
+      options: ['2', '3', '4', '5'],
+      correctIndex: 2,
+    ),
+    1 => (
+      prompt: 'Set $cycle: AFCON is contested by nations from which continent?',
+      options: ['Africa', 'Asia', 'Europe', 'Oceania'],
+      correctIndex: 0,
+    ),
+    2 => (
+      prompt: 'Set $cycle: Copa America is associated with which continent?',
+      options: ['South America', 'Europe', 'Asia', 'Africa'],
+      correctIndex: 0,
+    ),
+    3 => (
+      prompt:
+          'Set $cycle: which nation has appeared at every men\'s World Cup?',
+      options: ['Brazil', 'Germany', 'Italy', 'France'],
+      correctIndex: 0,
+    ),
+    4 => (
+      prompt:
+          'Set $cycle: the 2026 World Cup includes USA, Canada and which host?',
+      options: ['Mexico', 'Brazil', 'Japan', 'Spain'],
+      correctIndex: 0,
+    ),
+    5 => (
+      prompt: 'Set $cycle: Euro tournaments are organized by which body?',
+      options: ['UEFA', 'FIFA', 'CONMEBOL', 'CAF'],
+      correctIndex: 0,
+    ),
+    6 => (
+      prompt: 'Set $cycle: Brazil play in which confederation?',
+      options: ['CONMEBOL', 'UEFA', 'AFC', 'CAF'],
+      correctIndex: 0,
+    ),
+    7 => (
+      prompt: 'Set $cycle: Japan belongs to which football confederation?',
+      options: ['AFC', 'CAF', 'UEFA', 'CONCACAF'],
+      correctIndex: 0,
+    ),
+    8 => (
+      prompt: 'Set $cycle: which country hosted the 2022 World Cup?',
+      options: ['Qatar', 'Russia', 'Brazil', 'Germany'],
+      correctIndex: 0,
+    ),
+    _ => (
+      prompt: 'Set $cycle: the Women\'s World Cup is run by which global body?',
+      options: ['FIFA', 'UEFA', 'AFC', 'CONCACAF'],
+      correctIndex: 0,
+    ),
+  };
+}
 
 const List<TriviaQuestion> _bank = [
   // ───────────────────────── EASY — football basics ─────────────────────────
@@ -117,7 +417,8 @@ const List<TriviaQuestion> _bank = [
   TriviaQuestion(
     id: 'm_ucl_most',
     mode: QuizMode.medium,
-    prompt: 'Which club has won the most European Cup / Champions League titles?',
+    prompt:
+        'Which club has won the most European Cup / Champions League titles?',
     options: ['AC Milan', 'Bayern Munich', 'Real Madrid', 'Barcelona'],
     correctIndex: 2,
   ),
@@ -139,7 +440,12 @@ const List<TriviaQuestion> _bank = [
     id: 'm_ballon',
     mode: QuizMode.medium,
     prompt: 'Who has won the most Ballon d\'Or awards?',
-    options: ['Cristiano Ronaldo', 'Lionel Messi', 'Michel Platini', 'Johan Cruyff'],
+    options: [
+      'Cristiano Ronaldo',
+      'Lionel Messi',
+      'Michel Platini',
+      'Johan Cruyff',
+    ],
     correctIndex: 1,
   ),
   TriviaQuestion(
@@ -167,7 +473,12 @@ const List<TriviaQuestion> _bank = [
     id: 'm_wc_top_scorer',
     mode: QuizMode.medium,
     prompt: 'Who is the all-time top scorer in World Cup finals tournaments?',
-    options: ['Ronaldo Nazário', 'Miroslav Klose', 'Just Fontaine', 'Gerd Müller'],
+    options: [
+      'Ronaldo Nazário',
+      'Miroslav Klose',
+      'Just Fontaine',
+      'Gerd Müller',
+    ],
     correctIndex: 1,
   ),
   TriviaQuestion(
@@ -181,7 +492,12 @@ const List<TriviaQuestion> _bank = [
     id: 'm_special_one',
     mode: QuizMode.medium,
     prompt: 'Which manager is nicknamed "The Special One"?',
-    options: ['Pep Guardiola', 'José Mourinho', 'Jürgen Klopp', 'Carlo Ancelotti'],
+    options: [
+      'Pep Guardiola',
+      'José Mourinho',
+      'Jürgen Klopp',
+      'Carlo Ancelotti',
+    ],
     correctIndex: 1,
   ),
   TriviaQuestion(
@@ -204,13 +520,19 @@ const List<TriviaQuestion> _bank = [
     id: 'h_golden_boot_2022',
     mode: QuizMode.hard,
     prompt: 'Who won the Golden Boot at the 2022 World Cup?',
-    options: ['Lionel Messi', 'Kylian Mbappé', 'Julián Álvarez', 'Olivier Giroud'],
+    options: [
+      'Lionel Messi',
+      'Kylian Mbappé',
+      'Julián Álvarez',
+      'Olivier Giroud',
+    ],
     correctIndex: 1,
   ),
   TriviaQuestion(
     id: 'h_aguero_2012',
     mode: QuizMode.hard,
-    prompt: 'Sergio Agüero\'s famous last-minute 2012 title-winning goal was for?',
+    prompt:
+        'Sergio Agüero\'s famous last-minute 2012 title-winning goal was for?',
     options: ['Manchester United', 'Manchester City', 'Arsenal', 'Chelsea'],
     correctIndex: 1,
   ),
@@ -218,7 +540,12 @@ const List<TriviaQuestion> _bank = [
     id: 'h_ucl_top_scorer',
     mode: QuizMode.hard,
     prompt: 'Who is the all-time top scorer in the Champions League?',
-    options: ['Lionel Messi', 'Robert Lewandowski', 'Cristiano Ronaldo', 'Karim Benzema'],
+    options: [
+      'Lionel Messi',
+      'Robert Lewandowski',
+      'Cristiano Ronaldo',
+      'Karim Benzema',
+    ],
     correctIndex: 2,
   ),
   TriviaQuestion(
@@ -246,7 +573,12 @@ const List<TriviaQuestion> _bank = [
     id: 'h_leicester',
     mode: QuizMode.hard,
     prompt: 'Who managed Leicester City to the 2015–16 Premier League title?',
-    options: ['Nigel Pearson', 'Claudio Ranieri', 'Brendan Rodgers', 'Sam Allardyce'],
+    options: [
+      'Nigel Pearson',
+      'Claudio Ranieri',
+      'Brendan Rodgers',
+      'Sam Allardyce',
+    ],
     correctIndex: 1,
   ),
   TriviaQuestion(
@@ -266,7 +598,8 @@ const List<TriviaQuestion> _bank = [
   TriviaQuestion(
     id: 'h_pl_season_record',
     mode: QuizMode.hard,
-    prompt: 'Who holds the record for most goals in a 38-game Premier League season?',
+    prompt:
+        'Who holds the record for most goals in a 38-game Premier League season?',
     options: ['Mohamed Salah', 'Erling Haaland', 'Alan Shearer', 'Andy Cole'],
     correctIndex: 1,
   ),
@@ -280,7 +613,8 @@ const List<TriviaQuestion> _bank = [
   TriviaQuestion(
     id: 'h_invincibles',
     mode: QuizMode.hard,
-    prompt: 'Which club went unbeaten in the 2003–04 Premier League ("Invincibles")?',
+    prompt:
+        'Which club went unbeaten in the 2003–04 Premier League ("Invincibles")?',
     options: ['Manchester United', 'Chelsea', 'Arsenal', 'Liverpool'],
     correctIndex: 2,
   ),
@@ -352,7 +686,8 @@ const List<TriviaQuestion> _bank = [
   TriviaQuestion(
     id: 'g_2026_hosts',
     mode: QuizMode.global,
-    prompt: 'The 2026 World Cup is co-hosted by the USA, Canada and which nation?',
+    prompt:
+        'The 2026 World Cup is co-hosted by the USA, Canada and which nation?',
     options: ['Brazil', 'Mexico', 'Costa Rica', 'Argentina'],
     correctIndex: 1,
   ),
@@ -367,7 +702,12 @@ const List<TriviaQuestion> _bank = [
     id: 'g_wc_cycle',
     mode: QuizMode.global,
     prompt: 'How often is the FIFA World Cup held?',
-    options: ['Every 2 years', 'Every 3 years', 'Every 4 years', 'Every 5 years'],
+    options: [
+      'Every 2 years',
+      'Every 3 years',
+      'Every 4 years',
+      'Every 5 years',
+    ],
     correctIndex: 2,
   ),
 ];

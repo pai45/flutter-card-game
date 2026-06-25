@@ -5,9 +5,9 @@ import '../../../models/progression.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../predictions/widgets/history_hud.dart' show CutChipBorder;
 
-/// Glowing level chip — the focal element on a hero card (the player/rival is
-/// primary, so it earns the glow). Shared by the profile hero and the rival
-/// dossier hero.
+/// Level chip — raised HUD badge on a hero card. Depth comes from a top-lit
+/// gradient fill + a soft dark drop shadow (elevation, not a neon glow), keeping
+/// the accent glow scarce. Shared by the profile hero and the rival dossier hero.
 class LevelChip extends StatelessWidget {
   const LevelChip({required this.level, this.onTap, super.key});
 
@@ -25,7 +25,13 @@ class LevelChip extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
           decoration: ShapeDecoration(
-            color: Cyber.card,
+            // Top-lit gradient (lighter slate → darker card) reads as a raised
+            // surface rather than a flat fill.
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Cyber.panel, Cyber.card],
+            ),
             shape: CutChipBorder(
               cut: 7,
               side: BorderSide(
@@ -33,7 +39,14 @@ class LevelChip extends StatelessWidget {
                 width: 1.4,
               ),
             ),
-            shadows: Cyber.glow(Cyber.cyan, alpha: 0.45, blur: 16, spread: 0),
+            // Soft dark drop shadow = physical elevation (no neon glow).
+            shadows: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.5),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -54,10 +67,6 @@ class LevelChip extends StatelessWidget {
                   color: Cyber.cyan,
                 ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
-              if (onTap != null) ...[
-                const SizedBox(width: 3),
-                const Icon(Icons.chevron_right, size: 16, color: Cyber.cyan),
-              ],
             ],
           ),
         ),

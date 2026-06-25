@@ -99,6 +99,7 @@ class ShopCardFrame extends StatelessWidget {
     required this.accent,
     required this.child,
     this.focal = false,
+    this.elevated = false,
     this.stamp,
     super.key,
   });
@@ -106,13 +107,18 @@ class ShopCardFrame extends StatelessWidget {
   final Color accent;
   final Widget child;
   final bool focal;
+
+  /// Calm lift via offset hard shadow — depth without accent glow.
+  final bool elevated;
   final Widget? stamp;
+
+  static const Color _elevShadow = Color(0xff04060b);
 
   @override
   Widget build(BuildContext context) {
     Widget frame = CustomPaint(
       foregroundPainter: _ShopFrameBorder(
-        color: accent.withValues(alpha: focal ? 0.9 : 0.4),
+        color: accent.withValues(alpha: focal ? 0.9 : elevated ? 0.55 : 0.4),
         width: focal ? 1.6 : 1.0,
       ),
       child: ClipPath(
@@ -122,7 +128,13 @@ class ShopCardFrame extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [accent.withValues(alpha: 0.12), kShopBg],
+              colors: elevated
+                  ? [
+                      accent.withValues(alpha: 0.14),
+                      kShopSurface.withValues(alpha: 0.92),
+                      kShopBg,
+                    ]
+                  : [accent.withValues(alpha: 0.12), kShopBg],
             ),
           ),
           child: Stack(
@@ -136,11 +148,44 @@ class ShopCardFrame extends StatelessWidget {
     );
     if (focal) {
       // Glow sits behind the (lightly chamfered) frame — the single focal accent.
-      frame = DecoratedBox(
+      return DecoratedBox(
         decoration: BoxDecoration(
           boxShadow: Cyber.glow(accent, alpha: 0.32, blur: 22, spread: 1),
         ),
         child: frame,
+      );
+    }
+    if (elevated) {
+      final Widget card = frame;
+      return LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final double w = constraints.maxWidth;
+          final double h = constraints.maxHeight;
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Transform.translate(
+                offset: const Offset(0, 6),
+                child: SizedBox(
+                  width: w,
+                  height: h,
+                  child: ClipPath(
+                    clipper: CyberClipper(),
+                    child: const ColoredBox(color: _elevShadow),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: w,
+                height: h,
+                child: Transform.translate(
+                  offset: const Offset(0, -2),
+                  child: card,
+                ),
+              ),
+            ],
+          );
+        },
       );
     }
     return frame;

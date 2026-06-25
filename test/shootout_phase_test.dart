@@ -52,6 +52,7 @@ void main() {
     cpuShooters: cpu,
     cpuKeeper: cpu.last,
     cpuLevel: 1,
+    opponentName: 'Maya Santos',
   );
 
   Future<void> pumpPhase(WidgetTester tester, ShootoutState state) async {
@@ -76,6 +77,7 @@ void main() {
       cpuShooters: cpu,
       cpuKeeper: cpu.last,
       cpuLevel: 1,
+      opponentName: 'Maya Santos',
     );
     addTearDown(shootoutBloc.close);
     shootoutBloc.emit(state);
@@ -103,12 +105,12 @@ void main() {
     await pumpPhase(tester, baseState().copyWith(stage: ShootoutStage.choose));
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('TAKE THE SHOT'), findsOneWidget);
+    expect(find.text('CHOOSE YOUR CORNER'), findsOneWidget);
     // The active shooter (player's first attacker) is named with their OVR.
     expect(find.text('P-A1'), findsOneWidget);
     expect(find.textContaining('OVR 88'), findsWidgets);
-    // The SHOOT confirm is present.
-    expect(find.text('SHOOT'), findsOneWidget);
+    // The confirm CTA prompts for a target before a side is selected.
+    expect(find.text('PICK A SIDE'), findsOneWidget);
   });
 
   testWidgets('result stage shows the verdict and a winning banner', (

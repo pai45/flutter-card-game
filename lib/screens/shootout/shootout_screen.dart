@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -6,16 +8,18 @@ import '../../blocs/game/game_event.dart';
 import '../../blocs/shootout/shootout_bloc.dart';
 import '../../blocs/shootout/shootout_state.dart';
 import '../../config/enums.dart';
+import '../../data/random_opponent_names.dart';
 import '../../models/cards.dart';
 import '../../models/progression.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import 'widgets/shootout_lineup_phase.dart';
+import 'widgets/shootout_opponent_reveal_phase.dart';
 import 'widgets/shootout_phase.dart';
 import 'widgets/shootout_result_phase.dart';
 
 /// Standalone Penalty Shootout mode: the active match deck's five players
-/// (2 ATK + 2 DEF + keeper) trade kicks with a level-scaled CPU squad.
+/// (2 ATK + 2 DEF + keeper) trade kicks with a level-scaled opponent squad.
 class ShootoutScreen extends StatefulWidget {
   const ShootoutScreen({required this.onNavigate, super.key});
 
@@ -27,7 +31,7 @@ class ShootoutScreen extends StatefulWidget {
 
 class _ShootoutScreenState extends State<ShootoutScreen> {
   /// Bumped on PLAY AGAIN so the provider key rebuilds a fresh bloc
-  /// (and re-rolls the CPU squad).
+  /// (and re-rolls the opponent name + squad).
   int _session = 0;
   bool _finishDispatched = false;
 
@@ -49,11 +53,14 @@ class _ShootoutScreenState extends State<ShootoutScreen> {
     // deckReady (the entry gate) guarantees a keeper; fall back defensively.
     final keeper = game.deckKeeper ?? goalkeepers.first;
     final level = game.progression.playerLevel;
+    final rng = Random();
+    final opponentName = randomOpponentName(random: rng);
     final cpu = generateShootoutOpponent(
       level,
       attackers,
       defenders,
       goalkeepers,
+      random: rng,
     );
     return ShootoutBloc(
       playerShooters: [...game.deckAttackers, ...game.deckDefenders, keeper],
@@ -61,6 +68,7 @@ class _ShootoutScreenState extends State<ShootoutScreen> {
       cpuShooters: cpu.shooters,
       cpuKeeper: cpu.keeper,
       cpuLevel: level,
+      opponentName: opponentName,
     );
   }
 
@@ -77,6 +85,7 @@ class _ShootoutScreenState extends State<ShootoutScreen> {
     final s = context.read<ShootoutBloc>().state;
     final inProgress =
         !s.over &&
+        s.stage != ShootoutStage.opponentReveal &&
         s.stage != ShootoutStage.lineup &&
         s.stage != ShootoutStage.summary;
 
@@ -114,6 +123,10 @@ class _ShootoutScreenState extends State<ShootoutScreen> {
         },
         builder: (context, state) {
           final Widget phaseWidget = switch (state.stage) {
+            ShootoutStage.opponentReveal => ShootoutOpponentRevealPhase(
+              state: state,
+              onQuit: () => _quit(context),
+            ),
             ShootoutStage.lineup => ShootoutLineupPhase(
               state: state,
               onQuit: () => _quit(context),
@@ -153,6 +166,9 @@ class _ShootoutScreenState extends State<ShootoutScreen> {
               // The choose and result beats share one persistent widget so
               // the kick loop doesn't crossfade between every kick.
               key: switch (state.stage) {
+                ShootoutStage.opponentReveal => const ValueKey(
+                  'opponent-reveal',
+                ),
                 ShootoutStage.lineup => const ValueKey('lineup'),
                 ShootoutStage.choose ||
                 ShootoutStage.result => const ValueKey('kicks'),

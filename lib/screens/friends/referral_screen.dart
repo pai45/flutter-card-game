@@ -150,12 +150,12 @@ class _ReferralViewState extends State<_ReferralView> {
                 );
               }
               return ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 30),
+                padding: const EdgeInsets.fromLTRB(16, 18, 16, 30),
                 children: [
                   const _RewardHero(),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 16),
                   const _HowItWorks(),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 16),
                   _ReferralLinkCard(
                     link: state.referralLink,
                     copied: state.copied,
@@ -163,9 +163,9 @@ class _ReferralViewState extends State<_ReferralView> {
                     onShare: _shareLink,
                     sharing: state.sharing,
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 16),
                   _ProgressCard(state: state),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 18),
                   _RecentReferrals(entries: state.referrals),
                   if (kDebugMode) ...[
                     const SizedBox(height: 14),
@@ -192,37 +192,123 @@ class _ReferralViewState extends State<_ReferralView> {
   }
 }
 
+BoxDecoration _referralSurface({
+  Color accent = Cyber.cyan,
+  double fillAlpha = 0.62,
+  double borderAlpha = 0.16,
+}) {
+  return BoxDecoration(
+    gradient: LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        accent.withValues(alpha: 0.07),
+        Cyber.panel.withValues(alpha: fillAlpha),
+        Cyber.bg.withValues(alpha: 0.42),
+      ],
+      stops: const [0, 0.48, 1],
+    ),
+    border: Border.all(color: accent.withValues(alpha: borderAlpha)),
+  );
+}
+
+class _PanelTitle extends StatelessWidget {
+  const _PanelTitle(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1.2),
+    );
+  }
+}
+
 class _RewardHero extends StatelessWidget {
   const _RewardHero();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 24),
+      padding: const EdgeInsets.fromLTRB(18, 20, 18, 22),
       decoration: cutCornerDecoration(
-        color: Cyber.panel.withValues(alpha: 0.88),
-        borderColor: Cyber.gold.withValues(alpha: 0.72),
-        cut: 18,
+        color: Cyber.panel.withValues(alpha: 0.66),
+        borderColor: Cyber.gold.withValues(alpha: 0.24),
+        cut: 16,
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const CoinIcon(size: 58),
-          const SizedBox(height: 10),
-          Text(
-            'EARN 500 OZ COINS',
-            textAlign: TextAlign.center,
-            style: Cyber.display(25, color: Cyber.gold, letterSpacing: 1),
+          Row(
+            children: [
+              Container(
+                width: 62,
+                height: 62,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Cyber.gold.withValues(alpha: 0.1),
+                  border: Border.all(color: Cyber.gold.withValues(alpha: 0.22)),
+                  boxShadow: Cyber.glow(
+                    Cyber.gold,
+                    alpha: 0.12,
+                    blur: 20,
+                    spread: -6,
+                  ),
+                ),
+                child: const CoinIcon(size: 42),
+              ),
+              const SizedBox(width: 15),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'EARN 500 OZ COINS',
+                        maxLines: 1,
+                        style: Cyber.display(
+                          22,
+                          color: Cyber.gold,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Invite a friend into StatOz and get paid when they join.',
+                      style: Cyber.body(13, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 7),
-          Text(
-            'INVITE. PLAY. EARN.',
-            style: Cyber.label(11, color: Cyber.cyan, letterSpacing: 2),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Share your personal link with a friend. When they join, your reward is ready.',
-            textAlign: TextAlign.center,
-            style: Cyber.body(13, color: Cyber.muted),
+          const SizedBox(height: 16),
+          Container(height: 1, color: Colors.white.withValues(alpha: 0.08)),
+          const SizedBox(height: 13),
+          Row(
+            children: [
+              Icon(
+                Icons.verified_rounded,
+                size: 17,
+                color: Cyber.cyan.withValues(alpha: 0.82),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Your personal invite link is ready to share.',
+                  style: Cyber.label(
+                    10,
+                    color: Cyber.cyan.withValues(alpha: 0.86),
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -236,43 +322,99 @@ class _HowItWorks extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const steps = [
-      (Icons.ios_share_rounded, 'SHARE YOUR LINK'),
+      (Icons.ios_share_rounded, 'SHARE LINK'),
       (Icons.person_add_alt_1_rounded, 'FRIEND JOINS'),
-      (Icons.toll_rounded, 'YOU GET 500'),
+      (Icons.toll_rounded, '+500 COINS'),
     ];
-    return Row(
-      children: [
-        for (var i = 0; i < steps.length; i++) ...[
-          Expanded(
-            child: Container(
-              height: 88,
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
-              decoration: BoxDecoration(
-                color: Cyber.panel.withValues(alpha: 0.62),
-                border: Border.all(color: Cyber.line),
-              ),
-              child: Column(
-                children: [
-                  Icon(steps[i].$1, color: Cyber.cyan, size: 23),
-                  const Spacer(),
-                  Text('${i + 1}', style: Cyber.label(9, color: Cyber.gold)),
-                  const SizedBox(height: 3),
-                  Text(
-                    steps[i].$2,
-                    maxLines: 1,
-                    textAlign: TextAlign.center,
-                    style: Cyber.label(
-                      8,
-                      color: Colors.white,
-                      letterSpacing: 0.5,
-                    ),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
+      decoration: _referralSurface(borderAlpha: 0.13),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _PanelTitle('HOW IT WORKS'),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              for (var i = 0; i < steps.length; i++) ...[
+                Expanded(
+                  child: _StepItem(
+                    index: i + 1,
+                    icon: steps[i].$1,
+                    label: steps[i].$2,
                   ),
-                ],
+                ),
+                if (i < steps.length - 1)
+                  Container(
+                    width: 26,
+                    height: 1,
+                    margin: const EdgeInsets.only(bottom: 21),
+                    color: Cyber.cyan.withValues(alpha: 0.18),
+                  ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StepItem extends StatelessWidget {
+  const _StepItem({
+    required this.index,
+    required this.icon,
+    required this.label,
+  });
+
+  final int index;
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Cyber.bg.withValues(alpha: 0.5),
+                border: Border.all(color: Cyber.cyan.withValues(alpha: 0.22)),
+              ),
+              child: Icon(icon, color: Cyber.cyan, size: 21),
+            ),
+            Positioned(
+              right: -5,
+              top: -5,
+              child: Container(
+                width: 18,
+                height: 18,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Cyber.gold.withValues(alpha: 0.14),
+                  border: Border.all(color: Cyber.gold.withValues(alpha: 0.3)),
+                ),
+                child: Text(
+                  '$index',
+                  style: Cyber.label(8, color: Cyber.gold, letterSpacing: 0),
+                ),
               ),
             ),
-          ),
-          if (i < steps.length - 1) const SizedBox(width: 7),
-        ],
+          ],
+        ),
+        const SizedBox(height: 9),
+        Text(
+          label,
+          maxLines: 2,
+          textAlign: TextAlign.center,
+          overflow: TextOverflow.ellipsis,
+          style: Cyber.label(8.5, color: Colors.white, letterSpacing: 0.45),
+        ),
       ],
     );
   }
@@ -296,27 +438,27 @@ class _ReferralLinkCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: Cyber.panel.withValues(alpha: 0.72),
-        border: Border.all(color: Cyber.line),
-      ),
+      padding: const EdgeInsets.fromLTRB(15, 15, 15, 16),
+      decoration: _referralSurface(fillAlpha: 0.68, borderAlpha: 0.15),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'YOUR REFERRAL LINK',
-            style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1.1),
-          ),
-          const SizedBox(height: 9),
+          const _PanelTitle('YOUR REFERRAL LINK'),
+          const SizedBox(height: 10),
           Container(
-            padding: const EdgeInsets.fromLTRB(12, 11, 8, 11),
+            padding: const EdgeInsets.fromLTRB(12, 10, 6, 10),
             decoration: BoxDecoration(
               color: Cyber.bg.withValues(alpha: 0.72),
-              border: Border.all(color: Cyber.cyan.withValues(alpha: 0.35)),
+              border: Border.all(color: Cyber.cyan.withValues(alpha: 0.18)),
             ),
             child: Row(
               children: [
+                Icon(
+                  Icons.link_rounded,
+                  size: 18,
+                  color: Cyber.cyan.withValues(alpha: 0.74),
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     link,
@@ -325,20 +467,49 @@ class _ReferralLinkCard extends StatelessWidget {
                     style: Cyber.body(12, color: Colors.white),
                   ),
                 ),
-                IconButton(
-                  tooltip: 'Copy referral link',
-                  visualDensity: VisualDensity.compact,
-                  onPressed: onCopy,
-                  icon: Icon(
-                    copied ? Icons.check_rounded : Icons.copy_rounded,
-                    color: copied ? Cyber.success : Cyber.cyan,
-                    size: 20,
+                const SizedBox(width: 3),
+                Tooltip(
+                  message: copied ? 'Copied' : 'Copy referral link',
+                  child: IconButton(
+                    visualDensity: VisualDensity.compact,
+                    onPressed: onCopy,
+                    icon: Icon(
+                      copied ? Icons.check_circle_rounded : Icons.copy_rounded,
+                      color: copied ? Cyber.success : Cyber.cyan,
+                      size: 21,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 11),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+            decoration: BoxDecoration(
+              color: Cyber.cyan.withValues(alpha: 0.06),
+              border: Border.all(color: Cyber.cyan.withValues(alpha: 0.1)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  copied ? Icons.check_rounded : Icons.info_outline_rounded,
+                  size: 16,
+                  color: copied ? Cyber.success : Cyber.muted,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    copied
+                        ? 'Link copied. Send it anywhere your squad chats.'
+                        : 'Share or copy this invite to bring a friend in.',
+                    style: Cyber.body(11, color: Cyber.muted),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
           Builder(
             builder: (buttonContext) => HudCtaButton(
               label: sharing ? 'OPENING SHARE...' : 'SHARE REFERRAL LINK',
@@ -368,35 +539,41 @@ class _ProgressCard extends StatelessWidget {
       ('COINS', state.coinsEarned, Cyber.gold),
     ];
     return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Cyber.panel.withValues(alpha: 0.65),
-        border: Border.all(color: Cyber.line),
-      ),
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
+      decoration: _referralSurface(fillAlpha: 0.58, borderAlpha: 0.12),
       child: Row(
         children: [
           for (var i = 0; i < values.length; i++) ...[
             Expanded(
-              child: Column(
-                children: [
-                  Text(
-                    '${values[i].$2}',
-                    style: Cyber.display(18, color: values[i].$3),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    values[i].$1,
-                    style: Cyber.label(
-                      8,
-                      color: Cyber.muted,
-                      letterSpacing: 0.8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: Column(
+                  children: [
+                    Text(
+                      '${values[i].$2}',
+                      style: Cyber.display(19, color: values[i].$3),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 5),
+                    Text(
+                      values[i].$1,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Cyber.label(
+                        8,
+                        color: Cyber.muted,
+                        letterSpacing: 0.7,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             if (i < values.length - 1)
-              Container(width: 1, height: 28, color: Cyber.line),
+              Container(
+                width: 1,
+                height: 34,
+                color: Colors.white.withValues(alpha: 0.07),
+              ),
           ],
         ],
       ),
@@ -411,30 +588,54 @@ class _RecentReferrals extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Text('RECENT REFERRALS', style: Cyber.display(13, letterSpacing: 1)),
-        const SizedBox(height: 9),
-        if (entries.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Cyber.panel.withValues(alpha: 0.55),
-              border: Border.all(color: Cyber.line),
-            ),
-            child: Text(
-              'No referrals yet. Share your link to invite your first friend.',
-              textAlign: TextAlign.center,
-              style: Cyber.body(12, color: Cyber.muted),
-            ),
-          )
-        else
-          for (final entry in entries) ...[
-            _ReferralRow(entry: entry),
-            const SizedBox(height: 8),
-          ],
-      ],
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
+      decoration: _referralSurface(fillAlpha: 0.54, borderAlpha: 0.11),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'RECENT REFERRALS',
+                  style: Cyber.display(13, letterSpacing: 1),
+                ),
+              ),
+              Text(
+                '${entries.length} TOTAL',
+                style: Cyber.label(8.5, color: Cyber.muted, letterSpacing: 1),
+              ),
+            ],
+          ),
+          const SizedBox(height: 11),
+          if (entries.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: Cyber.bg.withValues(alpha: 0.38),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+              ),
+              child: Text(
+                'No referrals yet. Share your link to invite your first friend.',
+                textAlign: TextAlign.center,
+                style: Cyber.body(12, color: Cyber.muted),
+              ),
+            )
+          else
+            for (var i = 0; i < entries.length; i++) ...[
+              _ReferralRow(entry: entries[i]),
+              if (i < entries.length - 1)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Container(
+                    height: 1,
+                    color: Colors.white.withValues(alpha: 0.06),
+                  ),
+                ),
+            ],
+        ],
+      ),
     );
   }
 }
@@ -451,49 +652,47 @@ class _ReferralRow extends StatelessWidget {
       ReferralStatus.pending => ('PENDING', Cyber.amber),
       ReferralStatus.rewarded => ('REWARDED +${entry.reward}', Cyber.success),
     };
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Cyber.panel.withValues(alpha: 0.58),
-        border: Border.all(color: Cyber.line),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: color.withValues(alpha: 0.16),
-            child: Text(
-              entry.friendName.substring(0, 1).toUpperCase(),
-              style: Cyber.display(13, color: color),
-            ),
+    return Row(
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            border: Border.all(color: color.withValues(alpha: 0.22)),
           ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(entry.friendName, style: Cyber.body(13)),
-                const SizedBox(height: 3),
-                Text(
-                  _dateLabel(entry.createdAt),
-                  style: Cyber.label(9, color: Cyber.muted),
-                ),
-              ],
-            ),
+          child: Text(
+            entry.friendName.substring(0, 1).toUpperCase(),
+            style: Cyber.display(13, color: color),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              border: Border.all(color: color.withValues(alpha: 0.5)),
-            ),
-            child: Text(
-              label,
-              style: Cyber.label(8, color: color, letterSpacing: 0.6),
-            ),
+        ),
+        const SizedBox(width: 11),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(entry.friendName, style: Cyber.body(13)),
+              const SizedBox(height: 4),
+              Text(
+                _dateLabel(entry.createdAt),
+                style: Cyber.label(9, color: Cyber.muted),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.08),
+            border: Border.all(color: color.withValues(alpha: 0.24)),
+          ),
+          child: Text(
+            label,
+            style: Cyber.label(8, color: color, letterSpacing: 0.55),
+          ),
+        ),
+      ],
     );
   }
 }

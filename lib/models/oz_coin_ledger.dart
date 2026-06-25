@@ -12,6 +12,8 @@ enum OzCoinTransactionSource {
   shopTopUp,
   streakReward,
   referralReward,
+  quizEntry,
+  footballBingoLifeline,
   manual,
 }
 

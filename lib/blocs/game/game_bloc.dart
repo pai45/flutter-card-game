@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../config/enums.dart';
 import '../../config/tutorial_steps.dart';
+import '../../data/random_opponent_names.dart';
 import '../../models/avatar_frame_option.dart';
 import '../../models/cards.dart';
 import '../../models/deck.dart';
@@ -446,8 +447,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     if (event.amount <= 0) return;
     final xp = _nextXpSnapshot(
       delta: event.amount,
-      source: XpTransactionSource.prediction,
-      title: 'PREDICTION REWARD',
+      source: event.source,
+      title: event.title,
       details: event.details ?? 'Settled prediction',
     );
     emit(
@@ -894,6 +895,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
 
   void _onMatchStarted(MatchStarted event, Emitter<GameState> emit) {
     if (!state.deckReady) return;
+    final opponentName =
+        event.opponentName ?? randomOpponentName(random: _random);
     final opponent = generateOpponentDeck(
       event.opponentLevel ?? state.progression.playerLevel,
       attackers,
@@ -908,7 +911,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         opponentAttackers: opponent.attackers,
         opponentDefenders: opponent.defenders,
         opponentActions: opponent.actions,
-        opponentName: event.opponentName,
+        opponentName: opponentName,
       ),
     );
   }
@@ -1622,6 +1625,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       OzCoinTransactionSource.shopTopUp => 'COIN TOP-UP',
       OzCoinTransactionSource.streakReward => 'STREAK REWARD',
       OzCoinTransactionSource.referralReward => 'FRIEND REFERRAL',
+      OzCoinTransactionSource.quizEntry => 'FOOTBALL QUIZ ENTRY',
+      OzCoinTransactionSource.footballBingoLifeline => 'BINGO LIFELINE',
       OzCoinTransactionSource.openingBalance => 'OPENING BALANCE',
       OzCoinTransactionSource.manual =>
         positive ? 'COINS ADDED' : 'COINS SPENT',

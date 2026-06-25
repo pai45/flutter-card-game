@@ -15,6 +15,7 @@ import 'config/enums.dart';
 import 'config/theme.dart';
 import 'models/league.dart';
 import 'models/sport_match.dart';
+import 'screens/football_bingo/football_bingo_hub.dart';
 import 'screens/game/game_screen.dart';
 import 'screens/shootout/shootout_hub.dart';
 import 'screens/home/widgets/starter_pack_onboarding.dart';
@@ -276,6 +277,20 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
+  void _openFootballBingo() {
+    final navigator = Navigator.of(context);
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => FootballBingoTabContent(
+          onNavigate: (next) {
+            navigator.pop();
+            _go(next);
+          },
+        ),
+      ),
+    );
+  }
+
   void _openMatch(SportMatch match) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -365,6 +380,7 @@ class _AppShellState extends State<AppShell> {
               onOpenGame: _openGame,
               onOpenShootout: _openShootout,
               onOpenQuiz: _openQuiz,
+              onOpenFootballBingo: _openFootballBingo,
               onAddCoins: _openShopCoins,
             ),
           };

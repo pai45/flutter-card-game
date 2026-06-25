@@ -10,9 +10,14 @@ import '../config/theme.dart';
 /// once its [unlockedBy] predecessor is *cleared* (see [QuizProgress.isUnlocked]).
 enum QuizMode { easy, medium, hard, global }
 
-/// Fraction of a session a player must get right for a mode to count as
-/// "cleared" (which unlocks the next mode).
-const double kQuizClearThreshold = 0.6;
+const int kQuizSetCount = 50;
+const int kQuizQuestionsPerSet = 10;
+const int kQuizQuestionPoolPerMode = kQuizSetCount * kQuizQuestionsPerSet;
+const int kQuizEntryCost = 25;
+const int kQuizMaxWrongToPass = 5;
+
+bool quizSetPassed({required int correct, int total = kQuizQuestionsPerSet}) =>
+    total - correct <= kQuizMaxWrongToPass;
 
 extension QuizModeX on QuizMode {
   /// HUD label.
@@ -31,12 +36,12 @@ extension QuizModeX on QuizMode {
     QuizMode.global => 'WORLD FOOTBALL',
   };
 
-  /// XP paid per correct answer in this mode (harder = richer).
+  /// XP paid per correct answer, only when a set is passed.
   int get reward => switch (this) {
-    QuizMode.easy => 50,
-    QuizMode.medium => 75,
-    QuizMode.hard => 110,
-    QuizMode.global => 90,
+    QuizMode.easy => 5,
+    QuizMode.medium => 10,
+    QuizMode.hard => 20,
+    QuizMode.global => 30,
   };
 
   /// Accent colour — follows the glow/colour discipline: success→amber→danger
@@ -55,7 +60,8 @@ extension QuizModeX on QuizMode {
     QuizMode.global => Icons.public,
   };
 
-  /// The mode that must be cleared before this one opens (null = always open).
+  /// Legacy mode-ladder dependency. New Football Quiz categories are all open;
+  /// set progression is gated inside each mode.
   QuizMode? get unlockedBy => switch (this) {
     QuizMode.easy => null,
     QuizMode.medium => QuizMode.easy,
@@ -92,53 +98,121 @@ class TriviaQuestion {
       : options[index];
 }
 
-/// Persisted progress for a single mode: whether it's cleared (gates the next
-/// mode) and the player's best run (shown on the tile for replay pull).
-class QuizModeProgress {
-  const QuizModeProgress({
-    this.cleared = false,
+class QuizSetProgress {
+  const QuizSetProgress({
+    this.passed = false,
     this.bestCorrect = 0,
-    this.bestTotal = 0,
-    this.played = 0,
+    this.attempts = 0,
   });
 
-  factory QuizModeProgress.fromJson(Map<String, dynamic> json) =>
-      QuizModeProgress(
-        cleared: json['cleared'] as bool? ?? false,
+  factory QuizSetProgress.fromJson(Map<String, dynamic> json) =>
+      QuizSetProgress(
+        passed: json['passed'] as bool? ?? json['cleared'] as bool? ?? false,
         bestCorrect: json['bestCorrect'] as int? ?? 0,
-        bestTotal: json['bestTotal'] as int? ?? 0,
-        played: json['played'] as int? ?? 0,
+        attempts: json['attempts'] as int? ?? json['played'] as int? ?? 0,
       );
 
-  final bool cleared;
+  final bool passed;
   final int bestCorrect;
-  final int bestTotal;
-  final int played;
+  final int attempts;
 
-  bool get hasRun => bestTotal > 0;
-  double get bestPct => bestTotal == 0 ? 0 : bestCorrect / bestTotal;
+  bool get hasRun => attempts > 0;
+  double get bestPct => bestCorrect / kQuizQuestionsPerSet;
 
-  /// Folds a fresh result into this record: bumps the play count, keeps the
-  /// best run, and latches [cleared] once a run hits the threshold.
-  QuizModeProgress merge({required int correct, required int total}) {
-    final betterRun = bestTotal == 0 || correct / total > bestPct;
-    return QuizModeProgress(
-      cleared: cleared || (total > 0 && correct / total >= kQuizClearThreshold),
-      bestCorrect: betterRun ? correct : bestCorrect,
-      bestTotal: betterRun ? total : bestTotal,
-      played: played + 1,
+  QuizSetProgress merge({required int correct}) {
+    return QuizSetProgress(
+      passed: passed || quizSetPassed(correct: correct),
+      bestCorrect: correct > bestCorrect ? correct : bestCorrect,
+      attempts: attempts + 1,
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'cleared': cleared,
+    'passed': passed,
     'bestCorrect': bestCorrect,
-    'bestTotal': bestTotal,
-    'played': played,
+    'attempts': attempts,
   };
 }
 
-/// The full per-mode progress map, with the unlock rules baked in.
+/// Persisted progress for a single mode: 50 sequential sets, where set 1 starts
+/// unlocked and each next set opens after the previous set is passed.
+class QuizModeProgress {
+  const QuizModeProgress({this.sets = const {}});
+
+  factory QuizModeProgress.fromJson(Map<String, dynamic> json) {
+    final rawSets = json['sets'];
+    if (rawSets is Map) {
+      return QuizModeProgress(
+        sets: {
+          for (final entry in rawSets.entries)
+            int.parse(entry.key.toString()): QuizSetProgress.fromJson(
+              Map<String, dynamic>.from(entry.value as Map),
+            ),
+        },
+      );
+    }
+
+    // Backwards compatibility for the old single-run-per-mode shape: if a mode
+    // had been cleared, treat set 1 as passed so returning players keep access.
+    final legacyCleared = json['cleared'] as bool? ?? false;
+    final legacyBest = json['bestCorrect'] as int? ?? 0;
+    final legacyPlayed = json['played'] as int? ?? 0;
+    if (!legacyCleared && legacyBest == 0 && legacyPlayed == 0) {
+      return const QuizModeProgress();
+    }
+    return QuizModeProgress(
+      sets: {
+        1: QuizSetProgress(
+          passed: legacyCleared,
+          bestCorrect: legacyBest.clamp(0, kQuizQuestionsPerSet),
+          attempts: legacyPlayed,
+        ),
+      },
+    );
+  }
+
+  final Map<int, QuizSetProgress> sets;
+
+  QuizSetProgress setProgress(int setNumber) =>
+      sets[setNumber] ?? const QuizSetProgress();
+
+  bool isSetUnlocked(int setNumber) {
+    if (setNumber < 1 || setNumber > kQuizSetCount) return false;
+    if (setNumber == 1) return true;
+    return setProgress(setNumber - 1).passed;
+  }
+
+  int get passedCount =>
+      sets.entries.where((entry) => entry.value.passed).length;
+
+  bool get cleared => passedCount >= kQuizSetCount;
+  bool get hasRun => sets.values.any((set) => set.hasRun);
+  int get played => sets.values.fold(0, (sum, set) => sum + set.attempts);
+  int get bestCorrect => sets.values.fold(
+    0,
+    (best, set) => set.bestCorrect > best ? set.bestCorrect : best,
+  );
+  int get bestTotal => kQuizQuestionsPerSet;
+  double get bestPct => bestCorrect / kQuizQuestionsPerSet;
+
+  QuizModeProgress recordSet(int setNumber, {required int correct}) {
+    final before = setProgress(setNumber);
+    return QuizModeProgress(
+      sets: {
+        ...sets,
+        setNumber: before.merge(correct: correct),
+      },
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'sets': {
+      for (final entry in sets.entries) '${entry.key}': entry.value.toJson(),
+    },
+  };
+}
+
+/// The full per-mode progress map, with set unlock rules baked in.
 class QuizProgress {
   const QuizProgress(this.byMode);
 
@@ -157,11 +231,11 @@ class QuizProgress {
   QuizModeProgress forMode(QuizMode mode) =>
       byMode[mode] ?? const QuizModeProgress();
 
-  /// Easy is always open; every other mode needs its predecessor cleared.
-  bool isUnlocked(QuizMode mode) {
-    final pre = mode.unlockedBy;
-    return pre == null || forMode(pre).cleared;
-  }
+  /// All four categories are open; numbered sets are gated inside each mode.
+  bool isUnlocked(QuizMode mode) => true;
+
+  bool isSetUnlocked(QuizMode mode, int setNumber) =>
+      forMode(mode).isSetUnlocked(setNumber);
 
   int get clearedCount =>
       QuizMode.values.where((m) => forMode(m).cleared).length;
@@ -173,19 +247,15 @@ class QuizProgress {
     QuizMode mode, {
     required int correct,
     required int total,
+    int setNumber = 1,
   }) {
     final before = forMode(mode);
-    final after = before.merge(correct: correct, total: total);
+    final beforeSet = before.setProgress(setNumber);
+    final after = before.recordSet(setNumber, correct: correct);
     final next = QuizProgress({...byMode, mode: after});
-    final newlyCleared = !before.cleared && after.cleared;
-    // The mode this run just opened, if any (the one gated directly on [mode]).
-    final unlocked = newlyCleared
-        ? QuizMode.values
-              .where((m) => m.unlockedBy == mode)
-              .cast<QuizMode?>()
-              .firstWhere((_) => true, orElse: () => null)
-        : null;
-    return (progress: next, newlyCleared: newlyCleared, unlocked: unlocked);
+    final newlyCleared =
+        !beforeSet.passed && after.setProgress(setNumber).passed;
+    return (progress: next, newlyCleared: newlyCleared, unlocked: null);
   }
 
   Map<String, dynamic> toJson() => {

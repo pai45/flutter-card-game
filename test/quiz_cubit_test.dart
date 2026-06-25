@@ -20,96 +20,121 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  group('QuizProgress unlock rules', () {
-    test('easy is always open; the rest start locked', () {
+  group('QuizProgress set unlock rules', () {
+    test('all modes are open, but only set 1 starts unlocked', () {
       final progress = QuizProgress.initial();
-      expect(progress.isUnlocked(QuizMode.easy), isTrue);
-      expect(progress.isUnlocked(QuizMode.medium), isFalse);
-      expect(progress.isUnlocked(QuizMode.hard), isFalse);
-      expect(progress.isUnlocked(QuizMode.global), isFalse);
+      for (final mode in QuizMode.values) {
+        expect(progress.isUnlocked(mode), isTrue);
+        expect(progress.isSetUnlocked(mode, 1), isTrue);
+        expect(progress.isSetUnlocked(mode, 2), isFalse);
+      }
     });
 
-    test('clearing a mode unlocks exactly its successor', () {
+    test('passing a set unlocks exactly the next set in that mode', () {
       final result = QuizProgress.initial().record(
         QuizMode.easy,
-        correct: 6,
-        total: 8,
+        setNumber: 1,
+        correct: 5,
+        total: kQuizQuestionsPerSet,
       );
       expect(result.newlyCleared, isTrue);
-      expect(result.unlocked, QuizMode.medium);
-      expect(result.progress.isUnlocked(QuizMode.medium), isTrue);
-      // Two tiers down stays locked until medium is cleared too.
-      expect(result.progress.isUnlocked(QuizMode.hard), isFalse);
+      expect(result.unlocked, isNull);
+      expect(result.progress.isSetUnlocked(QuizMode.easy, 2), isTrue);
+      expect(result.progress.isSetUnlocked(QuizMode.easy, 3), isFalse);
+      expect(result.progress.isSetUnlocked(QuizMode.medium, 2), isFalse);
     });
 
-    test('a sub-threshold run does not clear or unlock', () {
+    test('a failed run records an attempt but does not unlock next set', () {
       final result = QuizProgress.initial().record(
         QuizMode.easy,
-        correct: 3,
-        total: 8,
+        setNumber: 1,
+        correct: 4,
+        total: kQuizQuestionsPerSet,
       );
+      final set = result.progress.forMode(QuizMode.easy).setProgress(1);
       expect(result.newlyCleared, isFalse);
-      expect(result.unlocked, isNull);
-      expect(result.progress.isUnlocked(QuizMode.medium), isFalse);
+      expect(set.attempts, 1);
+      expect(set.bestCorrect, 4);
+      expect(set.passed, isFalse);
+      expect(result.progress.isSetUnlocked(QuizMode.easy, 2), isFalse);
     });
   });
 
-  group('QuizModeProgress best run', () {
-    test('keeps the better of two runs and counts plays', () {
-      final after = const QuizModeProgress()
-          .merge(correct: 4, total: 8)
-          .merge(correct: 7, total: 8)
-          .merge(correct: 2, total: 8);
+  group('QuizSetProgress', () {
+    test('pass threshold is five or fewer wrong answers', () {
+      expect(quizSetPassed(correct: 5), isTrue);
+      expect(quizSetPassed(correct: 4), isFalse);
+    });
+
+    test('keeps the best run and counts attempts', () {
+      final after = const QuizSetProgress()
+          .merge(correct: 4)
+          .merge(correct: 7)
+          .merge(correct: 2);
       expect(after.bestCorrect, 7);
-      expect(after.bestTotal, 8);
-      expect(after.played, 3);
-      expect(after.cleared, isTrue);
+      expect(after.attempts, 3);
+      expect(after.passed, isTrue);
     });
   });
 
   group('QuizCubit', () {
-    test('records a result and persists across reloads', () async {
+    test('records a set result and persists across reloads', () async {
       final cubit = await _loaded();
       addTearDown(cubit.close);
 
-      expect(cubit.isUnlocked(QuizMode.medium), isFalse);
+      expect(cubit.isSetUnlocked(QuizMode.easy, 2), isFalse);
       final outcome = await cubit.recordResult(
         QuizMode.easy,
+        setNumber: 1,
         correct: 8,
-        total: 8,
+        total: kQuizQuestionsPerSet,
       );
       expect(outcome.newlyCleared, isTrue);
-      expect(outcome.unlocked, QuizMode.medium);
-      expect(cubit.isUnlocked(QuizMode.medium), isTrue);
-      expect(cubit.progressFor(QuizMode.easy).bestCorrect, 8);
+      expect(cubit.isSetUnlocked(QuizMode.easy, 2), isTrue);
+      expect(cubit.setProgressFor(QuizMode.easy, 1).bestCorrect, 8);
 
-      // A fresh cubit reading the same storage sees the unlock + best run.
       final reloaded = await _loaded();
       addTearDown(reloaded.close);
-      expect(reloaded.isUnlocked(QuizMode.medium), isTrue);
-      expect(reloaded.progressFor(QuizMode.easy).cleared, isTrue);
-      expect(reloaded.progressFor(QuizMode.easy).bestCorrect, 8);
+      expect(reloaded.isSetUnlocked(QuizMode.easy, 2), isTrue);
+      expect(reloaded.setProgressFor(QuizMode.easy, 1).passed, isTrue);
+      expect(reloaded.setProgressFor(QuizMode.easy, 1).bestCorrect, 8);
     });
   });
 
-  group('buildQuizSession', () {
-    test('returns answer-keyed questions only for the requested mode', () {
+  group('quiz question scaffolds', () {
+    test('mode constants match the set ladder economy', () {
+      expect(kQuizSetCount, 50);
+      expect(kQuizQuestionsPerSet, 10);
+      expect(kQuizQuestionPoolPerMode, 500);
+      expect(kQuizEntryCost, 25);
+      expect(QuizMode.easy.reward, 5);
+      expect(QuizMode.medium.reward, 10);
+      expect(QuizMode.hard.reward, 20);
+      expect(QuizMode.global.reward, 30);
+    });
+
+    test('buildQuizSet returns deterministic answer-keyed sets', () {
       for (final mode in QuizMode.values) {
-        final session = buildQuizSession(mode, count: 8, seed: 7);
-        expect(session, isNotEmpty);
-        expect(session.length, lessThanOrEqualTo(8));
-        for (final q in session) {
+        final first = buildQuizSet(mode, 12);
+        final second = buildQuizSet(mode, 12);
+        expect(first, hasLength(kQuizQuestionsPerSet));
+        expect(first.map((q) => q.id), second.map((q) => q.id));
+        for (final q in first) {
           expect(q.mode, mode);
           expect(q.correctIndex, inInclusiveRange(0, q.options.length - 1));
-          expect(q.options.length, greaterThanOrEqualTo(2));
+          expect(q.id, startsWith('${mode.name}_q'));
         }
       }
     });
 
-    test('same seed yields the same session (deterministic)', () {
-      final a = buildQuizSession(QuizMode.hard, count: 6, seed: 42);
-      final b = buildQuizSession(QuizMode.hard, count: 6, seed: 42);
-      expect(a.map((q) => q.id).toList(), b.map((q) => q.id).toList());
-    });
+    test(
+      'legacy random session still draws from the 500-question mode pool',
+      () {
+        final session = buildQuizSession(QuizMode.hard, count: 14, seed: 42);
+        expect(session, hasLength(14));
+        expect(quizPoolSize(QuizMode.hard), kQuizQuestionPoolPerMode);
+        expect(session.every((q) => q.mode == QuizMode.hard), isTrue);
+      },
+    );
   });
 }

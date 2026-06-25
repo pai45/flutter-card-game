@@ -82,6 +82,7 @@ _playerAvatarItems = playerPortraitAssets.entries
 const List<
   ({
     String id,
+    String label,
     int price,
     Color start,
     Color end,
@@ -93,6 +94,7 @@ const List<
 _bannerPlaceholders = [
   (
     id: 'nebula',
+    label: 'NEBULA',
     price: 25,
     start: Color(0xff111d60),
     end: Color(0xff050b1e),
@@ -102,6 +104,7 @@ _bannerPlaceholders = [
   ),
   (
     id: 'sunburst',
+    label: 'SUNBURST',
     price: 25,
     start: Color(0xffffb000),
     end: Color(0xffff5a00),
@@ -111,6 +114,7 @@ _bannerPlaceholders = [
   ),
   (
     id: 'night',
+    label: 'NIGHTFALL',
     price: 25,
     start: Color(0xff431064),
     end: Color(0xff130018),
@@ -120,6 +124,7 @@ _bannerPlaceholders = [
   ),
   (
     id: 'inferno',
+    label: 'INFERNO',
     price: 25,
     start: Color(0xffb00012),
     end: Color(0xff1b0207),
@@ -129,6 +134,7 @@ _bannerPlaceholders = [
   ),
   (
     id: 'flare',
+    label: 'SOLAR FLARE',
     price: 25,
     start: Color(0xffff7a00),
     end: Color(0xffffc02e),
@@ -416,10 +422,13 @@ class _BannersTabState extends State<BannersTab> {
                           child: Center(
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(maxWidth: 560),
-                              child: _BannerShopTile(
-                                item: item,
-                                owned: state.ownedBannerIds.contains(item.id),
-                                onAcquired: widget.onAcquired,
+                              child: SizedBox(
+                                height: 148,
+                                child: _BannerShopTile(
+                                  item: item,
+                                  owned: state.ownedBannerIds.contains(item.id),
+                                  onAcquired: widget.onAcquired,
+                                ),
                               ),
                             ),
                           ),
@@ -534,55 +543,84 @@ class _FrameShopTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color primary = frame.primary;
-    // Only the equipped tile is "live" — it's the single focal glow (glow rule).
     return ShopCardFrame(
       accent: primary,
       focal: equipped,
-      child: Padding(
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          children: [
-            Expanded(child: Center(child: _ring(glow: equipped))),
-            const SizedBox(height: 8),
-            Text(
-              frame.label.toUpperCase(),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontFamily: 'Orbitron',
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.6,
+      child: Column(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(child: Center(child: _ring(glow: equipped))),
+                  const SizedBox(height: 8),
+                  Text(
+                    frame.label.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Orbitron',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 8),
-            _action(context, primary),
-          ],
-        ),
+          ),
+          _footer(context, primary),
+        ],
       ),
     );
   }
 
-  Widget _action(BuildContext context, Color primary) {
+  Widget _footer(BuildContext context, Color primary) {
     if (equipped) {
-      return ShopActionButton(label: 'EQUIPPED', filled: true, onTap: () {});
+      return Container(
+        height: 36,
+        color: Colors.black.withValues(alpha: 0.88),
+        alignment: Alignment.center,
+        child: Text(
+          'EQUIPPED',
+          style: TextStyle(
+            color: primary,
+            fontFamily: 'Orbitron',
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.4,
+          ),
+        ),
+      );
     }
     if (owned) {
-      return ShopActionButton(
-        label: 'EQUIP',
-        filled: false,
+      return ShopPressable(
         onTap: () {
           playSound(SoundEffect.uiTap);
           context.read<GameBloc>().add(AvatarFrameEquipped(frame.id));
         },
+        child: Container(
+          height: 36,
+          color: Colors.black.withValues(alpha: 0.88),
+          alignment: Alignment.center,
+          child: Text(
+            'EQUIP',
+            style: TextStyle(
+              color: primary,
+              fontFamily: 'Orbitron',
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 1.4,
+            ),
+          ),
+        ),
       );
     }
-    return ShopActionButton(
-      label: _formatInt(frame.coinPrice),
-      filled: true,
-      icon: const CoinIcon(size: 14),
+    return ShopPressable(
       onTap: () {
         final GameBloc bloc = context.read<GameBloc>();
         if (bloc.state.coins < frame.coinPrice) {
@@ -598,6 +636,12 @@ class _FrameShopTile extends StatelessWidget {
           coinsSpent: frame.coinPrice,
         );
       },
+      child: Container(
+        height: 36,
+        color: Colors.black.withValues(alpha: 0.88),
+        alignment: Alignment.center,
+        child: ShopPricePill(coins: frame.coinPrice, size: 11),
+      ),
     );
   }
 }
@@ -646,55 +690,63 @@ class _AvatarShopTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ShopCardFrame(
       accent: _cyan,
-      stamp: owned ? const ShopStateStamp(kind: ShopStampKind.owned) : null,
       child: Column(
         children: [
-          Expanded(child: SizedBox.expand(child: _portrait())),
-          // Tappable price footer = the buy control (coin buys are instant,
-          // matching borders/cards). Shows OWNED once collected.
-          ShopPressable(
-            onTap: owned ? () {} : () => _buy(context),
-            child: Container(
-              height: 36,
-              color: Colors.black.withValues(alpha: 0.88),
-              alignment: Alignment.center,
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: owned
-                  ? const Text(
-                      'OWNED',
-                      style: TextStyle(
-                        color: _cyan,
-                        fontFamily: 'Orbitron',
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.4,
-                      ),
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            item.shortName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: _secondary,
-                              fontFamily: 'Orbitron',
-                              fontSize: 8,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        ShopPricePill(coins: item.price, size: 11),
-                      ],
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+              child: Column(
+                children: [
+                  Expanded(child: ClipRect(child: _portrait())),
+                  const SizedBox(height: 8),
+                  Text(
+                    item.shortName.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Orbitron',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.6,
                     ),
+                  ),
+                ],
+              ),
             ),
           ),
+          _footer(context),
         ],
+      ),
+    );
+  }
+
+  Widget _footer(BuildContext context) {
+    if (owned) {
+      return Container(
+        height: 36,
+        color: Colors.black.withValues(alpha: 0.88),
+        alignment: Alignment.center,
+        child: const Text(
+          'OWNED',
+          style: TextStyle(
+            color: _cyan,
+            fontFamily: 'Orbitron',
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.4,
+          ),
+        ),
+      );
+    }
+    return ShopPressable(
+      onTap: () => _buy(context),
+      child: Container(
+        height: 36,
+        color: Colors.black.withValues(alpha: 0.88),
+        alignment: Alignment.center,
+        child: ShopPricePill(coins: item.price, size: 11),
       ),
     );
   }
@@ -734,6 +786,7 @@ class _BannerShopTile extends StatelessWidget {
 
   final ({
     String id,
+    String label,
     int price,
     Color start,
     Color end,
@@ -769,37 +822,74 @@ class _BannerShopTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ShopCardFrame(
       accent: item.accent,
-      stamp: owned
-          ? ShopStateStamp(kind: ShopStampKind.owned, accent: item.accent)
-          : null,
-      child: SizedBox(
-        height: 112,
-        child: Stack(
-          children: [
-            Positioned.fill(child: _art()),
-            Positioned(
-              top: 8,
-              left: 10,
-              child: ShopTag(label: item.sport, accent: item.accent),
-            ),
-            if (!owned)
-              Positioned(
-                left: 0,
-                bottom: 0,
-                child: ShopPressable(
-                  onTap: () => _buy(context),
-                  child: Container(
-                    color: Colors.black.withValues(alpha: 0.56),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 9,
+      child: Column(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        Positioned.fill(child: _art()),
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          child: ShopTag(label: item.sport, accent: item.accent),
+                        ),
+                      ],
                     ),
-                    child: ShopPricePill(coins: item.price, size: 15),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  Text(
+                    item.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Orbitron',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                ],
               ),
-          ],
+            ),
+          ),
+          _footer(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _footer(BuildContext context) {
+    if (owned) {
+      return Container(
+        height: 36,
+        color: Colors.black.withValues(alpha: 0.88),
+        alignment: Alignment.center,
+        child: Text(
+          'OWNED',
+          style: TextStyle(
+            color: item.accent,
+            fontFamily: 'Orbitron',
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.4,
+          ),
         ),
+      );
+    }
+    return ShopPressable(
+      onTap: () => _buy(context),
+      child: Container(
+        height: 36,
+        color: Colors.black.withValues(alpha: 0.88),
+        alignment: Alignment.center,
+        child: ShopPricePill(coins: item.price, size: 11),
       ),
     );
   }
@@ -819,7 +909,7 @@ class _BannerShopTile extends StatelessWidget {
         height: 96,
         child: ShopCardFrame(accent: item.accent, child: _art()),
       ),
-      name: item.id,
+      name: item.label,
       accent: item.accent,
       coinsSpent: item.price,
     );
@@ -925,23 +1015,33 @@ class CoinsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: coinTiers.length,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: MediaQuery.sizeOf(context).width >= 720 ? 3 : 2,
-        mainAxisSpacing: 14,
-        crossAxisSpacing: 14,
-        childAspectRatio: 0.66,
-      ),
-      itemBuilder: (BuildContext context, int index) {
-        final CoinTier tier = coinTiers[index];
-        // Same match-card cascade — each coin tier slides + fades in to fill the
-        // page on a per-index stagger.
-        return StaggeredCardEntrance(
-          index: index,
-          animate: true,
-          child: _CoinTierTile(tier: tier, onPurchased: onPurchased),
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final int columns = constraints.maxWidth >= 720
+            ? 5
+            : constraints.maxWidth >= 480
+            ? 4
+            : 3;
+        return GridView.builder(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+          itemCount: coinTiers.length,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 0.72,
+          ),
+          itemBuilder: (BuildContext context, int index) {
+            final CoinTier tier = coinTiers[index];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: StaggeredCardEntrance(
+                index: index,
+                animate: true,
+                child: _CoinTierTile(tier: tier, onPurchased: onPurchased),
+              ),
+            );
+          },
         );
       },
     );
@@ -954,95 +1054,94 @@ class _CoinTierTile extends StatelessWidget {
   final CoinTier tier;
   final ValueChanged<int> onPurchased;
 
+  Widget _art({bool preview = false}) => Image.asset(
+    tier.imageAsset,
+    width: preview ? double.infinity : null,
+    height: preview ? double.infinity : null,
+    fit: BoxFit.contain,
+    alignment: Alignment.bottomCenter,
+    errorBuilder: (_, _, _) => Container(
+      color: _surface,
+      alignment: Alignment.center,
+      child: const CoinIcon(size: 42),
+    ),
+  );
+
   @override
   Widget build(BuildContext context) {
     final Color accent = _tierAccent(tier.id);
-    // Premium tiers (champion/legendary) are the one focal glow per the glow rule.
-    final bool premium = tier.id == 'champion' || tier.id == 'legendary';
     return ShopCardFrame(
       accent: accent,
-      focal: premium,
-      child: Stack(
+      elevated: true,
+      child: Column(
         children: [
-          Positioned.fill(
-            child: CustomPaint(painter: _TierBackgroundPainter(accent)),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // The old ribbon + rotated bonus sticker collapse into one calm
-                // header row of chips.
-                SizedBox(
-                  height: 18,
-                  child: Row(
-                    children: [
-                      if (tier.bonusPercent > 0)
-                        ShopTag(label: '+${tier.bonusPercent}%', accent: accent),
-                      const Spacer(),
-                      if (tier.tag != null)
-                        ShopTag(label: tier.tag!, accent: accent),
-                    ],
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: ClipRect(
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+                            child: _art(),
+                          ),
+                          if (tier.bonusPercent > 0 || tier.tag != null)
+                            Positioned(
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    if (tier.bonusPercent > 0)
+                                      ShopTag(
+                                        label: '+${tier.bonusPercent}%',
+                                        accent: accent,
+                                      ),
+                                    if (tier.bonusPercent > 0 && tier.tag != null)
+                                      const SizedBox(width: 4),
+                                    if (tier.tag != null)
+                                      ShopTag(label: tier.tag!, accent: accent),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                SizedBox(
-                  height: 58,
-                  child: Center(child: _CoinStackArt(accent: accent)),
-                ),
-                const SizedBox(height: 6),
-                Center(
-                  child: Text(
-                    _formatInt(tier.coins),
+                  const SizedBox(height: 8),
+                  Text(
+                    tier.name.toUpperCase(),
                     maxLines: 1,
-                    style: TextStyle(
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontFamily: 'Orbitron',
-                      fontWeight: FontWeight.w900,
-                      fontSize: 22,
-                      letterSpacing: 0.6,
-                      shadows: [
-                        Shadow(
-                          color: accent.withValues(alpha: 0.55),
-                          blurRadius: 14,
-                        ),
-                      ],
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                ),
-                Center(
-                  child: Text(
-                    'COINS',
-                    style: TextStyle(
-                      color: accent.withValues(alpha: 0.85),
-                      fontFamily: 'Orbitron',
-                      fontWeight: FontWeight.w900,
-                      fontSize: 9,
-                      letterSpacing: 1.6,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Center(
-                  child: Text(
-                    tier.name.toUpperCase(),
-                    style: const TextStyle(
-                      color: _secondary,
+                      fontSize: 11,
                       fontWeight: FontWeight.w800,
-                      fontSize: 10,
-                      letterSpacing: 1.2,
+                      letterSpacing: 0.6,
                     ),
                   ),
-                ),
-                const Spacer(),
-                ShopActionButton(
-                  label: '₹${_formatInt(tier.inrPrice)}',
-                  filled: true,
-                  onTap: () => _buy(context),
-                ),
-              ],
+                ],
+              ),
+            ),
+          ),
+          ShopPressable(
+            onTap: () => _buy(context),
+            child: Container(
+              height: 36,
+              color: Colors.black.withValues(alpha: 0.88),
+              alignment: Alignment.center,
+              child: ShopPricePill(inr: tier.inrPrice, accent: accent, size: 11),
             ),
           ),
         ],
@@ -1055,7 +1154,11 @@ class _CoinTierTile extends StatelessWidget {
       context,
       name: tier.name,
       price: '₹${_formatInt(tier.inrPrice)}',
-      preview: const CoinIcon(size: 42),
+      preview: SizedBox(
+        width: 120,
+        height: 150,
+        child: ShopCardFrame(accent: _tierAccent(tier.id), child: _art(preview: true)),
+      ),
     );
     if (!context.mounted || !confirmed) return;
     context.read<GameBloc>().add(
@@ -1077,19 +1180,21 @@ class PacksTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
+    return GridView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
       itemCount: shopPacks.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        // Column-stacked pack tiles — tuned so art + copy + footer fill the cell.
+        childAspectRatio: MediaQuery.sizeOf(context).width >= 720 ? 0.74 : 0.68,
+      ),
       itemBuilder: (BuildContext context, int index) {
-        // Each pack cascades in (slide + fade, per-index stagger) to fill the
-        // page — the same entrance the match cards use.
         return StaggeredCardEntrance(
           index: index,
           animate: true,
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _PackTile(pack: shopPacks[index]),
-          ),
+          child: _PackTile(pack: shopPacks[index]),
         );
       },
     );
@@ -1384,133 +1489,201 @@ class _PackTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color accent = pack.gradientAccent ? _magenta : pack.accent;
-    // The elite (gradient-accent) pack is the one focal glow per the glow rule.
-    return ShopCardFrame(
-      accent: accent,
-      focal: pack.gradientAccent,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Stack(
-              children: [
-                PackDesignWidget(pack: pack, width: 120, height: 172),
-                if (pack.gradientAccent)
-                  Positioned(top: -4, right: -4, child: _CornerStar(color: _gold)),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(4, 14, 14, 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    pack.name.toUpperCase(),
-                    style: TextStyle(
-                      color: accent,
-                      fontFamily: 'Orbitron',
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
-                      letterSpacing: 0.8,
-                      shadows: [
-                        Shadow(
-                          color: accent.withValues(alpha: 0.55),
-                          blurRadius: 12,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double tileW = constraints.maxWidth;
+        final bool narrow = tileW < 168;
+        final double packW = tileW * (narrow ? 0.50 : 0.44);
+        final double packH = packW * 1.42;
+        final double titleSize = narrow ? 10.0 : 11.0;
+        final double metaSize = narrow ? 8.0 : 9.0;
+        final double guaranteeSize = narrow ? 7.5 : 8.0;
+
+        return ShopCardFrame(
+          accent: accent,
+          focal: pack.gradientAccent,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+                  child: Column(
                     children: [
-                      Icon(Icons.style, color: _cyan, size: 12),
-                      const SizedBox(width: 4),
+                      Stack(
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.center,
+                        children: [
+                          PackDesignWidget(
+                            pack: pack,
+                            width: packW,
+                            height: packH,
+                          ),
+                          if (pack.gradientAccent)
+                            Positioned(
+                              top: -4,
+                              right: packW * 0.04,
+                              child: _CornerStar(
+                                color: _gold,
+                                size: narrow ? 16 : 20,
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
                       Text(
-                        '${pack.cardCount} CARDS',
-                        style: const TextStyle(
-                          color: _cyan,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 10,
-                          letterSpacing: 1.2,
+                        pack.name.toUpperCase(),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: accent,
+                          fontFamily: 'Orbitron',
+                          fontWeight: FontWeight.w900,
+                          fontSize: titleSize,
+                          letterSpacing: 0.6,
+                          height: 1.15,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.style, color: _cyan, size: narrow ? 9 : 10),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${pack.cardCount} CARDS',
+                            style: TextStyle(
+                              color: _cyan,
+                              fontFamily: 'Orbitron',
+                              fontWeight: FontWeight.w700,
+                              fontSize: metaSize,
+                              letterSpacing: 1.0,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Expanded(
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.72),
+                            border: Border.all(
+                              color: accent.withValues(alpha: 0.65),
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.verified,
+                                color: Colors.white.withValues(alpha: 0.92),
+                                size: narrow ? 10 : 11,
+                              ),
+                              const SizedBox(width: 5),
+                              Expanded(
+                                child: Text(
+                                  pack.guarantee,
+                                  maxLines: 4,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.94),
+                                    fontFamily: 'Onest',
+                                    fontSize: guaranteeSize,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.25,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  // Guarantee → the shared tag chip (with room to wrap).
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: accent.withValues(alpha: 0.10),
-                      border: Border.all(color: accent.withValues(alpha: 0.55)),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.verified, color: accent, size: 11),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            pack.guarantee,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: accent,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.6,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  BlocBuilder<GameBloc, GameState>(
-                    builder: (context, state) {
-                      final isStarterPack = pack.id == 'starter';
-                      final isDisabled =
-                          isStarterPack && state.starterPackClaimed;
-                      return Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Opacity(
-                            opacity: isDisabled ? 0.5 : 1.0,
-                            child: ShopActionButton(
-                              label: isStarterPack
-                                  ? (isDisabled ? 'CLAIMED' : 'FREE')
-                                  : _formatInt(pack.coinPrice),
-                              filled: false,
-                              icon: isStarterPack
-                                  ? null
-                                  : const CoinIcon(size: 14),
-                              onTap: isDisabled
-                                  ? () {}
-                                  : () => _buyWithCoins(context),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          if (!isStarterPack)
-                            ShopActionButton(
-                              label: '₹${_formatInt(pack.inrPrice)}',
-                              filled: true,
-                              onTap: () => _buyWithInr(context),
-                            ),
-                        ],
-                      );
-                    },
-                  ),
-                ],
+                ),
+              ),
+              _packFooter(context, accent),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _packFooter(BuildContext context, Color accent) {
+    return BlocBuilder<GameBloc, GameState>(
+      builder: (context, state) {
+        final isStarterPack = pack.id == 'starter';
+        final isDisabled = isStarterPack && state.starterPackClaimed;
+        if (isDisabled) {
+          return Container(
+            height: 36,
+            color: Colors.black.withValues(alpha: 0.88),
+            alignment: Alignment.center,
+            child: Text(
+              'CLAIMED',
+              style: TextStyle(
+                color: accent.withValues(alpha: 0.5),
+                fontFamily: 'Orbitron',
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.4,
               ),
             ),
-          ),
-        ],
-      ),
+          );
+        }
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ShopPressable(
+              onTap: () => _buyWithCoins(context),
+              child: Container(
+                height: 36,
+                color: Colors.black.withValues(alpha: 0.88),
+                alignment: Alignment.center,
+                child: isStarterPack
+                    ? Text(
+                        'FREE',
+                        style: TextStyle(
+                          color: accent,
+                          fontFamily: 'Orbitron',
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.4,
+                        ),
+                      )
+                    : ShopPricePill(coins: pack.coinPrice, size: 11),
+              ),
+            ),
+            if (!isStarterPack)
+              ShopPressable(
+                onTap: () => _buyWithInr(context),
+                child: Container(
+                  height: 36,
+                  color: accent.withValues(alpha: 0.18),
+                  alignment: Alignment.center,
+                  child: Text(
+                    '₹${_formatInt(pack.inrPrice)}',
+                    style: TextStyle(
+                      color: accent,
+                      fontFamily: 'Orbitron',
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
@@ -1985,30 +2158,15 @@ class _CardsTabState extends State<CardsTab> with TickerProviderStateMixin {
         final List<PlayerCard> cards = _filteredCards();
         return Column(
           children: [
-            SizedBox(
-              height: 46,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                children: [
-                  for (final String label in _filters)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: _FilterChipButton(
-                        label: label,
-                        active: _filter == label,
-                        onTap: () => setState(() => _filter = label),
-                      ),
-                    ),
-                ],
-              ),
+            CyberFilterChips(
+              labels: _filters,
+              selected: _filter,
+              accent: _cyan,
+              onSelect: (value) => setState(() => _filter = value),
             ),
             Expanded(
               child: GridView.builder(
-                padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                 itemCount: cards.length,
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: MediaQuery.sizeOf(context).width >= 720
@@ -2016,7 +2174,7 @@ class _CardsTabState extends State<CardsTab> with TickerProviderStateMixin {
                       : 2,
                   mainAxisSpacing: 10,
                   crossAxisSpacing: 10,
-                  childAspectRatio: 0.58,
+                  childAspectRatio: 0.68,
                 ),
                 itemBuilder: (BuildContext context, int index) {
                   final PlayerCard card = cards[index];
@@ -2118,40 +2276,79 @@ class _PurchasableCardTile extends StatelessWidget {
         stamp: owned ? const ShopStateStamp(kind: ShopStampKind.owned) : null,
         child: Column(
           children: [
-            ShopHeaderStrip(
-              tag: ShopTag(
-                label: _tierString(card.tier),
-                accent: rarityColor,
-              ),
-            ),
             const SizedBox(height: 2),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(6, 0, 6, 6),
-              child: Column(
-                children: [
-                  CyberPlayerCardTile(
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(4, 0, 4, 4),
+                child: Center(
+                  child: CyberPlayerCardTile(
                     card: card,
                     selected: flash,
-                    size: VisualCardSize.md,
+                    size: VisualCardSize.sm,
                   ),
-                  if (!owned) ...[
-                    const SizedBox(height: 6),
-                    ShopActionButton(
-                      label: _formatInt(coinPrice),
-                      filled: false,
-                      icon: const CoinIcon(size: 14),
-                      onTap: () => _buyWithCoins(context, coinPrice),
-                    ),
-                    const SizedBox(height: 4),
-                    ShopActionButton(
-                      label: '₹${_formatInt(_cardInrPrice(card))}',
-                      filled: true,
-                      onTap: () => _buyWithInr(context),
-                    ),
-                  ],
-                ],
+                ),
               ),
             ),
+            if (owned)
+              Container(
+                height: 36,
+                color: Colors.black.withValues(alpha: 0.88),
+                alignment: Alignment.center,
+                child: Text(
+                  'OWNED',
+                  style: TextStyle(
+                    color: rarityColor,
+                    fontFamily: 'Orbitron',
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.4,
+                  ),
+                ),
+              )
+            else ...[
+              ShopPressable(
+                onTap: () => _buyWithCoins(context, coinPrice),
+                child: Container(
+                  height: 36,
+                  color: Colors.black.withValues(alpha: 0.88),
+                  alignment: Alignment.center,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CoinIcon(size: 14),
+                      const SizedBox(width: 6),
+                      Text(
+                        _formatInt(coinPrice),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'Orbitron',
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              ShopPressable(
+                onTap: () => _buyWithInr(context),
+                child: Container(
+                  height: 36,
+                  color: rarityColor.withValues(alpha: 0.18),
+                  alignment: Alignment.center,
+                  child: Text(
+                    '₹${_formatInt(_cardInrPrice(card))}',
+                    style: TextStyle(
+                      color: rarityColor,
+                      fontFamily: 'Orbitron',
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -2234,43 +2431,7 @@ class _PurchasableCardTile extends StatelessWidget {
 // CoinIcon, the pressable and the shop button now live in widgets/shop_card.dart
 // (CoinIcon, ShopPressable, ShopActionButton) and are shared across the shop.
 
-class _FilterChipButton extends StatelessWidget {
-  const _FilterChipButton({
-    required this.label,
-    required this.active,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ShopPressable(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: active ? _cyan : Colors.transparent,
-          border: Border.all(color: _cyan),
-          borderRadius: BorderRadius.zero,
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: active ? _bg : _cyan,
-            fontWeight: FontWeight.w700,
-            fontSize: 11,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Gamified helpers (background, stickers, odds, art) ─────────────────────
+// PackOpeningOverlay removed — replaced by _PackRevealSequence + CardUnpackAnimation
 
 class _AnimatedShopBackground extends StatefulWidget {
   const _AnimatedShopBackground();
@@ -2337,66 +2498,17 @@ class _ShopBackgroundPainter extends CustomPainter {
   bool shouldRepaint(_ShopBackgroundPainter old) => old.t != t;
 }
 
-class _TierBackgroundPainter extends CustomPainter {
-  const _TierBackgroundPainter(this.accent);
-  final Color accent;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint p = Paint()
-      ..color = accent.withValues(alpha: 0.06)
-      ..strokeWidth = 0.9;
-    for (double d = -size.height; d < size.width + size.height; d += 16) {
-      canvas.drawLine(Offset(d, 0), Offset(d + size.height, size.height), p);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_TierBackgroundPainter old) => old.accent != accent;
-}
-
-class _CoinStackArt extends StatelessWidget {
-  const _CoinStackArt({required this.accent});
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 70,
-      height: 60,
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.center,
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [accent.withValues(alpha: 0.45), Colors.transparent],
-              ),
-            ),
-          ),
-          const Positioned(top: 4, child: CoinIcon(size: 30)),
-          const Positioned(top: 16, left: -2, child: CoinIcon(size: 24)),
-          const Positioned(top: 16, right: -2, child: CoinIcon(size: 24)),
-          const Positioned(bottom: 0, child: CoinIcon(size: 32)),
-        ],
-      ),
-    );
-  }
-}
-
 class _CornerStar extends StatelessWidget {
-  const _CornerStar({required this.color});
+  const _CornerStar({required this.color, this.size = 26});
+
   final Color color;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 26,
-      height: 26,
+      width: size,
+      height: size,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: color,
@@ -2405,7 +2517,7 @@ class _CornerStar extends StatelessWidget {
           BoxShadow(color: color.withValues(alpha: 0.7), blurRadius: 12),
         ],
       ),
-      child: const Icon(Icons.star, color: _bg, size: 16),
+      child: Icon(Icons.star, color: _bg, size: size * 0.62),
     );
   }
 }

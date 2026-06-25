@@ -30,7 +30,6 @@ import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/profile_banner_visual.dart';
 import '../../widgets/team_logo.dart';
 import '../deck/all_cards_screen.dart';
-import '../deck/deck_builder_screen.dart';
 import '../friends/friends_arena_screen.dart';
 import '../how_to_play/how_to_play_hub_screen.dart';
 import '../leaderboard/widgets/rank_widgets.dart';
@@ -238,14 +237,8 @@ class ProfileScreen extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 18),
-                              _NavRow(
-                                icon: Icons.dashboard_customize,
-                                label: 'Deck Builder',
-                                onTap: () => _push(
-                                  context,
-                                  (nav) => DeckBuilderScreen(onNavigate: nav),
-                                ),
-                              ),
+                              const _TimeZoneSetupCard(),
+                              const SizedBox(height: 14),
                               _NavRow(
                                 icon: Icons.style,
                                 label: 'All Cards',
@@ -358,6 +351,346 @@ class ProfileScreen extends StatelessWidget {
 /// The dossier hero: a chamfered elevated card with a banner strip, an
 /// overlapping avatar, the player name + a greeble telemetry line, a glowing
 /// level chip (the focal element) and the XP meter.
+class _TimeZoneOption {
+  const _TimeZoneOption(this.id, this.label, this.utcOffset);
+
+  final String id;
+  final String label;
+  final String utcOffset;
+}
+
+const _deviceTimeZoneId = 'device';
+
+const _timeZoneOptions = <_TimeZoneOption>[
+  _TimeZoneOption('Pacific/Pago_Pago', 'Pago Pago', 'UTC−11:00'),
+  _TimeZoneOption('Pacific/Honolulu', 'Honolulu', 'UTC−10:00'),
+  _TimeZoneOption('America/Anchorage', 'Anchorage', 'UTC−09:00'),
+  _TimeZoneOption('America/Los_Angeles', 'Los Angeles', 'UTC−08:00'),
+  _TimeZoneOption('America/Denver', 'Denver', 'UTC−07:00'),
+  _TimeZoneOption('America/Chicago', 'Chicago', 'UTC−06:00'),
+  _TimeZoneOption('America/New_York', 'New York', 'UTC−05:00'),
+  _TimeZoneOption('America/Halifax', 'Halifax', 'UTC−04:00'),
+  _TimeZoneOption('America/St_Johns', 'St. John’s', 'UTC−03:30'),
+  _TimeZoneOption('America/Sao_Paulo', 'São Paulo', 'UTC−03:00'),
+  _TimeZoneOption('Atlantic/South_Georgia', 'South Georgia', 'UTC−02:00'),
+  _TimeZoneOption('Atlantic/Azores', 'Azores', 'UTC−01:00'),
+  _TimeZoneOption('Etc/UTC', 'UTC / GMT', 'UTC+00:00'),
+  _TimeZoneOption('Europe/London', 'London', 'UTC+00:00'),
+  _TimeZoneOption('Europe/Paris', 'Paris', 'UTC+01:00'),
+  _TimeZoneOption('Europe/Athens', 'Athens', 'UTC+02:00'),
+  _TimeZoneOption('Africa/Nairobi', 'Nairobi', 'UTC+03:00'),
+  _TimeZoneOption('Asia/Tehran', 'Tehran', 'UTC+03:30'),
+  _TimeZoneOption('Asia/Dubai', 'Dubai', 'UTC+04:00'),
+  _TimeZoneOption('Asia/Kabul', 'Kabul', 'UTC+04:30'),
+  _TimeZoneOption('Asia/Karachi', 'Karachi', 'UTC+05:00'),
+  _TimeZoneOption('Asia/Kolkata', 'Kolkata', 'UTC+05:30'),
+  _TimeZoneOption('Asia/Kathmandu', 'Kathmandu', 'UTC+05:45'),
+  _TimeZoneOption('Asia/Dhaka', 'Dhaka', 'UTC+06:00'),
+  _TimeZoneOption('Asia/Yangon', 'Yangon', 'UTC+06:30'),
+  _TimeZoneOption('Asia/Bangkok', 'Bangkok', 'UTC+07:00'),
+  _TimeZoneOption('Asia/Singapore', 'Singapore', 'UTC+08:00'),
+  _TimeZoneOption('Australia/Eucla', 'Eucla', 'UTC+08:45'),
+  _TimeZoneOption('Asia/Tokyo', 'Tokyo', 'UTC+09:00'),
+  _TimeZoneOption('Australia/Adelaide', 'Adelaide', 'UTC+09:30'),
+  _TimeZoneOption('Australia/Sydney', 'Sydney', 'UTC+10:00'),
+  _TimeZoneOption('Australia/Lord_Howe', 'Lord Howe Island', 'UTC+10:30'),
+  _TimeZoneOption('Pacific/Noumea', 'Nouméa', 'UTC+11:00'),
+  _TimeZoneOption('Pacific/Auckland', 'Auckland', 'UTC+12:00'),
+  _TimeZoneOption('Pacific/Chatham', 'Chatham Islands', 'UTC+12:45'),
+  _TimeZoneOption('Pacific/Tongatapu', 'Nukuʻalofa', 'UTC+13:00'),
+  _TimeZoneOption('Pacific/Kiritimati', 'Kiritimati', 'UTC+14:00'),
+];
+
+class _TimeZoneSetupCard extends StatefulWidget {
+  const _TimeZoneSetupCard();
+
+  @override
+  State<_TimeZoneSetupCard> createState() => _TimeZoneSetupCardState();
+}
+
+class _TimeZoneSetupCardState extends State<_TimeZoneSetupCard> {
+  final SecureGameStorage _storage = SecureGameStorage();
+  String? _selectedId;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final selectedId = await _storage.loadSelectedTimeZoneId();
+    if (!mounted) return;
+    setState(() {
+      _selectedId = selectedId;
+      _loading = false;
+    });
+  }
+
+  Future<void> _selectTimeZone() async {
+    HapticFeedback.selectionClick();
+    final selectedId = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.76),
+      builder: (context) => _TimeZonePickerSheet(selectedId: _selectedId),
+    );
+    if (!mounted || selectedId == null || selectedId == _selectedId) return;
+
+    await _storage.saveSelectedTimeZoneId(selectedId);
+    if (!mounted) return;
+    setState(() => _selectedId = selectedId);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('Time zone set to ${_selectedLabel(selectedId)}'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+  }
+
+  String _selectedLabel(String id) {
+    if (id == _deviceTimeZoneId) {
+      return 'Device · ${_deviceTimeZoneDescription()}';
+    }
+    for (final option in _timeZoneOptions) {
+      if (option.id == id) return '${option.label} · ${option.utcOffset}';
+    }
+    return 'Choose your local time zone';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasSelection = _selectedId != null;
+    final subtitle = _loading
+        ? 'Loading preference…'
+        : hasSelection
+        ? _selectedLabel(_selectedId!)
+        : 'Choose your local time zone';
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _loading ? null : _selectTimeZone,
+      child: ProfileCard(
+        borderColor: hasSelection
+            ? Cyber.cyan.withValues(alpha: 0.58)
+            : Cyber.border,
+        padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Cyber.cyan.withValues(alpha: 0.1),
+                border: Border.all(color: Cyber.cyan.withValues(alpha: 0.46)),
+              ),
+              child: const Icon(
+                Icons.public_rounded,
+                color: Cyber.cyan,
+                size: 21,
+              ),
+            ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'SET UP YOUR LOCAL TIME ZONE',
+                    style: Cyber.label(
+                      11,
+                      color: Colors.white,
+                      letterSpacing: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Cyber.body(
+                      12,
+                      color: hasSelection ? Cyber.cyan : Cyber.muted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right, color: Cyber.cyan, size: 21),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TimeZonePickerSheet extends StatelessWidget {
+  const _TimeZonePickerSheet({required this.selectedId});
+
+  final String? selectedId;
+
+  @override
+  Widget build(BuildContext context) {
+    final height = MediaQuery.sizeOf(context).height * 0.78;
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        child: SizedBox(
+          height: height,
+          child: CyberPanel(
+            accent: Cyber.cyan,
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 16, 10, 14),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.schedule_rounded,
+                        color: Cyber.cyan,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 9),
+                      Expanded(
+                        child: Text(
+                          'SELECT TIME ZONE',
+                          style: Cyber.label(
+                            11,
+                            color: Cyber.cyan,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(
+                          Icons.close,
+                          color: Cyber.muted,
+                          size: 20,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const HudLine(),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    children: [
+                      _TimeZoneOptionTile(
+                        id: _deviceTimeZoneId,
+                        label: 'Use device time zone',
+                        subtitle: _deviceTimeZoneDescription(),
+                        selected: selectedId == _deviceTimeZoneId,
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(18, 12, 18, 6),
+                        child: Text(
+                          'OR CHOOSE A CITY',
+                          style: TextStyle(
+                            color: Cyber.muted,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      ),
+                      for (final option in _timeZoneOptions)
+                        _TimeZoneOptionTile(
+                          id: option.id,
+                          label: option.label,
+                          subtitle: option.utcOffset,
+                          selected: selectedId == option.id,
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TimeZoneOptionTile extends StatelessWidget {
+  const _TimeZoneOptionTile({
+    required this.id,
+    required this.label,
+    required this.subtitle,
+    required this.selected,
+  });
+
+  final String id;
+  final String label;
+  final String subtitle;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? Cyber.cyan.withValues(alpha: 0.08) : Colors.transparent,
+      child: InkWell(
+        onTap: () => Navigator.of(context).pop(id),
+        splashColor: Cyber.cyan.withValues(alpha: 0.1),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 11, 16, 11),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: Cyber.body(
+                        14,
+                        color: selected ? Cyber.cyan : Colors.white,
+                        weight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(subtitle, style: Cyber.body(11, color: Cyber.muted)),
+                  ],
+                ),
+              ),
+              Icon(
+                selected
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+                color: selected ? Cyber.cyan : Cyber.muted,
+                size: 19,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _deviceTimeZoneDescription() {
+  final now = DateTime.now();
+  final offset = now.timeZoneOffset;
+  final sign = offset.isNegative ? '−' : '+';
+  final hours = offset.inMinutes.abs() ~/ 60;
+  final minutes = offset.inMinutes.abs() % 60;
+  final formattedOffset =
+      'UTC$sign${hours.toString().padLeft(2, '0')}:'
+      '${minutes.toString().padLeft(2, '0')}';
+  final name = now.timeZoneName.trim();
+  return name.isEmpty ? formattedOffset : '$name · $formattedOffset';
+}
+
 class _ProfileHeroCard extends StatelessWidget {
   const _ProfileHeroCard({
     required this.progression,
@@ -1309,13 +1642,13 @@ class _AvatarEditScreenState extends State<_AvatarEditScreen>
 
   void _setTab(int index) {
     if (index == _tab) return;
-    _tabIndicatorAnimation = Tween<double>(
-      begin: _tab.toDouble(),
-      end: index.toDouble(),
-    ).animate(CurvedAnimation(
-      parent: _tabIndicatorController,
-      curve: Curves.easeOutCubic,
-    ));
+    _tabIndicatorAnimation =
+        Tween<double>(begin: _tab.toDouble(), end: index.toDouble()).animate(
+          CurvedAnimation(
+            parent: _tabIndicatorController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
     _tabIndicatorController.forward(from: 0);
     HapticFeedback.selectionClick();
     setState(() => _tab = index);
@@ -1383,8 +1716,9 @@ class _AvatarEditScreenState extends State<_AvatarEditScreen>
                           Expanded(
                             child: Center(
                               child: ConstrainedBox(
-                                constraints:
-                                    const BoxConstraints(maxWidth: 460),
+                                constraints: const BoxConstraints(
+                                  maxWidth: 460,
+                                ),
                                 child: Padding(
                                   padding: const EdgeInsets.fromLTRB(
                                     24,
@@ -1529,9 +1863,7 @@ class _AvatarEditorTabs extends StatelessWidget {
       height: 50,
       decoration: BoxDecoration(
         color: Cyber.bg.withValues(alpha: 0.4),
-        border: const Border(
-          bottom: BorderSide(color: Color(0x38ffffff)),
-        ),
+        border: const Border(bottom: BorderSide(color: Color(0x38ffffff))),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {

@@ -36,6 +36,7 @@ void main() {
     cpuShooters: cpu.shooters,
     cpuKeeper: cpu.keeper,
     cpuLevel: 4,
+    opponentName: 'Maya Santos',
   );
 
   runApp(
@@ -49,6 +50,7 @@ void main() {
           cpuShooters: cpu.shooters,
           cpuKeeper: cpu.keeper,
           cpuLevel: 4,
+          opponentName: 'Maya Santos',
         ),
         child: ShootoutLineupPhase(state: state, onQuit: () {}),
       ),

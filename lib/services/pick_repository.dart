@@ -63,6 +63,7 @@ class MockPickRepository implements PickRepository {
       ],
       volumeOz: 6400,
       closesAt: DateTime(2026, 6, 22, 18),
+      matchId: 'fifa_fra_irq',
       priceHistory: _history([
         {'fra': 68, 'draw': 19, 'irq': 13},
         {'fra': 70, 'draw': 18, 'irq': 12},
@@ -104,6 +105,7 @@ class MockPickRepository implements PickRepository {
       ],
       volumeOz: 7100,
       closesAt: DateTime(2026, 6, 23, 18),
+      matchId: 'fifa_arg_jor',
       priceHistory: _history([
         {'arg': 72, 'draw': 17, 'jor': 11},
         {'arg': 74, 'draw': 16, 'jor': 10},
@@ -139,6 +141,7 @@ class MockPickRepository implements PickRepository {
       ],
       volumeOz: 3600,
       closesAt: DateTime(2026, 6, 22, 20, 30),
+      matchId: 'fifa_nor_sen',
       priceHistory: _history([
         {'yes': 54, 'no': 46},
         {'yes': 56, 'no': 44},
@@ -174,6 +177,7 @@ class MockPickRepository implements PickRepository {
       ],
       volumeOz: 4700,
       closesAt: DateTime(2026, 6, 23, 23),
+      matchId: 'fifa_eng_gha',
       priceHistory: _history([
         {'yes': 52, 'no': 48},
         {'yes': 55, 'no': 45},
@@ -215,6 +219,7 @@ class MockPickRepository implements PickRepository {
       ],
       volumeOz: 5200,
       closesAt: DateTime(2026, 6, 24, 18),
+      matchId: 'fifa_por_uzb',
       priceHistory: _history([
         {'por': 63, 'draw': 21, 'uzb': 16},
         {'por': 65, 'draw': 20, 'uzb': 15},
@@ -250,6 +255,7 @@ class MockPickRepository implements PickRepository {
       ],
       volumeOz: 2800,
       closesAt: DateTime(2026, 6, 24, 20, 30),
+      matchId: 'fifa_col_cod',
       priceHistory: _history([
         {'yes': 45, 'no': 55},
         {'yes': 47, 'no': 53},
@@ -291,6 +297,7 @@ class MockPickRepository implements PickRepository {
       ],
       volumeOz: 5900,
       closesAt: DateTime(2026, 6, 26, 18),
+      matchId: 'fifa_nor_fra',
       priceHistory: _history([
         {'nor': 21, 'draw': 25, 'fra': 54},
         {'nor': 19, 'draw': 24, 'fra': 57},
@@ -326,6 +333,7 @@ class MockPickRepository implements PickRepository {
       ],
       volumeOz: 4100,
       closesAt: DateTime(2026, 6, 27, 18),
+      matchId: 'fifa_aut_arg',
       priceHistory: _history([
         {'yes': 58, 'no': 42},
         {'yes': 61, 'no': 39},
@@ -361,6 +369,7 @@ class MockPickRepository implements PickRepository {
       ],
       volumeOz: 3300,
       closesAt: DateTime(2026, 6, 27, 23),
+      matchId: 'fifa_pan_eng',
       priceHistory: _history([
         {'yes': 41, 'no': 59},
         {'yes': 43, 'no': 57},
@@ -498,6 +507,7 @@ class MockPickRepository implements PickRepository {
       ],
       volumeOz: 2400,
       closesAt: _now.add(const Duration(minutes: 28)),
+      matchId: 'ipl_pjk_rcb',
       priceHistory: _history([
         {'pjk': 41, 'rcb': 59},
         {'pjk': 38, 'rcb': 62},
@@ -543,6 +553,7 @@ class MockPickRepository implements PickRepository {
       ],
       volumeOz: 1900,
       closesAt: _at(0, 15),
+      matchId: 'epl_liv_mc',
       priceHistory: _history([
         {'liv': 35, 'draw': 28, 'mc': 37},
         {'liv': 37, 'draw': 27, 'mc': 36},
@@ -744,6 +755,7 @@ class MockPickRepository implements PickRepository {
       ],
       volumeOz: 760,
       closesAt: _at(-3, 19, 30),
+      matchId: 'epl_mu_whu',
       priceHistory: _history([
         {'yes': 54, 'no': 46},
         {'yes': 58, 'no': 42},
@@ -782,6 +794,7 @@ class MockPickRepository implements PickRepository {
       ],
       volumeOz: 940,
       closesAt: _at(-2, 19, 45),
+      matchId: 'epl_avl_bha',
       priceHistory: _history([
         {'avl': 49, 'bha_draw': 51},
         {'avl': 53, 'bha_draw': 47},
@@ -820,6 +833,7 @@ class MockPickRepository implements PickRepository {
       ],
       volumeOz: 1180,
       closesAt: _at(-1, 15),
+      matchId: 'ipl_csk_mi',
       priceHistory: _history([
         {'yes': 57, 'no': 43},
         {'yes': 61, 'no': 39},
@@ -853,6 +867,7 @@ class MockPickRepository implements PickRepository {
       ],
       volumeOz: 420,
       closesAt: _at(-1, 14),
+      matchId: 'ipl_csk_mi',
       priceHistory: _history([
         {'yes': 28, 'no': 72},
         {'yes': 24, 'no': 76},

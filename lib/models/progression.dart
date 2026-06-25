@@ -166,7 +166,7 @@ int targetRatingForLevel(int level) => min(95, 66 + level * 2);
 
 double cpuSmartness(int level) => min(1.0, level / 12);
 
-List<PlayerCard> _nearestByRating(
+List<PlayerCard> _variedNearestByRating(
   List<PlayerCard> pool,
   int target,
   int count,
@@ -176,7 +176,8 @@ List<PlayerCard> _nearestByRating(
     ..sort(
       (a, b) => (a.rating - target).abs().compareTo((b.rating - target).abs()),
     );
-  final window = sorted.take(max(count * 2, count)).toList()..shuffle(random);
+  final windowSize = min(pool.length, max(count * 8, 12));
+  final window = sorted.take(windowSize).toList()..shuffle(random);
   return window.take(count).toList();
 }
 
@@ -189,8 +190,18 @@ OpponentDeck generateOpponentDeck(
 }) {
   final rng = random ?? Random();
   final target = targetRatingForLevel(level);
-  final opponentAttackers = _nearestByRating(attackerPool, target, 2, rng);
-  final opponentDefenders = _nearestByRating(defenderPool, target, 2, rng);
+  final opponentAttackers = _variedNearestByRating(
+    attackerPool,
+    target,
+    2,
+    rng,
+  );
+  final opponentDefenders = _variedNearestByRating(
+    defenderPool,
+    target,
+    2,
+    rng,
+  );
   final smartness = cpuSmartness(level);
   final byPower = [...actionPool]..sort((a, b) => b.power.compareTo(a.power));
   final remaining = [...actionPool];
@@ -229,9 +240,9 @@ ShootoutOpponent generateShootoutOpponent(
 }) {
   final rng = random ?? Random();
   final target = targetRatingForLevel(level);
-  final cpuAttackers = _nearestByRating(attackerPool, target, 2, rng);
-  final cpuDefenders = _nearestByRating(defenderPool, target, 2, rng);
-  final keeper = _nearestByRating(keeperPool, target, 1, rng).first;
+  final cpuAttackers = _variedNearestByRating(attackerPool, target, 2, rng);
+  final cpuDefenders = _variedNearestByRating(defenderPool, target, 2, rng);
+  final keeper = _variedNearestByRating(keeperPool, target, 1, rng).first;
   return ShootoutOpponent(
     shooters: [...cpuAttackers, ...cpuDefenders, keeper],
     keeper: keeper,

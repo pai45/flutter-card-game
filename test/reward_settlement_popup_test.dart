@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('renders demo reward settlement content', (tester) async {
+  testWidgets('renders demo reward settlement bottom modal content', (
+    tester,
+  ) async {
     var dismissed = false;
 
     await tester.pumpWidget(
@@ -15,14 +17,26 @@ void main() {
         ),
       ),
     );
-    await tester.pump(const Duration(milliseconds: 1700));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('REWARDS SETTLED'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('reward-settlement-close')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('reward-settlement-overlay')),
+      findsOneWidget,
+    );
     expect(find.text('XP WON'), findsOneWidget);
     expect(find.text('COINS WON'), findsOneWidget);
     final sheet = find.byKey(const ValueKey('reward-settlement-sheet'));
     expect(sheet, findsOneWidget);
-    expect(tester.getSize(sheet).height, closeTo(600 * 0.75, 0.1));
+    final sheetSize = tester.getSize(sheet);
+    expect(sheetSize.height, closeTo(600 * 0.75, 0.1));
+    expect(sheetSize.width, closeTo(800, 0.1));
+    expect(tester.getTopLeft(sheet).dx, closeTo(0, 0.1));
     expect(find.text('PREDICT'), findsOneWidget);
     expect(find.text('PICKS'), findsOneWidget);
     expect(find.text('Man City vs Arsenal'), findsOneWidget);
@@ -35,7 +49,8 @@ void main() {
     expect(find.text('Chelsea to win'), findsOneWidget);
     expect(find.text('Man City vs Arsenal'), findsNothing);
 
-    await tester.tap(find.text('CONTINUE'));
+    await tester.tap(find.byKey(const ValueKey('reward-settlement-continue')));
+    await tester.pumpAndSettle();
 
     expect(dismissed, isTrue);
   });

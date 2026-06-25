@@ -209,7 +209,9 @@ class _HudCtaButtonState extends State<HudCtaButton>
                           spreadRadius: 1,
                         ),
                         BoxShadow(
-                          color: secondary.withValues(alpha: 0.12 + 0.18 * glow),
+                          color: secondary.withValues(
+                            alpha: 0.12 + 0.18 * glow,
+                          ),
                           blurRadius: 40 + 22 * glow,
                           spreadRadius: 2,
                         ),
@@ -277,22 +279,26 @@ class _HudCtaButtonState extends State<HudCtaButton>
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text(
-                                      widget.label,
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: _ink,
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: 3,
-                                        shadows: [
-                                          Shadow(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.30,
+                                    FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: Text(
+                                        widget.label,
+                                        maxLines: 1,
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: _ink,
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 3,
+                                          shadows: [
+                                            Shadow(
+                                              color: Colors.white.withValues(
+                                                alpha: 0.30,
+                                              ),
+                                              blurRadius: 4,
                                             ),
-                                            blurRadius: 4,
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
                                     ),
                                     if (widget.helper != null) ...[

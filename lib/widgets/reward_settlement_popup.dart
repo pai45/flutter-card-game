@@ -10,6 +10,8 @@ import 'cyber/cyber_widgets.dart';
 
 enum RewardSettlementOutcome { won, lost, voided, mixed }
 
+const _rewardSheetBorderColor = Color(0xff1f7f8f);
+
 class RewardSettlementDemoData {
   const RewardSettlementDemoData({
     required this.xpWon,
@@ -124,13 +126,14 @@ class RewardSettlementPopup extends StatefulWidget {
 class _RewardSettlementPopupState extends State<RewardSettlementPopup>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
+  bool _dismissing = false;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1600),
+      duration: const Duration(milliseconds: 420),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -148,6 +151,17 @@ class _RewardSettlementPopupState extends State<RewardSettlementPopup>
     super.dispose();
   }
 
+  Future<void> _handleDismiss() async {
+    if (_dismissing) return;
+    _dismissing = true;
+    if (mounted && MediaQuery.disableAnimationsOf(context)) {
+      widget.onDismiss();
+      return;
+    }
+    await _controller.reverse();
+    if (mounted) widget.onDismiss();
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.sizeOf(context).height;
@@ -161,15 +175,23 @@ class _RewardSettlementPopupState extends State<RewardSettlementPopup>
           final t = Curves.easeOutCubic.transform(_controller.value);
           return Stack(
             children: [
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: ColoredBox(
+                    key: const ValueKey('reward-settlement-overlay'),
+                    color: Colors.black.withValues(alpha: 0.34 * t),
+                  ),
+                ),
+              ),
               Align(
                 alignment: Alignment.bottomCenter,
                 child: Transform.translate(
-                  offset: Offset(0, (1 - t) * 34),
+                  offset: Offset(0, (1 - t) * sheetHeight),
                   child: _RewardSheet(
                     data: widget.data,
                     height: sheetHeight,
                     bottomPadding: bottomPadding,
-                    onDismiss: widget.onDismiss,
+                    onDismiss: _handleDismiss,
                   ),
                 ),
               ),
@@ -200,36 +222,34 @@ class _RewardSheet extends StatelessWidget {
       key: const ValueKey('reward-settlement-sheet'),
       height: height,
       width: double.infinity,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
-        child: CustomPaint(
-          foregroundPainter: const _FlatHudSheetBorderPainter(),
-          child: ClipPath(
-            clipper: const HudChamferClipper(bigCut: 22, smallCut: 7),
-            child: ColoredBox(
-              color: const Color(0xff151f31),
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  16,
-                  16,
-                  16,
-                  math.max(14, bottomPadding + 10),
-                ),
-                child: Column(
-                  children: [
-                    _RewardHeader(data: data),
-                    const SizedBox(height: 12),
-                    Expanded(child: _RewardOutcomeList(data: data)),
-                    const SizedBox(height: 12),
-                    HudPagerButton(
-                      label: 'CONTINUE',
-                      focal: false,
-                      enabled: true,
-                      trailingIcon: Icons.keyboard_double_arrow_down,
-                      onTap: onDismiss,
-                    ),
-                  ],
-                ),
+      child: CustomPaint(
+        foregroundPainter: const _FlatHudSheetBorderPainter(),
+        child: ClipPath(
+          clipper: const HudChamferClipper(bigCut: 22, smallCut: 7),
+          child: ColoredBox(
+            color: const Color(0xff151f31),
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                14,
+                16,
+                math.max(14, bottomPadding + 10),
+              ),
+              child: Column(
+                children: [
+                  _RewardHeader(data: data, onDismiss: onDismiss),
+                  const SizedBox(height: 12),
+                  Expanded(child: _RewardOutcomeList(data: data)),
+                  const SizedBox(height: 12),
+                  HudPagerButton(
+                    key: const ValueKey('reward-settlement-continue'),
+                    label: 'CONTINUE',
+                    focal: false,
+                    enabled: true,
+                    trailingIcon: Icons.keyboard_double_arrow_down,
+                    onTap: onDismiss,
+                  ),
+                ],
               ),
             ),
           ),
@@ -257,14 +277,14 @@ class _FlatHudSheetBorderPainter extends CustomPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.2
-        ..color = Cyber.cyan.withValues(alpha: 0.82),
+        ..color = _rewardSheetBorderColor.withValues(alpha: 0.9),
     );
     canvas.drawLine(
       const Offset(22, 0.6),
       Offset(size.width - 7, 0.6),
       Paint()
         ..strokeWidth = 2
-        ..color = Cyber.cyan.withValues(alpha: 0.72),
+        ..color = _rewardSheetBorderColor.withValues(alpha: 0.75),
     );
   }
 
@@ -273,9 +293,10 @@ class _FlatHudSheetBorderPainter extends CustomPainter {
 }
 
 class _RewardHeader extends StatelessWidget {
-  const _RewardHeader({required this.data});
+  const _RewardHeader({required this.data, required this.onDismiss});
 
   final RewardSettlementDemoData data;
+  final VoidCallback onDismiss;
 
   @override
   Widget build(BuildContext context) {
@@ -286,6 +307,22 @@ class _RewardHeader extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: SizedBox(
+                width: 32,
+                height: 32,
+                child: IconButton(
+                  key: const ValueKey('reward-settlement-close'),
+                  tooltip: 'Close',
+                  padding: EdgeInsets.zero,
+                  iconSize: 20,
+                  color: _rewardSheetBorderColor,
+                  onPressed: onDismiss,
+                  icon: const Icon(Icons.close),
+                ),
+              ),
+            ),
             Text(
               'REWARDS SETTLED',
               textAlign: TextAlign.center,

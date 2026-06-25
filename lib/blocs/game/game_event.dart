@@ -2,6 +2,7 @@ import '../../models/cards.dart';
 import '../../models/deck.dart';
 import '../../models/oz_coin_ledger.dart';
 import '../../models/streak.dart';
+import '../../models/xp_ledger.dart';
 
 sealed class GameEvent {}
 
@@ -67,10 +68,17 @@ class CoinsSpent extends GameEvent {
 
 /// XP earned outside Pitch Duel matches (prediction settlements).
 class PredictionXpAdded extends GameEvent {
-  PredictionXpAdded(this.amount, {this.details});
+  PredictionXpAdded(
+    this.amount, {
+    this.details,
+    this.source = XpTransactionSource.prediction,
+    this.title = 'PREDICTION REWARD',
+  });
 
   final int amount;
   final String? details;
+  final XpTransactionSource source;
+  final String title;
 }
 
 class CardPurchased extends GameEvent {

@@ -28,6 +28,7 @@ void main() {
     tossResult: tossResult,
     playerWonToss: playerWonToss,
     playerAttacking: playerAttacking,
+    opponentName: 'Maya Santos',
     // 'toss' marked seen so the spotlight walkthrough stays out of the test.
     tutorialSeen: const {'toss'},
   );
@@ -110,14 +111,16 @@ void main() {
 
     await tester.tap(find.text('ATTACK'));
     await tester.pump(); // start the button's press animation
-    await tester.pump(const Duration(milliseconds: 200)); // press completes → onTap
+    await tester.pump(
+      const Duration(milliseconds: 200),
+    ); // press completes → onTap
     await tester.pump(); // flush the dispatched RoleChosen event
 
     expect(bloc.state.phase, MatchPhase.scenario);
     expect(bloc.state.playerAttacking, isTrue);
   });
 
-  testWidgets('cpu win shows the CPU decision panel', (tester) async {
+  testWidgets('opponent win shows the opponent decision panel', (tester) async {
     await pumpToss(
       tester,
       tossState(
@@ -129,7 +132,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     await tester.pump(const Duration(milliseconds: 400));
 
-    expect(find.text('CPU WON THE TOSS'), findsOneWidget);
+    expect(find.text('MAYA SANTOS WON THE TOSS'), findsOneWidget);
 
     // Drain the decision meter (~900ms) + the 650ms auto-advance delay so no
     // timers outlive the test. Stepped pumps let each chained future resolve.
@@ -168,9 +171,8 @@ void main() {
     );
 
     // The loss treatment is the red-bordered coin (border colour _kTossRed).
-    bool redCoinVisible() => tester
-        .widgetList<Container>(find.byType(Container))
-        .any((c) {
+    bool redCoinVisible() =>
+        tester.widgetList<Container>(find.byType(Container)).any((c) {
           final d = c.decoration;
           return d is BoxDecoration &&
               d.border is Border &&
@@ -180,13 +182,13 @@ void main() {
     // Mid-flip: the outcome must stay hidden — no red coin, no result text.
     await tester.pump(const Duration(milliseconds: 700));
     expect(redCoinVisible(), isFalse);
-    expect(find.text('CPU WON THE TOSS'), findsNothing);
+    expect(find.text('MAYA SANTOS WON THE TOSS'), findsNothing);
 
     // Let the flip land (1.5s total) and the result panel reveal.
     await tester.pump(const Duration(milliseconds: 900));
     await tester.pump(const Duration(milliseconds: 400));
     expect(redCoinVisible(), isTrue);
-    expect(find.text('CPU WON THE TOSS'), findsOneWidget);
+    expect(find.text('MAYA SANTOS WON THE TOSS'), findsOneWidget);
 
     // Drain the CPU decision meter (3.6s) + the 650ms auto-advance delay so
     // no timers outlive the test.

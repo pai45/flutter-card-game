@@ -40,6 +40,7 @@ class RoundClashArena extends StatefulWidget {
     required this.result,
     required this.playerScore,
     required this.opponentScore,
+    required this.opponentLabel,
     this.onComplete,
     super.key,
   });
@@ -49,6 +50,7 @@ class RoundClashArena extends StatefulWidget {
   /// Running match totals AFTER this round (used by the score-impact beat).
   final int playerScore;
   final int opponentScore;
+  final String opponentLabel;
   final VoidCallback? onComplete;
 
   @override
@@ -298,7 +300,7 @@ class RoundClashArenaState extends State<RoundClashArena>
                           accent: playerAccent,
                         ),
                         _SideHeader(
-                          label: 'CPU',
+                          label: widget.opponentLabel,
                           role: oppRole,
                           accent: oppAccent,
                           alignEnd: true,
@@ -488,6 +490,7 @@ class RoundClashArenaState extends State<RoundClashArena>
                   _ScoreImpactStrip(
                     playerScore: widget.playerScore,
                     opponentScore: widget.opponentScore,
+                    opponentLabel: widget.opponentLabel,
                     goalScored: goalScored,
                     scoringIsPlayer: scoringIsPlayer,
                     t: scoreT,
@@ -911,6 +914,7 @@ class _ScoreImpactStrip extends StatelessWidget {
   const _ScoreImpactStrip({
     required this.playerScore,
     required this.opponentScore,
+    required this.opponentLabel,
     required this.goalScored,
     required this.scoringIsPlayer,
     required this.t,
@@ -918,6 +922,7 @@ class _ScoreImpactStrip extends StatelessWidget {
 
   final int playerScore;
   final int opponentScore;
+  final String opponentLabel;
   final bool goalScored;
   final bool scoringIsPlayer;
   final double t;
@@ -973,7 +978,7 @@ class _ScoreImpactStrip extends StatelessWidget {
                       Text('—', style: Cyber.display(18, color: Cyber.line)),
                       const SizedBox(width: 12),
                       _ScoreCell(
-                        label: 'CPU',
+                        label: opponentLabel,
                         value: shownOpp,
                         color: Cyber.danger,
                         pop: goalScored && !scoringIsPlayer ? popScale : 1,

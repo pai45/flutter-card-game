@@ -2,6 +2,9 @@ import '../../config/enums.dart';
 
 sealed class ShootoutEvent {}
 
+/// Leaves the random-opponent reveal and shows both squads.
+class ShootoutOpponentRevealCompleted extends ShootoutEvent {}
+
 /// Leaves the lineup intro and begins the kick loop.
 class ShootoutStarted extends ShootoutEvent {}
 

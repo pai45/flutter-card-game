@@ -18,6 +18,9 @@ class CoinTier {
   final int coins;
   final int bonusPercent;
   final String? tag;
+
+  /// Coin-pack art — `assets/coins/<id>.png`, smallest pile → largest by tier.
+  String get imageAsset => 'assets/coins/$id.png';
 }
 
 class ShopPack {

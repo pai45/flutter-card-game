@@ -63,6 +63,7 @@ ShootoutBloc _bloc(List<double> script) {
     cpuShooters: cpu,
     cpuKeeper: cpu.last,
     cpuLevel: 1,
+    opponentName: 'Maya Santos',
     random: _ScriptedRandom(script, fixedInt: 0),
   );
 }
@@ -80,6 +81,13 @@ Future<void> _playKick(ShootoutBloc bloc) async {
     bloc.add(ShootoutNextKick());
     await Future<void>.delayed(Duration.zero);
   }
+}
+
+Future<void> _startShootout(ShootoutBloc bloc) async {
+  bloc.add(ShootoutOpponentRevealCompleted());
+  await Future<void>.delayed(Duration.zero);
+  bloc.add(ShootoutStarted());
+  await Future<void>.delayed(Duration.zero);
 }
 
 void main() {
@@ -110,6 +118,26 @@ void main() {
   });
 
   group('ShootoutState getters', () {
+    test('starts at opponent reveal with a named opponent', () {
+      final player = _squad('p');
+      final cpu = _squad('c');
+      final base = ShootoutState.initial(
+        playerShooters: player,
+        playerKeeper: player.last,
+        cpuShooters: cpu,
+        cpuKeeper: cpu.last,
+        cpuLevel: 1,
+        opponentName: 'Maya Santos',
+      );
+
+      expect(base.stage, ShootoutStage.opponentReveal);
+      expect(base.opponentName, 'Maya Santos');
+      expect(
+        base.copyWith(stage: ShootoutStage.lineup).opponentName,
+        'Maya Santos',
+      );
+    });
+
     test('cycles the lineup once each side passes five kicks', () {
       final player = _squad('p');
       final cpu = _squad('c');
@@ -119,6 +147,7 @@ void main() {
         cpuShooters: cpu,
         cpuKeeper: cpu.last,
         cpuLevel: 1,
+        opponentName: 'Maya Santos',
       );
       // Round 0: player's 1st shooter.
       expect(base.currentShooter.id, player[0].id);
@@ -134,6 +163,26 @@ void main() {
   });
 
   group('ShootoutBloc resolution', () {
+    test('opponent reveal advances to lineup before shootout starts', () async {
+      final bloc = _bloc(const []);
+
+      expect(bloc.state.stage, ShootoutStage.opponentReveal);
+      bloc.add(ShootoutStarted());
+      await Future<void>.delayed(Duration.zero);
+      expect(bloc.state.stage, ShootoutStage.opponentReveal);
+
+      bloc.add(ShootoutOpponentRevealCompleted());
+      await Future<void>.delayed(Duration.zero);
+      expect(bloc.state.stage, ShootoutStage.lineup);
+
+      bloc.add(ShootoutStarted());
+      await Future<void>.delayed(Duration.zero);
+      expect(bloc.state.stage, ShootoutStage.choose);
+      expect(bloc.state.opponentName, 'Maya Santos');
+
+      await bloc.close();
+    });
+
     test('ends early once the lead is unbeatable', () async {
       // Player scores every kick, CPU misses every kick.
       final script = <double>[
@@ -145,8 +194,7 @@ void main() {
         ..._miss, // R5 cpu miss -> 3-0 with 2 each left: early out
       ];
       final bloc = _bloc(script);
-      bloc.add(ShootoutStarted());
-      await Future<void>.delayed(Duration.zero);
+      await _startShootout(bloc);
       for (var i = 0; i < 6 && !bloc.state.over; i++) {
         await _playKick(bloc);
       }
@@ -156,27 +204,28 @@ void main() {
       await bloc.close();
     });
 
-    test('a level shootout goes to sudden death and still finds a winner',
-        () async {
-      // All 10 regulation kicks score (5-5), then SD: player scores, CPU misses.
-      final script = <double>[
-        for (var i = 0; i < 10; i++) ..._goal, // 5-5 after regulation
-        ..._goal, // R10 player goal (SD)
-        ..._miss, // R11 cpu miss (SD) -> player wins the pair
-      ];
-      final bloc = _bloc(script);
-      bloc.add(ShootoutStarted());
-      await Future<void>.delayed(Duration.zero);
-      for (var i = 0; i < 12 && !bloc.state.over; i++) {
-        await _playKick(bloc);
-      }
-      expect(bloc.state.suddenDeath, isTrue);
-      expect(bloc.state.over, isTrue);
-      // A shootout never draws — exactly one winner.
-      expect(bloc.state.winner, anyOf('player', 'opponent'));
-      expect(bloc.state.winner, 'player');
-      expect(bloc.state.playerScore, isNot(bloc.state.opponentScore));
-      await bloc.close();
-    });
+    test(
+      'a level shootout goes to sudden death and still finds a winner',
+      () async {
+        // All 10 regulation kicks score (5-5), then SD: player scores, CPU misses.
+        final script = <double>[
+          for (var i = 0; i < 10; i++) ..._goal, // 5-5 after regulation
+          ..._goal, // R10 player goal (SD)
+          ..._miss, // R11 cpu miss (SD) -> player wins the pair
+        ];
+        final bloc = _bloc(script);
+        await _startShootout(bloc);
+        for (var i = 0; i < 12 && !bloc.state.over; i++) {
+          await _playKick(bloc);
+        }
+        expect(bloc.state.suddenDeath, isTrue);
+        expect(bloc.state.over, isTrue);
+        // A shootout never draws — exactly one winner.
+        expect(bloc.state.winner, anyOf('player', 'opponent'));
+        expect(bloc.state.winner, 'player');
+        expect(bloc.state.playerScore, isNot(bloc.state.opponentScore));
+        await bloc.close();
+      },
+    );
   });
 }

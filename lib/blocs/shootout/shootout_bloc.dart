@@ -36,6 +36,7 @@ class ShootoutBloc extends Bloc<ShootoutEvent, ShootoutState> {
     required List<PlayerCard> cpuShooters,
     required PlayerCard cpuKeeper,
     required int cpuLevel,
+    required String opponentName,
     Random? random,
   }) : _random = random ?? Random(),
        super(
@@ -45,11 +46,17 @@ class ShootoutBloc extends Bloc<ShootoutEvent, ShootoutState> {
            cpuShooters: cpuShooters,
            cpuKeeper: cpuKeeper,
            cpuLevel: cpuLevel,
+           opponentName: opponentName,
          ),
        ) {
-    on<ShootoutStarted>(
-      (_, emit) => emit(state.copyWith(stage: ShootoutStage.choose)),
-    );
+    on<ShootoutOpponentRevealCompleted>((_, emit) {
+      if (state.stage != ShootoutStage.opponentReveal) return;
+      emit(state.copyWith(stage: ShootoutStage.lineup));
+    });
+    on<ShootoutStarted>((_, emit) {
+      if (state.stage != ShootoutStage.lineup) return;
+      emit(state.copyWith(stage: ShootoutStage.choose));
+    });
     on<ShootoutDirectionSelected>(
       (event, emit) => emit(state.copyWith(selectedDirection: event.direction)),
     );

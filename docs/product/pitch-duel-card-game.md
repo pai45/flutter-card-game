@@ -13,10 +13,10 @@ Pitch Duel is opened from the **GAMES** tab in the Predictions area.
 The Games tab currently shows:
 
 - **Pitch Duel** as the available tactical card game
-- **Quiz Streak** as coming soon
-- **Accuracy Challenge** as coming soon
+- **Penalty Shootout** as a standalone spot-kick mode
+- **Football Quiz** as a trivia gauntlet
 
-When Pitch Duel opens, it becomes a full-screen game hub with internal navigation for home, deck, all cards, how to play, match, and related game views.
+When Pitch Duel opens, it becomes a full-screen game hub with internal navigation for home, deck, all cards, how to play, match, and related game views. Penalty Shootout opens as its own full-screen game hub from the same Games tab and is documented separately in [Penalty Shootout](penalty-shootout.md).
 
 ## First-Time Entry And Starter Pack
 
@@ -290,15 +290,9 @@ Odds-table parity between the engine and the Shot Meter is guarded by `test/shot
 
 ## Penalty Shootout
 
-If the match is tied after four rounds, the match moves to penalties.
+If a Pitch Duel match is tied after four rounds, the match can be decided by penalties before the final result. That in-match penalty score is saved as legacy `penaltyPlayerScore` / `penaltyOpponentScore` history data when present.
 
-Penalty play uses direction choice:
-
-- left
-- center
-- right
-
-The shooter scores when the shot direction and keeper direction differ. The user and opponent alternate kicks. The shootout can end early if one side cannot catch up, otherwise it reaches three kicks each and then moves into sudden death pairs if still tied.
+The standalone **Penalty Shootout** mode is a separate Games-tab experience with its own lobby, opponent reveal, five-kicks-each format, early-out rules, sudden death, rewards, history entries, and streak category. See [Penalty Shootout](penalty-shootout.md) for the current standalone shootout rules.
 
 ## Final Result And Rewards
 
@@ -333,5 +327,5 @@ For the full XP curve, pack XP formulas, level progress fields, de-leveling nuan
 
 - Pitch Duel is currently a single-player game against a CPU opponent.
 - Opponent strength scales with player level.
-- Match history keeps the latest saved entries rather than an unlimited archive.
+- Match history keeps the latest saved entries rather than an unlimited archive, including standalone Penalty Shootout entries.
 - The game uses persistent local product state for decks, owned cards, wallet, progression, starter pack, daily drop, tutorials, and match history.

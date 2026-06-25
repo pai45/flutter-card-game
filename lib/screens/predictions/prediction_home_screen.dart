@@ -32,6 +32,7 @@ class PredictionHomeScreen extends StatefulWidget {
     required this.onOpenGame,
     required this.onOpenShootout,
     required this.onOpenQuiz,
+    required this.onOpenFootballBingo,
     this.onAddCoins,
     super.key,
   });
@@ -44,6 +45,7 @@ class PredictionHomeScreen extends StatefulWidget {
   final VoidCallback onOpenGame;
   final VoidCallback onOpenShootout;
   final VoidCallback onOpenQuiz;
+  final VoidCallback onOpenFootballBingo;
   final VoidCallback? onAddCoins;
 
   @override
@@ -115,6 +117,7 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
         onOpenGame: widget.onOpenGame,
         onOpenShootout: widget.onOpenShootout,
         onOpenQuiz: widget.onOpenQuiz,
+        onOpenFootballBingo: widget.onOpenFootballBingo,
         animateIntro: _shouldAnimateIntro(2),
         onIntroPlayed: () => _markIntroPlayed(2),
       ),
@@ -1764,6 +1767,7 @@ class _GamesTab extends StatefulWidget {
     required this.onOpenGame,
     required this.onOpenShootout,
     required this.onOpenQuiz,
+    required this.onOpenFootballBingo,
     required this.animateIntro,
     required this.onIntroPlayed,
   });
@@ -1771,6 +1775,7 @@ class _GamesTab extends StatefulWidget {
   final VoidCallback onOpenGame;
   final VoidCallback onOpenShootout;
   final VoidCallback onOpenQuiz;
+  final VoidCallback onOpenFootballBingo;
   final bool animateIntro;
   final VoidCallback? onIntroPlayed;
 
@@ -1846,6 +1851,20 @@ class _GamesTabState extends State<_GamesTab> {
         const SizedBox(height: 12),
         StaggeredCardEntrance(
           index: 3,
+          animate: animateIntro,
+          child: _GameTile(
+            title: 'FOOTBALL BINGO',
+            subtitle: 'COUNTRY x CLUB GRID',
+            icon: Icons.grid_view,
+            accent: Cyber.amber,
+            featured: true,
+            showTrailingIcon: false,
+            onTap: widget.onOpenFootballBingo,
+          ),
+        ),
+        const SizedBox(height: 12),
+        StaggeredCardEntrance(
+          index: 4,
           animate: animateIntro,
           child: const _GameTile(
             title: 'ACCURACY CHALLENGE',

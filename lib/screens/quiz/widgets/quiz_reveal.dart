@@ -8,7 +8,8 @@ import '../../../models/quiz_trivia.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_cta_button.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
-import '../../predictions/widgets/settlement_reveal.dart' show SettlementQuestionResult;
+import '../../predictions/widgets/settlement_reveal.dart'
+    show SettlementQuestionResult;
 
 /// Answer-all-then-settle reveal for a finished Football Quiz run. Mirrors the
 /// prediction [SettlementRevealOverlay] beats — header → verdict flips with an
@@ -26,6 +27,8 @@ class QuizRevealOverlay extends StatefulWidget {
     required this.xpBefore,
     required this.newlyCleared,
     required this.unlocked,
+    required this.passed,
+    required this.onRetry,
     required this.onDone,
     super.key,
   });
@@ -40,6 +43,8 @@ class QuizRevealOverlay extends StatefulWidget {
 
   /// The mode this run just unlocked (gated directly on [mode]), if any.
   final QuizMode? unlocked;
+  final bool passed;
+  final VoidCallback onRetry;
   final VoidCallback onDone;
 
   @override
@@ -72,7 +77,12 @@ class _QuizRevealOverlayState extends State<QuizRevealOverlay> {
   @override
   void initState() {
     super.initState();
-    _play();
+    if (widget.passed) {
+      _play();
+    } else {
+      _stage = _summaryStage;
+      playSound(SoundEffect.cardSlam);
+    }
   }
 
   Future<void> _play() async {
@@ -116,7 +126,9 @@ class _QuizRevealOverlayState extends State<QuizRevealOverlay> {
             duration: const Duration(milliseconds: 320),
             switchInCurve: Curves.easeOutCubic,
             switchOutCurve: Curves.easeInCubic,
-            child: _onSummary ? _summary() : _flips(),
+            child: _onSummary
+                ? (widget.passed ? _summary() : _failSummary())
+                : _flips(),
           ),
         ),
       ),
@@ -233,21 +245,23 @@ class _QuizRevealOverlayState extends State<QuizRevealOverlay> {
                 child: Text(
                   '$_correctCount / ${widget.results.length} CORRECT',
                   textAlign: TextAlign.center,
-                  style:
-                      Cyber.label(12, color: Cyber.muted, letterSpacing: 1.6)
-                          .copyWith(
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                          ),
+                  style: Cyber.label(12, color: Cyber.muted, letterSpacing: 1.6)
+                      .copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
                 ),
               ),
               const SizedBox(height: 26),
-              _RevealIn(
-                delayFactor: 0.35,
-                child: _XpTotal(xp: widget.totalXp),
-              ),
+              _RevealIn(delayFactor: 0.35, child: _XpTotal(xp: widget.totalXp)),
               if (widget.newlyCleared) ...[
                 const SizedBox(height: 20),
-                _RevealIn(delayFactor: 0.5, child: _ClearBanner(mode: widget.mode, unlocked: widget.unlocked)),
+                _RevealIn(
+                  delayFactor: 0.5,
+                  child: _ClearBanner(
+                    mode: widget.mode,
+                    unlocked: widget.unlocked,
+                  ),
+                ),
               ],
               const SizedBox(height: 30),
               _RevealIn(
@@ -263,6 +277,103 @@ class _QuizRevealOverlayState extends State<QuizRevealOverlay> {
                   accent: _accent,
                   onTap: widget.onDone,
                   tapSound: SoundEffect.uiTap,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _failSummary() {
+    final wrong = widget.results.length - _correctCount;
+    return Stack(
+      key: const ValueKey('quiz-failed-summary'),
+      alignment: Alignment.center,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _RevealIn(
+                child: Text(
+                  'REPLAY REQUIRED',
+                  textAlign: TextAlign.center,
+                  style:
+                      Cyber.display(
+                        24,
+                        color: Cyber.danger,
+                        letterSpacing: 2.2,
+                      ).copyWith(
+                        shadows: [
+                          Shadow(
+                            color: Cyber.danger.withValues(alpha: 0.55),
+                            blurRadius: 22,
+                          ),
+                        ],
+                      ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              _RevealIn(
+                delayFactor: 0.2,
+                child: Text(
+                  '$_correctCount / ${widget.results.length} CORRECT · $wrong WRONG',
+                  textAlign: TextAlign.center,
+                  style: Cyber.label(12, color: Cyber.muted, letterSpacing: 1.4)
+                      .copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              _RevealIn(
+                delayFactor: 0.35,
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Cyber.danger.withValues(alpha: 0.08),
+                    border: Border.all(
+                      color: Cyber.danger.withValues(alpha: 0.42),
+                    ),
+                  ),
+                  child: Text(
+                    'More than 5 answers were wrong. Answers stay hidden until you pass this set.',
+                    textAlign: TextAlign.center,
+                    style: Cyber.body(13, color: Cyber.muted),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 28),
+              _RevealIn(
+                delayFactor: 0.55,
+                child: HudCtaButton(
+                  label: 'RETRY - 25 COINS',
+                  icon: Icons.replay,
+                  accent: _accent,
+                  onTap: widget.onRetry,
+                  tapSound: SoundEffect.uiTap,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _RevealIn(
+                delayFactor: 0.75,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: widget.onDone,
+                  child: Center(
+                    child: Text(
+                      'BACK TO SETS',
+                      style: Cyber.label(
+                        10,
+                        color: Cyber.muted,
+                        letterSpacing: 1.4,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -328,9 +439,10 @@ class _XpTicker extends StatelessWidget {
             curve: Curves.easeOutCubic,
             builder: (context, v, _) => Text(
               '+${v.round()}',
-              style: Cyber.display(12, color: Colors.white).copyWith(
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
+              style: Cyber.display(
+                12,
+                color: Colors.white,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
           ),
           const SizedBox(width: 4),
@@ -475,9 +587,10 @@ class _XpStamp extends StatelessWidget {
       ),
       child: Text(
         '+$earned XP',
-        style: Cyber.display(10, color: accent).copyWith(
-          fontFeatures: const [FontFeature.tabularFigures()],
-        ),
+        style: Cyber.display(
+          10,
+          color: accent,
+        ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
       ),
     );
   }
@@ -586,8 +699,11 @@ class _LevelLine extends StatelessWidget {
             ),
             Text(
               '${after.intoLevel} / ${after.levelSpan} XP',
-              style: Cyber.label(9, color: Cyber.muted, letterSpacing: 0.8)
-                  .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+              style: Cyber.label(
+                9,
+                color: Cyber.muted,
+                letterSpacing: 0.8,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
           ],
         ),

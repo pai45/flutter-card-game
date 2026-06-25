@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/deck.dart';
+import '../models/football_bingo.dart';
 import '../models/match.dart';
 import '../models/oz_coin_ledger.dart';
 import '../models/picks.dart';
@@ -120,6 +121,7 @@ class SecureGameStorage {
   static const _pickPositionsKey = 'pd_pick_positions_v1';
   static const _selectedAvatarKey = 'pd_selected_avatar_v1';
   static const _selectedProfileBannerKey = 'pd_selected_profile_banner_v1';
+  static const _selectedTimeZoneKey = 'pd_selected_time_zone_v1';
   static const _followedLeaguesKey = 'pd_followed_leagues_v1';
   static const _favoriteTeamsKey = 'pd_favorite_teams_v1';
   static const _onboardingCompleteKey = 'pd_onboarding_complete_v1';
@@ -131,6 +133,8 @@ class SecureGameStorage {
   static const _playerTagKey = 'pd_player_tag_v1';
   static const _referralEntriesKey = 'pd_referral_entries_v1';
   static const _quizProgressKey = 'pd_quiz_progress_v1';
+  static const _footballBingoProgressKey = 'pd_football_bingo_progress_v1';
+  static const _footballBingoArchiveKey = 'pd_football_bingo_archive_v1';
 
   final FlutterSecureStorage _storage;
 
@@ -285,6 +289,48 @@ class SecureGameStorage {
     );
   }
 
+  Future<FootballBingoProgress?> loadFootballBingoProgress() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_footballBingoProgressKey);
+      if (raw == null || raw.isEmpty) return null;
+      return FootballBingoProgress.fromJson(
+        Map<String, dynamic>.from(jsonDecode(raw) as Map),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveFootballBingoProgress(FootballBingoProgress progress) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _footballBingoProgressKey,
+      jsonEncode(progress.toJson()),
+    );
+  }
+
+  Future<FootballBingoArchive?> loadFootballBingoArchive() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_footballBingoArchiveKey);
+      if (raw == null || raw.isEmpty) return null;
+      return FootballBingoArchive.fromJson(
+        Map<String, dynamic>.from(jsonDecode(raw) as Map),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveFootballBingoArchive(FootballBingoArchive archive) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _footballBingoArchiveKey,
+      jsonEncode(archive.toJson()),
+    );
+  }
+
   Future<List<UserPrediction>> loadPredictions() async {
     try {
       final raw = await _storage.read(key: _predictionsKey);
@@ -353,6 +399,19 @@ class SecureGameStorage {
     await _storage.write(key: _selectedProfileBannerKey, value: bannerId);
   }
 
+  Future<String?> loadSelectedTimeZoneId() async {
+    try {
+      final raw = await _storage.read(key: _selectedTimeZoneKey);
+      return raw == null || raw.isEmpty ? null : raw;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveSelectedTimeZoneId(String timeZoneId) async {
+    await _storage.write(key: _selectedTimeZoneKey, value: timeZoneId);
+  }
+
   Future<List<String>> loadFollowedLeagueIds() async {
     try {
       final raw = await _storage.read(key: _followedLeaguesKey);
@@ -417,9 +476,8 @@ class SecureGameStorage {
       final data = jsonDecode(raw) as List;
       return data
           .map(
-            (item) => ReferralEntry.fromJson(
-              Map<String, dynamic>.from(item as Map),
-            ),
+            (item) =>
+                ReferralEntry.fromJson(Map<String, dynamic>.from(item as Map)),
           )
           .toList();
     } catch (_) {
@@ -486,6 +544,7 @@ class SecureGameStorage {
     await Future.wait([
       _storage.delete(key: _selectedAvatarKey),
       _storage.delete(key: _selectedProfileBannerKey),
+      _storage.delete(key: _selectedTimeZoneKey),
       _storage.delete(key: _followedLeaguesKey),
       _storage.delete(key: _favoriteTeamsKey),
       resetDemoRewardSettlementSeen(),

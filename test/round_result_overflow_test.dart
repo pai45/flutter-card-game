@@ -50,6 +50,7 @@ void main() {
               result: result,
               playerScore: 1,
               opponentScore: 2,
+              opponentLabel: 'OPP',
             ),
           ),
         ),

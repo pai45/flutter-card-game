@@ -163,7 +163,11 @@ class _ShootoutResultPhaseState extends State<ShootoutResultPhase>
                           ),
                         ),
                         const SizedBox(height: 14),
-                        _KickLogSection(kicks: s.kicks, dirLabel: _dirLabel),
+                        _KickLogSection(
+                          kicks: s.kicks,
+                          dirLabel: _dirLabel,
+                          opponentName: s.opponentName,
+                        ),
                       ],
                     ),
                   );
@@ -386,10 +390,15 @@ class _ShootoutXpPanel extends StatelessWidget {
 // ── Kick log (with shooter names) ─────────────────────────────────────────────
 
 class _KickLogSection extends StatelessWidget {
-  const _KickLogSection({required this.kicks, required this.dirLabel});
+  const _KickLogSection({
+    required this.kicks,
+    required this.dirLabel,
+    required this.opponentName,
+  });
 
   final List<PenaltyKick> kicks;
   final Map<PenaltyDirection, String> dirLabel;
+  final String opponentName;
 
   static final _headerStyle = Cyber.label(
     10,
@@ -448,7 +457,11 @@ class _KickLogSection extends StatelessWidget {
               ),
               const Divider(height: 1, color: Color(0xFF1E3A5F)),
               for (final kick in kicks)
-                _KickLogRow(kick: kick, dirLabel: dirLabel),
+                _KickLogRow(
+                  kick: kick,
+                  dirLabel: dirLabel,
+                  opponentName: opponentName,
+                ),
             ],
           ),
         ),
@@ -458,9 +471,14 @@ class _KickLogSection extends StatelessWidget {
 }
 
 class _KickLogRow extends StatelessWidget {
-  const _KickLogRow({required this.kick, required this.dirLabel});
+  const _KickLogRow({
+    required this.kick,
+    required this.dirLabel,
+    required this.opponentName,
+  });
   final PenaltyKick kick;
   final Map<PenaltyDirection, String> dirLabel;
+  final String opponentName;
 
   @override
   Widget build(BuildContext context) {
@@ -469,7 +487,7 @@ class _KickLogRow extends StatelessWidget {
         : const Color(0xFFFF1744);
     final takerName =
         kick.shooter?.shortName.toUpperCase() ??
-        (kick.byPlayer ? 'YOU' : 'CPU');
+        (kick.byPlayer ? 'YOU' : opponentName.toUpperCase());
     return Container(
       color: kick.scored
           ? const Color(0xFF00E5FF).withValues(alpha: 0.04)

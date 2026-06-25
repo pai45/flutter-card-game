@@ -1,11 +1,15 @@
 import 'package:card_game/blocs/achievement/achievement_celebration_controller.dart';
 import 'package:card_game/blocs/game/game_bloc.dart';
+import 'package:card_game/blocs/picks/picks_cubit.dart';
+import 'package:card_game/blocs/picks/picks_state.dart';
 import 'package:card_game/blocs/prediction/prediction_cubit.dart';
 import 'package:card_game/blocs/prediction/prediction_state.dart';
 import 'package:card_game/models/league.dart';
+import 'package:card_game/models/picks.dart';
 import 'package:card_game/models/prediction.dart';
 import 'package:card_game/models/sport_match.dart';
 import 'package:card_game/models/team_standing.dart';
+import 'package:card_game/services/pick_repository.dart';
 import 'package:card_game/screens/predictions/match_prediction_screen.dart';
 import 'package:card_game/services/prediction_repository.dart';
 import 'package:card_game/services/secure_storage_service.dart';
@@ -62,7 +66,8 @@ void main() {
         providers: [
           BlocProvider<PredictionCubit>.value(value: cubit),
           BlocProvider<AchievementCelebrationController>(
-            create: (_) => AchievementCelebrationController(SecureGameStorage()),
+            create: (_) =>
+                AchievementCelebrationController(SecureGameStorage()),
           ),
         ],
         child: MaterialApp(home: MatchPredictionScreen(match: _match)),
@@ -144,7 +149,8 @@ void main() {
         providers: [
           BlocProvider<PredictionCubit>.value(value: cubit),
           BlocProvider<AchievementCelebrationController>(
-            create: (_) => AchievementCelebrationController(SecureGameStorage()),
+            create: (_) =>
+                AchievementCelebrationController(SecureGameStorage()),
           ),
         ],
         child: MaterialApp(home: MatchPredictionScreen(match: _match)),
@@ -189,7 +195,8 @@ void main() {
         providers: [
           BlocProvider<PredictionCubit>.value(value: cubit),
           BlocProvider<AchievementCelebrationController>(
-            create: (_) => AchievementCelebrationController(SecureGameStorage()),
+            create: (_) =>
+                AchievementCelebrationController(SecureGameStorage()),
           ),
         ],
         child: MaterialApp(home: MatchPredictionScreen(match: _match)),
@@ -229,7 +236,8 @@ void main() {
         providers: [
           BlocProvider<PredictionCubit>.value(value: cubit),
           BlocProvider<AchievementCelebrationController>(
-            create: (_) => AchievementCelebrationController(SecureGameStorage()),
+            create: (_) =>
+                AchievementCelebrationController(SecureGameStorage()),
           ),
         ],
         child: MaterialApp(home: MatchPredictionScreen(match: _match)),
@@ -260,28 +268,23 @@ void main() {
     expect(multipliers, {'q1': PredictionMultiplier.x15});
   });
 
-  testWidgets('fresh submit lands on review list with a PREDICT-next dock', (
+  testWidgets('fresh submit lands on review list with an OPEN PICKS dock', (
     tester,
   ) async {
-    final nextMatch = SportMatch(
-      id: 'next_match',
-      leagueId: 'test', // same league as _match
-      sport: Sport.football,
-      home: _home,
-      away: _away,
-      kickoff: DateTime.now().add(const Duration(hours: 4)),
-      status: MatchStatus.upcoming,
-    );
     final cubit = _TestPredictionCubit(_QuizRepo(_quiz));
-    cubit.seedFixtures([_match, nextMatch]);
+    cubit.seedFixtures([_match]);
+    final picksCubit = _TestPicksCubit([_marketFor(_match)]);
     addTearDown(cubit.close);
+    addTearDown(picksCubit.close);
 
     await tester.pumpWidget(
       MultiBlocProvider(
         providers: [
           BlocProvider<PredictionCubit>.value(value: cubit),
+          BlocProvider<PicksCubit>.value(value: picksCubit),
           BlocProvider<AchievementCelebrationController>(
-            create: (_) => AchievementCelebrationController(SecureGameStorage()),
+            create: (_) =>
+                AchievementCelebrationController(SecureGameStorage()),
           ),
         ],
         child: MaterialApp(home: MatchPredictionScreen(match: _match)),
@@ -305,10 +308,21 @@ void main() {
     await _pumpFrames(tester, const Duration(milliseconds: 5200));
 
     // We stay on the quiz-submitted list (no pop): the celebration is gone, the
-    // dock chains into the next same-league match rather than SAVE UPDATES.
+    // dock opens this match's picks market rather than SAVE UPDATES.
     expect(find.text('PREDICTION SUBMITTED'), findsNothing);
     expect(find.text('SAVE UPDATES'), findsNothing);
-    expect(find.text('PREDICT HOM vs AWY'), findsOneWidget);
+    expect(find.text('OPEN PICKS'), findsOneWidget);
+
+    await _tapButton(tester, 'OPEN PICKS');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Home FC vs Away FC result'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('same_match_prediction_quiz_cta')),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('PREDICTION QUIZ'), findsOneWidget);
   });
 
   testWidgets('submitted review can move multiplier and save updates', (
@@ -573,20 +587,40 @@ class _QuizRepo implements PredictionRepository {
   ];
 }
 
+class _PickRepo implements PickRepository {
+  const _PickRepo(this._markets);
+
+  final List<PickMarket> _markets;
+
+  @override
+  Future<List<PickMarket>> markets() async => _markets;
+
+  @override
+  Future<PickMarket?> marketById(String marketId) async {
+    for (final market in _markets) {
+      if (market.id == marketId) return market;
+    }
+    return null;
+  }
+}
+
+class _TestPicksCubit extends PicksCubit {
+  _TestPicksCubit(List<PickMarket> markets)
+    : super(_PickRepo(markets), SecureGameStorage()) {
+    emit(const PicksState().copyWith(loading: false, markets: markets));
+  }
+}
+
 class _TestPredictionCubit extends PredictionCubit {
   _TestPredictionCubit(PredictionRepository repository)
     : super(repository, SecureGameStorage());
 
   void seed(UserPrediction prediction) {
-    emit(
-      const PredictionState().copyWith(
-        predictions: {prediction.matchId: prediction},
-      ),
-    );
+    emit(state.copyWith(predictions: {prediction.matchId: prediction}));
   }
 
   void seedFixtures(List<SportMatch> fixtures) {
-    emit(const PredictionState().copyWith(fixtures: fixtures));
+    emit(state.copyWith(fixtures: fixtures));
   }
 }
 
@@ -649,6 +683,42 @@ UserPrediction _prediction({
   multipliersByQuestion: multipliersByQuestion,
   submittedAt: DateTime.now().subtract(const Duration(hours: 1)),
   status: status,
+);
+
+PickMarket _marketFor(SportMatch match) => PickMarket(
+  id: '${match.id}_winner',
+  question: '${match.home.name} vs ${match.away.name} result',
+  type: PickMarketType.match,
+  sport: match.sport,
+  leagueId: match.leagueId,
+  leagueLabel: 'TEST',
+  status: PickMarketStatus.upcoming,
+  outcomes: [
+    PickOutcome(
+      id: match.home.id,
+      label: match.home.name,
+      probabilityPercent: 55,
+      color: match.home.color,
+    ),
+    const PickOutcome(
+      id: 'draw',
+      label: 'Draw',
+      probabilityPercent: 20,
+      color: Color(0xff64748b),
+    ),
+    PickOutcome(
+      id: match.away.id,
+      label: match.away.name,
+      probabilityPercent: 25,
+      color: match.away.color,
+    ),
+  ],
+  volumeOz: 100,
+  closesAt: match.kickoff,
+  matchId: match.id,
+  contextSubtitle: 'Winner after 90 minutes',
+  homeLabel: match.home.name,
+  awayLabel: match.away.name,
 );
 
 const _quiz = PredictionQuiz(

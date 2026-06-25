@@ -6,11 +6,14 @@ import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_event.dart';
 import '../../blocs/quiz/quiz_cubit.dart';
 import '../../config/theme.dart';
+import '../../models/oz_coin_ledger.dart';
 import '../../models/quiz_trivia.dart';
+import '../../models/xp_ledger.dart';
 import '../../services/quiz_trivia_bank.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
-import '../predictions/widgets/settlement_reveal.dart' show SettlementQuestionResult;
+import '../predictions/widgets/settlement_reveal.dart'
+    show SettlementQuestionResult;
 import 'widgets/quiz_reveal.dart';
 
 /// A single Football Quiz run for one [QuizMode]: a gamified, one-question-at-a-
@@ -19,30 +22,34 @@ import 'widgets/quiz_reveal.dart';
 /// [QuizRevealOverlay]. XP is credited (XP-only — never coins) on submit and the
 /// run is folded into [QuizCubit] progress.
 class QuizPlayScreen extends StatefulWidget {
-  const QuizPlayScreen({required this.mode, super.key});
+  const QuizPlayScreen({required this.mode, this.setNumber = 1, super.key});
 
   final QuizMode mode;
+  final int setNumber;
 
   @override
   State<QuizPlayScreen> createState() => _QuizPlayScreenState();
 }
 
 class _QuizPlayScreenState extends State<QuizPlayScreen> {
-  late final List<TriviaQuestion> _questions;
+  late List<TriviaQuestion> _questions;
   int _index = 0;
 
   /// question index → chosen option index.
   final Map<int, int> _answers = {};
   bool _submitting = false;
+  bool _retrying = false;
 
   // Settlement reveal payload (null until submitted).
   List<SettlementQuestionResult>? _revealResults;
   int _revealXp = 0;
   int _revealXpBefore = 0;
   bool _revealNewlyCleared = false;
+  bool _revealPassed = false;
   QuizMode? _revealUnlocked;
 
   QuizMode get _mode => widget.mode;
+  int get _setNumber => widget.setNumber;
   bool get _isLast => _index >= _questions.length - 1;
   bool get _currentAnswered => _answers.containsKey(_index);
   bool get _allAnswered => _answers.length == _questions.length;
@@ -53,7 +60,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
   @override
   void initState() {
     super.initState();
-    _questions = buildQuizSession(_mode);
+    _questions = buildQuizSet(_mode, _setNumber);
   }
 
   void _select(int option) {
@@ -83,14 +90,12 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
 
     final results = <SettlementQuestionResult>[];
     var correct = 0;
-    var totalXp = 0;
     for (var i = 0; i < _questions.length; i++) {
       final q = _questions[i];
       final picked = _answers[i];
       final isCorrect = picked == q.correctIndex;
       final earned = isCorrect ? _mode.reward : 0;
       if (isCorrect) correct++;
-      totalXp += earned;
       results.add(
         SettlementQuestionResult(
           text: q.prompt,
@@ -102,13 +107,23 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
       );
     }
 
+    final passed = quizSetPassed(correct: correct, total: _questions.length);
+    final totalXp = passed ? correct * _mode.reward : 0;
     final xpBefore = context.read<GameBloc>().state.progression.totalXP;
     // Credit up front (XP-only) so skipping the cinematic changes nothing.
     if (totalXp > 0) {
-      context.read<GameBloc>().add(PredictionXpAdded(totalXp));
+      context.read<GameBloc>().add(
+        PredictionXpAdded(
+          totalXp,
+          source: XpTransactionSource.quiz,
+          title: 'FOOTBALL QUIZ REWARD',
+          details: '${_mode.label} SET $_setNumber',
+        ),
+      );
     }
     final outcome = await context.read<QuizCubit>().recordResult(
       _mode,
+      setNumber: _setNumber,
       correct: correct,
       total: _questions.length,
     );
@@ -118,8 +133,55 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
       _revealXp = totalXp;
       _revealXpBefore = xpBefore;
       _revealNewlyCleared = outcome.newlyCleared;
+      _revealPassed = passed;
       _revealUnlocked = outcome.unlocked;
     });
+  }
+
+  Future<void> _retry() async {
+    if (_retrying) return;
+    final game = context.read<GameBloc>();
+    if (game.state.coins < kQuizEntryCost) {
+      _showMessage('Need $kQuizEntryCost coins to retry this quiz set.');
+      return;
+    }
+    setState(() => _retrying = true);
+    game.add(
+      CoinsSpent(
+        kQuizEntryCost,
+        source: OzCoinTransactionSource.quizEntry,
+        title: 'FOOTBALL QUIZ ENTRY',
+        subtitle: '${_mode.label} SET $_setNumber RETRY',
+      ),
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 120));
+    if (!mounted) return;
+    playSound(SoundEffect.playMatch);
+    setState(() {
+      _questions = buildQuizSet(_mode, _setNumber);
+      _index = 0;
+      _answers.clear();
+      _submitting = false;
+      _retrying = false;
+      _revealResults = null;
+      _revealXp = 0;
+      _revealXpBefore = 0;
+      _revealNewlyCleared = false;
+      _revealPassed = false;
+      _revealUnlocked = null;
+    });
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(milliseconds: 1700),
+        ),
+      );
   }
 
   @override
@@ -137,6 +199,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
               children: [
                 _TopBar(
                   mode: _mode,
+                  setNumber: _setNumber,
                   onBack: () => Navigator.of(context).maybePop(),
                 ),
                 const SizedBox(height: 8),
@@ -198,6 +261,8 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
                 xpBefore: _revealXpBefore,
                 newlyCleared: _revealNewlyCleared,
                 unlocked: _revealUnlocked,
+                passed: _revealPassed,
+                onRetry: _retry,
                 onDone: () => Navigator.of(context).maybePop(),
               ),
             ),
@@ -211,15 +276,20 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
       return 'All ${_questions.length} answered — lock it in';
     }
     final left = _questions.length - _answers.length;
-    return '$left of ${_questions.length} to go · +${_mode.reward} XP each';
+    return '$left of ${_questions.length} to go · pass for +${_mode.reward} XP/correct';
   }
 }
 
 // ── Top bar ───────────────────────────────────────────────────────────────────
 class _TopBar extends StatelessWidget {
-  const _TopBar({required this.mode, required this.onBack});
+  const _TopBar({
+    required this.mode,
+    required this.setNumber,
+    required this.onBack,
+  });
 
   final QuizMode mode;
+  final int setNumber;
   final VoidCallback onBack;
 
   @override
@@ -250,7 +320,10 @@ class _TopBar extends StatelessWidget {
               style: Cyber.display(15, color: Colors.white, letterSpacing: 1.2),
             ),
           ),
-          CyberChip(label: mode.label, color: mode.accent),
+          CyberChip(
+            label: '${mode.label} · SET $setNumber',
+            color: mode.accent,
+          ),
         ],
       ),
     );
@@ -287,26 +360,38 @@ class _QuizHeader extends StatelessWidget {
               const SizedBox(width: 10),
               Text(
                 'QUESTION ${index + 1}',
-                style: Cyber.display(15, color: Colors.white, letterSpacing: 1.2)
-                    .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+                style: Cyber.display(
+                  15,
+                  color: Colors.white,
+                  letterSpacing: 1.2,
+                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
               Text(
                 ' / $total',
-                style: Cyber.label(12, color: Cyber.muted, letterSpacing: 1)
-                    .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+                style: Cyber.label(
+                  12,
+                  color: Cyber.muted,
+                  letterSpacing: 1,
+                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
               const Spacer(),
               const Icon(Icons.bolt, size: 14, color: Cyber.gold),
               const SizedBox(width: 3),
               Text(
                 '$banked',
-                style: Cyber.display(13, color: Cyber.gold, letterSpacing: 0.6)
-                    .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+                style: Cyber.display(
+                  13,
+                  color: Cyber.gold,
+                  letterSpacing: 0.6,
+                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
               Text(
                 '/$potential XP',
-                style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1)
-                    .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+                style: Cyber.label(
+                  10,
+                  color: Cyber.muted,
+                  letterSpacing: 1,
+                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
             ],
           ),
@@ -378,7 +463,10 @@ class _QuestionPanel extends StatelessWidget {
             children: [
               Text(
                 question.prompt,
-                style: Cyber.display(16, letterSpacing: 0.3).copyWith(height: 1.3),
+                style: Cyber.display(
+                  16,
+                  letterSpacing: 0.3,
+                ).copyWith(height: 1.3),
               ),
               const SizedBox(height: 18),
               for (var i = 0; i < question.options.length; i++)
@@ -387,6 +475,7 @@ class _QuestionPanel extends StatelessWidget {
                     bottom: i == question.options.length - 1 ? 0 : 10,
                   ),
                   child: _OptionTile(
+                    key: ValueKey('quiz-option-$i'),
                     letter: String.fromCharCode(65 + i),
                     label: question.options[i],
                     selected: selected == i,
@@ -409,7 +498,10 @@ class _QuestionPanel extends StatelessWidget {
               color: mode.accent.withValues(alpha: 0.16),
               border: Border.all(color: Cyber.border),
             ),
-            child: Text('$number', style: Cyber.display(15, color: mode.accent)),
+            child: Text(
+              '$number',
+              style: Cyber.display(15, color: mode.accent),
+            ),
           ),
         ),
       ],
@@ -419,6 +511,7 @@ class _QuestionPanel extends StatelessWidget {
 
 class _OptionTile extends StatelessWidget {
   const _OptionTile({
+    super.key,
     required this.letter,
     required this.label,
     required this.selected,
@@ -448,7 +541,9 @@ class _OptionTile extends StatelessWidget {
             color: selected ? accent : const Color(0xff283448),
             width: selected ? 1.5 : 1,
           ),
-          boxShadow: selected ? Cyber.glow(accent, alpha: 0.22, blur: 12) : null,
+          boxShadow: selected
+              ? Cyber.glow(accent, alpha: 0.22, blur: 12)
+              : null,
         ),
         child: Row(
           children: [
@@ -483,8 +578,7 @@ class _OptionTile extends StatelessWidget {
                 ),
               ),
             ),
-            if (selected)
-              Icon(Icons.check_circle, color: accent, size: 18),
+            if (selected) Icon(Icons.check_circle, color: accent, size: 18),
           ],
         ),
       ),

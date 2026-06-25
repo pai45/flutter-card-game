@@ -3,7 +3,7 @@
 StatOz is a sports prediction and game app built around four connected product loops:
 
 - users predict real-world-style matches, submit answers, and claim rewards when results settle
-- users collect cards, build squads, and play the Pitch Duel tactical card game for XP and coins
+- users collect cards, build squads, and play game modes such as Pitch Duel and Penalty Shootout for XP and coins
 - users compare progress through leaderboard surfaces across match day, tournaments, coins, and games
 - users set up a profile identity with avatar, banner, followed leagues, and favorite teams
 
@@ -15,11 +15,11 @@ On first launch, the app opens into Profile Setup until onboarding is complete. 
 
 - **Matches**: fixture cards grouped by league, with prediction quizzes for individual matches.
 - **Pick**: a market-style picks surface where users choose outcomes and confirm an Oz Coin amount.
-- **Games**: entry point for Pitch Duel, plus placeholders for future game modes.
+- **Games**: entry point for Pitch Duel, Penalty Shootout, and Football Quiz.
 - **Leaderboard**: ranking surfaces for match day, tournaments, coins, and games.
 - **Shop and Profile**: supporting areas for identity setup, avatar and banner display, followed leagues, favorite teams, wallet, collection, card backs, and cosmetic browsing.
 
-The main navigation keeps Predictions, Pick, Leaderboard, Shop, and Profile as app-level destinations. Pitch Duel opens as a full-screen game hub from the Games tab, then handles its own internal destinations such as home, deck, all cards, how to play, match, and match history.
+The main navigation keeps Predictions, Pick, Leaderboard, Shop, and Profile as app-level destinations. Game modes open as full-screen hubs from the Games tab; Pitch Duel and Penalty Shootout share deck, collection, progression, wallet, and match-history systems.
 
 ## Feature Docs
 
@@ -27,6 +27,7 @@ The main navigation keeps Predictions, Pick, Leaderboard, Shop, and Profile as a
 - [Prediction Gamification](prediction-gamification.md) (designed, not yet built)
 - [Picks](picks.md)
 - [Pitch Duel Card Game](pitch-duel-card-game.md)
+- [Penalty Shootout](penalty-shootout.md)
 - [Pitch Duel Leveling System](pitch-duel-leveling.md)
 - [Leaderboard](leaderboard.md)
 - [Profile And Identity](profile-and-identity.md)
@@ -54,6 +55,15 @@ The main navigation keeps Predictions, Pick, Leaderboard, Shop, and Profile as a
 5. Match result awards XP and coins.
 6. User grows level, collection, and match history. See [Pitch Duel Leveling System](pitch-duel-leveling.md) for the XP curve, match rewards, pack XP, and opponent scaling.
 
+**Penalty Shootout loop**
+
+1. User enters Games and chooses Penalty Shootout.
+2. User makes sure the shared active deck is ready; the shootout takers use 2 attackers, 2 defenders, and 1 goalkeeper.
+3. User faces a level-scaled CPU opponent in a five-kicks-each shootout.
+4. The shootout can end early, or move into sudden death pairs after five kicks each.
+5. Result awards smaller XP/coin rewards than a full Pitch Duel match.
+6. Match history, XP/coin ledgers, and the penalty shootout streak are updated. See [Penalty Shootout](penalty-shootout.md) for full rules.
+
 **Competition loop**
 
 1. User predicts, picks, or plays game modes.
@@ -72,7 +82,7 @@ The main navigation keeps Predictions, Pick, Leaderboard, Shop, and Profile as a
 - Match fixtures, quizzes, vote results, and match leaderboard rows are currently mock-backed but written as product behavior so the surface can later connect to live data.
 - The Pick tab currently behaves like a product prototype: users can choose a market and confirm an amount, but the confirmed pick is not yet a persisted portfolio position.
 - Leaderboard entries are seeded to demonstrate ranking states, user highlighting, podiums, movement, and team boards.
-- Pitch Duel gameplay, deck ownership, progression, wallet, daily drop, and match history are persistent product experiences.
+- Pitch Duel gameplay, Penalty Shootout gameplay, deck ownership, progression, wallet, daily drop, streaks, and match history are persistent product experiences.
 - Profile setup and identity preferences are persistent local product state: avatar, banner, followed leagues, favorite teams, and onboarding completion.
 - The prediction gamification layer (streaks, settlement reveal, achievements, prediction XP, daily quests) is a designed-not-yet-built system documented in [Prediction Gamification](prediction-gamification.md).
 

@@ -1439,6 +1439,13 @@ class ScoreboardPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final inMatch =
         label == null && state.currentRound >= 1 && state.currentRound <= 4;
+    final opponentFirstName = (state.opponentName ?? 'OPP')
+        .split(RegExp(r'\s+'))
+        .first
+        .toUpperCase();
+    final opponentLabel = opponentFirstName.length <= 7
+        ? '[P2] $opponentFirstName'
+        : '[P2] OPP';
     return Container(
       decoration: BoxDecoration(
         // Glass HUD: rgba(13,17,26,0.85).
@@ -1482,7 +1489,7 @@ class ScoreboardPanel extends StatelessWidget {
           ),
           Expanded(
             child: _HudIdentity(
-              label: 'CPU [E1]',
+              label: opponentLabel,
               score: state.opponentScore,
               color: Cyber.danger,
               alignRight: true,

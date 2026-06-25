@@ -11,6 +11,7 @@ enum XpTransactionSource {
   dailyDrop,
   streakReward,
   cardUnlock,
+  quiz,
 }
 
 class XpLedgerEntry {
