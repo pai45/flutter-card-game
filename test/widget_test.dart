@@ -16,6 +16,8 @@ void main() {
     FlutterSecureStorage.setMockInitialValues({
       'pd_starter_pack_claimed_v1': 'true',
       'pd_selected_avatar_v1': 'adams',
+      'pd_onboarding_complete_v1': 'true',
+      'pd_demo_reward_settlement_seen_v1': 'true',
       'pd_deck_slots_v1': jsonEncode([slot.toJson()]),
       'pd_pick_positions_v1': '[]',
     });
@@ -53,7 +55,7 @@ void main() {
     await tester.pumpWidget(const PitchDuelApp());
     await tester.pump(const Duration(seconds: 3));
 
-    await tester.tap(find.byKey(const ValueKey('prediction_top_tab_1')));
+    await tester.tap(find.byKey(const ValueKey('cyber_gliding_tab_1')));
     await tester.pump(const Duration(seconds: 1));
 
     expect(find.byType(PicksHomeView), findsOneWidget);
@@ -73,7 +75,7 @@ void main() {
     await tester.pumpWidget(const PitchDuelApp());
     await tester.pump(const Duration(seconds: 3));
 
-    await tester.tap(find.byKey(const ValueKey('prediction_top_tab_1')));
+    await tester.tap(find.byKey(const ValueKey('cyber_gliding_tab_1')));
     await tester.pump(const Duration(seconds: 1));
     expect(find.byType(PicksHomeView), findsOneWidget);
     expect(
@@ -124,7 +126,7 @@ void main() {
     await tester.pumpWidget(const PitchDuelApp());
     await tester.pump(const Duration(seconds: 3));
 
-    await tester.tap(find.byKey(const ValueKey('prediction_top_tab_2')));
+    await tester.tap(find.byKey(const ValueKey('cyber_gliding_tab_2')));
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('PITCH DUEL'), findsOneWidget);
 

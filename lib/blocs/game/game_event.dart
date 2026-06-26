@@ -2,6 +2,7 @@ import '../../models/cards.dart';
 import '../../models/deck.dart';
 import '../../models/oz_coin_ledger.dart';
 import '../../models/streak.dart';
+import '../../models/xp_ledger.dart';
 
 sealed class GameEvent {}
 
@@ -67,8 +68,17 @@ class CoinsSpent extends GameEvent {
 
 /// XP earned outside Pitch Duel matches (prediction settlements).
 class PredictionXpAdded extends GameEvent {
-  PredictionXpAdded(this.amount);
+  PredictionXpAdded(
+    this.amount, {
+    this.details,
+    this.source = XpTransactionSource.prediction,
+    this.title = 'PREDICTION REWARD',
+  });
+
   final int amount;
+  final String? details;
+  final XpTransactionSource source;
+  final String title;
 }
 
 class CardPurchased extends GameEvent {
@@ -125,14 +135,40 @@ class CardBackEquipped extends GameEvent {
   final String cardBackId;
 }
 
-class AvatarBorderPurchased extends GameEvent {
-  AvatarBorderPurchased(this.borderId);
-  final String borderId;
+class AvatarFramePurchased extends GameEvent {
+  AvatarFramePurchased(this.frameId);
+  final String frameId;
 }
 
-class AvatarBorderEquipped extends GameEvent {
-  AvatarBorderEquipped(this.borderId);
-  final String borderId;
+class AvatarFrameEquipped extends GameEvent {
+  AvatarFrameEquipped(this.frameId);
+  final String frameId;
+}
+
+/// Buy a shop avatar (player portrait) with coins — BUY → OWNED, no equip.
+class ShopAvatarPurchased extends GameEvent {
+  ShopAvatarPurchased({
+    required this.avatarId,
+    required this.price,
+    required this.name,
+  });
+
+  final String avatarId;
+  final int price;
+  final String name;
+}
+
+/// Buy a shop banner with coins — BUY → OWNED, no equip.
+class ShopBannerPurchased extends GameEvent {
+  ShopBannerPurchased({
+    required this.bannerId,
+    required this.price,
+    required this.name,
+  });
+
+  final String bannerId;
+  final int price;
+  final String name;
 }
 
 class PackRevealSeen extends GameEvent {}
@@ -154,7 +190,17 @@ class StreakMilestoneClaimed extends GameEvent {
 
 class MatchReset extends GameEvent {}
 
-class MatchStarted extends GameEvent {}
+class MatchStarted extends GameEvent {
+  MatchStarted({this.opponentName, this.opponentLevel});
+
+  /// When launched as a leaderboard CHALLENGE, the rival's display name shown
+  /// on the VS screen. Null for a normal match (renders as "Opponent").
+  final String? opponentName;
+
+  /// Optional difficulty override (the rival's level); falls back to the
+  /// player's level when null.
+  final int? opponentLevel;
+}
 
 class TossChoiceChanged extends GameEvent {
   TossChoiceChanged(this.choice);

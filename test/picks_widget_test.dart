@@ -3,10 +3,13 @@ import 'dart:convert';
 import 'package:card_game/blocs/game/game_bloc.dart';
 import 'package:card_game/blocs/game/game_event.dart';
 import 'package:card_game/blocs/picks/picks_cubit.dart';
+import 'package:card_game/blocs/prediction/prediction_cubit.dart';
 import 'package:card_game/config/theme.dart';
 import 'package:card_game/screens/predictions/market_detail_screen.dart';
+import 'package:card_game/screens/predictions/match_prediction_screen.dart';
 import 'package:card_game/screens/predictions/picks_home_view.dart';
 import 'package:card_game/services/pick_repository.dart';
+import 'package:card_game/services/prediction_repository.dart';
 import 'package:card_game/services/secure_storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -47,9 +50,9 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('ALL'), findsOneWidget);
-    expect(find.text('Punjab'), findsOneWidget);
-    expect(find.text('Bangalore'), findsOneWidget);
-    expect(find.text('68%'), findsAtLeastNWidgets(1));
+    expect(find.text('France'), findsAtLeastNWidgets(1));
+    expect(find.text('Iraq'), findsAtLeastNWidgets(1));
+    expect(find.text('72%'), findsAtLeastNWidgets(1));
     expect(find.byIcon(Icons.settings), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.settings));
@@ -138,6 +141,13 @@ void main() {
     );
     await tester.pump(const Duration(seconds: 1));
 
+    await tester.scrollUntilVisible(
+      find.text('68%'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
+
     await tester.tap(find.text('68%').first);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
@@ -195,4 +205,63 @@ void main() {
     expect(find.text('YES 56%'), findsOneWidget);
     expect(find.text('NO 44%'), findsOneWidget);
   });
+
+  testWidgets(
+    'linked market detail can navigate to same match prediction quiz',
+    (tester) async {
+      FlutterSecureStorage.setMockInitialValues({'pd_pick_positions_v1': '[]'});
+      SharedPreferences.setMockInitialValues({});
+
+      final picksCubit = PicksCubit(MockPickRepository(), SecureGameStorage());
+      final predictionCubit = PredictionCubit(
+        MockPredictionRepository(),
+        SecureGameStorage(),
+      );
+      await picksCubit.load();
+      await predictionCubit.load();
+      addTearDown(picksCubit.close);
+      addTearDown(predictionCubit.close);
+
+      await tester.pumpWidget(
+        MultiBlocProvider(
+          providers: [
+            BlocProvider<PicksCubit>.value(value: picksCubit),
+            BlocProvider<PredictionCubit>.value(value: predictionCubit),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: const MarketDetailScreen(marketId: 'epl_liv_mc_winner'),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Liverpool vs Man City result'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('same_match_prediction_quiz_cta')),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
+
+      expect(find.text('PREDICTION QUIZ'), findsOneWidget);
+
+      await tester.tap(
+        find.byKey(const ValueKey('same_match_prediction_quiz_cta')),
+      );
+      await _pumpFrames(tester, const Duration(milliseconds: 800));
+
+      expect(find.byType(MarketDetailScreen), findsNothing);
+      expect(find.byType(MatchPredictionScreen), findsOneWidget);
+    },
+  );
+}
+
+Future<void> _pumpFrames(WidgetTester tester, Duration duration) async {
+  var elapsed = Duration.zero;
+  const step = Duration(milliseconds: 16);
+  while (elapsed < duration) {
+    await tester.pump(step);
+    elapsed += step;
+  }
 }

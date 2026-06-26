@@ -1,41 +1,41 @@
 import 'package:flutter/material.dart';
 
-import '../models/avatar_border_option.dart';
+import '../models/avatar_frame_option.dart';
 import 'team_logo.dart' show buildOctagonPath;
 
-enum AvatarBorderShape { roundedRect, octagon }
+enum AvatarFrameShape { roundedRect, octagon }
 
-/// Wraps [child] with the equipped [border]'s ring: a 4px team-colour gradient
-/// band plus a 2px raised inner edge (the "elevated" bevel). When [border] is
+/// Wraps [child] with the equipped [frame]'s ring: a 4px team-colour gradient
+/// band plus a 2px raised inner edge (the "elevated" bevel). When [frame] is
 /// null it returns [child] untouched (no ring).
 ///
 /// Per THE GLOW RULE the soft accent halo is opt-in via [glow] — set it only on
 /// the equipped / single focal instance, never on resting catalogue tiles.
-class AvatarBorderRing extends StatelessWidget {
-  const AvatarBorderRing({
-    required this.border,
+class AvatarFrameRing extends StatelessWidget {
+  const AvatarFrameRing({
+    required this.frame,
     required this.child,
-    this.shape = AvatarBorderShape.roundedRect,
+    this.shape = AvatarFrameShape.roundedRect,
     this.cornerRadius = 0,
     this.glow = false,
     super.key,
   });
 
-  final AvatarBorderOption? border;
+  final AvatarFrameOption? frame;
   final Widget child;
-  final AvatarBorderShape shape;
+  final AvatarFrameShape shape;
   final double cornerRadius;
   final bool glow;
 
   @override
   Widget build(BuildContext context) {
-    final option = border;
+    final option = frame;
     if (option == null) return child;
     return CustomPaint(
-      foregroundPainter: _AvatarBorderRingPainter(
+      foregroundPainter: _AvatarFrameRingPainter(
         primary: option.primary,
-        band: borderRingColors(option.primary),
-        raised: borderRaisedEdge(option.primary),
+        band: frameRingColors(option.primary),
+        raised: frameRaisedEdge(option.primary),
         shape: shape,
         cornerRadius: cornerRadius,
         glow: glow,
@@ -45,8 +45,8 @@ class AvatarBorderRing extends StatelessWidget {
   }
 }
 
-class _AvatarBorderRingPainter extends CustomPainter {
-  const _AvatarBorderRingPainter({
+class _AvatarFrameRingPainter extends CustomPainter {
+  const _AvatarFrameRingPainter({
     required this.primary,
     required this.band,
     required this.raised,
@@ -58,7 +58,7 @@ class _AvatarBorderRingPainter extends CustomPainter {
   final Color primary;
   final List<Color> band;
   final Color raised;
-  final AvatarBorderShape shape;
+  final AvatarFrameShape shape;
   final double cornerRadius;
   final bool glow;
 
@@ -70,12 +70,12 @@ class _AvatarBorderRingPainter extends CustomPainter {
       size.height - inset * 2,
     );
     switch (shape) {
-      case AvatarBorderShape.octagon:
+      case AvatarFrameShape.octagon:
         // Keep the chamfer proportional to the full box (not the inset rect) so
         // every layer of the ring tracks the same octagon silhouette.
         final cut = size.shortestSide * 0.15;
         return buildOctagonPath(rect, cutRatio: cut / rect.shortestSide);
-      case AvatarBorderShape.roundedRect:
+      case AvatarFrameShape.roundedRect:
         return Path()
           ..addRRect(
             RRect.fromRectAndRadius(rect, Radius.circular(cornerRadius)),
@@ -121,7 +121,7 @@ class _AvatarBorderRingPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_AvatarBorderRingPainter old) =>
+  bool shouldRepaint(_AvatarFrameRingPainter old) =>
       old.primary != primary ||
       old.raised != raised ||
       old.shape != shape ||

@@ -235,19 +235,33 @@ class PenaltyGoalMouth extends StatelessWidget {
   final ValueChanged<PenaltyDirection> onSelect;
 
   String _zoneLabel(PenaltyDirection d) => switch (d) {
-    PenaltyDirection.left => playerTaking ? '< LEFT' : '< DIVE',
-    PenaltyDirection.center => playerTaking ? 'CENTER' : 'STAY',
-    PenaltyDirection.right => playerTaking ? 'RIGHT >' : 'DIVE >',
+    PenaltyDirection.left => 'LEFT',
+    PenaltyDirection.center => 'CENTER',
+    PenaltyDirection.right => 'RIGHT',
   };
 
   @override
   Widget build(BuildContext context) {
     final accent = playerTaking ? Cyber.cyan : Cyber.amber;
-    return SizedBox(
-      height: 216,
+    const goalHeight = 252.0;
+    return Container(
+      height: goalHeight,
+      decoration: BoxDecoration(
+        color: Cyber.bg.withValues(alpha: 0.28),
+        border: Border.all(color: accent.withValues(alpha: 0.16)),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            accent.withValues(alpha: 0.05),
+            Cyber.bg.withValues(alpha: 0.10),
+            Colors.transparent,
+          ],
+        ),
+      ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final size = Size(constraints.maxWidth, 216);
+          final size = Size(constraints.maxWidth, goalHeight);
           final g = _GoalGeom(size);
           return Stack(
             children: [
@@ -262,17 +276,49 @@ class PenaltyGoalMouth extends StatelessWidget {
               // Reticles at the three aim points.
               for (final dir in PenaltyDirection.values)
                 Positioned(
-                  left: g.zoneX(dir) - 26,
-                  top: g.targetY - 26,
-                  width: 52,
-                  height: 52,
+                  left: g.zoneX(dir) - 30,
+                  top: g.targetY - 30,
+                  width: 60,
+                  height: 60,
                   child: AnimatedOpacity(
                     duration: const Duration(milliseconds: 160),
-                    opacity: selected == dir ? 1 : 0.30,
+                    opacity: selected == dir ? 1 : 0.42,
                     child: CustomPaint(
                       painter: _ZoneReticlePainter(
                         accent: accent,
                         active: selected == dir,
+                      ),
+                    ),
+                  ),
+                ),
+              for (final dir in PenaltyDirection.values)
+                Positioned(
+                  left: g.zoneX(dir) - 39,
+                  top: g.targetY + 33,
+                  width: 78,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(vertical: 5),
+                    decoration: BoxDecoration(
+                      color: selected == dir
+                          ? accent.withValues(alpha: 0.16)
+                          : Cyber.bg2.withValues(alpha: 0.34),
+                      border: Border.all(
+                        color: (selected == dir ? accent : Cyber.line)
+                            .withValues(alpha: selected == dir ? 0.45 : 0.18),
+                      ),
+                    ),
+                    child: Text(
+                      _zoneLabel(dir),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Cyber.label(
+                        9,
+                        color: selected == dir
+                            ? accent
+                            : Colors.white.withValues(alpha: 0.68),
+                        letterSpacing: 1.0,
                       ),
                     ),
                   ),
@@ -289,21 +335,7 @@ class PenaltyGoalMouth extends StatelessWidget {
                           playSound(SoundEffect.uiTap);
                           onSelect(dir);
                         },
-                        child: Align(
-                          alignment: Alignment.bottomCenter,
-                          child: Padding(
-                            padding: const EdgeInsets.only(bottom: 2),
-                            child: AnimatedDefaultTextStyle(
-                              duration: const Duration(milliseconds: 160),
-                              style: Cyber.label(
-                                10,
-                                color: selected == dir ? accent : Cyber.muted,
-                                letterSpacing: 1.2,
-                              ),
-                              child: Text(_zoneLabel(dir)),
-                            ),
-                          ),
-                        ),
+                        child: const SizedBox.expand(),
                       ),
                     ),
                 ],
@@ -339,7 +371,7 @@ class _GoalMouthPainter extends CustomPainter {
           g.left + third * (index + 1),
           g.groundY,
         ),
-        Paint()..color = accent.withValues(alpha: 0.09),
+        Paint()..color = accent.withValues(alpha: 0.14),
       );
     }
 

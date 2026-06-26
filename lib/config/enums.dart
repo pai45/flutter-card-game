@@ -36,6 +36,6 @@ enum MatchPhase {
 }
 
 /// Stages of the standalone Penalty Shootout mode.
-enum ShootoutStage { lineup, choose, result, summary }
+enum ShootoutStage { opponentReveal, lineup, choose, result, summary }
 
 enum RoundOutcome { goal, saved, blocked, missed, foul, redCard }

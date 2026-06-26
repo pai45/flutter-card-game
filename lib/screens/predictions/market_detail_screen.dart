@@ -8,12 +8,16 @@ import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_event.dart';
 import '../../blocs/picks/picks_cubit.dart';
 import '../../blocs/picks/picks_state.dart';
+import '../../blocs/prediction/prediction_cubit.dart';
+import '../../blocs/prediction/prediction_state.dart';
 import '../../config/theme.dart';
 import '../../models/oz_coin_ledger.dart';
 import '../../models/picks.dart';
+import '../../models/sport_match.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../shop/shop_screen.dart' show CoinIcon;
+import 'match_prediction_screen.dart';
 import 'widgets/pick_settlement_reveal.dart';
 import 'widgets/pick_status_style.dart';
 import 'widgets/pick_trade_sheet.dart';
@@ -98,6 +102,7 @@ class _MarketDetailScreenState extends State<MarketDetailScreen> {
                           ],
                         const SizedBox(height: 14),
                         _RulesPanel(outcome: selected),
+                        _LinkedPredictionQuizCta(market: market),
                       ],
                     ),
                   ),
@@ -217,6 +222,111 @@ class _MarketHeader extends StatelessWidget {
       ),
     );
   }
+}
+
+class _LinkedPredictionQuizCta extends StatelessWidget {
+  const _LinkedPredictionQuizCta({required this.market});
+
+  final PickMarket market;
+
+  @override
+  Widget build(BuildContext context) {
+    final matchId = market.matchId;
+    if (matchId == null) {
+      return const SizedBox.shrink();
+    }
+    final PredictionCubit prediction;
+    try {
+      prediction = context.read<PredictionCubit>();
+    } on ProviderNotFoundException {
+      return const SizedBox.shrink();
+    }
+
+    return BlocBuilder<PredictionCubit, PredictionState>(
+      bloc: prediction,
+      builder: (context, state) {
+        final match =
+            _matchById(state.fixtures, matchId) ?? _matchFromMarket(market);
+        if (match == null) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(top: 14),
+          child: CyberCtaButton(
+            key: const ValueKey('same_match_prediction_quiz_cta'),
+            label: 'PREDICTION QUIZ',
+            primary: true,
+            onPressed: () {
+              playSound(SoundEffect.playMatch);
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute<void>(
+                  builder: (_) => MatchPredictionScreen(match: match),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+}
+
+SportMatch? _matchById(List<SportMatch> fixtures, String matchId) {
+  for (final match in fixtures) {
+    if (match.id == matchId) return match;
+  }
+  return null;
+}
+
+SportMatch? _matchFromMarket(PickMarket market) {
+  final matchId = market.matchId;
+  final homeLabel = market.homeLabel;
+  final awayLabel = market.awayLabel;
+  if (matchId == null || homeLabel == null || awayLabel == null) return null;
+  final homeOutcome = market.outcomes
+      .where((outcome) => outcome.label == homeLabel)
+      .firstOrNull;
+  final awayOutcome = market.outcomes
+      .where((outcome) => outcome.label == awayLabel)
+      .firstOrNull;
+  return SportMatch(
+    id: matchId,
+    leagueId: market.leagueId,
+    sport: market.sport,
+    home: SportTeam(
+      id: homeOutcome?.id ?? 'home',
+      name: homeLabel,
+      shortName: _teamShortName(homeLabel),
+      color: homeOutcome?.color ?? Cyber.cyan,
+    ),
+    away: SportTeam(
+      id: awayOutcome?.id ?? 'away',
+      name: awayLabel,
+      shortName: _teamShortName(awayLabel),
+      color: awayOutcome?.color ?? Cyber.amber,
+    ),
+    kickoff: market.closesAt,
+    status: switch (market.status) {
+      PickMarketStatus.live => MatchStatus.live,
+      PickMarketStatus.settled ||
+      PickMarketStatus.voided => MatchStatus.finished,
+      _ => MatchStatus.upcoming,
+    },
+    homeScore: market.homeScore,
+    awayScore: market.awayScore,
+  );
+}
+
+String _teamShortName(String label) {
+  final letters = label
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .map((part) => part[0])
+      .join()
+      .toUpperCase();
+  if (letters.length >= 2) {
+    return letters.substring(0, math.min(letters.length, 4));
+  }
+  if (label.isEmpty) return 'TBD';
+  return label.substring(0, math.min(label.length, 3)).toUpperCase();
 }
 
 /// The Polymarket signature: the leading outcome's probability as the hero

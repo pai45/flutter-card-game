@@ -118,6 +118,7 @@ class PickMarket {
     required this.volumeOz,
     required this.closesAt,
     this.priceHistory = const [],
+    this.matchId,
     this.contextTitle,
     this.contextSubtitle,
     this.homeLabel,
@@ -141,6 +142,7 @@ class PickMarket {
   final int volumeOz;
   final DateTime closesAt;
   final List<PickPricePoint> priceHistory;
+  final String? matchId;
   final String? contextTitle;
   final String? contextSubtitle;
   final String? homeLabel;

@@ -5,7 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../config/enums.dart';
 import '../../config/tutorial_steps.dart';
-import '../../models/avatar_border_option.dart';
+import '../../data/random_opponent_names.dart';
+import '../../models/avatar_frame_option.dart';
 import '../../models/cards.dart';
 import '../../models/deck.dart';
 import '../../models/match.dart';
@@ -13,6 +14,7 @@ import '../../models/oz_coin_ledger.dart';
 import '../../models/packs.dart';
 import '../../models/progression.dart';
 import '../../models/streak.dart';
+import '../../models/xp_ledger.dart';
 import '../../services/secure_storage_service.dart';
 import '../../utils/card_helpers.dart';
 import '../../utils/label_helpers.dart';
@@ -55,8 +57,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<ShopPackPurchased>(_onShopPackPurchased);
     on<CardBackPurchased>(_onCardBackPurchased);
     on<CardBackEquipped>(_onCardBackEquipped);
-    on<AvatarBorderPurchased>(_onAvatarBorderPurchased);
-    on<AvatarBorderEquipped>(_onAvatarBorderEquipped);
+    on<AvatarFramePurchased>(_onAvatarFramePurchased);
+    on<AvatarFrameEquipped>(_onAvatarFrameEquipped);
+    on<ShopAvatarPurchased>(_onShopAvatarPurchased);
+    on<ShopBannerPurchased>(_onShopBannerPurchased);
     on<PackRevealSeen>(
       (_, emit) => emit(state.copyWith(pendingPackReveal: null)),
     );
@@ -158,6 +162,11 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         onTimeout: () => <OzCoinLedgerEntry>[],
       );
       developer.log('GameLoaded: Loaded coin ledger');
+      var xpLedger = await _storage.loadXpLedger().timeout(
+        const Duration(seconds: 2),
+        onTimeout: () => <XpLedgerEntry>[],
+      );
+      developer.log('GameLoaded: Loaded XP ledger');
 
       var ownedPlayerIds = _validPlayerIds({...owned, ...wallet.ownedCardIds});
       var ownedActionIds = _validActionIds(wallet.ownedActionCardIds);
@@ -177,6 +186,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       if (coinLedger.isEmpty && coins > 0) {
         coinLedger = [_openingBalanceEntry(coins)];
         await _storage.saveCoinLedger(coinLedger);
+      }
+      if (xpLedger.isEmpty && progression.totalXP > 0) {
+        xpLedger = [_openingXpEntry(progression.totalXP)];
+        await _storage.saveXpLedger(xpLedger);
       }
       final dailyDropLastClaimedAt = wallet.dailyDropLastClaimedAtMillis == null
           ? null
@@ -217,8 +230,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
               ? wallet.ownedCardBackIds
               : ['default', ...wallet.ownedCardBackIds],
           equippedCardBackId: wallet.equippedCardBackId,
-          ownedAvatarBorderIds: wallet.ownedAvatarBorderIds,
-          equippedAvatarBorderId: wallet.equippedAvatarBorderId,
+          ownedAvatarFrameIds: wallet.ownedAvatarFrameIds,
+          equippedAvatarFrameId: wallet.equippedAvatarFrameId,
+          ownedAvatarIds: wallet.ownedAvatarIds,
+          ownedBannerIds: wallet.ownedBannerIds,
           dailyDropLastClaimedAtMillis: wallet.dailyDropLastClaimedAtMillis,
         ),
       );
@@ -235,14 +250,17 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           deckKeeper: _keeperOf(active),
           coins: coins,
           coinLedger: coinLedger,
+          xpLedger: xpLedger,
           ownedCardIds: ownedPlayerIds,
           ownedActionCardIds: ownedActionIds,
           ownedCardBackIds: wallet.ownedCardBackIds.contains('default')
               ? wallet.ownedCardBackIds
               : ['default', ...wallet.ownedCardBackIds],
           equippedCardBackId: wallet.equippedCardBackId,
-          ownedAvatarBorderIds: wallet.ownedAvatarBorderIds,
-          equippedAvatarBorderId: wallet.equippedAvatarBorderId,
+          ownedAvatarFrameIds: wallet.ownedAvatarFrameIds,
+          equippedAvatarFrameId: wallet.equippedAvatarFrameId,
+          ownedAvatarIds: wallet.ownedAvatarIds,
+          ownedBannerIds: wallet.ownedBannerIds,
           matchHistory: history,
           tutorialSeen: seen,
           pendingPackReveal: null,
@@ -383,6 +401,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _unlockPack(
       result: result,
       emit: emit,
+      xpSource: XpTransactionSource.streakReward,
+      xpTitle: 'STREAK CARD REWARD',
+      xpDetails: milestone.rewardLabel,
       revealBuilder: (levels) => PackRevealData.streakReward(
         rewardName: milestone.rewardLabel,
         result: result,
@@ -406,6 +427,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _unlockPack(
       result: result,
       emit: emit,
+      xpSource: XpTransactionSource.streakReward,
+      xpTitle: 'STREAK PACK REWARD',
+      xpDetails: milestone.rewardLabel,
       revealBuilder: (levels) => PackRevealData.streakReward(
         rewardName: milestone.rewardLabel,
         result: result,
@@ -421,14 +445,21 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     Emitter<GameState> emit,
   ) async {
     if (event.amount <= 0) return;
-    final (:updated, levelsGained: _) = state.progression.applyXP(event.amount);
+    final xp = _nextXpSnapshot(
+      delta: event.amount,
+      source: event.source,
+      title: event.title,
+      details: event.details ?? 'Settled prediction',
+    );
     emit(
       state.copyWith(
-        progression: updated,
+        progression: xp.progression,
         previousProgression: state.progression,
+        xpLedger: xp.ledger,
       ),
     );
-    await _storage.saveProgression(updated);
+    await _storage.saveProgression(xp.progression);
+    await _storage.saveXpLedger(xp.ledger);
   }
 
   Future<void> _onCoinsSpent(CoinsSpent event, Emitter<GameState> emit) async {
@@ -482,6 +513,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _unlockPack(
       result: result,
       emit: emit,
+      xpSource: XpTransactionSource.pack,
+      xpTitle: 'PACK OPENED',
+      xpDetails: event.packName,
       coinDelta: event.refund,
       coinSource: OzCoinTransactionSource.duplicateRefund,
       coinType: OzCoinTransactionType.refund,
@@ -519,6 +553,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _unlockPack(
       result: result,
       emit: emit,
+      xpSource: XpTransactionSource.pack,
+      xpTitle: 'STARTER PACK',
+      xpDetails: 'Starter squad unlocked',
       starterClaimed: true,
       equippedSlot: slot,
       revealBuilder: (levels) =>
@@ -541,6 +578,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _unlockPack(
       result: result,
       emit: emit,
+      xpSource: XpTransactionSource.dailyDrop,
+      xpTitle: 'DAILY DROP',
+      xpDetails: 'Card reward claimed',
       dailyDropLastClaimedAt: claimedAt,
       revealBuilder: (levels) =>
           PackRevealData.daily(result: result, levelsGained: levels),
@@ -575,6 +615,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _unlockPack(
       result: result,
       emit: emit,
+      xpSource: XpTransactionSource.pack,
+      xpTitle: 'PACK OPENED',
+      xpDetails: pack.name,
       coinDelta: event.spendCoins ? -pack.price : 0,
       coinSource: OzCoinTransactionSource.packPurchase,
       coinType: OzCoinTransactionType.spend,
@@ -618,38 +661,77 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _saveWallet(equippedCardBackId: event.cardBackId);
   }
 
-  Future<void> _onAvatarBorderPurchased(
-    AvatarBorderPurchased event,
+  Future<void> _onAvatarFramePurchased(
+    AvatarFramePurchased event,
     Emitter<GameState> emit,
   ) async {
-    if (state.ownedAvatarBorderIds.contains(event.borderId)) return;
-    final border = avatarBorderOptionById(event.borderId);
-    if (border == null || state.coins < border.coinPrice) return;
-    // Spend coins (with ledger entry), then unlock the border.
+    if (state.ownedAvatarFrameIds.contains(event.frameId)) return;
+    final frame = avatarFrameOptionById(event.frameId);
+    if (frame == null || state.coins < frame.coinPrice) return;
+    // Spend coins (with ledger entry), then unlock the frame.
     await _applyCoinDelta(
-      delta: -border.coinPrice,
+      delta: -frame.coinPrice,
       emit: emit,
       source: OzCoinTransactionSource.directCardPurchase,
       type: OzCoinTransactionType.spend,
-      title: 'BORDER PURCHASE',
-      subtitle: border.label,
+      title: 'FRAME PURCHASE',
+      subtitle: frame.label,
     );
-    final owned = {...state.ownedAvatarBorderIds, event.borderId}.toList();
-    emit(state.copyWith(ownedAvatarBorderIds: owned));
-    await _saveWallet(ownedAvatarBorderIds: owned);
+    final owned = {...state.ownedAvatarFrameIds, event.frameId}.toList();
+    emit(state.copyWith(ownedAvatarFrameIds: owned));
+    await _saveWallet(ownedAvatarFrameIds: owned);
   }
 
-  Future<void> _onAvatarBorderEquipped(
-    AvatarBorderEquipped event,
+  Future<void> _onAvatarFrameEquipped(
+    AvatarFrameEquipped event,
     Emitter<GameState> emit,
   ) async {
     // An empty id un-equips (back to the default ring).
-    if (event.borderId.isNotEmpty &&
-        !state.ownedAvatarBorderIds.contains(event.borderId)) {
+    if (event.frameId.isNotEmpty &&
+        !state.ownedAvatarFrameIds.contains(event.frameId)) {
       return;
     }
-    emit(state.copyWith(equippedAvatarBorderId: event.borderId));
-    await _saveWallet(equippedAvatarBorderId: event.borderId);
+    emit(state.copyWith(equippedAvatarFrameId: event.frameId));
+    await _saveWallet(equippedAvatarFrameId: event.frameId);
+  }
+
+  Future<void> _onShopAvatarPurchased(
+    ShopAvatarPurchased event,
+    Emitter<GameState> emit,
+  ) async {
+    if (state.ownedAvatarIds.contains(event.avatarId)) return;
+    if (state.coins < event.price) return;
+    // Spend coins (with ledger entry), then add the avatar to the collection.
+    await _applyCoinDelta(
+      delta: -event.price,
+      emit: emit,
+      source: OzCoinTransactionSource.directCardPurchase,
+      type: OzCoinTransactionType.spend,
+      title: 'AVATAR PURCHASE',
+      subtitle: event.name,
+    );
+    final owned = {...state.ownedAvatarIds, event.avatarId}.toList();
+    emit(state.copyWith(ownedAvatarIds: owned));
+    await _saveWallet(ownedAvatarIds: owned);
+  }
+
+  Future<void> _onShopBannerPurchased(
+    ShopBannerPurchased event,
+    Emitter<GameState> emit,
+  ) async {
+    if (state.ownedBannerIds.contains(event.bannerId)) return;
+    if (state.coins < event.price) return;
+    await _applyCoinDelta(
+      delta: -event.price,
+      emit: emit,
+      source: OzCoinTransactionSource.directCardPurchase,
+      type: OzCoinTransactionType.spend,
+      title: 'BANNER PURCHASE',
+      subtitle: event.name,
+    );
+    final owned = {...state.ownedBannerIds, event.bannerId}.toList();
+    emit(state.copyWith(ownedBannerIds: owned));
+    await _saveWallet(ownedBannerIds: owned);
   }
 
   Future<void> _onDeckSaved(DeckSaved event, Emitter<GameState> emit) async {
@@ -783,10 +865,40 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     return (coins: coins, ledger: [entry, ...state.coinLedger]);
   }
 
+  ({
+    PlayerProgression progression,
+    List<int> levelsGained,
+    List<XpLedgerEntry> ledger,
+    int appliedDelta,
+  })
+  _nextXpSnapshot({
+    required int delta,
+    required XpTransactionSource source,
+    required String title,
+    String? details,
+  }) {
+    final applied = applyXpTransaction(
+      progression: state.progression,
+      ledger: state.xpLedger,
+      delta: delta,
+      source: source,
+      title: title,
+      details: details,
+    );
+    return (
+      progression: applied.progression,
+      levelsGained: applied.levelsGained,
+      ledger: applied.ledger,
+      appliedDelta: applied.appliedDelta,
+    );
+  }
+
   void _onMatchStarted(MatchStarted event, Emitter<GameState> emit) {
     if (!state.deckReady) return;
+    final opponentName =
+        event.opponentName ?? randomOpponentName(random: _random);
     final opponent = generateOpponentDeck(
-      state.progression.playerLevel,
+      event.opponentLevel ?? state.progression.playerLevel,
       attackers,
       defenders,
       actionCards,
@@ -799,6 +911,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         opponentAttackers: opponent.attackers,
         opponentDefenders: opponent.defenders,
         opponentActions: opponent.actions,
+        opponentName: opponentName,
       ),
     );
   }
@@ -1014,7 +1127,12 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       playerScore: state.playerScore,
       opponentScore: state.opponentScore,
     );
-    final (:updated, :levelsGained) = state.progression.applyXP(xpDelta);
+    final xp = _nextXpSnapshot(
+      delta: xpDelta,
+      source: XpTransactionSource.match,
+      title: 'PITCH DUEL',
+      details: '$resultLabel · ${state.playerScore}-${state.opponentScore}',
+    );
     final coinReward = coinsForResult(resultLabel);
     final coinSnapshot = _nextCoinSnapshot(
       delta: coinReward,
@@ -1046,7 +1164,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
             ),
           )
           .toList(),
-      xpEarned: xpDelta,
+      xpEarned: xp.appliedDelta,
     );
     final history = [historyEntry, ...state.matchHistory].take(12).toList();
     final streak = state.streak.record(
@@ -1059,15 +1177,17 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         matchHistory: history,
         coins: coins,
         coinLedger: coinLedger,
-        progression: updated,
+        progression: xp.progression,
         previousProgression: state.progression,
-        pendingLevelUps: levelsGained,
-        lastMatchXP: xpDelta,
+        pendingLevelUps: xp.levelsGained,
+        lastMatchXP: xp.appliedDelta,
+        xpLedger: xp.ledger,
         streak: streak,
       ),
     );
     await _storage.saveMatchHistory(history);
-    await _storage.saveProgression(updated);
+    await _storage.saveProgression(xp.progression);
+    await _storage.saveXpLedger(xp.ledger);
     await _saveWallet(coins: coins);
     await _storage.saveCoinLedger(coinLedger);
     await _storage.saveStreak(streak);
@@ -1082,7 +1202,13 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       won: won,
       margin: (event.playerGoals - event.cpuGoals).abs(),
     );
-    final (:updated, :levelsGained) = state.progression.applyXP(xpDelta);
+    final xp = _nextXpSnapshot(
+      delta: xpDelta,
+      source: XpTransactionSource.shootout,
+      title: 'PENALTY SHOOTOUT',
+      details:
+          '${won ? 'Victory' : 'Defeat'} · ${event.playerGoals}-${event.cpuGoals}',
+    );
     final coinReward = shootoutCoins(won);
     final coinSnapshot = _nextCoinSnapshot(
       delta: coinReward,
@@ -1106,7 +1232,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       playerScore: event.playerGoals,
       opponentScore: event.cpuGoals,
       rounds: const [],
-      xpEarned: xpDelta,
+      xpEarned: xp.appliedDelta,
     );
     final history = [historyEntry, ...state.matchHistory].take(12).toList();
     final streak = state.streak.record(
@@ -1118,15 +1244,17 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         matchHistory: history,
         coins: coins,
         coinLedger: coinLedger,
-        progression: updated,
+        progression: xp.progression,
         previousProgression: state.progression,
-        pendingLevelUps: levelsGained,
-        lastMatchXP: xpDelta,
+        pendingLevelUps: xp.levelsGained,
+        lastMatchXP: xp.appliedDelta,
+        xpLedger: xp.ledger,
         streak: streak,
       ),
     );
     await _storage.saveMatchHistory(history);
-    await _storage.saveProgression(updated);
+    await _storage.saveProgression(xp.progression);
+    await _storage.saveXpLedger(xp.ledger);
     await _saveWallet(coins: coins);
     await _storage.saveCoinLedger(coinLedger);
     await _storage.saveStreak(streak);
@@ -1194,6 +1322,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _unlockPack(
       result: result,
       emit: emit,
+      xpSource: XpTransactionSource.cardUnlock,
+      xpTitle: 'CARD UNLOCKED',
+      xpDetails: playerCard?.shortName ?? actionCard!.title,
       coinDelta: spendCoins ? -price : 0,
       coinSource: OzCoinTransactionSource.directCardPurchase,
       coinType: OzCoinTransactionType.spend,
@@ -1208,6 +1339,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     required PackResult result,
     required Emitter<GameState> emit,
     required PackRevealData Function(List<int> levelsGained) revealBuilder,
+    required XpTransactionSource xpSource,
+    required String xpTitle,
+    String? xpDetails,
     int coinDelta = 0,
     OzCoinTransactionSource coinSource = OzCoinTransactionSource.manual,
     OzCoinTransactionType? coinType,
@@ -1217,11 +1351,19 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     bool? starterClaimed,
     StoredDeckSlot? equippedSlot,
   }) async {
-    final applied = _applyPackSnapshot(
-      result: result,
-      ownedPlayerIds: state.ownedCardIds,
-      ownedActionIds: state.ownedActionCardIds,
-      progression: state.progression,
+    final ownedPlayerIds = _validPlayerIds({
+      ...state.ownedCardIds,
+      ...result.playerCards.map((card) => card.id),
+    });
+    final ownedActionIds = _validActionIds({
+      ...state.ownedActionCardIds,
+      ...result.actionCards.map((card) => card.id),
+    });
+    final xp = _nextXpSnapshot(
+      delta: result.xpGained,
+      source: xpSource,
+      title: xpTitle,
+      details: xpDetails,
     );
     final coinSnapshot = _nextCoinSnapshot(
       delta: coinDelta,
@@ -1263,58 +1405,31 @@ class GameBloc extends Bloc<GameEvent, GameState> {
             : _keeperOf(activeSlot),
         coins: coins,
         coinLedger: coinLedger,
-        ownedCardIds: applied.ownedPlayerIds,
-        ownedActionCardIds: applied.ownedActionIds,
-        pendingPackReveal: revealBuilder(applied.levelsGained),
+        ownedCardIds: ownedPlayerIds,
+        ownedActionCardIds: ownedActionIds,
+        pendingPackReveal: revealBuilder(xp.levelsGained),
         starterPackClaimed: starterClaimed ?? state.starterPackClaimed,
         dailyDropLastClaimedAt:
             dailyDropLastClaimedAt ?? state.dailyDropLastClaimedAt,
-        progression: applied.progression,
+        progression: xp.progression,
         previousProgression: state.progression,
-        pendingLevelUps: applied.levelsGained,
-        lastMatchXP: result.xpGained,
+        pendingLevelUps: xp.levelsGained,
+        lastMatchXP: xp.appliedDelta,
+        xpLedger: xp.ledger,
       ),
     );
 
-    await _storage.saveOwnedCards(applied.ownedPlayerIds);
+    await _storage.saveOwnedCards(ownedPlayerIds);
     if (equippedSlot != null) await _storage.saveDecks(slots);
-    await _storage.saveProgression(applied.progression);
+    await _storage.saveProgression(xp.progression);
+    await _storage.saveXpLedger(xp.ledger);
     await _saveWallet(
       coins: coins,
-      ownedCardIds: applied.ownedPlayerIds,
-      ownedActionCardIds: applied.ownedActionIds,
+      ownedCardIds: ownedPlayerIds,
+      ownedActionCardIds: ownedActionIds,
       dailyDropLastClaimedAt: dailyDropLastClaimedAt,
     );
     await _storage.saveCoinLedger(coinLedger);
-  }
-
-  ({
-    List<String> ownedPlayerIds,
-    List<String> ownedActionIds,
-    PlayerProgression progression,
-    List<int> levelsGained,
-  })
-  _applyPackSnapshot({
-    required PackResult result,
-    required List<String> ownedPlayerIds,
-    required List<String> ownedActionIds,
-    required PlayerProgression progression,
-  }) {
-    final nextPlayers = _validPlayerIds({
-      ...ownedPlayerIds,
-      ...result.playerCards.map((card) => card.id),
-    });
-    final nextActions = _validActionIds({
-      ...ownedActionIds,
-      ...result.actionCards.map((card) => card.id),
-    });
-    final (:updated, :levelsGained) = progression.applyXP(result.xpGained);
-    return (
-      ownedPlayerIds: nextPlayers,
-      ownedActionIds: nextActions,
-      progression: updated,
-      levelsGained: levelsGained,
-    );
   }
 
   GameState _resetMatch(GameState old) => GameState.initial().copyWith(
@@ -1327,12 +1442,15 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     deckKeeper: old.deckKeeper,
     coins: old.coins,
     coinLedger: old.coinLedger,
+    xpLedger: old.xpLedger,
     ownedCardIds: old.ownedCardIds,
     ownedActionCardIds: old.ownedActionCardIds,
     ownedCardBackIds: old.ownedCardBackIds,
     equippedCardBackId: old.equippedCardBackId,
-    ownedAvatarBorderIds: old.ownedAvatarBorderIds,
-    equippedAvatarBorderId: old.equippedAvatarBorderId,
+    ownedAvatarFrameIds: old.ownedAvatarFrameIds,
+    equippedAvatarFrameId: old.equippedAvatarFrameId,
+    ownedAvatarIds: old.ownedAvatarIds,
+    ownedBannerIds: old.ownedBannerIds,
     streak: old.streak,
     matchHistory: old.matchHistory,
     tutorialSeen: old.tutorialSeen,
@@ -1348,8 +1466,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     List<String>? ownedActionCardIds,
     List<String>? ownedCardBackIds,
     String? equippedCardBackId,
-    List<String>? ownedAvatarBorderIds,
-    String? equippedAvatarBorderId,
+    List<String>? ownedAvatarFrameIds,
+    String? equippedAvatarFrameId,
+    List<String>? ownedAvatarIds,
+    List<String>? ownedBannerIds,
     DateTime? dailyDropLastClaimedAt,
   }) => _storage.saveWallet(
     WalletSnapshot(
@@ -1358,10 +1478,11 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       ownedActionCardIds: ownedActionCardIds ?? state.ownedActionCardIds,
       ownedCardBackIds: ownedCardBackIds ?? state.ownedCardBackIds,
       equippedCardBackId: equippedCardBackId ?? state.equippedCardBackId,
-      ownedAvatarBorderIds:
-          ownedAvatarBorderIds ?? state.ownedAvatarBorderIds,
-      equippedAvatarBorderId:
-          equippedAvatarBorderId ?? state.equippedAvatarBorderId,
+      ownedAvatarFrameIds: ownedAvatarFrameIds ?? state.ownedAvatarFrameIds,
+      equippedAvatarFrameId:
+          equippedAvatarFrameId ?? state.equippedAvatarFrameId,
+      ownedAvatarIds: ownedAvatarIds ?? state.ownedAvatarIds,
+      ownedBannerIds: ownedBannerIds ?? state.ownedBannerIds,
       dailyDropLastClaimedAtMillis:
           (dailyDropLastClaimedAt ?? state.dailyDropLastClaimedAt)
               ?.millisecondsSinceEpoch,
@@ -1468,6 +1589,20 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     );
   }
 
+  XpLedgerEntry _openingXpEntry(int totalXp) {
+    final now = DateTime.now();
+    return XpLedgerEntry(
+      id: 'xp-opening-${now.microsecondsSinceEpoch}',
+      timestamp: now,
+      delta: totalXp,
+      balanceAfter: totalXp,
+      type: XpTransactionType.openingBalance,
+      source: XpTransactionSource.openingBalance,
+      title: 'PREVIOUS PROGRESS',
+      details: 'XP earned before history tracking',
+    );
+  }
+
   OzCoinTransactionType _defaultPositiveType(OzCoinTransactionSource source) {
     return switch (source) {
       OzCoinTransactionSource.shopTopUp => OzCoinTransactionType.topUp,
@@ -1489,6 +1624,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       OzCoinTransactionSource.directCardPurchase => 'CARD PURCHASE',
       OzCoinTransactionSource.shopTopUp => 'COIN TOP-UP',
       OzCoinTransactionSource.streakReward => 'STREAK REWARD',
+      OzCoinTransactionSource.referralReward => 'FRIEND REFERRAL',
+      OzCoinTransactionSource.quizEntry => 'FOOTBALL QUIZ ENTRY',
+      OzCoinTransactionSource.footballBingoLifeline => 'BINGO LIFELINE',
       OzCoinTransactionSource.openingBalance => 'OPENING BALANCE',
       OzCoinTransactionSource.manual =>
         positive ? 'COINS ADDED' : 'COINS SPENT',

@@ -77,6 +77,22 @@ class _ShootoutPhaseState extends State<ShootoutPhase>
       ? 'KICK ${s.sideKickIndex + 1} SD'
       : 'KICK ${s.sideKickIndex + 1} of 5';
 
+  String _directionLabel(PenaltyDirection direction) => switch (direction) {
+    PenaltyDirection.left => 'LEFT',
+    PenaltyDirection.center => 'CENTER',
+    PenaltyDirection.right => 'RIGHT',
+  };
+
+  String _confirmLabel(ShootoutState s) {
+    final selected = s.selectedDirection;
+    if (selected == null) return s.playerTaking ? 'PICK A SIDE' : 'PICK A DIVE';
+    final direction = _directionLabel(selected);
+    if (s.playerTaking) return 'SHOOT $direction';
+    return selected == PenaltyDirection.center
+        ? 'STAY CENTER'
+        : 'DIVE $direction';
+  }
+
   Widget _buildChoose(BuildContext context, ShootoutState s) {
     final playerTaking = s.playerTaking;
     final selected = s.selectedDirection;
@@ -91,7 +107,7 @@ class _ShootoutPhaseState extends State<ShootoutPhase>
       spotlightDelay: const Duration(milliseconds: 500),
       bottomActionKey: _shootKey,
       bottomAction: CyberCtaButton(
-        label: playerTaking ? 'SHOOT' : 'DIVE',
+        label: _confirmLabel(s),
         primary: true,
         onPressed: selected == null
             ? null
@@ -138,10 +154,10 @@ class _ShootoutPhaseState extends State<ShootoutPhase>
           key: ValueKey('kick-scene-${s.kicks.length}'),
           kick: kick,
         ),
-        // YOU vs CPU table — user always on the left, CPU on the right.
-        _KickTable(kick: kick),
+        // YOU vs opponent table — user always on the left, opponent on the right.
+        _KickTable(kick: kick, opponentName: s.opponentName),
         // Kick history row
-        _PenaltyHistoryRow(kicks: s.kicks),
+        _PenaltyHistoryRow(kicks: s.kicks, opponentName: s.opponentName),
         // Shootout-over banner OR auto-advance countdown.
         if (s.over)
           _WinnerBanner(winner: s.winner)
@@ -169,123 +185,157 @@ class _ShooterActionPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final playerTaking = state.playerTaking;
     final Color accent = playerTaking ? Cyber.cyan : Cyber.amber;
-    final IconData icon = playerTaking ? Icons.sports_soccer : Icons.pan_tool;
-    final String title = playerTaking ? 'TAKE THE SHOT' : 'GO FOR THE SAVE';
+    final Color keeperAccent = playerTaking ? Cyber.amber : Cyber.cyan;
+    final String prompt = playerTaking ? 'CHOOSE YOUR CORNER' : 'READ THE SHOT';
     final shooter = state.currentShooter;
     final keeper = state.currentKeeper;
-    final String description = playerTaking
-        ? 'Pick a direction. The keeper will dive — outsmart them.'
-        : 'Read the shooter. Dive the right way to make the save.';
+    final opponentFirst = state.opponentName.split(RegExp(r'\s+')).first;
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.06),
-        border: Border.all(color: accent.withValues(alpha: 0.6), width: 1.2),
+        color: Cyber.panel.withValues(alpha: 0.68),
+        border: Border.all(color: accent.withValues(alpha: 0.28)),
+        gradient: LinearGradient(
+          colors: [
+            Cyber.panel2.withValues(alpha: 0.72),
+            Cyber.bg.withValues(alpha: 0.42),
+          ],
+        ),
         boxShadow: [
-          BoxShadow(color: accent.withValues(alpha: 0.18), blurRadius: 18),
+          BoxShadow(color: accent.withValues(alpha: 0.10), blurRadius: 18),
         ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            title,
+            prompt,
             textAlign: TextAlign.center,
-            style: Cyber.display(22, color: accent, letterSpacing: 1.6)
+            style: Cyber.display(15, color: accent, letterSpacing: 1.4)
                 .copyWith(
                   shadows: [
                     Shadow(
-                      color: accent.withValues(alpha: 0.6),
-                      blurRadius: 18,
+                      color: accent.withValues(alpha: 0.45),
+                      blurRadius: 14,
                     ),
                   ],
                 ),
-          ),
-          const SizedBox(height: 12),
-          // Whose kick it is: portrait + name + rating, vs the keeper in goal.
-          Row(
-            children: [
-              _ShooterPortrait(card: shooter, accent: accent),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      playerTaking ? 'ON THE SPOT' : 'CPU SHOOTER',
-                      style: Cyber.label(9, color: accent, letterSpacing: 1.6),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      shooter.shortName.toUpperCase(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Cyber.display(16, letterSpacing: 0.8),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      '${shooter.position.split('/').first} · OVR ${shooter.rating}',
-                      style: const TextStyle(
-                        color: Cyber.muted,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        fontFeatures: [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(icon, color: accent, size: 26),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            description,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 12,
-              height: 1.4,
-              fontWeight: FontWeight.w600,
-            ),
           ),
           const SizedBox(height: 10),
-          // The keeper standing between them and the net.
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.10),
-              border: Border.all(color: accent.withValues(alpha: 0.55)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.pan_tool, color: Cyber.gold, size: 13),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    '${playerTaking ? 'CPU KEEPER' : 'YOUR KEEPER'}: '
-                    '${keeper.shortName.toUpperCase()} · OVR ${keeper.rating}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Cyber.gold,
-                      fontFamily: 'Orbitron',
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.1,
-                      fontFeatures: [FontFeature.tabularFigures()],
-                    ),
-                  ),
+          Row(
+            children: [
+              Expanded(
+                child: _DuelPlayerSummary(
+                  label: playerTaking
+                      ? 'SHOOTER'
+                      : '${opponentFirst.toUpperCase()} SHOOTER',
+                  card: shooter,
+                  accent: accent,
+                  alignEnd: false,
                 ),
-              ],
-            ),
+              ),
+              _VersusBadge(accent: accent),
+              Expanded(
+                child: _DuelPlayerSummary(
+                  label: playerTaking ? 'KEEPER' : 'YOUR KEEPER',
+                  card: keeper,
+                  accent: keeperAccent,
+                  alignEnd: true,
+                ),
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DuelPlayerSummary extends StatelessWidget {
+  const _DuelPlayerSummary({
+    required this.label,
+    required this.card,
+    required this.accent,
+    required this.alignEnd,
+  });
+
+  final String label;
+  final PlayerCard card;
+  final Color accent;
+  final bool alignEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    final textAlign = alignEnd ? TextAlign.right : TextAlign.left;
+    return Row(
+      textDirection: alignEnd ? TextDirection.rtl : TextDirection.ltr,
+      children: [
+        _ShooterPortrait(card: card, accent: accent),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: alignEnd
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: textAlign,
+                style: Cyber.label(8, color: accent, letterSpacing: 1.4),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                card.shortName.toUpperCase(),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: textAlign,
+                style: Cyber.display(13, letterSpacing: 0.6),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                '${card.position.split('/').first} / OVR ${card.rating}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: textAlign,
+                style: const TextStyle(
+                  color: Cyber.muted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  fontFeatures: [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _VersusBadge extends StatelessWidget {
+  const _VersusBadge({required this.accent});
+
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      width: 34,
+      height: 34,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: accent.withValues(alpha: 0.10),
+        border: Border.all(color: accent.withValues(alpha: 0.32)),
+      ),
+      child: Text(
+        'VS',
+        style: Cyber.label(9, color: accent, letterSpacing: 0.8),
       ),
     );
   }
@@ -302,11 +352,11 @@ class _ShooterPortrait extends StatelessWidget {
   Widget build(BuildContext context) {
     final asset = card.resolvedPortraitAsset;
     return Container(
-      width: 56,
-      height: 66,
+      width: 44,
+      height: 50,
       decoration: BoxDecoration(
         color: Cyber.bg.withValues(alpha: 0.6),
-        border: Border.all(color: accent.withValues(alpha: 0.55)),
+        border: Border.all(color: accent.withValues(alpha: 0.35)),
       ),
       clipBehavior: Clip.hardEdge,
       child: asset != null
@@ -322,11 +372,12 @@ class _ShooterPortrait extends StatelessWidget {
   }
 }
 
-// ─── YOU vs CPU result table ─────────────────────────────────────────────────
+// ─── YOU vs opponent result table ────────────────────────────────────────────
 
 class _KickTable extends StatelessWidget {
-  const _KickTable({required this.kick});
+  const _KickTable({required this.kick, required this.opponentName});
   final PenaltyKick kick;
+  final String opponentName;
 
   String _dirLabel(PenaltyDirection d) => switch (d) {
     PenaltyDirection.left => 'LEFT',
@@ -336,7 +387,7 @@ class _KickTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // User is always on the LEFT, CPU on the RIGHT — regardless of who shot.
+    // User is always on the LEFT, opponent on the RIGHT — regardless of who shot.
     final bool userShot = kick.byPlayer;
     final PenaltyDirection userDir = userShot
         ? kick.shootDirection
@@ -375,7 +426,7 @@ class _KickTable extends StatelessWidget {
             const VerticalDivider(color: Cyber.line, thickness: 1, width: 1),
             Expanded(
               child: _KickTableCell(
-                heading: 'CPU',
+                heading: opponentName.toUpperCase(),
                 headingColor: Cyber.amber,
                 action: cpuAction,
                 direction: _dirLabel(cpuDir),
@@ -416,6 +467,8 @@ class _KickTableCell extends StatelessWidget {
         children: [
           Text(
             heading,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: headingColor,
               fontFamily: 'Orbitron',
@@ -544,24 +597,43 @@ class _ShootoutHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CyberPanel(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 11),
+      decoration: BoxDecoration(
+        color: Cyber.bg2.withValues(alpha: 0.50),
+        border: Border.all(color: Cyber.cyan.withValues(alpha: 0.24)),
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            '$kickLabel  -  YOU ${state.playerScore} - ${state.opponentScore} OPP',
-            style: const TextStyle(
-              color: Colors.white,
-              fontFamily: 'Orbitron',
-              fontSize: 13,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0.6,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: _ShootoutMetricPill(
+                  label: kickLabel.toUpperCase(),
+                  color: Cyber.cyan,
+                  alignStart: true,
+                ),
+              ),
+              const SizedBox(width: 8),
+              _ShootoutMetricPill(
+                label: 'YOU ${state.playerScore}',
+                color: Cyber.cyan,
+              ),
+              const SizedBox(width: 8),
+              _ShootoutMetricPill(
+                label: 'OPP ${state.opponentScore}',
+                color: Cyber.amber,
+              ),
+            ],
           ),
           if (state.kicks.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            _PenaltyHistoryRow(kicks: state.kicks),
+            const SizedBox(height: 12),
+            _PenaltyHistoryRow(
+              kicks: state.kicks,
+              opponentName: state.opponentName,
+            ),
           ],
         ],
       ),
@@ -569,15 +641,56 @@ class _ShootoutHeader extends StatelessWidget {
   }
 }
 
+class _ShootoutMetricPill extends StatelessWidget {
+  const _ShootoutMetricPill({
+    required this.label,
+    required this.color,
+    this.alignStart = false,
+  });
+
+  final String label;
+  final Color color;
+  final bool alignStart;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 30),
+      alignment: alignStart ? Alignment.centerLeft : Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.07),
+        border: Border.all(color: color.withValues(alpha: 0.20)),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: color.withValues(alpha: 0.92),
+          fontFamily: 'Orbitron',
+          fontSize: 10,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.8,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
+      ),
+    );
+  }
+}
+
 class _PenaltyHistoryRow extends StatelessWidget {
-  const _PenaltyHistoryRow({required this.kicks});
+  const _PenaltyHistoryRow({required this.kicks, required this.opponentName});
   final List<PenaltyKick> kicks;
+  final String opponentName;
 
   @override
   Widget build(BuildContext context) {
     final playerKicks = kicks.where((kick) => kick.byPlayer).toList();
     final opponentKicks = kicks.where((kick) => !kick.byPlayer).toList();
     final slotCount = max(5, max(playerKicks.length, opponentKicks.length));
+    final firstName = opponentName.split(RegExp(r'\s+')).first.toUpperCase();
+    final opponentLabel = firstName.length <= 6 ? firstName : 'OPP';
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -598,7 +711,7 @@ class _PenaltyHistoryRow extends StatelessWidget {
         ),
         Expanded(
           child: _PenaltySideHistory(
-            label: 'CPU',
+            label: opponentLabel,
             kicks: opponentKicks,
             slotCount: slotCount,
             alignEnd: true,

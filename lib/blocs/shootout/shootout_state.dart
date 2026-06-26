@@ -10,6 +10,7 @@ class ShootoutState {
     required this.cpuShooters,
     required this.cpuKeeper,
     required this.cpuLevel,
+    required this.opponentName,
     required this.kicks,
     required this.playerScore,
     required this.opponentScore,
@@ -26,13 +27,15 @@ class ShootoutState {
     required List<PlayerCard> cpuShooters,
     required PlayerCard cpuKeeper,
     required int cpuLevel,
+    required String opponentName,
   }) => ShootoutState(
-    stage: ShootoutStage.lineup,
+    stage: ShootoutStage.opponentReveal,
     playerShooters: playerShooters,
     playerKeeper: playerKeeper,
     cpuShooters: cpuShooters,
     cpuKeeper: cpuKeeper,
     cpuLevel: cpuLevel,
+    opponentName: opponentName,
     kicks: const [],
     playerScore: 0,
     opponentScore: 0,
@@ -51,6 +54,7 @@ class ShootoutState {
   final List<PlayerCard> cpuShooters;
   final PlayerCard cpuKeeper;
   final int cpuLevel;
+  final String opponentName;
 
   final List<PenaltyKick> kicks;
   final int playerScore;
@@ -86,6 +90,7 @@ class ShootoutState {
     Object? selectedDirection = _sentinel,
     bool? suddenDeath,
     Object? winner = _sentinel,
+    String? opponentName,
   }) => ShootoutState(
     stage: stage ?? this.stage,
     playerShooters: playerShooters,
@@ -93,6 +98,7 @@ class ShootoutState {
     cpuShooters: cpuShooters,
     cpuKeeper: cpuKeeper,
     cpuLevel: cpuLevel,
+    opponentName: opponentName ?? this.opponentName,
     kicks: kicks ?? this.kicks,
     playerScore: playerScore ?? this.playerScore,
     opponentScore: opponentScore ?? this.opponentScore,

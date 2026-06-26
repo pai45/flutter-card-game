@@ -29,7 +29,7 @@ class ShootoutLineupPhase extends StatefulWidget {
 class _ShootoutLineupPhaseState extends State<ShootoutLineupPhase>
     with SingleTickerProviderStateMixin {
   // Drives the staggered face-off reveal: your squad slides in, the VS stamps,
-  // then the CPU squad answers — all off this single controller.
+  // then the opponent squad answers — all off this single controller.
   late final AnimationController _reveal = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 850),
@@ -64,9 +64,7 @@ class _ShootoutLineupPhaseState extends State<ShootoutLineupPhase>
         primary: true,
         onPressed: () => context.read<ShootoutBloc>().add(ShootoutStarted()),
       ),
-      children: [
-        _FaceoffStage(state: widget.state, reveal: _reveal),
-      ],
+      children: [_FaceoffStage(state: widget.state, reveal: _reveal)],
     );
   }
 }
@@ -97,7 +95,7 @@ class _FaceoffStage extends StatelessWidget {
         _VsDivider(reveal: reveal),
         const SizedBox(height: 16),
         _FaceoffRow(
-          label: 'CPU SQUAD',
+          label: '${state.opponentName.toUpperCase()} SQUAD',
           accent: Cyber.amber,
           shooters: state.cpuShooters,
           reveal: reveal,
@@ -141,15 +139,26 @@ class _FaceoffRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final header = Row(
       children: [
-        Text(label, style: Cyber.label(11, color: accent, letterSpacing: 2)),
-        const Spacer(),
-        Text('AVG', style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.4)),
+        Expanded(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Cyber.label(11, color: accent, letterSpacing: 2),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          'AVG',
+          style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.4),
+        ),
         const SizedBox(width: 5),
         Text(
           '${_avgRating().round()}',
-          style: Cyber.display(14, color: accent).copyWith(
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
+          style: Cyber.display(
+            14,
+            color: accent,
+          ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
         ),
       ],
     );
@@ -179,14 +188,11 @@ class _FaceoffRow extends StatelessWidget {
             child: Center(
               child: Text(
                 '${i + 1}',
-                style:
-                    Cyber.label(
-                      10,
-                      color: i == shooters.length - 1 ? Cyber.gold : Cyber.muted,
-                      letterSpacing: 1,
-                    ).copyWith(
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
+                style: Cyber.label(
+                  10,
+                  color: i == shooters.length - 1 ? Cyber.gold : Cyber.muted,
+                  letterSpacing: 1,
+                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
             ),
           ),
@@ -236,7 +242,9 @@ class _FaceoffCard extends StatelessWidget {
               children: [
                 // Tier-graded foil fill (no glow — always-on secondary element).
                 DecoratedBox(
-                  decoration: BoxDecoration(gradient: Cyber.panelGradient(tier)),
+                  decoration: BoxDecoration(
+                    gradient: Cyber.panelGradient(tier),
+                  ),
                 ),
                 // Portrait — leaves a strip for the nameplate.
                 Positioned(
@@ -265,8 +273,12 @@ class _FaceoffCard extends StatelessWidget {
                     color: Colors.black.withValues(alpha: 0.62),
                     child: Text(
                       '${card.rating}',
-                      style: Cyber.display(12, color: chipColor, letterSpacing: 0.2)
-                          .copyWith(
+                      style:
+                          Cyber.display(
+                            12,
+                            color: chipColor,
+                            letterSpacing: 0.2,
+                          ).copyWith(
                             fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                     ),
@@ -285,7 +297,11 @@ class _FaceoffCard extends StatelessWidget {
                       color: Cyber.gold.withValues(alpha: 0.85),
                       child: Text(
                         'GK',
-                        style: Cyber.label(8, color: Cyber.bg, letterSpacing: 1),
+                        style: Cyber.label(
+                          8,
+                          color: Cyber.bg,
+                          letterSpacing: 1,
+                        ),
                       ),
                     ),
                   ),

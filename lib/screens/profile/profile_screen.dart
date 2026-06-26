@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../blocs/friends/friends_cubit.dart';
 import '../../blocs/game/game_bloc.dart';
+import '../../blocs/game/game_event.dart';
 import '../../blocs/game/game_state.dart';
 import '../../blocs/picks/picks_cubit.dart';
 import '../../blocs/prediction/prediction_cubit.dart';
@@ -10,7 +13,8 @@ import '../../blocs/prediction/prediction_state.dart';
 import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../data/followable_leagues.dart';
-import '../../models/avatar_border_option.dart';
+import '../../data/rival_roster.dart';
+import '../../models/avatar_frame_option.dart';
 import '../../models/avatar_option.dart';
 import '../../models/picks.dart';
 import '../../models/player_stats.dart';
@@ -20,21 +24,23 @@ import '../../models/profile_banner_option.dart';
 import '../../models/progression.dart';
 import '../../services/achievement_progress.dart';
 import '../../services/secure_storage_service.dart';
-import '../../widgets/avatar_border_ring.dart';
+import '../../widgets/avatar_frame_ring.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/profile_banner_visual.dart';
 import '../../widgets/team_logo.dart';
 import '../deck/all_cards_screen.dart';
-import '../deck/deck_builder_screen.dart';
+import '../friends/friends_arena_screen.dart';
 import '../how_to_play/how_to_play_hub_screen.dart';
+import '../leaderboard/widgets/rank_widgets.dart';
 import '../match_history/match_history_pages.dart';
 import '../predictions/prediction_match_history_screen.dart';
 import '../predictions/prediction_picks_history_screen.dart';
-import '../predictions/widgets/history_hud.dart' show CutChipBorder;
 import 'achievements_screen.dart';
 import 'oz_coin_history_screen.dart';
+import 'xp_history_screen.dart';
 import 'widgets/achievement_grid.dart';
+import 'widgets/level_progress.dart';
 import 'widgets/oz_coin_tracker_card.dart';
 import 'widgets/profile_card.dart';
 import 'widgets/profile_stat_band.dart';
@@ -49,11 +55,16 @@ class ProfileScreen extends StatelessWidget {
   const ProfileScreen({
     required this.onNavigate,
     required this.onLogout,
+    required this.onChallenge,
     super.key,
   });
 
   final ValueChanged<AppSection> onNavigate;
   final Future<void> Function() onLogout;
+
+  /// Launches a card match against a CPU themed as the given rival (name,
+  /// level). Threaded into the Friends Arena so a friend can be challenged.
+  final void Function(String opponentName, int opponentLevel) onChallenge;
 
   @override
   Widget build(BuildContext context) {
@@ -106,7 +117,10 @@ class ProfileScreen extends StatelessWidget {
                     return ListView(
                       padding: EdgeInsets.zero,
                       children: [
-                        _ProfileHeroCard(progression: game.progression),
+                        _ProfileHeroCard(
+                          progression: game.progression,
+                          onChallenge: onChallenge,
+                        ),
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
                           child: Column(
@@ -223,14 +237,8 @@ class ProfileScreen extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 18),
-                              _NavRow(
-                                icon: Icons.dashboard_customize,
-                                label: 'Deck Builder',
-                                onTap: () => _push(
-                                  context,
-                                  (nav) => DeckBuilderScreen(onNavigate: nav),
-                                ),
-                              ),
+                              const _TimeZoneSetupCard(),
+                              const SizedBox(height: 14),
                               _NavRow(
                                 icon: Icons.style,
                                 label: 'All Cards',
@@ -343,16 +351,360 @@ class ProfileScreen extends StatelessWidget {
 /// The dossier hero: a chamfered elevated card with a banner strip, an
 /// overlapping avatar, the player name + a greeble telemetry line, a glowing
 /// level chip (the focal element) and the XP meter.
+class _TimeZoneOption {
+  const _TimeZoneOption(this.id, this.label, this.utcOffset);
+
+  final String id;
+  final String label;
+  final String utcOffset;
+}
+
+const _deviceTimeZoneId = 'device';
+
+const _timeZoneOptions = <_TimeZoneOption>[
+  _TimeZoneOption('Pacific/Pago_Pago', 'Pago Pago', 'UTC−11:00'),
+  _TimeZoneOption('Pacific/Honolulu', 'Honolulu', 'UTC−10:00'),
+  _TimeZoneOption('America/Anchorage', 'Anchorage', 'UTC−09:00'),
+  _TimeZoneOption('America/Los_Angeles', 'Los Angeles', 'UTC−08:00'),
+  _TimeZoneOption('America/Denver', 'Denver', 'UTC−07:00'),
+  _TimeZoneOption('America/Chicago', 'Chicago', 'UTC−06:00'),
+  _TimeZoneOption('America/New_York', 'New York', 'UTC−05:00'),
+  _TimeZoneOption('America/Halifax', 'Halifax', 'UTC−04:00'),
+  _TimeZoneOption('America/St_Johns', 'St. John’s', 'UTC−03:30'),
+  _TimeZoneOption('America/Sao_Paulo', 'São Paulo', 'UTC−03:00'),
+  _TimeZoneOption('Atlantic/South_Georgia', 'South Georgia', 'UTC−02:00'),
+  _TimeZoneOption('Atlantic/Azores', 'Azores', 'UTC−01:00'),
+  _TimeZoneOption('Etc/UTC', 'UTC / GMT', 'UTC+00:00'),
+  _TimeZoneOption('Europe/London', 'London', 'UTC+00:00'),
+  _TimeZoneOption('Europe/Paris', 'Paris', 'UTC+01:00'),
+  _TimeZoneOption('Europe/Athens', 'Athens', 'UTC+02:00'),
+  _TimeZoneOption('Africa/Nairobi', 'Nairobi', 'UTC+03:00'),
+  _TimeZoneOption('Asia/Tehran', 'Tehran', 'UTC+03:30'),
+  _TimeZoneOption('Asia/Dubai', 'Dubai', 'UTC+04:00'),
+  _TimeZoneOption('Asia/Kabul', 'Kabul', 'UTC+04:30'),
+  _TimeZoneOption('Asia/Karachi', 'Karachi', 'UTC+05:00'),
+  _TimeZoneOption('Asia/Kolkata', 'Kolkata', 'UTC+05:30'),
+  _TimeZoneOption('Asia/Kathmandu', 'Kathmandu', 'UTC+05:45'),
+  _TimeZoneOption('Asia/Dhaka', 'Dhaka', 'UTC+06:00'),
+  _TimeZoneOption('Asia/Yangon', 'Yangon', 'UTC+06:30'),
+  _TimeZoneOption('Asia/Bangkok', 'Bangkok', 'UTC+07:00'),
+  _TimeZoneOption('Asia/Singapore', 'Singapore', 'UTC+08:00'),
+  _TimeZoneOption('Australia/Eucla', 'Eucla', 'UTC+08:45'),
+  _TimeZoneOption('Asia/Tokyo', 'Tokyo', 'UTC+09:00'),
+  _TimeZoneOption('Australia/Adelaide', 'Adelaide', 'UTC+09:30'),
+  _TimeZoneOption('Australia/Sydney', 'Sydney', 'UTC+10:00'),
+  _TimeZoneOption('Australia/Lord_Howe', 'Lord Howe Island', 'UTC+10:30'),
+  _TimeZoneOption('Pacific/Noumea', 'Nouméa', 'UTC+11:00'),
+  _TimeZoneOption('Pacific/Auckland', 'Auckland', 'UTC+12:00'),
+  _TimeZoneOption('Pacific/Chatham', 'Chatham Islands', 'UTC+12:45'),
+  _TimeZoneOption('Pacific/Tongatapu', 'Nukuʻalofa', 'UTC+13:00'),
+  _TimeZoneOption('Pacific/Kiritimati', 'Kiritimati', 'UTC+14:00'),
+];
+
+class _TimeZoneSetupCard extends StatefulWidget {
+  const _TimeZoneSetupCard();
+
+  @override
+  State<_TimeZoneSetupCard> createState() => _TimeZoneSetupCardState();
+}
+
+class _TimeZoneSetupCardState extends State<_TimeZoneSetupCard> {
+  final SecureGameStorage _storage = SecureGameStorage();
+  String? _selectedId;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final selectedId = await _storage.loadSelectedTimeZoneId();
+    if (!mounted) return;
+    setState(() {
+      _selectedId = selectedId;
+      _loading = false;
+    });
+  }
+
+  Future<void> _selectTimeZone() async {
+    HapticFeedback.selectionClick();
+    final selectedId = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.76),
+      builder: (context) => _TimeZonePickerSheet(selectedId: _selectedId),
+    );
+    if (!mounted || selectedId == null || selectedId == _selectedId) return;
+
+    await _storage.saveSelectedTimeZoneId(selectedId);
+    if (!mounted) return;
+    setState(() => _selectedId = selectedId);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('Time zone set to ${_selectedLabel(selectedId)}'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+  }
+
+  String _selectedLabel(String id) {
+    if (id == _deviceTimeZoneId) {
+      return 'Device · ${_deviceTimeZoneDescription()}';
+    }
+    for (final option in _timeZoneOptions) {
+      if (option.id == id) return '${option.label} · ${option.utcOffset}';
+    }
+    return 'Choose your local time zone';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasSelection = _selectedId != null;
+    final subtitle = _loading
+        ? 'Loading preference…'
+        : hasSelection
+        ? _selectedLabel(_selectedId!)
+        : 'Choose your local time zone';
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _loading ? null : _selectTimeZone,
+      child: ProfileCard(
+        borderColor: hasSelection
+            ? Cyber.cyan.withValues(alpha: 0.58)
+            : Cyber.border,
+        padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Cyber.cyan.withValues(alpha: 0.1),
+                border: Border.all(color: Cyber.cyan.withValues(alpha: 0.46)),
+              ),
+              child: const Icon(
+                Icons.public_rounded,
+                color: Cyber.cyan,
+                size: 21,
+              ),
+            ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'SET UP YOUR LOCAL TIME ZONE',
+                    style: Cyber.label(
+                      11,
+                      color: Colors.white,
+                      letterSpacing: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Cyber.body(
+                      12,
+                      color: hasSelection ? Cyber.cyan : Cyber.muted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right, color: Cyber.cyan, size: 21),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TimeZonePickerSheet extends StatelessWidget {
+  const _TimeZonePickerSheet({required this.selectedId});
+
+  final String? selectedId;
+
+  @override
+  Widget build(BuildContext context) {
+    final height = MediaQuery.sizeOf(context).height * 0.78;
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+        child: SizedBox(
+          height: height,
+          child: CyberPanel(
+            accent: Cyber.cyan,
+            padding: EdgeInsets.zero,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 16, 10, 14),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.schedule_rounded,
+                        color: Cyber.cyan,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 9),
+                      Expanded(
+                        child: Text(
+                          'SELECT TIME ZONE',
+                          style: Cyber.label(
+                            11,
+                            color: Cyber.cyan,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(
+                          Icons.close,
+                          color: Cyber.muted,
+                          size: 20,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const HudLine(),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    children: [
+                      _TimeZoneOptionTile(
+                        id: _deviceTimeZoneId,
+                        label: 'Use device time zone',
+                        subtitle: _deviceTimeZoneDescription(),
+                        selected: selectedId == _deviceTimeZoneId,
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(18, 12, 18, 6),
+                        child: Text(
+                          'OR CHOOSE A CITY',
+                          style: TextStyle(
+                            color: Cyber.muted,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      ),
+                      for (final option in _timeZoneOptions)
+                        _TimeZoneOptionTile(
+                          id: option.id,
+                          label: option.label,
+                          subtitle: option.utcOffset,
+                          selected: selectedId == option.id,
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TimeZoneOptionTile extends StatelessWidget {
+  const _TimeZoneOptionTile({
+    required this.id,
+    required this.label,
+    required this.subtitle,
+    required this.selected,
+  });
+
+  final String id;
+  final String label;
+  final String subtitle;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? Cyber.cyan.withValues(alpha: 0.08) : Colors.transparent,
+      child: InkWell(
+        onTap: () => Navigator.of(context).pop(id),
+        splashColor: Cyber.cyan.withValues(alpha: 0.1),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 11, 16, 11),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: Cyber.body(
+                        14,
+                        color: selected ? Cyber.cyan : Colors.white,
+                        weight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(subtitle, style: Cyber.body(11, color: Cyber.muted)),
+                  ],
+                ),
+              ),
+              Icon(
+                selected
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+                color: selected ? Cyber.cyan : Cyber.muted,
+                size: 19,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String _deviceTimeZoneDescription() {
+  final now = DateTime.now();
+  final offset = now.timeZoneOffset;
+  final sign = offset.isNegative ? '−' : '+';
+  final hours = offset.inMinutes.abs() ~/ 60;
+  final minutes = offset.inMinutes.abs() % 60;
+  final formattedOffset =
+      'UTC$sign${hours.toString().padLeft(2, '0')}:'
+      '${minutes.toString().padLeft(2, '0')}';
+  final name = now.timeZoneName.trim();
+  return name.isEmpty ? formattedOffset : '$name · $formattedOffset';
+}
+
 class _ProfileHeroCard extends StatelessWidget {
-  const _ProfileHeroCard({required this.progression});
+  const _ProfileHeroCard({
+    required this.progression,
+    required this.onChallenge,
+  });
 
   final PlayerProgression progression;
+  final void Function(String opponentName, int opponentLevel) onChallenge;
 
   @override
   Widget build(BuildContext context) {
     final level = progression.playerLevel;
     return SizedBox(
-      height: 300,
+      height: 352,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -370,13 +722,16 @@ class _ProfileHeroCard extends StatelessWidget {
             child: ProfileCard(
               padding: EdgeInsets.zero,
               child: SizedBox(
-                height: 172,
+                height: 228,
                 child: Stack(
                   children: [
                     Positioned(
                       right: 16,
                       top: 18,
-                      child: _LevelChip(level: level),
+                      child: LevelChip(
+                        level: level,
+                        onTap: () => showXpHistory(context),
+                      ),
                     ),
                     Positioned(
                       left: 20,
@@ -399,7 +754,15 @@ class _ProfileHeroCard extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 14),
-                          _XpMeter(progression: progression),
+                          XpMeter(progression: progression),
+                          const SizedBox(height: 14),
+                          Row(
+                            children: [
+                              const Flexible(child: _PlayerTagPill()),
+                              const SizedBox(width: 10),
+                              _FriendsPill(onChallenge: onChallenge),
+                            ],
+                          ),
                         ],
                       ),
                     ),
@@ -415,46 +778,76 @@ class _ProfileHeroCard extends StatelessWidget {
   }
 }
 
-/// Glowing level chip — the one focal element on the profile (it's "you" and
-/// primary, so it earns the glow).
-class _LevelChip extends StatelessWidget {
-  const _LevelChip({required this.level});
+/// The player's own shareable tag (e.g. `PL4Y-X7K9`), generated once and
+/// persisted. Tap to copy it; another player pastes it in their Friends Arena
+/// search to find and add you. Calm chamfered chip — no glow (the hero's focal
+/// glow stays the level chip + XP meter).
+class _PlayerTagPill extends StatefulWidget {
+  const _PlayerTagPill();
 
-  final int level;
+  @override
+  State<_PlayerTagPill> createState() => _PlayerTagPillState();
+}
+
+class _PlayerTagPillState extends State<_PlayerTagPill> {
+  final SecureGameStorage _storage = SecureGameStorage();
+  String? _tag;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTag();
+  }
+
+  Future<void> _loadTag() async {
+    final tag = await _storage.loadOrCreatePlayerTag();
+    if (!mounted) return;
+    setState(() => _tag = tag);
+  }
+
+  Future<void> _copy() async {
+    final tag = _tag;
+    if (tag == null) return;
+    await Clipboard.setData(ClipboardData(text: tag));
+    if (!mounted) return;
+    HapticFeedback.selectionClick();
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('Player tag copied · $tag'),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
-      decoration: ShapeDecoration(
-        color: Cyber.card,
-        shape: CutChipBorder(
-          cut: 7,
-          side: BorderSide(
-            color: Cyber.cyan.withValues(alpha: 0.85),
-            width: 1.4,
-          ),
-        ),
-        shadows: Cyber.glow(Cyber.cyan, alpha: 0.45, blur: 16, spread: 0),
-      ),
+    final tag = _tag ?? '••••-••••';
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _tag == null ? null : _copy,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            'LVL',
-            style: Cyber.label(
-              9,
-              color: Cyber.cyan.withValues(alpha: 0.85),
-              letterSpacing: 1.6,
+          Flexible(
+            child: Text(
+              tag,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Cyber.body(
+                16,
+                weight: FontWeight.w600,
+                height: 1,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
             ),
           ),
           const SizedBox(width: 6),
-          Text(
-            '$level',
-            style: Cyber.display(
-              20,
-              color: Cyber.cyan,
-            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+          Icon(
+            Icons.copy_rounded,
+            size: 16,
+            color: Cyber.cyan.withValues(alpha: 0.85),
           ),
         ],
       ),
@@ -462,42 +855,106 @@ class _LevelChip extends StatelessWidget {
   }
 }
 
-class _XpMeter extends StatelessWidget {
-  const _XpMeter({required this.progression});
+/// Hero entry point to the Friends Arena: total friend count + a live online
+/// count. Faint cyan interactive border (it's tappable) but no glow, keeping the
+/// hero's glow scarce.
+class _FriendsPill extends StatelessWidget {
+  const _FriendsPill({required this.onChallenge});
 
-  final PlayerProgression progression;
+  final void Function(String opponentName, int opponentLevel) onChallenge;
+
+  void _openArena(BuildContext context) {
+    HapticFeedback.selectionClick();
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => FriendsArenaScreen(onChallenge: onChallenge),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final p = levelProgress(progression.totalXP);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              'XP',
-              style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1.4),
+    return BlocBuilder<FriendsCubit, FriendsState>(
+      builder: (context, state) {
+        final friends = state.friends;
+        final online = friends.where(rivalIsOnline).length;
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => _openArena(context),
+          child: Container(
+            height: 34,
+            padding: const EdgeInsets.fromLTRB(11, 0, 8, 0),
+            decoration: cutCornerDecoration(
+              color: Cyber.panel.withValues(alpha: 0.55),
+              borderColor: Cyber.cyan.withValues(alpha: 0.42),
+              cut: 9,
             ),
-            const Spacer(),
-            Text(
-              '${p.intoLevel} / ${p.levelSpan}',
-              style: Cyber.label(
-                10,
-                color: Cyber.muted,
-                letterSpacing: 0.6,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.groups_rounded, color: Cyber.cyan, size: 17),
+                const SizedBox(width: 7),
+                Text('FRIENDS', style: Cyber.display(12, letterSpacing: 1)),
+                const SizedBox(width: 8),
+                _CountBadge(value: friends.length, color: Cyber.violet),
+                if (online > 0) ...[
+                  const SizedBox(width: 6),
+                  _CountBadge(value: online, color: Cyber.success, dot: true),
+                ],
+                const SizedBox(width: 3),
+                const Icon(Icons.chevron_right, color: Cyber.muted, size: 16),
+              ],
             ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Small count chip used inside [_FriendsPill] (violet = total, green dot =
+/// online).
+class _CountBadge extends StatelessWidget {
+  const _CountBadge({
+    required this.value,
+    required this.color,
+    this.dot = false,
+  });
+
+  final int value;
+  final Color color;
+  final bool dot;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(dot ? 5 : 7, 2, 7, 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.16),
+        border: Border.all(color: color.withValues(alpha: 0.55)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (dot) ...[
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 4),
           ],
-        ),
-        const SizedBox(height: 7),
-        CyberProgressBar(
-          value: p.pct,
-          accent: Cyber.cyan,
-          trackColor: Cyber.bg,
-        ),
-      ],
+          Text(
+            '$value',
+            style: Cyber.label(
+              11,
+              color: color,
+              letterSpacing: 0.5,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1080,10 +1537,10 @@ class _AvatarState extends State<_Avatar> {
             bottom: 0,
             child: BlocBuilder<GameBloc, GameState>(
               buildWhen: (a, b) =>
-                  a.equippedAvatarBorderId != b.equippedAvatarBorderId,
+                  a.equippedAvatarFrameId != b.equippedAvatarFrameId,
               builder: (context, state) {
-                final equipped = avatarBorderOptionById(
-                  state.equippedAvatarBorderId,
+                final equipped = avatarFrameOptionById(
+                  state.equippedAvatarFrameId,
                 );
                 return Container(
                   width: 96,
@@ -1098,8 +1555,8 @@ class _AvatarState extends State<_Avatar> {
                       BoxShadow(color: Color(0xff04060b), offset: Offset(0, 4)),
                     ],
                   ),
-                  child: AvatarBorderRing(
-                    border: equipped,
+                  child: AvatarFrameRing(
+                    frame: equipped,
                     // The user's own avatar is a legitimate focal element.
                     glow: true,
                     child: Image.asset(
@@ -1116,7 +1573,7 @@ class _AvatarState extends State<_Avatar> {
             top: 0,
             right: 0,
             child: Tooltip(
-              message: 'Edit avatar',
+              message: 'Edit avatar & frame',
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
@@ -1144,7 +1601,10 @@ class _AvatarState extends State<_Avatar> {
   }
 }
 
-// Avatar editing screen.
+// Avatar + frame editing screen — an AVATAR | FRAME segmented editor with a live
+// preview. The AVATAR tab picks a portrait (committed on CONTINUE); the FRAME tab
+// equips one of your owned frames instantly (persisted by GameBloc); buying more
+// frames stays in the Shop.
 class _AvatarEditScreen extends StatefulWidget {
   const _AvatarEditScreen({required this.initialAvatarId});
 
@@ -1154,17 +1614,49 @@ class _AvatarEditScreen extends StatefulWidget {
   State<_AvatarEditScreen> createState() => _AvatarEditScreenState();
 }
 
-class _AvatarEditScreenState extends State<_AvatarEditScreen> {
+class _AvatarEditScreenState extends State<_AvatarEditScreen>
+    with SingleTickerProviderStateMixin {
   late String _selectedAvatarId;
+  int _tab = 0;
+
+  late final AnimationController _tabIndicatorController;
+  late Animation<double> _tabIndicatorAnimation;
 
   @override
   void initState() {
     super.initState();
     _selectedAvatarId = avatarOptionById(widget.initialAvatarId).id;
+    _tabIndicatorController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+      value: 0,
+    );
+    _tabIndicatorAnimation = AlwaysStoppedAnimation<double>(0);
+  }
+
+  @override
+  void dispose() {
+    _tabIndicatorController.dispose();
+    super.dispose();
+  }
+
+  void _setTab(int index) {
+    if (index == _tab) return;
+    _tabIndicatorAnimation =
+        Tween<double>(begin: _tab.toDouble(), end: index.toDouble()).animate(
+          CurvedAnimation(
+            parent: _tabIndicatorController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+    _tabIndicatorController.forward(from: 0);
+    HapticFeedback.selectionClick();
+    setState(() => _tab = index);
   }
 
   @override
   Widget build(BuildContext context) {
+    final avatar = avatarOptionById(_selectedAvatarId);
     return Scaffold(
       backgroundColor: Cyber.bg,
       body: Stack(
@@ -1185,7 +1677,7 @@ class _AvatarEditScreenState extends State<_AvatarEditScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          'CHOOSE YOUR AVATAR',
+                          'CUSTOMISE PROFILE',
                           style: Cyber.display(19, letterSpacing: 1.1),
                         ),
                       ),
@@ -1197,33 +1689,53 @@ class _AvatarEditScreenState extends State<_AvatarEditScreen> {
                     ],
                   ),
                 ),
+                _AvatarEditorTabs(
+                  activeTab: _tab,
+                  indicatorAnimation: _tabIndicatorAnimation,
+                  onTap: _setTab,
+                ),
                 Expanded(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 460),
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 22, 24, 104),
-                        child: GridView.builder(
-                          itemCount: avatarOptions.length,
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,
-                                mainAxisSpacing: 16,
-                                crossAxisSpacing: 16,
-                                childAspectRatio: 1,
+                  child: BlocBuilder<GameBloc, GameState>(
+                    buildWhen: (a, b) =>
+                        a.equippedAvatarFrameId != b.equippedAvatarFrameId ||
+                        a.ownedAvatarFrameIds != b.ownedAvatarFrameIds,
+                    builder: (context, state) {
+                      final equipped = avatarFrameOptionById(
+                        state.equippedAvatarFrameId,
+                      );
+                      return Column(
+                        children: [
+                          const SizedBox(height: 18),
+                          _PreviewAvatar(avatar: avatar, frame: equipped),
+                          const SizedBox(height: 14),
+                          const Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: Cyber.border,
+                          ),
+                          Expanded(
+                            child: Center(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 460,
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    24,
+                                    6,
+                                    24,
+                                    104,
+                                  ),
+                                  child: _tab == 0
+                                      ? _avatarGrid()
+                                      : _frameGrid(context, state, avatar),
+                                ),
                               ),
-                          itemBuilder: (context, index) {
-                            final avatar = avatarOptions[index];
-                            return _EditableAvatarTile(
-                              avatar: avatar,
-                              selected: avatar.id == _selectedAvatarId,
-                              onTap: () =>
-                                  setState(() => _selectedAvatarId = avatar.id),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ],
@@ -1239,7 +1751,7 @@ class _AvatarEditScreenState extends State<_AvatarEditScreen> {
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 460),
                   child: _AvatarTossCta(
-                    label: 'CONTINUE',
+                    label: 'DONE',
                     onPressed: () =>
                         Navigator.of(context).pop(_selectedAvatarId),
                   ),
@@ -1248,6 +1760,279 @@ class _AvatarEditScreenState extends State<_AvatarEditScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _avatarGrid() => GridView.builder(
+    itemCount: avatarOptions.length,
+    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: 3,
+      mainAxisSpacing: 16,
+      crossAxisSpacing: 16,
+      childAspectRatio: 1,
+    ),
+    itemBuilder: (context, index) {
+      final avatar = avatarOptions[index];
+      return _EditableAvatarTile(
+        avatar: avatar,
+        selected: avatar.id == _selectedAvatarId,
+        onTap: () => setState(() => _selectedAvatarId = avatar.id),
+      );
+    },
+  );
+
+  Widget _frameGrid(
+    BuildContext context,
+    GameState state,
+    AvatarOption avatar,
+  ) {
+    final owned = state.ownedAvatarFrameIds
+        .map(avatarFrameOptionById)
+        .whereType<AvatarFrameOption>()
+        .toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: GridView.builder(
+            // A leading "NONE" tile (un-equip) + every owned frame.
+            itemCount: owned.length + 1,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16,
+              childAspectRatio: 1,
+            ),
+            itemBuilder: (context, index) {
+              final frame = index == 0 ? null : owned[index - 1];
+              final selected = frame == null
+                  ? state.equippedAvatarFrameId.isEmpty
+                  : state.equippedAvatarFrameId == frame.id;
+              return _EditableFrameTile(
+                frame: frame,
+                avatar: avatar,
+                selected: selected,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  context.read<GameBloc>().add(
+                    AvatarFrameEquipped(frame?.id ?? ''),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.storefront, size: 14, color: Cyber.muted),
+            const SizedBox(width: 6),
+            Text(
+              owned.isEmpty
+                  ? 'UNLOCK TEAM FRAMES IN THE SHOP'
+                  : 'GET MORE TEAM FRAMES IN THE SHOP',
+              style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1.1),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Avatar editor tab bar (matches leaderboard MATCH DAY / TOURNEY style) ───
+
+class _AvatarEditorTabs extends StatelessWidget {
+  const _AvatarEditorTabs({
+    required this.activeTab,
+    required this.indicatorAnimation,
+    required this.onTap,
+  });
+
+  final int activeTab;
+  final Animation<double> indicatorAnimation;
+  final ValueChanged<int> onTap;
+
+  static const List<String> _labels = ['AVATAR', 'FRAME'];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 50,
+      decoration: BoxDecoration(
+        color: Cyber.bg.withValues(alpha: 0.4),
+        border: const Border(bottom: BorderSide(color: Color(0x38ffffff))),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final double tabWidth = constraints.maxWidth / _labels.length;
+          return Stack(
+            children: [
+              Row(
+                children: [
+                  for (int i = 0; i < _labels.length; i++)
+                    Expanded(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => onTap(i),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 220),
+                          color: activeTab == i
+                              ? Cyber.cyan.withValues(alpha: 0.07)
+                              : Colors.transparent,
+                          alignment: Alignment.center,
+                          child: Text(
+                            _labels[i],
+                            style: Cyber.label(
+                              10,
+                              color: activeTab == i
+                                  ? Cyber.cyan
+                                  : AppTheme.slate400,
+                              weight: FontWeight.w900,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              AnimatedBuilder(
+                animation: indicatorAnimation,
+                builder: (context, child) => Positioned(
+                  left: tabWidth * indicatorAnimation.value + tabWidth * 0.18,
+                  bottom: 0,
+                  width: tabWidth * 0.64,
+                  height: 3,
+                  child: child!,
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Cyber.cyan,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Cyber.cyan.withValues(alpha: 0.7),
+                        blurRadius: 10,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Live avatar + equipped-frame preview at the top of the editor.
+class _PreviewAvatar extends StatelessWidget {
+  const _PreviewAvatar({required this.avatar, required this.frame});
+
+  final AvatarOption avatar;
+  final AvatarFrameOption? frame;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 110,
+      height: 110,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Cyber.panel,
+          border: frame == null
+              ? Border.all(color: Cyber.cyan, width: 2)
+              : null,
+        ),
+        child: AvatarFrameRing(
+          frame: frame,
+          glow: true,
+          child: Image.asset(
+            avatar.assetPath,
+            fit: BoxFit.cover,
+            alignment: Alignment.topCenter,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One frame option in the FRAME tab — the selected avatar wrapped in the
+/// frame's ring (or no ring for the "NONE" tile), with a label caption and the
+/// equipped tile carrying the lime select treatment.
+class _EditableFrameTile extends StatelessWidget {
+  const _EditableFrameTile({
+    required this.frame,
+    required this.avatar,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final AvatarFrameOption? frame;
+  final AvatarOption avatar;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = selected ? Cyber.lime : Cyber.line;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: frame?.label ?? 'No frame',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          decoration: BoxDecoration(
+            color: Cyber.panel,
+            border: Border.all(color: accent, width: selected ? 2 : 1),
+            boxShadow: selected
+                ? Cyber.glow(Cyber.lime, alpha: 0.18, blur: 14, spread: -2)
+                : null,
+          ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 22),
+                child: AvatarFrameRing(
+                  frame: frame,
+                  child: Image.asset(
+                    avatar.assetPath,
+                    fit: BoxFit.cover,
+                    alignment: Alignment.topCenter,
+                  ),
+                ),
+              ),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 3),
+                  color: Cyber.bg.withValues(alpha: 0.8),
+                  child: Text(
+                    (frame?.label ?? 'NONE').toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: Cyber.label(
+                      8,
+                      color: selected ? Cyber.lime : Cyber.muted,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                ),
+              ),
+              if (selected) const _EditableAvatarSelectedCorner(),
+            ],
+          ),
+        ),
       ),
     );
   }

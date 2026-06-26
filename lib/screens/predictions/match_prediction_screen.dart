@@ -8,9 +8,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/achievement/achievement_celebration_controller.dart';
 import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_event.dart';
+import '../../blocs/picks/picks_cubit.dart';
 import '../../blocs/prediction/prediction_cubit.dart';
 import '../../blocs/prediction/prediction_state.dart';
 import '../../config/theme.dart';
+import '../../models/picks.dart';
 import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
 import '../../models/streak.dart';
@@ -18,6 +20,7 @@ import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/staggered_card_entrance.dart';
 import '../../widgets/team_logo.dart';
+import 'market_detail_screen.dart';
 import 'widgets/score_prediction_picker.dart';
 import 'widgets/settlement_reveal.dart';
 
@@ -52,7 +55,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
   bool _savingUpdates = false;
   // True for the session right after a fresh submit: we stay on the review list
   // (the "quiz submitted" screen) instead of popping, the cards cascade in, and
-  // the dock shows a PREDICT-next CTA until the user edits an answer.
+  // the dock shows an OPEN PICKS CTA until the user edits an answer.
   bool _justSubmitted = false;
   // Held while the post-submit cinematic plays so a freshly-unlocked achievement
   // (e.g. Analyst on the 10th quiz) reveals *after* it, not on top of it.
@@ -362,7 +365,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     }
     // Snapshot what we just submitted as the saved baseline so the post-submit
     // review list opens with no pending draft — that's what surfaces the
-    // PREDICT-next dock. Editing an answer afterwards flips _hasDraftChanges
+    // OPEN PICKS dock. Editing an answer afterwards flips _hasDraftChanges
     // back on and swaps the dock to SAVE UPDATES.
     _savedAnswers = Map<String, int>.from(_answers);
     _savedMultipliersByQuestion = Map<String, PredictionMultiplier>.from(
@@ -394,25 +397,17 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     });
   }
 
-  /// The next fixture to chain into after a fresh submit: the earliest upcoming
-  /// (predictable) match in the SAME league as this one, excluding the current
-  /// match; failing that, the earliest upcoming match overall. Null when there
-  /// is nothing left to predict (the CTA then falls back to "BACK TO MATCHES").
-  SportMatch? _nextMatchInLine() {
-    final fixtures = context
-        .read<PredictionCubit>()
-        .state
-        .fixtures
-        .where((m) => m.predictable && m.id != _match.id)
+  /// The best pick market for this fixture. Fresh quiz submit should hand the
+  /// player into the same match's Picks surface, not a different quiz.
+  PickMarket? _sameMatchPickMarket() {
+    final picks = context.read<PicksCubit?>();
+    if (picks == null) return null;
+    final linked = picks.state.markets
+        .where((market) => market.matchId == _match.id)
         .toList();
-    if (fixtures.isEmpty) return null;
-    int byKickoff(SportMatch a, SportMatch b) => a.kickoff.compareTo(b.kickoff);
-    final sameLeague =
-        fixtures.where((m) => m.leagueId == _match.leagueId).toList()
-          ..sort(byKickoff);
-    if (sameLeague.isNotEmpty) return sameLeague.first;
-    fixtures.sort(byKickoff);
-    return fixtures.first;
+    if (linked.isEmpty) return null;
+    linked.sort(_compareSameMatchMarkets);
+    return linked.first;
   }
 
   /// Scores the stored answers locally (presentation), persists the
@@ -455,7 +450,12 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     final earnedXp = await context.read<PredictionCubit>().settle(_match.id);
     if (!mounted) return;
     if (earnedXp > 0) {
-      context.read<GameBloc>().add(PredictionXpAdded(earnedXp));
+      context.read<GameBloc>().add(
+        PredictionXpAdded(
+          earnedXp,
+          details: '${_match.home.shortName} vs ${_match.away.shortName}',
+        ),
+      );
     }
     setState(() {
       _settlementResults = results;
@@ -510,7 +510,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
                   _heldCelebrations = null;
                   // The prediction now exists in state, so the rebuild routes
                   // to _reviewContent — the all-questions list. _justSubmitted
-                  // makes the cards cascade in and shows the PREDICT-next dock.
+                  // makes the cards cascade in and shows the OPEN PICKS dock.
                   setState(() {
                     _submitting = false;
                     _justSubmitted = true;
@@ -802,9 +802,9 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
           ),
         ),
         if (editable && _justSubmitted && !_hasDraftChanges)
-          // Fresh submit, no edits yet: chain into the next match (or head
-          // back to the matches list when there's nothing left to predict).
-          _PredictNextDock(next: _nextMatchInLine())
+          // Fresh submit, no edits yet: hand the player into the same match's
+          // picks market when one exists.
+          _OpenPicksDock(market: _sameMatchPickMarket())
         else if (editable)
           _ReviewSaveDock(
             enabled: _hasDraftChanges && _allAnswered && !_savingUpdates,
@@ -1798,20 +1798,18 @@ class _ReviewSaveDock extends StatelessWidget {
   }
 }
 
-/// Focal dock shown right after a fresh submit: chains the player straight into
-/// the next match's quiz ("PREDICT XXX vs XXX"), or — when there's nothing left
-/// to predict — drops them back to the matches list.
-class _PredictNextDock extends StatelessWidget {
-  const _PredictNextDock({required this.next});
+/// Focal dock shown right after a fresh submit: moves the player straight into
+/// the same match's pick market. If no market is linked yet, it drops them back
+/// to the matches list.
+class _OpenPicksDock extends StatelessWidget {
+  const _OpenPicksDock({required this.market});
 
-  final SportMatch? next;
+  final PickMarket? market;
 
   @override
   Widget build(BuildContext context) {
-    final next = this.next;
-    final label = next == null
-        ? 'BACK TO MATCHES'
-        : 'PREDICT ${next.home.shortName} vs ${next.away.shortName}';
+    final market = this.market;
+    final label = market == null ? 'BACK TO MATCHES' : 'OPEN PICKS';
     return SafeArea(
       top: false,
       child: Padding(
@@ -1823,13 +1821,26 @@ class _PredictNextDock extends StatelessWidget {
           trailingIcon: Icons.keyboard_double_arrow_right,
           onTap: () {
             playSound(SoundEffect.playMatch);
-            if (next == null) {
+            if (market == null) {
               Navigator.of(context).popUntil((r) => r.isFirst);
             } else {
-              // Replace so chaining match→match doesn't grow the back stack.
+              PredictionCubit? prediction;
+              try {
+                prediction = context.read<PredictionCubit>();
+              } on ProviderNotFoundException {
+                prediction = null;
+              }
+              // Replace so quiz→picks→quiz does not grow the back stack.
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute<void>(
-                  builder: (_) => MatchPredictionScreen(match: next),
+                  builder: (_) {
+                    final screen = MarketDetailScreen(marketId: market.id);
+                    if (prediction == null) return screen;
+                    return BlocProvider<PredictionCubit>.value(
+                      value: prediction!,
+                      child: screen,
+                    );
+                  },
                 ),
               );
             }
@@ -3734,6 +3745,19 @@ bool _sameMultipliers(
   }
   return true;
 }
+
+int _compareSameMatchMarkets(PickMarket a, PickMarket b) {
+  final typeRank = _sameMatchMarketTypeRank(
+    a,
+  ).compareTo(_sameMatchMarketTypeRank(b));
+  if (typeRank != 0) return typeRank;
+  final openRank = (a.canBuy ? 0 : 1).compareTo(b.canBuy ? 0 : 1);
+  if (openRank != 0) return openRank;
+  return a.closesAt.compareTo(b.closesAt);
+}
+
+int _sameMatchMarketTypeRank(PickMarket market) =>
+    market.type == PickMarketType.match ? 0 : 1;
 
 String _formatTime(DateTime dt) {
   final h = dt.hour.toString().padLeft(2, '0');

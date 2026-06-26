@@ -18,16 +18,24 @@ import 'widgets/final_result_phase.dart';
 import 'widgets/match_phases.dart';
 
 class GameTabContent extends StatefulWidget {
-  const GameTabContent({required this.onNavigate, super.key});
+  const GameTabContent({
+    required this.onNavigate,
+    this.initialSection = AppSection.home,
+    super.key,
+  });
 
   final ValueChanged<AppSection> onNavigate;
+
+  /// Where the card-game hub opens. Defaults to the home lobby; a leaderboard
+  /// CHALLENGE opens straight into [AppSection.match].
+  final AppSection initialSection;
 
   @override
   State<GameTabContent> createState() => _GameTabContentState();
 }
 
 class _GameTabContentState extends State<GameTabContent> {
-  AppSection _gameSection = AppSection.home;
+  late AppSection _gameSection = widget.initialSection;
 
   // App-level destinations leave the card game and switch the main shell;
   // everything else navigates within the card-game hub.
@@ -132,6 +140,7 @@ class _MatchScreenState extends State<MatchScreen> {
         final Widget phaseWidget = showIntro
             ? MatchIntroPhase(
                 deckName: deckName,
+                opponentName: state.opponentName,
                 onComplete: () => setState(() => _introShown = true),
               )
             : switch (state.phase) {

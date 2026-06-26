@@ -10,6 +10,7 @@ import '../../../blocs/game/game_event.dart';
 import '../../../blocs/game/game_state.dart';
 import '../../../config/enums.dart';
 import '../../../config/theme.dart';
+import '../../../data/random_opponent_names.dart';
 import '../../../models/cards.dart';
 import '../../../utils/label_helpers.dart';
 import '../../../utils/sound_effects.dart';
@@ -25,6 +26,13 @@ const Color _kTossCyan = Color(0xFF5CDFFF);
 const Color _kTossRed = Color(0xFFFF4D4D);
 const Color _kTossBg = Color(0xFF0D111A);
 const Color _kTossMuted = Color(0xFF8FA3B8);
+
+String _opponentName(GameState state) => state.opponentName ?? 'Opponent';
+
+String _compactOpponentName(GameState state) {
+  final firstName = _opponentName(state).split(RegExp(r'\s+')).first;
+  return firstName.length <= 7 ? firstName.toUpperCase() : 'OPP';
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TossPhase  –  full HUD redesign
@@ -366,10 +374,11 @@ class _CoinTossPhaseState extends State<CoinTossPhase>
 
   Widget _buildCpuDecisionPanel() {
     final progress = _cpuDecision.value.clamp(0.0, 1.0);
+    final opponent = _opponentName(widget.state).toUpperCase();
     return Column(
       children: [
         Text(
-          'CPU WON THE TOSS',
+          '$opponent WON THE TOSS',
           textAlign: TextAlign.center,
           style: Cyber.display(26, color: _kTossRed, letterSpacing: 2),
         ),
@@ -378,8 +387,8 @@ class _CoinTossPhaseState extends State<CoinTossPhase>
           duration: const Duration(milliseconds: 220),
           child: Text(
             _cpuFinalized
-                ? 'CPU HAS DECIDED'
-                : 'CPU IS DECIDING TO ATTACK OR DEFEND',
+                ? '$opponent HAS DECIDED'
+                : '$opponent IS DECIDING TO ATTACK OR DEFEND',
             key: ValueKey(_cpuFinalized),
             textAlign: TextAlign.center,
             style: Cyber.body(12, color: _kTossMuted),
@@ -393,7 +402,7 @@ class _CoinTossPhaseState extends State<CoinTossPhase>
 }
 
 // _TossTopBar: slim round caption + close button (replaces the old big header
-// and the [P1] YOU / RD x/4 / VS / ATTACKING / CPU [E1] score bar).
+// and the old [P1] YOU / RD x/4 / VS / ATTACKING / CPU [E1] score bar).
 // [round] is optional — the coin toss happens once, so its caption omits it.
 class _TossTopBar extends StatelessWidget {
   const _TossTopBar({required this.label, required this.onQuit, this.round});
@@ -771,7 +780,9 @@ class _CpuDecisionMeter extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            finalized ? 'NEXT: SCENARIO BRIEFING' : 'CPU DECISION PROTOCOL',
+            finalized
+                ? 'NEXT: SCENARIO BRIEFING'
+                : 'OPPONENT DECISION PROTOCOL',
             textAlign: TextAlign.center,
             style: Cyber.label(10, color: _kTossMuted, letterSpacing: 2),
           ),
@@ -797,7 +808,7 @@ class _CpuDecisionMeter extends StatelessWidget {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RoleRevealPhase  –  animated role-assignment beat
-//   • CPU-won round 1:  CPU CHOSE x  →  YOUR ROLE
+//   • Opponent-won round 1:  OPP CHOSE x  →  YOUR ROLE
 //   • Rounds 2–4:       ROLES SWITCHED  →  YOU NOW x
 // ─────────────────────────────────────────────────────────────────────────────
 class RoleRevealPhase extends StatefulWidget {
@@ -919,7 +930,8 @@ class _RoleRevealPhaseState extends State<RoleRevealPhase>
     final accent = _roleAccent(_attacking);
     final roleName = _attacking ? 'ATTACK' : 'DEFEND';
     final roleIcon = _attacking ? Icons.sports_soccer : Icons.shield;
-    final headline = _isSwitch ? 'ROLES SWITCHED' : 'CPU WON THE TOSS';
+    final opponent = _opponentName(widget.state).toUpperCase();
+    final headline = _isSwitch ? 'ROLES SWITCHED' : '$opponent WON THE TOSS';
     final badgeCaption = _isSwitch ? 'YOU NOW' : 'YOUR ROLE';
 
     return Scaffold(
@@ -1071,13 +1083,13 @@ class _RoleRevealPhaseState extends State<RoleRevealPhase>
         ],
       );
     }
-    // CPU won round 1: CPU CHOSE x  →  YOU get the opposite role.
+    // Opponent won round 1: OPP CHOSE x  →  YOU get the opposite role.
     final cpuAttacking = !_attacking;
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _RoleRevealChip(
-          caption: 'CPU CHOSE',
+          caption: '${_compactOpponentName(widget.state)} CHOSE',
           role: cpuAttacking ? 'ATTACK' : 'DEFEND',
           icon: cpuAttacking ? Icons.sports_soccer : Icons.shield,
           accent: _kTossRed,
@@ -3507,6 +3519,7 @@ class _RoundResultPhaseState extends State<RoundResultPhase> {
             result: result,
             playerScore: widget.state.playerScore,
             opponentScore: widget.state.opponentScore,
+            opponentLabel: _compactOpponentName(widget.state),
             onComplete: () {
               if (mounted) setState(() => _cinematicDone = true);
             },
@@ -3603,11 +3616,15 @@ class MatchIntroPhase extends StatefulWidget {
   const MatchIntroPhase({
     required this.deckName,
     required this.onComplete,
+    this.opponentName,
     super.key,
   });
 
   final String deckName;
   final VoidCallback onComplete;
+
+  /// Rival name for a leaderboard CHALLENGE; null shows the generic "Opponent".
+  final String? opponentName;
 
   @override
   State<MatchIntroPhase> createState() => _MatchIntroPhaseState();
@@ -3618,10 +3635,16 @@ class _MatchIntroPhaseState extends State<MatchIntroPhase>
   // 0 = cinematic reveal, 1 = countdown, 2 = kick off
   int _stage = 0;
   int _countdown = 3;
+  bool _introStarted = false;
+  bool _opponentLocked = false;
 
   late final AnimationController _reveal = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 1700),
+  );
+  late final AnimationController _opponentSearch = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 4000),
   );
   late final AnimationController _pulse = AnimationController(
     vsync: this,
@@ -3635,12 +3658,38 @@ class _MatchIntroPhaseState extends State<MatchIntroPhase>
   @override
   void initState() {
     super.initState();
-    _reveal.addStatusListener(_onRevealDone);
-    _reveal.forward();
+    _opponentSearch.addStatusListener(_onOpponentSearchDone);
   }
 
-  void _onRevealDone(AnimationStatus s) {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_introStarted) return;
+    _introStarted = true;
+
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _reveal.value = 1;
+      _opponentSearch.duration = const Duration(milliseconds: 600);
+    } else {
+      _reveal.forward();
+    }
+    _opponentSearch.forward();
+  }
+
+  void _onOpponentSearchDone(AnimationStatus s) {
     if (s != AnimationStatus.completed) return;
+    _lockOpponentAndContinue();
+  }
+
+  Future<void> _lockOpponentAndContinue() async {
+    if (_opponentLocked) return;
+    if (mounted) {
+      setState(() => _opponentLocked = true);
+      playSound(SoundEffect.cardReveal);
+    }
+
+    await Future<void>.delayed(const Duration(milliseconds: 700));
+    if (!mounted || _stage != 0) return;
     setState(() {
       _stage = 1;
       _countdown = 3;
@@ -3668,8 +3717,9 @@ class _MatchIntroPhaseState extends State<MatchIntroPhase>
 
   @override
   void dispose() {
-    _reveal
-      ..removeStatusListener(_onRevealDone)
+    _reveal.dispose();
+    _opponentSearch
+      ..removeStatusListener(_onOpponentSearchDone)
       ..dispose();
     _pulse.dispose();
     _kickoff.dispose();
@@ -3685,7 +3735,12 @@ class _MatchIntroPhaseState extends State<MatchIntroPhase>
     return Scaffold(
       backgroundColor: Cyber.bg,
       body: AnimatedBuilder(
-        animation: Listenable.merge([_reveal, _pulse, _kickoff]),
+        animation: Listenable.merge([
+          _reveal,
+          _opponentSearch,
+          _pulse,
+          _kickoff,
+        ]),
         builder: (context, _) => Stack(
           fit: StackFit.expand,
           children: [
@@ -3772,7 +3827,7 @@ class _MatchIntroPhaseState extends State<MatchIntroPhase>
                 ),
               ),
               const SizedBox(height: 36),
-              // YOU vs CPU badges
+              // YOU vs opponent badges
               Opacity(
                 opacity: sidesIn.clamp(0.0, 1.0),
                 child: Row(
@@ -3799,10 +3854,12 @@ class _MatchIntroPhaseState extends State<MatchIntroPhase>
                     ),
                     Transform.translate(
                       offset: Offset(38 * (1 - sidesIn), 0),
-                      child: const _VsBadge(
-                        label: 'CPU',
-                        sub: 'Opponent',
+                      child: _VsBadge(
+                        label: 'OPP',
+                        sub: widget.opponentName ?? 'Opponent',
                         color: Cyber.amber,
+                        searchProgress: _opponentSearch.value,
+                        locked: _opponentLocked,
                       ),
                     ),
                   ],
@@ -3940,22 +3997,41 @@ class _MatchIntroPhaseState extends State<MatchIntroPhase>
 }
 
 class _VsBadge extends StatelessWidget {
-  const _VsBadge({required this.label, required this.sub, required this.color});
+  const _VsBadge({
+    required this.label,
+    required this.sub,
+    required this.color,
+    this.searchProgress,
+    this.locked = false,
+  });
 
   final String label;
   final String sub;
   final Color color;
+  final double? searchProgress;
+  final bool locked;
 
   @override
   Widget build(BuildContext context) {
+    final searching = searchProgress != null && !locked;
+    final progress = (searchProgress ?? 1.0).clamp(0.0, 1.0).toDouble();
+    final rollingIndex =
+        (Curves.easeOutCubic.transform(progress) * 173).floor() %
+        randomOpponentNames.length;
+    final opponentLabel = searchProgress == null || locked
+        ? sub
+        : randomOpponentNames[rollingIndex];
+    final borderAlpha = locked ? 0.95 : 0.6;
+    final glowAlpha = locked ? 0.34 : 0.18;
+
     return Container(
-      constraints: const BoxConstraints(maxWidth: 130),
+      constraints: const BoxConstraints(maxWidth: 148, minWidth: 130),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        border: Border.all(color: color.withValues(alpha: 0.6)),
+        border: Border.all(color: color.withValues(alpha: borderAlpha)),
         boxShadow: [
-          BoxShadow(color: color.withValues(alpha: 0.18), blurRadius: 16),
+          BoxShadow(color: color.withValues(alpha: glowAlpha), blurRadius: 16),
         ],
       ),
       child: Column(
@@ -3973,15 +4049,43 @@ class _VsBadge extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            sub.toUpperCase(),
+            opponentLabel.toUpperCase(),
             overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
             style: TextStyle(
-              color: color.withValues(alpha: 0.65),
+              color: color.withValues(alpha: locked ? 0.94 : 0.65),
               fontFamily: 'Orbitron',
               fontSize: 9,
               letterSpacing: 1,
             ),
           ),
+          if (searchProgress != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              height: 3,
+              alignment: Alignment.centerLeft,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                border: Border.all(color: color.withValues(alpha: 0.22)),
+              ),
+              child: FractionallySizedBox(
+                widthFactor: progress,
+                child: Container(color: color.withValues(alpha: 0.8)),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              searching ? 'SEARCHING...' : 'OPPONENT FOUND',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: (locked ? Cyber.lime : color).withValues(alpha: 0.86),
+                fontFamily: 'Orbitron',
+                fontSize: 7,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.1,
+              ),
+            ),
+          ],
         ],
       ),
     );

@@ -5,6 +5,7 @@ import 'package:card_game/blocs/game/game_event.dart';
 import 'package:card_game/blocs/game/game_state.dart';
 import 'package:card_game/models/oz_coin_ledger.dart';
 import 'package:card_game/models/progression.dart';
+import 'package:card_game/models/xp_ledger.dart';
 import 'package:card_game/services/secure_storage_service.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -226,5 +227,90 @@ void main() {
       OzCoinTransactionSource.shootoutReward,
     );
     expect(rewarded.coinLedger.first.delta, 20);
+    expect(rewarded.xpLedger.first.source, XpTransactionSource.shootout);
+    expect(rewarded.xpLedger.first.delta, 10);
+  });
+
+  test('XP ledger entry round trips through json and storage', () async {
+    final entry = XpLedgerEntry(
+      id: 'xp-storage',
+      timestamp: DateTime(2026, 6, 22, 18, 30),
+      delta: -7,
+      balanceAfter: 143,
+      type: XpTransactionType.loss,
+      source: XpTransactionSource.match,
+      title: 'PITCH DUEL',
+      details: 'Defeat · 0-1',
+    );
+
+    final restoredFromJson = XpLedgerEntry.fromJson(entry.toJson());
+    expect(restoredFromJson.id, entry.id);
+    expect(restoredFromJson.timestamp, entry.timestamp);
+    expect(restoredFromJson.delta, -7);
+    expect(restoredFromJson.balanceAfter, 143);
+    expect(restoredFromJson.type, XpTransactionType.loss);
+    expect(restoredFromJson.source, XpTransactionSource.match);
+    expect(restoredFromJson.details, entry.details);
+
+    final storage = SecureGameStorage();
+    await storage.saveXpLedger([entry]);
+    final restored = await storage.loadXpLedger();
+    expect(restored, hasLength(1));
+    expect(restored.single.id, entry.id);
+    expect(restored.single.delta, -7);
+  });
+
+  test('existing XP seeds one previous-progress opening entry', () async {
+    FlutterSecureStorage.setMockInitialValues({
+      'pd_progression_v1': jsonEncode({'totalXP': 450}),
+    });
+    final bloc = GameBloc(SecureGameStorage());
+    addTearDown(bloc.close);
+
+    final loaded = await _load(bloc);
+
+    expect(loaded.progression.totalXP, 450);
+    expect(loaded.xpLedger, hasLength(1));
+    expect(loaded.xpLedger.single.type, XpTransactionType.openingBalance);
+    expect(loaded.xpLedger.single.source, XpTransactionSource.openingBalance);
+    expect(loaded.xpLedger.single.balanceAfter, 450);
+  });
+
+  test('prediction and pack XP append correctly sourced ledger rows', () async {
+    final bloc = GameBloc(SecureGameStorage());
+    addTearDown(bloc.close);
+    await _load(bloc);
+
+    bloc.add(PredictionXpAdded(30));
+    final predicted = await _nextWhere(
+      bloc,
+      (state) => state.progression.totalXP == 30,
+    );
+    expect(predicted.xpLedger.first.source, XpTransactionSource.prediction);
+    expect(predicted.xpLedger.first.delta, 30);
+
+    bloc.add(DailyDropClaimed());
+    final dropped = await _nextWhere(
+      bloc,
+      (state) => state.dailyDropLastClaimedAt != null,
+    );
+    expect(dropped.xpLedger.first.source, XpTransactionSource.dailyDrop);
+    expect(dropped.xpLedger.first.balanceAfter, dropped.progression.totalXP);
+  });
+
+  test('XP application records only the loss that can actually be applied', () {
+    final result = applyXpTransaction(
+      progression: const PlayerProgression(totalXP: 3),
+      ledger: const [],
+      delta: -15,
+      source: XpTransactionSource.match,
+      title: 'PITCH DUEL',
+      timestamp: DateTime(2026, 6, 22),
+    );
+
+    expect(result.progression.totalXP, 0);
+    expect(result.appliedDelta, -3);
+    expect(result.ledger.single.delta, -3);
+    expect(result.ledger.single.balanceAfter, 0);
   });
 }

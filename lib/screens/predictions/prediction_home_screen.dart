@@ -31,6 +31,8 @@ class PredictionHomeScreen extends StatefulWidget {
     required this.onOpenLeague,
     required this.onOpenGame,
     required this.onOpenShootout,
+    required this.onOpenQuiz,
+    required this.onOpenFootballBingo,
     this.onAddCoins,
     super.key,
   });
@@ -42,6 +44,8 @@ class PredictionHomeScreen extends StatefulWidget {
   final ValueChanged<League> onOpenLeague;
   final VoidCallback onOpenGame;
   final VoidCallback onOpenShootout;
+  final VoidCallback onOpenQuiz;
+  final VoidCallback onOpenFootballBingo;
   final VoidCallback? onAddCoins;
 
   @override
@@ -112,6 +116,8 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
       _ => _GamesTab(
         onOpenGame: widget.onOpenGame,
         onOpenShootout: widget.onOpenShootout,
+        onOpenQuiz: widget.onOpenQuiz,
+        onOpenFootballBingo: widget.onOpenFootballBingo,
         animateIntro: _shouldAnimateIntro(2),
         onIntroPlayed: () => _markIntroPlayed(2),
       ),
@@ -383,7 +389,7 @@ class _MatchesTabState extends State<_MatchesTab> {
                             : null,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                   ],
                 ],
             ],
@@ -1718,7 +1724,7 @@ class _PickSkeleton extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(12, 16, 12, 28),
       itemCount: 4,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: 16),
       itemBuilder: (_, index) => ClipPath(
         clipper: const HudChamferClipper(bigCut: 15, smallCut: 2),
         child: Container(
@@ -1760,12 +1766,16 @@ class _GamesTab extends StatefulWidget {
   const _GamesTab({
     required this.onOpenGame,
     required this.onOpenShootout,
+    required this.onOpenQuiz,
+    required this.onOpenFootballBingo,
     required this.animateIntro,
     required this.onIntroPlayed,
   });
 
   final VoidCallback onOpenGame;
   final VoidCallback onOpenShootout;
+  final VoidCallback onOpenQuiz;
+  final VoidCallback onOpenFootballBingo;
   final bool animateIntro;
   final VoidCallback? onIntroPlayed;
 
@@ -1805,6 +1815,7 @@ class _GamesTabState extends State<_GamesTab> {
             accent: Cyber.cyan,
             streak: streaks.pitch,
             featured: true,
+            showTrailingIcon: false,
             onTap: widget.onOpenGame,
           ),
         ),
@@ -1819,6 +1830,7 @@ class _GamesTabState extends State<_GamesTab> {
             accent: Cyber.lime,
             streak: streaks.penalty,
             featured: true,
+            showTrailingIcon: false,
             onTap: widget.onOpenShootout,
           ),
         ),
@@ -1826,17 +1838,33 @@ class _GamesTabState extends State<_GamesTab> {
         StaggeredCardEntrance(
           index: 2,
           animate: animateIntro,
-          child: const _GameTile(
-            title: 'QUIZ STREAK',
-            subtitle: 'COMING SOON',
-            icon: Icons.bolt,
+          child: _GameTile(
+            title: 'FOOTBALL QUIZ',
+            subtitle: 'TRIVIA GAUNTLET',
+            icon: Icons.quiz,
             accent: Cyber.violet,
-            locked: true,
+            featured: true,
+            showTrailingIcon: false,
+            onTap: widget.onOpenQuiz,
           ),
         ),
         const SizedBox(height: 12),
         StaggeredCardEntrance(
           index: 3,
+          animate: animateIntro,
+          child: _GameTile(
+            title: 'FOOTBALL BINGO',
+            subtitle: 'COUNTRY x CLUB GRID',
+            icon: Icons.grid_view,
+            accent: Cyber.amber,
+            featured: true,
+            showTrailingIcon: false,
+            onTap: widget.onOpenFootballBingo,
+          ),
+        ),
+        const SizedBox(height: 12),
+        StaggeredCardEntrance(
+          index: 4,
           animate: animateIntro,
           child: const _GameTile(
             title: 'ACCURACY CHALLENGE',
@@ -1863,6 +1891,7 @@ class _GameTile extends StatelessWidget {
     this.locked = false,
     this.featured = false,
     this.streak = 0,
+    this.showTrailingIcon = true,
   });
 
   final String title;
@@ -1873,6 +1902,7 @@ class _GameTile extends StatelessWidget {
   final bool locked;
   final bool featured;
   final int streak;
+  final bool showTrailingIcon;
 
   static const _bigCut = 14.0;
   static const _smallCut = 4.0;
@@ -1908,6 +1938,7 @@ class _GameTile extends StatelessWidget {
                     accent: accent,
                     streak: streak,
                     onTap: onTap,
+                    showTrailingIcon: showTrailingIcon,
                   )
                 : _CompactBody(
                     title: title,
@@ -1915,6 +1946,7 @@ class _GameTile extends StatelessWidget {
                     icon: icon,
                     accent: accent,
                     locked: locked,
+                    showTrailingIcon: showTrailingIcon,
                   ),
           ),
         ),
@@ -1930,6 +1962,7 @@ class _CompactBody extends StatelessWidget {
     required this.icon,
     required this.accent,
     required this.locked,
+    required this.showTrailingIcon,
   });
 
   final String title;
@@ -1937,6 +1970,7 @@ class _CompactBody extends StatelessWidget {
   final IconData icon;
   final Color accent;
   final bool locked;
+  final bool showTrailingIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -1974,11 +2008,12 @@ class _CompactBody extends StatelessWidget {
               ],
             ),
           ),
-          Icon(
-            locked ? Icons.lock_outline : Icons.chevron_right,
-            color: locked ? accent.withValues(alpha: 0.55) : accent,
-            size: 22,
-          ),
+          if (showTrailingIcon || locked)
+            Icon(
+              locked ? Icons.lock_outline : Icons.chevron_right,
+              color: locked ? accent.withValues(alpha: 0.55) : accent,
+              size: 22,
+            ),
         ],
       ),
     );
@@ -1995,6 +2030,7 @@ class _FeaturedBody extends StatelessWidget {
     required this.accent,
     required this.onTap,
     required this.streak,
+    required this.showTrailingIcon,
   });
 
   final String title;
@@ -2003,6 +2039,7 @@ class _FeaturedBody extends StatelessWidget {
   final Color accent;
   final VoidCallback? onTap;
   final int streak;
+  final bool showTrailingIcon;
 
   @override
   Widget build(BuildContext context) {
@@ -2063,11 +2100,12 @@ class _FeaturedBody extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Icon(Icons.chevron_right, color: accent, size: 22),
+                  if (showTrailingIcon)
+                    Icon(Icons.chevron_right, color: accent, size: 22),
                 ],
               ),
               const SizedBox(height: 14),
-              _GameFreeButton(onTap: onTap),
+              _GameFreeButton(onTap: onTap, accent: accent),
             ],
           ),
         ),
@@ -2105,12 +2143,11 @@ class _GameIconBox extends StatelessWidget {
 }
 
 class _GameFreeButton extends StatelessWidget {
-  const _GameFreeButton({required this.onTap});
+  const _GameFreeButton({required this.onTap, required this.accent});
 
   final VoidCallback? onTap;
+  final Color accent;
 
-  static const _fillColor = AppTheme.gameCtaFill;
-  static const _borderColor = AppTheme.gameCtaBorder;
   static const _bigCut = 10.0;
   static const _smallCut = 3.0;
 
@@ -2123,8 +2160,8 @@ class _GameFreeButton extends StatelessWidget {
         painter: _HudChamferCardPainter(
           bigCut: _bigCut,
           smallCut: _smallCut,
-          fillColor: _fillColor,
-          borderColor: _borderColor,
+          fillColor: accent,
+          borderColor: Colors.transparent,
         ),
         child: ClipPath(
           clipper: const HudChamferClipper(
@@ -2137,9 +2174,20 @@ class _GameFreeButton extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CoinIcon(size: 18),
+                const Icon(
+                  Icons.toll_rounded,
+                  size: 18,
+                  color: AppTheme.darkInk,
+                ),
                 const SizedBox(width: 8),
-                Text('Free', style: Cyber.display(16, letterSpacing: 0.8)),
+                Text(
+                  'Free',
+                  style: Cyber.display(
+                    16,
+                    color: AppTheme.darkInk,
+                    letterSpacing: 0.8,
+                  ),
+                ),
               ],
             ),
           ),

@@ -39,6 +39,7 @@ class MatchPredictionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final borderColor = _stateBorderColor(match, prediction);
     final body = DecoratedBox(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -82,20 +83,28 @@ class MatchPredictionCard extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // Hard, un-blurred drop shadow drawn behind the card.
-          const Positioned.fill(
-            child: CustomPaint(painter: _HardShadowPainter()),
+          // Hard, un-blurred drop shadow drawn behind the card — tinted with the
+          // state colour so the elevated bottom edge matches the border.
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _HardShadowPainter(
+                borderColor.withValues(alpha: 0.25),
+              ),
+            ),
           ),
           Material(
             color: _cardBase,
             elevation: 0,
             clipBehavior: Clip.antiAlias,
-            shape: const _CyberCardBorder(
+            shape: _CyberCardBorder(
               cut: 12,
               notchWidth: _notchFloorW,
               notchDepth: _notchDepth,
               notchSlope: _notchSlope,
-              side: BorderSide(color: _borderCol),
+              side: BorderSide(
+                color: borderColor.withValues(alpha: 0.25),
+                width: 1.5,
+              ),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -543,7 +552,10 @@ Path _cardPath(
 /// colour and shifted straight down, drawn behind the card for an "embossed"
 /// elevated feel without a soft blur.
 class _HardShadowPainter extends CustomPainter {
-  const _HardShadowPainter();
+  const _HardShadowPainter(this.color);
+
+  /// Fill colour of the elevated bottom edge — the card's state border colour.
+  final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -554,11 +566,12 @@ class _HardShadowPainter extends CustomPainter {
       _notchDepth,
       _notchSlope,
     ).shift(const Offset(0, 6));
-    canvas.drawPath(path, Paint()..color = _shadowCol);
+    canvas.drawPath(path, Paint()..color = color);
   }
 
   @override
-  bool shouldRepaint(covariant _HardShadowPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _HardShadowPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 // ── Palette (card-local, tuned to the reference) ──────────────────────────────
@@ -566,7 +579,7 @@ const _cardBase = Color(0xff141c2b);
 const _cardTop = Color(0xff1b2336);
 const _cardBottom = Color(0xff121a28);
 const _borderCol = Color(0xff2a3550);
-const _shadowCol = Color(0xff04060b); // hard drop-shadow fill
+const _borderPredicted = Color(0xff2c7a8c); // dark cyan — predicted, not started
 const _stripDark = Color(0xff0f1826);
 const _stripBlue = Color(0xff173a5e);
 const _timeGold = Color(0xffc8a45a);
@@ -581,6 +594,23 @@ const _notchDepth = 22.0;
 const _notchSlope = 12.0;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+/// The card border colour telegraphs where the fixture sits in its lifecycle:
+/// dark cyan = yet to begin (predicted or not), red = live, gold = results ready
+/// to reveal, cyan = revealed. Mirrors the bottom strip's existing cues.
+Color _stateBorderColor(SportMatch match, UserPrediction? prediction) {
+  switch (match.status) {
+    case MatchStatus.live:
+      return Cyber.danger; // red — started
+    case MatchStatus.upcoming:
+      return _borderPredicted; // dark cyan — yet to begin
+    case MatchStatus.finished:
+      if (prediction == null) return _borderCol; // neutral edge
+      return prediction.status == PredictionStatus.settled
+          ? Cyber.cyan // cyan — revealed
+          : _timeGold; // gold — results ready
+  }
+}
+
 String _formatTime(DateTime dt) {
   final h = dt.hour.toString().padLeft(2, '0');
   final m = dt.minute.toString().padLeft(2, '0');

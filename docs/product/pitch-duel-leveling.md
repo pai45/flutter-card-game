@@ -60,6 +60,30 @@ Coins are awarded separately:
 | Draw | 25 |
 | Defeat | 10 |
 
+## XP From Penalty Shootout
+
+Standalone [Penalty Shootout](penalty-shootout.md) uses the same total XP, level, wallet, ledger, and match-history systems as Pitch Duel, but its rewards are smaller because sessions are shorter.
+
+Shootout XP is calculated by `calculateShootoutXP`:
+
+| Result | XP behavior |
+|--------|-------------|
+| Win by 1 | +8 XP |
+| Win by 2 | +10 XP |
+| Win by 3+ | +12 XP, capped |
+| Loss | 0 XP |
+
+Shootout losses do not subtract XP. This differs from full Pitch Duel match losses, which can apply negative XP.
+
+Shootout coins are awarded by `shootoutCoins`:
+
+| Result | Coins |
+|--------|-------|
+| Win | 20 |
+| Loss | 5 |
+
+When a standalone shootout ends, `GameBloc._onShootoutFinished` records the XP ledger source `shootout`, coin ledger source `shootoutReward`, a `shootout` match-history entry, and penalty shootout streak activity.
+
 ## XP From Cards And Packs
 
 Packs, daily drops, starter packs, and direct card unlocks all grant XP based on the cards revealed. Pack reward assembly lives in [`lib/models/packs.dart`](../../lib/models/packs.dart).
@@ -120,6 +144,8 @@ The scaling rules are:
 
 At level 1, CPU smartness is about 8.3%. At level 12 and above, smartness reaches 100%.
 
+Penalty Shootout uses the same level-derived target rating and CPU smartness. `generateShootoutOpponent` builds a five-player CPU lineup near the target rating, and the shootout CPU uses smartness to decide how often it reads the user's shot or dive habits before falling back to random directions.
+
 ## UI Surfaces
 
 Leveling appears in these user-facing areas:
@@ -137,8 +163,10 @@ Leveling appears in these user-facing areas:
 |---------|--------|
 | Level curve and XP application | [`lib/models/progression.dart`](../../lib/models/progression.dart) |
 | Match XP and coin rewards | [`lib/models/progression.dart`](../../lib/models/progression.dart) |
+| Shootout XP, coin rewards, and opponent generation | [`lib/models/progression.dart`](../../lib/models/progression.dart) |
 | Opponent difficulty scaling | [`lib/models/progression.dart`](../../lib/models/progression.dart) |
 | Match finish reward application | [`lib/blocs/game/game_bloc.dart`](../../lib/blocs/game/game_bloc.dart) |
+| Shootout finish reward application | [`lib/blocs/game/game_bloc.dart`](../../lib/blocs/game/game_bloc.dart) |
 | Pack reward application | [`lib/blocs/game/game_bloc.dart`](../../lib/blocs/game/game_bloc.dart) |
 | Pack XP totals | [`lib/models/packs.dart`](../../lib/models/packs.dart) |
 | Progression persistence | [`lib/services/secure_storage_service.dart`](../../lib/services/secure_storage_service.dart) |

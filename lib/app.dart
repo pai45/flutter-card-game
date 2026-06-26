@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'blocs/achievement/achievement_celebration_controller.dart';
+import 'blocs/friends/friends_cubit.dart';
 import 'blocs/game/game_bloc.dart';
 import 'blocs/game/game_event.dart';
 import 'blocs/game/game_state.dart';
@@ -9,10 +10,12 @@ import 'blocs/picks/picks_cubit.dart';
 import 'blocs/picks/picks_state.dart';
 import 'blocs/prediction/prediction_cubit.dart';
 import 'blocs/prediction/prediction_state.dart';
+import 'blocs/quiz/quiz_cubit.dart';
 import 'config/enums.dart';
 import 'config/theme.dart';
 import 'models/league.dart';
 import 'models/sport_match.dart';
+import 'screens/football_bingo/football_bingo_hub.dart';
 import 'screens/game/game_screen.dart';
 import 'screens/shootout/shootout_hub.dart';
 import 'screens/home/widgets/starter_pack_onboarding.dart';
@@ -20,6 +23,7 @@ import 'screens/onboarding/profile_setup_screen.dart';
 import 'screens/predictions/league_detail_screen.dart';
 import 'screens/predictions/match_prediction_screen.dart';
 import 'screens/predictions/prediction_home_screen.dart';
+import 'screens/quiz/quiz_hub.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/leaderboard/leaderboard_screen.dart';
 import 'screens/shop/shop_screen.dart';
@@ -28,6 +32,7 @@ import 'services/pick_repository.dart';
 import 'services/prediction_repository.dart';
 import 'services/secure_storage_service.dart';
 import 'widgets/achievement_celebration_host.dart';
+import 'widgets/reward_settlement_popup.dart';
 import 'widgets/streak_celebration_host.dart';
 
 class PitchDuelApp extends StatelessWidget {
@@ -52,6 +57,8 @@ class PitchDuelApp extends StatelessWidget {
         BlocProvider(
           create: (_) => AchievementCelebrationController(SecureGameStorage()),
         ),
+        BlocProvider(create: (_) => FriendsCubit(SecureGameStorage())..load()),
+        BlocProvider(create: (_) => QuizCubit(SecureGameStorage())..load()),
       ],
       child: MaterialApp(
         title: 'Pitch Duel',
@@ -117,6 +124,7 @@ class _AppShellState extends State<AppShell> {
   final SecureGameStorage _storage = SecureGameStorage();
   bool _onboardingLoading = true;
   bool _onboardingComplete = false;
+  bool _demoRewardSettlementSeen = true;
   String? _selectedAvatarId;
 
   @override
@@ -128,10 +136,12 @@ class _AppShellState extends State<AppShell> {
   Future<void> _loadOnboardingState() async {
     final avatarId = await _storage.loadSelectedAvatarId();
     final complete = await _storage.loadOnboardingComplete();
+    final demoRewardSeen = await _storage.loadDemoRewardSettlementSeen();
     if (!mounted) return;
     setState(() {
       _selectedAvatarId = avatarId;
       _onboardingComplete = complete;
+      _demoRewardSettlementSeen = demoRewardSeen;
       _onboardingLoading = false;
     });
   }
@@ -146,6 +156,30 @@ class _AppShellState extends State<AppShell> {
     section = AppSection.shop;
   });
 
+  /// Launch a card match against a CPU themed as a leaderboard rival. Reuses the
+  /// starter-pack gate, then opens the game flow straight into the match.
+  void _openChallenge(String opponentName, int opponentLevel) {
+    _enterGameFlow(() => _pushChallengeMatch(opponentName, opponentLevel));
+  }
+
+  void _pushChallengeMatch(String opponentName, int opponentLevel) {
+    final navigator = Navigator.of(context);
+    context.read<GameBloc>().add(
+      MatchStarted(opponentName: opponentName, opponentLevel: opponentLevel),
+    );
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => GameTabContent(
+          initialSection: AppSection.match,
+          onNavigate: (next) {
+            navigator.pop();
+            _go(next);
+          },
+        ),
+      ),
+    );
+  }
+
   Future<void> _completeProfileSetup(ProfileSetupResult result) async {
     await _storage.saveSelectedAvatarId(result.avatarId);
     await _storage.saveSelectedProfileBannerId(result.bannerId);
@@ -156,7 +190,14 @@ class _AppShellState extends State<AppShell> {
     setState(() {
       _selectedAvatarId = result.avatarId;
       _onboardingComplete = true;
+      _demoRewardSettlementSeen = false;
     });
+  }
+
+  Future<void> _dismissDemoRewardSettlement() async {
+    if (_demoRewardSettlementSeen) return;
+    setState(() => _demoRewardSettlementSeen = true);
+    await _storage.saveDemoRewardSettlementSeen();
   }
 
   Future<void> _logoutFromProfile() async {
@@ -168,6 +209,7 @@ class _AppShellState extends State<AppShell> {
       _pendingGameLaunch = null;
       _selectedAvatarId = null;
       _onboardingComplete = false;
+      _demoRewardSettlementSeen = false;
     });
   }
 
@@ -210,6 +252,36 @@ class _AppShellState extends State<AppShell> {
     navigator.push(
       MaterialPageRoute<void>(
         builder: (_) => ShootoutTabContent(
+          onNavigate: (next) {
+            navigator.pop();
+            _go(next);
+          },
+        ),
+      ),
+    );
+  }
+
+  /// Open the Football Quiz from the GAMES tab. Unlike the card games it needs
+  /// no starter deck, so it pushes straight in (no starter-pack gate).
+  void _openQuiz() {
+    final navigator = Navigator.of(context);
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => QuizTabContent(
+          onNavigate: (next) {
+            navigator.pop();
+            _go(next);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _openFootballBingo() {
+    final navigator = Navigator.of(context);
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => FootballBingoTabContent(
           onNavigate: (next) {
             navigator.pop();
             _go(next);
@@ -284,7 +356,7 @@ class _AppShellState extends State<AppShell> {
               reveal: packReveal,
             );
           }
-          return switch (section) {
+          final content = switch (section) {
             AppSection.shop => ShopScreen(
               onNavigate: _go,
               initialTab: _shopInitialTab,
@@ -292,10 +364,12 @@ class _AppShellState extends State<AppShell> {
             AppSection.leaderboard => LeaderboardScreen(
               onNavigate: _go,
               onAddCoins: _openShopCoins,
+              onChallenge: _openChallenge,
             ),
             AppSection.profile => ProfileScreen(
               onNavigate: _go,
               onLogout: _logoutFromProfile,
+              onChallenge: _openChallenge,
             ),
             _ => PredictionHomeScreen(
               activeTab: _predictionTab,
@@ -305,9 +379,23 @@ class _AppShellState extends State<AppShell> {
               onOpenLeague: _openLeague,
               onOpenGame: _openGame,
               onOpenShootout: _openShootout,
+              onOpenQuiz: _openQuiz,
+              onOpenFootballBingo: _openFootballBingo,
               onAddCoins: _openShopCoins,
             ),
           };
+          return Stack(
+            children: [
+              Positioned.fill(child: content),
+              if (!_demoRewardSettlementSeen)
+                Positioned.fill(
+                  child: RewardSettlementPopup(
+                    data: RewardSettlementDemoData.demo(),
+                    onDismiss: _dismissDemoRewardSettlement,
+                  ),
+                ),
+            ],
+          );
         },
       ),
     );
