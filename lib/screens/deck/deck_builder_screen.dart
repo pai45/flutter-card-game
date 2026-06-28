@@ -9,7 +9,9 @@ import '../../config/theme.dart';
 import '../../config/tutorial_steps.dart';
 import '../../models/cards.dart';
 import '../../models/deck.dart';
+import '../../models/football_chess.dart';
 import '../../utils/card_helpers.dart';
+import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
 import '../../widgets/match_widgets.dart';
@@ -30,6 +32,7 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
   late List<String?> selectedDefenders;
   late List<String?> selectedActions;
   String? selectedKeeper;
+  ChessFormation _selectedFormation = ChessFormation.box;
   bool editing = false;
   DeckPickerLane activeLane = DeckPickerLane.attacker;
   int activeSlotIndex = 0;
@@ -275,6 +278,31 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
                                     onSelectAction: _assignActionToActiveSlot,
                                   ),
                                 ],
+                                const SizedBox(height: 16),
+                                const SectionLabel(label: '5V5 FORMATION'),
+                                const SizedBox(height: 8),
+                                GridView.count(
+                                  crossAxisCount: 2,
+                                  shrinkWrap: true,
+                                  physics:
+                                      const NeverScrollableScrollPhysics(),
+                                  mainAxisSpacing: 10,
+                                  crossAxisSpacing: 10,
+                                  childAspectRatio: 1.45,
+                                  children: [
+                                    for (final f in ChessFormation.values)
+                                      _FormationTile(
+                                        formation: f,
+                                        selected: f == _selectedFormation,
+                                        onTap: () {
+                                          playSound(SoundEffect.cardSelect);
+                                          setState(
+                                            () => _selectedFormation = f,
+                                          );
+                                        },
+                                      ),
+                                  ],
+                                ),
                               ],
                             ),
                           ),
@@ -348,6 +376,11 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
           index < state.deckActions.length ? state.deckActions[index].id : null,
     );
     selectedKeeper = state.deckKeeper?.id;
+    final activeSlot = state.deckSlots.firstWhere(
+      (s) => s.id == state.activeDeckId,
+      orElse: () => state.deckSlots.first,
+    );
+    _selectedFormation = activeSlot.chessFormation ?? ChessFormation.box;
   }
 
   StoredDeckSlot _buildStoredSlot(String name, String id) => StoredDeckSlot(
@@ -357,6 +390,7 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
     defenders: selectedDefenders.whereType<String>().toList(),
     actions: selectedActions.whereType<String>().toList(),
     keeper: selectedKeeper,
+    chessFormation: _selectedFormation,
   );
 
   void _focusSlot(DeckPickerLane lane, int index) {
@@ -483,6 +517,81 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
       activeLane = DeckPickerLane.action;
       activeSlotIndex = nextAction;
     }
+  }
+}
+
+class _FormationTile extends StatelessWidget {
+  const _FormationTile({
+    required this.formation,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final ChessFormation formation;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = selected ? Cyber.cyan : Cyber.border;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              (selected ? Cyber.cyan : Cyber.panel2).withValues(alpha: 0.18),
+              Cyber.panel.withValues(alpha: 0.95),
+            ],
+          ),
+          border: Border.all(
+            color: accent.withValues(alpha: selected ? 1 : 0.6),
+            width: selected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(2),
+          boxShadow: selected ? Cyber.glow(Cyber.cyan) : null,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  formation.code,
+                  style: TextStyle(
+                    fontFamily: Cyber.displayFont,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1,
+                    color: selected ? Cyber.cyan : Colors.white,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+                const Spacer(),
+                if (selected)
+                  const Icon(Icons.check_circle, size: 16, color: Cyber.cyan),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Text(
+              formation.label,
+              style: Cyber.label(11,
+                  color: selected ? Cyber.cyan : Cyber.muted, letterSpacing: 1.4),
+            ),
+            const Spacer(),
+            Text(
+              formation.blurb,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Cyber.body(10).copyWith(color: Cyber.muted, height: 1.35),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

@@ -1,3 +1,5 @@
+import 'football_chess.dart';
+
 class StoredDeckSlot {
   const StoredDeckSlot({
     required this.id,
@@ -6,6 +8,7 @@ class StoredDeckSlot {
     required this.defenders,
     required this.actions,
     this.keeper,
+    this.chessFormation,
   });
 
   final String id;
@@ -17,6 +20,10 @@ class StoredDeckSlot {
   /// Card id of the deck's goalkeeper, or null if none is assigned yet.
   final String? keeper;
 
+  /// Formation used when this deck is played in 5v5 Football Chess.
+  /// Null means default (ChessFormation.box).
+  final ChessFormation? chessFormation;
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
@@ -24,6 +31,7 @@ class StoredDeckSlot {
     'defenders': defenders,
     'actions': actions,
     'keeper': keeper,
+    if (chessFormation != null) 'chessFormation': chessFormation!.name,
   };
 
   static StoredDeckSlot fromJson(Map<String, dynamic> json) => StoredDeckSlot(
@@ -34,6 +42,15 @@ class StoredDeckSlot {
     actions: List<String>.from(json['actions'] as List),
     // Older saved decks predate the keeper slot, so it may be absent.
     keeper: json['keeper'] as String?,
+    chessFormation: _parseFormation(json['chessFormation'] as String?),
+  );
+}
+
+ChessFormation? _parseFormation(String? name) {
+  if (name == null) return null;
+  return ChessFormation.values.firstWhere(
+    (f) => f.name == name,
+    orElse: () => ChessFormation.box,
   );
 }
 

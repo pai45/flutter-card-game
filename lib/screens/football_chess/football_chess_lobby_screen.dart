@@ -1,12 +1,14 @@
-import 'dart:math';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../blocs/football_chess/football_chess_cubit.dart';
 import '../../blocs/football_chess/football_chess_state.dart';
 import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_state.dart';
+import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../data/random_opponent_names.dart';
 import '../../models/cards.dart';
@@ -16,14 +18,17 @@ import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
+import '../../widgets/player_level_badge.dart';
 import 'football_chess_match_screen.dart';
 import 'football_chess_matchmaking_screen.dart';
 
-/// Pre-match lobby: lifetime record, the 5-a-side formation picker, and KICKOFF.
+/// Pre-match lobby — Pitch Duel-style hero hub with animated emblem, stat row,
+/// active-formation strip, and FIND MATCH CTA. Formation is now configured in
+/// the Deck Builder and saved per-deck.
 class FootballChessLobbyScreen extends StatefulWidget {
-  const FootballChessLobbyScreen({required this.onBack, super.key});
+  const FootballChessLobbyScreen({required this.onNavigate, super.key});
 
-  final VoidCallback onBack;
+  final ValueChanged<AppSection> onNavigate;
 
   @override
   State<FootballChessLobbyScreen> createState() =>
@@ -31,13 +36,23 @@ class FootballChessLobbyScreen extends StatefulWidget {
 }
 
 class _FootballChessLobbyScreenState extends State<FootballChessLobbyScreen> {
-  ChessFormation _formation = ChessFormation.box;
+  final _rng = math.Random();
 
-  final Random _rng = Random();
+  ChessFormation _activeFormation(GameState s) {
+    if (s.deckSlots.isEmpty) return ChessFormation.box;
+    final slot = s.deckSlots.firstWhere(
+      (d) => d.id == s.activeDeckId,
+      orElse: () => s.deckSlots.first,
+    );
+    return slot.chessFormation ?? ChessFormation.box;
+  }
 
-  /// Gate on a ready deck, build the match (fresh shuffled CPU squad), then run
-  /// the matchmaking search → card face-off → kickoff into the live pitch.
-  void _launch(ChessFormation formation) {
+  bool _deckReady(GameState s) =>
+      s.deckAttackers.length >= 2 &&
+      s.deckDefenders.length >= 2 &&
+      s.deckKeeper != null;
+
+  void _launch() {
     final game = context.read<GameBloc>().state;
     if (!_deckReady(game)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -48,6 +63,7 @@ class _FootballChessLobbyScreenState extends State<FootballChessLobbyScreen> {
       return;
     }
 
+    final formation = _activeFormation(game);
     final squad = <PlayerCard>[
       ...game.deckAttackers,
       ...game.deckDefenders,
@@ -92,7 +108,7 @@ class _FootballChessLobbyScreenState extends State<FootballChessLobbyScreen> {
                     onExit: navigator.pop,
                     onPlayAgain: () {
                       navigator.pop();
-                      _launch(formation);
+                      _launch();
                     },
                   ),
                 ),
@@ -104,67 +120,393 @@ class _FootballChessLobbyScreenState extends State<FootballChessLobbyScreen> {
     );
   }
 
-  bool _deckReady(GameState s) =>
-      s.deckAttackers.length >= 2 &&
-      s.deckDefenders.length >= 2 &&
-      s.deckKeeper != null;
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<GameBloc, GameState>(
+      buildWhen: (p, c) =>
+          p.deckSlots != c.deckSlots || p.progression != c.progression,
+      builder: (context, gameState) {
+        return BlocBuilder<FootballChessCubit, FootballChessState>(
+          builder: (context, chessState) {
+            final formation = _activeFormation(gameState);
+            final deckReady = _deckReady(gameState);
+
+            return Scaffold(
+              backgroundColor: Cyber.bg,
+              appBar: ReactHeaderBar(
+                title: '5V5 FOOTBALL CHESS',
+                subtitle: '// TACTICAL GRID DUEL',
+                onBack: () => widget.onNavigate(AppSection.predictions),
+                rightSlot: PlayerLevelBadge(
+                  progression: gameState.progression,
+                ),
+              ),
+              body: CyberBackground(
+                animated: true,
+                child: SafeArea(
+                  top: false,
+                  child: chessState.loading
+                      ? const Center(
+                          child: CircularProgressIndicator(color: Cyber.cyan),
+                        )
+                      : SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(24, 22, 24, 32),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 380),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // Greeble status strip
+                                const CyberSlideUpFadeIn(
+                                  child: _ChessLobbyStatusBar(),
+                                ),
+                                const SizedBox(height: 18),
+                                // Hero row: emblem + identity + chip
+                                CyberSlideUpFadeIn(
+                                  delay: const Duration(milliseconds: 80),
+                                  offset: 24,
+                                  child: Row(
+                                    children: [
+                                      const _ChessHeroEmblem(size: 92),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              '5V5 FOOTBALL CHESS',
+                                              style: Cyber.display(
+                                                22,
+                                                letterSpacing: 1.2,
+                                              ).copyWith(
+                                                shadows: [
+                                                  Shadow(
+                                                    color: Cyber.cyan
+                                                        .withValues(alpha: 0.45),
+                                                    blurRadius: 14,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              'TACTICAL GRID DUEL',
+                                              style: TextStyle(
+                                                color: Cyber.muted,
+                                                fontFamily: Cyber.displayFont,
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.w800,
+                                                letterSpacing: 2.4,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 10),
+                                            Align(
+                                              alignment: Alignment.centerLeft,
+                                              child: CyberChip(
+                                                label: deckReady
+                                                    ? 'DECK ONLINE'
+                                                    : 'BUILD DECK',
+                                                color: deckReady
+                                                    ? Cyber.lime
+                                                    : Cyber.amber,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                // Stats row
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: CyberDealtCard(
+                                        key: const ValueKey('chess-stat-wins'),
+                                        index: 0,
+                                        initialDelay: const Duration(
+                                          milliseconds: 180,
+                                        ),
+                                        flyDistance: 130,
+                                        child: _HudStat(
+                                          label: 'WINS',
+                                          value:
+                                              '${chessState.stats.wins}',
+                                          accent: Cyber.success,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: CyberDealtCard(
+                                        key: const ValueKey(
+                                          'chess-stat-losses',
+                                        ),
+                                        index: 1,
+                                        initialDelay: const Duration(
+                                          milliseconds: 180,
+                                        ),
+                                        flyDistance: 130,
+                                        child: _HudStat(
+                                          label: 'LOSSES',
+                                          value:
+                                              '${chessState.stats.losses}',
+                                          accent: Cyber.danger,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: CyberDealtCard(
+                                        key: const ValueKey(
+                                          'chess-stat-streak',
+                                        ),
+                                        index: 2,
+                                        initialDelay: const Duration(
+                                          milliseconds: 180,
+                                        ),
+                                        flyDistance: 130,
+                                        child: _HudStat(
+                                          label: 'STREAK',
+                                          value:
+                                              '${chessState.stats.currentStreak}',
+                                          accent: Cyber.cyan,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 14),
+                                // Active formation strip
+                                CyberSlideUpFadeIn(
+                                  delay: const Duration(milliseconds: 300),
+                                  child: _ActiveFormationStrip(
+                                    formation: formation,
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                // FIND MATCH — hero CTA
+                                CyberSlideUpFadeIn(
+                                  delay: const Duration(milliseconds: 390),
+                                  offset: 22,
+                                  child: deckReady
+                                      ? HudCtaButton(
+                                          label: 'FIND MATCH',
+                                          icon: Icons.sports_soccer,
+                                          tapSound: SoundEffect.playMatch,
+                                          helper:
+                                              'SHAPE: ${formation.code}  ${formation.label}',
+                                          onTap: _launch,
+                                        )
+                                      : Opacity(
+                                          opacity: 0.45,
+                                          child: IgnorePointer(
+                                            child: HudCtaButton(
+                                              label: 'FIND MATCH',
+                                              icon: Icons.sports_soccer,
+                                              onTap: () {},
+                                            ),
+                                          ),
+                                        ),
+                                ),
+                                const SizedBox(height: 14),
+                                // Secondary: Deck Builder
+                                CyberDealtCard(
+                                  key: const ValueKey('chess-action-deck'),
+                                  index: 0,
+                                  initialDelay: const Duration(
+                                    milliseconds: 470,
+                                  ),
+                                  staggerMs: 85,
+                                  flyDistance: 95,
+                                  duration: const Duration(milliseconds: 500),
+                                  child: CyberCtaButton(
+                                    label: 'Deck Builder',
+                                    clip: false,
+                                    onPressed: () {
+                                      HapticFeedback.selectionClick();
+                                      playSound(SoundEffect.uiTap);
+                                      widget.onNavigate(AppSection.deck);
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                // Rules text
+                                CyberSlideUpFadeIn(
+                                  delay: const Duration(milliseconds: 650),
+                                  offset: 14,
+                                  child: Text(
+                                    'Chess on a pitch: take turns, move a player or the ball, '
+                                    'win it back by position, and shoot from their half to score. '
+                                    'XP only — coins stay in the shop.',
+                                    textAlign: TextAlign.center,
+                                    style: Cyber.body(11).copyWith(
+                                      color: Cyber.muted,
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Private widgets
+// ---------------------------------------------------------------------------
+
+class _ChessLobbyStatusBar extends StatelessWidget {
+  const _ChessLobbyStatusBar();
 
   @override
   Widget build(BuildContext context) {
-    return GameScaffold(
-      title: '5v5 Football Chess',
-      subtitle: 'TACTICAL SQUAD DUEL',
-      leading: _BackButton(onTap: widget.onBack),
-      child: BlocBuilder<FootballChessCubit, FootballChessState>(
-        builder: (context, state) {
-          if (state.loading) {
-            return const Center(
-              child: CircularProgressIndicator(color: Cyber.cyan),
-            );
-          }
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+    return Row(
+      children: [
+        Container(
+          width: 7,
+          height: 7,
+          decoration: BoxDecoration(
+            color: Cyber.success,
+            shape: BoxShape.circle,
+            boxShadow: Cyber.glow(Cyber.success, alpha: 0.6, blur: 8, spread: 0),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          'ONLINE',
+          style: TextStyle(
+            color: Cyber.success,
+            fontFamily: Cyber.displayFont,
+            fontSize: 9,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 2,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(
+            height: 1,
+            color: Cyber.cyan.withValues(alpha: 0.16),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          'SYS://CHESS_GRID v1.0.0',
+          style: TextStyle(
+            color: Cyber.muted,
+            fontFamily: Cyber.displayFont,
+            fontSize: 8.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.2,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ChessHeroEmblem extends StatefulWidget {
+  const _ChessHeroEmblem({this.size = 92});
+
+  final double size;
+
+  @override
+  State<_ChessHeroEmblem> createState() => _ChessHeroEmblemState();
+}
+
+class _ChessHeroEmblemState extends State<_ChessHeroEmblem>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _spin;
+
+  @override
+  void initState() {
+    super.initState();
+    _spin = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3600),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _spin.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = widget.size;
+    return SizedBox(
+      width: size,
+      height: size,
+      child: AnimatedBuilder(
+        animation: _spin,
+        builder: (context, _) {
+          final phase = _spin.value * math.pi * 2;
+          final pulse = 0.5 + 0.5 * math.sin(phase * 2);
+          return Stack(
+            alignment: Alignment.center,
             children: [
-              _StatsHeader(stats: state.stats),
-              const SizedBox(height: 20),
-              Text(
-                'CHOOSE YOUR SHAPE',
-                style: Cyber.label(11, color: Cyber.muted, letterSpacing: 1.8),
+              Container(
+                width: size * 0.9,
+                height: size * 0.9,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Cyber.bg.withValues(alpha: 0.5),
+                  border: Border.all(
+                    color: Cyber.cyan.withValues(alpha: 0.26 + pulse * 0.12),
+                  ),
+                  boxShadow: Cyber.glow(
+                    Cyber.cyan,
+                    alpha: 0.2 + pulse * 0.08,
+                    blur: 18 + pulse * 4,
+                    spread: -4,
+                  ),
+                ),
               ),
-              const SizedBox(height: 12),
-              GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.45,
-                children: [
-                  for (final f in ChessFormation.values)
-                    _FormationTile(
-                      formation: f,
-                      selected: f == _formation,
-                      onTap: () {
-                        playSound(SoundEffect.cardSelect);
-                        setState(() => _formation = f);
-                      },
+              SizedBox(
+                width: size * 0.74,
+                height: size * 0.74,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Cyber.magenta.withValues(alpha: 0.18),
                     ),
-                ],
+                  ),
+                ),
               ),
-              const SizedBox(height: 24),
-              HudCtaButton(
-                label: 'FIND MATCH',
-                icon: Icons.sports_soccer,
-                tapSound: SoundEffect.playMatch,
-                onTap: () => _launch(_formation),
+              Transform.rotate(
+                angle: phase * 0.25,
+                child: Icon(
+                  Icons.grid_4x4,
+                  size: size * 0.58,
+                  color: Cyber.cyan,
+                  shadows: [
+                    Shadow(
+                      color: Cyber.cyan.withValues(alpha: 0.62),
+                      blurRadius: 16 + pulse * 4,
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 12),
-              Text(
-                'Chess on a pitch: take turns, move a player or the ball, '
-                'win it back by position, and shoot from their half to score. '
-                'XP only — coins stay in the shop.',
-                textAlign: TextAlign.center,
-                style: Cyber.body(11).copyWith(color: Cyber.muted, height: 1.5),
+              CustomPaint(
+                size: Size.square(size),
+                painter: _ChessCornerBracketsPainter(
+                  Cyber.cyan.withValues(alpha: 0.62 + pulse * 0.14),
+                ),
               ),
             ],
           );
@@ -174,143 +516,123 @@ class _FootballChessLobbyScreenState extends State<FootballChessLobbyScreen> {
   }
 }
 
-class _StatsHeader extends StatelessWidget {
-  const _StatsHeader({required this.stats});
+class _ChessCornerBracketsPainter extends CustomPainter {
+  const _ChessCornerBracketsPainter(this.color);
 
-  final FootballChessStats stats;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = color
+      ..strokeWidth = 1.5
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.square;
+    const len = 11.0;
+    final w = size.width;
+    final h = size.height;
+    canvas.drawLine(Offset.zero, const Offset(len, 0), p);
+    canvas.drawLine(Offset.zero, const Offset(0, len), p);
+    canvas.drawLine(Offset(w, 0), Offset(w - len, 0), p);
+    canvas.drawLine(Offset(w, 0), Offset(w, len), p);
+    canvas.drawLine(Offset(0, h), Offset(len, h), p);
+    canvas.drawLine(Offset(0, h), Offset(0, h - len), p);
+    canvas.drawLine(Offset(w, h), Offset(w - len, h), p);
+    canvas.drawLine(Offset(w, h), Offset(w, h - len), p);
+  }
+
+  @override
+  bool shouldRepaint(covariant _ChessCornerBracketsPainter old) =>
+      old.color != color;
+}
+
+class _HudStat extends StatelessWidget {
+  const _HudStat({
+    required this.label,
+    required this.value,
+    this.accent = Cyber.cyan,
+  });
+
+  final String label;
+  final String value;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
-    return CyberPanel(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Cyber.bg.withValues(alpha: 0.5),
+        border: Border.all(color: accent.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _stat('WINS', stats.wins, Cyber.gold),
-          _divider(),
-          _stat('LOSSES', stats.losses, Cyber.danger),
-          _divider(),
-          _stat('DRAWS', stats.draws, Cyber.amber),
-          _divider(),
-          _stat('STREAK', stats.currentStreak, Cyber.cyan),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontFamily: Cyber.displayFont,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Cyber.muted,
+              fontFamily: Cyber.displayFont,
+              fontSize: 7.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.8,
+            ),
+          ),
         ],
       ),
     );
   }
-
-  Widget _divider() =>
-      Container(width: 1, height: 34, color: Cyber.border.withValues(alpha: 0.6));
-
-  Widget _stat(String label, int value, Color color) {
-    return Column(
-      children: [
-        Text(
-          '$value',
-          style: TextStyle(
-            fontFamily: Cyber.displayFont,
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            color: color,
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(label, style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.2)),
-      ],
-    );
-  }
 }
 
-class _FormationTile extends StatelessWidget {
-  const _FormationTile({
-    required this.formation,
-    required this.selected,
-    required this.onTap,
-  });
+class _ActiveFormationStrip extends StatelessWidget {
+  const _ActiveFormationStrip({required this.formation});
 
   final ChessFormation formation;
-  final bool selected;
-  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final accent = selected ? Cyber.cyan : Cyber.border;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              (selected ? Cyber.cyan : Cyber.panel2).withValues(alpha: 0.18),
-              Cyber.panel.withValues(alpha: 0.95),
-            ],
-          ),
-          border: Border.all(
-            color: accent.withValues(alpha: selected ? 1 : 0.6),
-            width: selected ? 2 : 1,
-          ),
-          borderRadius: BorderRadius.circular(2),
-          boxShadow: selected ? Cyber.glow(Cyber.cyan) : null,
+    return Row(
+      children: [
+        Text(
+          'SHAPE',
+          style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.8),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text(
-                  formation.code,
-                  style: TextStyle(
-                    fontFamily: Cyber.displayFont,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1,
-                    color: selected ? Cyber.cyan : Colors.white,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-                const Spacer(),
-                if (selected)
-                  const Icon(Icons.check_circle, size: 16, color: Cyber.cyan),
-              ],
-            ),
-            const SizedBox(height: 2),
-            Text(
-              formation.label,
-              style: Cyber.label(11,
-                  color: selected ? Cyber.cyan : Cyber.muted, letterSpacing: 1.4),
-            ),
-            const Spacer(),
-            Text(
-              formation.blurb,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Cyber.body(10).copyWith(color: Cyber.muted, height: 1.35),
-            ),
-          ],
+        const SizedBox(width: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: Cyber.cyan.withValues(alpha: 0.10),
+            border: Border.all(color: Cyber.cyan.withValues(alpha: 0.5)),
+            borderRadius: BorderRadius.circular(2),
+          ),
+          child: Text(
+            '${formation.code}  ${formation.label}',
+            style: Cyber.label(11, color: Cyber.cyan, letterSpacing: 1.4),
+          ),
         ),
-      ),
-    );
-  }
-}
-
-class _BackButton extends StatelessWidget {
-  const _BackButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        playSound(SoundEffect.uiTap);
-        onTap();
-      },
-      child: const Center(
-        child: Icon(Icons.arrow_back_ios_new, size: 18, color: Cyber.cyan),
-      ),
+        const SizedBox(width: 8),
+        Text(
+          formation.blurb,
+          style: Cyber.body(10).copyWith(color: Cyber.muted),
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
   }
 }
