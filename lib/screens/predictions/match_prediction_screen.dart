@@ -1837,7 +1837,7 @@ class _OpenPicksDock extends StatelessWidget {
                     final screen = MarketDetailScreen(marketId: market.id);
                     if (prediction == null) return screen;
                     return BlocProvider<PredictionCubit>.value(
-                      value: prediction!,
+                      value: prediction,
                       child: screen,
                     );
                   },

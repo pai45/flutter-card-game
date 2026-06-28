@@ -3,7 +3,6 @@ import 'package:card_game/blocs/game/game_bloc.dart';
 import 'package:card_game/blocs/picks/picks_cubit.dart';
 import 'package:card_game/blocs/picks/picks_state.dart';
 import 'package:card_game/blocs/prediction/prediction_cubit.dart';
-import 'package:card_game/blocs/prediction/prediction_state.dart';
 import 'package:card_game/models/league.dart';
 import 'package:card_game/models/picks.dart';
 import 'package:card_game/models/prediction.dart';

@@ -41,6 +41,9 @@ dependencies:
   lottie: ^3.3.3
   share_plus: ^11.1.0
 
+  # 5v5 Football Chess game loop / renderer.
+  flame: ^1.18.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

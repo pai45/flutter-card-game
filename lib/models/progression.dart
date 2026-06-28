@@ -112,6 +112,20 @@ int calculateShootoutXP({required bool won, required int margin}) =>
 
 int shootoutCoins(bool won) => won ? 20 : 5;
 
+// XP for the 5v5 Football Chess mode — a full 2-minute tactical match, so it
+// pays a little more than the quick shootout. A win scales with the goal margin
+// (+14 base, +3 per extra goal, capped at +26); a draw is a small +6; a loss
+// still earns a tiny +2 for finishing. XP only — this mode never pays coins.
+int calculateFootballChessXP({
+  required bool won,
+  required bool draw,
+  required int goalMargin,
+}) {
+  if (won) return min(26, 14 + (goalMargin - 1).clamp(0, 99) * 3);
+  if (draw) return 6;
+  return 2;
+}
+
 class PlayerProgression {
   const PlayerProgression({required this.totalXP});
 

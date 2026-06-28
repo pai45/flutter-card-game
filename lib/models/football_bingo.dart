@@ -113,6 +113,7 @@ class FootballBingoProgress {
     required this.currentIndex,
     required this.lifelines,
     required this.completed,
+    required this.cellOrderIds,
   });
 
   factory FootballBingoProgress.initial(String puzzleId, DateTime now) =>
@@ -123,6 +124,7 @@ class FootballBingoProgress {
         currentIndex: 0,
         lifelines: kFootballBingoStartingLifelines,
         completed: false,
+        cellOrderIds: const [],
       );
 
   factory FootballBingoProgress.fromJson(Map<String, dynamic> json) =>
@@ -137,6 +139,9 @@ class FootballBingoProgress {
         currentIndex: json['currentIndex'] as int? ?? 0,
         lifelines: json['lifelines'] as int? ?? kFootballBingoStartingLifelines,
         completed: json['completed'] as bool? ?? false,
+        cellOrderIds: List<String>.from(
+          json['cellOrderIds'] as List? ?? const [],
+        ),
       );
 
   final String puzzleId;
@@ -145,6 +150,7 @@ class FootballBingoProgress {
   final int currentIndex;
   final int lifelines;
   final bool completed;
+  final List<String> cellOrderIds;
 
   Map<String, dynamic> toJson() => {
     'puzzleId': puzzleId,
@@ -153,6 +159,7 @@ class FootballBingoProgress {
     'currentIndex': currentIndex,
     'lifelines': lifelines,
     'completed': completed,
+    'cellOrderIds': cellOrderIds,
   };
 
   FootballBingoProgress copyWith({
@@ -162,6 +169,7 @@ class FootballBingoProgress {
     int? currentIndex,
     int? lifelines,
     bool? completed,
+    List<String>? cellOrderIds,
   }) => FootballBingoProgress(
     puzzleId: puzzleId ?? this.puzzleId,
     startedAt: startedAt ?? this.startedAt,
@@ -169,6 +177,7 @@ class FootballBingoProgress {
     currentIndex: currentIndex ?? this.currentIndex,
     lifelines: lifelines ?? this.lifelines,
     completed: completed ?? this.completed,
+    cellOrderIds: cellOrderIds ?? this.cellOrderIds,
   );
 }
 
@@ -237,6 +246,9 @@ List<FootballBingoValidationError> validateFootballBingoPuzzle(
   final playerIds = players.map((player) => player.id).toSet();
   final columnIds = puzzle.columns.map((axis) => axis.id).toSet();
   final rowIds = puzzle.rows.map((axis) => axis.id).toSet();
+  final cellSlots = <String>{};
+  final cellIds = <String>{};
+  final playerIdsInPuzzle = <String>{};
 
   if (puzzle.columns.length != kFootballBingoGridSize) {
     errors.add(
@@ -251,6 +263,22 @@ List<FootballBingoValidationError> validateFootballBingoPuzzle(
   }
 
   for (final cell in puzzle.cells) {
+    final cellKey = '${cell.rowId}:${cell.columnId}';
+    if (!cellSlots.add(cellKey)) {
+      errors.add(
+        FootballBingoValidationError(
+          'Duplicate cell for ${cell.rowId}/${cell.columnId}',
+        ),
+      );
+    }
+    if (!cellIds.add(cell.id)) {
+      errors.add(FootballBingoValidationError('Duplicate cell id ${cell.id}'));
+    }
+    if (!playerIdsInPuzzle.add(cell.playerId)) {
+      errors.add(
+        FootballBingoValidationError('Duplicate player ${cell.playerId}'),
+      );
+    }
     if (!rowIds.contains(cell.rowId)) {
       errors.add(FootballBingoValidationError('Unknown row ${cell.rowId}'));
     }
@@ -265,12 +293,6 @@ List<FootballBingoValidationError> validateFootballBingoPuzzle(
     if (!playerIds.contains(cell.playerId) || player == null) {
       errors.add(
         FootballBingoValidationError('Unknown player ${cell.playerId}'),
-      );
-    } else if (player.countryCode.toLowerCase() != cell.columnId) {
-      errors.add(
-        FootballBingoValidationError(
-          '${player.name} does not match ${cell.columnId}',
-        ),
       );
     }
   }

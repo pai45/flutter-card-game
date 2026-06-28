@@ -33,6 +33,7 @@ class PredictionHomeScreen extends StatefulWidget {
     required this.onOpenShootout,
     required this.onOpenQuiz,
     required this.onOpenFootballBingo,
+    required this.onOpenFootballChess,
     this.onAddCoins,
     super.key,
   });
@@ -46,6 +47,7 @@ class PredictionHomeScreen extends StatefulWidget {
   final VoidCallback onOpenShootout;
   final VoidCallback onOpenQuiz;
   final VoidCallback onOpenFootballBingo;
+  final VoidCallback onOpenFootballChess;
   final VoidCallback? onAddCoins;
 
   @override
@@ -118,6 +120,7 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
         onOpenShootout: widget.onOpenShootout,
         onOpenQuiz: widget.onOpenQuiz,
         onOpenFootballBingo: widget.onOpenFootballBingo,
+        onOpenFootballChess: widget.onOpenFootballChess,
         animateIntro: _shouldAnimateIntro(2),
         onIntroPlayed: () => _markIntroPlayed(2),
       ),
@@ -1768,6 +1771,7 @@ class _GamesTab extends StatefulWidget {
     required this.onOpenShootout,
     required this.onOpenQuiz,
     required this.onOpenFootballBingo,
+    required this.onOpenFootballChess,
     required this.animateIntro,
     required this.onIntroPlayed,
   });
@@ -1776,6 +1780,7 @@ class _GamesTab extends StatefulWidget {
   final VoidCallback onOpenShootout;
   final VoidCallback onOpenQuiz;
   final VoidCallback onOpenFootballBingo;
+  final VoidCallback onOpenFootballChess;
   final bool animateIntro;
   final VoidCallback? onIntroPlayed;
 
@@ -1866,11 +1871,25 @@ class _GamesTabState extends State<_GamesTab> {
         StaggeredCardEntrance(
           index: 4,
           animate: animateIntro,
+          child: _GameTile(
+            title: '5V5 FOOTBALL CHESS',
+            subtitle: 'TACTICAL SQUAD DUEL',
+            icon: Icons.grid_on,
+            accent: Cyber.gold,
+            featured: true,
+            showTrailingIcon: false,
+            onTap: widget.onOpenFootballChess,
+          ),
+        ),
+        const SizedBox(height: 12),
+        StaggeredCardEntrance(
+          index: 5,
+          animate: animateIntro,
           child: const _GameTile(
             title: 'ACCURACY CHALLENGE',
             subtitle: 'COMING SOON',
             icon: Icons.track_changes,
-            accent: Cyber.gold,
+            accent: Cyber.violet,
             locked: true,
           ),
         ),

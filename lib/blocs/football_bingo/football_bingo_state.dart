@@ -52,7 +52,12 @@ class FootballBingoState {
 
   FootballBingoCell? get currentCell {
     if (completed || readOnly) return null;
-    for (final cell in puzzle.cells) {
+    final orderedIds = progress.cellOrderIds.isEmpty
+        ? puzzle.cells.map((cell) => cell.id)
+        : progress.cellOrderIds;
+    for (final cellId in orderedIds) {
+      final cell = puzzle.cells.where((cell) => cell.id == cellId).firstOrNull;
+      if (cell == null) continue;
       if (!solvedCellIds.contains(cell.id)) return cell;
     }
     return null;

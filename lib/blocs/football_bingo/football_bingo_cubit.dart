@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/football_bingo_puzzles.dart';
@@ -181,7 +183,7 @@ class FootballBingoCubit extends Cubit<FootballBingoState> {
     return FootballBingoProgress.initial(
       puzzle.id,
       parseFootballBingoDayKey(dayKey) ?? DateTime.now(),
-    );
+    ).copyWith(cellOrderIds: _cellOrderFor(puzzle, dayKey));
   }
 
   FootballBingoProgress _safeProgress(
@@ -199,6 +201,7 @@ class FootballBingoCubit extends Cubit<FootballBingoState> {
     final safeSolved = progress.solvedCellIds
         .where((id) => resolvedPuzzle.cells.any((cell) => cell.id == id))
         .toList();
+    final safeOrder = _safeCellOrder(progress, resolvedPuzzle, dayKey);
     return progress.copyWith(
       puzzleId: resolvedPuzzle.id,
       startedAt: parseFootballBingoDayKey(dayKey) ?? progress.startedAt,
@@ -206,6 +209,40 @@ class FootballBingoCubit extends Cubit<FootballBingoState> {
       currentIndex: safeSolved.length,
       lifelines: progress.lifelines.clamp(0, 99),
       completed: safeSolved.length == resolvedPuzzle.cells.length,
+      cellOrderIds: safeOrder,
     );
+  }
+
+  List<String> _safeCellOrder(
+    FootballBingoProgress progress,
+    FootballBingoPuzzle puzzle,
+    String dayKey,
+  ) {
+    final cellIds = puzzle.cells.map((cell) => cell.id).toSet();
+    final seen = <String>{};
+    final order = progress.cellOrderIds
+        .where((id) => cellIds.contains(id) && seen.add(id))
+        .toList();
+    if (order.toSet().length == cellIds.length &&
+        order.length == cellIds.length) {
+      return order;
+    }
+    final missing = cellIds.difference(order.toSet()).toList();
+    return [...order, ..._cellOrderFor(puzzle, dayKey).where(missing.contains)];
+  }
+
+  List<String> _cellOrderFor(FootballBingoPuzzle puzzle, String dayKey) {
+    final ids = puzzle.cells.map((cell) => cell.id).toList();
+    ids.shuffle(Random(_stableSeed('${puzzle.id}:$dayKey')));
+    return ids;
+  }
+
+  int _stableSeed(String value) {
+    var hash = 0x811c9dc5;
+    for (final unit in value.codeUnits) {
+      hash ^= unit;
+      hash = (hash * 0x01000193) & 0x7fffffff;
+    }
+    return hash;
   }
 }

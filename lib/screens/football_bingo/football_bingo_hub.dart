@@ -6,6 +6,7 @@ import '../../blocs/football_bingo/football_bingo_state.dart';
 import '../../config/enums.dart';
 import '../../services/secure_storage_service.dart';
 import 'football_bingo_home_screen.dart';
+import 'football_bingo_logs_screen.dart';
 import 'football_bingo_screen.dart';
 
 class FootballBingoTabContent extends StatefulWidget {
@@ -20,14 +21,20 @@ class FootballBingoTabContent extends StatefulWidget {
 
 class _FootballBingoTabContentState extends State<FootballBingoTabContent> {
   bool _showGrid = false;
+  bool _showLogs = false;
 
   Future<void> _openDay(BuildContext context, String dayKey) async {
     await context.read<FootballBingoCubit>().openDay(dayKey);
     if (!mounted) return;
-    setState(() => _showGrid = true);
+    setState(() {
+      _showGrid = true;
+      _showLogs = false;
+    });
   }
 
   void _backHome() => setState(() => _showGrid = false);
+  void _openLogs() => setState(() => _showLogs = true);
+  void _closeLogs() => setState(() => _showLogs = false);
 
   @override
   Widget build(BuildContext context) {
@@ -41,10 +48,18 @@ class _FootballBingoTabContentState extends State<FootballBingoTabContent> {
               onCompleted: _backHome,
             );
           }
+          if (_showLogs) {
+            return FootballBingoLogsScreen(
+              state: state,
+              onBack: _closeLogs,
+              onOpenDay: (dayKey) => _openDay(context, dayKey),
+            );
+          }
           return FootballBingoHomeScreen(
             state: state,
             onBack: () => widget.onNavigate(AppSection.predictions),
             onOpenDay: (dayKey) => _openDay(context, dayKey),
+            onOpenLogs: _openLogs,
           );
         },
       ),

@@ -16,6 +16,7 @@ import 'config/theme.dart';
 import 'models/league.dart';
 import 'models/sport_match.dart';
 import 'screens/football_bingo/football_bingo_hub.dart';
+import 'screens/football_chess/football_chess_hub.dart';
 import 'screens/game/game_screen.dart';
 import 'screens/shootout/shootout_hub.dart';
 import 'screens/home/widgets/starter_pack_onboarding.dart';
@@ -221,6 +222,10 @@ class _AppShellState extends State<AppShell> {
   /// Enter the standalone Penalty Shootout game from the GAMES tab.
   void _openShootout() => _enterGameFlow(_pushShootout);
 
+  /// Enter 5v5 Football Chess from the GAMES tab — it fields the equipped deck,
+  /// so it shares the starter-pack gate with the other deck-based games.
+  void _openFootballChess() => _enterGameFlow(_pushFootballChess);
+
   /// Both games share the starter deck — claim the starter pack first on a
   /// first launch, then push the requested flow once the reveal completes.
   void _enterGameFlow(VoidCallback push) {
@@ -252,6 +257,20 @@ class _AppShellState extends State<AppShell> {
     navigator.push(
       MaterialPageRoute<void>(
         builder: (_) => ShootoutTabContent(
+          onNavigate: (next) {
+            navigator.pop();
+            _go(next);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _pushFootballChess() {
+    final navigator = Navigator.of(context);
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => FootballChessTabContent(
           onNavigate: (next) {
             navigator.pop();
             _go(next);
@@ -381,6 +400,7 @@ class _AppShellState extends State<AppShell> {
               onOpenShootout: _openShootout,
               onOpenQuiz: _openQuiz,
               onOpenFootballBingo: _openFootballBingo,
+              onOpenFootballChess: _openFootballChess,
               onAddCoins: _openShopCoins,
             ),
           };
