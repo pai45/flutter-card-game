@@ -1497,11 +1497,12 @@ class _PackTile extends StatelessWidget {
         final double packH = packW * 1.42;
         final double titleSize = narrow ? 10.0 : 11.0;
         final double metaSize = narrow ? 8.0 : 9.0;
-        final double guaranteeSize = narrow ? 7.5 : 8.0;
 
         return ShopCardFrame(
           accent: accent,
           focal: pack.gradientAccent,
+          // Calmer wash so the accent-coloured pack name stays readable.
+          tint: 0.04,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -1509,6 +1510,7 @@ class _PackTile extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
                   child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Stack(
                         clipBehavior: Clip.none,
@@ -1564,48 +1566,6 @@ class _PackTile extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 6),
-                      Expanded(
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.72),
-                            border: Border.all(
-                              color: accent.withValues(alpha: 0.65),
-                            ),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(
-                                Icons.verified,
-                                color: Colors.white.withValues(alpha: 0.92),
-                                size: narrow ? 10 : 11,
-                              ),
-                              const SizedBox(width: 5),
-                              Expanded(
-                                child: Text(
-                                  pack.guarantee,
-                                  maxLines: 4,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.94),
-                                    fontFamily: 'Onest',
-                                    fontSize: guaranteeSize,
-                                    fontWeight: FontWeight.w600,
-                                    height: 1.25,
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -1625,7 +1585,9 @@ class _PackTile extends StatelessWidget {
         final isDisabled = isStarterPack && state.starterPackClaimed;
         if (isDisabled) {
           return Container(
-            height: 36,
+            // Uniform 72px footer so every pack's "what's inside" box is the
+            // same height (single-row packs match the two-row paid packs).
+            height: 72,
             color: Colors.black.withValues(alpha: 0.88),
             alignment: Alignment.center,
             child: Text(
@@ -1646,7 +1608,9 @@ class _PackTile extends StatelessWidget {
             ShopPressable(
               onTap: () => _buyWithCoins(context),
               child: Container(
-                height: 36,
+                // Free packs get the full 72px slot so their guarantee box
+                // lines up with the two-row paid packs.
+                height: isStarterPack ? 72 : 36,
                 color: Colors.black.withValues(alpha: 0.88),
                 alignment: Alignment.center,
                 child: isStarterPack
@@ -1655,7 +1619,7 @@ class _PackTile extends StatelessWidget {
                         style: TextStyle(
                           color: accent,
                           fontFamily: 'Orbitron',
-                          fontSize: 10,
+                          fontSize: 12,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1.4,
                         ),

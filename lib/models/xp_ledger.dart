@@ -12,6 +12,7 @@ enum XpTransactionSource {
   streakReward,
   cardUnlock,
   quiz,
+  footballChess,
 }
 
 class XpLedgerEntry {

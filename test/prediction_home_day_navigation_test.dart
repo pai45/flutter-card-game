@@ -122,6 +122,7 @@ Future<void> _pumpHome(WidgetTester tester, PredictionCubit cubit) async {
           onOpenShootout: () {},
           onOpenQuiz: () {},
           onOpenFootballBingo: () {},
+          onOpenFootballChess: () {},
         ),
       ),
     ),

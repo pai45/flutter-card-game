@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/deck.dart';
 import '../models/football_bingo.dart';
+import '../models/football_chess.dart';
 import '../models/match.dart';
 import '../models/oz_coin_ledger.dart';
 import '../models/picks.dart';
@@ -135,6 +136,7 @@ class SecureGameStorage {
   static const _quizProgressKey = 'pd_quiz_progress_v1';
   static const _footballBingoProgressKey = 'pd_football_bingo_progress_v1';
   static const _footballBingoArchiveKey = 'pd_football_bingo_archive_v1';
+  static const _footballChessStatsKey = 'pd_football_chess_stats_v1';
 
   final FlutterSecureStorage _storage;
 
@@ -329,6 +331,24 @@ class SecureGameStorage {
       _footballBingoArchiveKey,
       jsonEncode(archive.toJson()),
     );
+  }
+
+  Future<FootballChessStats> loadFootballChessStats() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_footballChessStatsKey);
+      if (raw == null || raw.isEmpty) return const FootballChessStats();
+      return FootballChessStats.fromJson(
+        Map<String, dynamic>.from(jsonDecode(raw) as Map),
+      );
+    } catch (_) {
+      return const FootballChessStats();
+    }
+  }
+
+  Future<void> saveFootballChessStats(FootballChessStats stats) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_footballChessStatsKey, jsonEncode(stats.toJson()));
   }
 
   Future<List<UserPrediction>> loadPredictions() async {

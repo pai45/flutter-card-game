@@ -4,9 +4,11 @@ import 'package:card_game/blocs/game/game_event.dart';
 import 'package:card_game/data/football_bingo_puzzles.dart';
 import 'package:card_game/models/cards.dart';
 import 'package:card_game/models/football_bingo.dart';
+import 'package:card_game/screens/football_bingo/football_bingo_home_screen.dart';
 import 'package:card_game/screens/football_bingo/football_bingo_hub.dart';
 import 'package:card_game/screens/football_bingo/football_bingo_screen.dart';
 import 'package:card_game/services/secure_storage_service.dart';
+import 'package:card_game/widgets/team_logo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -27,7 +29,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  test('seed puzzle is a valid 3x3 player country grid', () {
+  test('seed puzzle is a valid 3x3 club-club grid', () {
     for (final puzzle in footballBingoPuzzles) {
       final errors = validateFootballBingoPuzzle(puzzle, allPlayerCards);
       expect(errors.map((e) => e.message), isEmpty);
@@ -59,10 +61,11 @@ void main() {
 
   test('legacy single progress migrates into a daily archive', () async {
     final storage = SecureGameStorage();
+    final legacyCell = footballBingoPuzzles.first.cells.first.id;
     final legacy = FootballBingoProgress.initial(
       footballBingoPuzzles.first.id,
       DateTime(2026, 2, 4, 12),
-    ).copyWith(solvedCellIds: ['psg-uru'], currentIndex: 1);
+    ).copyWith(solvedCellIds: [legacyCell], currentIndex: 1);
     await storage.saveFootballBingoProgress(legacy);
 
     final cubit = await _loaded(now: DateTime(2026, 2, 5, 10));
@@ -71,8 +74,29 @@ void main() {
     expect(cubit.state.unlockedDayKeys, ['2026-02-04', '2026-02-05']);
     expect(
       cubit.state.archive.progressByDay['2026-02-04']!.solvedCellIds,
-      contains('psg-uru'),
+      contains(legacyCell),
     );
+    expect(
+      cubit.state.archive.progressByDay['2026-02-04']!.cellOrderIds,
+      hasLength(9),
+    );
+  });
+
+  test('daily prompt order is shuffled and persists across reloads', () async {
+    final day = DateTime(2026, 4, 8, 9);
+    final cubit = await _loaded(now: day);
+    final authored = cubit.state.puzzle.cells.map((cell) => cell.id).toList();
+    final order = cubit.state.progress.cellOrderIds;
+    await cubit.close();
+
+    final reloaded = await _loaded(now: day);
+    addTearDown(reloaded.close);
+
+    expect(order, hasLength(9));
+    expect(order.toSet(), authored.toSet());
+    expect(order, isNot(authored));
+    expect(reloaded.state.progress.cellOrderIds, order);
+    expect(reloaded.state.currentCell!.id, order.first);
   });
 
   test('correct answers solve and wrong answers spend lifelines', () async {
@@ -80,7 +104,10 @@ void main() {
     addTearDown(cubit.close);
 
     final first = cubit.state.currentCell!;
-    expect(await cubit.selectCell('psg-bra'), isFalse);
+    final wrong = cubit.state.puzzle.cells.firstWhere(
+      (cell) => cell.id != first.id,
+    );
+    expect(await cubit.selectCell(wrong.id), isFalse);
     expect(cubit.state.progress.lifelines, 4);
     expect(cubit.state.progress.solvedCellIds, isEmpty);
 
@@ -96,7 +123,11 @@ void main() {
       addTearDown(cubit.close);
 
       for (var i = 0; i < kFootballBingoStartingLifelines; i++) {
-        await cubit.selectCell('psg-bra');
+        final current = cubit.state.currentCell!;
+        final wrong = cubit.state.puzzle.cells.firstWhere(
+          (cell) => cell.id != current.id,
+        );
+        await cubit.selectCell(wrong.id);
       }
       expect(cubit.state.needsLifeline, isTrue);
 
@@ -114,8 +145,11 @@ void main() {
   test('progress persists across reloads', () async {
     final cubit = await _loaded();
     final first = cubit.state.currentCell!;
+    final wrong = cubit.state.puzzle.cells.firstWhere(
+      (cell) => cell.id != first.id,
+    );
     await cubit.selectCell(first.id);
-    await cubit.selectCell('psg-por');
+    await cubit.selectCell(wrong.id);
     await cubit.close();
 
     final reloaded = await _loaded();
@@ -134,7 +168,10 @@ void main() {
     await reloaded.openDay('2026-03-01', now: DateTime(2026, 3, 2, 9));
 
     expect(reloaded.state.readOnly, isTrue);
-    expect(await reloaded.selectCell('psg-uru'), isFalse);
+    expect(
+      await reloaded.selectCell(reloaded.state.puzzle.cells.first.id),
+      isFalse,
+    );
     expect(reloaded.state.progress.solvedCellIds, isEmpty);
     expect(await reloaded.buyLifeline(100), isFalse);
   });
@@ -158,10 +195,15 @@ void main() {
     );
     await tester.pump();
 
+    final player = bingo.state.currentPlayer!;
     expect(find.text('BINGO GRID'), findsOneWidget);
-    expect(find.text('URU'), findsOneWidget);
-    expect(find.text('PSG'), findsOneWidget);
-    expect(find.text('Manuel Ugarte'), findsOneWidget);
+    expect(find.byType(TeamLogo), findsNWidgets(6));
+    await tester.drag(find.byType(ListView), const Offset(0, -260));
+    await tester.pump();
+    expect(find.text(player.position), findsOneWidget);
+    expect(find.text(player.trait.toUpperCase()), findsOneWidget);
+    expect(find.text(player.name), findsNothing);
+    expect(find.text(player.countryCode), findsNothing);
     expect(find.byIcon(Icons.favorite), findsWidgets);
   });
 
@@ -183,14 +225,76 @@ void main() {
     await tester.pump();
 
     expect(find.text('FOOTBALL BINGO'), findsOneWidget);
-    expect(find.text('TODAY\'S GRID'), findsOneWidget);
+    expect(find.text('DAILY LOGS'), findsOneWidget);
     expect(find.text('PLAY TODAY\'S GRID'), findsOneWidget);
 
     await tester.tap(find.text('PLAY TODAY\'S GRID'));
     await tester.pumpAndSettle();
 
     expect(find.text('BINGO GRID'), findsOneWidget);
-    expect(find.text('Manuel Ugarte'), findsOneWidget);
+    final active = find.textContaining('/');
+    expect(active, findsWidgets);
+  });
+
+  testWidgets('bingo home keeps log cards off the landing page', (
+    tester,
+  ) async {
+    final bingo = await _loaded();
+    for (var i = 0; i < 9; i++) {
+      await bingo.selectCell(bingo.state.currentCell!.id);
+    }
+    final state = bingo.state;
+    await bingo.close();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FootballBingoHomeScreen(
+          state: state,
+          onBack: () {},
+          onOpenDay: (_) {},
+          onOpenLogs: () {},
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('DAILY LOGS'), findsOneWidget);
+    expect(find.text('COMPLETED GRID'), findsNothing);
+  });
+
+  testWidgets('daily logs page shows completed today', (tester) async {
+    final game = GameBloc(SecureGameStorage())..add(GameLoaded());
+    addTearDown(game.close);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider.value(
+          value: game,
+          child: FootballBingoTabContent(onNavigate: (_) {}),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(find.text('PLAY TODAY\'S GRID'));
+    await tester.pumpAndSettle();
+
+    final cubit = tester
+        .element(find.byType(FootballBingoScreen))
+        .read<FootballBingoCubit>();
+    while (!cubit.state.completed) {
+      await cubit.selectCell(cubit.state.currentCell!.id);
+    }
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    await tester.tap(find.text('DAILY LOGS'));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('BINGO LOGS'), findsOneWidget);
+    expect(find.text('COMPLETED GRID'), findsOneWidget);
+    expect(find.text('9/9'), findsWidgets);
   });
 
   testWidgets('completion overlay appears and returns home', (tester) async {
@@ -223,8 +327,10 @@ void main() {
     await tester.tap(find.byKey(ValueKey('bingo-cell-$finalCell')));
     await tester.pump(const Duration(milliseconds: 200));
 
-    expect(find.text('GRID COMPLETE'), findsWidgets);
-    await tester.pump(const Duration(seconds: 2));
+    expect(find.byKey(const ValueKey('bingo-card-reveal')), findsNothing);
+    for (var i = 0; i < 120 && !completed; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     expect(completed, isTrue);
   });
 }

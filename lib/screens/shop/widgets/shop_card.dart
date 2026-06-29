@@ -100,6 +100,7 @@ class ShopCardFrame extends StatelessWidget {
     required this.child,
     this.focal = false,
     this.elevated = false,
+    this.tint = 0.12,
     this.stamp,
     super.key,
   });
@@ -110,6 +111,11 @@ class ShopCardFrame extends StatelessWidget {
 
   /// Calm lift via offset hard shadow — depth without accent glow.
   final bool elevated;
+
+  /// Strength of the accent wash on the surface gradient. Lower it (e.g. on the
+  /// pack tiles) when accent-coloured text sits on the surface so the copy stays
+  /// readable against a near-black fill.
+  final double tint;
   final Widget? stamp;
 
   static const Color _elevShadow = Color(0xff04060b);
@@ -134,7 +140,7 @@ class ShopCardFrame extends StatelessWidget {
                       kShopSurface.withValues(alpha: 0.92),
                       kShopBg,
                     ]
-                  : [accent.withValues(alpha: 0.12), kShopBg],
+                  : [accent.withValues(alpha: tint), kShopBg],
             ),
           ),
           child: Stack(

@@ -1567,6 +1567,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     keeper: goalkeepers.any((card) => card.id == slot.keeper)
         ? slot.keeper
         : null,
+    chessFormation: slot.chessFormation,
   );
 
   String _resultLabelForState(GameState state) {
