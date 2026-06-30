@@ -64,8 +64,6 @@ class ChessMatch {
     this.banner,
     this.lastMove,
     this.moveLog = const [],
-    this.playerMomentum = 0,
-    this.opponentMomentum = 0,
     this.goals = const [],
     this.eventTick = 0,
   });
@@ -113,10 +111,6 @@ class ChessMatch {
   final LastMove? lastMove;
   final List<MoveLogEntry> moveLog;
 
-  /// Per-side momentum gauge (0..kMomentumMax); full → next duel is boosted.
-  final int playerMomentum;
-  final int opponentMomentum;
-
   final List<ChessGoal> goals;
   final int eventTick;
 
@@ -124,9 +118,6 @@ class ChessMatch {
   bool get playerWon => playerScore > opponentScore;
   bool get isDraw => playerScore == opponentScore;
   bool get hasSelection => selectedPieceId != null;
-
-  int momentumFor(Side side) =>
-      side == Side.player ? playerMomentum : opponentMomentum;
 
   BoardPiece? get selectedPiece =>
       selectedPieceId == null ? null : board.pieceById(selectedPieceId!);
@@ -151,8 +142,6 @@ class ChessMatch {
     Object? banner = _sentinel,
     LastMove? lastMove,
     List<MoveLogEntry>? moveLog,
-    int? playerMomentum,
-    int? opponentMomentum,
     List<ChessGoal>? goals,
     int? eventTick,
   }) => ChessMatch(
@@ -185,8 +174,6 @@ class ChessMatch {
     banner: identical(banner, _sentinel) ? this.banner : banner as String?,
     lastMove: lastMove ?? this.lastMove,
     moveLog: moveLog ?? this.moveLog,
-    playerMomentum: playerMomentum ?? this.playerMomentum,
-    opponentMomentum: opponentMomentum ?? this.opponentMomentum,
     goals: goals ?? this.goals,
     eventTick: eventTick ?? this.eventTick,
   );

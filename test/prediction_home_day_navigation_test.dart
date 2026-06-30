@@ -35,6 +35,85 @@ void main() {
     expect(_headingText('(1)'), findsOneWidget);
   });
 
+  testWidgets('new games release section appears above match day header', (
+    tester,
+  ) async {
+    final cubit = _NavCubit(_NavRepo());
+    cubit.seed(_fixtures());
+    addTearDown(cubit.close);
+
+    await _pumpHome(tester, cubit);
+
+    final releaseCard = find.byKey(const ValueKey('new-games-release-card'));
+    expect(releaseCard, findsOneWidget);
+    expect(find.text('BRAND NEW GAMES'), findsOneWidget);
+    final heading = find.byKey(const ValueKey('match-day-heading'));
+    expect(
+      tester.getTopLeft(releaseCard).dy,
+      lessThan(tester.getTopLeft(heading).dy),
+    );
+  });
+
+  testWidgets('tapping new games release section opens release page', (
+    tester,
+  ) async {
+    final cubit = _NavCubit(_NavRepo());
+    cubit.seed(_fixtures());
+    addTearDown(cubit.close);
+
+    await _pumpHome(tester, cubit);
+
+    await tester.tap(find.byKey(const ValueKey('new-games-release-card')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('new-games-release-screen')),
+      findsOneWidget,
+    );
+    expect(find.text('PITCH DUEL'), findsOneWidget);
+    expect(find.text('PENALTY SHOOTOUT'), findsOneWidget);
+    expect(find.text('PLAY PITCH DUEL'), findsOneWidget);
+    expect(find.text('PLAY SHOOTOUT'), findsOneWidget);
+  });
+
+  testWidgets('pitch duel release page CTA opens Pitch Duel', (tester) async {
+    final cubit = _NavCubit(_NavRepo());
+    cubit.seed(_fixtures());
+    addTearDown(cubit.close);
+    var openedPitchDuel = false;
+
+    await _pumpHome(tester, cubit, onOpenGame: () => openedPitchDuel = true);
+
+    await tester.tap(find.byKey(const ValueKey('new-games-release-card')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('new-games-page-pitch-duel-cta')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(openedPitchDuel, isTrue);
+  });
+
+  testWidgets('penalty shootout release page CTA opens Penalty Shootout', (
+    tester,
+  ) async {
+    final cubit = _NavCubit(_NavRepo());
+    cubit.seed(_fixtures());
+    addTearDown(cubit.close);
+    var openedShootout = false;
+
+    await _pumpHome(tester, cubit, onOpenShootout: () => openedShootout = true);
+
+    await tester.tap(find.byKey(const ValueKey('new-games-release-card')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(const ValueKey('new-games-page-penalty-shootout-cta')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(openedShootout, isTrue);
+  });
+
   testWidgets('match day arrows move to tomorrow and yesterday', (
     tester,
   ) async {
@@ -87,21 +166,30 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('match-day-calendar-button')));
     await tester.pumpAndSettle();
 
-    final tomorrow = _today().add(const Duration(days: 1));
-    await tester.tap(
-      find.descendant(
-        of: find.byType(CalendarDatePicker),
-        matching: find.text('${tomorrow.day}'),
-      ),
+    final today = _today();
+    final target = today.day > 1
+        ? today.subtract(const Duration(days: 1))
+        : today.add(const Duration(days: 1));
+    final expectedLabel = target.isBefore(today) ? 'YESTERDAY' : 'TOMORROW';
+    final targetCell = find.descendant(
+      of: find.byType(CalendarDatePicker),
+      matching: find.text('${target.day}'),
     );
+    await tester.tap(targetCell.last);
+    await tester.pump();
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
 
-    expect(_headingText('TOMORROW'), findsOneWidget);
+    expect(_headingText(expectedLabel), findsOneWidget);
   });
 }
 
-Future<void> _pumpHome(WidgetTester tester, PredictionCubit cubit) async {
+Future<void> _pumpHome(
+  WidgetTester tester,
+  PredictionCubit cubit, {
+  VoidCallback? onOpenGame,
+  VoidCallback? onOpenShootout,
+}) async {
   final gameBloc = GameBloc(SecureGameStorage());
   addTearDown(gameBloc.close);
 
@@ -118,11 +206,12 @@ Future<void> _pumpHome(WidgetTester tester, PredictionCubit cubit) async {
           onNavigate: (_) {},
           onOpenMatch: (_) {},
           onOpenLeague: (_) {},
-          onOpenGame: () {},
-          onOpenShootout: () {},
+          onOpenGame: onOpenGame ?? () {},
+          onOpenShootout: onOpenShootout ?? () {},
           onOpenQuiz: () {},
           onOpenFootballBingo: () {},
           onOpenFootballChess: () {},
+          onOpenGuessPlayer: () {},
         ),
       ),
     ),

@@ -57,7 +57,9 @@ class _FootballChessLobbyScreenState extends State<FootballChessLobbyScreen> {
     if (!_deckReady(game)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Build a full 5-a-side deck first (2 ATK · 2 DEF · GK).'),
+          content: Text(
+            'Build a full 5-a-side deck first (2 ATK · 2 DEF · GK).',
+          ),
         ),
       );
       return;
@@ -137,9 +139,8 @@ class _FootballChessLobbyScreenState extends State<FootballChessLobbyScreen> {
                 title: '5V5 FOOTBALL CHESS',
                 subtitle: '// TACTICAL GRID DUEL',
                 onBack: () => widget.onNavigate(AppSection.predictions),
-                rightSlot: PlayerLevelBadge(
-                  progression: gameState.progression,
-                ),
+                showTitle: false,
+                rightSlot: PlayerLevelBadge(progression: gameState.progression),
               ),
               body: CyberBackground(
                 animated: true,
@@ -149,209 +150,246 @@ class _FootballChessLobbyScreenState extends State<FootballChessLobbyScreen> {
                       ? const Center(
                           child: CircularProgressIndicator(color: Cyber.cyan),
                         )
-                      : SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(24, 22, 24, 32),
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 380),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                // Greeble status strip
-                                const CyberSlideUpFadeIn(
-                                  child: _ChessLobbyStatusBar(),
-                                ),
-                                const SizedBox(height: 18),
-                                // Hero row: emblem + identity + chip
-                                CyberSlideUpFadeIn(
-                                  delay: const Duration(milliseconds: 80),
-                                  offset: 24,
-                                  child: Row(
-                                    children: [
-                                      const _ChessHeroEmblem(size: 92),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            return SingleChildScrollView(
+                              padding: const EdgeInsets.fromLTRB(
+                                24,
+                                16,
+                                24,
+                                24,
+                              ),
+                              child: Center(
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxWidth: 380,
+                                    minHeight: math.max(
+                                      0,
+                                      constraints.maxHeight - 40,
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        // Greeble status strip
+                                        const CyberSlideUpFadeIn(
+                                          child: _ChessLobbyStatusBar(),
+                                        ),
+                                        const SizedBox(height: 18),
+                                        // Hero row: emblem + identity + chip
+                                        CyberSlideUpFadeIn(
+                                          delay: const Duration(
+                                            milliseconds: 80,
+                                          ),
+                                          offset: 24,
+                                          child: Row(
+                                            children: [
+                                              const _ChessHeroEmblem(size: 92),
+                                              const SizedBox(width: 16),
+                                              Expanded(
+                                                child: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      '5V5 FOOTBALL CHESS',
+                                                      style:
+                                                          Cyber.display(
+                                                            22,
+                                                            letterSpacing: 1.2,
+                                                          ).copyWith(
+                                                            shadows: [
+                                                              Shadow(
+                                                                color: Cyber
+                                                                    .cyan
+                                                                    .withValues(
+                                                                      alpha:
+                                                                          0.45,
+                                                                    ),
+                                                                blurRadius: 14,
+                                                              ),
+                                                            ],
+                                                          ),
+                                                    ),
+                                                    const SizedBox(height: 6),
+                                                    Text(
+                                                      'TACTICAL GRID DUEL',
+                                                      style: TextStyle(
+                                                        color: Cyber.muted,
+                                                        fontFamily:
+                                                            Cyber.displayFont,
+                                                        fontSize: 9,
+                                                        fontWeight:
+                                                            FontWeight.w800,
+                                                        letterSpacing: 2.4,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 10),
+                                                    Align(
+                                                      alignment:
+                                                          Alignment.centerLeft,
+                                                      child: CyberChip(
+                                                        label: deckReady
+                                                            ? 'DECK ONLINE'
+                                                            : 'BUILD DECK',
+                                                        color: deckReady
+                                                            ? Cyber.lime
+                                                            : Cyber.amber,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(height: 20),
+                                        // Stats row
+                                        Row(
                                           children: [
-                                            Text(
-                                              '5V5 FOOTBALL CHESS',
-                                              style: Cyber.display(
-                                                22,
-                                                letterSpacing: 1.2,
-                                              ).copyWith(
-                                                shadows: [
-                                                  Shadow(
-                                                    color: Cyber.cyan
-                                                        .withValues(alpha: 0.45),
-                                                    blurRadius: 14,
-                                                  ),
-                                                ],
+                                            Expanded(
+                                              child: CyberDealtCard(
+                                                key: const ValueKey(
+                                                  'chess-stat-wins',
+                                                ),
+                                                index: 0,
+                                                initialDelay: const Duration(
+                                                  milliseconds: 180,
+                                                ),
+                                                flyDistance: 130,
+                                                child: _HudStat(
+                                                  label: 'WINS',
+                                                  value:
+                                                      '${chessState.stats.wins}',
+                                                  accent: Cyber.success,
+                                                ),
                                               ),
                                             ),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              'TACTICAL GRID DUEL',
-                                              style: TextStyle(
-                                                color: Cyber.muted,
-                                                fontFamily: Cyber.displayFont,
-                                                fontSize: 9,
-                                                fontWeight: FontWeight.w800,
-                                                letterSpacing: 2.4,
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: CyberDealtCard(
+                                                key: const ValueKey(
+                                                  'chess-stat-losses',
+                                                ),
+                                                index: 1,
+                                                initialDelay: const Duration(
+                                                  milliseconds: 180,
+                                                ),
+                                                flyDistance: 130,
+                                                child: _HudStat(
+                                                  label: 'LOSSES',
+                                                  value:
+                                                      '${chessState.stats.losses}',
+                                                  accent: Cyber.danger,
+                                                ),
                                               ),
                                             ),
-                                            const SizedBox(height: 10),
-                                            Align(
-                                              alignment: Alignment.centerLeft,
-                                              child: CyberChip(
-                                                label: deckReady
-                                                    ? 'DECK ONLINE'
-                                                    : 'BUILD DECK',
-                                                color: deckReady
-                                                    ? Cyber.lime
-                                                    : Cyber.amber,
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: CyberDealtCard(
+                                                key: const ValueKey(
+                                                  'chess-stat-streak',
+                                                ),
+                                                index: 2,
+                                                initialDelay: const Duration(
+                                                  milliseconds: 180,
+                                                ),
+                                                flyDistance: 130,
+                                                child: _HudStat(
+                                                  label: 'STREAK',
+                                                  value:
+                                                      '${chessState.stats.currentStreak}',
+                                                  accent: Cyber.cyan,
+                                                ),
                                               ),
                                             ),
                                           ],
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(height: 20),
-                                // Stats row
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: CyberDealtCard(
-                                        key: const ValueKey('chess-stat-wins'),
-                                        index: 0,
-                                        initialDelay: const Duration(
-                                          milliseconds: 180,
+                                        const SizedBox(height: 24),
+                                        // FIND MATCH — hero CTA
+                                        CyberSlideUpFadeIn(
+                                          delay: const Duration(
+                                            milliseconds: 390,
+                                          ),
+                                          offset: 22,
+                                          child: deckReady
+                                              ? HudCtaButton(
+                                                  label: 'FIND MATCH',
+                                                  icon: Icons.sports_soccer,
+                                                  tapSound:
+                                                      SoundEffect.playMatch,
+                                                  helper:
+                                                      'SHAPE: ${formation.code}  ${formation.label}',
+                                                  onTap: _launch,
+                                                )
+                                              : Opacity(
+                                                  opacity: 0.45,
+                                                  child: IgnorePointer(
+                                                    child: HudCtaButton(
+                                                      label: 'FIND MATCH',
+                                                      icon: Icons.sports_soccer,
+                                                      onTap: () {},
+                                                    ),
+                                                  ),
+                                                ),
                                         ),
-                                        flyDistance: 130,
-                                        child: _HudStat(
-                                          label: 'WINS',
-                                          value:
-                                              '${chessState.stats.wins}',
-                                          accent: Cyber.success,
+                                        const SizedBox(height: 14),
+                                        // Secondary: Deck Builder
+                                        CyberDealtCard(
+                                          key: const ValueKey(
+                                            'chess-action-deck',
+                                          ),
+                                          index: 0,
+                                          initialDelay: const Duration(
+                                            milliseconds: 470,
+                                          ),
+                                          staggerMs: 85,
+                                          flyDistance: 95,
+                                          duration: const Duration(
+                                            milliseconds: 500,
+                                          ),
+                                          child: CyberCtaButton(
+                                            label: 'Deck Builder',
+                                            clip: false,
+                                            onPressed: () {
+                                              HapticFeedback.selectionClick();
+                                              playSound(SoundEffect.uiTap);
+                                              widget.onNavigate(
+                                                AppSection.deck,
+                                              );
+                                            },
+                                          ),
                                         ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: CyberDealtCard(
-                                        key: const ValueKey(
-                                          'chess-stat-losses',
-                                        ),
-                                        index: 1,
-                                        initialDelay: const Duration(
-                                          milliseconds: 180,
-                                        ),
-                                        flyDistance: 130,
-                                        child: _HudStat(
-                                          label: 'LOSSES',
-                                          value:
-                                              '${chessState.stats.losses}',
-                                          accent: Cyber.danger,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: CyberDealtCard(
-                                        key: const ValueKey(
-                                          'chess-stat-streak',
-                                        ),
-                                        index: 2,
-                                        initialDelay: const Duration(
-                                          milliseconds: 180,
-                                        ),
-                                        flyDistance: 130,
-                                        child: _HudStat(
-                                          label: 'STREAK',
-                                          value:
-                                              '${chessState.stats.currentStreak}',
-                                          accent: Cyber.cyan,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 14),
-                                // Active formation strip
-                                CyberSlideUpFadeIn(
-                                  delay: const Duration(milliseconds: 300),
-                                  child: _ActiveFormationStrip(
-                                    formation: formation,
-                                  ),
-                                ),
-                                const SizedBox(height: 24),
-                                // FIND MATCH — hero CTA
-                                CyberSlideUpFadeIn(
-                                  delay: const Duration(milliseconds: 390),
-                                  offset: 22,
-                                  child: deckReady
-                                      ? HudCtaButton(
-                                          label: 'FIND MATCH',
-                                          icon: Icons.sports_soccer,
-                                          tapSound: SoundEffect.playMatch,
-                                          helper:
-                                              'SHAPE: ${formation.code}  ${formation.label}',
-                                          onTap: _launch,
-                                        )
-                                      : Opacity(
-                                          opacity: 0.45,
-                                          child: IgnorePointer(
-                                            child: HudCtaButton(
-                                              label: 'FIND MATCH',
-                                              icon: Icons.sports_soccer,
-                                              onTap: () {},
+                                        const SizedBox(height: 16),
+                                        // Rules text
+                                        CyberSlideUpFadeIn(
+                                          delay: const Duration(
+                                            milliseconds: 650,
+                                          ),
+                                          offset: 14,
+                                          child: Text(
+                                            'Chess on a pitch: take turns, move a player or the ball, '
+                                            'win it back by position, and shoot from their half to score. '
+                                            'XP only — coins stay in the shop.',
+                                            textAlign: TextAlign.center,
+                                            style: Cyber.body(11).copyWith(
+                                              color: Cyber.muted,
+                                              height: 1.5,
                                             ),
                                           ),
                                         ),
-                                ),
-                                const SizedBox(height: 14),
-                                // Secondary: Deck Builder
-                                CyberDealtCard(
-                                  key: const ValueKey('chess-action-deck'),
-                                  index: 0,
-                                  initialDelay: const Duration(
-                                    milliseconds: 470,
-                                  ),
-                                  staggerMs: 85,
-                                  flyDistance: 95,
-                                  duration: const Duration(milliseconds: 500),
-                                  child: CyberCtaButton(
-                                    label: 'Deck Builder',
-                                    clip: false,
-                                    onPressed: () {
-                                      HapticFeedback.selectionClick();
-                                      playSound(SoundEffect.uiTap);
-                                      widget.onNavigate(AppSection.deck);
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                // Rules text
-                                CyberSlideUpFadeIn(
-                                  delay: const Duration(milliseconds: 650),
-                                  offset: 14,
-                                  child: Text(
-                                    'Chess on a pitch: take turns, move a player or the ball, '
-                                    'win it back by position, and shoot from their half to score. '
-                                    'XP only — coins stay in the shop.',
-                                    textAlign: TextAlign.center,
-                                    style: Cyber.body(11).copyWith(
-                                      color: Cyber.muted,
-                                      height: 1.5,
+                                      ],
                                     ),
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
+                              ),
+                            );
+                          },
                         ),
                 ),
               ),
@@ -380,7 +418,12 @@ class _ChessLobbyStatusBar extends StatelessWidget {
           decoration: BoxDecoration(
             color: Cyber.success,
             shape: BoxShape.circle,
-            boxShadow: Cyber.glow(Cyber.success, alpha: 0.6, blur: 8, spread: 0),
+            boxShadow: Cyber.glow(
+              Cyber.success,
+              alpha: 0.6,
+              blur: 8,
+              spread: 0,
+            ),
           ),
         ),
         const SizedBox(width: 8),
@@ -596,43 +639,6 @@ class _HudStat extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _ActiveFormationStrip extends StatelessWidget {
-  const _ActiveFormationStrip({required this.formation});
-
-  final ChessFormation formation;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(
-          'SHAPE',
-          style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.8),
-        ),
-        const SizedBox(width: 10),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: Cyber.cyan.withValues(alpha: 0.10),
-            border: Border.all(color: Cyber.cyan.withValues(alpha: 0.5)),
-            borderRadius: BorderRadius.circular(2),
-          ),
-          child: Text(
-            '${formation.code}  ${formation.label}',
-            style: Cyber.label(11, color: Cyber.cyan, letterSpacing: 1.4),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          formation.blurb,
-          style: Cyber.body(10).copyWith(color: Cyber.muted),
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
     );
   }
 }

@@ -66,7 +66,14 @@ const int _shopTabCount = 6;
 
 // Sport-filter chips shared by the FRAME and BANNER tabs (mirrors the
 // leaderboard's sport strip). NBA/F1 have no items seeded yet → empty state.
-const List<String> _shopSportFilters = ['ALL', 'FIFA', 'IPL', 'UCL', 'NBA', 'F1'];
+const List<String> _shopSportFilters = [
+  'ALL',
+  'FIFA',
+  'IPL',
+  'UCL',
+  'NBA',
+  'F1',
+];
 
 // shortName → countryCode, built once from the card catalogue, so the AVATAR
 // tab can filter player portraits by nation.
@@ -271,7 +278,8 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
               ),
               if (_celebrationCoins != null)
                 _CelebrationOverlay(amount: _celebrationCoins!),
-              if (_acquireOverlay != null) Positioned.fill(child: _acquireOverlay!),
+              if (_acquireOverlay != null)
+                Positioned.fill(child: _acquireOverlay!),
             ],
           ),
           bottomNavigationBar: LandingBottomNavigation(
@@ -352,7 +360,7 @@ class _AvatarsTabState extends State<AvatarsTab> {
                       crossAxisCount: columns,
                       mainAxisSpacing: 12,
                       crossAxisSpacing: 12,
-                      childAspectRatio: 0.72,
+                      childAspectRatio: 0.60,
                     ),
                     itemBuilder: (BuildContext context, int index) {
                       final item = items[index];
@@ -474,32 +482,42 @@ class _FramesTabState extends State<FramesTab> {
               ? _ShopEmptyFilter(sport: _sport)
               : BlocBuilder<GameBloc, GameState>(
                   builder: (BuildContext context, GameState state) {
-                    return GridView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                      itemCount: items.length,
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount:
-                            MediaQuery.sizeOf(context).width >= 720 ? 3 : 2,
-                        mainAxisSpacing: 12,
-                        crossAxisSpacing: 12,
-                        childAspectRatio: 0.78,
-                      ),
-                      itemBuilder: (BuildContext context, int index) {
-                        final frame = items[index];
-                        return StaggeredCardEntrance(
-                          index: index,
-                          animate: true,
-                          child: _FrameShopTile(
-                            frame: frame,
-                            owned: state.ownedAvatarFrameIds.contains(
-                              frame.id,
-                            ),
-                            equipped:
-                                state.equippedAvatarFrameId == frame.id,
-                            onAcquired: widget.onAcquired,
-                          ),
-                        );
-                      },
+                    return LayoutBuilder(
+                      builder:
+                          (BuildContext context, BoxConstraints constraints) {
+                            final int columns = constraints.maxWidth >= 720
+                                ? 5
+                                : constraints.maxWidth >= 480
+                                ? 4
+                                : 3;
+                            return GridView.builder(
+                              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                              itemCount: items.length,
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: columns,
+                                    mainAxisSpacing: 12,
+                                    crossAxisSpacing: 12,
+                                    childAspectRatio: 0.60,
+                                  ),
+                              itemBuilder: (BuildContext context, int index) {
+                                final frame = items[index];
+                                return StaggeredCardEntrance(
+                                  index: index,
+                                  animate: true,
+                                  child: _FrameShopTile(
+                                    frame: frame,
+                                    owned: state.ownedAvatarFrameIds.contains(
+                                      frame.id,
+                                    ),
+                                    equipped:
+                                        state.equippedAvatarFrameId == frame.id,
+                                    onAcquired: widget.onAcquired,
+                                  ),
+                                );
+                              },
+                            );
+                          },
                     );
                   },
                 ),
@@ -549,14 +567,18 @@ class _FrameShopTile extends StatelessWidget {
       child: Column(
         children: [
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Expanded(child: Center(child: _ring(glow: equipped))),
-                  const SizedBox(height: 8),
-                  Text(
+            child: Column(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Center(child: _ring(glow: equipped)),
+                  ),
+                ),
+                Container(height: 1, color: primary.withValues(alpha: 0.3)),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                  child: Text(
                     frame.label.toUpperCase(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -569,8 +591,8 @@ class _FrameShopTile extends StatelessWidget {
                       letterSpacing: 0.6,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           _footer(context, primary),
@@ -624,7 +646,11 @@ class _FrameShopTile extends StatelessWidget {
       onTap: () {
         final GameBloc bloc = context.read<GameBloc>();
         if (bloc.state.coins < frame.coinPrice) {
-          _showSnack(context, 'Not enough coins — top up in the Coins tab.', false);
+          _showSnack(
+            context,
+            'Not enough coins — top up in the Coins tab.',
+            false,
+          );
           return;
         }
         playSound(SoundEffect.uiTap);
@@ -693,27 +719,37 @@ class _AvatarShopTile extends StatelessWidget {
       child: Column(
         children: [
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
-              child: Column(
-                children: [
-                  Expanded(child: ClipRect(child: _portrait())),
-                  const SizedBox(height: 8),
-                  Text(
-                    item.shortName.toUpperCase(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'Orbitron',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.6,
+            child: Column(
+              children: [
+                AspectRatio(
+                  aspectRatio: 1.0,
+                  child: ClipRect(child: _portrait()),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      bottom: 8,
+                      left: 10,
+                      right: 10,
+                    ),
+                    child: Center(
+                      child: Text(
+                        item.shortName.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'Orbitron',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           _footer(context),
@@ -826,7 +862,7 @@ class _BannerShopTile extends StatelessWidget {
         children: [
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+              padding: const EdgeInsets.only(bottom: 8),
               child: Column(
                 children: [
                   Expanded(
@@ -836,7 +872,10 @@ class _BannerShopTile extends StatelessWidget {
                         Positioned(
                           top: 0,
                           left: 0,
-                          child: ShopTag(label: item.sport, accent: item.accent),
+                          child: ShopTag(
+                            label: item.sport,
+                            accent: item.accent,
+                          ),
                         ),
                       ],
                     ),
@@ -1029,7 +1068,7 @@ class CoinsTab extends StatelessWidget {
             crossAxisCount: columns,
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
-            childAspectRatio: 0.72,
+            childAspectRatio: 0.60,
           ),
           itemBuilder: (BuildContext context, int index) {
             final CoinTier tier = coinTiers[index];
@@ -1058,7 +1097,7 @@ class _CoinTierTile extends StatelessWidget {
     tier.imageAsset,
     width: preview ? double.infinity : null,
     height: preview ? double.infinity : null,
-    fit: BoxFit.contain,
+    fit: BoxFit.cover,
     alignment: Alignment.bottomCenter,
     errorBuilder: (_, _, _) => Container(
       color: _surface,
@@ -1076,63 +1115,68 @@ class _CoinTierTile extends StatelessWidget {
       child: Column(
         children: [
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: ClipRect(
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
-                            child: _art(),
-                          ),
-                          if (tier.bonusPercent > 0 || tier.tag != null)
-                            Positioned(
-                              top: 0,
-                              left: 0,
-                              right: 0,
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.centerLeft,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (tier.bonusPercent > 0)
-                                      ShopTag(
-                                        label: '+${tier.bonusPercent}%',
-                                        accent: accent,
-                                      ),
-                                    if (tier.bonusPercent > 0 && tier.tag != null)
-                                      const SizedBox(width: 4),
-                                    if (tier.tag != null)
-                                      ShopTag(label: tier.tag!, accent: accent),
-                                  ],
-                                ),
+            child: Column(
+              children: [
+                AspectRatio(
+                  aspectRatio: 1.0,
+                  child: ClipRect(
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        _art(),
+                        if (tier.bonusPercent > 0 || tier.tag != null)
+                          Positioned(
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (tier.bonusPercent > 0)
+                                    ShopTag(
+                                      label: '+${tier.bonusPercent}%',
+                                      accent: accent,
+                                    ),
+                                  if (tier.bonusPercent > 0 && tier.tag != null)
+                                    const SizedBox(width: 4),
+                                  if (tier.tag != null)
+                                    ShopTag(label: tier.tag!, accent: accent),
+                                ],
                               ),
                             ),
-                        ],
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      bottom: 8,
+                      left: 10,
+                      right: 10,
+                    ),
+                    child: Center(
+                      child: Text(
+                        tier.name.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'Orbitron',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.6,
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    tier.name.toUpperCase(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontFamily: 'Orbitron',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.6,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           ShopPressable(
@@ -1141,7 +1185,11 @@ class _CoinTierTile extends StatelessWidget {
               height: 36,
               color: Colors.black.withValues(alpha: 0.88),
               alignment: Alignment.center,
-              child: ShopPricePill(inr: tier.inrPrice, accent: accent, size: 11),
+              child: ShopPricePill(
+                inr: tier.inrPrice,
+                accent: accent,
+                size: 11,
+              ),
             ),
           ),
         ],
@@ -1157,7 +1205,10 @@ class _CoinTierTile extends StatelessWidget {
       preview: SizedBox(
         width: 120,
         height: 150,
-        child: ShopCardFrame(accent: _tierAccent(tier.id), child: _art(preview: true)),
+        child: ShopCardFrame(
+          accent: _tierAccent(tier.id),
+          child: _art(preview: true),
+        ),
       ),
     );
     if (!context.mounted || !confirmed) return;
@@ -1552,7 +1603,11 @@ class _PackTile extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.style, color: _cyan, size: narrow ? 9 : 10),
+                          Icon(
+                            Icons.style,
+                            color: _cyan,
+                            size: narrow ? 9 : 10,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             '${pack.cardCount} CARDS',
@@ -2319,11 +2374,8 @@ class _PurchasableCardTile extends StatelessWidget {
     );
   }
 
-  Widget _revealPreview() => CyberPlayerCardTile(
-    card: card,
-    selected: true,
-    size: VisualCardSize.md,
-  );
+  Widget _revealPreview() =>
+      CyberPlayerCardTile(card: card, selected: true, size: VisualCardSize.md);
 
   void _buyWithCoins(BuildContext context, int price) {
     final GameBloc bloc = context.read<GameBloc>();

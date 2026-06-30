@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../blocs/football_bingo/football_bingo_state.dart';
@@ -57,15 +58,23 @@ class FootballBingoHomeScreen extends StatelessWidget {
                             unlockedCount: state.unlockedDayKeys.length,
                           ),
                           const SizedBox(height: 20),
-                          HudCtaButton(
-                            label: ctaLabel,
-                            icon: Icons.play_arrow,
-                            accent: Cyber.amber,
-                            tapSound: SoundEffect.playMatch,
-                            onTap: () => onOpenDay(today),
+                          CyberSlideUpFadeIn(
+                            delay: const Duration(milliseconds: 390),
+                            offset: 22,
+                            child: HudCtaButton(
+                              label: ctaLabel,
+                              icon: Icons.play_arrow,
+                              accent: Cyber.amber,
+                              tapSound: SoundEffect.playMatch,
+                              onTap: () => onOpenDay(today),
+                            ),
                           ),
                           const SizedBox(height: 14),
-                          _DailyLogsHeader(onTap: onOpenLogs),
+                          CyberSlideUpFadeIn(
+                            delay: const Duration(milliseconds: 470),
+                            offset: 22,
+                            child: _DailyLogsHeader(onTap: onOpenLogs),
+                          ),
                         ],
                       ),
                     ),
@@ -121,44 +130,198 @@ class _HomeHeader extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
-class _FootballBingoStadiumBackground extends StatelessWidget {
+class _FootballBingoStadiumBackground extends StatefulWidget {
   const _FootballBingoStadiumBackground({required this.child});
 
   final Widget child;
 
   @override
+  State<_FootballBingoStadiumBackground> createState() =>
+      _FootballBingoStadiumBackgroundState();
+}
+
+class _FootballBingoStadiumBackgroundState
+    extends State<_FootballBingoStadiumBackground>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 18),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: Image.asset(
-            'assets/backgrounds/football_bingo_stadium.png',
-            fit: BoxFit.cover,
-            alignment: Alignment.center,
-            errorBuilder: (_, _, _) => const ColoredBox(color: Cyber.bg),
-          ),
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xff020812), Color(0xff071522), Color(0xff02050b)],
         ),
-        Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Cyber.bg.withValues(alpha: 0.18),
-                  Cyber.bg.withValues(alpha: 0.28),
-                  Cyber.bg.withValues(alpha: 0.76),
-                ],
-                stops: const [0.0, 0.48, 1.0],
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                final phase = _controller.value * math.pi * 2;
+                return Transform.translate(
+                  offset: Offset(math.sin(phase) * 8, math.cos(phase) * 6),
+                  child: Transform.scale(
+                    scale: 1.05 + 0.008 * math.sin(phase * 2),
+                    child: child,
+                  ),
+                );
+              },
+              child: Opacity(
+                opacity: 0.2,
+                child: Image.asset(
+                  'assets/backgrounds/football_bingo_stadium.png',
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                ),
               ),
             ),
           ),
-        ),
-        const Positioned.fill(child: CyberTextureOverlay()),
-        child,
-      ],
+          Positioned.fill(
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, _) => CustomPaint(
+                painter: _ArenaMotionPainter(progress: _controller.value),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Cyber.bg.withValues(alpha: 0.18),
+                    Cyber.bg.withValues(alpha: 0.28),
+                    Cyber.bg.withValues(alpha: 0.76),
+                  ],
+                  stops: const [0.0, 0.48, 1.0],
+                ),
+              ),
+            ),
+          ),
+          const Positioned.fill(child: CyberTextureOverlay()),
+          widget.child,
+        ],
+      ),
     );
   }
+}
+
+class _ArenaMotionPainter extends CustomPainter {
+  const _ArenaMotionPainter({required this.progress});
+
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+
+    final rect = Offset.zero & size;
+    final phase = progress * math.pi * 2;
+
+    final pulse = 0.5 + 0.5 * math.sin(phase * 2);
+    final fieldGlow = Paint()
+      ..shader = RadialGradient(
+        center: const Alignment(0, 0.72),
+        radius: 0.88,
+        colors: [
+          Cyber.amber.withValues(alpha: 0.08 + pulse * 0.035),
+          Cyber.amber.withValues(alpha: 0.025),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.28, 1.0],
+      ).createShader(rect);
+    canvas.drawRect(rect, fieldGlow);
+
+    _drawBeam(
+      canvas,
+      size,
+      start: Offset(size.width * 0.08, size.height * 0.72),
+      end: Offset(size.width * (0.42 + math.sin(phase) * 0.06), 0),
+      width: size.width * 0.42,
+      opacity: 0.026 + pulse * 0.016,
+    );
+    _drawBeam(
+      canvas,
+      size,
+      start: Offset(size.width * 0.92, size.height * 0.72),
+      end: Offset(size.width * (0.58 + math.cos(phase) * 0.06), 0),
+      width: size.width * 0.42,
+      opacity: 0.026 + (1 - pulse) * 0.016,
+    );
+
+    final streakPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.055)
+      ..strokeWidth = 1.2
+      ..strokeCap = StrokeCap.round;
+
+    for (var i = 0; i < 14; i++) {
+      final seed = i * 37.0;
+      final x = ((seed * 19) % size.width) + math.sin(phase + i) * 18;
+      final travel = (progress + i * 0.071) % 1.0;
+      final y = size.height * (0.96 - travel * 0.82);
+      final length = 12.0 + (i % 4) * 5.0;
+      final opacity = 0.025 + 0.03 * math.sin(phase + i).abs();
+      streakPaint.color = Cyber.amber.withValues(alpha: opacity);
+      canvas.drawLine(
+        Offset(x, y),
+        Offset(x + length * 0.42, y - length),
+        streakPaint,
+      );
+    }
+  }
+
+  void _drawBeam(
+    Canvas canvas,
+    Size size, {
+    required Offset start,
+    required Offset end,
+    required double width,
+    required double opacity,
+  }) {
+    final path = Path()
+      ..moveTo(start.dx - width * 0.5, start.dy)
+      ..lineTo(start.dx + width * 0.5, start.dy)
+      ..lineTo(end.dx + width * 0.08, end.dy)
+      ..lineTo(end.dx - width * 0.08, end.dy)
+      ..close();
+
+    final paint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.bottomCenter,
+        end: Alignment.topCenter,
+        colors: [
+          Cyber.amber.withValues(alpha: opacity),
+          Cyber.amber.withValues(alpha: opacity * 0.35),
+          Colors.transparent,
+        ],
+      ).createShader(path.getBounds());
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _ArenaMotionPainter oldDelegate) =>
+      oldDelegate.progress != progress;
 }
 
 class _LandingHero extends StatelessWidget {
@@ -175,55 +338,71 @@ class _LandingHero extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _TelemetryStrip(),
+        const CyberSlideUpFadeIn(child: _TelemetryStrip()),
         const SizedBox(height: 12),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const _BingoIconBay(),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'FOOTBALL BINGO',
-                      maxLines: 1,
-                      style: Cyber.display(22, color: Colors.white).copyWith(
-                        letterSpacing: 1.1,
-                        shadows: [
-                          Shadow(
-                            color: Cyber.cyan.withValues(alpha: 0.3),
-                            blurRadius: 8,
-                          ),
-                        ],
+        CyberSlideUpFadeIn(
+          delay: const Duration(milliseconds: 80),
+          offset: 24,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const _BingoIconBay(),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'FOOTBALL BINGO',
+                        maxLines: 1,
+                        style: Cyber.display(22, color: Colors.white).copyWith(
+                          letterSpacing: 1.1,
+                          shadows: [
+                            Shadow(
+                              color: Cyber.cyan.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    '3X3 BINGO GAME',
-                    style: Cyber.label(10, color: Cyber.muted),
-                  ),
-                  const SizedBox(height: 8),
-                  const CyberChip(label: 'BINGO ONLINE', color: Cyber.lime),
-                ],
+                    const SizedBox(height: 5),
+                    Text(
+                      '3X3 BINGO GAME',
+                      style: Cyber.label(10, color: Cyber.muted),
+                    ),
+                    const SizedBox(height: 8),
+                    const CyberChip(label: 'BINGO ONLINE', color: Cyber.lime),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         const SizedBox(height: 18),
         Row(
           children: [
             Expanded(
-              child: _StatTile(label: 'COMPLETE', value: '$completedCount'),
+              child: CyberDealtCard(
+                key: const ValueKey('home-stat-complete'),
+                index: 0,
+                initialDelay: const Duration(milliseconds: 180),
+                flyDistance: 130,
+                child: _StatTile(label: 'COMPLETE', value: '$completedCount'),
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(
-              child: _StatTile(label: 'UNLOCKED', value: '$unlockedCount'),
+              child: CyberDealtCard(
+                key: const ValueKey('home-stat-unlocked'),
+                index: 1,
+                initialDelay: const Duration(milliseconds: 180),
+                flyDistance: 130,
+                child: _StatTile(label: 'UNLOCKED', value: '$unlockedCount'),
+              ),
             ),
           ],
         ),

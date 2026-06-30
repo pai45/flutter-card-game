@@ -29,8 +29,6 @@ class FootballChessCubit extends Cubit<FootballChessState> {
 
   static const double kMatchSeconds = 120;
   static const double kDecisionSeconds = 10;
-  static const int kMomentumMax = 3;
-  static const double kMomentumBoost = 0.18;
   static const Duration _tickInterval = Duration(milliseconds: 100);
   static const double _dt = 0.1;
 
@@ -133,7 +131,7 @@ class FootballChessCubit extends Cubit<FootballChessState> {
         }
       }
       if (verb == BoardActionType.pass) {
-        final tapped = m.board.outfieldAt(cell);
+        final tapped = m.board.pieceAt(cell);
         if (tapped != null && m.passTargetIds.contains(tapped.id)) {
           _applyAction(
             ChessAction(
@@ -148,7 +146,7 @@ class FootballChessCubit extends Cubit<FootballChessState> {
       // Tapped off-target: fall through to (re)select / deselect.
     }
 
-    final tapped = m.board.outfieldAt(cell);
+    final tapped = m.board.pieceAt(cell);
     if (tapped != null && tapped.side == Side.player) {
       if (tapped.id == m.selectedPieceId) {
         _clearSelection(); // tap again to deselect
@@ -249,28 +247,7 @@ class FootballChessCubit extends Cubit<FootballChessState> {
     final actor = m.board.pieceById(action.pieceId)!;
     final side = actor.side;
 
-    // Momentum: a full gauge boosts this duel, then is spent.
-    const duels = {
-      BoardActionType.dribble,
-      BoardActionType.tackle,
-      BoardActionType.slide,
-      BoardActionType.shoot,
-    };
-    final momentum = m.momentumFor(side);
-    final boosted = duels.contains(action.type) && momentum >= kMomentumMax;
-
-    final res = _engine.apply(
-      m.board,
-      action,
-      winBonus: boosted ? kMomentumBoost : 0.0,
-    );
-
-    final nextMomentum = boosted
-        ? 0
-        : (res.duelWon ? (momentum + 1).clamp(0, kMomentumMax) : momentum);
-    final playerMomentum = side == Side.player ? nextMomentum : m.playerMomentum;
-    final opponentMomentum =
-        side == Side.opponent ? nextMomentum : m.opponentMomentum;
+    final res = _engine.apply(m.board, action);
 
     final lastMove = _lastMoveFor(m, action, actor, res);
     final log = [
@@ -288,7 +265,9 @@ class FootballChessCubit extends Cubit<FootballChessState> {
             board: res.state,
             turnSide: side,
             playerScore: scorerIsPlayer ? m.playerScore + 1 : m.playerScore,
-            opponentScore: scorerIsPlayer ? m.opponentScore : m.opponentScore + 1,
+            opponentScore: scorerIsPlayer
+                ? m.opponentScore
+                : m.opponentScore + 1,
             banner: 'GOAL',
             goals: [
               ...m.goals,
@@ -300,8 +279,6 @@ class FootballChessCubit extends Cubit<FootballChessState> {
             ],
             lastMove: lastMove,
             moveLog: trimmed,
-            playerMomentum: playerMomentum,
-            opponentMomentum: opponentMomentum,
             selectedPieceId: null,
             availableActions: const [],
             selectedAction: null,
@@ -330,8 +307,6 @@ class FootballChessCubit extends Cubit<FootballChessState> {
           banner: banner,
           lastMove: lastMove,
           moveLog: trimmed,
-          playerMomentum: playerMomentum,
-          opponentMomentum: opponentMomentum,
           selectedPieceId: null,
           availableActions: const [],
           selectedAction: null,
@@ -353,8 +328,9 @@ class FootballChessCubit extends Cubit<FootballChessState> {
     final to = switch (action.type) {
       BoardActionType.move => action.cell!,
       BoardActionType.pass ||
-      BoardActionType.dribble =>
-        m.board.pieceById(action.targetId!)!.cell,
+      BoardActionType.dribble => m.board.pieceById(action.targetId!)!.cell,
+      BoardActionType.tackle ||
+      BoardActionType.slide => m.board.carrier?.cell ?? from,
       _ => res.state.pieceById(actor.id)?.cell ?? from,
     };
     return LastMove(
@@ -390,12 +366,15 @@ class FootballChessCubit extends Cubit<FootballChessState> {
     emit(
       state.copyWith(
         match: m.copyWith(
-          board: _engine.initialBoard(
-            playerSquad: m.playerSquad,
-            opponentSquad: m.opponentSquad,
-            playerFormation: m.playerFormation,
-            opponentFormation: m.opponentFormation,
-            kickoff: conceder,
+          board: _engine.kickoffReset(
+            _engine.initialBoard(
+              playerSquad: m.playerSquad,
+              opponentSquad: m.opponentSquad,
+              playerFormation: m.playerFormation,
+              opponentFormation: m.opponentFormation,
+              kickoff: conceder,
+            ),
+            conceder,
           ),
           banner: null,
         ),
@@ -406,12 +385,16 @@ class FootballChessCubit extends Cubit<FootballChessState> {
 
   void _startTurn(Side side) {
     final m = state.match!;
-    // Tick down any bookings (red-carded pieces sitting out) for this side.
+    // Tick down any bookings (red-carded pieces sitting out) and cooldowns for this side.
     final board = m.board.copyWith(
       pieces: [
         for (final p in m.board.pieces)
-          (p.side == side && p.benchedTurns > 0)
-              ? p.copyWith(benchedTurns: p.benchedTurns - 1)
+          p.side == side
+              ? p.copyWith(
+                  benchedTurns: max(0, p.benchedTurns - 1),
+                  tackleCooldownTurns: max(0, p.tackleCooldownTurns - 1),
+                  slideCooldownTurns: max(0, p.slideCooldownTurns - 1),
+                )
               : p,
       ],
     );
@@ -463,7 +446,8 @@ class FootballChessCubit extends Cubit<FootballChessState> {
   void _tick() {
     final m = state.match;
     if (m == null) return;
-    final active = m.phase == ChessMatchPhase.playerTurn ||
+    final active =
+        m.phase == ChessMatchPhase.playerTurn ||
         m.phase == ChessMatchPhase.opponentTurn;
     if (!active) return;
     final clock = m.clockRemaining - _dt;

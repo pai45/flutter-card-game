@@ -163,7 +163,13 @@ class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
               Positioned.fill(child: GameWidget(game: _game)),
               Align(
                 alignment: Alignment.topCenter,
-                child: ChessHud(onExit: widget.onExit),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ChessHud(onExit: widget.onExit),
+                    const LastActionBanner(),
+                  ],
+                ),
               ),
               const Align(child: CentreFlash()),
               const OpponentActionToast(),
@@ -171,11 +177,7 @@ class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
                 alignment: Alignment.bottomCenter,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: [
-                    MomentumMeter(),
-                    DecisionTimer(),
-                    ActionBar(),
-                  ],
+                  children: [DecisionTimer(), ActionBar()],
                 ),
               ),
               _TossLayer(onCall: _cubit.callToss),

@@ -43,8 +43,7 @@ class BoardCell {
   ].where((c) => c.inBounds).toList();
 
   /// Chebyshev distance (a diagonal step counts as 1).
-  int distanceTo(BoardCell o) =>
-      max((col - o.col).abs(), (row - o.row).abs());
+  int distanceTo(BoardCell o) => max((col - o.col).abs(), (row - o.row).abs());
 
   bool isAdjacent8(BoardCell o) => distanceTo(o) == 1;
 
@@ -74,6 +73,8 @@ class BoardPiece {
     required this.isKeeper,
     this.yellow = false,
     this.benchedTurns = 0,
+    this.tackleCooldownTurns = 0,
+    this.slideCooldownTurns = 0,
   });
 
   final String id;
@@ -88,19 +89,30 @@ class BoardPiece {
   /// Turns the piece must sit out (red card); 0 = available.
   final int benchedTurns;
 
+  /// Cooldowns for actions (in turns). Ticks down at start of side's turn.
+  final int tackleCooldownTurns;
+  final int slideCooldownTurns;
+
   int get rating => card.rating;
   bool get benched => benchedTurns > 0;
 
-  BoardPiece copyWith({BoardCell? cell, bool? yellow, int? benchedTurns}) =>
-      BoardPiece(
-        id: id,
-        card: card,
-        side: side,
-        cell: cell ?? this.cell,
-        isKeeper: isKeeper,
-        yellow: yellow ?? this.yellow,
-        benchedTurns: benchedTurns ?? this.benchedTurns,
-      );
+  BoardPiece copyWith({
+    BoardCell? cell,
+    bool? yellow,
+    int? benchedTurns,
+    int? tackleCooldownTurns,
+    int? slideCooldownTurns,
+  }) => BoardPiece(
+    id: id,
+    card: card,
+    side: side,
+    cell: cell ?? this.cell,
+    isKeeper: isKeeper,
+    yellow: yellow ?? this.yellow,
+    benchedTurns: benchedTurns ?? this.benchedTurns,
+    tackleCooldownTurns: tackleCooldownTurns ?? this.tackleCooldownTurns,
+    slideCooldownTurns: slideCooldownTurns ?? this.slideCooldownTurns,
+  );
 }
 
 /// Immutable spatial state: where everyone is, where the ball is, and who holds
@@ -130,8 +142,10 @@ class BoardState {
     possession: possession ?? this.possession,
   );
 
-  List<BoardPiece> outfield(Side side) =>
-      [for (final p in pieces) if (p.side == side && !p.isKeeper) p];
+  List<BoardPiece> outfield(Side side) => [
+    for (final p in pieces)
+      if (p.side == side && !p.isKeeper) p,
+  ];
 
   BoardPiece keeperOf(Side side) =>
       pieces.firstWhere((p) => p.side == side && p.isKeeper);
@@ -139,6 +153,14 @@ class BoardState {
   BoardPiece? pieceById(String id) {
     for (final p in pieces) {
       if (p.id == id) return p;
+    }
+    return null;
+  }
+
+  /// The piece (outfielder or keeper) standing on [cell], or null.
+  BoardPiece? pieceAt(BoardCell cell) {
+    for (final p in pieces) {
+      if (p.cell == cell) return p;
     }
     return null;
   }
@@ -153,17 +175,30 @@ class BoardState {
 
   bool isEmpty(BoardCell cell) => cell.inBounds && outfieldAt(cell) == null;
 
-  /// The piece currently carrying the ball (the possessing outfielder on the
+  /// The piece currently carrying the ball (the possessing outfielder or keeper on the
   /// ball cell).
   BoardPiece? get carrier {
-    final p = outfieldAt(ballCell);
+    final p = pieceAt(ballCell);
     return (p != null && p.side == possession) ? p : null;
   }
 
   /// Replace one piece (by id) with a moved copy.
-  BoardState withPieceAt(String id, BoardCell cell) => copyWith(
+  BoardState withPieceAt(
+    String id,
+    BoardCell cell, {
+    int? tackleCooldownTurns,
+    int? slideCooldownTurns,
+  }) => copyWith(
     pieces: [
-      for (final p in pieces) if (p.id == id) p.copyWith(cell: cell) else p,
+      for (final p in pieces)
+        if (p.id == id)
+          p.copyWith(
+            cell: cell,
+            tackleCooldownTurns: tackleCooldownTurns,
+            slideCooldownTurns: slideCooldownTurns,
+          )
+        else
+          p,
     ],
   );
 }

@@ -25,6 +25,8 @@ import 'screens/predictions/league_detail_screen.dart';
 import 'screens/predictions/match_prediction_screen.dart';
 import 'screens/predictions/prediction_home_screen.dart';
 import 'screens/quiz/quiz_hub.dart';
+import 'screens/guess_player/guess_player_hub.dart';
+import 'models/cards.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/leaderboard/leaderboard_screen.dart';
 import 'screens/shop/shop_screen.dart';
@@ -296,6 +298,21 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
+  void _openGuessPlayer() {
+    final navigator = Navigator.of(context);
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => GuessPlayerTabContent(
+          allPlayers: allPlayerCards,
+          onNavigate: (next) {
+            navigator.pop();
+            _go(next);
+          },
+        ),
+      ),
+    );
+  }
+
   void _openFootballBingo() {
     final navigator = Navigator.of(context);
     navigator.push(
@@ -401,6 +418,7 @@ class _AppShellState extends State<AppShell> {
               onOpenQuiz: _openQuiz,
               onOpenFootballBingo: _openFootballBingo,
               onOpenFootballChess: _openFootballChess,
+              onOpenGuessPlayer: _openGuessPlayer,
               onAddCoins: _openShopCoins,
             ),
           };

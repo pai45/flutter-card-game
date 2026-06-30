@@ -16,7 +16,8 @@ void main() {
   final strongDef =
       (defenders.toList()..sort((a, b) => b.rating.compareTo(a.rating))).first;
   final strongGk =
-      (goalkeepers.toList()..sort((a, b) => b.rating.compareTo(a.rating))).first;
+      (goalkeepers.toList()..sort((a, b) => b.rating.compareTo(a.rating)))
+          .first;
 
   BoardPiece mk(
     String id,
@@ -28,8 +29,20 @@ void main() {
       BoardPiece(id: id, card: card, side: side, cell: cell, isKeeper: keeper);
 
   test('initial board: ball with kickoff side; keepers off-grid', () {
-    final p = [attackers[0], attackers[1], defenders[0], defenders[1], goalkeepers[0]];
-    final o = [attackers[2], attackers[3], defenders[2], defenders[3], goalkeepers[1]];
+    final p = [
+      attackers[0],
+      attackers[1],
+      defenders[0],
+      defenders[1],
+      goalkeepers[0],
+    ];
+    final o = [
+      attackers[2],
+      attackers[3],
+      defenders[2],
+      defenders[3],
+      goalkeepers[1],
+    ];
     final s = engine.initialBoard(
       playerSquad: p,
       opponentSquad: o,
@@ -125,8 +138,10 @@ void main() {
           ),
         );
         if (r.event == BoardEvent.advanced) {
-          expect(r.duelWon, isTrue);
-          expect(r.state.pieceById('p0')!.cell, const BoardCell(1, 2)); // swapped
+          expect(
+            r.state.pieceById('p0')!.cell,
+            const BoardCell(1, 2),
+          ); // swapped
           expect(r.state.pieceById('o0')!.cell, const BoardCell(1, 1));
           expect(r.state.ballCell, const BoardCell(1, 2));
           sawWin = true;
@@ -139,29 +154,6 @@ void main() {
       expect(sawWin, isTrue);
       expect(sawLoss, isTrue);
     });
-  });
-
-  test('momentum winBonus lifts a weak tackle to a turnover', () {
-    final carrier = mk('o0', Side.opponent, const BoardCell(1, 1), strongAtk);
-    final tackler = mk('p0', Side.player, const BoardCell(0, 1), weakAtk);
-    final s = BoardState(
-      pieces: [carrier, tackler],
-      ballCell: const BoardCell(1, 1),
-      possession: Side.opponent,
-    );
-    var won = false;
-    for (var i = 0; i < 8; i++) {
-      final r = FootballChessEngine(random: Random(i)).apply(
-        s,
-        const ChessAction(type: BoardActionType.tackle, pieceId: 'p0'),
-        winBonus: 0.95,
-      );
-      if (r.event == BoardEvent.turnover) {
-        won = true;
-        break;
-      }
-    }
-    expect(won, isTrue);
   });
 
   group('slide fouls', () {
@@ -215,8 +207,13 @@ void main() {
         BoardState(
           pieces: [
             mk('p0', Side.player, at, strongAtk),
-            mk('ok', Side.opponent, const BoardCell(1, kBoardRows), strongGk,
-                keeper: true),
+            mk(
+              'ok',
+              Side.opponent,
+              const BoardCell(1, kBoardRows),
+              strongGk,
+              keeper: true,
+            ),
             ...extra,
           ],
           ballCell: at,

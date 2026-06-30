@@ -229,7 +229,7 @@ void main() {
     expect(find.text('PLAY TODAY\'S GRID'), findsOneWidget);
 
     await tester.tap(find.text('PLAY TODAY\'S GRID'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('BINGO GRID'), findsOneWidget);
     final active = find.textContaining('/');
@@ -278,7 +278,7 @@ void main() {
     await tester.pump();
 
     await tester.tap(find.text('PLAY TODAY\'S GRID'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 500));
 
     final cubit = tester
         .element(find.byType(FootballBingoScreen))
@@ -322,9 +322,13 @@ void main() {
       ),
     );
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1000));
 
     final finalCell = bingo.state.currentCell!.id;
-    await tester.tap(find.byKey(ValueKey('bingo-cell-$finalCell')));
+    final finalCellFinder = find.byKey(ValueKey('bingo-cell-$finalCell'));
+    await tester.ensureVisible(finalCellFinder);
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(finalCellFinder);
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.byKey(const ValueKey('bingo-card-reveal')), findsNothing);
