@@ -110,17 +110,16 @@ class FootballChessGame extends FlameGame {
       double.infinity,
     );
 
-    // We have 3 columns and effectively 6 rows (4 pitch + 2 keeper cells).
-    // Calculate the maximum square cell size that fits in the available space.
-    final c = min(maxW / 3, maxH / 6);
+    // We have 4 rows in the pitch, plus 1 keeper row above and 1 keeper row below.
+    // So the total grid height is effectively 6 rows.
+    final ch = maxH / 6;
 
-    final fw = c * 3;
-    final fh = c * 4;
+    final fw = maxW;
+    final fh = ch * 4;
 
-    // Center the entire 6x3 block within the available space, then offset by 1 row
-    // for the top keeper cell to find the top of the 4x3 pitch.
-    final left = (size.x - fw) / 2;
-    final top = _marginTop + (maxH - (c * 6)) / 2 + c;
+    final left = _marginX;
+    // The top of the 4-row pitch starts after 1 keeper row.
+    final top = _marginTop + ch;
 
     return Rect.fromLTWH(left, top, fw, fh);
   }
@@ -284,6 +283,22 @@ class GridComponent extends PositionComponent {
   @override
   void render(Canvas canvas) {
     if (field.isEmpty) return;
+
+    // 1. Pitch Gradient Background (from top keeper to bottom keeper)
+    final pitchRect = Rect.fromLTWH(
+      field.left, 
+      field.top - _ch, 
+      field.width, 
+      field.height + _ch * 2,
+    );
+    final bgPaint = Paint()
+      ..shader = Gradient.linear(
+        pitchRect.topCenter,
+        pitchRect.bottomCenter,
+        [const Color(0xff073222), const Color(0xff061b22), const Color(0xff08111d)],
+        [0.0, 0.5, 1.0],
+      );
+    canvas.drawRect(pitchRect, bgPaint);
 
     // Cells.
     final cellBorder = Paint()

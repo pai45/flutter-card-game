@@ -488,7 +488,9 @@ class _NewGamesReleaseCard extends StatelessWidget {
               Row(
                 children: [
                   _ReleaseMiniChip(label: 'PITCH DUEL', accent: Cyber.cyan),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
+                  const _ReleaseMiniDivider(),
+                  const SizedBox(width: 12),
                   _ReleaseMiniChip(
                     label: 'PENALTY SHOOTOUT',
                     accent: Cyber.lime,
@@ -511,18 +513,26 @@ class _ReleaseMiniChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Flexible(
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            label,
-            maxLines: 1,
-            style: Cyber.label(13, color: accent, letterSpacing: 1),
-          ),
-        ),
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Text(
+        label,
+        maxLines: 1,
+        style: Cyber.label(13, color: accent, letterSpacing: 1),
       ),
+    );
+  }
+}
+
+class _ReleaseMiniDivider extends StatelessWidget {
+  const _ReleaseMiniDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 16,
+      color: Cyber.border.withValues(alpha: 0.72),
     );
   }
 }

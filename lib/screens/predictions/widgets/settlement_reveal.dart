@@ -7,6 +7,7 @@ import '../../../models/prediction.dart';
 import '../../../models/progression.dart';
 import '../../../models/sport_match.dart';
 import '../../../utils/sound_effects.dart';
+import '../../../widgets/card_unpack_animation.dart';
 import '../../../widgets/cyber/cyber_cta_button.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 
@@ -170,10 +171,7 @@ class _SettlementRevealOverlayState extends State<SettlementRevealOverlay> {
           ),
         ),
         const SizedBox(height: 10),
-        _RevealIn(
-          delayFactor: 0.35,
-          child: _FixtureRecap(match: widget.match),
-        ),
+        _RevealIn(delayFactor: 0.35, child: _FixtureRecap(match: widget.match)),
         const SizedBox(height: 18),
         _RevealIn(
           delayFactor: 0.6,
@@ -196,10 +194,8 @@ class _SettlementRevealOverlayState extends State<SettlementRevealOverlay> {
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
             itemCount: _stage.clamp(0, widget.results.length),
             separatorBuilder: (_, _) => const SizedBox(height: 10),
-            itemBuilder: (context, i) => _VerdictRow(
-              index: i + 1,
-              result: widget.results[i],
-            ),
+            itemBuilder: (context, i) =>
+                _VerdictRow(index: i + 1, result: widget.results[i]),
           ),
         ),
         Padding(
@@ -222,6 +218,10 @@ class _SettlementRevealOverlayState extends State<SettlementRevealOverlay> {
       key: const ValueKey('settlement-summary'),
       alignment: Alignment.center,
       children: [
+        if (_perfect)
+          const Positioned.fill(
+            child: PackRevealBackground(rarity: 'platinum', pulseOpacity: 0.12),
+          ),
         if (_perfect) const Center(child: PackBurst()),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -256,9 +256,9 @@ class _SettlementRevealOverlayState extends State<SettlementRevealOverlay> {
                   '$_correctCount / ${widget.results.length} CORRECT',
                   textAlign: TextAlign.center,
                   style: Cyber.label(12, color: Cyber.muted, letterSpacing: 1.6)
-                      .copyWith(fontFeatures: const [
-                        FontFeature.tabularFigures(),
-                      ]),
+                      .copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
                 ),
               ),
               const SizedBox(height: 26),
@@ -270,23 +270,21 @@ class _SettlementRevealOverlayState extends State<SettlementRevealOverlay> {
                   child: Text(
                     'YOU BEAT ${(beaten * 100).round()}% OF PREDICTORS',
                     textAlign: TextAlign.center,
-                    style: Cyber.label(
-                      11,
-                      color: Cyber.cyan,
-                      letterSpacing: 1.3,
-                    ).copyWith(fontFeatures: const [
-                      FontFeature.tabularFigures(),
-                    ]),
+                    style:
+                        Cyber.label(
+                          11,
+                          color: Cyber.cyan,
+                          letterSpacing: 1.3,
+                        ).copyWith(
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
                   ),
                 ),
               ],
               const SizedBox(height: 30),
               _RevealIn(
                 delayFactor: 0.7,
-                child: _LevelLine(
-                  before: progressBefore,
-                  after: progressAfter,
-                ),
+                child: _LevelLine(before: progressBefore, after: progressAfter),
               ),
               const SizedBox(height: 34),
               _RevealIn(
@@ -354,8 +352,11 @@ class _FixtureRecap extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           score,
-          style: Cyber.display(13, color: Cyber.gold, letterSpacing: 1.2)
-              .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+          style: Cyber.display(
+            13,
+            color: Cyber.gold,
+            letterSpacing: 1.2,
+          ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
         ),
       ],
     );
@@ -387,9 +388,10 @@ class _XpTicker extends StatelessWidget {
             curve: Curves.easeOutCubic,
             builder: (context, v, _) => Text(
               '+${v.round()}',
-              style: Cyber.display(12, color: Colors.white).copyWith(
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
+              style: Cyber.display(
+                12,
+                color: Colors.white,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
           ),
           const SizedBox(width: 4),
@@ -534,9 +536,10 @@ class _XpStamp extends StatelessWidget {
       ),
       child: Text(
         boosted ? '+$earned XP ${multiplier!.label}' : '+$earned XP',
-        style: Cyber.display(10, color: accent).copyWith(
-          fontFeatures: const [FontFeature.tabularFigures()],
-        ),
+        style: Cyber.display(
+          10,
+          color: accent,
+        ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
       ),
     );
   }
@@ -598,8 +601,11 @@ class _LevelLine extends StatelessWidget {
             ),
             Text(
               '${after.intoLevel} / ${after.levelSpan} XP',
-              style: Cyber.label(9, color: Cyber.muted, letterSpacing: 0.8)
-                  .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+              style: Cyber.label(
+                9,
+                color: Cyber.muted,
+                letterSpacing: 0.8,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
           ],
         ),

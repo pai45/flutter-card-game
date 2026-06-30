@@ -19,6 +19,7 @@ class CyberTooltip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: message,
+      triggerMode: TooltipTriggerMode.tap,
       decoration: BoxDecoration(
         color: const Color(0xff0B1220), // Dark background matching panels
         border: Border.all(color: accentColor),

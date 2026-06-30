@@ -15,6 +15,7 @@ import '../../models/football_bingo.dart';
 import '../../models/oz_coin_ledger.dart';
 import '../../models/sport_match.dart';
 import '../../utils/sound_effects.dart';
+import '../../widgets/card_unpack_animation.dart';
 import '../../widgets/team_logo.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../shop/shop_screen.dart' show CoinIcon;
@@ -873,81 +874,90 @@ class _CompletionOverlayState extends State<_CompletionOverlay> {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: _handleTap,
-      child: ColoredBox(
-        color: const Color(0xf6070b14),
-        child: Center(
-          child: TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: 1),
-            duration: const Duration(milliseconds: 1200),
-            builder: (context, summaryValue, child) {
-              final count = (_summary ? 9 : summaryValue * 9)
-                  .clamp(0, 9)
-                  .floor();
-              return _FlatPanel(
-                borderColor: Cyber.lime,
-                child: SizedBox(
-                  width: 280,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _summary ? 'DAILY LOGGED' : 'GRID COMPLETE',
-                        textAlign: TextAlign.center,
-                        style: Cyber.display(
-                          18,
-                          color: _summary ? Cyber.amber : Cyber.lime,
-                          letterSpacing: 1.8,
+      child: Stack(
+        children: [
+          const Positioned.fill(
+            child: PackRevealBackground(rarity: 'platinum', pulseOpacity: 0.12),
+          ),
+          const Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(color: Color(0x66070B14)),
+            ),
+          ),
+          Center(
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: 1),
+              duration: const Duration(milliseconds: 1200),
+              builder: (context, summaryValue, child) {
+                final count = (_summary ? 9 : summaryValue * 9)
+                    .clamp(0, 9)
+                    .floor();
+                return _FlatPanel(
+                  borderColor: Cyber.lime,
+                  child: SizedBox(
+                    width: 280,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _summary ? 'DAILY LOGGED' : 'GRID COMPLETE',
+                          textAlign: TextAlign.center,
+                          style: Cyber.display(
+                            18,
+                            color: _summary ? Cyber.amber : Cyber.lime,
+                            letterSpacing: 1.8,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '$count/9',
-                        style: Cyber.display(30, color: Colors.white),
-                      ),
-                      const SizedBox(height: 14),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: [
-                          for (var i = 0; i < 9; i++)
-                            Container(
-                              width: 34,
-                              height: 34,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: i < count ? Cyber.lime : Cyber.panel2,
-                                border: Border.all(
+                        const SizedBox(height: 8),
+                        Text(
+                          '$count/9',
+                          style: Cyber.display(30, color: Colors.white),
+                        ),
+                        const SizedBox(height: 14),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            for (var i = 0; i < 9; i++)
+                              Container(
+                                width: 34,
+                                height: 34,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: i < count ? Cyber.lime : Cyber.panel2,
+                                  border: Border.all(
+                                    color: i < count
+                                        ? Cyber.lime
+                                        : AppTheme.borderMuted,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.check,
+                                  size: 18,
                                   color: i < count
-                                      ? Cyber.lime
-                                      : AppTheme.borderMuted,
+                                      ? AppTheme.darkInk
+                                      : Cyber.muted,
                                 ),
                               ),
-                              child: Icon(
-                                Icons.check,
-                                size: 18,
-                                color: i < count
-                                    ? AppTheme.darkInk
-                                    : Cyber.muted,
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 220),
-                        child: Text(
-                          _summary ? 'TAP TO CONTINUE' : 'TAP TO REVEAL',
-                          key: ValueKey(_summary),
-                          style: Cyber.label(10, color: Cyber.muted),
+                          ],
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 14),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 220),
+                          child: Text(
+                            _summary ? 'TAP TO CONTINUE' : 'TAP TO REVEAL',
+                            key: ValueKey(_summary),
+                            style: Cyber.label(10, color: Cyber.muted),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

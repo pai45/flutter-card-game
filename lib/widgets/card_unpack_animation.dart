@@ -221,6 +221,73 @@ class _PackSkipBtnPainter extends CustomPainter {
 // ═════════════════════════════════════════════════════════════════════════════
 // Main widget
 // ═════════════════════════════════════════════════════════════════════════════
+/// Reusable version of the pack-opening reveal backdrop: the same rarity glow,
+/// scanline sweep, vignette, and rotating god-rays used behind unpacked cards.
+class PackRevealBackground extends StatefulWidget {
+  const PackRevealBackground({
+    this.rarity = 'platinum',
+    this.pulseOpacity = 0.1,
+    this.showRays = true,
+    super.key,
+  });
+
+  final String rarity;
+  final double pulseOpacity;
+  final bool showRays;
+
+  @override
+  State<PackRevealBackground> createState() => _PackRevealBackgroundState();
+}
+
+class _PackRevealBackgroundState extends State<PackRevealBackground>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _beamCtrl = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 16),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _beamCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rank = _rarityRank(widget.rarity);
+    return Stack(
+      children: [
+        Positioned.fill(child: Container(color: _kBg)),
+        Positioned.fill(
+          child: _CyberRevealBackground(
+            glowColor: _rarityGlow(widget.rarity),
+            pulseOpacity: widget.pulseOpacity,
+          ),
+        ),
+        if (widget.showRays && rank >= 1)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: RepaintBoundary(
+                child: AnimatedBuilder(
+                  animation: _beamCtrl,
+                  builder: (_, ignored) => CustomPaint(
+                    painter: _RayBurstPainter(
+                      color: _rarityBase(widget.rarity),
+                      secondary: _raritySecondary(widget.rarity),
+                      rank: rank,
+                      rotation: _beamCtrl.value,
+                      intro: 1,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class CardUnpackAnimation extends StatefulWidget {
   const CardUnpackAnimation({
     super.key,

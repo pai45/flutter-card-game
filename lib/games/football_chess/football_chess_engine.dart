@@ -185,8 +185,9 @@ class FootballChessEngine {
 
     // Keeper can only pass, and only when they have the ball.
     if (p.isKeeper) {
-      if (isCarrier && passTargets(s, p).isNotEmpty)
+      if (isCarrier && passTargets(s, p).isNotEmpty) {
         verbs.add(BoardActionType.pass);
+      }
       return verbs;
     }
 
@@ -224,8 +225,9 @@ class FootballChessEngine {
     final out = <String>[];
     for (final t in s.outfield(carrier.side)) {
       if (t.id == carrier.id) continue;
-      if (carrier.isKeeper || _clearLine(s, carrier.cell, t.cell))
+      if (carrier.isKeeper || _clearLine(s, carrier.cell, t.cell)) {
         out.add(t.id);
+      }
     }
     return out;
   }

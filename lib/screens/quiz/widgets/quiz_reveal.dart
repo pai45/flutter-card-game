@@ -6,6 +6,7 @@ import '../../../config/theme.dart';
 import '../../../models/progression.dart';
 import '../../../models/quiz_trivia.dart';
 import '../../../utils/sound_effects.dart';
+import '../../../widgets/card_unpack_animation.dart';
 import '../../../widgets/cyber/cyber_cta_button.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../predictions/widgets/settlement_reveal.dart'
@@ -211,6 +212,10 @@ class _QuizRevealOverlayState extends State<QuizRevealOverlay> {
       key: const ValueKey('quiz-summary'),
       alignment: Alignment.center,
       children: [
+        if (_perfect)
+          const Positioned.fill(
+            child: PackRevealBackground(rarity: 'platinum', pulseOpacity: 0.12),
+          ),
         if (_perfect) const Center(child: PackBurst()),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 28),
