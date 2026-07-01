@@ -311,8 +311,13 @@ FootballBingoStatus footballBingoStatus(
   FootballBingoProgress progress, [
   DateTime? now,
 ]) {
-  final elapsed = (now ?? DateTime.now()).difference(progress.startedAt);
-  final remaining = kFootballBingoCooldown - elapsed;
+  final currentTime = now ?? DateTime.now();
+  final tomorrowMidnight = DateTime(
+    currentTime.year,
+    currentTime.month,
+    currentTime.day + 1,
+  );
+  final remaining = tomorrowMidnight.difference(currentTime);
   if (remaining <= Duration.zero) {
     return const FootballBingoStatus(true, Duration.zero);
   }

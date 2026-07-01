@@ -5,7 +5,7 @@ import '../../config/theme.dart';
 import '../../data/football_bingo_puzzles.dart';
 import '../../models/football_bingo.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
-import '../../widgets/cyber/fixture_card.dart';
+import '../shop/widgets/shop_card.dart';
 
 class FootballBingoLogsScreen extends StatelessWidget {
   const FootballBingoLogsScreen({
@@ -141,10 +141,15 @@ class FootballBingoLogsScreen extends StatelessWidget {
               Expanded(
                 child: items.isEmpty
                     ? const SizedBox.shrink()
-                    : ListView.separated(
+                    : GridView.builder(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 1.15,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
                         itemCount: items.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final dayKey = items[index];
                           final progress = state.archive.progressByDay[dayKey]!;
@@ -206,77 +211,90 @@ class _BingoLogTile extends StatelessWidget {
   final FootballBingoPuzzle puzzle;
   final VoidCallback onTap;
 
+  String _formatDate(String key) {
+    final date = parseFootballBingoDayKey(key);
+    if (date == null) return key;
+    final months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final done = progress.completed;
     final accent = done ? Cyber.lime : Cyber.cyan;
-    return FixtureCardFrame(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
-      tag: FixtureTagText(text: done ? 'DONE' : 'VIEW', color: accent),
-      bodyPadding: const EdgeInsets.fromLTRB(14, 30, 14, 12),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            dayKey,
-            style: Cyber.label(
-              9,
-              color: Cyber.muted.withValues(alpha: 0.85),
-              letterSpacing: 1.2,
-            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.14),
-                  border: Border.all(color: accent.withValues(alpha: 0.45)),
-                ),
-                child: Icon(Icons.grid_view, color: accent, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  puzzle.title.toUpperCase(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Cyber.display(14, color: Colors.white),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                '${progress.solvedCellIds.length}/9',
-                style: Cyber.display(
-                  16,
-                  color: accent,
-                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-              ),
-            ],
-          ),
-        ],
-      ),
-      bottomStrip: FixtureCardStrip(
-        topBorder: accent.withValues(alpha: 0.25),
-        child: Row(
+      child: ShopCardFrame(
+        accent: accent,
+        elevated: true,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Icon(
-              done ? Icons.verified : Icons.visibility,
-              color: accent,
-              size: 14,
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Color.lerp(Cyber.panel, accent, 0.045),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          done ? Icons.verified_rounded : Icons.grid_view,
+                          color: accent,
+                          size: 18,
+                        ),
+                        const Spacer(),
+                        Text(
+                          _formatDate(dayKey),
+                          style: Cyber.display(
+                            12,
+                            color: accent,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      puzzle.title.toUpperCase(),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Cyber.display(
+                        14,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      done ? 'COMPLETED' : '${progress.lifelines} LIVES LEFT',
+                      style: Cyber.label(
+                        8.5,
+                        color: Cyber.muted,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(width: 7),
-            Text(
-              done ? 'COMPLETED GRID' : 'ANSWER KEY',
-              style: Cyber.label(9, color: accent, letterSpacing: 0.9),
-            ),
-            const Spacer(),
-            Text(
-              'DAILY LOG',
-              style: Cyber.label(9, color: Cyber.muted, letterSpacing: 0.9),
+            Container(
+              height: 32,
+              color: Colors.black.withValues(alpha: 0.88),
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                done ? 'CHECK ANSWER' : 'PLAY GRID',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Cyber.label(
+                  9,
+                  color: accent,
+                  letterSpacing: 0.55,
+                ),
+              ),
             ),
           ],
         ),

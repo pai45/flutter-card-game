@@ -19,6 +19,7 @@ import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
 import '../../widgets/player_level_badge.dart';
+import '../how_to_play/how_to_play_hub_screen.dart';
 import 'football_chess_match_screen.dart';
 import 'football_chess_matchmaking_screen.dart';
 
@@ -366,21 +367,26 @@ class _FootballChessLobbyScreenState extends State<FootballChessLobbyScreen> {
                                           ),
                                         ),
                                         const SizedBox(height: 16),
-                                        // Rules text
+                                        // How to Play link
                                         CyberSlideUpFadeIn(
                                           delay: const Duration(
                                             milliseconds: 650,
                                           ),
                                           offset: 14,
-                                          child: Text(
-                                            'Chess on a pitch: take turns, move a player or the ball, '
-                                            'win it back by position, and shoot from their half to score. '
-                                            'XP only — coins stay in the shop.',
-                                            textAlign: TextAlign.center,
-                                            style: Cyber.body(11).copyWith(
-                                              color: Cyber.muted,
-                                              height: 1.5,
-                                            ),
+                                          child: Wrap(
+                                            alignment: WrapAlignment.center,
+                                            crossAxisAlignment: WrapCrossAlignment.center,
+                                            spacing: 14,
+                                            runSpacing: 6,
+                                            children: [
+                                              _HudLink(
+                                                label: 'HOW TO PLAY',
+                                                onTap: () => showHowToPlayGuide(
+                                                  context,
+                                                  HowToPlayMode.footballChess,
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ],
@@ -638,6 +644,33 @@ class _HudStat extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+class _HudLink extends StatelessWidget {
+  const _HudLink({
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Text(
+        label,
+        style: TextStyle(
+          color: Cyber.cyan,
+          fontFamily: Cyber.displayFont,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1.4,
+        ),
       ),
     );
   }

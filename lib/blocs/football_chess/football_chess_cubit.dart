@@ -180,17 +180,21 @@ class FootballChessCubit extends Cubit<FootballChessState> {
 
   void _select(BoardPiece piece) {
     final m = state.match!;
+    final available = _engine.availableActions(
+      m.board,
+      Side.player,
+      piece,
+    );
+    final hasMove = available.contains(BoardActionType.move);
+    final cells = hasMove ? _engine.legalMoves(m.board, piece) : const <BoardCell>[];
+
     emit(
       state.copyWith(
         match: m.copyWith(
           selectedPieceId: piece.id,
-          availableActions: _engine.availableActions(
-            m.board,
-            Side.player,
-            piece,
-          ),
-          selectedAction: null,
-          moveCells: const [],
+          availableActions: available,
+          selectedAction: hasMove ? BoardActionType.move : null,
+          moveCells: cells,
           passTargetIds: const [],
           eventTick: m.eventTick + 1,
         ),

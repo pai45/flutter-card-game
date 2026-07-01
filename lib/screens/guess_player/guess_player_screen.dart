@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../blocs/guess_player/guess_player_cubit.dart';
 import '../../config/theme.dart';
+import '../../data/followable_leagues.dart';
 import '../../models/cards.dart';
 import '../../models/sport_match.dart';
 import '../../widgets/cyber/cyber_tooltip.dart';
@@ -237,13 +238,25 @@ class _CareerTimelinePanel extends StatelessWidget {
                     ? spell.clubName.substring(0, 3).toUpperCase()
                     : spell.clubName.toUpperCase();
 
-                final team = SportTeam(
+                // Try to find the team in followableLeagues to get accurate colors/shortNames.
+                SportTeam? realTeam;
+                for (final l in followableLeagues) {
+                  for (final t in l.teams) {
+                    if (t.name.toLowerCase() == spell.clubName.toLowerCase() ||
+                        t.id.toLowerCase() == spell.clubName.toLowerCase()) {
+                      realTeam = t;
+                      break;
+                    }
+                  }
+                  if (realTeam != null) break;
+                }
+
+                final team = realTeam ?? SportTeam(
                   id: spell.clubName,
                   name: spell.clubName,
                   shortName: clubAbbr,
                   color: const Color(0xff1A2433), // dark cyber panel color
                 );
-
                 final isLast = index == timeline.career.length - 1;
                 final endYearStr = isLast
                     ? 'Present'

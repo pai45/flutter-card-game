@@ -6,6 +6,7 @@ import '../../config/theme.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../how_to_play/how_to_play_hub_screen.dart';
 
 class FootballBingoHomeScreen extends StatelessWidget {
   const FootballBingoHomeScreen({
@@ -74,6 +75,26 @@ class FootballBingoHomeScreen extends StatelessWidget {
                             delay: const Duration(milliseconds: 470),
                             offset: 22,
                             child: _DailyLogsHeader(onTap: onOpenLogs),
+                          ),
+                          const SizedBox(height: 16),
+                          CyberSlideUpFadeIn(
+                            delay: const Duration(milliseconds: 650),
+                            offset: 14,
+                            child: Wrap(
+                              alignment: WrapAlignment.center,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              spacing: 14,
+                              runSpacing: 6,
+                              children: [
+                                _HudLink(
+                                  label: 'HOW TO PLAY',
+                                  onTap: () => showHowToPlayGuide(
+                                    context,
+                                    HowToPlayMode.bingoGrid,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -623,6 +644,34 @@ class _StatTile extends StatelessWidget {
           const SizedBox(height: 2),
           Text(label, style: Cyber.label(8, color: Cyber.muted)),
         ],
+      ),
+    );
+  }
+}
+
+class _HudLink extends StatelessWidget {
+  const _HudLink({
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Text(
+        label,
+        style: TextStyle(
+          color: Cyber.amber,
+          fontFamily: Cyber.displayFont,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1.4,
+        ),
       ),
     );
   }

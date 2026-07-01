@@ -202,6 +202,7 @@ class _FootballBingoScreenState extends State<FootballBingoScreen> {
                             _PlayerPanel(
                               state: state,
                               portraitKey: _activePlayerKey,
+                              now: _now,
                             ),
                             if (state.completed && !_showCompletion) ...[
                               const SizedBox(height: 16),
@@ -659,29 +660,49 @@ const _clubColors = <String, Color>{
 };
 
 class _PlayerPanel extends StatelessWidget {
-  const _PlayerPanel({required this.state, required this.portraitKey});
+  const _PlayerPanel({required this.state, required this.portraitKey, required this.now});
 
   final FootballBingoState state;
   final GlobalKey portraitKey;
+  final DateTime now;
 
   @override
   Widget build(BuildContext context) {
     final player = state.currentPlayer;
     if (player == null) {
+      if (!state.isToday) {
+        return _FlatPanel(
+          child: Column(
+            children: [
+              Text(
+                'GRID COMPLETE',
+                style: Cyber.display(15, color: Cyber.amber),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Return to logs for more grids.',
+                textAlign: TextAlign.center,
+                style: Cyber.body(12, color: Cyber.muted),
+              ),
+            ],
+          ),
+        );
+      }
+      
+      final status = footballBingoStatus(state.progress, now);
+      final timer = formatFootballBingoCountdown(status.remaining);
       return _FlatPanel(
+        borderColor: Cyber.amber,
         child: Column(
           children: [
             Text(
-              state.readOnly ? 'ARCHIVE ANSWER GRID' : 'GRID COMPLETE',
-              style: Cyber.display(15, color: Cyber.amber),
+              'NEXT GRID UNLOCKS IN',
+              style: Cyber.label(10, color: Cyber.muted),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
-              state.readOnly
-                  ? 'Past daily grids are view-only.'
-                  : 'Return home for the next daily grid.',
-              textAlign: TextAlign.center,
-              style: Cyber.body(12, color: Cyber.muted),
+              timer,
+              style: Cyber.display(24, color: Cyber.amber),
             ),
           ],
         ),

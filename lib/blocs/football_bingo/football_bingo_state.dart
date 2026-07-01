@@ -40,9 +40,9 @@ class FootballBingoState {
   final String? lastTappedCellId;
 
   bool get isToday => activeDayKey == todayKey;
-  bool get readOnly => !isToday;
+  bool get readOnly => false;
   bool get completed => progress.completed;
-  bool get needsLifeline => isToday && !completed && progress.lifelines <= 0;
+  bool get needsLifeline => !completed && progress.lifelines <= 0;
   Set<String> get solvedCellIds => progress.solvedCellIds.toSet();
   List<String> get unlockedDayKeys =>
       archive.progressByDay.keys.toList()..sort();
