@@ -12,8 +12,8 @@ enum HowToPlayMode { predict, pick, pitchDuel, penaltyShootout, bingoGrid, footb
 
 /// Opens the standalone How To Play guide for a single [mode]. Used by the in-
 /// context help affordances inside the Predict and Pick surfaces.
-void showHowToPlayGuide(BuildContext context, HowToPlayMode mode) {
-  Navigator.of(context).push(
+Future<void> showHowToPlayGuide(BuildContext context, HowToPlayMode mode) {
+  return Navigator.of(context).push(
     MaterialPageRoute<void>(
       builder: (_) => _HowToPlayGuideScreen(guide: _guides[mode.index]),
     ),

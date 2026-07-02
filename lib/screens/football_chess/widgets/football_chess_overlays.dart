@@ -8,6 +8,7 @@ import '../../../config/theme.dart';
 import '../../../models/football_chess.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
+import '../../how_to_play/how_to_play_hub_screen.dart';
 
 /// Slim top HUD — just `score · clock`. The board carries everything else.
 class ChessHud extends StatelessWidget {
@@ -63,7 +64,17 @@ class ChessHud extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 40),
+              IconButton(
+                icon: const Icon(Icons.help_outline, color: Cyber.muted, size: 20),
+                onPressed: () async {
+                  playSound(SoundEffect.uiTap);
+                  context.read<FootballChessCubit>().setPaused(true);
+                  await showHowToPlayGuide(context, HowToPlayMode.footballChess);
+                  if (context.mounted) {
+                    context.read<FootballChessCubit>().setPaused(false);
+                  }
+                },
+              ),
             ],
           ),
         );
@@ -236,18 +247,19 @@ class ActionBar extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              for (final verb in m.availableActions) ...[
-                _ActionChip(
-                  verb: verb,
-                  armed: m.selectedAction == verb,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    playSound(_sfxFor(verb));
-                    context.read<FootballChessCubit>().chooseAction(verb);
-                  },
-                ),
-                const SizedBox(width: 8),
-              ],
+              for (final verb in m.availableActions)
+                if (verb != BoardActionType.move) ...[
+                  _ActionChip(
+                    verb: verb,
+                    armed: m.selectedAction == verb,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      playSound(_sfxFor(verb));
+                      context.read<FootballChessCubit>().chooseAction(verb);
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                ],
             ],
           );
         }

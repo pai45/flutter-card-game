@@ -443,6 +443,13 @@ class FootballChessCubit extends Cubit<FootballChessState> {
 
   // ---- Clock -------------------------------------------------------------
 
+  void setPaused(bool paused) {
+    final m = state.match;
+    if (m != null) {
+      emit(state.copyWith(match: m.copyWith(paused: paused)));
+    }
+  }
+
   void _ensureClock() {
     _clock ??= Timer.periodic(_tickInterval, (_) => _tick());
   }
@@ -453,7 +460,7 @@ class FootballChessCubit extends Cubit<FootballChessState> {
     final active =
         m.phase == ChessMatchPhase.playerTurn ||
         m.phase == ChessMatchPhase.opponentTurn;
-    if (!active) return;
+    if (!active || m.paused) return;
     final clock = m.clockRemaining - _dt;
     if (clock <= 0) {
       emit(state.copyWith(match: m.copyWith(clockRemaining: 0)));

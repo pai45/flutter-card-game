@@ -572,34 +572,74 @@ class FootballChessEngine {
   double _scoreCpuAction(BoardState s, ChessAction a) {
     final piece = s.pieceById(a.pieceId)!;
     final carrier = s.carrier;
+    
     switch (a.type) {
       case BoardActionType.shoot:
-        return 100 + shotGoalProbability(s, piece) * 100;
+        // Scale purely by probability. A 10% shot is 15, an 80% shot is 120.
+        // Prevents mindless shooting from terrible positions.
+        return shotGoalProbability(s, piece) * 150.0;
+        
       case BoardActionType.tackle:
         final adj = _adjacentDefenders(s, Side.opponent, carrier!.cell);
-        // Safe — prefer it strongly when the odds are good.
-        return 70 +
-            tackleWinProbability(piece, carrier, adjacentCount: adj) * 45;
+        final win = tackleWinProbability(piece, carrier, adjacentCount: adj);
+        // Increased desperation if the player is closer to the CPU goal (row 3).
+        final danger = carrier.cell.row * 10.0;
+        return 40.0 + danger + win * 50.0;
+        
       case BoardActionType.slide:
         final win = slideWinProbability(piece, carrier!);
-        // High reward, but a miss lets the carrier advance — discount the risk.
-        return 50 + win * 45 - (1 - win) * 25;
+        final danger = carrier.cell.row * 15.0; // Higher desperation modifier
+        // High reward, but discount the risk of missing.
+        return 30.0 + danger + win * 50.0 - (1.0 - win) * 35.0;
+        
       case BoardActionType.press:
-        return 35.0; // close down to set up a tackle next turn
+        final step = _pressStep(s, piece, carrier!);
+        if (step == null) return 0.0; // Failsafe
+        final before = piece.cell.distanceTo(carrier.cell);
+        final after = step.distanceTo(carrier.cell);
+        final progress = (before - after).toDouble();
+        // Bonus for getting between the carrier and the goal.
+        final blockingBonus = (step.row > carrier.cell.row) ? 10.0 : 0.0;
+        return 20.0 + progress * 15.0 + carrier.cell.row * 5.0 + blockingBonus;
+        
       case BoardActionType.pass:
         final t = s.pieceById(a.targetId!)!;
-        return 40 + (s.ballCell.row - t.cell.row) * 6; // advance toward row 0
+        final advance = (s.ballCell.row - t.cell.row).toDouble();
+        
+        // Evaluate if the target is open
+        int pressure = 0;
+        for (final n in t.cell.neighbors8()) {
+          final opp = s.outfieldAt(n);
+          if (opp != null && opp.side == Side.player) pressure++;
+        }
+        return 35.0 + advance * 15.0 - pressure * 12.0;
+        
       case BoardActionType.dribble:
         final defender = s.pieceById(a.targetId!)!;
-        // Value beating a defender, more so toward the player's goal (row 0).
-        return 45 +
-            dribbleWinProbability(piece, defender) * 35 +
-            (s.ballCell.row - defender.cell.row) * 6;
+        final win = dribbleWinProbability(piece, defender);
+        final advance = (s.ballCell.row - defender.cell.row).toDouble();
+        return 25.0 + win * 40.0 + advance * 15.0;
+        
       case BoardActionType.move:
         if (carrier != null && carrier.side == Side.player) {
+          // Defending move (not pressing, just repositioning)
           final before = piece.cell.distanceTo(carrier.cell);
           final after = a.cell!.distanceTo(carrier.cell);
-          return 10 + (before - after) * 5;
+          final progress = (before - after).toDouble();
+          return 10.0 + progress * 10.0;
+        }
+        
+        if (carrier != null && carrier.side == Side.opponent) {
+          if (carrier.id == piece.id) {
+            // Carrier moving into space
+            final advance = (piece.cell.row - a.cell!.row).toDouble();
+            return 25.0 + advance * 20.0;
+          } else {
+            // Off-ball attacker making a run
+            final advance = (piece.cell.row - a.cell!.row).toDouble();
+            final spread = (a.cell!.col - carrier.cell.col).abs().toDouble();
+            return 15.0 + advance * 12.0 + spread * 5.0;
+          }
         }
         return 5.0;
     }

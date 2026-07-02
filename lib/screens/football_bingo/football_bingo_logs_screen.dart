@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../blocs/football_bingo/football_bingo_state.dart';
 import '../../config/theme.dart';
-import '../../data/football_bingo_puzzles.dart';
 import '../../models/football_bingo.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../shop/widgets/shop_card.dart';
@@ -143,12 +142,13 @@ class FootballBingoLogsScreen extends StatelessWidget {
                     ? const SizedBox.shrink()
                     : GridView.builder(
                         padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 1.15,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              childAspectRatio: 1.15,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                            ),
                         itemCount: items.length,
                         itemBuilder: (context, index) {
                           final dayKey = items[index];
@@ -156,7 +156,6 @@ class FootballBingoLogsScreen extends StatelessWidget {
                           return _BingoLogTile(
                             dayKey: dayKey,
                             progress: progress,
-                            puzzle: footballBingoPuzzleFor(progress.puzzleId),
                             onTap: () => onOpenDay(dayKey),
                           );
                         },
@@ -202,19 +201,30 @@ class _BingoLogTile extends StatelessWidget {
   const _BingoLogTile({
     required this.dayKey,
     required this.progress,
-    required this.puzzle,
     required this.onTap,
   });
 
   final String dayKey;
   final FootballBingoProgress progress;
-  final FootballBingoPuzzle puzzle;
   final VoidCallback onTap;
 
   String _formatDate(String key) {
     final date = parseFootballBingoDayKey(key);
     if (date == null) return key;
-    final months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    final months = [
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ];
     return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
@@ -249,23 +259,17 @@ class _BingoLogTile extends StatelessWidget {
                         ),
                         const Spacer(),
                         Text(
-                          _formatDate(dayKey),
-                          style: Cyber.display(
-                            12,
-                            color: accent,
-                          ),
+                          done ? 'DONE' : 'OPEN',
+                          style: Cyber.label(8.5, color: accent),
                         ),
                       ],
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      puzzle.title.toUpperCase(),
+                      _formatDate(dayKey),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.display(
-                        14,
-                        color: Colors.white,
-                      ),
+                      style: Cyber.display(14, color: Colors.white),
                     ),
                     const Spacer(),
                     Text(
@@ -289,11 +293,7 @@ class _BingoLogTile extends StatelessWidget {
                 done ? 'CHECK ANSWER' : 'PLAY GRID',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.label(
-                  9,
-                  color: accent,
-                  letterSpacing: 0.55,
-                ),
+                style: Cyber.label(9, color: accent, letterSpacing: 0.55),
               ),
             ),
           ],

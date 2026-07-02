@@ -14,6 +14,8 @@ import '../../models/football_chess.dart';
 import '../../models/progression.dart';
 import '../../models/xp_ledger.dart';
 import '../../utils/sound_effects.dart';
+import '../../widgets/cyber/cyber_toss_coin.dart';
+import '../../widgets/spotlight_walkthrough.dart';
 import 'widgets/football_chess_overlays.dart';
 import 'widgets/football_chess_result.dart';
 
@@ -42,6 +44,12 @@ class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
   bool _kickoffScheduled = false;
   bool _xpDispatched = false;
   int _awardedXp = 0;
+  bool _walkthroughShown = false;
+
+  final _boardKey = GlobalKey();
+  final _timerKey = GlobalKey();
+  final _topKey = GlobalKey();
+  final _tossKey = GlobalKey();
 
   @override
   void initState() {
@@ -76,6 +84,12 @@ class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
     if (m == null) return;
     switch (m.phase) {
       case ChessMatchPhase.toss:
+        final gameBloc = context.read<GameBloc>();
+        if (!_walkthroughShown &&
+            !gameBloc.state.tutorialSeen.contains('football-chess-first')) {
+          _walkthroughShown = true;
+          _showWalkthrough();
+        }
         if (m.tossResult != null && !_kickoffScheduled) {
           _kickoffScheduled = true;
           playSound(SoundEffect.coinLand);
@@ -150,6 +164,55 @@ class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
     );
   }
 
+  void _showWalkthrough() {
+    _cubit.setPaused(true);
+    showSpotlightWalkthrough(
+      context,
+      keyName: 'football-chess-first',
+      steps: [
+        SpotlightStep(
+          targetKey: _tossKey,
+          title: 'The Coin Toss',
+          body: 'Call the toss to see who gets to kickoff and attack first. Good luck!',
+          icon: Icons.monetization_on,
+          accent: Cyber.gold,
+        ),
+        SpotlightStep(
+          targetKey: _timerKey,
+          title: 'The Clock is Ticking',
+          body: 'You have 2 minutes to score before the game ends. Use your time wisely!',
+          icon: Icons.timer,
+          accent: Cyber.lime,
+        ),
+        SpotlightStep(
+          targetKey: _boardKey,
+          title: 'On the Attack',
+          body: 'When you have the ball, tap your player to MOVE, DRIBBLE, PASS, or SHOOT. Tap an empty square to execute.',
+          icon: Icons.flash_on,
+          accent: Cyber.cyan,
+        ),
+        SpotlightStep(
+          targetKey: _boardKey,
+          title: 'On the Defense',
+          body: 'When defending, select your player to PRESS, TACKLE, or SLIDE. Win the ball back before they score!',
+          icon: Icons.shield,
+          accent: Cyber.danger,
+        ),
+        SpotlightStep(
+          targetKey: _topKey,
+          title: 'Turn Based Action',
+          body: 'The CPU plays immediately after your turn. Watch their moves closely!',
+          icon: Icons.smart_toy,
+          accent: Cyber.violet,
+        ),
+      ],
+      onComplete: () {
+        _cubit.setPaused(false);
+        context.read<GameBloc>().add(TutorialSeenMarked('football-chess-first'));
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -160,27 +223,41 @@ class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
         child: SafeArea(
           child: Stack(
             children: [
-              Positioned.fill(child: GameWidget(game: _game)),
+              Positioned.fill(
+                child: SpotlightTarget(
+                  spotlightKey: _boardKey,
+                  child: GameWidget(game: _game),
+                ),
+              ),
               Align(
                 alignment: Alignment.topCenter,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    ChessHud(onExit: widget.onExit),
+                    SpotlightTarget(
+                      spotlightKey: _topKey,
+                      child: ChessHud(onExit: widget.onExit),
+                    ),
                     const LastActionBanner(),
                   ],
                 ),
               ),
               const Align(child: CentreFlash()),
               const OpponentActionToast(),
-              const Align(
+              Align(
                 alignment: Alignment.bottomCenter,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: [DecisionTimer(), ActionBar()],
+                  children: [
+                    SpotlightTarget(
+                      spotlightKey: _timerKey,
+                      child: const DecisionTimer(),
+                    ),
+                    const ActionBar(),
+                  ],
                 ),
               ),
-              _TossLayer(onCall: _cubit.callToss),
+              _TossLayer(tossKey: _tossKey, onCall: _cubit.callToss),
               _ResultLayer(
                 awardedXp: () => _awardedXp,
                 onExit: widget.onExit,
@@ -199,8 +276,9 @@ class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
 // ---------------------------------------------------------------------------
 
 class _TossLayer extends StatelessWidget {
-  const _TossLayer({required this.onCall});
+  const _TossLayer({required this.tossKey, required this.onCall});
 
+  final GlobalKey tossKey;
   final ValueChanged<CoinSide> onCall;
 
   @override
@@ -223,66 +301,67 @@ class _TossLayer extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  revealed ? 'TOSS' : 'CALL THE TOSS',
-                  style: TextStyle(
-                    fontFamily: Cyber.displayFont,
-                    fontSize: 16,
-                    letterSpacing: 4,
-                    fontWeight: FontWeight.w700,
-                    color: Cyber.muted,
+                SpotlightTarget(
+                  spotlightKey: tossKey,
+                  child: Text(
+                    revealed ? 'TOSS RESULT' : 'CALL THE TOSS',
+                    style: TextStyle(
+                      fontFamily: Cyber.displayFont,
+                      fontSize: 16,
+                      letterSpacing: 4,
+                      fontWeight: FontWeight.w700,
+                      color: Cyber.muted,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
+                CyberTossCoin(
+                  result: revealed ? m.tossResult!.name : null,
+                  won: m.playerWonToss,
+                ),
+                const SizedBox(height: 32),
                 if (!revealed)
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _CoinButton(
-                        label: 'HEADS',
-                        onTap: () {
-                          playSound(SoundEffect.coinFlip);
-                          HapticFeedback.mediumImpact();
-                          onCall(CoinSide.heads);
-                        },
+                      Expanded(
+                        child: CyberCallChoiceButton(
+                          face: 'H',
+                          label: 'HEADS',
+                          accent: Cyber.cyan,
+                          onTap: () {
+                            playSound(SoundEffect.coinFlip);
+                            HapticFeedback.mediumImpact();
+                            onCall(CoinSide.heads);
+                          },
+                        ),
                       ),
                       const SizedBox(width: 16),
-                      _CoinButton(
-                        label: 'TAILS',
-                        onTap: () {
-                          playSound(SoundEffect.coinFlip);
-                          HapticFeedback.mediumImpact();
-                          onCall(CoinSide.tails);
-                        },
+                      Expanded(
+                        child: CyberCallChoiceButton(
+                          face: 'T',
+                          label: 'TAILS',
+                          accent: const Color(0xFFC084FC),
+                          onTap: () {
+                            playSound(SoundEffect.coinFlip);
+                            HapticFeedback.mediumImpact();
+                            onCall(CoinSide.tails);
+                          },
+                        ),
                       ),
                     ],
                   )
                 else
-                  Column(
-                    children: [
-                      Text(
-                        m.tossResult!.name.toUpperCase(),
-                        style: TextStyle(
-                          fontFamily: Cyber.displayFont,
-                          fontSize: 40,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 4,
-                          color: Cyber.gold,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        (m.playerWonToss ?? false)
-                            ? 'YOU WON THE TOSS — YOU KICK OFF'
-                            : 'CPU WON THE TOSS',
-                        style: Cyber.label(12).copyWith(
-                          color: (m.playerWonToss ?? false)
-                              ? Cyber.cyan
-                              : Cyber.magenta,
-                          letterSpacing: 1.6,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    (m.playerWonToss ?? false)
+                        ? 'YOU WON THE TOSS — YOU KICK OFF'
+                        : 'CPU WON THE TOSS',
+                    style: Cyber.label(12).copyWith(
+                      color: (m.playerWonToss ?? false)
+                          ? Cyber.cyan
+                          : Cyber.danger,
+                      letterSpacing: 1.6,
+                    ),
                   ),
               ],
             ),
@@ -293,38 +372,7 @@ class _TossLayer extends StatelessWidget {
   }
 }
 
-class _CoinButton extends StatelessWidget {
-  const _CoinButton({required this.label, required this.onTap});
 
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 120,
-        height: 56,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Cyber.cyan.withValues(alpha: 0.2),
-              Cyber.panel.withValues(alpha: 0.9),
-            ],
-          ),
-          border: Border.all(color: Cyber.cyan.withValues(alpha: 0.85)),
-          borderRadius: BorderRadius.circular(2),
-        ),
-        child: Text(
-          label,
-          style: Cyber.label(14).copyWith(color: Cyber.cyan, letterSpacing: 2),
-        ),
-      ),
-    );
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Full-time result (delegates to the shared revamped victory screen).

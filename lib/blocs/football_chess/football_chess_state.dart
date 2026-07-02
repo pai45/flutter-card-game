@@ -66,6 +66,7 @@ class ChessMatch {
     this.moveLog = const [],
     this.goals = const [],
     this.eventTick = 0,
+    this.paused = false,
   });
 
   // Teams / meta
@@ -84,6 +85,7 @@ class ChessMatch {
   final int opponentScore;
   final double clockRemaining; // seconds, kickoff 120 → 0
   final double decisionRemaining; // soft per-move timer (player turn)
+  final bool paused;
 
   // Toss
   final CoinSide? tossCall;
@@ -144,6 +146,7 @@ class ChessMatch {
     List<MoveLogEntry>? moveLog,
     List<ChessGoal>? goals,
     int? eventTick,
+    bool? paused,
   }) => ChessMatch(
     playerSquad: playerSquad,
     opponentSquad: opponentSquad,
@@ -176,6 +179,7 @@ class ChessMatch {
     moveLog: moveLog ?? this.moveLog,
     goals: goals ?? this.goals,
     eventTick: eventTick ?? this.eventTick,
+    paused: paused ?? this.paused,
   );
 }
 

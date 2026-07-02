@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../blocs/guess_player/guess_player_cubit.dart';
 import '../../config/theme.dart';
-import '../../widgets/cyber/cyber_widgets.dart';
 import '../../utils/sound_effects.dart';
+import '../../widgets/cyber/cyber_widgets.dart';
+import '../shop/widgets/shop_card.dart';
 
 class GuessPlayerLogsScreen extends StatelessWidget {
   const GuessPlayerLogsScreen({
@@ -98,27 +99,62 @@ class GuessPlayerLogsScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-              const SizedBox(height: 8),
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                  itemCount: items.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final dayKey = items[index];
-                    final result = state.archive.resultsByDay[dayKey];
-                    final isToday = dayKey == state.todayKey;
-
-                    return _LogItem(
-                      dayKey: dayKey,
-                      isToday: isToday,
-                      won: result?.won,
-                      playerName: result?.targetPlayerName,
-                      onTap: () => onOpenDay(dayKey),
-                    );
-                  },
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+                child: ClipRRect(
+                  child: SizedBox(
+                    height: 4,
+                    child: Row(
+                      children: [
+                        if (completed > 0)
+                          Expanded(
+                            flex: completed,
+                            child: Container(color: Cyber.success),
+                          ),
+                        if (items.length - completed > 0)
+                          Expanded(
+                            flex: items.length - completed,
+                            child: Container(color: Cyber.magenta),
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
+              ),
+              if (items.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 10, 16, 14),
+                  child: Text(
+                    'No mystery logs yet.',
+                    style: TextStyle(color: Cyber.muted, fontSize: 12),
+                  ),
+                ),
+              Expanded(
+                child: items.isEmpty
+                    ? const SizedBox.shrink()
+                    : GridView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              childAspectRatio: 1.15,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                            ),
+                        itemCount: items.length,
+                        itemBuilder: (context, index) {
+                          final dayKey = items[index];
+                          final result = state.archive.resultsByDay[dayKey];
+                          final isToday = dayKey == state.todayKey;
+
+                          return _LogItem(
+                            dayKey: dayKey,
+                            isToday: isToday,
+                            won: result?.won,
+                            onTap: () => onOpenDay(dayKey),
+                          );
+                        },
+                      ),
               ),
             ],
           ),
@@ -130,6 +166,7 @@ class GuessPlayerLogsScreen extends StatelessWidget {
 
 class _LogStatBox extends StatelessWidget {
   const _LogStatBox(this.label, this.value, this.color);
+
   final String label;
   final String value;
   final Color color;
@@ -169,108 +206,109 @@ class _LogItem extends StatelessWidget {
     required this.dayKey,
     required this.isToday,
     required this.won,
-    required this.playerName,
     required this.onTap,
   });
 
   final String dayKey;
   final bool isToday;
   final bool? won; // null means played but not finished, or just not played
-  final String? playerName;
   final VoidCallback onTap;
+
+  String _formatDate(String key) {
+    final date = DateTime.tryParse(key);
+    if (date == null) return key;
+    final months = [
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = won == true
+    final accent = won == true
         ? Cyber.success
-        : (won == false ? Cyber.danger : Cyber.muted);
+        : (won == false ? Cyber.danger : Cyber.magenta);
     final icon = won == true
         ? Icons.check_circle
         : (won == false ? Icons.cancel : Icons.hourglass_empty);
+    final status = won == true ? 'GUESSED' : (won == false ? 'MISSED' : 'OPEN');
+    final action = won == null ? 'PLAY MYSTERY' : 'CHECK ANSWER';
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          playSound(SoundEffect.uiTap);
-          onTap();
-        },
-        borderRadius: BorderRadius.zero,
-        splashColor: Cyber.magenta.withValues(alpha: 0.1),
-        highlightColor: Cyber.magenta.withValues(alpha: 0.05),
-        child: Ink(
-          decoration: BoxDecoration(
-            color: const Color(0xff0a0d18),
-            borderRadius: BorderRadius.zero,
-            border: Border.all(color: Cyber.borderSubtle),
-          ),
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Icon(icon, color: statusColor, size: 24),
-              const SizedBox(width: 16),
-              Expanded(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        playSound(SoundEffect.uiTap);
+        onTap();
+      },
+      child: ShopCardFrame(
+        accent: accent,
+        elevated: true,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Color.lerp(Cyber.panel, accent, 0.045),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
+                        Icon(icon, color: accent, size: 18),
+                        const Spacer(),
                         Text(
-                          dayKey,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontFamily: 'Orbitron',
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.0,
-                          ),
+                          isToday ? 'TODAY' : (won == null ? 'OPEN' : 'DONE'),
+                          style: Cyber.label(8.5, color: accent),
                         ),
-                        if (isToday) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Cyber.magenta.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.zero,
-                              border: Border.all(
-                                color: Cyber.magenta.withValues(alpha: 0.5),
-                              ),
-                            ),
-                            child: const Text(
-                              'TODAY',
-                              style: TextStyle(
-                                color: Cyber.magenta,
-                                fontFamily: 'Orbitron',
-                                fontSize: 9,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                          ),
-                        ],
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 10),
                     Text(
-                      playerName != null && won != null
-                          ? playerName!.toUpperCase()
-                          : 'MYSTERY PLAYER',
-                      style: TextStyle(
-                        color: playerName != null && won != null
-                            ? Colors.white
-                            : Cyber.muted,
-                        fontFamily: 'Onest',
-                        fontSize: 12,
+                      _formatDate(dayKey),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Cyber.display(14, color: Colors.white),
+                    ),
+                    const Spacer(),
+                    Text(
+                      status,
+                      style: Cyber.label(
+                        8.5,
+                        color: Cyber.muted,
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right, color: Colors.white54, size: 20),
-            ],
-          ),
+            ),
+            Container(
+              height: 32,
+              color: Colors.black.withValues(alpha: 0.88),
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                action,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Cyber.label(9, color: accent, letterSpacing: 0.55),
+              ),
+            ),
+          ],
         ),
       ),
     );

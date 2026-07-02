@@ -6,6 +6,7 @@ import 'package:card_game/models/cards.dart';
 import 'package:card_game/models/football_bingo.dart';
 import 'package:card_game/screens/football_bingo/football_bingo_home_screen.dart';
 import 'package:card_game/screens/football_bingo/football_bingo_hub.dart';
+import 'package:card_game/screens/football_bingo/football_bingo_logs_screen.dart';
 import 'package:card_game/screens/football_bingo/football_bingo_screen.dart';
 import 'package:card_game/services/secure_storage_service.dart';
 import 'package:card_game/widgets/team_logo.dart';
@@ -262,39 +263,29 @@ void main() {
     expect(find.text('COMPLETED GRID'), findsNothing);
   });
 
-  testWidgets('daily logs page shows completed today', (tester) async {
-    final game = GameBloc(SecureGameStorage())..add(GameLoaded());
-    addTearDown(game.close);
+  testWidgets('daily logs page uses the date as the log title', (tester) async {
+    final cubit = await _loaded(now: DateTime(2026, 7, 2, 9));
+    addTearDown(cubit.close);
+
+    while (!cubit.state.completed) {
+      await cubit.selectCell(cubit.state.currentCell!.id);
+    }
 
     await tester.pumpWidget(
       MaterialApp(
-        home: BlocProvider.value(
-          value: game,
-          child: FootballBingoTabContent(onNavigate: (_) {}),
+        home: FootballBingoLogsScreen(
+          state: cubit.state,
+          onBack: () {},
+          onOpenDay: (_) {},
         ),
       ),
     );
     await tester.pump();
-    await tester.pump();
-
-    await tester.tap(find.text('PLAY TODAY\'S GRID'));
-    await tester.pump(const Duration(milliseconds: 500));
-
-    final cubit = tester
-        .element(find.byType(FootballBingoScreen))
-        .read<FootballBingoCubit>();
-    while (!cubit.state.completed) {
-      await cubit.selectCell(cubit.state.currentCell!.id);
-    }
-    await tester.tap(find.byIcon(Icons.arrow_back));
-    await tester.pump(const Duration(milliseconds: 300));
-
-    await tester.tap(find.text('DAILY LOGS'));
-    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('BINGO LOGS'), findsOneWidget);
-    expect(find.text('COMPLETED GRID'), findsOneWidget);
-    expect(find.text('9/9'), findsWidgets);
+    expect(find.text('JUL 2, 2026'), findsOneWidget);
+    expect(find.text('CLUB CONNECTIONS'), findsNothing);
+    expect(find.text('COMPLETED'), findsOneWidget);
   });
 
   testWidgets('completion overlay appears and returns home', (tester) async {
