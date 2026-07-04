@@ -16,9 +16,11 @@ import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/staggered_card_entrance.dart';
 import '../../widgets/stat_oz_top_bar.dart';
 import '../../widgets/streak_widgets.dart';
+import '../profile/widgets/profile_card.dart';
 import '../shop/shop_screen.dart' show CoinIcon;
 import 'streak_calendar_screen.dart';
 import 'picks_home_view.dart';
+import 'widgets/history_hud.dart';
 import 'widgets/match_prediction_card.dart';
 
 /// A compact sports prediction hub with StatOz styling.
@@ -34,6 +36,7 @@ class PredictionHomeScreen extends StatefulWidget {
     required this.onOpenQuiz,
     required this.onOpenFootballBingo,
     required this.onOpenFootballChess,
+    required this.onOpenGuessPlayer,
     this.onAddCoins,
     super.key,
   });
@@ -48,6 +51,7 @@ class PredictionHomeScreen extends StatefulWidget {
   final VoidCallback onOpenQuiz;
   final VoidCallback onOpenFootballBingo;
   final VoidCallback onOpenFootballChess;
+  final VoidCallback onOpenGuessPlayer;
   final VoidCallback? onAddCoins;
 
   @override
@@ -108,6 +112,8 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
       0 => _MatchesTab(
         onOpenMatch: widget.onOpenMatch,
         onOpenLeague: widget.onOpenLeague,
+        onOpenGame: widget.onOpenGame,
+        onOpenShootout: widget.onOpenShootout,
         animateIntro: _shouldAnimateIntro(0),
         onIntroPlayed: () => _markIntroPlayed(0),
       ),
@@ -121,6 +127,7 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
         onOpenQuiz: widget.onOpenQuiz,
         onOpenFootballBingo: widget.onOpenFootballBingo,
         onOpenFootballChess: widget.onOpenFootballChess,
+        onOpenGuessPlayer: widget.onOpenGuessPlayer,
         animateIntro: _shouldAnimateIntro(2),
         onIntroPlayed: () => _markIntroPlayed(2),
       ),
@@ -185,12 +192,16 @@ class _MatchesTab extends StatefulWidget {
   const _MatchesTab({
     required this.onOpenMatch,
     required this.onOpenLeague,
+    required this.onOpenGame,
+    required this.onOpenShootout,
     required this.animateIntro,
     required this.onIntroPlayed,
   });
 
   final ValueChanged<SportMatch> onOpenMatch;
   final ValueChanged<League> onOpenLeague;
+  final VoidCallback onOpenGame;
+  final VoidCallback onOpenShootout;
   final bool animateIntro;
   final VoidCallback? onIntroPlayed;
 
@@ -310,6 +321,11 @@ class _MatchesTabState extends State<_MatchesTab> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
             children: [
+              _NewGamesReleaseCard(
+                key: const ValueKey('new-games-release-card'),
+                onTap: _openNewGamesRelease,
+              ),
+              const SizedBox(height: 14),
               Row(
                 children: [
                   Expanded(
@@ -399,6 +415,361 @@ class _MatchesTabState extends State<_MatchesTab> {
           ),
         );
       },
+    );
+  }
+
+  void _openNewGamesRelease() {
+    playSound(SoundEffect.uiTap);
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => _NewGamesReleaseScreen(
+          onOpenGame: widget.onOpenGame,
+          onOpenShootout: widget.onOpenShootout,
+        ),
+      ),
+    );
+  }
+}
+
+class _NewGamesReleaseCard extends StatelessWidget {
+  const _NewGamesReleaseCard({required this.onTap, super.key});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Brand new games',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: ProfileCard(
+          borderColor: Cyber.cyan.withValues(alpha: 0.46),
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Cyber.cyan.withValues(alpha: 0.1),
+                      border: Border.all(
+                        color: Cyber.cyan.withValues(alpha: 0.46),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.sports_soccer,
+                      color: Cyber.cyan,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'BRAND NEW GAMES',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Cyber.display(17, letterSpacing: 1.1),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Two new ways to play are live: tactical card battles in Pitch Duel and high-pressure spot kicks in Penalty Shootout.',
+                style: Cyber.body(12, color: Cyber.muted, height: 1.35),
+              ),
+              const SizedBox(height: 22),
+              Row(
+                children: [
+                  _ReleaseMiniChip(label: 'PITCH DUEL', accent: Cyber.cyan),
+                  const SizedBox(width: 12),
+                  const _ReleaseMiniDivider(),
+                  const SizedBox(width: 12),
+                  _ReleaseMiniChip(
+                    label: 'PENALTY SHOOTOUT',
+                    accent: Cyber.lime,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReleaseMiniChip extends StatelessWidget {
+  const _ReleaseMiniChip({required this.label, required this.accent});
+
+  final String label;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Text(
+        label,
+        maxLines: 1,
+        style: Cyber.label(13, color: accent, letterSpacing: 1),
+      ),
+    );
+  }
+}
+
+class _ReleaseMiniDivider extends StatelessWidget {
+  const _ReleaseMiniDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 16,
+      color: Cyber.border.withValues(alpha: 0.72),
+    );
+  }
+}
+
+class _NewGamesReleaseScreen extends StatelessWidget {
+  const _NewGamesReleaseScreen({
+    required this.onOpenGame,
+    required this.onOpenShootout,
+  });
+
+  final VoidCallback onOpenGame;
+  final VoidCallback onOpenShootout;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Cyber.bg,
+      body: Stack(
+        children: [
+          const Positioned.fill(child: _PredictionBackground()),
+          SafeArea(
+            child: Column(
+              children: [
+                HistoryHeaderBar(
+                  title: 'BRAND NEW GAMES',
+                  accent: Cyber.cyan,
+                  onBack: () => Navigator.of(context).pop(),
+                ),
+                Expanded(
+                  child: ListView(
+                    key: const ValueKey('new-games-release-screen'),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                    children: [
+                      Text(
+                        'Fresh game modes are now live. Use your squad in faster, more tactical football challenges built for quick sessions and big moments.',
+                        style: Cyber.body(13, color: Cyber.muted, height: 1.45),
+                      ),
+                      const SizedBox(height: 16),
+                      _ReleaseGameFeatureCard(
+                        title: 'PITCH DUEL',
+                        description:
+                            'A tactical card match where every round asks you to pick the right player, choose the right action, and outscore your rival across changing match scenarios.',
+                        icon: Icons.sports_soccer,
+                        accent: Cyber.cyan,
+                        ctaLabel: 'PLAY PITCH DUEL',
+                        ctaKey: const ValueKey('new-games-page-pitch-duel-cta'),
+                        onTap: () => _launchGame(context, onOpenGame),
+                      ),
+                      const _ReleaseGameDivider(),
+                      _ReleaseGameFeatureCard(
+                        title: 'PENALTY SHOOTOUT',
+                        description:
+                            'A fast shootout mode made for instant tension. Aim your kicks, read the keeper, and hold your nerve through sudden swings from the penalty spot.',
+                        icon: Icons.gps_fixed,
+                        accent: Cyber.lime,
+                        ctaLabel: 'PLAY SHOOTOUT',
+                        ctaKey: const ValueKey(
+                          'new-games-page-penalty-shootout-cta',
+                        ),
+                        onTap: () => _launchGame(context, onOpenShootout),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _launchGame(BuildContext context, VoidCallback openGame) {
+    Navigator.of(context).pop();
+    WidgetsBinding.instance.addPostFrameCallback((_) => openGame());
+  }
+}
+
+class _ReleaseGameFeatureCard extends StatelessWidget {
+  const _ReleaseGameFeatureCard({
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.accent,
+    required this.ctaLabel,
+    required this.ctaKey,
+    required this.onTap,
+  });
+
+  final String title;
+  final String description;
+  final IconData icon;
+  final Color accent;
+  final String ctaLabel;
+  final Key ctaKey;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 12, 0, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _ReleaseIconBox(icon: icon, accent: accent),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Cyber.display(18, letterSpacing: 1.1),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            description,
+            style: Cyber.body(13, color: Cyber.muted, height: 1.4),
+          ),
+          const SizedBox(height: 16),
+          _ReleaseGameButton(
+            key: ctaKey,
+            label: ctaLabel,
+            icon: Icons.keyboard_double_arrow_right,
+            accent: accent,
+            onTap: onTap,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReleaseGameDivider extends StatelessWidget {
+  const _ReleaseGameDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Container(height: 1, color: Cyber.border.withValues(alpha: 0.58)),
+    );
+  }
+}
+
+class _ReleaseIconBox extends StatelessWidget {
+  const _ReleaseIconBox({required this.icon, required this.accent});
+
+  final IconData icon;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 44,
+      height: 44,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Cyber.bg.withValues(alpha: 0.55),
+        border: Border.all(color: accent.withValues(alpha: 0.56)),
+      ),
+      child: Icon(icon, color: accent, size: 22),
+    );
+  }
+}
+
+class _ReleaseGameButton extends StatelessWidget {
+  const _ReleaseGameButton({
+    required this.label,
+    required this.icon,
+    required this.accent,
+    required this.onTap,
+    super.key,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color accent;
+  final VoidCallback onTap;
+
+  static const _bigCut = 10.0;
+  static const _smallCut = 3.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          playSound(SoundEffect.uiTap);
+          onTap();
+        },
+        child: CustomPaint(
+          painter: _HudChamferCardPainter(
+            bigCut: _bigCut,
+            smallCut: _smallCut,
+            fillColor: accent.withValues(alpha: 0.14),
+            borderColor: accent.withValues(alpha: 0.72),
+          ),
+          child: ClipPath(
+            clipper: const HudChamferClipper(
+              bigCut: _bigCut,
+              smallCut: _smallCut,
+            ),
+            child: SizedBox(
+              height: 42,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, color: accent, size: 17),
+                  const SizedBox(width: 7),
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        style: Cyber.label(
+                          10,
+                          color: accent,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1772,6 +2143,7 @@ class _GamesTab extends StatefulWidget {
     required this.onOpenQuiz,
     required this.onOpenFootballBingo,
     required this.onOpenFootballChess,
+    required this.onOpenGuessPlayer,
     required this.animateIntro,
     required this.onIntroPlayed,
   });
@@ -1781,6 +2153,7 @@ class _GamesTab extends StatefulWidget {
   final VoidCallback onOpenQuiz;
   final VoidCallback onOpenFootballBingo;
   final VoidCallback onOpenFootballChess;
+  final VoidCallback onOpenGuessPlayer;
   final bool animateIntro;
   final VoidCallback? onIntroPlayed;
 
@@ -1844,6 +2217,20 @@ class _GamesTabState extends State<_GamesTab> {
           index: 2,
           animate: animateIntro,
           child: _GameTile(
+            title: '5V5 FOOTBALL CHESS',
+            subtitle: 'TACTICAL SQUAD DUEL',
+            icon: Icons.grid_on,
+            accent: Cyber.gold,
+            featured: true,
+            showTrailingIcon: false,
+            onTap: widget.onOpenFootballChess,
+          ),
+        ),
+        const SizedBox(height: 12),
+        StaggeredCardEntrance(
+          index: 3,
+          animate: animateIntro,
+          child: _GameTile(
             title: 'FOOTBALL QUIZ',
             subtitle: 'TRIVIA GAUNTLET',
             icon: Icons.quiz,
@@ -1855,7 +2242,7 @@ class _GamesTabState extends State<_GamesTab> {
         ),
         const SizedBox(height: 12),
         StaggeredCardEntrance(
-          index: 3,
+          index: 4,
           animate: animateIntro,
           child: _GameTile(
             title: 'FOOTBALL BINGO',
@@ -1869,21 +2256,21 @@ class _GamesTabState extends State<_GamesTab> {
         ),
         const SizedBox(height: 12),
         StaggeredCardEntrance(
-          index: 4,
+          index: 5,
           animate: animateIntro,
           child: _GameTile(
-            title: '5V5 FOOTBALL CHESS',
-            subtitle: 'TACTICAL SQUAD DUEL',
-            icon: Icons.grid_on,
-            accent: Cyber.gold,
+            title: 'GUESS THE PLAYER',
+            subtitle: 'DAILY FOOTBALL MYSTERY',
+            icon: Icons.person_search,
+            accent: Cyber.pink,
             featured: true,
             showTrailingIcon: false,
-            onTap: widget.onOpenFootballChess,
+            onTap: widget.onOpenGuessPlayer,
           ),
         ),
         const SizedBox(height: 12),
         StaggeredCardEntrance(
-          index: 5,
+          index: 6,
           animate: animateIntro,
           child: const _GameTile(
             title: 'ACCURACY CHALLENGE',

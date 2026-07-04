@@ -562,12 +562,16 @@ class Cyber {
   static const success = AppTheme.green700;
   static const red = AppTheme.redColor;
   static const violet = AppTheme.matchesLabel;
+  static const pink = Color(0xFFFF94C1); // pastel pink
 
   static const border = AppTheme.border;
   static const line = AppTheme.settingsBorderColor;
   static const borderSubtle = AppTheme.whiteA10;
   static const borderActive = AppTheme.matchesBorder;
   static const muted = AppTheme.textMedium;
+  static const textPrimary = AppTheme.textPrimary;
+  static const borderMuted = AppTheme.borderMuted;
+  static const blue = AppTheme.blueColor;
 
   static const displayFont = 'Orbitron';
   static const bodyFont = 'Onest';

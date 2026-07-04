@@ -28,7 +28,6 @@ class ActionResult {
     required this.event,
     this.scorer,
     this.card = CardType.none,
-    this.duelWon = false,
   });
 
   final BoardState state;
@@ -37,10 +36,6 @@ class ActionResult {
 
   /// A booking handed out this action (missed slide), if any.
   final CardType card;
-
-  /// True when the acting side won a duel (dribble/tackle/slide win or goal) —
-  /// feeds the momentum meter.
-  final bool duelWon;
 }
 
 /// Pure rules engine for grid Football Chess. All randomness flows through an
@@ -162,8 +157,10 @@ class FootballChessEngine {
   // ---- Legal options -----------------------------------------------------
 
   /// Empty 8-directional neighbours.
-  List<BoardCell> legalMoves(BoardState s, BoardPiece p) =>
-      [for (final c in p.cell.neighbors8()) if (s.isEmpty(c)) c];
+  List<BoardCell> legalMoves(BoardState s, BoardPiece p) => [
+    for (final c in p.cell.neighbors8())
+      if (s.isEmpty(c)) c,
+  ];
 
   /// Adjacent opponents a carrier can take on (DRIBBLE targets).
   List<String> dribbleTargets(BoardState s, BoardPiece carrier) {
@@ -181,10 +178,18 @@ class FootballChessEngine {
     Side side,
     BoardPiece p,
   ) {
-    if (p.side != side || p.isKeeper || p.benched) return const [];
+    if (p.side != side || p.benched) return const [];
     final carrier = s.carrier;
     final isCarrier = carrier != null && carrier.id == p.id;
     final verbs = <BoardActionType>[];
+
+    // Keeper can only pass, and only when they have the ball.
+    if (p.isKeeper) {
+      if (isCarrier && passTargets(s, p).isNotEmpty) {
+        verbs.add(BoardActionType.pass);
+      }
+      return verbs;
+    }
 
     if (s.possession == side) {
       if (isCarrier) {
@@ -199,25 +204,30 @@ class FootballChessEngine {
     }
 
     // Defending — press (close down from range), tackle (adjacent), slide
-    // (lunge ≤2), then move. Distances are Chebyshev (diagonals count as 1).
+    // (adjacent), then move. Distances are Chebyshev (diagonals count as 1).
     if (carrier != null) {
       final d = p.cell.distanceTo(carrier.cell);
       if (d >= 2 && _pressStep(s, p, carrier) != null) {
         verbs.add(BoardActionType.press);
       }
-      if (d == 1) verbs.add(BoardActionType.tackle);
-      if (d >= 1 && d <= 2) verbs.add(BoardActionType.slide);
+      if (d == 1) {
+        if (p.tackleCooldownTurns == 0) verbs.add(BoardActionType.tackle);
+        if (p.slideCooldownTurns == 0) verbs.add(BoardActionType.slide);
+      }
     }
     if (legalMoves(s, p).isNotEmpty) verbs.add(BoardActionType.move);
     return verbs;
   }
 
   /// Teammates reachable by a straight (row/column) pass with a clear lane.
+  /// Keepers can pass to ANY teammate.
   List<String> passTargets(BoardState s, BoardPiece carrier) {
     final out = <String>[];
     for (final t in s.outfield(carrier.side)) {
       if (t.id == carrier.id) continue;
-      if (_clearLine(s, carrier.cell, t.cell)) out.add(t.id);
+      if (carrier.isKeeper || _clearLine(s, carrier.cell, t.cell)) {
+        out.add(t.id);
+      }
     }
     return out;
   }
@@ -238,16 +248,15 @@ class FootballChessEngine {
     return best;
   }
 
-  int _adjacentDefenders(BoardState s, Side side, BoardCell carrierCell) => s
-      .outfield(side)
-      .where((p) => p.cell.isAdjacent8(carrierCell))
-      .length;
+  int _adjacentDefenders(BoardState s, Side side, BoardCell carrierCell) =>
+      s.outfield(side).where((p) => p.cell.isAdjacent8(carrierCell)).length;
 
   bool _clearLine(BoardState s, BoardCell from, BoardCell to) {
     final dc = (to.col - from.col).sign;
     final dr = (to.row - from.row).sign;
     // Allow orthogonal AND diagonal straight lanes; reject L-shapes.
-    if (dc != 0 && dr != 0 &&
+    if (dc != 0 &&
+        dr != 0 &&
         (to.col - from.col).abs() != (to.row - from.row).abs()) {
       return false;
     }
@@ -275,9 +284,7 @@ class FootballChessEngine {
             }
           case BoardActionType.pass:
             for (final t in passTargets(s, p)) {
-              out.add(
-                ChessAction(type: v, pieceId: p.id, targetId: t),
-              );
+              out.add(ChessAction(type: v, pieceId: p.id, targetId: t));
             }
           case BoardActionType.shoot:
           case BoardActionType.press:
@@ -296,17 +303,15 @@ class FootballChessEngine {
   static const double _foulChance = 0.3;
   static const int kBenchTurns = 2;
 
-  /// [winBonus] (momentum) is added to the dribble/tackle/slide/shot win chance.
-  ActionResult apply(BoardState s, ChessAction a, {double winBonus = 0}) =>
-      switch (a.type) {
-        BoardActionType.move => _move(s, a.pieceId, a.cell!),
-        BoardActionType.dribble => _dribble(s, a.targetId!, winBonus),
-        BoardActionType.pass => _pass(s, a.targetId!),
-        BoardActionType.shoot => _shoot(s, winBonus),
-        BoardActionType.press => _press(s, a.pieceId),
-        BoardActionType.tackle => _tackle(s, a.pieceId, winBonus),
-        BoardActionType.slide => _slide(s, a.pieceId, winBonus),
-      };
+  ActionResult apply(BoardState s, ChessAction a) => switch (a.type) {
+    BoardActionType.move => _move(s, a.pieceId, a.cell!),
+    BoardActionType.dribble => _dribble(s, a.targetId!),
+    BoardActionType.pass => _pass(s, a.targetId!),
+    BoardActionType.shoot => _shoot(s),
+    BoardActionType.press => _press(s, a.pieceId),
+    BoardActionType.tackle => _tackle(s, a.pieceId),
+    BoardActionType.slide => _slide(s, a.pieceId),
+  };
 
   /// MOVE — reposition to an empty cell; if the mover is the carrier the ball
   /// goes with them (carry into space).
@@ -318,17 +323,16 @@ class FootballChessEngine {
 
   /// DRIBBLE — take on an adjacent defender. Win → swap squares (advance past),
   /// ball follows. Lose → turnover to that defender.
-  ActionResult _dribble(BoardState s, String defenderId, double winBonus) {
+  ActionResult _dribble(BoardState s, String defenderId) {
     final carrier = s.carrier!;
     final defender = s.pieceById(defenderId)!;
-    final p =
-        (dribbleWinProbability(carrier, defender) + winBonus).clamp(0.0, 1.0);
+    final p = (dribbleWinProbability(carrier, defender)).clamp(0.0, 1.0);
     if (_random.nextDouble() < p) {
       final ns = s
           .withPieceAt(carrier.id, defender.cell)
           .withPieceAt(defender.id, carrier.cell)
           .copyWith(ballCell: defender.cell);
-      return ActionResult(state: ns, event: BoardEvent.advanced, duelWon: true);
+      return ActionResult(state: ns, event: BoardEvent.advanced);
     }
     return ActionResult(
       state: s.copyWith(ballCell: defender.cell, possession: defender.side),
@@ -344,22 +348,30 @@ class FootballChessEngine {
     );
   }
 
-  ActionResult _shoot(BoardState s, double winBonus) {
+  ActionResult _shoot(BoardState s) {
     final shooter = s.carrier!;
-    final goalP = (shotGoalProbability(s, shooter) + winBonus).clamp(0.0, 1.0);
+    final goalP = (shotGoalProbability(s, shooter)).clamp(0.0, 1.0);
     if (_random.nextDouble() < goalP) {
       return ActionResult(
         state: s,
         event: BoardEvent.goal,
         scorer: shooter.side,
-        duelWon: true,
       );
     }
     // Missed: keeper/defender deals with it; possession flips to the defenders.
     final defending = shooter.side.opposite;
     final blocked = _shotBlockers(s, shooter) > 0;
+
+    BoardState nextState;
+    if (blocked) {
+      nextState = _distributeTo(s, defending);
+    } else {
+      final keeper = s.keeperOf(defending);
+      nextState = s.copyWith(ballCell: keeper.cell, possession: defending);
+    }
+
     return ActionResult(
-      state: _distributeTo(s, defending),
+      state: nextState,
       event: blocked ? BoardEvent.blocked : BoardEvent.save,
     );
   }
@@ -378,42 +390,46 @@ class FootballChessEngine {
   }
 
   /// TACKLE — adjacent standing tackle: rating + outnumber; safe on a miss.
-  ActionResult _tackle(BoardState s, String tacklerId, double winBonus) {
+  ActionResult _tackle(BoardState s, String tacklerId) {
     final tackler = s.pieceById(tacklerId)!;
     final carrier = s.carrier!;
     final adj = _adjacentDefenders(s, tackler.side, carrier.cell);
-    final p = (tackleWinProbability(tackler, carrier, adjacentCount: adj) +
-            winBonus)
-        .clamp(0.0, 1.0);
+    final p = (tackleWinProbability(
+      tackler,
+      carrier,
+      adjacentCount: adj,
+    )).clamp(0.0, 1.0);
+
+    var ns = s.withPieceAt(tacklerId, tackler.cell, tackleCooldownTurns: 2);
+
     if (_random.nextDouble() < p) {
       return ActionResult(
-        state: s.copyWith(ballCell: tackler.cell, possession: tackler.side),
+        state: ns.copyWith(ballCell: tackler.cell, possession: tackler.side),
         event: BoardEvent.turnover,
-        duelWon: true,
       );
     }
-    return ActionResult(state: s, event: BoardEvent.none);
+    return ActionResult(state: ns, event: BoardEvent.none);
   }
 
   /// SLIDE — committed lunge (reach ≤2): high win chance, but a miss lets the
   /// carrier break past and risks a foul (yellow → red → benched).
-  ActionResult _slide(BoardState s, String sliderId, double winBonus) {
+  ActionResult _slide(BoardState s, String sliderId) {
     final slider = s.pieceById(sliderId)!;
     final carrier = s.carrier!;
-    final p =
-        (slideWinProbability(slider, carrier) + winBonus).clamp(0.0, 1.0);
+    final p = (slideWinProbability(slider, carrier)).clamp(0.0, 1.0);
+
+    var ns = s.withPieceAt(sliderId, slider.cell, slideCooldownTurns: 3);
+
     if (_random.nextDouble() < p) {
-      final landing = _slideLanding(s, slider, carrier) ?? slider.cell;
+      final landing = _slideLanding(ns, slider, carrier) ?? slider.cell;
       return ActionResult(
-        state: s
-            .withPieceAt(sliderId, landing)
+        state: ns
+            .withPieceAt(sliderId, landing, slideCooldownTurns: 3)
             .copyWith(ballCell: landing, possession: slider.side),
         event: BoardEvent.turnover,
-        duelWon: true,
       );
     }
-    // Miss: carrier breaks past; maybe a foul + card.
-    var ns = _breakFree(s, carrier);
+    // Miss: maybe a foul + card.
     var card = CardType.none;
     if (_random.nextDouble() < _foulChance) {
       final red = slider.yellow; // already booked → second yellow = red
@@ -435,7 +451,11 @@ class FootballChessEngine {
   }
 
   /// An empty cell adjacent to the carrier nearest the slider (the lunge end).
-  BoardCell? _slideLanding(BoardState s, BoardPiece slider, BoardPiece carrier) {
+  BoardCell? _slideLanding(
+    BoardState s,
+    BoardPiece slider,
+    BoardPiece carrier,
+  ) {
     if (slider.cell.isAdjacent8(carrier.cell)) return slider.cell;
     BoardCell? best;
     var bestD = 999;
@@ -448,21 +468,6 @@ class FootballChessEngine {
       }
     }
     return best;
-  }
-
-  /// Carrier breaks past a missed slide: dribbles a cell toward its goal.
-  BoardState _breakFree(BoardState s, BoardPiece carrier) {
-    final dir = carrier.side == Side.player ? 1 : -1;
-    final ahead = BoardCell(carrier.cell.col, carrier.cell.row + dir);
-    if (ahead.inBounds && s.isEmpty(ahead)) {
-      return s.withPieceAt(carrier.id, ahead).copyWith(ballCell: ahead);
-    }
-    for (final c in carrier.cell.neighbors8()) {
-      if (s.isEmpty(c)) {
-        return s.withPieceAt(carrier.id, c).copyWith(ballCell: c);
-      }
-    }
-    return s;
   }
 
   /// Hand the ball to [side] after a save/block: its outfielder nearest its own
@@ -503,7 +508,10 @@ class FootballChessEngine {
   /// rating edge over the keeper = better. Pure (no RNG).
   double shotGoalProbability(BoardState s, BoardPiece shooter) {
     final dist = shooter.side == Side.player
-        ? kBoardRows - shooter.cell.row // row 3 → 1, row 2 → 2
+        ? kBoardRows -
+              shooter
+                  .cell
+                  .row // row 3 → 1, row 2 → 2
         : shooter.cell.row + 1; // row 0 → 1, row 1 → 2
     var p = dist <= 1 ? 0.55 : 0.30;
     p *= pow(0.45, _shotBlockers(s, shooter)).toDouble();
@@ -564,34 +572,74 @@ class FootballChessEngine {
   double _scoreCpuAction(BoardState s, ChessAction a) {
     final piece = s.pieceById(a.pieceId)!;
     final carrier = s.carrier;
+    
     switch (a.type) {
       case BoardActionType.shoot:
-        return 100 + shotGoalProbability(s, piece) * 100;
+        // Scale purely by probability. A 10% shot is 15, an 80% shot is 120.
+        // Prevents mindless shooting from terrible positions.
+        return shotGoalProbability(s, piece) * 150.0;
+        
       case BoardActionType.tackle:
         final adj = _adjacentDefenders(s, Side.opponent, carrier!.cell);
-        // Safe — prefer it strongly when the odds are good.
-        return 70 +
-            tackleWinProbability(piece, carrier, adjacentCount: adj) * 45;
+        final win = tackleWinProbability(piece, carrier, adjacentCount: adj);
+        // Increased desperation if the player is closer to the CPU goal (row 3).
+        final danger = carrier.cell.row * 10.0;
+        return 40.0 + danger + win * 50.0;
+        
       case BoardActionType.slide:
         final win = slideWinProbability(piece, carrier!);
-        // High reward, but a miss lets the carrier advance — discount the risk.
-        return 50 + win * 45 - (1 - win) * 25;
+        final danger = carrier.cell.row * 15.0; // Higher desperation modifier
+        // High reward, but discount the risk of missing.
+        return 30.0 + danger + win * 50.0 - (1.0 - win) * 35.0;
+        
       case BoardActionType.press:
-        return 35.0; // close down to set up a tackle next turn
+        final step = _pressStep(s, piece, carrier!);
+        if (step == null) return 0.0; // Failsafe
+        final before = piece.cell.distanceTo(carrier.cell);
+        final after = step.distanceTo(carrier.cell);
+        final progress = (before - after).toDouble();
+        // Bonus for getting between the carrier and the goal.
+        final blockingBonus = (step.row > carrier.cell.row) ? 10.0 : 0.0;
+        return 20.0 + progress * 15.0 + carrier.cell.row * 5.0 + blockingBonus;
+        
       case BoardActionType.pass:
         final t = s.pieceById(a.targetId!)!;
-        return 40 + (s.ballCell.row - t.cell.row) * 6; // advance toward row 0
+        final advance = (s.ballCell.row - t.cell.row).toDouble();
+        
+        // Evaluate if the target is open
+        int pressure = 0;
+        for (final n in t.cell.neighbors8()) {
+          final opp = s.outfieldAt(n);
+          if (opp != null && opp.side == Side.player) pressure++;
+        }
+        return 35.0 + advance * 15.0 - pressure * 12.0;
+        
       case BoardActionType.dribble:
         final defender = s.pieceById(a.targetId!)!;
-        // Value beating a defender, more so toward the player's goal (row 0).
-        return 45 +
-            dribbleWinProbability(piece, defender) * 35 +
-            (s.ballCell.row - defender.cell.row) * 6;
+        final win = dribbleWinProbability(piece, defender);
+        final advance = (s.ballCell.row - defender.cell.row).toDouble();
+        return 25.0 + win * 40.0 + advance * 15.0;
+        
       case BoardActionType.move:
         if (carrier != null && carrier.side == Side.player) {
+          // Defending move (not pressing, just repositioning)
           final before = piece.cell.distanceTo(carrier.cell);
           final after = a.cell!.distanceTo(carrier.cell);
-          return 10 + (before - after) * 5;
+          final progress = (before - after).toDouble();
+          return 10.0 + progress * 10.0;
+        }
+        
+        if (carrier != null && carrier.side == Side.opponent) {
+          if (carrier.id == piece.id) {
+            // Carrier moving into space
+            final advance = (piece.cell.row - a.cell!.row).toDouble();
+            return 25.0 + advance * 20.0;
+          } else {
+            // Off-ball attacker making a run
+            final advance = (piece.cell.row - a.cell!.row).toDouble();
+            final spread = (a.cell!.col - carrier.cell.col).abs().toDouble();
+            return 15.0 + advance * 12.0 + spread * 5.0;
+          }
         }
         return 5.0;
     }

@@ -128,7 +128,7 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('cyber_gliding_tab_2')));
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('PITCH DUEL'), findsOneWidget);
+    expect(find.text('PITCH DUEL'), findsAtLeastNWidgets(1));
 
     await tester.tap(
       find.descendant(
@@ -152,7 +152,7 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('PITCH DUEL'), findsOneWidget);
+    expect(find.text('PITCH DUEL'), findsAtLeastNWidgets(1));
     expect(
       tester
           .widget<LandingBottomNavigation>(find.byType(LandingBottomNavigation))

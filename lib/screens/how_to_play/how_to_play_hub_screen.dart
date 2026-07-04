@@ -8,12 +8,12 @@ import '../../widgets/game_scaffold.dart';
 
 /// The four playable modes that have a How To Play guide. Order matches the
 /// [_guides] table so a mode maps straight to its guide by index.
-enum HowToPlayMode { predict, pick, pitchDuel, penaltyShootout }
+enum HowToPlayMode { predict, pick, pitchDuel, penaltyShootout, bingoGrid, footballChess }
 
 /// Opens the standalone How To Play guide for a single [mode]. Used by the in-
 /// context help affordances inside the Predict and Pick surfaces.
-void showHowToPlayGuide(BuildContext context, HowToPlayMode mode) {
-  Navigator.of(context).push(
+Future<void> showHowToPlayGuide(BuildContext context, HowToPlayMode mode) {
+  return Navigator.of(context).push(
     MaterialPageRoute<void>(
       builder: (_) => _HowToPlayGuideScreen(guide: _guides[mode.index]),
     ),
@@ -857,6 +857,166 @@ const _guides = <_ModeGuide>[
         icon: Icons.sports_soccer,
         label: 'Standalone mode',
         body: 'Played on its own from the Games tab — not tied to a card match.',
+      ),
+    ],
+  ),
+
+  // ── Bingo Grid ─────────────────────────────────────────────────────────────
+  _ModeGuide(
+    title: 'BINGO GRID',
+    tagline: 'Match the player to the intersecting clubs',
+    subtitle: '// Daily 3x3 Grid',
+    purpose:
+        'Test your football knowledge by matching the active player to the '
+        'correct intersecting clubs. Complete the daily 3x3 grid without '
+        'running out of lives.',
+    icon: Icons.grid_on,
+    accent: Cyber.amber,
+    stats: [
+      _GuideStat(
+        icon: Icons.grid_view,
+        label: '9 CELLS',
+        sub: '3x3 daily puzzle',
+        color: Cyber.amber,
+      ),
+      _GuideStat(
+        icon: Icons.favorite,
+        label: '5 LIVES',
+        sub: 'don\'t tap wrong',
+        color: Cyber.red,
+      ),
+      _GuideStat(
+        icon: Icons.timer,
+        label: 'DAILY',
+        sub: 'new grid tomorrow',
+        color: Cyber.cyan,
+      ),
+    ],
+    steps: [
+      _GuideStep(
+        title: 'Check the Active Player',
+        body:
+            'The panel shows a player. Your goal is to find the one cell they '
+            'belong to.',
+      ),
+      _GuideStep(
+        title: 'Match the criteria',
+        body:
+            'Look at the row and column clubs. The active player must have '
+            'played for both.',
+      ),
+      _GuideStep(
+        title: 'Tap to place',
+        body:
+            'Tap the intersecting cell. A correct guess locks the player in '
+            'and gives you the next one.',
+      ),
+      _GuideStep(
+        title: 'Watch your lives',
+        body:
+            'You start with 5 lifelines. A wrong guess burns a life and shows '
+            'a red error.',
+      ),
+      _GuideStep(
+        title: 'Buy a lifeline',
+        body:
+            'Run out of lives? You can buy an extra lifeline for 25 Oz Coins '
+            'to keep playing.',
+      ),
+      _GuideStep(
+        title: 'Complete the grid',
+        body:
+            'Fill all 9 cells to finish the daily puzzle. Archives are '
+            'view-only.',
+      ),
+    ],
+    facts: [
+      _GuideFact(
+        icon: Icons.timer,
+        label: 'Daily Refresh',
+        body: 'A new grid unlocks every day.',
+      ),
+      _GuideFact(
+        icon: Icons.monetization_on,
+        label: 'Lifeline cost',
+        body: '25 Oz Coins to revive.',
+      ),
+      _GuideFact(
+        icon: Icons.history,
+        label: 'Archive mode',
+        body: 'Past grids can be viewed but not played.',
+      ),
+    ],
+  ),
+
+  // ── Football Chess ───────────────────────────────────────────────────────────
+  _ModeGuide(
+    title: 'FOOTBALL CHESS',
+    tagline: 'Tactical 5v5 Grid Duel',
+    subtitle: '// Turn-Based Match',
+    purpose:
+        'Chess on a pitch. Take turns to move, pass, dribble, or shoot. '
+        'Defend using press, tackle, or slide to win back possession and '
+        'score from the opponent\'s half.',
+    icon: Icons.grid_4x4,
+    accent: Cyber.cyan,
+    stats: [
+      _GuideStat(
+        icon: Icons.grid_on,
+        label: '3x4 GRID',
+        sub: 'tight tactical pitch',
+        color: Cyber.cyan,
+      ),
+      _GuideStat(
+        icon: Icons.people,
+        label: '5V5 SQUAD',
+        sub: '4 outfield + 1 keeper',
+        color: Cyber.lime,
+      ),
+      _GuideStat(
+        icon: Icons.timer_outlined,
+        label: 'COOLDOWNS',
+        sub: 'manage your tackles',
+        color: Cyber.amber,
+      ),
+    ],
+    steps: [
+      _GuideStep(
+        title: 'Move & Pass',
+        body:
+            'Move a player 1 square in any direction. Pass the ball in a clear '
+            'straight line to a teammate. Keepers can pass to anyone!',
+      ),
+      _GuideStep(
+        title: 'Dribble',
+        body:
+            'Have the ball? Dribble into an adjacent opponent to beat them and '
+            'keep possession.',
+      ),
+      _GuideStep(
+        title: 'Press & Tackle',
+        body:
+            'Press to move a defender closer to the ball carrier from range. '
+            'Tackle an adjacent carrier to win the ball back cleanly.',
+      ),
+      _GuideStep(
+        title: 'Slide Tackle',
+        body:
+            'Higher chance to win the ball, but risks a foul or a card! '
+            'Missed slides have a longer cooldown.',
+      ),
+      _GuideStep(
+        title: 'Shoot to Score',
+        body:
+            'Once in the opponent\'s half, you can shoot! Your player\'s attack '
+            'is matched against the enemy goalkeeper\'s defense.',
+      ),
+    ],
+    facts: [
+      _GuideFact(
+        icon: Icons.workspace_premium,
+        label: 'XP Only',
+        body: 'This mode rewards XP for progression. Coins stay in the shop.',
       ),
     ],
   ),

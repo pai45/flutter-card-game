@@ -8,6 +8,7 @@ import '../../../config/theme.dart';
 import '../../../models/football_chess.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
+import '../../how_to_play/how_to_play_hub_screen.dart';
 
 /// Slim top HUD — just `score · clock`. The board carries everything else.
 class ChessHud extends StatelessWidget {
@@ -63,7 +64,17 @@ class ChessHud extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 40),
+              IconButton(
+                icon: const Icon(Icons.help_outline, color: Cyber.muted, size: 20),
+                onPressed: () async {
+                  playSound(SoundEffect.uiTap);
+                  context.read<FootballChessCubit>().setPaused(true);
+                  await showHowToPlayGuide(context, HowToPlayMode.footballChess);
+                  if (context.mounted) {
+                    context.read<FootballChessCubit>().setPaused(false);
+                  }
+                },
+              ),
             ],
           ),
         );
@@ -140,7 +151,10 @@ class _CentreFlashState extends State<CentreFlash>
             builder: (context, _) {
               final v = _c.value;
               if (v == 0 || v >= 1) return const SizedBox.shrink();
-              final op = (v < 0.2 ? v / 0.2 : 1 - (v - 0.2) / 0.8).clamp(0.0, 1.0);
+              final op = (v < 0.2 ? v / 0.2 : 1 - (v - 0.2) / 0.8).clamp(
+                0.0,
+                1.0,
+              );
               return Opacity(
                 opacity: op,
                 child: Transform.scale(
@@ -189,30 +203,85 @@ class ActionBar extends StatelessWidget {
       builder: (context, state) {
         final m = state.match;
         if (m == null ||
-            m.phase != ChessMatchPhase.playerTurn ||
-            !m.hasSelection ||
-            m.availableActions.isEmpty) {
+            (m.phase != ChessMatchPhase.playerTurn &&
+                m.phase != ChessMatchPhase.opponentTurn)) {
           return const SizedBox.shrink();
         }
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 22, left: 12, right: 12),
-          child: Row(
+
+        Widget content;
+        if (m.phase == ChessMatchPhase.opponentTurn) {
+          content = Text(
+            'WAITING FOR OPPONENT',
+            style: TextStyle(
+              fontFamily: Cyber.displayFont,
+              fontSize: 14,
+              letterSpacing: 2,
+              fontWeight: FontWeight.w600,
+              color: Cyber.muted,
+            ),
+          );
+        } else if (!m.hasSelection) {
+          content = Text(
+            'SELECT A PIECE',
+            style: TextStyle(
+              fontFamily: Cyber.displayFont,
+              fontSize: 14,
+              letterSpacing: 2,
+              fontWeight: FontWeight.w600,
+              color: Cyber.cyan,
+            ),
+          );
+        } else if (m.availableActions.isEmpty) {
+          content = Text(
+            'NO ACTIONS',
+            style: TextStyle(
+              fontFamily: Cyber.displayFont,
+              fontSize: 14,
+              letterSpacing: 2,
+              fontWeight: FontWeight.w600,
+              color: Cyber.danger,
+            ),
+          );
+        } else {
+          content = Row(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              for (final verb in m.availableActions) ...[
-                _ActionChip(
-                  verb: verb,
-                  armed: m.selectedAction == verb,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    playSound(_sfxFor(verb));
-                    context.read<FootballChessCubit>().chooseAction(verb);
-                  },
-                ),
-                const SizedBox(width: 8),
-              ],
+              for (final verb in m.availableActions)
+                if (verb != BoardActionType.move) ...[
+                  _ActionChip(
+                    verb: verb,
+                    armed: m.selectedAction == verb,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      playSound(_sfxFor(verb));
+                      context.read<FootballChessCubit>().chooseAction(verb);
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                ],
             ],
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 22, left: 12, right: 12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+            constraints: const BoxConstraints(minHeight: 52),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Cyber.panel.withValues(alpha: 0.85),
+              border: Border.all(color: Cyber.cyan.withValues(alpha: 0.3)),
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.5),
+                  blurRadius: 10,
+                ),
+              ],
+            ),
+            child: content,
           ),
         );
       },
@@ -304,7 +373,8 @@ class DecisionTimer extends StatelessWidget {
     return BlocBuilder<FootballChessCubit, FootballChessState>(
       buildWhen: (p, c) =>
           p.match?.phase != c.match?.phase ||
-          p.match?.decisionRemaining.ceil() != c.match?.decisionRemaining.ceil(),
+          p.match?.decisionRemaining.ceil() !=
+              c.match?.decisionRemaining.ceil(),
       builder: (context, state) {
         final m = state.match;
         if (m == null || m.phase != ChessMatchPhase.playerTurn) {
@@ -322,14 +392,17 @@ class DecisionTimer extends StatelessWidget {
                 Text(
                   '${secs}s',
                   style: Cyber.label(11, color: accent, letterSpacing: 1)
-                      .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+                      .copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: CyberProgressBar(
-                    value: (m.decisionRemaining /
-                            FootballChessCubit.kDecisionSeconds)
-                        .clamp(0.0, 1.0),
+                    value:
+                        (m.decisionRemaining /
+                                FootballChessCubit.kDecisionSeconds)
+                            .clamp(0.0, 1.0),
                     accent: accent,
                     animate: false,
                     height: 5,
@@ -337,50 +410,6 @@ class DecisionTimer extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-/// Player's momentum gauge (pips) — glows when full (next duel is boosted).
-class MomentumMeter extends StatelessWidget {
-  const MomentumMeter({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<FootballChessCubit, FootballChessState>(
-      buildWhen: (p, c) => p.match?.playerMomentum != c.match?.playerMomentum,
-      builder: (context, state) {
-        final m = state.match;
-        if (m == null) return const SizedBox.shrink();
-        final mo = m.playerMomentum;
-        final full = mo >= FootballChessCubit.kMomentumMax;
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 6),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'MOMENTUM',
-                style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.4),
-              ),
-              const SizedBox(width: 8),
-              for (var i = 0; i < FootballChessCubit.kMomentumMax; i++) ...[
-                if (i > 0) const SizedBox(width: 4),
-                Container(
-                  width: 16,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: i < mo
-                        ? Cyber.cyan
-                        : Cyber.border.withValues(alpha: 0.6),
-                    boxShadow: (full && i < mo) ? Cyber.glow(Cyber.cyan) : null,
-                  ),
-                ),
-              ],
-            ],
           ),
         );
       },
@@ -440,11 +469,10 @@ class _OpponentActionToastState extends State<OpponentActionToast>
             builder: (context, _) {
               final v = _c.value;
               if (v == 0 || v >= 1) return const SizedBox.shrink();
-              final op =
-                  (v < 0.12 ? v / 0.12 : 1 - (v - 0.12) / 0.88).clamp(
-                    0.0,
-                    1.0,
-                  );
+              final op = (v < 0.12 ? v / 0.12 : 1 - (v - 0.12) / 0.88).clamp(
+                0.0,
+                1.0,
+              );
               return Opacity(
                 opacity: op,
                 child: Container(
@@ -511,13 +539,13 @@ class MoveLogStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<FootballChessCubit, FootballChessState>(
-      buildWhen: (p, c) =>
-          p.match?.moveLog.length != c.match?.moveLog.length,
+      buildWhen: (p, c) => p.match?.moveLog.length != c.match?.moveLog.length,
       builder: (context, state) {
         final m = state.match;
         if (m == null || m.moveLog.isEmpty) return const SizedBox.shrink();
-        final recent =
-            m.moveLog.length > 5 ? m.moveLog.sublist(m.moveLog.length - 5) : m.moveLog;
+        final recent = m.moveLog.length > 5
+            ? m.moveLog.sublist(m.moveLog.length - 5)
+            : m.moveLog;
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           child: Row(
@@ -567,6 +595,57 @@ class _LogChip extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Banner that persistently displays the last action (who did what).
+class LastActionBanner extends StatelessWidget {
+  const LastActionBanner({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<FootballChessCubit, FootballChessState>(
+      buildWhen: (p, c) => p.match?.lastMove != c.match?.lastMove,
+      builder: (context, state) {
+        final lm = state.match?.lastMove;
+        if (lm == null) return const SizedBox.shrink();
+        final you = lm.side == Side.player;
+        final color = you ? Cyber.cyan : Cyber.magenta;
+        final actorText = you ? 'YOU' : 'CPU';
+
+        // e.g. "YOU TACKLED" or "CPU MOVED"
+        String verbLabel = lm.verb.label;
+        if (verbLabel.endsWith('E')) {
+          verbLabel = '${verbLabel}D';
+        } else if (verbLabel == 'PASS' || verbLabel == 'PRESS') {
+          verbLabel = '${verbLabel}ED';
+        } else if (verbLabel == 'SHOOT') {
+          verbLabel = 'SHOT';
+        } else {
+          verbLabel = '${verbLabel}ED';
+        }
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          margin: const EdgeInsets.only(top: 8),
+          decoration: BoxDecoration(
+            color: Cyber.bg.withValues(alpha: 0.8),
+            border: Border.all(color: color.withValues(alpha: 0.6)),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            '$actorText $verbLabel',
+            style: TextStyle(
+              fontFamily: Cyber.displayFont,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 2,
+              color: color,
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -1,15 +1,15 @@
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
-import '../../blocs/football_bingo/football_bingo_state.dart';
+import '../../blocs/guess_player/guess_player_cubit.dart';
 import '../../config/theme.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
-import '../how_to_play/how_to_play_hub_screen.dart';
 
-class FootballBingoHomeScreen extends StatelessWidget {
-  const FootballBingoHomeScreen({
+class GuessPlayerHomeScreen extends StatelessWidget {
+  const GuessPlayerHomeScreen({
     required this.state,
     required this.onBack,
     required this.onOpenDay,
@@ -17,7 +17,7 @@ class FootballBingoHomeScreen extends StatelessWidget {
     super.key,
   });
 
-  final FootballBingoState state;
+  final GuessPlayerState state;
   final VoidCallback onBack;
   final ValueChanged<String> onOpenDay;
   final VoidCallback onOpenLogs;
@@ -25,17 +25,18 @@ class FootballBingoHomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final today = state.todayKey;
-    final progress = state.archive.progressByDay[today] ?? state.progress;
-    final ctaLabel = progress.completed
-        ? 'REVIEW GRID'
-        : progress.solvedCellIds.isNotEmpty
-        ? 'RESUME GRID'
-        : 'PLAY TODAY\'S GRID';
+    final todayResult = state.archive.resultsByDay[today];
+    final solvedCount = state.archive.resultsByDay.values
+        .where((result) => result.won)
+        .length;
+    final ctaLabel = todayResult != null
+        ? (todayResult.won ? 'REVIEW SOLUTION' : 'REVIEW RESULTS')
+        : 'PLAY TODAY\'S MYSTERY';
 
     return Scaffold(
       backgroundColor: Cyber.bg,
       appBar: _HomeHeader(onBack: onBack),
-      body: _FootballBingoStadiumBackground(
+      body: _GuessPlayerStadiumBackground(
         child: SafeArea(
           top: false,
           child: LayoutBuilder(
@@ -55,7 +56,7 @@ class FootballBingoHomeScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           _LandingHero(
-                            completedCount: state.completedCount,
+                            solvedCount: solvedCount,
                             unlockedCount: state.unlockedDayKeys.length,
                           ),
                           const SizedBox(height: 20),
@@ -64,8 +65,8 @@ class FootballBingoHomeScreen extends StatelessWidget {
                             offset: 22,
                             child: HudCtaButton(
                               label: ctaLabel,
-                              icon: Icons.play_arrow,
-                              accent: Cyber.amber,
+                              icon: Icons.person_search,
+                              accent: Cyber.magenta,
                               tapSound: SoundEffect.playMatch,
                               onTap: () => onOpenDay(today),
                             ),
@@ -75,26 +76,6 @@ class FootballBingoHomeScreen extends StatelessWidget {
                             delay: const Duration(milliseconds: 470),
                             offset: 22,
                             child: _DailyLogsHeader(onTap: onOpenLogs),
-                          ),
-                          const SizedBox(height: 16),
-                          CyberSlideUpFadeIn(
-                            delay: const Duration(milliseconds: 650),
-                            offset: 14,
-                            child: Wrap(
-                              alignment: WrapAlignment.center,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              spacing: 14,
-                              runSpacing: 6,
-                              children: [
-                                _HudLink(
-                                  label: 'HOW TO PLAY',
-                                  onTap: () => showHowToPlayGuide(
-                                    context,
-                                    HowToPlayMode.bingoGrid,
-                                  ),
-                                ),
-                              ],
-                            ),
                           ),
                         ],
                       ),
@@ -143,7 +124,7 @@ class _HomeHeader extends StatelessWidget implements PreferredSizeWidget {
               icon: const Icon(Icons.arrow_back, color: Colors.white, size: 22),
             ),
             const Spacer(),
-            const Icon(Icons.grid_view, color: Cyber.amber, size: 24),
+            const Icon(Icons.person_search, color: Cyber.magenta, size: 24),
           ],
         ),
       ),
@@ -151,18 +132,18 @@ class _HomeHeader extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
-class _FootballBingoStadiumBackground extends StatefulWidget {
-  const _FootballBingoStadiumBackground({required this.child});
+class _GuessPlayerStadiumBackground extends StatefulWidget {
+  const _GuessPlayerStadiumBackground({required this.child});
 
   final Widget child;
 
   @override
-  State<_FootballBingoStadiumBackground> createState() =>
-      _FootballBingoStadiumBackgroundState();
+  State<_GuessPlayerStadiumBackground> createState() =>
+      _GuessPlayerStadiumBackgroundState();
 }
 
-class _FootballBingoStadiumBackgroundState
-    extends State<_FootballBingoStadiumBackground>
+class _GuessPlayerStadiumBackgroundState
+    extends State<_GuessPlayerStadiumBackground>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
@@ -188,7 +169,7 @@ class _FootballBingoStadiumBackgroundState
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xff020812), Color(0xff071522), Color(0xff02050b)],
+          colors: [Color(0xff020812), Color(0xff101024), Color(0xff02050b)],
         ),
       ),
       child: Stack(
@@ -207,9 +188,9 @@ class _FootballBingoStadiumBackgroundState
                 );
               },
               child: Opacity(
-                opacity: 0.2,
+                opacity: 0.22,
                 child: Image.asset(
-                  'assets/backgrounds/football_bingo_stadium.png',
+                  'assets/backgrounds/home_stadium.png',
                   fit: BoxFit.cover,
                   alignment: Alignment.center,
                 ),
@@ -231,9 +212,9 @@ class _FootballBingoStadiumBackgroundState
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Cyber.bg.withValues(alpha: 0.18),
-                    Cyber.bg.withValues(alpha: 0.28),
-                    Cyber.bg.withValues(alpha: 0.76),
+                    Cyber.bg.withValues(alpha: 0.16),
+                    Cyber.bg.withValues(alpha: 0.3),
+                    Cyber.bg.withValues(alpha: 0.78),
                   ],
                   stops: const [0.0, 0.48, 1.0],
                 ),
@@ -266,8 +247,8 @@ class _ArenaMotionPainter extends CustomPainter {
         center: const Alignment(0, 0.72),
         radius: 0.88,
         colors: [
-          Cyber.amber.withValues(alpha: 0.08 + pulse * 0.035),
-          Cyber.amber.withValues(alpha: 0.025),
+          Cyber.magenta.withValues(alpha: 0.08 + pulse * 0.035),
+          Cyber.cyan.withValues(alpha: 0.025),
           Colors.transparent,
         ],
         stops: const [0.0, 0.28, 1.0],
@@ -303,7 +284,7 @@ class _ArenaMotionPainter extends CustomPainter {
       final y = size.height * (0.96 - travel * 0.82);
       final length = 12.0 + (i % 4) * 5.0;
       final opacity = 0.025 + 0.03 * math.sin(phase + i).abs();
-      streakPaint.color = Cyber.amber.withValues(alpha: opacity);
+      streakPaint.color = Cyber.magenta.withValues(alpha: opacity);
       canvas.drawLine(
         Offset(x, y),
         Offset(x + length * 0.42, y - length),
@@ -332,8 +313,8 @@ class _ArenaMotionPainter extends CustomPainter {
         begin: Alignment.bottomCenter,
         end: Alignment.topCenter,
         colors: [
-          Cyber.amber.withValues(alpha: opacity),
-          Cyber.amber.withValues(alpha: opacity * 0.35),
+          Cyber.magenta.withValues(alpha: opacity),
+          Cyber.magenta.withValues(alpha: opacity * 0.35),
           Colors.transparent,
         ],
       ).createShader(path.getBounds());
@@ -346,12 +327,9 @@ class _ArenaMotionPainter extends CustomPainter {
 }
 
 class _LandingHero extends StatelessWidget {
-  const _LandingHero({
-    required this.completedCount,
-    required this.unlockedCount,
-  });
+  const _LandingHero({required this.solvedCount, required this.unlockedCount});
 
-  final int completedCount;
+  final int solvedCount;
   final int unlockedCount;
 
   @override
@@ -367,7 +345,7 @@ class _LandingHero extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const _BingoIconBay(),
+              const _GuessIconBay(),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -377,13 +355,13 @@ class _LandingHero extends StatelessWidget {
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        'FOOTBALL BINGO',
+                        'GUESS THE PLAYER',
                         maxLines: 1,
                         style: Cyber.display(22, color: Colors.white).copyWith(
                           letterSpacing: 1.1,
                           shadows: [
                             Shadow(
-                              color: Cyber.cyan.withValues(alpha: 0.3),
+                              color: Cyber.magenta.withValues(alpha: 0.32),
                               blurRadius: 8,
                             ),
                           ],
@@ -392,11 +370,14 @@ class _LandingHero extends StatelessWidget {
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      '3X3 BINGO GAME',
+                      'CAREER TIMELINE GAME',
                       style: Cyber.label(10, color: Cyber.muted),
                     ),
                     const SizedBox(height: 8),
-                    const CyberChip(label: 'BINGO ONLINE', color: Cyber.lime),
+                    const CyberChip(
+                      label: 'DAILY MYSTERY',
+                      color: Cyber.magenta,
+                    ),
                   ],
                 ),
               ),
@@ -408,17 +389,17 @@ class _LandingHero extends StatelessWidget {
           children: [
             Expanded(
               child: CyberDealtCard(
-                key: const ValueKey('home-stat-complete'),
+                key: const ValueKey('guess-home-stat-solved'),
                 index: 0,
                 initialDelay: const Duration(milliseconds: 180),
                 flyDistance: 130,
-                child: _StatTile(label: 'COMPLETE', value: '$completedCount'),
+                child: _StatTile(label: 'SOLVED', value: '$solvedCount'),
               ),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: CyberDealtCard(
-                key: const ValueKey('home-stat-unlocked'),
+                key: const ValueKey('guess-home-stat-unlocked'),
                 index: 1,
                 initialDelay: const Duration(milliseconds: 180),
                 flyDistance: 130,
@@ -443,8 +424,8 @@ class _TelemetryStrip extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xff071321).withValues(alpha: 0.82),
         border: Border(
-          left: BorderSide(color: Cyber.cyan.withValues(alpha: 0.35)),
-          right: BorderSide(color: Cyber.cyan.withValues(alpha: 0.35)),
+          left: BorderSide(color: Cyber.magenta.withValues(alpha: 0.35)),
+          right: BorderSide(color: Cyber.magenta.withValues(alpha: 0.35)),
         ),
       ),
       child: Row(
@@ -469,7 +450,7 @@ class _TelemetryStrip extends StatelessWidget {
           Expanded(
             child: Container(
               height: 1,
-              color: Cyber.cyan.withValues(alpha: 0.18),
+              color: Cyber.magenta.withValues(alpha: 0.18),
             ),
           ),
           const SizedBox(width: 10),
@@ -477,7 +458,7 @@ class _TelemetryStrip extends StatelessWidget {
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                'SYS://3X3 BINGO GAME | 1.0.0',
+                'SYS://CAREER TIMELINE | 1.0.0',
                 style: Cyber.label(8, color: Cyber.muted),
               ),
             ),
@@ -488,8 +469,8 @@ class _TelemetryStrip extends StatelessWidget {
   }
 }
 
-class _BingoIconBay extends StatelessWidget {
-  const _BingoIconBay();
+class _GuessIconBay extends StatelessWidget {
+  const _GuessIconBay();
 
   @override
   Widget build(BuildContext context) {
@@ -525,16 +506,22 @@ class _BingoIconBay extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xff102036).withValues(alpha: 0.95),
                 shape: BoxShape.circle,
-                border: Border.all(color: Cyber.cyan.withValues(alpha: 0.12)),
+                border: Border.all(
+                  color: Cyber.magenta.withValues(alpha: 0.16),
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: Cyber.cyan.withValues(alpha: 0.12),
+                    color: Cyber.magenta.withValues(alpha: 0.14),
                     blurRadius: 24,
                     spreadRadius: 1,
                   ),
                 ],
               ),
-              child: const Icon(Icons.grid_view, color: Cyber.amber, size: 28),
+              child: const Icon(
+                Icons.person_search,
+                color: Cyber.magenta,
+                size: 28,
+              ),
             ),
           ),
         ],
@@ -557,17 +544,17 @@ class _HudCorner extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(
           top: top
-              ? BorderSide(color: Cyber.amber.withValues(alpha: 0.75))
+              ? BorderSide(color: Cyber.magenta.withValues(alpha: 0.75))
               : BorderSide.none,
           bottom: top
               ? BorderSide.none
-              : BorderSide(color: Cyber.amber.withValues(alpha: 0.75)),
+              : BorderSide(color: Cyber.magenta.withValues(alpha: 0.75)),
           left: left
-              ? BorderSide(color: Cyber.amber.withValues(alpha: 0.75))
+              ? BorderSide(color: Cyber.magenta.withValues(alpha: 0.75))
               : BorderSide.none,
           right: left
               ? BorderSide.none
-              : BorderSide(color: Cyber.amber.withValues(alpha: 0.75)),
+              : BorderSide(color: Cyber.magenta.withValues(alpha: 0.75)),
         ),
       ),
     );
@@ -596,14 +583,14 @@ class _DailyLogsHeader extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.history, color: Cyber.amber, size: 18),
+            const Icon(Icons.history, color: Cyber.magenta, size: 18),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 'DAILY LOGS',
                 style: Cyber.display(
                   14,
-                  color: Cyber.amber,
+                  color: Cyber.magenta,
                 ).copyWith(letterSpacing: 1.4),
               ),
             ),
@@ -628,7 +615,7 @@ class _StatTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
         color: const Color(0xff102036).withValues(alpha: 0.86),
-        border: Border.all(color: Cyber.cyan.withValues(alpha: 0.45)),
+        border: Border.all(color: Cyber.magenta.withValues(alpha: 0.45)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -638,40 +625,12 @@ class _StatTile extends StatelessWidget {
             value,
             style: Cyber.display(
               16,
-              color: Cyber.amber,
+              color: Cyber.magenta,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
           const SizedBox(height: 2),
           Text(label, style: Cyber.label(8, color: Cyber.muted)),
         ],
-      ),
-    );
-  }
-}
-
-class _HudLink extends StatelessWidget {
-  const _HudLink({
-    required this.label,
-    required this.onTap,
-  });
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Text(
-        label,
-        style: TextStyle(
-          color: Cyber.amber,
-          fontFamily: Cyber.displayFont,
-          fontSize: 11,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 1.4,
-        ),
       ),
     );
   }

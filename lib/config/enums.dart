@@ -12,6 +12,7 @@ enum AppSection {
   shootout,
   game,
   allCards,
+  guessPlayer,
 }
 
 enum DeckPickerLane { attacker, defender, keeper, action }

@@ -15,6 +15,7 @@ import '../models/quiz_trivia.dart';
 import '../models/referral.dart';
 import '../models/streak.dart';
 import '../models/xp_ledger.dart';
+import '../models/guess_player.dart';
 import '../data/rival_roster.dart' show randomPlayerTag;
 
 /// Maps a legacy `border_*` avatar-frame id to the renamed `frame_*` form so a
@@ -136,6 +137,7 @@ class SecureGameStorage {
   static const _quizProgressKey = 'pd_quiz_progress_v1';
   static const _footballBingoProgressKey = 'pd_football_bingo_progress_v1';
   static const _footballBingoArchiveKey = 'pd_football_bingo_archive_v1';
+  static const _guessPlayerArchiveKey = 'pd_guess_player_archive_v1';
   static const _footballChessStatsKey = 'pd_football_chess_stats_v1';
 
   final FlutterSecureStorage _storage;
@@ -331,6 +333,24 @@ class SecureGameStorage {
       _footballBingoArchiveKey,
       jsonEncode(archive.toJson()),
     );
+  }
+
+  Future<GuessPlayerArchive?> loadGuessPlayerArchive() async {
+    final prefs = await SharedPreferences.getInstance();
+    try {
+      final raw = prefs.getString(_guessPlayerArchiveKey);
+      if (raw == null) return null;
+      return GuessPlayerArchive.fromJson(
+        jsonDecode(raw) as Map<String, dynamic>,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveGuessPlayerArchive(GuessPlayerArchive archive) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_guessPlayerArchiveKey, jsonEncode(archive.toJson()));
   }
 
   Future<FootballChessStats> loadFootballChessStats() async {
