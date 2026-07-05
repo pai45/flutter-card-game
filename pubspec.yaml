@@ -105,6 +105,11 @@ flutter:
     - assets/animations/
     - assets/avatar_options/
     - assets/player_images/
+    - assets/player_images/bronze/
+    - assets/player_images/silver/
+    - assets/player_images/gold/
+    - assets/player_images/platinum/
+    - assets/player_images/unranked/
     - assets/audio/
     - assets/packs/
     - assets/coins/

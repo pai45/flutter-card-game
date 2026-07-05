@@ -18,7 +18,8 @@
       "Bash(dart run *)",
       "Bash(brew upgrade *)",
       "Bash(brew --version)",
-      "Bash(HOMEBREW_NO_BOOTSNAP=1 brew upgrade claude-code)"
+      "Bash(HOMEBREW_NO_BOOTSNAP=1 brew upgrade claude-code)",
+      "Bash(python3 *)"
     ]
   }
 }
