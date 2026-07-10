@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../blocs/guess_player/guess_player_cubit.dart';
 import '../../config/enums.dart';
+import '../../models/sport_match.dart';
+import '../../data/guess_player_data.dart';
 import '../../models/cards.dart';
 import '../../services/secure_storage_service.dart';
 import 'guess_player_home_screen.dart';
@@ -11,11 +13,15 @@ import 'guess_player_screen.dart';
 
 class GuessPlayerTabContent extends StatefulWidget {
   const GuessPlayerTabContent({
+    required this.sport,
+    required this.timelines,
     required this.onNavigate,
     required this.allPlayers,
     super.key,
   });
 
+  final Sport sport;
+  final List<GuessPlayerTimeline> timelines;
   final ValueChanged<AppSection> onNavigate;
   final List<PlayerCard> allPlayers;
 
@@ -44,6 +50,8 @@ class _GuessPlayerTabContentState extends State<GuessPlayerTabContent> {
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => GuessPlayerCubit(
+        sport: widget.sport,
+        timelines: widget.timelines,
         allPlayers: widget.allPlayers,
         storage: SecureGameStorage(),
       )..load(),

@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../config/sport_modules.dart';
 import '../../config/theme.dart';
 import '../../data/followable_leagues.dart';
 import '../../models/avatar_option.dart';
@@ -20,12 +21,14 @@ class ProfileSetupResult {
   const ProfileSetupResult({
     required this.avatarId,
     required this.bannerId,
+    required this.primarySport,
     required this.followedLeagueIds,
     required this.favoriteTeams,
   });
 
   final String avatarId;
   final String bannerId;
+  final Sport primarySport;
   final List<String> followedLeagueIds;
   final Map<String, String> favoriteTeams;
 }
@@ -51,63 +54,47 @@ class ProfileSetupScreen extends StatefulWidget {
 }
 
 class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
-  static const int _stepCount = 4;
+  static const int _stepCount = 3;
 
   int _step = 0;
 
   late String _avatarId = avatarOptionById(widget.initialAvatarId).id;
   String _bannerId = profileBannerOptions.first.id;
+  Sport _primarySport = Sport.football;
   final List<String> _followedLeagueIds = [];
   final Map<String, String> _favoriteTeams = {};
 
-  // Within the team step, which followed league we're picking a team for.
-  int _teamLeagueIndex = 0;
+  String _activeLeagueId = followableLeaguesForSport(
+    Sport.football,
+  ).first.league.id;
   bool _completing = false;
   // First-run brand splash + WELCOME reveal, shown before the setup steps.
   bool _intro = true;
 
-  List<FollowableLeague> get _followed => [
-    for (final entry in followableLeagues)
-      if (_followedLeagueIds.contains(entry.league.id)) entry,
-  ];
+  List<FollowableLeague> get _availableLeagues =>
+      followableLeaguesForSport(_primarySport);
 
-  bool get _isLastVisibleStep {
-    if (_step == 2) return _followedLeagueIds.isEmpty;
-    if (_step == 3) return _teamLeagueIndex >= _followed.length - 1;
-    return false;
-  }
+  FollowableLeague get _activeLeague =>
+      followableLeagueById(_activeLeagueId) ?? _availableLeagues.first;
+
+  bool get _isLastVisibleStep => _step == _stepCount - 1;
 
   void _next() {
-    if (_step == 2 && _followedLeagueIds.isEmpty) {
+    if (_isLastVisibleStep) {
       _finish();
       return;
     }
-    if (_step == 3) {
-      if (_teamLeagueIndex < _followed.length - 1) {
-        setState(() => _teamLeagueIndex++);
-        return;
-      }
-      _finish();
-      return;
-    }
-    setState(() {
-      _step++;
-      if (_step == 3) _teamLeagueIndex = 0;
-    });
+    setState(() => _step++);
   }
 
-  bool get _canGoBack => _step > 0 || (_step == 3 && _teamLeagueIndex > 0);
+  bool get _canGoBack => _step > 0;
 
   void _back() {
-    if (_step == 3 && _teamLeagueIndex > 0) {
-      setState(() => _teamLeagueIndex--);
-      return;
-    }
     if (_step > 0) setState(() => _step--);
   }
 
   void _skip() {
-    if (_step == 2) {
+    if (_isLastVisibleStep) {
       setState(() {
         _followedLeagueIds.clear();
         _favoriteTeams.clear();
@@ -125,30 +112,63 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       ProfileSetupResult(
         avatarId: _avatarId,
         bannerId: _bannerId,
+        primarySport: _primarySport,
         followedLeagueIds: List.unmodifiable(_followedLeagueIds),
         favoriteTeams: Map.unmodifiable(_favoriteTeams),
       ),
     );
   }
 
-  void _toggleLeague(String leagueId) {
+  void _toggleLeague(FollowableLeague entry) {
     setState(() {
-      if (_followedLeagueIds.remove(leagueId)) {
-        _favoriteTeams.remove(leagueId);
+      if (_followedLeagueIds.remove(entry.league.id)) {
+        _favoriteTeams.remove(entry.league.id);
       } else {
-        _followedLeagueIds.add(leagueId);
+        _followedLeagueIds.add(entry.league.id);
+        if (entry.teams.isNotEmpty) {
+          _favoriteTeams[entry.league.id] = entry.teams.first.id;
+        }
+        _activeLeagueId = entry.league.id;
       }
     });
   }
 
-  String get _skipLabel => _step == 3 ? 'DECIDE LATER' : 'SKIP';
+  void _selectSport(Sport sport) {
+    setState(() {
+      if (_primarySport == sport) return;
+      _primarySport = sport;
+      _followedLeagueIds.clear();
+      _favoriteTeams.clear();
+      _activeLeagueId = followableLeaguesForSport(sport).first.league.id;
+    });
+  }
+
+  void _selectLeague(FollowableLeague entry) {
+    setState(() => _activeLeagueId = entry.league.id);
+  }
+
+  void _selectTeam(FollowableLeague entry, String teamId) {
+    setState(() {
+      if (_primarySport != entry.sport) {
+        _primarySport = entry.sport;
+        _followedLeagueIds.clear();
+        _favoriteTeams.clear();
+      }
+      _activeLeagueId = entry.league.id;
+      if (!_followedLeagueIds.contains(entry.league.id)) {
+        _followedLeagueIds.add(entry.league.id);
+      }
+      _favoriteTeams[entry.league.id] = teamId;
+    });
+  }
+
+  String get _skipLabel => _isLastVisibleStep ? 'DECIDE LATER' : 'SKIP';
   String get _ctaLabel => _isLastVisibleStep ? 'FINISH SETUP' : 'NEXT';
 
   String get _helperText => switch (_step) {
-    0 => 'STEP 1 OF 4 // CHOOSE THE FACE FOR YOUR DOSSIER',
-    1 => 'STEP 2 OF 4 // SET YOUR BANNER COLOURS',
-    2 => 'STEP 3 OF 4 // FOLLOW LEAGUES — OPTIONAL',
-    _ => 'STEP 4 OF 4 // LEAGUE ${_teamLeagueIndex + 1} OF ${_followed.length}',
+    0 => 'STEP 1 OF 3 // CHOOSE THE FACE FOR YOUR DOSSIER',
+    1 => 'STEP 2 OF 3 // SET YOUR BANNER COLOURS',
+    _ => 'STEP 3 OF 3 // PICK SPORTS, LEAGUES, AND CLUBS IN ONE PLACE',
   };
 
   @override
@@ -168,7 +188,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 520),
                       child: KeyedSubtree(
-                        key: ValueKey('step_${_step}_$_teamLeagueIndex'),
+                        key: ValueKey('step_${_step}_$_activeLeagueId'),
                         child: CyberSlideUpFadeIn(child: _buildStepBody()),
                       ),
                     ),
@@ -191,9 +211,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             Positioned.fill(child: _LaunchSequence(onEnter: _emit)),
           if (_intro)
             Positioned.fill(
-              child: _LaunchIntro(
-                onDone: () => setState(() => _intro = false),
-              ),
+              child: _LaunchIntro(onDone: () => setState(() => _intro = false)),
             ),
         ],
       ),
@@ -209,15 +227,16 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       selectedId: _bannerId,
       onSelect: (id) => setState(() => _bannerId = id),
     ),
-    2 => _LeaguesStep(followedIds: _followedLeagueIds, onToggle: _toggleLeague),
-    _ => _TeamsStep(
-      league: _followed[_teamLeagueIndex],
-      index: _teamLeagueIndex,
-      total: _followed.length,
-      selectedTeamId: _favoriteTeams[_followed[_teamLeagueIndex].league.id],
-      onSelect: (teamId) => setState(
-        () => _favoriteTeams[_followed[_teamLeagueIndex].league.id] = teamId,
-      ),
+    _ => _ClubsStep(
+      sport: _primarySport,
+      activeLeagueId: _activeLeague.league.id,
+      leagues: _availableLeagues,
+      followedIds: _followedLeagueIds,
+      favoriteTeams: _favoriteTeams,
+      onSelectSport: _selectSport,
+      onSelectLeague: _selectLeague,
+      onToggleLeague: _toggleLeague,
+      onSelectTeam: _selectTeam,
     ),
   };
 }
@@ -321,9 +340,7 @@ class _SetupTopBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(18, 0, 10, 0),
       decoration: BoxDecoration(
         color: Cyber.panel.withValues(alpha: 0.55),
-        border: const Border(
-          bottom: BorderSide(color: Cyber.cyan, width: 1.4),
-        ),
+        border: const Border(bottom: BorderSide(color: Cyber.cyan, width: 1.4)),
       ),
       child: Row(
         children: [
@@ -603,107 +620,162 @@ class _BannerStep extends StatelessWidget {
   }
 }
 
-class _LeaguesStep extends StatelessWidget {
-  const _LeaguesStep({required this.followedIds, required this.onToggle});
+class _ClubsStep extends StatelessWidget {
+  const _ClubsStep({
+    required this.sport,
+    required this.activeLeagueId,
+    required this.leagues,
+    required this.followedIds,
+    required this.favoriteTeams,
+    required this.onSelectSport,
+    required this.onSelectLeague,
+    required this.onToggleLeague,
+    required this.onSelectTeam,
+  });
 
+  final Sport sport;
+  final String activeLeagueId;
+  final List<FollowableLeague> leagues;
   final List<String> followedIds;
-  final ValueChanged<String> onToggle;
+  final Map<String, String> favoriteTeams;
+  final ValueChanged<Sport> onSelectSport;
+  final ValueChanged<FollowableLeague> onSelectLeague;
+  final ValueChanged<FollowableLeague> onToggleLeague;
+  final void Function(FollowableLeague entry, String teamId) onSelectTeam;
 
   @override
   Widget build(BuildContext context) {
-    final count = followedIds.length;
+    final isFormulaOne = sport == Sport.f1;
+    final activeLeague = followableLeagueById(activeLeagueId) ?? leagues.first;
+    final selectedTeamId = favoriteTeams[activeLeague.league.id];
+    final followedCount = followedIds.length;
+
     return _StepShell(
-      title: 'FOLLOW LEAGUES',
-      subtitle: count == 0
-          ? 'Pick the competitions you follow — optional.'
-          : '$count followed • pick a team for each next.',
-      child: GridView.builder(
-        itemCount: followableLeagues.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 0.88,
-        ),
-        itemBuilder: (context, index) {
-          final entry = followableLeagues[index];
-          return CyberDealtCard(
-            index: index,
-            child: _LeagueTile(
-              entry: entry,
-              selected: followedIds.contains(entry.league.id),
-              onTap: () => onToggle(entry.league.id),
+      title: 'CHOOSE CLUBS',
+      subtitle: isFormulaOne
+          ? 'Pick your Formula 1 constructor. No league selection needed.'
+          : followedCount == 0
+          ? 'Pick a sport, choose leagues, or tap any club to follow it.'
+          : '$followedCount followed - tap any club to update your picks.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            height: 48,
+            child: ListView.separated(
+              key: const ValueKey('onboarding_sport_selector'),
+              scrollDirection: Axis.horizontal,
+              itemBuilder: (context, index) {
+                final module = sportModules[index];
+                return _ClubSportPill(
+                  module: module,
+                  selected: module.sport == sport,
+                  onTap: () => onSelectSport(module.sport),
+                );
+              },
+              separatorBuilder: (context, index) => const SizedBox(width: 8),
+              itemCount: sportModules.length,
             ),
-          );
-        },
+          ),
+          if (!isFormulaOne) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 92,
+              child: ListView.separated(
+                key: const ValueKey('onboarding_league_selector'),
+                scrollDirection: Axis.horizontal,
+                itemBuilder: (context, index) {
+                  final entry = leagues[index];
+                  return _ClubLeaguePill(
+                    entry: entry,
+                    active: entry.league.id == activeLeagueId,
+                    selected: followedIds.contains(entry.league.id),
+                    onTap: () => onSelectLeague(entry),
+                    onToggle: () => onToggleLeague(entry),
+                  );
+                },
+                separatorBuilder: (context, index) => const SizedBox(width: 10),
+                itemCount: leagues.length,
+              ),
+            ),
+          ],
+          SizedBox(height: isFormulaOne ? 14 : 10),
+          Expanded(
+            child: GridView.builder(
+              key: const ValueKey('onboarding_team_grid'),
+              itemCount: activeLeague.teams.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 0.92,
+              ),
+              itemBuilder: (context, index) {
+                final team = activeLeague.teams[index];
+                return _ClubTeamTile(
+                  team: team,
+                  selected: team.id == selectedTeamId,
+                  enabled: followedIds.contains(activeLeague.league.id),
+                  onTap: () => onSelectTeam(activeLeague, team.id),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// A league pick — an avatar-style panel tile. Unselected reads as a calm but
-/// fully-enabled surface (panel fill + line border); selected gets a lime
-/// border, soft glow and the corner check seal — same language as the avatar
-/// and banner steps.
-class _LeagueTile extends StatelessWidget {
-  const _LeagueTile({
-    required this.entry,
+class _ClubSportPill extends StatelessWidget {
+  const _ClubSportPill({
+    required this.module,
     required this.selected,
     required this.onTap,
   });
 
-  final FollowableLeague entry;
+  final SportModule module;
   final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final league = entry.league;
-    final borderColor = selected ? Cyber.lime : AppTheme.onboardingPanelBorder;
+    final color = selected ? Cyber.lime : module.accent;
     return Semantics(
       button: true,
       selected: selected,
-      label: league.name,
-      child: PressableScale(
+      label: module.label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
           decoration: BoxDecoration(
-            color: AppTheme.onboardingPanelFill,
-            border: Border.all(color: borderColor, width: selected ? 2 : 1),
+            color: AppTheme.onboardingPanelFill.withValues(
+              alpha: selected ? 1 : 0.78,
+            ),
+            border: Border.all(
+              color: color.withValues(alpha: selected ? 0.95 : 0.48),
+              width: selected ? 2 : 1,
+            ),
             boxShadow: selected
-                ? Cyber.glow(Cyber.lime, alpha: 0.18, blur: 14, spread: -2)
+                ? Cyber.glow(Cyber.lime, alpha: 0.14, blur: 12, spread: -3)
                 : null,
           ),
-          child: Stack(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _LeagueMark(code: league.shortCode, color: league.accent),
-                    const SizedBox(height: 8),
-                    Text(
-                      league.name.toUpperCase(),
-                      maxLines: 2,
-                      textAlign: TextAlign.center,
-                      overflow: TextOverflow.ellipsis,
-                      style: Cyber.display(
-                        10,
-                        color: selected ? Colors.white : Cyber.muted,
-                        letterSpacing: 0.4,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      '${entry.teams.length} TEAMS',
-                      style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.0),
-                    ),
-                  ],
+              Icon(module.icon, color: color, size: 18),
+              const SizedBox(width: 7),
+              Text(
+                module.label.toUpperCase(),
+                style: Cyber.label(
+                  10,
+                  color: selected ? Colors.white : Cyber.muted,
+                  letterSpacing: 1.0,
                 ),
               ),
-              if (selected) const SelectedCheckCorner(size: 24),
             ],
           ),
         ),
@@ -712,38 +784,78 @@ class _LeagueTile extends StatelessWidget {
   }
 }
 
-/// Angled-cut, hard-base league badge — the picks-page `_LeagueMark` look. The
-/// selection affordance now lives on the surrounding panel tile, so the mark
-/// itself stays neutral.
-class _LeagueMark extends StatelessWidget {
-  const _LeagueMark({required this.code, required this.color});
+class _ClubLeaguePill extends StatelessWidget {
+  const _ClubLeaguePill({
+    required this.entry,
+    required this.active,
+    required this.selected,
+    required this.onTap,
+    required this.onToggle,
+  });
 
-  final String code;
-  final Color color;
+  final FollowableLeague entry;
+  final bool active;
+  final bool selected;
+  final VoidCallback onTap;
+  final VoidCallback onToggle;
 
   @override
   Widget build(BuildContext context) {
-    final ink = color.computeLuminance() > 0.48
-        ? const Color(0xff07111e)
-        : Colors.white;
-    return CustomPaint(
-      size: const Size(52, 46),
-      painter: _LeagueMarkPainter(color: color),
-      child: SizedBox(
-        width: 52,
-        height: 46,
-        child: Center(
-          child: Text(
-            code,
-            style: Cyber.display(17, color: ink, letterSpacing: 0.5).copyWith(
-              height: 1,
-              shadows: [
-                Shadow(
-                  color: Colors.black.withValues(alpha: 0.22),
-                  blurRadius: 6,
-                ),
-              ],
+    final accent = selected ? Cyber.lime : Cyber.cyan;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: entry.league.name,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          width: 106,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: active
+                ? AppTheme.onboardingPanelFill
+                : AppTheme.onboardingPanelFill.withValues(alpha: 0.64),
+            border: Border.all(
+              color: active ? accent : AppTheme.onboardingPanelBorder,
+              width: active ? 1.5 : 1,
             ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      entry.league.shortCode,
+                      style: Cyber.display(
+                        13,
+                        color: active ? accent : Cyber.muted,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: onToggle,
+                    child: Icon(
+                      selected
+                          ? Icons.check_box
+                          : Icons.check_box_outline_blank,
+                      color: accent,
+                      size: 18,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              Text(
+                entry.league.name.toUpperCase(),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.4),
+              ),
+            ],
           ),
         ),
       ),
@@ -751,102 +863,17 @@ class _LeagueMark extends StatelessWidget {
   }
 }
 
-/// The picks-page league-mark silhouette: a top-left + bottom-right chamfer,
-/// a hard darker base offset down, the colour fill, and a faint white edge.
-class _LeagueMarkPainter extends CustomPainter {
-  const _LeagueMarkPainter({required this.color});
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const cut = 10.0;
-    final rect = Offset.zero & Size(size.width, size.height - 3);
-    final path = Path()
-      ..moveTo(rect.left + cut, rect.top)
-      ..lineTo(rect.right, rect.top)
-      ..lineTo(rect.right, rect.bottom - cut)
-      ..lineTo(rect.right - cut, rect.bottom)
-      ..lineTo(rect.left, rect.bottom)
-      ..lineTo(rect.left, rect.top + cut)
-      ..close();
-    canvas
-      ..drawPath(
-        path.shift(const Offset(0, 3)),
-        Paint()..color = Color.lerp(color, Colors.black, 0.58)!,
-      )
-      ..drawPath(path, Paint()..color = color)
-      ..drawPath(
-        path,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1
-          ..color = Colors.white.withValues(alpha: 0.2),
-      );
-  }
-
-  @override
-  bool shouldRepaint(covariant _LeagueMarkPainter oldDelegate) =>
-      oldDelegate.color != color;
-}
-
-class _TeamsStep extends StatelessWidget {
-  const _TeamsStep({
-    required this.league,
-    required this.index,
-    required this.total,
-    required this.selectedTeamId,
-    required this.onSelect,
-  });
-
-  final FollowableLeague league;
-  final int index;
-  final int total;
-  final String? selectedTeamId;
-  final ValueChanged<String> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    return _StepShell(
-      title: 'PICK YOUR TEAM',
-      subtitle:
-          'LEAGUE ${index + 1} OF $total  //  ${league.league.name.toUpperCase()}',
-      child: GridView.builder(
-        itemCount: league.teams.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4,
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 10,
-          childAspectRatio: 0.8,
-        ),
-        itemBuilder: (context, i) {
-          final team = league.teams[i];
-          return CyberDealtCard(
-            index: i,
-            child: _TeamTile(
-              team: team,
-              selected: team.id == selectedTeamId,
-              onTap: () => onSelect(team.id),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// A team pick — an avatar-style panel tile. Unselected reads as a calm but
-/// fully-enabled surface; selected gets the lime border, soft glow and corner
-/// check seal — same language as the avatar and banner steps.
-class _TeamTile extends StatelessWidget {
-  const _TeamTile({
+class _ClubTeamTile extends StatelessWidget {
+  const _ClubTeamTile({
     required this.team,
     required this.selected,
+    required this.enabled,
     required this.onTap,
   });
 
   final SportTeam team;
   final bool selected;
+  final bool enabled;
   final VoidCallback onTap;
 
   @override
@@ -856,39 +883,40 @@ class _TeamTile extends StatelessWidget {
       button: true,
       selected: selected,
       label: team.name,
-      child: PressableScale(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
           decoration: BoxDecoration(
-            color: AppTheme.onboardingPanelFill,
+            color: enabled
+                ? AppTheme.onboardingPanelFill
+                : AppTheme.onboardingPanelFill.withValues(alpha: 0.58),
             border: Border.all(color: borderColor, width: selected ? 2 : 1),
             boxShadow: selected
-                ? Cyber.glow(Cyber.lime, alpha: 0.18, blur: 14, spread: -2)
+                ? Cyber.glow(Cyber.lime, alpha: 0.16, blur: 12, spread: -3)
                 : null,
           ),
           child: Stack(
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 8),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    TeamLogo(team: team, width: 40, height: 44),
-                    const SizedBox(height: 7),
-                    Text(
-                      team.name.toUpperCase(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: Cyber.label(
-                        8,
-                        color: selected ? Colors.white : Cyber.muted,
-                        letterSpacing: 0.3,
-                      ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TeamLogo(team: team, width: 40, height: 44),
+                  const SizedBox(height: 7),
+                  Text(
+                    team.name.toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: Cyber.label(
+                      8,
+                      color: selected ? Colors.white : Cyber.muted,
+                      letterSpacing: 0.3,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
               if (selected) const SelectedCheckCorner(size: 20),
             ],
@@ -899,6 +927,16 @@ class _TeamTile extends StatelessWidget {
   }
 }
 
+/// A league pick — an avatar-style panel tile. Unselected reads as a calm but
+/// fully-enabled surface (panel fill + line border); selected gets a lime
+/// border, soft glow and the corner check seal — same language as the avatar
+/// and banner steps.
+/// Angled-cut, hard-base league badge — the picks-page `_LeagueMark` look. The
+/// selection affordance now lives on the surrounding panel tile, so the mark
+/// itself stays neutral.
+/// A team pick — an avatar-style panel tile. Unselected reads as a calm but
+/// fully-enabled surface; selected gets the lime border, soft glow and corner
+/// check seal — same language as the avatar and banner steps.
 // ─── Completion reveal (card-reveal style) ────────────────────────────────────
 
 /// A pack/card-reveal-style celebration: the identity card slams in with a
@@ -1044,8 +1082,8 @@ class _LaunchIntroState extends State<_LaunchIntro>
   bool _settled = false;
 
   // ── Logo: scale pop-in + spin to rest (no opacity fade, no zoom) ──
-  late final Animation<double> _appearScale =
-      Tween<double>(begin: 0, end: 1).animate(
+  late final Animation<double> _appearScale = Tween<double>(begin: 0, end: 1)
+      .animate(
         CurvedAnimation(
           parent: _ctrl,
           curve: const Interval(0, 0.22, curve: Curves.easeOutBack),
@@ -1064,8 +1102,8 @@ class _LaunchIntroState extends State<_LaunchIntro>
     parent: _ctrl,
     curve: const Interval(0.52, 0.66),
   );
-  late final Animation<double> _kickerSlide =
-      Tween<double>(begin: 12, end: 0).animate(
+  late final Animation<double> _kickerSlide = Tween<double>(begin: 12, end: 0)
+      .animate(
         CurvedAnimation(
           parent: _ctrl,
           curve: const Interval(0.52, 0.68, curve: Curves.easeOut),
@@ -1075,8 +1113,8 @@ class _LaunchIntroState extends State<_LaunchIntro>
     parent: _ctrl,
     curve: const Interval(0.64, 0.80),
   );
-  late final Animation<double> _wordSlide =
-      Tween<double>(begin: 16, end: 0).animate(
+  late final Animation<double> _wordSlide = Tween<double>(begin: 16, end: 0)
+      .animate(
         CurvedAnimation(
           parent: _ctrl,
           curve: const Interval(0.64, 0.82, curve: Curves.easeOut),
@@ -1231,15 +1269,11 @@ class _LogoMark extends StatelessWidget {
             height: size,
             fit: BoxFit.contain,
             filterQuality: FilterQuality.medium,
-            errorBuilder: (_, _, _) => Icon(
-              Icons.sports_soccer,
-              size: size * 0.5,
-              color: Cyber.cyan,
-            ),
+            errorBuilder: (_, _, _) =>
+                Icon(Icons.sports_soccer, size: size * 0.5, color: Cyber.cyan),
           ),
         ],
       ),
     );
   }
 }
-

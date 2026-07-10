@@ -1,4 +1,5 @@
 import 'package:card_game/blocs/quiz/quiz_cubit.dart';
+import 'package:card_game/models/sport_match.dart';
 import 'package:card_game/models/quiz_trivia.dart';
 import 'package:card_game/services/quiz_trivia_bank.dart';
 import 'package:card_game/services/secure_storage_service.dart';
@@ -82,22 +83,23 @@ void main() {
       final cubit = await _loaded();
       addTearDown(cubit.close);
 
-      expect(cubit.isSetUnlocked(QuizMode.easy, 2), isFalse);
+      expect(cubit.isSetUnlocked(Sport.football, QuizMode.easy, 2), isFalse);
       final outcome = await cubit.recordResult(
+        Sport.football,
         QuizMode.easy,
         setNumber: 1,
         correct: 8,
         total: kQuizQuestionsPerSet,
       );
       expect(outcome.newlyCleared, isTrue);
-      expect(cubit.isSetUnlocked(QuizMode.easy, 2), isTrue);
-      expect(cubit.setProgressFor(QuizMode.easy, 1).bestCorrect, 8);
+      expect(cubit.isSetUnlocked(Sport.football, QuizMode.easy, 2), isTrue);
+      expect(cubit.setProgressFor(Sport.football, QuizMode.easy, 1).bestCorrect, 8);
 
       final reloaded = await _loaded();
       addTearDown(reloaded.close);
-      expect(reloaded.isSetUnlocked(QuizMode.easy, 2), isTrue);
-      expect(reloaded.setProgressFor(QuizMode.easy, 1).passed, isTrue);
-      expect(reloaded.setProgressFor(QuizMode.easy, 1).bestCorrect, 8);
+      expect(reloaded.isSetUnlocked(Sport.football, QuizMode.easy, 2), isTrue);
+      expect(reloaded.setProgressFor(Sport.football, QuizMode.easy, 1).passed, isTrue);
+      expect(reloaded.setProgressFor(Sport.football, QuizMode.easy, 1).bestCorrect, 8);
     });
   });
 
@@ -115,14 +117,14 @@ void main() {
 
     test('buildQuizSet returns deterministic answer-keyed sets', () {
       for (final mode in QuizMode.values) {
-        final first = buildQuizSet(mode, 12);
-        final second = buildQuizSet(mode, 12);
+        final first = buildQuizSet(Sport.football, mode, 12);
+        final second = buildQuizSet(Sport.football, mode, 12);
         expect(first, hasLength(kQuizQuestionsPerSet));
         expect(first.map((q) => q.id), second.map((q) => q.id));
         for (final q in first) {
           expect(q.mode, mode);
           expect(q.correctIndex, inInclusiveRange(0, q.options.length - 1));
-          expect(q.id, startsWith('${mode.name}_q'));
+          expect(q.id, contains('${mode.name}_q'));
         }
       }
     });
@@ -130,7 +132,7 @@ void main() {
     test(
       'legacy random session still draws from the 500-question mode pool',
       () {
-        final session = buildQuizSession(QuizMode.hard, count: 14, seed: 42);
+        final session = buildQuizSession(Sport.football, QuizMode.hard, count: 14, seed: 42);
         expect(session, hasLength(14));
         expect(quizPoolSize(QuizMode.hard), kQuizQuestionPoolPerMode);
         expect(session.every((q) => q.mode == QuizMode.hard), isTrue);

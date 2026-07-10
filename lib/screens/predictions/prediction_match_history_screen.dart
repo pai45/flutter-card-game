@@ -48,8 +48,11 @@ class _PredictionMatchHistoryScreenState
   Future<void> _loadQuizzes() async {
     final cubit = context.read<PredictionCubit>();
     final loaded = <String, PredictionQuiz?>{};
-    for (final id in cubit.state.predictions.keys) {
-      loaded[id] = await cubit.quizFor(id);
+    for (final prediction in cubit.state.predictions.values) {
+      loaded[prediction.key] = await cubit.quizFor(
+        prediction.matchId,
+        prediction.quizId,
+      );
     }
     if (!mounted) return;
     setState(() {
@@ -73,10 +76,10 @@ class _PredictionMatchHistoryScreenState
                 final entries = _buildEntries(state);
                 final items = <_MatchHistoryItem>[
                   for (final entry in entries)
-                    if (_quizzes[entry.match.id] != null)
+                    if (_quizzes[entry.prediction.key] != null)
                       _MatchHistoryItem(
                         entry: entry,
-                        quiz: _quizzes[entry.match.id]!,
+                        quiz: _quizzes[entry.prediction.key]!,
                       ),
                 ];
                 final counts = {
@@ -165,6 +168,7 @@ class _PredictionMatchHistoryScreenState
                                     MaterialPageRoute<void>(
                                       builder: (_) => MatchPredictionScreen(
                                         match: item.entry.match,
+                                        quizId: item.prediction.quizId,
                                       ),
                                     ),
                                   ),
@@ -445,8 +449,11 @@ class _ScoreCentre extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Text(
           '${match.homeScore ?? '-'}  -  ${match.awayScore ?? '-'}',
-          style: Cyber.display(21, color: Colors.white, letterSpacing: 0.5)
-              .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+          style: Cyber.display(
+            21,
+            color: Colors.white,
+            letterSpacing: 0.5,
+          ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
         ),
       );
     }
@@ -572,18 +579,15 @@ class _MatchHistoryStrip extends StatelessWidget {
                   'RESULTS READY — TAP TO REVEAL',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.label(
-                    9,
-                    color: Cyber.gold,
-                    letterSpacing: 1,
-                  ).copyWith(
-                    shadows: [
-                      Shadow(
-                        color: Cyber.gold.withValues(alpha: 0.45),
-                        blurRadius: 10,
+                  style: Cyber.label(9, color: Cyber.gold, letterSpacing: 1)
+                      .copyWith(
+                        shadows: [
+                          Shadow(
+                            color: Cyber.gold.withValues(alpha: 0.45),
+                            blurRadius: 10,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
                 ),
               ),
             ],
@@ -682,10 +686,7 @@ class _OutcomeDot extends StatelessWidget {
 }
 
 class _EmptyHistory extends StatelessWidget {
-  const _EmptyHistory({
-    required this.hasAnyQuizzes,
-    required this.filterLabel,
-  });
+  const _EmptyHistory({required this.hasAnyQuizzes, required this.filterLabel});
 
   final bool hasAnyQuizzes;
   final String filterLabel;

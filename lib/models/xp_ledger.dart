@@ -13,6 +13,9 @@ enum XpTransactionSource {
   cardUnlock,
   quiz,
   footballChess,
+  grandPrix,
+  superOver,
+  basketball,
 }
 
 class XpLedgerEntry {

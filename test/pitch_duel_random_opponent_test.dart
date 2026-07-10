@@ -3,8 +3,11 @@ import 'dart:math';
 import 'package:card_game/blocs/game/game_bloc.dart';
 import 'package:card_game/blocs/game/game_event.dart';
 import 'package:card_game/blocs/game/game_state.dart';
+import 'package:card_game/config/enums.dart';
 import 'package:card_game/data/random_opponent_names.dart';
 import 'package:card_game/models/cards.dart';
+import 'package:card_game/models/deck.dart';
+import 'package:card_game/models/packs.dart';
 import 'package:card_game/models/progression.dart';
 import 'package:card_game/screens/game/widgets/match_phases.dart';
 import 'package:card_game/services/secure_storage_service.dart';
@@ -45,6 +48,138 @@ void main() {
 
     expect(bloc.state.opponentName, isNotNull);
     expect(randomOpponentNames, contains(bloc.state.opponentName));
+  });
+
+  test('Pitch Duel starts from a football deck without batsmen', () async {
+    final base = GameState.initial();
+    final keeper = base.deckKeeper!;
+    final footballOnlySlot = StoredDeckSlot(
+      id: 'football-only',
+      name: 'Football Only',
+      attackers: base.deckAttackers.map((card) => card.id).toList(),
+      defenders: base.deckDefenders.map((card) => card.id).toList(),
+      actions: base.deckActions.map((card) => card.id).toList(),
+      keeper: keeper.id,
+    );
+    final bloc = GameBloc(SecureGameStorage());
+    addTearDown(bloc.close);
+    bloc.emit(
+      base.copyWith(
+        loading: false,
+        deckSlots: [footballOnlySlot],
+        activeDeckId: footballOnlySlot.id,
+        deckBatsmen: const [],
+        ownedCardIds: [
+          ...base.deckAttackers.map((card) => card.id),
+          ...base.deckDefenders.map((card) => card.id),
+          keeper.id,
+        ],
+        ownedActionCardIds: base.deckActions.map((card) => card.id).toList(),
+      ),
+    );
+
+    expect(bloc.state.deckReady, isTrue);
+    expect(bloc.state.superOverDeckReady, isFalse);
+
+    bloc.add(MatchStarted());
+    await Future<void>.delayed(Duration.zero);
+
+    expect(bloc.state.phase, MatchPhase.toss);
+  });
+
+  test('cricket deck save keeps the football deck intact', () async {
+    final base = _playableState();
+    final footballSlot = defaultDeckSlots.first;
+    final cricketIds = batsmen.take(3).map((card) => card.id).toList();
+    final bloc = GameBloc(SecureGameStorage());
+    addTearDown(bloc.close);
+    bloc.emit(
+      base.copyWith(
+        deckSlots: [footballSlot],
+        activeDeckId: footballSlot.id,
+        ownedCardIds: [...base.ownedCardIds, ...cricketIds],
+      ),
+    );
+
+    bloc.add(
+      DeckSaved(
+        StoredDeckSlot(
+          id: footballSlot.id,
+          name: footballSlot.name,
+          attackers: footballSlot.attackers,
+          defenders: footballSlot.defenders,
+          actions: footballSlot.actions,
+          keeper: footballSlot.keeper,
+          batsmen: cricketIds,
+          chessFormation: footballSlot.chessFormation,
+        ),
+      ),
+    );
+    await Future<void>.delayed(Duration.zero);
+
+    expect(
+      bloc.state.deckAttackers.map((card) => card.id),
+      footballSlot.attackers,
+    );
+    expect(
+      bloc.state.deckDefenders.map((card) => card.id),
+      footballSlot.defenders,
+    );
+    expect(bloc.state.deckActions.map((card) => card.id), footballSlot.actions);
+    expect(bloc.state.deckBatsmen.map((card) => card.id), cricketIds);
+    expect(bloc.state.deckReady, isTrue);
+    expect(bloc.state.superOverDeckReady, isTrue);
+  });
+
+  test('cricket starter unlocks Super Over deck only', () async {
+    final base = _playableState();
+    final footballSlot = defaultDeckSlots.first;
+    final bloc = GameBloc(SecureGameStorage());
+    addTearDown(bloc.close);
+    bloc.emit(
+      base.copyWith(
+        deckSlots: [footballSlot],
+        activeDeckId: footballSlot.id,
+        deckBatsmen: const [],
+        starterPackClaimed: false,
+        cricketStarterPackClaimed: false,
+      ),
+    );
+
+    bloc.add(CricketStarterPackOpened());
+    await Future<void>.delayed(Duration.zero);
+
+    expect(bloc.state.cricketStarterPackClaimed, isTrue);
+    expect(bloc.state.starterPackClaimed, isFalse);
+    expect(bloc.state.deckBatsmen, hasLength(cricketStarterCardCount));
+    expect(
+      bloc.state.deckBatsmen.every((card) => card.role == PlayerRole.batsman),
+      isTrue,
+    );
+    expect(bloc.state.superOverDeckReady, isTrue);
+    expect(
+      bloc.state.deckAttackers.map((card) => card.id),
+      footballSlot.attackers,
+    );
+  });
+
+  test('football starter does not claim cricket starter', () async {
+    final base = GameState.initial();
+    final bloc = GameBloc(SecureGameStorage());
+    addTearDown(bloc.close);
+    bloc.emit(
+      base.copyWith(
+        loading: false,
+        starterPackClaimed: false,
+        cricketStarterPackClaimed: false,
+      ),
+    );
+
+    bloc.add(StarterPackOpened());
+    await Future<void>.delayed(Duration.zero);
+
+    expect(bloc.state.starterPackClaimed, isTrue);
+    expect(bloc.state.cricketStarterPackClaimed, isFalse);
   });
 
   test(

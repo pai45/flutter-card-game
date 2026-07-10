@@ -203,15 +203,25 @@ Future<void> _pumpHome(
         home: PredictionHomeScreen(
           activeTab: 0,
           onTabChanged: (_) {},
+          activeMatchSportTab: 0,
+          onMatchSportTabChanged: (_) {},
+          activeGamesSportTab: 0,
+          onGamesSportTabChanged: (_) {},
           onNavigate: (_) {},
           onOpenMatch: (_) {},
           onOpenLeague: (_) {},
           onOpenGame: onOpenGame ?? () {},
           onOpenShootout: onOpenShootout ?? () {},
-          onOpenQuiz: () {},
+          onOpenQuiz: (_) {},
           onOpenFootballBingo: () {},
           onOpenFootballChess: () {},
+          onOpenSuperOver: () {},
           onOpenGuessPlayer: () {},
+          onOpenGrandPrix: () {},
+          onOpenBasketball: () {},
+          onOpenCricketDeck: () {},
+          onOpenBasketballGuessPlayer: () {},
+          onOpenCricketGuessPlayer: () {},
         ),
       ),
     ),
@@ -265,13 +275,20 @@ class _NavCubit extends PredictionCubit {
 
 class _NavRepo implements PredictionRepository {
   @override
+  Future<List<SportMatch>> enrichFixtures(List<SportMatch> fixtures) async {
+    return fixtures;
+  }
+  @override
   Future<List<League>> leagues() async => const [_league];
 
   @override
   Future<List<SportMatch>> fixtures({DateTime? day}) async => const [];
 
   @override
-  Future<PredictionQuiz?> quizFor(String matchId) async => null;
+  Future<List<PredictionQuiz>> quizzesFor(String matchId) async => const [];
+
+  @override
+  Future<PredictionQuiz?> quizFor(String matchId, String quizId) async => null;
 
   @override
   Future<List<TeamStanding>> standings(String leagueId) async => const [];
@@ -279,12 +296,14 @@ class _NavRepo implements PredictionRepository {
   @override
   Future<PredictionVoteBreakdown?> votesFor(
     String matchId,
+    String quizId,
     String questionId,
   ) async => null;
 
   @override
   Future<List<MatchPredictionLeaderboardEntry>> matchLeaderboard(
     String matchId,
+    String quizId,
   ) async => const [];
 }
 

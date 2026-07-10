@@ -114,7 +114,6 @@ class _TutorialDialogState extends State<TutorialDialog> {
       insetPadding: const EdgeInsets.symmetric(horizontal: 24),
       child: CyberPanel(
         accent: accent,
-        solidBackground: true,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,

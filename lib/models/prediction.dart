@@ -4,6 +4,8 @@
 /// settled → result known, [correctCount]/[rewardEarned] populated.
 enum PredictionStatus { open, locked, settled }
 
+const kDefaultPredictionQuizId = 'main';
+
 enum QuizQuestionType { multipleChoice, exactScore }
 
 enum PredictionMultiplier {
@@ -81,9 +83,20 @@ class QuizQuestion {
 
 /// The full quiz for one fixture.
 class PredictionQuiz {
-  const PredictionQuiz({required this.matchId, required this.questions});
+  const PredictionQuiz({
+    required this.matchId,
+    required this.questions,
+    this.id = kDefaultPredictionQuizId,
+    this.title = 'Prediction Quiz',
+    this.subtitle,
+    this.prizeLabel,
+  });
 
+  final String id;
   final String matchId;
+  final String title;
+  final String? subtitle;
+  final String? prizeLabel;
   final List<QuizQuestion> questions;
 
   int get maxReward => questions.fold(0, (sum, q) => sum + q.reward);
@@ -150,6 +163,7 @@ class UserPrediction {
     required this.matchId,
     required this.answers,
     required this.submittedAt,
+    this.quizId = kDefaultPredictionQuizId,
     this.multipliersByQuestion = const {},
     this.status = PredictionStatus.open,
     this.correctCount,
@@ -160,19 +174,24 @@ class UserPrediction {
   final Map<String, int> answers;
   final Map<String, PredictionMultiplier> multipliersByQuestion;
   final String matchId;
+  final String quizId;
   final DateTime submittedAt;
   final PredictionStatus status;
   final int? correctCount;
   final int rewardEarned;
 
+  String get key => predictionStorageKey(matchId, quizId);
+
   UserPrediction copyWith({
     Map<String, int>? answers,
     Map<String, PredictionMultiplier>? multipliersByQuestion,
+    String? quizId,
     PredictionStatus? status,
     int? correctCount,
     int? rewardEarned,
   }) => UserPrediction(
     matchId: matchId,
+    quizId: quizId ?? this.quizId,
     answers: answers ?? this.answers,
     multipliersByQuestion: multipliersByQuestion ?? this.multipliersByQuestion,
     submittedAt: submittedAt,
@@ -183,6 +202,7 @@ class UserPrediction {
 
   Map<String, dynamic> toJson() => {
     'matchId': matchId,
+    'quizId': quizId,
     'answers': answers,
     'multipliersByQuestion': multipliersByQuestion.map(
       (questionId, multiplier) => MapEntry(questionId, multiplier.jsonKey),
@@ -195,6 +215,7 @@ class UserPrediction {
 
   factory UserPrediction.fromJson(Map<String, dynamic> json) => UserPrediction(
     matchId: json['matchId'] as String,
+    quizId: json['quizId'] as String? ?? kDefaultPredictionQuizId,
     answers: (json['answers'] as Map).map(
       (key, value) => MapEntry(key as String, value as int),
     ),
@@ -209,3 +230,6 @@ class UserPrediction {
     rewardEarned: json['rewardEarned'] as int? ?? 0,
   );
 }
+
+String predictionStorageKey(String matchId, String quizId) =>
+    '$matchId::$quizId';

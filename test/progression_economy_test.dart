@@ -78,6 +78,33 @@ void main() {
     expect(shootoutCoins(false), 5);
   });
 
+  test('grand prix XP pays by finishing position and PB, never negative', () {
+    expect(calculateGrandPrixXP(1), 26);
+    expect(calculateGrandPrixXP(2), 22);
+    expect(calculateGrandPrixXP(3), 18);
+    expect(calculateGrandPrixXP(4), 12);
+    expect(calculateGrandPrixXP(6), 12);
+    expect(calculateGrandPrixXP(7), 8);
+    expect(calculateGrandPrixXP(10), 8);
+    expect(calculateGrandPrixXP(11), 4);
+    expect(calculateGrandPrixXP(20), 4);
+    // Personal-best lap bonus stacks on any finish.
+    expect(calculateGrandPrixXP(1, personalBest: true), 29);
+    expect(calculateGrandPrixXP(20, personalBest: true), 7);
+    // Longer distances multiply the position payout (not the PB bonus).
+    expect(grandPrixXpMultiplier(1), 1);
+    expect(grandPrixXpMultiplier(3), 2);
+    expect(grandPrixXpMultiplier(5), 3);
+    expect(calculateGrandPrixXP(1, laps: 3), 52);
+    expect(calculateGrandPrixXP(1, laps: 5), 78);
+    expect(calculateGrandPrixXP(20, laps: 3), 8);
+    expect(calculateGrandPrixXP(1, personalBest: true, laps: 3), 55);
+    // Racing never subtracts XP.
+    for (var position = 1; position <= 20; position++) {
+      expect(calculateGrandPrixXP(position), greaterThan(0));
+    }
+  });
+
   test('shootout opponent fields a full five-man squad with a keeper', () {
     final cpu = generateShootoutOpponent(
       6,

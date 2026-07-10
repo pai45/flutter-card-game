@@ -65,18 +65,15 @@ class LeagueHeader extends StatelessWidget {
             height: 54,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
+              gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  league.accent,
-                  Color.lerp(league.accent, Colors.black, 0.45)!,
-                ],
+                colors: [Color(0xff4ade80), Color(0xff22c55e)], // FIFA Green
               ),
               border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
             ),
             child: Text(
-              league.shortCode,
+              'FIFA', // Hardcoded as per the design requirement, or use league.shortCode if dynamic
               style: Cyber.display(15, color: Colors.white, letterSpacing: 0.5),
             ),
           ),
@@ -87,7 +84,7 @@ class LeagueHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                league.name,
+                'FIFA World Cup 26',
                 style: Cyber.display(
                   19,
                   color: Colors.white,
@@ -291,7 +288,19 @@ class _TeamBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TeamLogo(team: team, width: 28, height: 22);
+    return Container(
+      width: 28,
+      height: 22,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: team.color,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        team.shortName,
+        style: Cyber.label(9, color: Colors.white, weight: FontWeight.w800),
+      ),
+    );
   }
 }
 

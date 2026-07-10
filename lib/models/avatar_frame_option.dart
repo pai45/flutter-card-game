@@ -32,13 +32,12 @@ class AvatarFrameOption {
 
 const int _framePrice = 150;
 
-// Football leagues all sit under the broad FIFA chip; cricket under IPL.
 const Map<String, Set<String>> _leagueSports = {
-  'epl': {'FIFA'},
-  'laliga': {'FIFA'},
-  'seriea': {'FIFA'},
-  'bundesliga': {'FIFA'},
-  'ipl': {'IPL'},
+  'epl': {'FOOTBALL'},
+  'laliga': {'FOOTBALL'},
+  'seriea': {'FOOTBALL'},
+  'bundesliga': {'FOOTBALL'},
+  'ipl': {'CRICKET'},
 };
 
 // Elite clubs that also surface under the UCL chip.
@@ -58,7 +57,7 @@ const Set<String> _uclTeams = {
 
 Set<String> _sportsFor(String leagueId, String teamId) {
   final base = {...?_leagueSports[leagueId]};
-  if (_uclTeams.contains(teamId)) base.add('UCL');
+  if (_uclTeams.contains(teamId)) base.add('FOOTBALL');
   return base;
 }
 

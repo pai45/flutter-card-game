@@ -128,6 +128,8 @@ class RivalDossier {
     bestMatchStreak: bestStreak,
     cleanSheets: cleanSheets,
     shootoutWins: shootoutWins,
+    // Rivals haven't hit the court yet — no fabricated hoop record.
+    basketballWins: 0,
     predictionsMade: predictionsMade,
     correctPredictions: correctPredictions,
     picksPlaced: picksPlaced,

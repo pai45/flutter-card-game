@@ -30,6 +30,7 @@ AchievementStats currentAchievementStats(BuildContext context) {
     bestMatchStreak: record.bestStreak,
     cleanSheets: record.cleanSheets,
     shootoutWins: record.shootoutWins,
+    basketballWins: record.basketballWins,
     predictionsMade: pred.predictionsMade,
     correctPredictions: pred.correctPredictions,
     picksPlaced: picks.positions.length,

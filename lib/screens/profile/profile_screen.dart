@@ -11,6 +11,7 @@ import '../../blocs/picks/picks_cubit.dart';
 import '../../blocs/prediction/prediction_cubit.dart';
 import '../../blocs/prediction/prediction_state.dart';
 import '../../config/enums.dart';
+import '../../config/sport_modules.dart';
 import '../../config/theme.dart';
 import '../../data/followable_leagues.dart';
 import '../../data/rival_roster.dart';
@@ -2357,6 +2358,7 @@ class _FollowingBandState extends State<_FollowingBand> {
   List<(SportTeam, String)> _favourites = const [];
   List<String> _followedLeagueIds = const [];
   Map<String, String> _favoriteTeams = const {};
+  Sport _primarySport = Sport.football;
 
   @override
   void initState() {
@@ -2365,6 +2367,9 @@ class _FollowingBandState extends State<_FollowingBand> {
   }
 
   Future<void> _load() async {
+    final primarySport = sportFromStorage(
+      await _storage.loadPrimarySportName(),
+    );
     final followed = await _storage.loadFollowedLeagueIds();
     final teams = await _storage.loadFavoriteTeams();
     final result = <(SportTeam, String)>[];
@@ -2380,6 +2385,7 @@ class _FollowingBandState extends State<_FollowingBand> {
       _favourites = result;
       _followedLeagueIds = followed;
       _favoriteTeams = teams;
+      _primarySport = primarySport;
     });
   }
 
@@ -2390,6 +2396,7 @@ class _FollowingBandState extends State<_FollowingBand> {
       backgroundColor: Colors.transparent,
       builder: (context) => _FollowingEditorSheet(
         storage: _storage,
+        primarySport: _primarySport,
         followedLeagueIds: _followedLeagueIds,
         favoriteTeams: _favoriteTeams,
       ),
@@ -2401,6 +2408,7 @@ class _FollowingBandState extends State<_FollowingBand> {
 
   @override
   Widget build(BuildContext context) {
+    final module = sportModuleFor(_primarySport);
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: ProfileCard(
@@ -2408,6 +2416,8 @@ class _FollowingBandState extends State<_FollowingBand> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            _PrimarySportChip(module: module),
+            const SizedBox(width: 10),
             Expanded(
               child: _favourites.isEmpty
                   ? Text(
@@ -2433,6 +2443,46 @@ class _FollowingBandState extends State<_FollowingBand> {
 }
 
 // ─── Following editor controls ────────────────────────────────────────────────
+
+class _PrimarySportChip extends StatelessWidget {
+  const _PrimarySportChip({required this.module});
+
+  final SportModule module;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minWidth: 76),
+      padding: const EdgeInsets.fromLTRB(9, 8, 10, 8),
+      decoration: BoxDecoration(
+        color: module.accent.withValues(alpha: 0.12),
+        border: Border.all(color: module.accent.withValues(alpha: 0.58)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(module.icon, color: module.accent, size: 20),
+          const SizedBox(width: 7),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                module.shortLabel,
+                style: Cyber.display(12, color: Colors.white),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'MODULE',
+                style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.1),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _FollowedTeamChip extends StatelessWidget {
   const _FollowedTeamChip({required this.team, required this.leagueCode});
@@ -2511,11 +2561,13 @@ class _FollowingEditButton extends StatelessWidget {
 class _FollowingEditorSheet extends StatefulWidget {
   const _FollowingEditorSheet({
     required this.storage,
+    required this.primarySport,
     required this.followedLeagueIds,
     required this.favoriteTeams,
   });
 
   final SecureGameStorage storage;
+  final Sport primarySport;
   final List<String> followedLeagueIds;
   final Map<String, String> favoriteTeams;
 
@@ -2524,15 +2576,35 @@ class _FollowingEditorSheet extends StatefulWidget {
 }
 
 class _FollowingEditorSheetState extends State<_FollowingEditorSheet> {
+  late Sport _primarySport = widget.primarySport;
   late final Set<String> _followedLeagueIds = widget.followedLeagueIds.toSet();
   late final Map<String, String> _favoriteTeams = Map.of(widget.favoriteTeams);
-  late String _activeLeagueId = _followedLeagueIds.isNotEmpty
-      ? _followedLeagueIds.first
-      : followableLeagues.first.league.id;
+  late String _activeLeagueId = _initialActiveLeagueId();
   bool _saving = false;
 
+  List<FollowableLeague> get _availableLeagues =>
+      followableLeaguesForSport(_primarySport);
+
+  String _initialActiveLeagueId() {
+    for (final leagueId in _followedLeagueIds) {
+      final entry = followableLeagueById(leagueId);
+      if (entry?.sport == _primarySport) return leagueId;
+    }
+    return _availableLeagues.first.league.id;
+  }
+
   FollowableLeague get _activeLeague =>
-      followableLeagueById(_activeLeagueId) ?? followableLeagues.first;
+      followableLeagueById(_activeLeagueId) ?? _availableLeagues.first;
+
+  void _selectSport(Sport sport) {
+    if (_primarySport == sport) return;
+    setState(() {
+      _primarySport = sport;
+      _followedLeagueIds.clear();
+      _favoriteTeams.clear();
+      _activeLeagueId = followableLeaguesForSport(sport).first.league.id;
+    });
+  }
 
   void _toggleLeague(FollowableLeague entry) {
     setState(() {
@@ -2541,7 +2613,7 @@ class _FollowingEditorSheetState extends State<_FollowingEditorSheet> {
         if (_activeLeagueId == entry.league.id) {
           _activeLeagueId = _followedLeagueIds.isNotEmpty
               ? _followedLeagueIds.first
-              : followableLeagues.first.league.id;
+              : _availableLeagues.first.league.id;
         }
       } else {
         _followedLeagueIds.add(entry.league.id);
@@ -2561,7 +2633,7 @@ class _FollowingEditorSheetState extends State<_FollowingEditorSheet> {
   Future<void> _save() async {
     setState(() => _saving = true);
     final orderedLeagueIds = [
-      for (final entry in followableLeagues)
+      for (final entry in _availableLeagues)
         if (_followedLeagueIds.contains(entry.league.id)) entry.league.id,
     ];
     final teams = {
@@ -2569,6 +2641,7 @@ class _FollowingEditorSheetState extends State<_FollowingEditorSheet> {
         if (_favoriteTeams[leagueId] != null)
           leagueId: _favoriteTeams[leagueId]!,
     };
+    await widget.storage.savePrimarySportName(_primarySport.name);
     await widget.storage.saveFollowedLeagueIds(orderedLeagueIds);
     await widget.storage.saveFavoriteTeams(teams);
     if (mounted) Navigator.of(context).pop(true);
@@ -2604,12 +2677,31 @@ class _FollowingEditorSheetState extends State<_FollowingEditorSheet> {
                 ),
               ),
               SizedBox(
+                height: 48,
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  scrollDirection: Axis.horizontal,
+                  itemBuilder: (context, index) {
+                    final module = sportModules[index];
+                    return _EditableSportPill(
+                      module: module,
+                      selected: module.sport == _primarySport,
+                      onTap: () => _selectSport(module.sport),
+                    );
+                  },
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 8),
+                  itemCount: sportModules.length,
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
                 height: 96,
                 child: ListView.separated(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   scrollDirection: Axis.horizontal,
                   itemBuilder: (context, index) {
-                    final entry = followableLeagues[index];
+                    final entry = _availableLeagues[index];
                     return _EditableLeaguePill(
                       entry: entry,
                       active: entry.league.id == _activeLeagueId,
@@ -2621,7 +2713,7 @@ class _FollowingEditorSheetState extends State<_FollowingEditorSheet> {
                   },
                   separatorBuilder: (context, index) =>
                       const SizedBox(width: 10),
-                  itemCount: followableLeagues.length,
+                  itemCount: _availableLeagues.length,
                 ),
               ),
               const SizedBox(height: 10),
@@ -2663,6 +2755,61 @@ class _FollowingEditorSheetState extends State<_FollowingEditorSheet> {
                     _saving ? 'SAVING' : 'SAVE',
                     style: Cyber.display(13, color: Cyber.bg),
                   ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EditableSportPill extends StatelessWidget {
+  const _EditableSportPill({
+    required this.module,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final SportModule module;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? Cyber.lime : module.accent;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: module.label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+          decoration: BoxDecoration(
+            color: Cyber.panel.withValues(alpha: selected ? 0.76 : 0.48),
+            border: Border.all(
+              color: color.withValues(alpha: selected ? 0.9 : 0.45),
+              width: selected ? 2 : 1,
+            ),
+            boxShadow: selected
+                ? Cyber.glow(Cyber.lime, alpha: 0.14, blur: 12, spread: -3)
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(module.icon, color: color, size: 18),
+              const SizedBox(width: 7),
+              Text(
+                module.label.toUpperCase(),
+                style: Cyber.label(
+                  10,
+                  color: selected ? Colors.white : Cyber.muted,
+                  letterSpacing: 1.0,
                 ),
               ),
             ],

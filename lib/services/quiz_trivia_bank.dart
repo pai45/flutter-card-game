@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import '../models/quiz_trivia.dart';
+import '../models/sport_match.dart';
 
 /// Authored, answer-keyed football trivia for the standalone Football Quiz
 /// game. Unlike `football_question_bank.dart` (fixture-bound prediction markets
@@ -13,13 +14,14 @@ import '../models/quiz_trivia.dart';
 /// Keep answers factually correct — this is the source of truth players score
 /// against. When in doubt, prefer evergreen facts over ones that age quickly.
 List<TriviaQuestion> buildQuizSession(
+  Sport sport,
   QuizMode mode, {
   int count = 8,
   int? seed,
 }) {
   final pool = List<TriviaQuestion>.generate(
     kQuizQuestionPoolPerMode,
-    (index) => _questionAt(mode, index + 1),
+    (index) => _questionAt(sport, mode, index + 1),
   );
   final rng = Random(seed ?? DateTime.now().microsecondsSinceEpoch);
   pool.shuffle(rng);
@@ -29,43 +31,65 @@ List<TriviaQuestion> buildQuizSession(
 /// How many questions exist for [mode] — used by the lobby to size sessions.
 int quizPoolSize(QuizMode mode) => kQuizQuestionPoolPerMode;
 
-List<TriviaQuestion> buildQuizSet(QuizMode mode, int setNumber) {
+List<TriviaQuestion> buildQuizSet(Sport sport, QuizMode mode, int setNumber) {
   final clampedSet = setNumber.clamp(1, kQuizSetCount);
   final start = (clampedSet - 1) * kQuizQuestionsPerSet + 1;
   return List<TriviaQuestion>.generate(
     kQuizQuestionsPerSet,
-    (offset) => _questionAt(mode, start + offset),
+    (offset) => _questionAt(sport, mode, start + offset),
     growable: false,
   );
 }
 
-TriviaQuestion _questionAt(QuizMode mode, int number) {
-  final authored = _bank.where((q) => q.mode == mode).toList(growable: false);
-  if (number <= authored.length) {
-    final q = authored[number - 1];
-    return TriviaQuestion(
-      id: '${mode.name}_q${number.toString().padLeft(3, '0')}',
-      mode: mode,
-      prompt: q.prompt,
-      options: q.options,
-      correctIndex: q.correctIndex,
-      backgroundAsset: q.backgroundAsset,
-    );
+TriviaQuestion _questionAt(Sport sport, QuizMode mode, int number) {
+  if (sport == Sport.football) {
+    final authored = _bank.where((q) => q.mode == mode).toList(growable: false);
+    if (number <= authored.length) {
+      final q = authored[number - 1];
+      return TriviaQuestion(
+        id: '${mode.name}_q${number.toString().padLeft(3, '0')}',
+        mode: mode,
+        prompt: q.prompt,
+        options: q.options,
+        correctIndex: q.correctIndex,
+        backgroundAsset: q.backgroundAsset,
+      );
+    }
   }
-  return _generatedQuestion(mode, number);
+  return _generatedQuestion(sport, mode, number);
 }
 
-TriviaQuestion _generatedQuestion(QuizMode mode, int number) {
+TriviaQuestion _generatedQuestion(Sport sport, QuizMode mode, int number) {
   final serial = number.toString().padLeft(3, '0');
   final variant = (number - 1) % 10;
   final cycle = ((number - 1) ~/ 10) + 1;
-  final id = '${mode.name}_q$serial';
+  final id = '${sport.name}_${mode.name}_q$serial';
 
-  final (:prompt, :options, :correctIndex) = switch (mode) {
-    QuizMode.easy => _easyScaffold(variant, cycle),
-    QuizMode.medium => _mediumScaffold(variant, cycle),
-    QuizMode.hard => _hardScaffold(variant, cycle),
-    QuizMode.global => _globalScaffold(variant, cycle),
+  final (:prompt, :options, :correctIndex) = switch (sport) {
+    Sport.football => switch (mode) {
+      QuizMode.easy => _easyScaffold(variant, cycle),
+      QuizMode.medium => _mediumScaffold(variant, cycle),
+      QuizMode.hard => _hardScaffold(variant, cycle),
+      QuizMode.global => _globalScaffold(variant, cycle),
+    },
+    Sport.cricket => switch (mode) {
+      QuizMode.easy => _cricketScaffold('Easy', variant, cycle),
+      QuizMode.medium => _cricketScaffold('Medium', variant, cycle),
+      QuizMode.hard => _cricketScaffold('Hard', variant, cycle),
+      QuizMode.global => _cricketScaffold('Global', variant, cycle),
+    },
+    Sport.basketball => switch (mode) {
+      QuizMode.easy => _basketballScaffold('Easy', variant, cycle),
+      QuizMode.medium => _basketballScaffold('Medium', variant, cycle),
+      QuizMode.hard => _basketballScaffold('Hard', variant, cycle),
+      QuizMode.global => _basketballScaffold('Global', variant, cycle),
+    },
+    Sport.f1 => switch (mode) {
+      QuizMode.easy => _f1Scaffold('Easy', variant, cycle),
+      QuizMode.medium => _f1Scaffold('Medium', variant, cycle),
+      QuizMode.hard => _f1Scaffold('Hard', variant, cycle),
+      QuizMode.global => _f1Scaffold('Global', variant, cycle),
+    },
   };
 
   return TriviaQuestion(
@@ -324,6 +348,30 @@ TriviaQuestion _generatedQuestion(QuizMode mode, int number) {
       correctIndex: 0,
     ),
   };
+}
+
+({String prompt, List<String> options, int correctIndex}) _cricketScaffold(String difficulty, int variant, int cycle) {
+  return (
+    prompt: 'Set $cycle: which is a standard cricket term? ($difficulty variant $variant)',
+    options: ['Bat', 'Racket', 'Club', 'Stick'],
+    correctIndex: 0,
+  );
+}
+
+({String prompt, List<String> options, int correctIndex}) _basketballScaffold(String difficulty, int variant, int cycle) {
+  return (
+    prompt: 'Set $cycle: how many points for a shot beyond the arc? ($difficulty variant $variant)',
+    options: ['1', '2', '3', '4'],
+    correctIndex: 2,
+  );
+}
+
+({String prompt, List<String> options, int correctIndex}) _f1Scaffold(String difficulty, int variant, int cycle) {
+  return (
+    prompt: 'Set $cycle: what does the checkered flag mean? ($difficulty variant $variant)',
+    options: ['Start', 'End of session', 'Hazard', 'Pit stop'],
+    correctIndex: 1,
+  );
 }
 
 const List<TriviaQuestion> _bank = [

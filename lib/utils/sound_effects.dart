@@ -38,6 +38,7 @@ enum SoundEffect {
   rarityPlatinum, // pack reveal payoff — top tier (walkout sting)
   matchWin, // victory screen
   matchLose, // defeat screen
+  cheering, // crowd cheering for 4, 6, or out
 }
 
 extension _SoundEffectAsset on SoundEffect {
@@ -70,6 +71,7 @@ extension _SoundEffectAsset on SoundEffect {
     SoundEffect.rarityPlatinum => 'rarity_platinum',
     SoundEffect.matchWin => 'match_win',
     SoundEffect.matchLose => 'match_lose',
+    SoundEffect.cheering => 'cheering',
   }}.wav';
 
   /// Per-effect mix level so loud/percussive cues don't overpower subtle ones.
@@ -101,6 +103,7 @@ extension _SoundEffectAsset on SoundEffect {
     SoundEffect.rarityPlatinum => 0.95,
     SoundEffect.matchWin => 0.95,
     SoundEffect.matchLose => 0.85,
+    SoundEffect.cheering => 0.8,
   };
 }
 

@@ -6,11 +6,14 @@ import '../../blocs/game/game_bloc.dart';
 import '../../blocs/prediction/prediction_cubit.dart';
 import '../../blocs/prediction/prediction_state.dart';
 import '../../config/enums.dart';
+import '../../config/sport_modules.dart';
 import '../../config/theme.dart';
 import '../../models/league.dart';
+import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
 import '../../models/streak.dart';
 import '../../utils/sound_effects.dart';
+import '../../widgets/cyber/cyber_underline_tabs.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/staggered_card_entrance.dart';
@@ -19,7 +22,6 @@ import '../../widgets/streak_widgets.dart';
 import '../profile/widgets/profile_card.dart';
 import '../shop/shop_screen.dart' show CoinIcon;
 import 'streak_calendar_screen.dart';
-import 'picks_home_view.dart';
 import 'widgets/history_hud.dart';
 import 'widgets/match_prediction_card.dart';
 
@@ -28,6 +30,10 @@ class PredictionHomeScreen extends StatefulWidget {
   const PredictionHomeScreen({
     required this.activeTab,
     required this.onTabChanged,
+    required this.activeMatchSportTab,
+    required this.onMatchSportTabChanged,
+    required this.activeGamesSportTab,
+    required this.onGamesSportTabChanged,
     required this.onNavigate,
     required this.onOpenMatch,
     required this.onOpenLeague,
@@ -36,22 +42,38 @@ class PredictionHomeScreen extends StatefulWidget {
     required this.onOpenQuiz,
     required this.onOpenFootballBingo,
     required this.onOpenFootballChess,
+    required this.onOpenSuperOver,
+    required this.onOpenCricketDeck,
     required this.onOpenGuessPlayer,
+    required this.onOpenBasketballGuessPlayer,
+    required this.onOpenCricketGuessPlayer,
+    required this.onOpenGrandPrix,
+    required this.onOpenBasketball,
     this.onAddCoins,
     super.key,
   });
 
   final int activeTab;
   final ValueChanged<int> onTabChanged;
+  final int activeMatchSportTab;
+  final ValueChanged<int> onMatchSportTabChanged;
+  final int activeGamesSportTab;
+  final ValueChanged<int> onGamesSportTabChanged;
   final ValueChanged<AppSection> onNavigate;
   final ValueChanged<SportMatch> onOpenMatch;
   final ValueChanged<League> onOpenLeague;
   final VoidCallback onOpenGame;
   final VoidCallback onOpenShootout;
-  final VoidCallback onOpenQuiz;
+  final ValueChanged<Sport> onOpenQuiz;
   final VoidCallback onOpenFootballBingo;
   final VoidCallback onOpenFootballChess;
+  final VoidCallback onOpenSuperOver;
+  final VoidCallback onOpenCricketDeck;
   final VoidCallback onOpenGuessPlayer;
+  final VoidCallback onOpenBasketballGuessPlayer;
+  final VoidCallback onOpenCricketGuessPlayer;
+  final VoidCallback onOpenGrandPrix;
+  final VoidCallback onOpenBasketball;
   final VoidCallback? onAddCoins;
 
   @override
@@ -60,6 +82,11 @@ class PredictionHomeScreen extends StatefulWidget {
 
 class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
   final Set<int> _introPlayedTabs = <int>{};
+
+  Sport get _selectedMatchSport =>
+      _predictionSports[widget.activeMatchSportTab];
+  Sport get _selectedGamesSport =>
+      _predictionSports[widget.activeGamesSportTab];
 
   @override
   Widget build(BuildContext context) {
@@ -110,6 +137,9 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
   Widget _buildTab(int tab) {
     return switch (tab) {
       0 => _MatchesTab(
+        selectedSport: _selectedMatchSport,
+        activeSportTab: widget.activeMatchSportTab,
+        onSportTabChanged: widget.onMatchSportTabChanged,
         onOpenMatch: widget.onOpenMatch,
         onOpenLeague: widget.onOpenLeague,
         onOpenGame: widget.onOpenGame,
@@ -117,19 +147,24 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
         animateIntro: _shouldAnimateIntro(0),
         onIntroPlayed: () => _markIntroPlayed(0),
       ),
-      1 => _PickTab(
-        animateIntro: _shouldAnimateIntro(1),
-        onIntroPlayed: () => _markIntroPlayed(1),
-      ),
       _ => _GamesTab(
+        selectedSport: _selectedGamesSport,
+        activeSportTab: widget.activeGamesSportTab,
+        onSportTabChanged: widget.onGamesSportTabChanged,
         onOpenGame: widget.onOpenGame,
         onOpenShootout: widget.onOpenShootout,
         onOpenQuiz: widget.onOpenQuiz,
         onOpenFootballBingo: widget.onOpenFootballBingo,
         onOpenFootballChess: widget.onOpenFootballChess,
+        onOpenSuperOver: widget.onOpenSuperOver,
+        onOpenCricketDeck: widget.onOpenCricketDeck,
         onOpenGuessPlayer: widget.onOpenGuessPlayer,
-        animateIntro: _shouldAnimateIntro(2),
-        onIntroPlayed: () => _markIntroPlayed(2),
+        onOpenBasketballGuessPlayer: widget.onOpenBasketballGuessPlayer,
+        onOpenCricketGuessPlayer: widget.onOpenCricketGuessPlayer,
+        onOpenGrandPrix: widget.onOpenGrandPrix,
+        onOpenBasketball: widget.onOpenBasketball,
+        animateIntro: _shouldAnimateIntro(1),
+        onIntroPlayed: () => _markIntroPlayed(1),
       ),
     };
   }
@@ -138,6 +173,39 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
 
   void _markIntroPlayed(int tab) {
     _introPlayedTabs.add(tab);
+  }
+}
+
+const _predictionSports = <Sport>[
+  Sport.football,
+  Sport.cricket,
+  Sport.basketball,
+  Sport.f1,
+];
+
+final _predictionSportLabels = _predictionSports
+    .map((sport) => sportModuleFor(sport).label.toUpperCase())
+    .toList(growable: false);
+
+class _PredictionSportsTabs extends StatelessWidget {
+  const _PredictionSportsTabs({
+    required this.activeIndex,
+    required this.selectedSport,
+    required this.onTap,
+  });
+
+  final int activeIndex;
+  final Sport selectedSport;
+  final ValueChanged<int> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return CyberUnderlineTabs(
+      labels: _predictionSportLabels,
+      activeIndex: activeIndex,
+      accent: sportModuleFor(selectedSport).accent,
+      onTap: onTap,
+    );
   }
 }
 
@@ -154,21 +222,10 @@ class _PredictionBackground extends StatelessWidget {
 /// cyan / green / orange — which the gliding active plate morphs between.
 final List<CyberGlidingTab> _predictionTopTabs = <CyberGlidingTab>[
   CyberGlidingTab(
-    label: 'PREDICT',
+    label: 'MATCH',
     accent: Cyber.cyan,
     icon: (color) => SvgPicture.asset(
       'assets/icons/match.svg',
-      width: 18,
-      height: 18,
-      fit: BoxFit.contain,
-      colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-    ),
-  ),
-  CyberGlidingTab(
-    label: 'PICK',
-    accent: Cyber.lime,
-    icon: (color) => SvgPicture.asset(
-      'assets/icons/pick.svg',
       width: 18,
       height: 18,
       fit: BoxFit.contain,
@@ -190,6 +247,9 @@ final List<CyberGlidingTab> _predictionTopTabs = <CyberGlidingTab>[
 
 class _MatchesTab extends StatefulWidget {
   const _MatchesTab({
+    required this.selectedSport,
+    required this.activeSportTab,
+    required this.onSportTabChanged,
     required this.onOpenMatch,
     required this.onOpenLeague,
     required this.onOpenGame,
@@ -198,6 +258,9 @@ class _MatchesTab extends StatefulWidget {
     required this.onIntroPlayed,
   });
 
+  final Sport selectedSport;
+  final int activeSportTab;
+  final ValueChanged<int> onSportTabChanged;
   final ValueChanged<SportMatch> onOpenMatch;
   final ValueChanged<League> onOpenLeague;
   final VoidCallback onOpenGame;
@@ -215,6 +278,17 @@ class _MatchesTabState extends State<_MatchesTab> {
   double _daySwipeDelta = 0;
   int _dayGeneration = 0;
   bool _slideFromLeft = true;
+  bool _showNewGamesCallout = true;
+
+  @override
+  void didUpdateWidget(covariant _MatchesTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedSport != widget.selectedSport) {
+      _selectedDay = _startOfDay(DateTime.now());
+      _slideFromLeft = true;
+      _dayGeneration++;
+    }
+  }
 
   bool _hasDay(List<DateTime> days, DateTime day) {
     final normalized = _startOfDay(day);
@@ -290,131 +364,191 @@ class _MatchesTabState extends State<_MatchesTab> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PredictionCubit, PredictionState>(
-      builder: (context, state) {
-        if (state.loading) return const _PickSkeleton();
-        final days = _calendarDays(state.fixtures);
-        if (!days.any((day) => _sameDay(day, _selectedDay))) {
-          _selectedDay = _startOfDay(DateTime.now());
-        }
-        final selectedFixtures = state.fixtures
-            .where((fixture) => _sameDay(fixture.kickoff, _selectedDay))
-            .toList();
-        final grouped = _groupByLeague(state.leagues, selectedFixtures);
-        final animateIntro =
-            widget.animateIntro && !_introPlayed && selectedFixtures.isNotEmpty;
-        if (animateIntro) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            _introPlayed = true;
-            widget.onIntroPlayed?.call();
-          });
-        }
-        final animateCards = animateIntro || _dayGeneration > 0;
-        var cardEntranceIndex = 0;
-        return GestureDetector(
-          key: const ValueKey('match-day-swipe-area'),
-          behavior: HitTestBehavior.translucent,
-          onHorizontalDragStart: _handleDaySwipeStart,
-          onHorizontalDragUpdate: _handleDaySwipeUpdate,
-          onHorizontalDragEnd: (details) => _handleDaySwipeEnd(days, details),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-            children: [
-              _NewGamesReleaseCard(
-                key: const ValueKey('new-games-release-card'),
-                onTap: _openNewGamesRelease,
-              ),
-              const SizedBox(height: 14),
-              Row(
-                children: [
-                  Expanded(
-                    child: _MatchDayNavigator(
-                      dayLabel: _dayHeading(_selectedDay),
-                      matchCount: selectedFixtures.length,
-                      canGoPrevious: _canMoveDay(days, -1),
-                      canGoNext: _canMoveDay(days, 1),
-                      onPrevious: () => _moveDay(days, -1),
-                      onNext: () => _moveDay(days, 1),
-                      onCalendar: () {
-                        playSound(SoundEffect.uiTap);
-                        _openCalendar(days);
-                      },
+    return Column(
+      children: [
+        _PredictionSportsTabs(
+          activeIndex: widget.activeSportTab,
+          selectedSport: widget.selectedSport,
+          onTap: widget.onSportTabChanged,
+        ),
+        Expanded(
+          child: BlocBuilder<PredictionCubit, PredictionState>(
+            builder: (context, state) {
+              if (state.loading) return const _PickSkeleton();
+              final sportFixtures = state.fixtures
+                  .where((fixture) => fixture.sport == widget.selectedSport)
+                  .toList();
+              final days = _calendarDays(sportFixtures);
+              final today = _startOfDay(DateTime.now());
+              if (!days.any((day) => _sameDay(day, _selectedDay)) &&
+                  !_sameDay(_selectedDay, today)) {
+                _selectedDay = days.any((day) => _sameDay(day, today))
+                    ? today
+                    : (days.isNotEmpty ? days.first : today);
+              }
+              final selectedFixtures = sportFixtures
+                  .where((fixture) => _sameDay(fixture.kickoff, _selectedDay))
+                  .toList();
+              final upcomingDays = days
+                  .where((d) => !d.isBefore(_selectedDay))
+                  .toList();
+              final groupedByDay = <DateTime, Map<League, List<SportMatch>>>{};
+              for (final day in upcomingDays) {
+                final dayFixtures = sportFixtures
+                    .where((fixture) => _sameDay(fixture.kickoff, day))
+                    .toList();
+                if (dayFixtures.isNotEmpty) {
+                  groupedByDay[day] = _groupByLeague(
+                    state.leagues,
+                    dayFixtures,
+                  );
+                }
+              }
+              final animateIntro =
+                  widget.animateIntro &&
+                  !_introPlayed &&
+                  groupedByDay.isNotEmpty;
+              if (animateIntro) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  _introPlayed = true;
+                  widget.onIntroPlayed?.call();
+                });
+              }
+              final animateCards = animateIntro || _dayGeneration > 0;
+              var cardEntranceIndex = 0;
+              return GestureDetector(
+                key: const ValueKey('match-day-swipe-area'),
+                behavior: HitTestBehavior.translucent,
+                onHorizontalDragStart: _handleDaySwipeStart,
+                onHorizontalDragUpdate: _handleDaySwipeUpdate,
+                onHorizontalDragEnd: (details) =>
+                    _handleDaySwipeEnd(days, details),
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                  children: [
+                    if (_showNewGamesCallout) ...[
+                      _NewGamesReleaseCard(
+                        key: const ValueKey('new-games-release-card'),
+                        onTap: _openNewGamesRelease,
+                        onClose: () {
+                          setState(() {
+                            _showNewGamesCallout = false;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 14),
+                    ],
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _MatchDayNavigator(
+                            dayLabel: _dayHeading(_selectedDay),
+                            matchCount: selectedFixtures.length,
+                            canGoPrevious: _canMoveDay(days, -1),
+                            canGoNext: _canMoveDay(days, 1),
+                            onPrevious: () => _moveDay(days, -1),
+                            onNext: () => _moveDay(days, 1),
+                            onCalendar: () {
+                              playSound(SoundEffect.uiTap);
+                              _openCalendar(days);
+                            },
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (grouped.isEmpty)
-                _EmptyMatchDay(day: _selectedDay)
-              else
-                for (final entry in grouped.entries) ...[
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () {
-                      playSound(SoundEffect.uiTap);
-                      widget.onOpenLeague(entry.key);
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 8, top: 4),
-                      child: Row(
-                        children: [
-                          Text(
-                            entry.key.shortCode,
-                            style:
-                                Cyber.display(
-                                  18,
-                                  color: Cyber.cyan.withValues(alpha: 0.85),
-                                  letterSpacing: 2,
-                                ).copyWith(
-                                  fontFeatures: const [
-                                    FontFeature.tabularFigures(),
-                                  ],
+                    const SizedBox(height: 12),
+                    if (groupedByDay.isEmpty)
+                      _EmptyMatchDay(day: _selectedDay)
+                    else
+                      for (final dayEntry in groupedByDay.entries) ...[
+                        if (!_sameDay(dayEntry.key, _selectedDay))
+                          _DayDividerRow(day: dayEntry.key),
+                        for (final entry in dayEntry.value.entries) ...[
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {
+                              playSound(SoundEffect.uiTap);
+                              widget.onOpenLeague(entry.key);
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 8, top: 4),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    entry.key.shortCode,
+                                    style:
+                                        Cyber.display(
+                                          18,
+                                          color: Cyber.cyan.withValues(
+                                            alpha: 0.85,
+                                          ),
+                                          letterSpacing: 2,
+                                        ).copyWith(
+                                          fontFeatures: const [
+                                            FontFeature.tabularFigures(),
+                                          ],
+                                        ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Container(
+                                      height: 1,
+                                      color: entry.key.accent.withValues(
+                                        alpha: 0.25,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    'ALL GAMES',
+                                    style: Cyber.label(
+                                      9,
+                                      color: Cyber.muted,
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          for (final match in entry.value) ...[
+                            StaggeredCardEntrance(
+                              key: ValueKey(
+                                'day-$_dayGeneration-$cardEntranceIndex',
+                              ),
+                              index: cardEntranceIndex++,
+                              animate: animateCards,
+                              slideFromLeft: _slideFromLeft,
+                              child: MatchPredictionCard(
+                                match: match,
+                                prediction: state.predictionSummaryForMatch(
+                                  match.id,
                                 ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Container(
-                              height: 1,
-                              color: entry.key.accent.withValues(alpha: 0.25),
+                                quiz:
+                                    state.quizzes[predictionStorageKey(
+                                      match.id,
+                                      state
+                                              .predictionSummaryForMatch(
+                                                match.id,
+                                              )
+                                              ?.quizId ??
+                                          kDefaultPredictionQuizId,
+                                    )],
+                                onTap: () => widget.onOpenMatch(match),
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            'STANDINGS',
-                            style: Cyber.label(
-                              9,
-                              color: Cyber.muted,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
+                            const SizedBox(height: 16),
+                          ],
                         ],
-                      ),
-                    ),
-                  ),
-                  for (final match in entry.value) ...[
-                    StaggeredCardEntrance(
-                      key: ValueKey('day-$_dayGeneration-$cardEntranceIndex'),
-                      index: cardEntranceIndex++,
-                      animate: animateCards,
-                      slideFromLeft: _slideFromLeft,
-                      child: MatchPredictionCard(
-                        match: match,
-                        prediction: state.predictionFor(match.id),
-                        onTap:
-                            (match.predictable ||
-                                state.predictionFor(match.id) != null)
-                            ? () => widget.onOpenMatch(match)
-                            : null,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+                      ],
                   ],
-                ],
-            ],
+                ),
+              );
+            },
           ),
-        );
-      },
+        ),
+      ],
     );
   }
 
@@ -432,9 +566,10 @@ class _MatchesTabState extends State<_MatchesTab> {
 }
 
 class _NewGamesReleaseCard extends StatelessWidget {
-  const _NewGamesReleaseCard({required this.onTap, super.key});
+  const _NewGamesReleaseCard({required this.onTap, this.onClose, super.key});
 
   final VoidCallback onTap;
+  final VoidCallback? onClose;
 
   @override
   Widget build(BuildContext context) {
@@ -477,6 +612,15 @@ class _NewGamesReleaseCard extends StatelessWidget {
                       style: Cyber.display(17, letterSpacing: 1.1),
                     ),
                   ),
+                  if (onClose != null)
+                    GestureDetector(
+                      onTap: onClose,
+                      behavior: HitTestBehavior.opaque,
+                      child: const Padding(
+                        padding: EdgeInsets.all(4.0),
+                        child: Icon(Icons.close, color: Cyber.muted, size: 20),
+                      ),
+                    ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -888,6 +1032,39 @@ class _MatchDayArrowButton extends StatelessWidget {
   }
 }
 
+class _DayDividerRow extends StatelessWidget {
+  const _DayDividerRow({required this.day});
+  final DateTime day;
+
+  @override
+  Widget build(BuildContext context) {
+    const months = [
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ];
+    final header = '${day.day} ${months[day.month - 1]}';
+    return Padding(
+      padding: const EdgeInsets.only(top: 8, bottom: 16),
+      child: Center(
+        child: Text(
+          header,
+          style: Cyber.display(15, color: Cyber.cyan, letterSpacing: 1.5),
+        ),
+      ),
+    );
+  }
+}
+
 class _EmptyMatchDay extends StatelessWidget {
   const _EmptyMatchDay({required this.day});
 
@@ -970,17 +1147,6 @@ String _monthDayLabel(DateTime day) {
     'Dec',
   ];
   return '${months[day.month - 1]} ${day.day}';
-}
-
-class _PickTab extends StatelessWidget {
-  const _PickTab({required this.animateIntro, required this.onIntroPlayed});
-
-  final bool animateIntro;
-  final VoidCallback? onIntroPlayed;
-
-  @override
-  Widget build(BuildContext context) =>
-      PicksHomeView(animateIntro: animateIntro, onIntroPlayed: onIntroPlayed);
 }
 
 // ignore: unused_element
@@ -2138,22 +2304,40 @@ class _PickSkeleton extends StatelessWidget {
 
 class _GamesTab extends StatefulWidget {
   const _GamesTab({
+    required this.selectedSport,
+    required this.activeSportTab,
+    required this.onSportTabChanged,
     required this.onOpenGame,
     required this.onOpenShootout,
     required this.onOpenQuiz,
     required this.onOpenFootballBingo,
     required this.onOpenFootballChess,
+    required this.onOpenSuperOver,
+    required this.onOpenCricketDeck,
     required this.onOpenGuessPlayer,
+    required this.onOpenBasketballGuessPlayer,
+    required this.onOpenCricketGuessPlayer,
+    required this.onOpenGrandPrix,
+    required this.onOpenBasketball,
     required this.animateIntro,
     required this.onIntroPlayed,
   });
 
+  final Sport selectedSport;
+  final int activeSportTab;
+  final ValueChanged<int> onSportTabChanged;
   final VoidCallback onOpenGame;
   final VoidCallback onOpenShootout;
-  final VoidCallback onOpenQuiz;
+  final ValueChanged<Sport> onOpenQuiz;
   final VoidCallback onOpenFootballBingo;
   final VoidCallback onOpenFootballChess;
+  final VoidCallback onOpenSuperOver;
+  final VoidCallback onOpenCricketDeck;
   final VoidCallback onOpenGuessPlayer;
+  final VoidCallback onOpenBasketballGuessPlayer;
+  final VoidCallback onOpenCricketGuessPlayer;
+  final VoidCallback onOpenGrandPrix;
+  final VoidCallback onOpenBasketball;
   final bool animateIntro;
   final VoidCallback? onIntroPlayed;
 
@@ -2180,6 +2364,147 @@ class _GamesTabState extends State<_GamesTab> {
         widget.onIntroPlayed?.call();
       });
     }
+    return Column(
+      children: [
+        _PredictionSportsTabs(
+          activeIndex: widget.activeSportTab,
+          selectedSport: widget.selectedSport,
+          onTap: widget.onSportTabChanged,
+        ),
+        Expanded(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 240),
+            transitionBuilder: (child, animation) {
+              final slide = Tween<Offset>(
+                begin: const Offset(0, 0.03),
+                end: Offset.zero,
+              ).animate(animation);
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(position: slide, child: child),
+              );
+            },
+            child: KeyedSubtree(
+              key: ValueKey<Sport>(widget.selectedSport),
+              child: _buildSportTab(animateIntro, streaks),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSportTab(bool animateIntro, ({int pitch, int penalty}) streaks) {
+    return switch (widget.selectedSport) {
+      Sport.football => _buildFootballGames(animateIntro, streaks),
+      Sport.f1 => _buildF1Games(animateIntro),
+      Sport.basketball => _buildBasketballGames(animateIntro),
+      Sport.cricket => _buildCricketGames(animateIntro),
+    };
+  }
+
+  Widget _buildBasketballGames(bool animateIntro) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: [
+        StaggeredCardEntrance(
+          index: 0,
+          animate: animateIntro,
+          child: _GameTile(
+            title: 'HOOP DUEL',
+            subtitle: 'STREET 1-ON-1 ARCADE HOOPS',
+            icon: Icons.sports_basketball,
+            accent: Cyber.gold,
+            featured: true,
+            showTrailingIcon: false,
+            onTap: widget.onOpenBasketball,
+          ),
+        ),
+        const SizedBox(height: 12),
+        StaggeredCardEntrance(
+          index: 1,
+          animate: animateIntro,
+          child: _GameTile(
+            title: 'GUESS THE PLAYER',
+            subtitle: 'DAILY BASKETBALL MYSTERY',
+            icon: Icons.person_search,
+            accent: Cyber.pink,
+            featured: true,
+            showTrailingIcon: false,
+            onTap: widget.onOpenBasketballGuessPlayer,
+          ),
+        ),
+        const SizedBox(height: 12),
+        StaggeredCardEntrance(
+          index: 2,
+          animate: animateIntro,
+          child: _GameTile(
+            title: 'BASKETBALL QUIZ',
+            subtitle: 'TRIVIA GAUNTLET',
+            icon: Icons.quiz,
+            accent: Cyber.violet,
+            featured: true,
+            showTrailingIcon: false,
+            onTap: () => widget.onOpenQuiz(Sport.basketball),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCricketGames(bool animateIntro) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: [
+        StaggeredCardEntrance(
+          index: 0,
+          animate: animateIntro,
+          child: _GameTile(
+            title: 'SUPER OVER',
+            subtitle: 'ARCADE CRICKET BATTING',
+            icon: Icons.sports_cricket,
+            accent: Cyber.lime,
+            featured: true,
+            showTrailingIcon: false,
+            onTap: widget.onOpenSuperOver,
+          ),
+        ),
+        const SizedBox(height: 12),
+        StaggeredCardEntrance(
+          index: 1,
+          animate: animateIntro,
+          child: _GameTile(
+            title: 'GUESS THE PLAYER',
+            subtitle: 'DAILY CRICKET MYSTERY',
+            icon: Icons.person_search,
+            accent: Cyber.pink,
+            featured: true,
+            showTrailingIcon: false,
+            onTap: widget.onOpenCricketGuessPlayer,
+          ),
+        ),
+        const SizedBox(height: 12),
+        StaggeredCardEntrance(
+          index: 2,
+          animate: animateIntro,
+          child: _GameTile(
+            title: 'CRICKET QUIZ',
+            subtitle: 'TRIVIA GAUNTLET',
+            icon: Icons.quiz,
+            accent: Cyber.violet,
+            featured: true,
+            showTrailingIcon: false,
+            onTap: () => widget.onOpenQuiz(Sport.cricket),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFootballGames(
+    bool animateIntro,
+    ({int pitch, int penalty}) streaks,
+  ) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
@@ -2237,7 +2562,7 @@ class _GamesTabState extends State<_GamesTab> {
             accent: Cyber.violet,
             featured: true,
             showTrailingIcon: false,
-            onTap: widget.onOpenQuiz,
+            onTap: () => widget.onOpenQuiz(Sport.football),
           ),
         ),
         const SizedBox(height: 12),
@@ -2268,16 +2593,39 @@ class _GamesTabState extends State<_GamesTab> {
             onTap: widget.onOpenGuessPlayer,
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildF1Games(bool animateIntro) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: [
+        StaggeredCardEntrance(
+          index: 0,
+          animate: animateIntro,
+          child: _GameTile(
+            title: 'GRAND PRIX DASH',
+            subtitle: 'ONE-LAP ARCADE RACER',
+            icon: Icons.sports_motorsports,
+            accent: Cyber.f1Red,
+            featured: true,
+            showTrailingIcon: false,
+            onTap: widget.onOpenGrandPrix,
+          ),
+        ),
         const SizedBox(height: 12),
         StaggeredCardEntrance(
-          index: 6,
+          index: 1,
           animate: animateIntro,
-          child: const _GameTile(
-            title: 'ACCURACY CHALLENGE',
-            subtitle: 'COMING SOON',
-            icon: Icons.track_changes,
+          child: _GameTile(
+            title: 'F1 QUIZ',
+            subtitle: 'TRIVIA GAUNTLET',
+            icon: Icons.quiz,
             accent: Cyber.violet,
-            locked: true,
+            featured: true,
+            showTrailingIcon: false,
+            onTap: () => widget.onOpenQuiz(Sport.f1),
           ),
         ),
       ],
@@ -2294,7 +2642,6 @@ class _GameTile extends StatelessWidget {
     required this.icon,
     required this.accent,
     this.onTap,
-    this.locked = false,
     this.featured = false,
     this.streak = 0,
     this.showTrailingIcon = true,
@@ -2305,7 +2652,6 @@ class _GameTile extends StatelessWidget {
   final IconData icon;
   final Color accent;
   final VoidCallback? onTap;
-  final bool locked;
   final bool featured;
   final int streak;
   final bool showTrailingIcon;
@@ -2315,28 +2661,27 @@ class _GameTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderAlpha = locked ? 0.38 : 0.82;
-    final borderColor = accent.withValues(alpha: borderAlpha);
+    final borderColor = accent.withValues(alpha: 0.82);
 
     return Opacity(
-      opacity: locked ? 0.52 : 1,
+      opacity: 1,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: locked ? null : onTap,
+        onTap: onTap,
         child: CustomPaint(
           painter: _HudChamferCardPainter(
             bigCut: _bigCut,
             smallCut: _smallCut,
             fillColor: Cyber.panel,
             borderColor: borderColor,
-            borderGlow: !locked && featured,
+            borderGlow: featured,
           ),
           child: ClipPath(
             clipper: const HudChamferClipper(
               bigCut: _bigCut,
               smallCut: _smallCut,
             ),
-            child: featured && !locked
+            child: featured
                 ? _FeaturedBody(
                     title: title,
                     subtitle: subtitle,
@@ -2351,7 +2696,6 @@ class _GameTile extends StatelessWidget {
                     subtitle: subtitle,
                     icon: icon,
                     accent: accent,
-                    locked: locked,
                     showTrailingIcon: showTrailingIcon,
                   ),
           ),
@@ -2367,7 +2711,6 @@ class _CompactBody extends StatelessWidget {
     required this.subtitle,
     required this.icon,
     required this.accent,
-    required this.locked,
     required this.showTrailingIcon,
   });
 
@@ -2375,7 +2718,6 @@ class _CompactBody extends StatelessWidget {
   final String subtitle;
   final IconData icon;
   final Color accent;
-  final bool locked;
   final bool showTrailingIcon;
 
   @override
@@ -2395,9 +2737,7 @@ class _CompactBody extends StatelessWidget {
                   style: Cyber.display(
                     17,
                     letterSpacing: 1,
-                    color: locked
-                        ? Colors.white.withValues(alpha: 0.45)
-                        : Colors.white,
+                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -2405,21 +2745,15 @@ class _CompactBody extends StatelessWidget {
                   subtitle,
                   style: Cyber.label(
                     9,
-                    color: locked
-                        ? Cyber.muted
-                        : accent.withValues(alpha: 0.65),
+                    color: accent.withValues(alpha: 0.65),
                     letterSpacing: 1.4,
                   ),
                 ),
               ],
             ),
           ),
-          if (showTrailingIcon || locked)
-            Icon(
-              locked ? Icons.lock_outline : Icons.chevron_right,
-              color: locked ? accent.withValues(alpha: 0.55) : accent,
-              size: 22,
-            ),
+          if (showTrailingIcon)
+            Icon(Icons.chevron_right, color: accent, size: 22),
         ],
       ),
     );

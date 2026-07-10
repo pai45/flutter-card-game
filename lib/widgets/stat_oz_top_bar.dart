@@ -91,11 +91,10 @@ class _TopBarStreak extends StatelessWidget {
     final content = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SvgPicture.asset(
-          'assets/icons/streak.svg',
-          width: 22,
-          height: 22,
-          fit: BoxFit.contain,
+        const Icon(
+          Icons.local_fire_department_outlined,
+          color: StreakTheme.primary,
+          size: 22,
         ),
         const SizedBox(width: 6),
         Text(

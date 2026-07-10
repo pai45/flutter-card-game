@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../config/enums.dart';
 import '../config/theme.dart';
@@ -17,7 +16,7 @@ class LandingBottomNavigation extends StatelessWidget {
   });
 
   /// With [includeShop] true: 0 = Home, 1 = Leaderboard, 2 = Shop, 3 = Profile.
-  /// With [includeShop] false: 0 = Matches, 1 = Shop, 2 = Top, 3 = Profile.
+  /// With [includeShop] false: 0 = Sports, 1 = Shop, 2 = Top, 3 = Profile.
   final int selectedIndex;
   final ValueChanged<AppSection> onNavigate;
   final bool includeShop;
@@ -56,11 +55,10 @@ class LandingBottomNavigation extends StatelessWidget {
   static const List<_NavSpec> _predictionItems = [
     _NavSpec(
       section: AppSection.predictions,
-      icon: Icons.sports_esports,
-      activeIcon: Icons.sports_esports,
-      label: 'MATCHES',
+      icon: Icons.sports_soccer_outlined,
+      activeIcon: Icons.sports_soccer,
+      label: 'SPORTS',
       accent: Color(0xffc27aff),
-      iconKind: _NavIconKind.matches,
       activeFontSize: 12,
     ),
     _NavSpec(
@@ -126,8 +124,6 @@ class LandingBottomNavigation extends StatelessWidget {
   }
 }
 
-enum _NavIconKind { material, matches }
-
 class _NavSpec {
   const _NavSpec({
     required this.section,
@@ -135,7 +131,6 @@ class _NavSpec {
     required this.activeIcon,
     required this.label,
     required this.accent,
-    this.iconKind = _NavIconKind.material,
     this.activeFontSize = 10,
   });
 
@@ -144,7 +139,6 @@ class _NavSpec {
   final IconData activeIcon;
   final String label;
   final Color accent;
-  final _NavIconKind iconKind;
   final double activeFontSize;
 }
 
@@ -218,22 +212,8 @@ class _NavIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (spec.iconKind == _NavIconKind.matches) {
-      return SizedBox(
-        width: 20,
-        height: 20,
-        child: SvgPicture.string(
-          _matchesFooterIconSvg,
-          colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-        ),
-      );
-    }
-
     return Icon(active ? spec.activeIcon : spec.icon, color: color, size: 20);
   }
 }
-
-const _matchesFooterIconSvg =
-    '<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M580-360v-240h180v240H580Zm60-60h60v-120h-60v120Zm-440 60v-140h120v-40H200v-60h180v140H260v40h120v60H200Zm250-160v-60h60v60h-60Zm0 140v-60h60v60h-60ZM80-160v-640h200v-80h80v80h240v-80h80v80h200v640H80Zm80-80h290v-60h60v60h290v-480H510v60h-60v-60H160v480Zm0 0v-480 480Z"/></svg>';
 
 const _inactive = Color(0xff6a7282);

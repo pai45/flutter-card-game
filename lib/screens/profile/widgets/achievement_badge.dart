@@ -160,7 +160,6 @@ Future<void> showAchievementDetail(
         constraints: const BoxConstraints(maxWidth: 340),
         child: CyberPanel(
           accent: tier,
-          solidBackground: true,
           padding: const EdgeInsets.fromLTRB(22, 24, 22, 22),
           child: Column(
             mainAxisSize: MainAxisSize.min,

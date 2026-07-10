@@ -197,7 +197,12 @@ class _FaceoffCard extends StatelessWidget {
               fit: StackFit.expand,
               children: [
                 DecoratedBox(
-                  decoration: BoxDecoration(gradient: Cyber.panelGradient(tier)),
+                  decoration: BoxDecoration(
+                    color: Color.alphaBlend(
+                      tier.withValues(alpha: 0.16),
+                      Cyber.panel,
+                    ),
+                  ),
                 ),
                 Positioned(
                   left: 2,
@@ -284,7 +289,9 @@ class _FaceoffCard extends StatelessWidget {
   }
 
   Widget _fallback(Color tier) => DecoratedBox(
-    decoration: BoxDecoration(gradient: Cyber.panelGradient(tier)),
+    decoration: BoxDecoration(
+      color: Color.alphaBlend(tier.withValues(alpha: 0.16), Cyber.panel),
+    ),
     child: Center(
       child: Icon(card.icon, color: tier.withValues(alpha: 0.85), size: 24),
     ),

@@ -14,6 +14,7 @@ class AchievementStats {
     required this.bestMatchStreak,
     required this.cleanSheets,
     required this.shootoutWins,
+    required this.basketballWins,
     required this.predictionsMade,
     required this.correctPredictions,
     required this.picksPlaced,
@@ -33,6 +34,7 @@ class AchievementStats {
       bestMatchStreak = 0,
       cleanSheets = 0,
       shootoutWins = 0,
+      basketballWins = 0,
       predictionsMade = 0,
       correctPredictions = 0,
       picksPlaced = 0,
@@ -50,6 +52,7 @@ class AchievementStats {
   final int bestMatchStreak;
   final int cleanSheets;
   final int shootoutWins;
+  final int basketballWins;
   final int predictionsMade;
   final int correctPredictions;
   final int picksPlaced;
@@ -171,6 +174,26 @@ final List<Achievement> achievementCatalog = [
     category: AchievementCategory.matches,
     target: 1,
     measure: (s) => s.shootoutWins,
+  ),
+  Achievement(
+    id: 'first_bucket',
+    title: 'First Bucket',
+    description: 'Win a Hoop Duel match.',
+    icon: Icons.sports_basketball,
+    tier: CardTier.silver,
+    category: AchievementCategory.matches,
+    target: 1,
+    measure: (s) => s.basketballWins,
+  ),
+  Achievement(
+    id: 'court_king',
+    title: 'Court King',
+    description: 'Win 5 Hoop Duel matches.',
+    icon: Icons.emoji_events,
+    tier: CardTier.gold,
+    category: AchievementCategory.matches,
+    target: 5,
+    measure: (s) => s.basketballWins,
   ),
   Achievement(
     id: 'veteran',

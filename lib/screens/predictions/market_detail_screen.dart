@@ -17,7 +17,7 @@ import '../../models/sport_match.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../shop/shop_screen.dart' show CoinIcon;
-import 'match_prediction_screen.dart';
+import 'match_detail_screen.dart';
 import 'widgets/pick_settlement_reveal.dart';
 import 'widgets/pick_status_style.dart';
 import 'widgets/pick_trade_sheet.dart';
@@ -258,7 +258,7 @@ class _LinkedPredictionQuizCta extends StatelessWidget {
               playSound(SoundEffect.playMatch);
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute<void>(
-                  builder: (_) => MatchPredictionScreen(match: match),
+                  builder: (_) => MatchDetailScreen(match: match),
                 ),
               );
             },

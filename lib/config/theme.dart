@@ -555,6 +555,7 @@ class Cyber {
   static const cyan = AppTheme.textPrimary;
   static const accentGlow = Color(0x405cdfff);
   static const magenta = AppTheme.matchesLabel;
+  static const f1Red = Color(0xFFFF3131);
   static const lime = AppTheme.pickLabel;
   static const amber = AppTheme.gamesLabel;
   static const gold = AppTheme.yellowColor;
@@ -575,13 +576,6 @@ class Cyber {
 
   static const displayFont = 'Orbitron';
   static const bodyFont = 'Onest';
-
-  static LinearGradient panelGradient([Color? glow]) => LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [(glow ?? cyan).withValues(alpha: 0.16), panel, panel2],
-    stops: const [0, 0.42, 1],
-  );
 
   static List<BoxShadow> glow(
     Color color, {

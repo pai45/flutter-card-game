@@ -1,6 +1,9 @@
 import 'dart:math';
+import 'dart:io';
 
 import 'package:card_game/config/enums.dart';
+import 'package:card_game/models/cards.dart';
+import 'package:card_game/models/packs.dart';
 import 'package:card_game/models/starter_pack.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -76,10 +79,7 @@ void main() {
 
     test('players have the correct roles', () {
       final pack = rollDefaultStarterPack(random: Random(7));
-      expect(
-        pack.strikers.every((c) => c.role == PlayerRole.attacker),
-        isTrue,
-      );
+      expect(pack.strikers.every((c) => c.role == PlayerRole.attacker), isTrue);
       expect(
         pack.defenders.every((c) => c.role == PlayerRole.defender),
         isTrue,
@@ -90,18 +90,17 @@ void main() {
     test('action cards split 3-2 between attack and defense', () {
       for (var seed = 0; seed < 50; seed++) {
         final pack = rollDefaultStarterPack(random: Random(seed));
-        final counts = [
-          pack.attackActions.length,
-          pack.defenseActions.length,
-        ]..sort();
+        final counts = [pack.attackActions.length, pack.defenseActions.length]
+          ..sort();
         expect(counts, [2, 3], reason: 'seed $seed should be a 3-2 split');
         expect(
           pack.attackActions.every((c) => c.category == ActionCategory.attack),
           isTrue,
         );
         expect(
-          pack.defenseActions
-              .every((c) => c.category == ActionCategory.defense),
+          pack.defenseActions.every(
+            (c) => c.category == ActionCategory.defense,
+          ),
           isTrue,
         );
       }
@@ -121,6 +120,88 @@ void main() {
       final pack = rollDefaultStarterPack(random: Random(99));
       final total = pack.rarityBreakdown.values.reduce((a, b) => a + b);
       expect(total, 10);
+    });
+  });
+
+  group('cricket catalog and starter pack', () {
+    test('catalog includes every CSV player', () {
+      final rowCount =
+          File(
+            'ipl_players.csv',
+          ).readAsLinesSync().where((line) => line.trim().isNotEmpty).length -
+          1;
+
+      expect(cricketPlayerCards, hasLength(rowCount));
+      expect(
+        allPlayerCards,
+        hasLength(
+          footballPlayerCards.length +
+              cricketPlayerCards.length +
+              basketballPlayerCards.length,
+        ),
+      );
+    });
+
+    test('image-backed cricket cards resolve portraits', () {
+      final kohli = cricketPlayerCards.firstWhere(
+        (card) => card.name == 'Virat Kohli',
+      );
+
+      expect(
+        kohli.resolvedPortraitAsset,
+        'assets/cricketer_images/virat_kohli.webp',
+      );
+      expect(kohli.hasPortrait, isTrue);
+    });
+
+    test('cricket starter contains 3 unique batting cards', () {
+      final result = buildCricketStarterPack(
+        cricketBattingCards,
+        random: Random(8),
+      );
+      final ids = result.playerCards.map((card) => card.id).toList();
+
+      expect(result.playerCards, hasLength(cricketStarterCardCount));
+      expect(result.actionCards, isEmpty);
+      expect(ids.toSet(), hasLength(ids.length));
+      expect(
+        result.playerCards.every((card) => card.role == PlayerRole.batsman),
+        isTrue,
+      );
+    });
+
+    test('basketball starter contains one guard, one wing and one big', () {
+      final result = buildBasketballStarterPack(
+        basketballPlayerCards,
+        random: Random(12),
+      );
+      final ids = result.playerCards.map((card) => card.id).toList();
+
+      expect(result.playerCards, hasLength(basketballStarterCardCount));
+      expect(result.actionCards, isEmpty);
+      expect(ids.toSet(), hasLength(ids.length));
+      expect(
+        result.playerCards.every((card) => card.tier != CardTier.platinum),
+        isTrue,
+      );
+      expect(
+        result.playerCards.where(
+          (card) => card.role == PlayerRole.basketballGuard,
+        ),
+        hasLength(1),
+      );
+      expect(
+        result.playerCards.where(
+          (card) => card.role == PlayerRole.basketballWing,
+        ),
+        hasLength(1),
+      );
+      expect(
+        result.playerCards.where(
+          (card) => card.role == PlayerRole.basketballBig,
+        ),
+        hasLength(1),
+      );
     });
   });
 

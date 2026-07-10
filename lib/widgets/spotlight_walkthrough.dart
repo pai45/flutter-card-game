@@ -368,7 +368,6 @@ class _SpotlightWalkthroughPageState extends State<_SpotlightWalkthroughPage> {
                 ),
                 child: CyberPanel(
                   accent: step.accent,
-                  solidBackground: true,
                   padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,

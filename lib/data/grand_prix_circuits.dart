@@ -1,0 +1,291 @@
+import '../models/grand_prix.dart';
+
+/// Seeded circuit catalog for Grand Prix Dash.
+///
+/// Names are generic archetypes (no real-circuit trademarks). Lengths are in
+/// metres, speeds in m/s — the engine's top speed is ~88 m/s, so safe speeds
+/// of ~24 (hairpin) to ~64 (fast sweeper) set how brutal each braking zone is.
+/// Street-circuit sections carry a low `wallThreshold` so overcooking a corner
+/// there means wall contact, not just running wide.
+const List<GrandPrixCircuit> grandPrixCircuits = [
+  GrandPrixCircuit(
+    id: GrandPrixCircuitId.harbourStreet,
+    name: 'HARBOUR STREET',
+    character: 'STREET',
+    flavor: 'Slow corners, punishing walls. Hard to pass.',
+    difficultyStars: 4,
+    sections: [
+      TrackSection.straight(400),
+      TrackSection.corner(
+        length: 60,
+        direction: CornerDirection.left,
+        safeSpeed: 26,
+        wallThreshold: 8,
+        bend: 16,
+      ),
+      TrackSection.straight(180),
+      TrackSection.corner(
+        length: 55,
+        direction: CornerDirection.right,
+        safeSpeed: 24,
+        wallThreshold: 8,
+        bend: 14,
+      ),
+      TrackSection.straight(240),
+      TrackSection.chicane(
+        length: 90,
+        direction: CornerDirection.left,
+        safeSpeed: 24,
+        wallThreshold: 8,
+      ),
+      TrackSection.straight(160),
+      TrackSection.corner(
+        length: 65,
+        direction: CornerDirection.right,
+        safeSpeed: 28,
+        wallThreshold: 8,
+        bend: 16,
+      ),
+      TrackSection.corner(
+        length: 60,
+        direction: CornerDirection.left,
+        safeSpeed: 25,
+        wallThreshold: 8,
+        bend: 14,
+      ),
+      TrackSection.straight(320),
+      TrackSection.corner(
+        length: 70,
+        direction: CornerDirection.right,
+        safeSpeed: 30,
+        wallThreshold: 8,
+        bend: 18,
+      ),
+      TrackSection.straight(150),
+      TrackSection.corner(
+        length: 55,
+        direction: CornerDirection.left,
+        safeSpeed: 23,
+        wallThreshold: 8,
+        bend: 14,
+      ),
+      TrackSection.straight(200),
+      TrackSection.corner(
+        length: 60,
+        direction: CornerDirection.right,
+        safeSpeed: 26,
+        wallThreshold: 8,
+        bend: 15,
+      ),
+      TrackSection.straight(340),
+    ],
+  ),
+  GrandPrixCircuit(
+    id: GrandPrixCircuitId.desertMile,
+    name: 'DESERT MILE',
+    character: 'SPEEDWAY',
+    flavor: 'Endless straights, heavy slipstream. Overtaking festival.',
+    difficultyStars: 2,
+    sections: [
+      TrackSection.straight(900),
+      TrackSection.corner(
+        length: 140,
+        direction: CornerDirection.right,
+        safeSpeed: 60,
+        bend: 34,
+      ),
+      TrackSection.straight(780),
+      TrackSection.corner(
+        length: 120,
+        direction: CornerDirection.right,
+        safeSpeed: 55,
+        bend: 30,
+      ),
+      TrackSection.straight(950),
+      TrackSection.chicane(
+        length: 130,
+        direction: CornerDirection.right,
+        safeSpeed: 34,
+      ),
+      TrackSection.straight(700),
+      TrackSection.corner(
+        length: 150,
+        direction: CornerDirection.right,
+        safeSpeed: 58,
+        bend: 34,
+      ),
+      TrackSection.straight(730),
+    ],
+  ),
+  GrandPrixCircuit(
+    id: GrandPrixCircuitId.emeraldPark,
+    name: 'EMERALD PARK',
+    character: 'BALANCED',
+    flavor: 'An even mix of straights and corners. The classic.',
+    difficultyStars: 3,
+    sections: [
+      TrackSection.straight(420),
+      TrackSection.corner(
+        length: 90,
+        direction: CornerDirection.right,
+        safeSpeed: 45,
+        bend: 26,
+      ),
+      TrackSection.straight(300),
+      TrackSection.corner(
+        length: 80,
+        direction: CornerDirection.left,
+        safeSpeed: 38,
+        bend: 22,
+      ),
+      TrackSection.straight(520),
+      TrackSection.corner(
+        length: 110,
+        direction: CornerDirection.right,
+        safeSpeed: 52,
+        bend: 30,
+      ),
+      TrackSection.corner(
+        length: 90,
+        direction: CornerDirection.left,
+        safeSpeed: 40,
+        bend: 24,
+      ),
+      TrackSection.straight(260),
+      TrackSection.chicane(
+        length: 120,
+        direction: CornerDirection.left,
+        safeSpeed: 30,
+      ),
+      TrackSection.straight(340),
+      TrackSection.corner(
+        length: 100,
+        direction: CornerDirection.right,
+        safeSpeed: 45,
+        bend: 26,
+      ),
+      TrackSection.straight(300),
+      TrackSection.corner(
+        length: 70,
+        direction: CornerDirection.left,
+        safeSpeed: 33,
+        bend: 18,
+      ),
+      TrackSection.straight(380),
+    ],
+  ),
+  GrandPrixCircuit(
+    id: GrandPrixCircuitId.mountainPass,
+    name: 'MOUNTAIN PASS',
+    character: 'TECHNICAL',
+    flavor: 'Chicanes and quick flicks. Rewards braking control.',
+    difficultyStars: 4,
+    sections: [
+      TrackSection.straight(460),
+      TrackSection.chicane(
+        length: 110,
+        direction: CornerDirection.right,
+        safeSpeed: 32,
+      ),
+      TrackSection.straight(220),
+      TrackSection.corner(
+        length: 75,
+        direction: CornerDirection.left,
+        safeSpeed: 34,
+        bend: 20,
+      ),
+      TrackSection.corner(
+        length: 70,
+        direction: CornerDirection.right,
+        safeSpeed: 31,
+        bend: 18,
+      ),
+      TrackSection.straight(300),
+      TrackSection.chicane(
+        length: 120,
+        direction: CornerDirection.left,
+        safeSpeed: 29,
+      ),
+      TrackSection.straight(260),
+      TrackSection.corner(
+        length: 85,
+        direction: CornerDirection.right,
+        safeSpeed: 38,
+        bend: 22,
+      ),
+      TrackSection.chicane(
+        length: 110,
+        direction: CornerDirection.right,
+        safeSpeed: 31,
+      ),
+      TrackSection.straight(280),
+      TrackSection.corner(
+        length: 90,
+        direction: CornerDirection.left,
+        safeSpeed: 36,
+        bend: 22,
+      ),
+      TrackSection.corner(
+        length: 60,
+        direction: CornerDirection.right,
+        safeSpeed: 28,
+        bend: 16,
+      ),
+      TrackSection.straight(500),
+    ],
+  ),
+  GrandPrixCircuit(
+    id: GrandPrixCircuitId.coastalSprint,
+    name: 'COASTAL SPRINT',
+    character: 'FLOWING',
+    flavor: 'Fast sweepers, one big stop. Carry the speed.',
+    difficultyStars: 3,
+    sections: [
+      TrackSection.straight(450),
+      TrackSection.corner(
+        length: 140,
+        direction: CornerDirection.right,
+        safeSpeed: 62,
+        bend: 30,
+      ),
+      TrackSection.straight(280),
+      TrackSection.corner(
+        length: 150,
+        direction: CornerDirection.left,
+        safeSpeed: 58,
+        bend: 30,
+      ),
+      TrackSection.straight(360),
+      TrackSection.corner(
+        length: 160,
+        direction: CornerDirection.right,
+        safeSpeed: 64,
+        bend: 34,
+      ),
+      TrackSection.corner(
+        length: 120,
+        direction: CornerDirection.left,
+        safeSpeed: 55,
+        bend: 26,
+      ),
+      TrackSection.straight(420),
+      TrackSection.corner(
+        length: 90,
+        direction: CornerDirection.right,
+        safeSpeed: 42,
+        bend: 22,
+      ),
+      TrackSection.straight(300),
+      TrackSection.corner(
+        length: 150,
+        direction: CornerDirection.left,
+        safeSpeed: 60,
+        bend: 30,
+      ),
+      TrackSection.straight(380),
+    ],
+  ),
+];
+
+GrandPrixCircuit grandPrixCircuit(GrandPrixCircuitId id) =>
+    grandPrixCircuits.firstWhere((circuit) => circuit.id == id);

@@ -1,11 +1,78 @@
 import 'package:flutter/material.dart';
 
+import 'basketball_scorecard.dart';
+import 'cricket_scorecard.dart';
+
 /// Lifecycle of a fixture, which drives whether a prediction can still be made.
 enum MatchStatus { upcoming, live, finished }
 
-/// Sport governs how scores are laid out on the card (cricket shows per-team
-/// score lines under the name; football shows a compact centre score).
-enum Sport { cricket, football }
+enum MatchEventType { goal, yellowCard, redCard, substitution }
+
+class MatchEvent {
+  const MatchEvent({
+    required this.minute,
+    required this.isHomeTeam,
+    required this.playerName,
+    required this.type,
+    this.secondaryPlayerName,
+  });
+
+  final int minute;
+  final bool isHomeTeam;
+  final String playerName;
+  final MatchEventType type;
+  final String? secondaryPlayerName; // Used for substitution (e.g. player subbed off)
+}
+
+class MatchCommentary {
+  const MatchCommentary({
+    required this.minute,
+    required this.text,
+    this.shortText,
+    this.scoreValue,
+    this.isWicket = false,
+  });
+  final String minute;
+  final String text;
+  final String? shortText;
+  final int? scoreValue;
+  final bool isWicket;
+}
+
+class MatchPlayer {
+  const MatchPlayer({
+    required this.id,
+    required this.name,
+    required this.number,
+    this.rating,
+    this.imageUrl,
+    this.role,
+    this.isCaptain = false,
+  });
+  final String id;
+  final String name;
+  final int number;
+  final double? rating;
+  final String? imageUrl;
+  final String? role;
+  final bool isCaptain;
+}
+
+class MatchLineup {
+  const MatchLineup({
+    required this.formation,
+    required this.startingXI,
+    this.substitutes = const [],
+    this.manager,
+  });
+  final String formation; // e.g. "4-3-3"
+  final List<MatchPlayer> startingXI; // Always 11 players
+  final List<MatchPlayer> substitutes; // Bench players
+  final String? manager; // Manager/Coach name
+}
+
+/// Sport governs how sport-specific surfaces lay out scores and modules.
+enum Sport { football, cricket, f1, basketball }
 
 /// One side of a fixture. Crest art can be added later via [crestAsset];
 /// until then the UI falls back to an initials badge tinted with [color].
@@ -43,6 +110,15 @@ class SportMatch {
     this.homeScore,
     this.awayScore,
     this.resultLine,
+    this.liveLastUpdated,
+    this.liveStatusNote,
+    this.timelineEvents,
+    this.homeLineup,
+    this.awayLineup,
+    this.cricketScorecard,
+    this.basketballScorecard,
+    this.commentary,
+    this.f1DriverStandings,
     this.rewardXp = 0,
   });
 
@@ -68,6 +144,28 @@ class SportMatch {
   /// One-line outcome for finished matches, e.g. "Mumbai won by 19 runs".
   final String? resultLine;
 
+  /// Timestamp from the live-score provider when a remote score was merged.
+  final DateTime? liveLastUpdated;
+
+  /// Non-fatal live-score state, e.g. missing API key or provider unavailable.
+  final String? liveStatusNote;
+
+  /// Timeline of match events like goals, cards, substitutions.
+  final List<MatchEvent>? timelineEvents;
+
+  /// Starting lineups and formations
+  final MatchLineup? homeLineup;
+  final MatchLineup? awayLineup;
+
+  final CricketScorecard? cricketScorecard;
+  final BasketballScorecard? basketballScorecard;
+
+  /// Play-by-play commentary.
+  final List<MatchCommentary>? commentary;
+
+  /// F1 Driver Standings.
+  final List<String>? f1DriverStandings;
+
   /// XP shown on the reward strip once the match is finished/settled.
   final int rewardXp;
 
@@ -75,4 +173,62 @@ class SportMatch {
   bool get predictable => status == MatchStatus.upcoming;
 
   bool get hasScore => homeScore != null || awayScore != null;
+
+  SportMatch copyWith({
+    String? id,
+    String? leagueId,
+    Sport? sport,
+    SportTeam? home,
+    SportTeam? away,
+    DateTime? kickoff,
+    MatchStatus? status,
+    String? prizeLabel,
+    int? liveMinute,
+    String? homeScore,
+    String? awayScore,
+    String? resultLine,
+    DateTime? liveLastUpdated,
+    String? liveStatusNote,
+    List<MatchEvent>? timelineEvents,
+    MatchLineup? homeLineup,
+    MatchLineup? awayLineup,
+    CricketScorecard? cricketScorecard,
+    BasketballScorecard? basketballScorecard,
+    List<MatchCommentary>? commentary,
+    List<String>? f1DriverStandings,
+    int? rewardXp,
+    bool clearLiveMinute = false,
+    bool clearHomeScore = false,
+    bool clearAwayScore = false,
+    bool clearResultLine = false,
+    bool clearLiveLastUpdated = false,
+    bool clearLiveStatusNote = false,
+  }) => SportMatch(
+    id: id ?? this.id,
+    leagueId: leagueId ?? this.leagueId,
+    sport: sport ?? this.sport,
+    home: home ?? this.home,
+    away: away ?? this.away,
+    kickoff: kickoff ?? this.kickoff,
+    status: status ?? this.status,
+    prizeLabel: prizeLabel ?? this.prizeLabel,
+    liveMinute: clearLiveMinute ? null : liveMinute ?? this.liveMinute,
+    homeScore: clearHomeScore ? null : homeScore ?? this.homeScore,
+    awayScore: clearAwayScore ? null : awayScore ?? this.awayScore,
+    resultLine: clearResultLine ? null : resultLine ?? this.resultLine,
+    liveLastUpdated: clearLiveLastUpdated
+        ? null
+        : liveLastUpdated ?? this.liveLastUpdated,
+    liveStatusNote: clearLiveStatusNote
+        ? null
+        : liveStatusNote ?? this.liveStatusNote,
+    timelineEvents: timelineEvents ?? this.timelineEvents,
+    homeLineup: homeLineup ?? this.homeLineup,
+    awayLineup: awayLineup ?? this.awayLineup,
+    cricketScorecard: cricketScorecard ?? this.cricketScorecard,
+    basketballScorecard: basketballScorecard ?? this.basketballScorecard,
+    commentary: commentary ?? this.commentary,
+    f1DriverStandings: f1DriverStandings ?? this.f1DriverStandings,
+    rewardXp: rewardXp ?? this.rewardXp,
+  );
 }

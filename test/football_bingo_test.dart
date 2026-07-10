@@ -146,10 +146,11 @@ void main() {
   test('progress persists across reloads', () async {
     final cubit = await _loaded();
     final first = cubit.state.currentCell!;
-    final wrong = cubit.state.puzzle.cells.firstWhere(
-      (cell) => cell.id != first.id,
-    );
     await cubit.selectCell(first.id);
+    final next = cubit.state.currentCell!;
+    final wrong = cubit.state.puzzle.cells.firstWhere(
+      (cell) => cell.id != next.id,
+    );
     await cubit.selectCell(wrong.id);
     await cubit.close();
 

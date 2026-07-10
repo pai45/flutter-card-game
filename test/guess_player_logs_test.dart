@@ -10,7 +10,7 @@ void main() {
   testWidgets('guess player logs use the date as the log title', (
     tester,
   ) async {
-    final timeline = guessPlayerTimelines.first;
+    final timeline = footballGuessTimelines.first;
     final target = allPlayerCards.firstWhere(
       (player) => player.name == timeline.playerName,
       orElse: () => allPlayerCards.first,

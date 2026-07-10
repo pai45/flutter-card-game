@@ -116,6 +116,10 @@ class StarterPackClaimed extends GameEvent {}
 
 class StarterPackOpened extends GameEvent {}
 
+class CricketStarterPackOpened extends GameEvent {}
+
+class BasketballStarterPackOpened extends GameEvent {}
+
 class DailyDropClaimed extends GameEvent {}
 
 class ShopPackPurchased extends GameEvent {
@@ -261,4 +265,65 @@ class ShootoutFinished extends GameEvent {
 
   final int playerGoals;
   final int cpuGoals;
+}
+
+/// Fired once by Grand Prix Dash when the player crosses the line — applies
+/// the (already computed, PB bonus included) XP and writes a `grandprix`
+/// match-history entry in one handler, mirroring [ShootoutFinished].
+/// XP only: racing never pays coins.
+class GrandPrixFinished extends GameEvent {
+  GrandPrixFinished({
+    required this.position,
+    required this.fieldSize,
+    required this.circuitName,
+    required this.lapTimeMs,
+    required this.verdictLabel,
+    required this.xp,
+  });
+
+  final int position;
+  final int fieldSize;
+  final String circuitName;
+  final int lapTimeMs;
+  final String verdictLabel; // 'Victory' | 'Podium' | 'Points' | 'Finished'
+  final int xp;
+}
+
+/// Fired once by Hoop Duel when a match ends — applies the (already computed)
+/// XP and writes a `basketball` match-history entry, mirroring
+/// [GrandPrixFinished]. XP only: the court never pays coins.
+class BasketballFinished extends GameEvent {
+  BasketballFinished({
+    required this.playerScore,
+    required this.cpuScore,
+    required this.resultLabel,
+    required this.difficultyLabel,
+    required this.grade,
+    required this.overtime,
+    required this.xp,
+  });
+
+  final int playerScore;
+  final int cpuScore;
+  final String resultLabel; // 'Victory' | 'Defeat'
+  final String difficultyLabel;
+  final String grade;
+  final bool overtime;
+  final int xp;
+}
+
+/// Fired once by Super Over mode when an over finishes to award XP
+/// and record history.
+class SuperOverFinished extends GameEvent {
+  SuperOverFinished({
+    required this.runs,
+    required this.wickets,
+    required this.wonChase,
+    required this.xp,
+  });
+
+  final int runs;
+  final int wickets;
+  final bool? wonChase;
+  final int xp;
 }

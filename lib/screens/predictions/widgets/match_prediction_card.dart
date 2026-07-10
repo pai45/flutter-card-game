@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../config/theme.dart';
 import '../../../models/prediction.dart';
 import '../../../models/sport_match.dart';
+import '../../../utils/prediction_helpers.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/team_logo.dart';
 
@@ -26,12 +27,14 @@ class MatchPredictionCard extends StatelessWidget {
   const MatchPredictionCard({
     required this.match,
     required this.prediction,
+    this.quiz,
     this.onTap,
     super.key,
   });
 
   final SportMatch match;
   final UserPrediction? prediction;
+  final PredictionQuiz? quiz;
   final VoidCallback? onTap;
 
   bool get _predicted => prediction != null;
@@ -66,6 +69,10 @@ class MatchPredictionCard extends StatelessWidget {
                   weight: FontWeight.w600,
                 ),
               ),
+              // Reserve room so the bottom strip (an overlay, not part of this
+              // Column's own height) doesn't sit on top of this text.
+              if (match.status != MatchStatus.live)
+                const SizedBox(height: _stripReserve),
             ],
           ],
         ),
@@ -87,9 +94,7 @@ class MatchPredictionCard extends StatelessWidget {
           // state colour so the elevated bottom edge matches the border.
           Positioned.fill(
             child: CustomPaint(
-              painter: _HardShadowPainter(
-                borderColor.withValues(alpha: 0.25),
-              ),
+              painter: _HardShadowPainter(borderColor.withValues(alpha: 0.25)),
             ),
           ),
           Material(
@@ -106,19 +111,25 @@ class MatchPredictionCard extends StatelessWidget {
                 width: 1.5,
               ),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                body,
-                _StatusStrip(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [body]),
+          ),
+          // Bottom strip gets drawn above the shadow but below the notch
+          if (match.status != MatchStatus.live)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: ClipPath(
+                clipper: _StripClipper(cut: 12),
+                child: _StatusStrip(
                   match: match,
                   prediction: prediction,
+                  quiz: quiz,
                   predicted: _predicted,
                   submittedAt: prediction?.submittedAt,
                 ),
-              ],
+              ),
             ),
-          ),
           // The status tag sits inside the notch, reading against the page
           // background that shows through the cut.
           Positioned(
@@ -132,6 +143,27 @@ class MatchPredictionCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _StripClipper extends CustomClipper<Path> {
+  const _StripClipper({required this.cut});
+  final double cut;
+
+  @override
+  Path getClip(Size size) {
+    final r = Offset.zero & size;
+    return Path()
+      ..moveTo(r.left, r.top)
+      ..lineTo(r.right, r.top)
+      ..lineTo(r.right, r.bottom - cut)
+      ..lineTo(r.right - cut, r.bottom)
+      ..lineTo(r.left + cut, r.bottom)
+      ..lineTo(r.left, r.bottom - cut)
+      ..close();
+  }
+
+  @override
+  bool shouldReclip(covariant _StripClipper oldClipper) => oldClipper.cut != cut;
 }
 
 // ── Status tag content (sits inside the top notch, against the background) ─────
@@ -193,9 +225,11 @@ class _TeamsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Cricket shows each side's innings under the team name; football keeps the
-    // score in the centre instead.
-    final cricketScores = match.sport == Sport.cricket && match.hasScore;
+    // Cricket shows each side's innings, F1 shows each constructor's finishing
+    // grid position, under the team name; football keeps the score centred.
+    final perTeamScores =
+        (match.sport == Sport.cricket || match.sport == Sport.f1) &&
+        match.hasScore;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -204,7 +238,7 @@ class _TeamsRow extends StatelessWidget {
             team: match.home,
             alignEnd: false,
             dim: dimNames,
-            scoreLine: cricketScores ? match.homeScore : null,
+            scoreLine: perTeamScores ? match.homeScore : null,
           ),
         ),
         _ScoreCentre(match: match),
@@ -213,7 +247,7 @@ class _TeamsRow extends StatelessWidget {
             team: match.away,
             alignEnd: true,
             dim: dimNames,
-            scoreLine: cricketScores ? match.awayScore : null,
+            scoreLine: perTeamScores ? match.awayScore : null,
           ),
         ),
       ],
@@ -294,7 +328,7 @@ class _ScoreCentre extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (match.sport == Sport.football && match.hasScore) {
+    if ((match.sport == Sport.football || match.sport == Sport.basketball) && match.hasScore) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Text(
@@ -307,7 +341,15 @@ class _ScoreCentre extends StatelessWidget {
         ),
       );
     }
-    // Upcoming, or cricket (innings live under each name) → centre dash.
+    if (match.sport == Sport.f1 && match.status == MatchStatus.finished) {
+      // Grid position lives under each team name; the centre carries the
+      // chequered-flag cue instead of a football-style score dash.
+      return const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 12),
+        child: Icon(Icons.sports_motorsports, color: Cyber.muted, size: 20),
+      );
+    }
+    // Upcoming, or cricket/F1 (line lives under each name) → centre dash.
     return const Padding(
       padding: EdgeInsets.symmetric(horizontal: 12),
       child: Text(
@@ -329,19 +371,132 @@ class _StatusStrip extends StatelessWidget {
   const _StatusStrip({
     required this.match,
     required this.prediction,
+    required this.quiz,
     required this.predicted,
     required this.submittedAt,
   });
 
   final SportMatch match;
   final UserPrediction? prediction;
+  final PredictionQuiz? quiz;
   final bool predicted;
   final DateTime? submittedAt;
 
   @override
   Widget build(BuildContext context) {
-    // Finished + predicted but not yet settled → the settlement reveal is
-    // waiting; this is the card's focal pull-back-in state.
+    // If it's a quiz, use the quiz-specific UI
+    if (quiz != null) {
+      final answered = prediction?.answers.length ?? 0;
+      final total = quiz!.questions.length;
+      final potentialXp = quiz!.maxReward;
+      final isSettled = prediction?.status == PredictionStatus.settled;
+      final correct = prediction?.correctCount ?? 0;
+      
+      if (match.status == MatchStatus.upcoming) {
+        return _Strip(
+          fill: _stripDark,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Text(
+                  'QUIZ $answered/$total',
+                  style: Cyber.label(
+                    9,
+                    color: Cyber.muted,
+                    letterSpacing: 0.8,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  'POTENTIAL +$potentialXp XP',
+                  style: Cyber.label(
+                    9,
+                    color: Cyber.cyan.withValues(alpha: 0.85),
+                    letterSpacing: 0.8,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+      
+      if (match.status == MatchStatus.finished) {
+        if (!isSettled && (prediction != null || quiz!.settleable)) {
+          return _Strip(
+            fill: _stripDark,
+            topBorder: Cyber.gold.withValues(alpha: 0.35),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.redeem, color: Cyber.gold, size: 14),
+                const SizedBox(width: 7),
+                Text(
+                  'RESULTS READY — TAP TO REVEAL',
+                  style: Cyber.label(9, color: Cyber.gold, letterSpacing: 1)
+                      .copyWith(
+                        shadows: [
+                          Shadow(
+                            color: Cyber.gold.withValues(alpha: 0.45),
+                            blurRadius: 10,
+                          ),
+                        ],
+                      ),
+                ),
+              ],
+            ),
+          );
+        }
+        
+        if (isSettled) {
+          final isWon = correct > 0;
+          return _Strip(
+            fill: _stripDark,
+            topBorder: (isWon ? Cyber.success : Cyber.red).withValues(alpha: 0.25),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  if (isWon) ...[
+                    const Icon(Icons.trending_up, color: Cyber.success, size: 13),
+                    const SizedBox(width: 6),
+                    Text(
+                      '+${prediction!.rewardEarned} XP',
+                      style: Cyber.body(
+                        12,
+                        color: Cyber.success,
+                        weight: FontWeight.w800,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ] else ...[
+                    Text(
+                      '$correct/$total CORRECT',
+                      style: Cyber.label(
+                        9,
+                        color: Cyber.muted,
+                        letterSpacing: 0.8,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                  const Spacer(),
+                  _OutcomeDots(
+                    outcomes: questionOutcomes(quiz!, prediction!),
+                    compact: true,
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+      }
+    }
+
+    // Fallback/classic match status strip
     if (match.status == MatchStatus.finished &&
         prediction != null &&
         prediction!.status != PredictionStatus.settled) {
@@ -349,8 +504,8 @@ class _StatusStrip extends StatelessWidget {
         fill: _stripDark,
         topBorder: Cyber.gold.withValues(alpha: 0.28),
         child: Text(
-          'Results ready — tap to reveal',
-          style: Cyber.body(13, color: Cyber.gold, weight: FontWeight.w700)
+          'RESULTS READY — TAP TO REVEAL',
+          style: Cyber.label(9, color: Cyber.gold, letterSpacing: 1)
               .copyWith(
                 shadows: [
                   Shadow(
@@ -363,8 +518,6 @@ class _StatusStrip extends StatelessWidget {
       );
     }
 
-    // Finished with a reward → "△ +N XP" (the user's own earned XP once
-    // settled, otherwise the fixture's advertised reward).
     final settledXp = prediction?.status == PredictionStatus.settled
         ? prediction!.rewardEarned
         : null;
@@ -394,7 +547,6 @@ class _StatusStrip extends StatelessWidget {
       );
     }
 
-    // Upcoming + predicted → calm note.
     if (match.status == MatchStatus.upcoming && predicted) {
       return _Strip(
         fill: _stripDark,
@@ -409,7 +561,6 @@ class _StatusStrip extends StatelessWidget {
       );
     }
 
-    // Upcoming + open → prize CTA (the one focal strip; brighter + glowing text).
     if (match.status == MatchStatus.upcoming && match.prizeLabel != null) {
       return _Strip(
         fill: _stripBlue,
@@ -429,11 +580,65 @@ class _StatusStrip extends StatelessWidget {
       );
     }
 
-    // Live → no strip.
     return const SizedBox.shrink();
   }
 }
 
+class _OutcomeDots extends StatelessWidget {
+  const _OutcomeDots({required this.outcomes, this.compact = false});
+
+  final List<QuestionOutcome> outcomes;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final gap = compact ? 4.0 : 5.0;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < outcomes.length; i++) ...[
+          _OutcomeDot(outcome: outcomes[i], compact: compact),
+          if (i != outcomes.length - 1) SizedBox(width: gap),
+        ],
+      ],
+    );
+  }
+}
+
+class _OutcomeDot extends StatelessWidget {
+  const _OutcomeDot({required this.outcome, required this.compact});
+
+  final QuestionOutcome outcome;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (outcome) {
+      QuestionOutcome.correct => Cyber.success,
+      QuestionOutcome.wrong => Cyber.red,
+      QuestionOutcome.pending => Cyber.muted,
+    };
+    final icon = switch (outcome) {
+      QuestionOutcome.correct => Icons.check,
+      QuestionOutcome.wrong => Icons.close,
+      QuestionOutcome.pending => Icons.more_horiz,
+    };
+    final box = compact ? 13.0 : 17.0;
+    final iconSize = compact ? 9.0 : 11.0;
+    return Container(
+      width: box,
+      height: box,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        border: Border.all(color: color.withValues(alpha: 0.55)),
+      ),
+      child: Icon(icon, size: iconSize, color: color),
+    );
+  }
+}
+
+// ── Shape: square top, chamfered bottom corners — used for the shadow + border ─
 class _Strip extends StatelessWidget {
   const _Strip({required this.fill, required this.child, this.topBorder});
   final Color fill;
@@ -459,7 +664,6 @@ class _Strip extends StatelessWidget {
   }
 }
 
-// ── Shape: square top, chamfered bottom corners — used for the shadow + border ─
 class _CyberCardBorder extends ShapeBorder {
   const _CyberCardBorder({
     this.cut = 12,
@@ -579,7 +783,9 @@ const _cardBase = Color(0xff141c2b);
 const _cardTop = Color(0xff1b2336);
 const _cardBottom = Color(0xff121a28);
 const _borderCol = Color(0xff2a3550);
-const _borderPredicted = Color(0xff2c7a8c); // dark cyan — predicted, not started
+const _borderPredicted = Color(
+  0xff2c7a8c,
+); // dark cyan — predicted, not started
 const _stripDark = Color(0xff0f1826);
 const _stripBlue = Color(0xff173a5e);
 const _timeGold = Color(0xffc8a45a);
@@ -592,6 +798,11 @@ const _predictedText = Color(0xff93a1b2);
 const _notchFloorW = 96.0;
 const _notchDepth = 22.0;
 const _notchSlope = 12.0;
+
+// Approximate rendered height of the single-line bottom strip (11 vertical
+// padding × 2 + a line of 9-13pt text) — the strip is a Stack overlay, not a
+// Column child, so its own height isn't otherwise reserved.
+const _stripReserve = 44.0;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 /// The card border colour telegraphs where the fixture sits in its lifecycle:
@@ -606,7 +817,8 @@ Color _stateBorderColor(SportMatch match, UserPrediction? prediction) {
     case MatchStatus.finished:
       if (prediction == null) return _borderCol; // neutral edge
       return prediction.status == PredictionStatus.settled
-          ? Cyber.cyan // cyan — revealed
+          ? Cyber
+                .cyan // cyan — revealed
           : _timeGold; // gold — results ready
   }
 }

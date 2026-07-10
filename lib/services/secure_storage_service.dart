@@ -3,9 +3,12 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../models/sport_match.dart';
+import '../models/basketball.dart';
 import '../models/deck.dart';
 import '../models/football_bingo.dart';
 import '../models/football_chess.dart';
+import '../models/grand_prix.dart';
 import '../models/match.dart';
 import '../models/oz_coin_ledger.dart';
 import '../models/picks.dart';
@@ -16,6 +19,7 @@ import '../models/referral.dart';
 import '../models/streak.dart';
 import '../models/xp_ledger.dart';
 import '../models/guess_player.dart';
+import '../models/super_over_stats.dart';
 import '../data/rival_roster.dart' show randomPlayerTag;
 
 /// Maps a legacy `border_*` avatar-frame id to the renamed `frame_*` form so a
@@ -115,6 +119,10 @@ class SecureGameStorage {
   static const _ownedCardsKey = 'pd_owned_cards_v1';
   static const _historyKey = 'pd_match_history_v1';
   static const _starterPackClaimedKey = 'pd_starter_pack_claimed_v1';
+  static const _cricketStarterPackClaimedKey =
+      'pd_cricket_starter_pack_claimed_v1';
+  static const _basketballStarterPackClaimedKey =
+      'pd_basketball_starter_pack_claimed_v1';
   static const _progressionKey = 'pd_progression_v1';
   static const _walletKey = 'pitch_duel_wallet';
   static const _coinLedgerKey = 'pd_oz_coin_ledger_v1';
@@ -123,6 +131,7 @@ class SecureGameStorage {
   static const _pickPositionsKey = 'pd_pick_positions_v1';
   static const _selectedAvatarKey = 'pd_selected_avatar_v1';
   static const _selectedProfileBannerKey = 'pd_selected_profile_banner_v1';
+  static const _primarySportKey = 'pd_primary_sport_v1';
   static const _selectedTimeZoneKey = 'pd_selected_time_zone_v1';
   static const _followedLeaguesKey = 'pd_followed_leagues_v1';
   static const _favoriteTeamsKey = 'pd_favorite_teams_v1';
@@ -134,11 +143,14 @@ class SecureGameStorage {
   static const _friendsKey = 'pd_friends_v1';
   static const _playerTagKey = 'pd_player_tag_v1';
   static const _referralEntriesKey = 'pd_referral_entries_v1';
-  static const _quizProgressKey = 'pd_quiz_progress_v1';
+  String _quizProgressKey(Sport sport) => sport == Sport.football ? 'pd_quiz_progress_v1' : 'pd_quiz_progress_${sport.name}_v1';
   static const _footballBingoProgressKey = 'pd_football_bingo_progress_v1';
   static const _footballBingoArchiveKey = 'pd_football_bingo_archive_v1';
-  static const _guessPlayerArchiveKey = 'pd_guess_player_archive_v1';
+  String _guessPlayerArchiveKey(Sport sport) => 'pd_guess_player_archive_${sport.name}_v1';
   static const _footballChessStatsKey = 'pd_football_chess_stats_v1';
+  static const _grandPrixStatsKey = 'pd_grand_prix_stats_v1';
+  static const _superOverStatsKey = 'pd_super_over_stats_v1';
+  static const _basketballStatsKey = 'pd_basketball_stats_v1';
 
   final FlutterSecureStorage _storage;
 
@@ -201,6 +213,32 @@ class SecureGameStorage {
 
   Future<void> saveStarterPackClaimed() async {
     await _storage.write(key: _starterPackClaimedKey, value: 'true');
+  }
+
+  Future<bool> loadCricketStarterPackClaimed() async {
+    try {
+      final raw = await _storage.read(key: _cricketStarterPackClaimedKey);
+      return raw == 'true';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> saveCricketStarterPackClaimed() async {
+    await _storage.write(key: _cricketStarterPackClaimedKey, value: 'true');
+  }
+
+  Future<bool> loadBasketballStarterPackClaimed() async {
+    try {
+      final raw = await _storage.read(key: _basketballStarterPackClaimedKey);
+      return raw == 'true';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> saveBasketballStarterPackClaimed() async {
+    await _storage.write(key: _basketballStarterPackClaimedKey, value: 'true');
   }
 
   Future<List<MatchHistoryEntry>> loadMatchHistory() async {
@@ -335,10 +373,10 @@ class SecureGameStorage {
     );
   }
 
-  Future<GuessPlayerArchive?> loadGuessPlayerArchive() async {
+  Future<GuessPlayerArchive?> loadGuessPlayerArchive(Sport sport) async {
     final prefs = await SharedPreferences.getInstance();
     try {
-      final raw = prefs.getString(_guessPlayerArchiveKey);
+      final raw = prefs.getString(_guessPlayerArchiveKey(sport));
       if (raw == null) return null;
       return GuessPlayerArchive.fromJson(
         jsonDecode(raw) as Map<String, dynamic>,
@@ -348,9 +386,9 @@ class SecureGameStorage {
     }
   }
 
-  Future<void> saveGuessPlayerArchive(GuessPlayerArchive archive) async {
+  Future<void> saveGuessPlayerArchive(Sport sport, GuessPlayerArchive archive) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_guessPlayerArchiveKey, jsonEncode(archive.toJson()));
+    await prefs.setString(_guessPlayerArchiveKey(sport), jsonEncode(archive.toJson()));
   }
 
   Future<FootballChessStats> loadFootballChessStats() async {
@@ -369,6 +407,24 @@ class SecureGameStorage {
   Future<void> saveFootballChessStats(FootballChessStats stats) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_footballChessStatsKey, jsonEncode(stats.toJson()));
+  }
+
+  Future<GrandPrixStats> loadGrandPrixStats() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_grandPrixStatsKey);
+      if (raw == null || raw.isEmpty) return const GrandPrixStats();
+      return GrandPrixStats.fromJson(
+        Map<String, dynamic>.from(jsonDecode(raw) as Map),
+      );
+    } catch (_) {
+      return const GrandPrixStats();
+    }
+  }
+
+  Future<void> saveGrandPrixStats(GrandPrixStats stats) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_grandPrixStatsKey, jsonEncode(stats.toJson()));
   }
 
   Future<List<UserPrediction>> loadPredictions() async {
@@ -437,6 +493,19 @@ class SecureGameStorage {
 
   Future<void> saveSelectedProfileBannerId(String bannerId) async {
     await _storage.write(key: _selectedProfileBannerKey, value: bannerId);
+  }
+
+  Future<String?> loadPrimarySportName() async {
+    try {
+      final raw = await _storage.read(key: _primarySportKey);
+      return raw == null || raw.isEmpty ? null : raw;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> savePrimarySportName(String sportName) async {
+    await _storage.write(key: _primarySportKey, value: sportName);
   }
 
   Future<String?> loadSelectedTimeZoneId() async {
@@ -584,6 +653,7 @@ class SecureGameStorage {
     await Future.wait([
       _storage.delete(key: _selectedAvatarKey),
       _storage.delete(key: _selectedProfileBannerKey),
+      _storage.delete(key: _primarySportKey),
       _storage.delete(key: _selectedTimeZoneKey),
       _storage.delete(key: _followedLeaguesKey),
       _storage.delete(key: _favoriteTeamsKey),
@@ -647,11 +717,11 @@ class SecureGameStorage {
     );
   }
 
-  /// Football Quiz per-mode progress (cleared flags + best runs). Drives the
+  /// Quiz per-mode progress (cleared flags + best runs). Drives the
   /// progression-gated unlocks in the quiz lobby.
-  Future<QuizProgress> loadQuizProgress() async {
+  Future<QuizProgress> loadQuizProgress(Sport sport) async {
     try {
-      final raw = await _storage.read(key: _quizProgressKey);
+      final raw = await _storage.read(key: _quizProgressKey(sport));
       if (raw == null || raw.isEmpty) return QuizProgress.initial();
       return QuizProgress.fromJson(
         Map<String, dynamic>.from(jsonDecode(raw) as Map),
@@ -661,10 +731,46 @@ class SecureGameStorage {
     }
   }
 
-  Future<void> saveQuizProgress(QuizProgress progress) async {
+  Future<void> saveQuizProgress(Sport sport, QuizProgress progress) async {
     await _storage.write(
-      key: _quizProgressKey,
+      key: _quizProgressKey(sport),
       value: jsonEncode(progress.toJson()),
     );
+  }
+
+  Future<SuperOverStats> loadSuperOverStats() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_superOverStatsKey);
+      if (raw == null || raw.isEmpty) return const SuperOverStats();
+      return SuperOverStats.fromJson(
+        Map<String, dynamic>.from(jsonDecode(raw) as Map),
+      );
+    } catch (_) {
+      return const SuperOverStats();
+    }
+  }
+
+  Future<void> saveSuperOverStats(SuperOverStats stats) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_superOverStatsKey, jsonEncode(stats.toJson()));
+  }
+
+  Future<BasketballStats> loadBasketballStats() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_basketballStatsKey);
+      if (raw == null || raw.isEmpty) return const BasketballStats();
+      return BasketballStats.fromJson(
+        Map<String, dynamic>.from(jsonDecode(raw) as Map),
+      );
+    } catch (_) {
+      return const BasketballStats();
+    }
+  }
+
+  Future<void> saveBasketballStats(BasketballStats stats) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_basketballStatsKey, jsonEncode(stats.toJson()));
   }
 }

@@ -8,11 +8,12 @@ import '../../blocs/prediction/prediction_state.dart';
 import '../../config/theme.dart';
 import '../../models/league.dart';
 import '../../models/picks.dart';
+import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
 import '../../models/team_standing.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import 'market_detail_screen.dart';
-import 'match_prediction_screen.dart';
+import 'match_detail_screen.dart';
 import 'widgets/pick_market_card.dart';
 import 'widgets/pick_trade_sheet.dart';
 import 'widgets/match_prediction_card.dart';
@@ -29,9 +30,7 @@ class TeamDetailScreen extends StatelessWidget {
 
   void _openMatch(BuildContext context, SportMatch match) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => MatchPredictionScreen(match: match),
-      ),
+      MaterialPageRoute<void>(builder: (_) => MatchDetailScreen(match: match)),
     );
   }
 
@@ -76,12 +75,18 @@ class TeamDetailScreen extends StatelessWidget {
                           for (final match in fixtures) ...[
                             MatchPredictionCard(
                               match: match,
-                              prediction: state.predictionFor(match.id),
-                              onTap:
-                                  (match.predictable ||
-                                      state.predictionFor(match.id) != null)
-                                  ? () => _openMatch(context, match)
-                                  : null,
+                              prediction: state.predictionSummaryForMatch(
+                                match.id,
+                              ),
+                              quiz:
+                                  state.quizzes[predictionStorageKey(
+                                    match.id,
+                                    state
+                                            .predictionSummaryForMatch(match.id)
+                                            ?.quizId ??
+                                        kDefaultPredictionQuizId,
+                                  )],
+                              onTap: () => _openMatch(context, match),
                             ),
                             const SizedBox(height: 12),
                           ],

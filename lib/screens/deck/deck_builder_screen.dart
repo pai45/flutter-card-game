@@ -235,24 +235,27 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
                                         _focusSlot(activeLane, index),
                                     playerOptions: <PlayerCard>[
                                       ...switch (activeLane) {
-                                        DeckPickerLane.attacker => attackers
-                                            .where(
-                                              (card) => state.ownedCardIds
-                                                  .contains(card.id),
-                                            )
-                                            .toList(),
-                                        DeckPickerLane.defender => defenders
-                                            .where(
-                                              (card) => state.ownedCardIds
-                                                  .contains(card.id),
-                                            )
-                                            .toList(),
-                                        DeckPickerLane.keeper => goalkeepers
-                                            .where(
-                                              (card) => state.ownedCardIds
-                                                  .contains(card.id),
-                                            )
-                                            .toList(),
+                                        DeckPickerLane.attacker =>
+                                          attackers
+                                              .where(
+                                                (card) => state.ownedCardIds
+                                                    .contains(card.id),
+                                              )
+                                              .toList(),
+                                        DeckPickerLane.defender =>
+                                          defenders
+                                              .where(
+                                                (card) => state.ownedCardIds
+                                                    .contains(card.id),
+                                              )
+                                              .toList(),
+                                        DeckPickerLane.keeper =>
+                                          goalkeepers
+                                              .where(
+                                                (card) => state.ownedCardIds
+                                                    .contains(card.id),
+                                              )
+                                              .toList(),
                                         DeckPickerLane.action =>
                                           const <PlayerCard>[],
                                       },
@@ -284,8 +287,7 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
                                 GridView.count(
                                   crossAxisCount: 2,
                                   shrinkWrap: true,
-                                  physics:
-                                      const NeverScrollableScrollPhysics(),
+                                  physics: const NeverScrollableScrollPhysics(),
                                   mainAxisSpacing: 10,
                                   crossAxisSpacing: 10,
                                   childAspectRatio: 1.45,
@@ -313,10 +315,7 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
                       primaryLabel: 'PLAY',
                       primaryEnabled: valid,
                       primaryOnTap: () {
-                        final slot = _buildStoredSlot(
-                          active.name,
-                          state.activeDeckId,
-                        );
+                        final slot = _buildStoredSlot(active);
                         context.read<GameBloc>().add(DeckSaved(slot));
                         context.read<GameBloc>().add(MatchStarted());
                         widget.onNavigate(AppSection.match);
@@ -325,9 +324,7 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
                       secondaryOnTap: () {
                         if (editing) {
                           context.read<GameBloc>().add(
-                            DeckSaved(
-                              _buildStoredSlot(active.name, state.activeDeckId),
-                            ),
+                            DeckSaved(_buildStoredSlot(active)),
                           );
                         }
                         setState(() {
@@ -383,12 +380,13 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
     _selectedFormation = activeSlot.chessFormation ?? ChessFormation.box;
   }
 
-  StoredDeckSlot _buildStoredSlot(String name, String id) => StoredDeckSlot(
-    id: id,
-    name: name,
+  StoredDeckSlot _buildStoredSlot(StoredDeckSlot active) => StoredDeckSlot(
+    id: active.id,
+    name: active.name,
     attackers: selectedAttackers.whereType<String>().toList(),
     defenders: selectedDefenders.whereType<String>().toList(),
     actions: selectedActions.whereType<String>().toList(),
+    batsmen: active.batsmen,
     keeper: selectedKeeper,
     chessFormation: _selectedFormation,
   );
@@ -578,8 +576,11 @@ class _FormationTile extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               formation.label,
-              style: Cyber.label(11,
-                  color: selected ? Cyber.cyan : Cyber.muted, letterSpacing: 1.4),
+              style: Cyber.label(
+                11,
+                color: selected ? Cyber.cyan : Cyber.muted,
+                letterSpacing: 1.4,
+              ),
             ),
             const Spacer(),
             Text(

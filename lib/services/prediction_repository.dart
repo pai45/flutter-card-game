@@ -4,6 +4,7 @@ import '../models/league.dart';
 import '../models/prediction.dart';
 import '../models/sport_match.dart';
 import '../models/team_standing.dart';
+import 'espn_score_service.dart';
 import 'football_question_bank.dart';
 
 /// Data seam for the prediction hub. The UI/cubit only ever talk to this
@@ -15,19 +16,30 @@ abstract class PredictionRepository {
   /// Fixtures for [day] (defaults to "today" in mock terms — returns all).
   Future<List<SportMatch>> fixtures({DateTime? day});
 
-  /// The quiz for a fixture, or null if none is configured.
-  Future<PredictionQuiz?> quizFor(String matchId);
+  /// All quiz sets for a fixture.
+  Future<List<PredictionQuiz>> quizzesFor(String matchId);
+
+  /// One quiz set for a fixture, or null if none is configured.
+  Future<PredictionQuiz?> quizFor(String matchId, String quizId);
 
   /// The rank-sorted standings table for [leagueId], or empty if none.
   Future<List<TeamStanding>> standings(String leagueId);
 
   /// Aggregate vote totals for a match question.
-  Future<PredictionVoteBreakdown?> votesFor(String matchId, String questionId);
+  Future<PredictionVoteBreakdown?> votesFor(
+    String matchId,
+    String quizId,
+    String questionId,
+  );
 
   /// Rank table scoped to one prediction match.
   Future<List<MatchPredictionLeaderboardEntry>> matchLeaderboard(
     String matchId,
+    String quizId,
   );
+
+  /// Enrich fixtures with live network data asynchronously
+  Future<List<SportMatch>> enrichFixtures(List<SportMatch> fixtures);
 }
 
 /// Hardcoded fixtures + quizzes mirroring the home mockup, spanning every card
@@ -35,17 +47,11 @@ abstract class PredictionRepository {
 /// cricket). Single source of truth for fixtures until a backend exists.
 class MockPredictionRepository implements PredictionRepository {
   // ── Leagues (EPL first to match the reference order) ─────────────────────────
-  static const _epl = League(
-    id: 'epl',
-    name: 'English Premier League',
-    shortCode: 'EPL',
-    accent: Color(0xffa855f7),
-  );
-  static const _ipl = League(
-    id: 'ipl',
-    name: 'Indian Premier League',
-    shortCode: 'IPL',
-    accent: Color(0xff5cdfff),
+  static const _intl = League(
+    id: '23810',
+    name: 'International T20',
+    shortCode: 'T20I',
+    accent: Color(0xfff59e0b),
   );
   static const _fifa = League(
     id: 'fifa',
@@ -53,13 +59,43 @@ class MockPredictionRepository implements PredictionRepository {
     shortCode: 'FIFA',
     accent: Color(0xff00d084),
   );
+  static const _f1 = League(
+    id: 'f1',
+    name: 'Formula 1',
+    shortCode: 'F1',
+    accent: Color(0xffe10600),
+  );
+  static const _wnba = League(
+    id: 'wnba',
+    name: 'WNBA',
+    shortCode: 'WNBA',
+    accent: Color(0xffff6600),
+  );
 
   // ── Teams ──────────────────────────────────────────────────────────────────
+  static const _mercedes = SportTeam(
+    id: 'mercedes',
+    name: 'Mercedes',
+    shortName: 'MER',
+    color: Color(0xff00a19c),
+  );
+  static const _ferrari = SportTeam(
+    id: 'ferrari',
+    name: 'Ferrari',
+    shortName: 'FER',
+    color: Color(0xffdc0000),
+  );
   static const _france = SportTeam(
     id: 'fra',
     name: 'France',
     shortName: 'FRA',
     color: Color(0xff1d4ed8),
+  );
+  static const _paraguay = SportTeam(
+    id: 'par',
+    name: 'Paraguay',
+    shortName: 'PAR',
+    color: Color(0xffd7263d),
   );
   static const _senegal = SportTeam(
     id: 'sen',
@@ -121,6 +157,62 @@ class MockPredictionRepository implements PredictionRepository {
     shortName: 'ENG',
     color: Color(0xffffffff),
   );
+  static const _india = SportTeam(
+    id: 'ind',
+    name: 'India',
+    shortName: 'IND',
+    color: Color(0xff1d4ed8),
+  );
+  static const _westIndies = SportTeam(
+    id: 'wi',
+    name: 'West Indies',
+    shortName: 'WI',
+    color: Color(0xff7a0016),
+  );
+  static const _sriLanka = SportTeam(
+    id: 'sl',
+    name: 'Sri Lanka',
+    shortName: 'SL',
+    color: Color(0xff002b54),
+  );
+  static const _denmark = SportTeam(
+    id: 'den',
+    name: 'Denmark',
+    shortName: 'DEN',
+    color: Color(0xffc60c30),
+  );
+  static const _estonia = SportTeam(
+    id: 'est',
+    name: 'Estonia',
+    shortName: 'EST',
+    color: Color(0xff0072ce),
+  );
+
+  static const _gibraltar = SportTeam(
+    id: 'gibr',
+    name: 'Gibraltar',
+    shortName: 'GIBR',
+    color: Color(0xffe2001a),
+  );
+  static const _hungary = SportTeam(
+    id: 'hun',
+    name: 'Hungary',
+    shortName: 'HUN',
+    color: Color(0xff436f4d),
+  );
+
+  static const _romania = SportTeam(
+    id: 'rom',
+    name: 'Romania',
+    shortName: 'ROM',
+    color: Color(0xfffcd116),
+  );
+  static const _serbia = SportTeam(
+    id: 'srb',
+    name: 'Serbia',
+    shortName: 'SRB',
+    color: Color(0xffc6363c),
+  );
   static const _croatia = SportTeam(
     id: 'cro',
     name: 'Croatia',
@@ -150,6 +242,96 @@ class MockPredictionRepository implements PredictionRepository {
     name: 'Colombia',
     shortName: 'COL',
     color: Color(0xfffacc15),
+  );
+  static const _brazil = SportTeam(
+    id: 'bra',
+    name: 'Brazil',
+    shortName: 'BRA',
+    color: Color(0xfffacc15),
+  );
+  static const _japan = SportTeam(
+    id: 'jpn',
+    name: 'Japan',
+    shortName: 'JPN',
+    color: Color(0xffffffff),
+  );
+  static const _germany = SportTeam(
+    id: 'ger',
+    name: 'Germany',
+    shortName: 'GER',
+    color: Color(0xffffffff),
+  );
+  static const _sweden = SportTeam(
+    id: 'swe',
+    name: 'Sweden',
+    shortName: 'SWE',
+    color: Color(0xfffacc15),
+  );
+  static const _morocco = SportTeam(
+    id: 'mar',
+    name: 'Morocco',
+    shortName: 'MAR',
+    color: Color(0xffc1272d),
+  );
+  static const _canada = SportTeam(
+    id: 'can',
+    name: 'Canada',
+    shortName: 'CAN',
+    color: Color(0xffef4444),
+  );
+  static const _spain = SportTeam(
+    id: 'esp',
+    name: 'Spain',
+    shortName: 'ESP',
+    color: Color(0xfff59e0b),
+  );
+  static const _usa = SportTeam(
+    id: 'usa',
+    name: 'United States',
+    shortName: 'USA',
+    color: Color(0xff2563eb),
+  );
+  static const _belgium = SportTeam(
+    id: 'bel',
+    name: 'Belgium',
+    shortName: 'BEL',
+    color: Color(0xfffacc15),
+  );
+  static const _mexico = SportTeam(
+    id: 'mex',
+    name: 'Mexico',
+    shortName: 'MEX',
+    color: Color(0xff16a34a),
+  );
+  static const _egypt = SportTeam(
+    id: 'egy',
+    name: 'Egypt',
+    shortName: 'EGY',
+    color: Color(0xffdc2626),
+  );
+  static const _switzerland = SportTeam(
+    id: 'sui',
+    name: 'Switzerland',
+    shortName: 'SUI',
+    color: Color(0xffef4444),
+  );
+  static const _netherlands = SportTeam(
+    id: 'ned',
+    name: 'Netherlands',
+    shortName: 'NED',
+    color: Color(0xffff7a00),
+  );
+  static const _southAfrica = SportTeam(
+    id: 'rsa',
+    name: 'South Africa',
+    shortName: 'RSA',
+    color: Color(0xff16a34a),
+  );
+  static const _caboVerde = SportTeam(
+    id: 'cpv',
+    name: 'Cabo Verde',
+    shortName: 'CPV',
+    color: Color(0xff2563eb),
   );
   static const _liv = SportTeam(
     id: 'liv',
@@ -263,147 +445,336 @@ class MockPredictionRepository implements PredictionRepository {
   DateTime _at(int dayOffset, int hour, [int minute = 0]) =>
       _today.add(Duration(days: dayOffset, hours: hour, minutes: minute));
 
+  MatchStatus _fallbackStatusFor(DateTime kickoff) {
+    if (_now.isBefore(kickoff)) return MatchStatus.upcoming;
+    if (_now.isBefore(kickoff.add(const Duration(minutes: 125)))) {
+      return MatchStatus.live;
+    }
+    return MatchStatus.finished;
+  }
+
   late final List<SportMatch> _fixtures = [
-    // FIFA World Cup 26 - remaining group-stage fixtures through June 27.
+    // FIFA World Cup 26 knockout stage only: Round of 32 through Final.
     SportMatch(
-      id: 'fifa_fra_irq',
+      id: 'fifa_r32_mex_rsa',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _mexico,
+      away: _southAfrica,
+      kickoff: DateTime(2026, 6, 28, 18),
+      status: _fallbackStatusFor(DateTime(2026, 6, 28, 18)),
+      prizeLabel: 'Win 4200 coins',
+    ),
+    SportMatch(
+      id: 'fifa_r32_bra_jpn',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _brazil,
+      away: _japan,
+      kickoff: DateTime(2026, 6, 28, 20, 30),
+      status: _fallbackStatusFor(DateTime(2026, 6, 28, 20, 30)),
+      prizeLabel: 'Win 5200 coins',
+    ),
+    SportMatch(
+      id: 'fifa_r32_ger_par',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _germany,
+      away: _paraguay,
+      kickoff: DateTime(2026, 6, 28, 23),
+      status: _fallbackStatusFor(DateTime(2026, 6, 28, 23)),
+      prizeLabel: 'Win 4800 coins',
+    ),
+    SportMatch(
+      id: 'fifa_r32_ned_mar',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _netherlands,
+      away: _morocco,
+      kickoff: DateTime(2026, 6, 29, 18),
+      status: _fallbackStatusFor(DateTime(2026, 6, 29, 18)),
+      prizeLabel: 'Win 4300 coins',
+    ),
+    SportMatch(
+      id: 'fifa_r32_fra_swe',
       leagueId: 'fifa',
       sport: Sport.football,
       home: _france,
-      away: _iraq,
-      kickoff: DateTime(2026, 6, 22, 18),
-      status: MatchStatus.upcoming,
-      prizeLabel: 'Win 5000 coins',
+      away: _sweden,
+      kickoff: DateTime(2026, 6, 29, 20, 30),
+      status: _fallbackStatusFor(DateTime(2026, 6, 29, 20, 30)),
+      prizeLabel: 'Win 5600 coins',
     ),
     SportMatch(
-      id: 'fifa_nor_sen',
-      leagueId: 'fifa',
-      sport: Sport.football,
-      home: _norway,
-      away: _senegal,
-      kickoff: DateTime(2026, 6, 22, 20, 30),
-      status: MatchStatus.upcoming,
-      prizeLabel: 'Win 4000 coins',
-    ),
-    SportMatch(
-      id: 'fifa_arg_jor',
+      id: 'fifa_r32_arg_cpv',
       leagueId: 'fifa',
       sport: Sport.football,
       home: _argentina,
-      away: _jordan,
-      kickoff: DateTime(2026, 6, 23, 18),
-      status: MatchStatus.upcoming,
-      prizeLabel: 'Win 6000 coins',
+      away: _caboVerde,
+      kickoff: DateTime(2026, 6, 29, 23),
+      status: _fallbackStatusFor(DateTime(2026, 6, 29, 23)),
+      prizeLabel: 'Win 5800 coins',
     ),
     SportMatch(
-      id: 'fifa_alg_aut',
+      id: 'fifa_r32_por_cro',
       leagueId: 'fifa',
       sport: Sport.football,
-      home: _algeria,
-      away: _austria,
-      kickoff: DateTime(2026, 6, 23, 20, 30),
-      status: MatchStatus.upcoming,
-      prizeLabel: 'Win 3500 coins',
+      home: _portugal,
+      away: _croatia,
+      kickoff: DateTime(2026, 6, 30, 18),
+      status: _fallbackStatusFor(DateTime(2026, 6, 30, 18)),
+      prizeLabel: 'Win 5400 coins',
     ),
     SportMatch(
-      id: 'fifa_eng_gha',
+      id: 'fifa_r32_usa_sen',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _usa,
+      away: _senegal,
+      kickoff: DateTime(2026, 6, 30, 20, 30),
+      status: _fallbackStatusFor(DateTime(2026, 6, 30, 20, 30)),
+      prizeLabel: 'Win 5000 coins',
+    ),
+    SportMatch(
+      id: 'fifa_r32_eng_gha',
       leagueId: 'fifa',
       sport: Sport.football,
       home: _england,
       away: _ghana,
-      kickoff: DateTime(2026, 6, 23, 23),
-      status: MatchStatus.upcoming,
-      prizeLabel: 'Win 5500 coins',
+      kickoff: DateTime(2026, 7, 1, 18),
+      status: _fallbackStatusFor(DateTime(2026, 7, 1, 18)),
+      prizeLabel: 'Win 5200 coins',
     ),
     SportMatch(
-      id: 'fifa_cro_pan',
+      id: 'fifa_r32_esp_aut',
       leagueId: 'fifa',
       sport: Sport.football,
-      home: _croatia,
-      away: _panama,
-      kickoff: DateTime(2026, 6, 23, 23, 30),
-      status: MatchStatus.upcoming,
-      prizeLabel: 'Win 4000 coins',
+      home: _spain,
+      away: _austria,
+      kickoff: DateTime(2026, 7, 1, 20, 30),
+      status: _fallbackStatusFor(DateTime(2026, 7, 1, 20, 30)),
+      prizeLabel: 'Win 5300 coins',
     ),
     SportMatch(
-      id: 'fifa_por_uzb',
+      id: 'fifa_r32_bel_ira',
       leagueId: 'fifa',
       sport: Sport.football,
-      home: _portugal,
-      away: _uzbekistan,
-      kickoff: DateTime(2026, 6, 24, 18),
-      status: MatchStatus.upcoming,
-      prizeLabel: 'Win 5000 coins',
+      home: _belgium,
+      away: _iraq,
+      kickoff: DateTime(2026, 7, 2, 18),
+      status: _fallbackStatusFor(DateTime(2026, 7, 2, 18)),
+      prizeLabel: 'Win 4700 coins',
     ),
     SportMatch(
-      id: 'fifa_col_cod',
-      leagueId: 'fifa',
-      sport: Sport.football,
-      home: _colombia,
-      away: _congoDr,
-      kickoff: DateTime(2026, 6, 24, 20, 30),
-      status: MatchStatus.upcoming,
-      prizeLabel: 'Win 4500 coins',
-    ),
-    SportMatch(
-      id: 'fifa_nor_fra',
+      id: 'fifa_r32_nor_egy',
       leagueId: 'fifa',
       sport: Sport.football,
       home: _norway,
-      away: _france,
-      kickoff: DateTime(2026, 6, 26, 18),
-      status: MatchStatus.upcoming,
-      prizeLabel: 'Win 6000 coins',
+      away: _egypt,
+      kickoff: DateTime(2026, 7, 2, 20, 30),
+      status: _fallbackStatusFor(DateTime(2026, 7, 2, 20, 30)),
+      prizeLabel: 'Win 4500 coins',
     ),
     SportMatch(
-      id: 'fifa_sen_irq',
+      id: 'fifa_r32_sui_alg',
       leagueId: 'fifa',
       sport: Sport.football,
-      home: _senegal,
-      away: _iraq,
-      kickoff: DateTime(2026, 6, 26, 20, 30),
-      status: MatchStatus.upcoming,
-      prizeLabel: 'Win 4000 coins',
-    ),
-    SportMatch(
-      id: 'fifa_aut_arg',
-      leagueId: 'fifa',
-      sport: Sport.football,
-      home: _austria,
-      away: _argentina,
-      kickoff: DateTime(2026, 6, 27, 18),
-      status: MatchStatus.upcoming,
-      prizeLabel: 'Win 6500 coins',
-    ),
-    SportMatch(
-      id: 'fifa_jor_alg',
-      leagueId: 'fifa',
-      sport: Sport.football,
-      home: _jordan,
+      home: _switzerland,
       away: _algeria,
-      kickoff: DateTime(2026, 6, 27, 20, 30),
-      status: MatchStatus.upcoming,
-      prizeLabel: 'Win 3500 coins',
+      kickoff: DateTime(2026, 7, 3, 18),
+      status: _fallbackStatusFor(DateTime(2026, 7, 3, 18)),
+      prizeLabel: 'Win 3900 coins',
     ),
     SportMatch(
-      id: 'fifa_pan_eng',
+      id: 'fifa_r32_can_col',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _canada,
+      away: _colombia,
+      kickoff: DateTime(2026, 7, 3, 20, 30),
+      status: _fallbackStatusFor(DateTime(2026, 7, 3, 20, 30)),
+      prizeLabel: 'Win 4600 coins',
+    ),
+    SportMatch(
+      id: 'fifa_r32_pan_uzb',
       leagueId: 'fifa',
       sport: Sport.football,
       home: _panama,
-      away: _england,
-      kickoff: DateTime(2026, 6, 27, 23),
-      status: MatchStatus.upcoming,
-      prizeLabel: 'Win 5500 coins',
+      away: _uzbekistan,
+      kickoff: DateTime(2026, 7, 3, 23),
+      status: _fallbackStatusFor(DateTime(2026, 7, 3, 23)),
+      prizeLabel: 'Win 3600 coins',
     ),
     SportMatch(
-      id: 'fifa_cro_gha',
+      id: 'fifa_r32_jor_cod',
       leagueId: 'fifa',
       sport: Sport.football,
-      home: _croatia,
-      away: _ghana,
-      kickoff: DateTime(2026, 6, 27, 23, 30),
-      status: MatchStatus.upcoming,
-      prizeLabel: 'Win 4500 coins',
+      home: _jordan,
+      away: _congoDr,
+      kickoff: DateTime(2026, 7, 3, 23, 30),
+      status: _fallbackStatusFor(DateTime(2026, 7, 3, 23, 30)),
+      prizeLabel: 'Win 3600 coins',
+    ),
+    SportMatch(
+      id: 'fifa_r16_can_mar',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _canada,
+      away: _morocco,
+      kickoff: DateTime(2026, 7, 4, 18),
+      status: _fallbackStatusFor(DateTime(2026, 7, 4, 18)),
+      prizeLabel: 'Win 6200 coins',
+    ),
+    SportMatch(
+      id: 'fifa_fra_par',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _france,
+      away: _paraguay,
+      kickoff: DateTime(2026, 7, 5, 2, 30),
+      status: _fallbackStatusFor(DateTime(2026, 7, 5, 2, 30)),
+      prizeLabel: 'Win 7000 coins',
+      liveStatusNote: 'Live score not updated yet',
+    ),
+    SportMatch(
+      id: 'fifa_r16_bra_nor',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _brazil,
+      away: _norway,
+      kickoff: DateTime(2026, 7, 5, 18),
+      status: _fallbackStatusFor(DateTime(2026, 7, 5, 18)),
+      prizeLabel: 'Win 6400 coins',
+    ),
+    SportMatch(
+      id: 'fifa_r16_mex_eng',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _mexico,
+      away: _england,
+      kickoff: DateTime(2026, 7, 5, 23),
+      status: _fallbackStatusFor(DateTime(2026, 7, 5, 23)),
+      prizeLabel: 'Win 6500 coins',
+    ),
+    SportMatch(
+      id: 'fifa_r16_por_esp',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _portugal,
+      away: _spain,
+      kickoff: DateTime(2026, 7, 6, 18),
+      status: _fallbackStatusFor(DateTime(2026, 7, 6, 18)),
+      prizeLabel: 'Win 6800 coins',
+    ),
+    SportMatch(
+      id: 'fifa_r16_usa_bel',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _usa,
+      away: _belgium,
+      kickoff: DateTime(2026, 7, 6, 23),
+      status: _fallbackStatusFor(DateTime(2026, 7, 6, 23)),
+      prizeLabel: 'Win 6100 coins',
+    ),
+    SportMatch(
+      id: 'fifa_r16_arg_egy',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _argentina,
+      away: _egypt,
+      kickoff: DateTime(2026, 7, 7, 18),
+      status: _fallbackStatusFor(DateTime(2026, 7, 7, 18)),
+      prizeLabel: 'Win 6600 coins',
+    ),
+    SportMatch(
+      id: 'fifa_r16_sui_col',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _switzerland,
+      away: _colombia,
+      kickoff: DateTime(2026, 7, 7, 23),
+      status: _fallbackStatusFor(DateTime(2026, 7, 7, 23)),
+      prizeLabel: 'Win 6000 coins',
+    ),
+    SportMatch(
+      id: 'fifa_qf_mar_fra',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _morocco,
+      away: _france,
+      kickoff: DateTime(2026, 7, 9, 23),
+      status: _fallbackStatusFor(DateTime(2026, 7, 9, 23)),
+      prizeLabel: 'Win 8000 coins',
+    ),
+    SportMatch(
+      id: 'fifa_qf_por_bel',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _portugal,
+      away: _belgium,
+      kickoff: DateTime(2026, 7, 10, 23),
+      status: _fallbackStatusFor(DateTime(2026, 7, 10, 23)),
+      prizeLabel: 'Win 7800 coins',
+    ),
+    SportMatch(
+      id: 'fifa_qf_nor_eng',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _norway,
+      away: _england,
+      kickoff: DateTime(2026, 7, 11, 18),
+      status: _fallbackStatusFor(DateTime(2026, 7, 11, 18)),
+      prizeLabel: 'Win 7600 coins',
+    ),
+    SportMatch(
+      id: 'fifa_qf_arg_col',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _argentina,
+      away: _colombia,
+      kickoff: DateTime(2026, 7, 11, 23),
+      status: _fallbackStatusFor(DateTime(2026, 7, 11, 23)),
+      prizeLabel: 'Win 7900 coins',
+    ),
+    SportMatch(
+      id: 'fifa_sf_fra_bel',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _france,
+      away: _belgium,
+      kickoff: DateTime(2026, 7, 14, 23),
+      status: _fallbackStatusFor(DateTime(2026, 7, 14, 23)),
+      prizeLabel: 'Win 9000 coins',
+    ),
+    SportMatch(
+      id: 'fifa_sf_eng_arg',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _england,
+      away: _argentina,
+      kickoff: DateTime(2026, 7, 15, 23),
+      status: _fallbackStatusFor(DateTime(2026, 7, 15, 23)),
+      prizeLabel: 'Win 9000 coins',
+    ),
+    SportMatch(
+      id: 'fifa_third_bel_eng',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _belgium,
+      away: _england,
+      kickoff: DateTime(2026, 7, 18, 20, 30),
+      status: _fallbackStatusFor(DateTime(2026, 7, 18, 20, 30)),
+      prizeLabel: 'Win 6500 coins',
+    ),
+    SportMatch(
+      id: 'fifa_final_fra_arg',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _france,
+      away: _argentina,
+      kickoff: DateTime(2026, 7, 19, 23, 30),
+      status: _fallbackStatusFor(DateTime(2026, 7, 19, 23, 30)),
+      prizeLabel: 'Win 12000 coins',
     ),
     // EPL — today's headline fixture: Man Utd vs Arsenal.
     SportMatch(
@@ -502,6 +873,61 @@ class MockPredictionRepository implements PredictionRepository {
       status: MatchStatus.upcoming,
       prizeLabel: 'Win 3000 coins',
     ),
+    // Live IND vs ENG API matched event!
+    SportMatch(
+      id: '1496576', // ESPN Event ID
+      leagueId: '23810', // ESPN League ID
+      sport: Sport.cricket,
+      home: _england,
+      away: _india,
+      kickoff: _now,
+      status: MatchStatus.live,
+    ),
+    SportMatch(
+      id: '1543361',
+      leagueId: '1543347',
+      sport: Sport.cricket,
+      home: _denmark,
+      away: _estonia,
+      kickoff: _now,
+      status: MatchStatus.live,
+    ),
+    SportMatch(
+      id: '1543362',
+      leagueId: '1543347',
+      sport: Sport.cricket,
+      home: _gibraltar,
+      away: _belgium,
+      kickoff: _now,
+      status: MatchStatus.live,
+    ),
+    SportMatch(
+      id: '1543363',
+      leagueId: '1543347',
+      sport: Sport.cricket,
+      home: _hungary,
+      away: _norway,
+      kickoff: _now.add(const Duration(hours: 4)),
+      status: MatchStatus.upcoming,
+    ),
+    SportMatch(
+      id: '1543364',
+      leagueId: '1543347',
+      sport: Sport.cricket,
+      home: _romania,
+      away: _serbia,
+      kickoff: _now.add(const Duration(hours: 4)),
+      status: MatchStatus.upcoming,
+    ),
+    SportMatch(
+      id: '1538312',
+      leagueId: '23810', // Map to International T20
+      sport: Sport.cricket,
+      home: _westIndies,
+      away: _sriLanka,
+      kickoff: _at(-4, 14),
+      status: MatchStatus.finished,
+    ),
     // IPL — finished cricket, settleable reveal demo (8th fixture).
     SportMatch(
       id: 'ipl_csk_mi',
@@ -579,23 +1005,74 @@ class MockPredictionRepository implements PredictionRepository {
       status: MatchStatus.upcoming,
       prizeLabel: 'Win 3500 coins',
     ),
+    SportMatch(
+      id: 'f1_british_gp',
+      leagueId: 'f1',
+      sport: Sport.f1,
+      home: _mercedes,
+      away: _ferrari,
+      kickoff: _at(0, 14), // Changed to today so it appears instantly on the active tab
+      status: MatchStatus.finished,
+      homeScore: 'P1',
+      awayScore: 'P3',
+      resultLine: 'British Grand Prix: Hamilton takes the chequered flag',
+      rewardXp: 150,
+      timelineEvents: const [
+        MatchEvent(
+          minute: 12,
+          isHomeTeam: true,
+          playerName: 'Lewis Hamilton',
+          type: MatchEventType.substitution,
+          secondaryPlayerName: 'Overtakes for P2',
+        ),
+        MatchEvent(
+          minute: 52,
+          isHomeTeam: true,
+          playerName: 'Lewis Hamilton',
+          type: MatchEventType.goal,
+          secondaryPlayerName: 'Wins the Race!',
+        ),
+      ],
+      f1DriverStandings: const [
+        'Charles Leclerc',
+        'George Russell',
+        'Lewis Hamilton',
+        'Lando Norris',
+        'Isack Hadjar',
+        'Liam Lawson',
+        'Arvid Lindblad',
+        'Gabriel Bortoleto',
+        'Franco Colapinto',
+        'Pierre Gasly',
+        'Oscar Piastri',
+        'Oliver Bearman',
+        'Esteban Ocon',
+        'Sergio Pérez',
+        'Kimi Antonelli',
+        'Valtteri Bottas',
+        'Carlos Sainz',
+        'Fernando Alonso',
+        'Lance Stroll',
+        'Max Verstappen',
+        'Alexander Albon',
+        'Nico Hülkenberg',
+      ],
+    ),
   ];
 
+  late final Map<String, List<PredictionQuiz>> _quizSets = {
+    'fifa_fra_par': _franceParaguayQuizzes(),
+    'f1_british_gp': _f1BritishGpQuizzes(),
+  };
+
   late final Map<String, PredictionQuiz> _quizzes = {
-    'fifa_fra_irq': _footballQuiz('fifa_fra_irq', 'France', 'Iraq'),
-    'fifa_nor_sen': _footballQuiz('fifa_nor_sen', 'Norway', 'Senegal'),
-    'fifa_arg_jor': _footballQuiz('fifa_arg_jor', 'Argentina', 'Jordan'),
-    'fifa_alg_aut': _footballQuiz('fifa_alg_aut', 'Algeria', 'Austria'),
-    'fifa_eng_gha': _footballQuiz('fifa_eng_gha', 'England', 'Ghana'),
-    'fifa_cro_pan': _footballQuiz('fifa_cro_pan', 'Croatia', 'Panama'),
-    'fifa_por_uzb': _footballQuiz('fifa_por_uzb', 'Portugal', 'Uzbekistan'),
-    'fifa_col_cod': _footballQuiz('fifa_col_cod', 'Colombia', 'Congo DR'),
-    'fifa_nor_fra': _footballQuiz('fifa_nor_fra', 'Norway', 'France'),
-    'fifa_sen_irq': _footballQuiz('fifa_sen_irq', 'Senegal', 'Iraq'),
-    'fifa_aut_arg': _footballQuiz('fifa_aut_arg', 'Austria', 'Argentina'),
-    'fifa_jor_alg': _footballQuiz('fifa_jor_alg', 'Jordan', 'Algeria'),
-    'fifa_pan_eng': _footballQuiz('fifa_pan_eng', 'Panama', 'England'),
-    'fifa_cro_gha': _footballQuiz('fifa_cro_gha', 'Croatia', 'Ghana'),
+    for (final fixture in _fixtures)
+      if (fixture.leagueId == 'fifa' && fixture.id != 'fifa_fra_par')
+        fixture.id: _footballQuiz(
+          fixture.id,
+          fixture.home.name,
+          fixture.away.name,
+        ),
     'epl_mu_ars': _footballQuiz('epl_mu_ars', 'Man Utd', 'Arsenal'),
     'epl_liv_mc': _footballQuiz('epl_liv_mc', 'Liverpool', 'Man City'),
     'epl_cfc_new': const PredictionQuiz(
@@ -679,6 +1156,39 @@ class MockPredictionRepository implements PredictionRepository {
           options: ['Yes', 'No'],
           reward: 5,
           settledOptionIndex: 1,
+        ),
+      ],
+    ),
+    'ipl_srh_mi': const PredictionQuiz(
+      matchId: 'ipl_srh_mi',
+      questions: [
+        QuizQuestion(
+          id: 'q1',
+          text: 'Who wins the toss?',
+          options: ['Hyderabad', 'Mumbai'],
+          reward: 50,
+          settledOptionIndex: 1,
+        ),
+        QuizQuestion(
+          id: 'q2',
+          text: 'Total sixes over/under 12.5?',
+          options: ['Over 12.5', 'Under 12.5'],
+          reward: 100,
+          settledOptionIndex: 0,
+        ),
+        QuizQuestion(
+          id: 'q3',
+          text: 'Who will win Hyderabad vs Mumbai?',
+          options: ['Hyderabad', 'Tie', 'Mumbai'],
+          reward: 100,
+          settledOptionIndex: 2,
+        ),
+        QuizQuestion(
+          id: 'q4',
+          text: 'Will either opener score 50+?',
+          options: ['Yes', 'No'],
+          reward: 75,
+          settledOptionIndex: 0,
         ),
       ],
     ),
@@ -810,6 +1320,159 @@ class MockPredictionRepository implements PredictionRepository {
     String away,
   ) => buildFootballQuiz(matchId: matchId, home: home, away: away);
 
+  static List<PredictionQuiz> _predictTabQuizSets(
+    SportMatch match,
+    PredictionQuiz primary,
+  ) {
+    final main = switch (match.sport) {
+      Sport.football => _withQuizMeta(
+        primary,
+        title: 'Scoreline Quiz',
+        subtitle: 'Final score and scoring market',
+      ),
+      Sport.cricket => _withQuizMeta(
+        primary,
+        title: 'Match Basics Quiz',
+        subtitle: 'Toss, sixes, and match winner',
+      ),
+      _ => primary,
+    };
+    final events = switch (match.sport) {
+      Sport.football => _footballEventsQuiz(match),
+      Sport.cricket => _cricketEventsQuiz(match),
+      _ => null,
+    };
+    return events == null ? [main] : [main, events];
+  }
+
+  static PredictionQuiz _withQuizMeta(
+    PredictionQuiz quiz, {
+    required String title,
+    required String subtitle,
+  }) => PredictionQuiz(
+    id: quiz.id,
+    matchId: quiz.matchId,
+    title: title,
+    subtitle: subtitle,
+    prizeLabel: '${quiz.maxReward} XP available',
+    questions: quiz.questions,
+  );
+
+  static List<PredictionQuiz> _franceParaguayQuizzes() => const [
+    PredictionQuiz(
+      id: 'main',
+      matchId: 'fifa_fra_par',
+      title: 'Scoreline Quiz',
+      subtitle: 'Final score and scoring market',
+      prizeLabel: '190 XP available',
+      questions: [
+        QuizQuestion(
+          id: 'q1',
+          text: 'Predict the full-time score',
+          type: QuizQuestionType.exactScore,
+          reward: 120,
+        ),
+        QuizQuestion(
+          id: 'q2',
+          text: 'Both teams to score?',
+          options: ['Yes', 'No'],
+          reward: 70,
+        ),
+      ],
+    ),
+    PredictionQuiz(
+      id: 'events',
+      matchId: 'fifa_fra_par',
+      title: 'Match Events Quiz',
+      subtitle: 'Winner, first goal, and discipline',
+      prizeLabel: '230 XP available',
+      questions: [
+        QuizQuestion(
+          id: 'q1',
+          text: 'Who wins France vs Paraguay?',
+          options: ['France', 'Draw', 'Paraguay'],
+          reward: 90,
+        ),
+        QuizQuestion(
+          id: 'q2',
+          text: 'Which team scores first?',
+          options: ['France', 'Paraguay', 'No goal'],
+          reward: 80,
+        ),
+        QuizQuestion(
+          id: 'q3',
+          text: 'Will a red card be shown?',
+          options: ['Yes', 'No'],
+          reward: 60,
+        ),
+      ],
+    ),
+  ];
+
+  static PredictionQuiz _footballEventsQuiz(SportMatch match) {
+    final home = match.home.name;
+    final away = match.away.name;
+    return PredictionQuiz(
+      id: 'events',
+      matchId: match.id,
+      title: 'Match Events Quiz',
+      subtitle: 'Winner, first goal, and discipline',
+      prizeLabel: '230 XP available',
+      questions: [
+        QuizQuestion(
+          id: 'q1',
+          text: 'Who wins $home vs $away?',
+          options: [home, 'Draw', away],
+          reward: 90,
+        ),
+        QuizQuestion(
+          id: 'q2',
+          text: 'Which team scores first?',
+          options: [home, away, 'No goal'],
+          reward: 80,
+        ),
+        const QuizQuestion(
+          id: 'q3',
+          text: 'Will a red card be shown?',
+          options: ['Yes', 'No'],
+          reward: 60,
+        ),
+      ],
+    );
+  }
+
+  static PredictionQuiz _cricketEventsQuiz(SportMatch match) {
+    final home = match.home.name;
+    final away = match.away.name;
+    return PredictionQuiz(
+      id: 'events',
+      matchId: match.id,
+      title: 'Match Events Quiz',
+      subtitle: 'Powerplay, wickets, and final-over drama',
+      prizeLabel: '210 XP available',
+      questions: [
+        QuizQuestion(
+          id: 'q1',
+          text: 'Who has the higher powerplay score?',
+          options: [home, away, 'Tie'],
+          reward: 80,
+        ),
+        const QuizQuestion(
+          id: 'q2',
+          text: 'Total wickets over/under 12.5?',
+          options: ['Over 12.5', 'Under 12.5'],
+          reward: 70,
+        ),
+        const QuizQuestion(
+          id: 'q3',
+          text: 'Will the match be decided in the final over?',
+          options: ['Yes', 'No'],
+          reward: 60,
+        ),
+      ],
+    );
+  }
+
   static PredictionQuiz _cricketQuiz(
     String matchId,
     String home,
@@ -905,7 +1568,7 @@ class MockPredictionRepository implements PredictionRepository {
         form: '-----',
       ),
       TeamStanding(
-        team: _norway,
+        team: _paraguay,
         rank: 6,
         played: 0,
         won: 0,
@@ -916,7 +1579,7 @@ class MockPredictionRepository implements PredictionRepository {
         form: '-----',
       ),
       TeamStanding(
-        team: _croatia,
+        team: _norway,
         rank: 7,
         played: 0,
         won: 0,
@@ -927,7 +1590,7 @@ class MockPredictionRepository implements PredictionRepository {
         form: '-----',
       ),
       TeamStanding(
-        team: _colombia,
+        team: _croatia,
         rank: 8,
         played: 0,
         won: 0,
@@ -1126,14 +1789,51 @@ class MockPredictionRepository implements PredictionRepository {
   };
 
   @override
-  Future<List<League>> leagues() async => const [_fifa, _epl, _ipl];
+  Future<List<League>> leagues() async => const [_fifa, _intl, _f1, _wnba];
 
   @override
-  Future<List<SportMatch>> fixtures({DateTime? day}) async =>
-      List.unmodifiable(_fixtures);
+  Future<List<SportMatch>> fixtures({DateTime? day}) async {
+    final now = DateTime.now();
+    final mockFixtures = _fixtures.where((f) => f.leagueId != 'epl' && f.leagueId != 'ipl').map((f) {
+      if (f.id == 'f1_british_gp') {
+        return f.copyWith(kickoff: DateTime(now.year, now.month, now.day, 14, 0));
+      }
+      return f;
+    }).toList();
+    
+    // Fetch dynamic matches (yesterday, today, next 3 days).
+    final espnService = EspnScoreService();
+    final dynamicMatches = await espnService.fetchDynamicMatches();
+
+    return List.unmodifiable([...mockFixtures, ...dynamicMatches]);
+  }
 
   @override
-  Future<PredictionQuiz?> quizFor(String matchId) async => _quizzes[matchId];
+  Future<List<PredictionQuiz>> quizzesFor(String matchId) async {
+    final sets = _quizSets[matchId];
+    if (sets != null) return List.unmodifiable(sets);
+    final quiz = _quizzes[matchId];
+    if (quiz == null) return const [];
+    final fixture = _fixtureFor(matchId);
+    if (fixture == null) return [quiz];
+    return List.unmodifiable(_predictTabQuizSets(fixture, quiz));
+  }
+
+  SportMatch? _fixtureFor(String matchId) {
+    for (final fixture in _fixtures) {
+      if (fixture.id == matchId) return fixture;
+    }
+    return null;
+  }
+
+  @override
+  Future<PredictionQuiz?> quizFor(String matchId, String quizId) async {
+    final quizzes = await quizzesFor(matchId);
+    for (final quiz in quizzes) {
+      if (quiz.id == quizId) return quiz;
+    }
+    return null;
+  }
 
   @override
   Future<List<TeamStanding>> standings(String leagueId) async =>
@@ -1142,16 +1842,17 @@ class MockPredictionRepository implements PredictionRepository {
   @override
   Future<PredictionVoteBreakdown?> votesFor(
     String matchId,
+    String quizId,
     String questionId,
   ) async {
-    final quiz = _quizzes[matchId];
+    final quiz = await quizFor(matchId, quizId);
     if (quiz == null) return null;
     for (final question in quiz.questions) {
       if (question.id == questionId) {
         return PredictionVoteBreakdown(
           matchId: matchId,
           questionId: questionId,
-          totals: _voteTotals(matchId, question),
+          totals: _voteTotals(matchId, quizId, question),
         );
       }
     }
@@ -1159,10 +1860,16 @@ class MockPredictionRepository implements PredictionRepository {
   }
 
   @override
+  Future<List<SportMatch>> enrichFixtures(List<SportMatch> fixtures) async {
+    return fixtures; // Mock does no enrichment
+  }
+
+  @override
   Future<List<MatchPredictionLeaderboardEntry>> matchLeaderboard(
     String matchId,
+    String quizId,
   ) async {
-    final seed = _stableSeed(matchId);
+    final seed = _stableSeed('$matchId:$quizId');
     final names = const [
       'You',
       'Aarav',
@@ -1183,8 +1890,12 @@ class MockPredictionRepository implements PredictionRepository {
     ];
   }
 
-  static Map<int, int> _voteTotals(String matchId, QuizQuestion question) {
-    final seed = _stableSeed('$matchId:${question.id}');
+  static Map<int, int> _voteTotals(
+    String matchId,
+    String quizId,
+    QuizQuestion question,
+  ) {
+    final seed = _stableSeed('$matchId:$quizId:${question.id}');
     if (question.isScorePrediction) {
       final correct = question.settledScoreEncoded;
       final scores = <int>[
@@ -1214,4 +1925,42 @@ class MockPredictionRepository implements PredictionRepository {
     }
     return hash;
   }
+
+  static List<PredictionQuiz> _f1BritishGpQuizzes() => const [
+    PredictionQuiz(
+      id: 'main',
+      matchId: 'f1_british_gp',
+      title: 'Race Predictions',
+      questions: [
+        QuizQuestion(
+          id: 'q1',
+          text: 'Who will win the race?',
+          options: ['Lewis Hamilton', 'Charles Leclerc', 'Kimi Antonelli', 'George Russell'],
+          reward: 100,
+          settledOptionIndex: 0,
+        ),
+        QuizQuestion(
+          id: 'q2',
+          text: 'Will there be a safety car?',
+          options: ['Yes', 'No'],
+          reward: 50,
+          settledOptionIndex: 0,
+        ),
+      ],
+    ),
+    PredictionQuiz(
+      id: 'bonus',
+      matchId: 'f1_british_gp',
+      title: 'Bonus Predictions',
+      questions: [
+        QuizQuestion(
+          id: 'b1',
+          text: 'Who gets the fastest lap?',
+          options: ['Lewis Hamilton', 'Charles Leclerc', 'George Russell'],
+          reward: 75,
+          settledOptionIndex: 2,
+        ),
+      ],
+    ),
+  ];
 }

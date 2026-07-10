@@ -1,0 +1,181 @@
+name,short_name,team,team_code,role,rating,tier
+Jasprit Bumrah,J Bumrah,Mumbai Indians,MI,Bowler,94,Platinum
+Virat Kohli,V Kohli,Royal Challengers Bengaluru,RCB,Batsman,94,Platinum
+Suryakumar Yadav,SKY,Mumbai Indians,MI,Batsman,93,Platinum
+Rashid Khan,R Khan,Gujarat Titans,GT,Bowler,93,Platinum
+Heinrich Klaasen,H Klaasen,Sunrisers Hyderabad,SRH,Wicket-keeper,92,Platinum
+Shubman Gill,S Gill,Gujarat Titans,GT,Batsman,92,Platinum
+Rohit Sharma,R Sharma,Mumbai Indians,MI,Batsman,91,Platinum
+Sunil Narine,S Narine,Kolkata Knight Riders,KKR,All-rounder,91,Platinum
+Pat Cummins,P Cummins,Sunrisers Hyderabad,SRH,Bowler,91,Platinum
+Ravindra Jadeja,R Jadeja,Rajasthan Royals,RR,All-rounder,91,Platinum
+Rishabh Pant,R Pant,Lucknow Super Giants,LSG,Wicket-keeper,91,Platinum
+Jos Buttler,J Buttler,Gujarat Titans,GT,Wicket-keeper,91,Platinum
+Hardik Pandya,H Pandya,Mumbai Indians,MI,All-rounder,90,Platinum
+Travis Head,T Head,Sunrisers Hyderabad,SRH,Batsman,90,Platinum
+Nicholas Pooran,N Pooran,Lucknow Super Giants,LSG,Wicket-keeper,90,Platinum
+Kagiso Rabada,K Rabada,Gujarat Titans,GT,Bowler,90,Platinum
+MS Dhoni,MSD,Chennai Super Kings,CSK,Wicket-keeper,89,Gold
+Sanju Samson,S Samson,Chennai Super Kings,CSK,Wicket-keeper,89,Gold
+Trent Boult,T Boult,Mumbai Indians,MI,Bowler,89,Gold
+Yashasvi Jaiswal,Y Jaiswal,Rajasthan Royals,RR,Batsman,89,Gold
+KL Rahul,KL Rahul,Delhi Capitals,DC,Wicket-keeper,89,Gold
+Kuldeep Yadav,K Yadav,Delhi Capitals,DC,Bowler,89,Gold
+Arshdeep Singh,A Singh,Punjab Kings,PBKS,Bowler,89,Gold
+Mohammed Shami,M Shami,Lucknow Super Giants,LSG,Bowler,89,Gold
+Ruturaj Gaikwad,R Gaikwad,Chennai Super Kings,CSK,Batsman,88,Gold
+Quinton de Kock,Q de Kock,Mumbai Indians,MI,Wicket-keeper,88,Gold
+Josh Hazlewood,J Hazlewood,Royal Challengers Bengaluru,RCB,Bowler,88,Gold
+Rinku Singh,R Singh,Kolkata Knight Riders,KKR,Batsman,88,Gold
+Matheesha Pathirana,M Pathirana,Kolkata Knight Riders,KKR,Bowler,88,Gold
+Abhishek Sharma,A Sharma,Sunrisers Hyderabad,SRH,All-rounder,88,Gold
+Sam Curran,S Curran,Rajasthan Royals,RR,All-rounder,88,Gold
+Axar Patel,A Patel,Delhi Capitals,DC,All-rounder,88,Gold
+Mitchell Starc,M Starc,Delhi Capitals,DC,Bowler,88,Gold
+Shreyas Iyer,S Iyer,Punjab Kings,PBKS,Batsman,88,Gold
+Yuzvendra Chahal,Y Chahal,Punjab Kings,PBKS,Bowler,88,Gold
+Mohammed Siraj,M Siraj,Gujarat Titans,GT,Bowler,88,Gold
+Shivam Dube,S Dube,Chennai Super Kings,CSK,All-rounder,87,Gold
+Phil Salt,P Salt,Royal Challengers Bengaluru,RCB,Wicket-keeper,87,Gold
+Cameron Green,C Green,Kolkata Knight Riders,KKR,All-rounder,87,Gold
+Riyan Parag,R Parag,Rajasthan Royals,RR,All-rounder,87,Gold
+Jofra Archer,J Archer,Rajasthan Royals,RR,Bowler,87,Gold
+David Miller,D Miller,Delhi Capitals,DC,Batsman,87,Gold
+Marcus Stoinis,M Stoinis,Punjab Kings,PBKS,All-rounder,87,Gold
+Wanindu Hasaranga,W Hasaranga,Lucknow Super Giants,LSG,All-rounder,87,Gold
+Mayank Yadav,M Yadav,Lucknow Super Giants,LSG,Bowler,87,Gold
+Sai Sudharsan,S Sudharsan,Gujarat Titans,GT,Batsman,87,Gold
+Tilak Varma,T Varma,Mumbai Indians,MI,Batsman,86,Gold
+Bhuvneshwar Kumar,B Kumar,Royal Challengers Bengaluru,RCB,Bowler,86,Gold
+Varun Chakaravarthy,V Chakaravarthy,Kolkata Knight Riders,KKR,Bowler,86,Gold
+Ishan Kishan,I Kishan,Sunrisers Hyderabad,SRH,Wicket-keeper,86,Gold
+Liam Livingstone,L Livingstone,Sunrisers Hyderabad,SRH,All-rounder,86,Gold
+Tristan Stubbs,T Stubbs,Delhi Capitals,DC,Wicket-keeper,86,Gold
+T. Natarajan,T Natarajan,Delhi Capitals,DC,Bowler,86,Gold
+Aiden Markram,A Markram,Lucknow Super Giants,LSG,Batsman,86,Gold
+Mitchell Marsh,M Marsh,Lucknow Super Giants,LSG,All-rounder,86,Gold
+Khaleel Ahmed,K Ahmed,Chennai Super Kings,CSK,Bowler,85,Silver
+Will Jacks,W Jacks,Mumbai Indians,MI,All-rounder,85,Silver
+Rajat Patidar,R Patidar,Royal Challengers Bengaluru,RCB,Batsman,85,Silver
+Venkatesh Iyer,V Iyer,Royal Challengers Bengaluru,RCB,All-rounder,85,Silver
+Rachin Ravindra,R Ravindra,Kolkata Knight Riders,KKR,All-rounder,85,Silver
+Nitish Kumar Reddy,N Reddy,Sunrisers Hyderabad,SRH,All-rounder,85,Silver
+Harshal Patel,H Patel,Sunrisers Hyderabad,SRH,Bowler,85,Silver
+Shimron Hetmyer,S Hetmyer,Rajasthan Royals,RR,Batsman,85,Silver
+Jonny Bairstow,J Bairstow,Rajasthan Royals,RR,Wicket-keeper,85,Silver
+Sandeep Sharma,S Sharma,Rajasthan Royals,RR,Bowler,85,Silver
+Pathum Nissanka,P Nissanka,Delhi Capitals,DC,Batsman,85,Silver
+Josh Inglis,J Inglis,Lucknow Super Giants,LSG,Wicket-keeper,85,Silver
+Avesh Khan,A Khan,Lucknow Super Giants,LSG,Bowler,85,Silver
+Anrich Nortje,A Nortje,Lucknow Super Giants,LSG,Bowler,85,Silver
+Rahul Tewatia,R Tewatia,Gujarat Titans,GT,All-rounder,85,Silver
+Noor Ahmad,N Ahmad,Chennai Super Kings,CSK,Bowler,84,Silver
+Matt Henry,M Henry,Chennai Super Kings,CSK,Bowler,84,Silver
+Deepak Chahar,D Chahar,Mumbai Indians,MI,Bowler,84,Silver
+Tim David,T David,Royal Challengers Bengaluru,RCB,Batsman,84,Silver
+Jitesh Sharma,J Sharma,Royal Challengers Bengaluru,RCB,Wicket-keeper,84,Silver
+Rovman Powell,R Powell,Kolkata Knight Riders,KKR,Batsman,84,Silver
+Harshit Rana,H Rana,Kolkata Knight Riders,KKR,Bowler,84,Silver
+Kamindu Mendis,K Mendis,Sunrisers Hyderabad,SRH,All-rounder,84,Silver
+Vaibhav Sooryavanshi,V Sooryavanshi,Rajasthan Royals,RR,Batsman,84,Silver
+Dhruv Jurel,D Jurel,Rajasthan Royals,RR,Wicket-keeper,84,Silver
+Ben Duckett,B Duckett,Delhi Capitals,DC,Batsman,84,Silver
+Mukesh Kumar,M Kumar,Delhi Capitals,DC,Bowler,84,Silver
+Lungisani Ngidi,L Ngidi,Delhi Capitals,DC,Bowler,84,Silver
+Shashank Singh,S Singh,Punjab Kings,PBKS,Batsman,84,Silver
+Azmatullah Omarzai,A Omarzai,Punjab Kings,PBKS,All-rounder,84,Silver
+Lockie Ferguson,L Ferguson,Punjab Kings,PBKS,Bowler,84,Silver
+Mohsin Khan,M Khan,Lucknow Super Giants,LSG,Bowler,84,Silver
+Jason Holder,J Holder,Gujarat Titans,GT,All-rounder,84,Silver
+Glenn Phillips,G Phillips,Gujarat Titans,GT,Batsman,84,Silver
+Prasidh Krishna,P Krishna,Gujarat Titans,GT,Bowler,84,Silver
+Matthew Short,M Short,Chennai Super Kings,CSK,All-rounder,83,Silver
+Akeal Hosein,A Hosein,Chennai Super Kings,CSK,Bowler,83,Silver
+Spencer Johnson,S Johnson,Chennai Super Kings,CSK,Bowler,83,Silver
+Mitchell Santner,M Santner,Mumbai Indians,MI,All-rounder,83,Silver
+Krunal Pandya,K Pandya,Royal Challengers Bengaluru,RCB,All-rounder,83,Silver
+Yash Dayal,Y Dayal,Royal Challengers Bengaluru,RCB,Bowler,83,Silver
+Rahul Tripathi,R Tripathi,Kolkata Knight Riders,KKR,Batsman,83,Silver
+Finn Allen,F Allen,Kolkata Knight Riders,KKR,Wicket-keeper,83,Silver
+Nandre Burger,N Burger,Rajasthan Royals,RR,Bowler,83,Silver
+Nitish Rana,N Rana,Delhi Capitals,DC,Batsman,83,Silver
+Marco Jansen,M Jansen,Punjab Kings,PBKS,All-rounder,83,Silver
+Xavier Bartlett,X Bartlett,Punjab Kings,PBKS,Bowler,83,Silver
+Ayush Badoni,A Badoni,Lucknow Super Giants,LSG,Batsman,83,Silver
+Tom Banton,T Banton,Gujarat Titans,GT,Wicket-keeper,83,Silver
+Washington Sundar,W Sundar,Gujarat Titans,GT,All-rounder,83,Silver
+Jamie Overton,J Overton,Chennai Super Kings,CSK,All-rounder,82,Silver
+Shardul Thakur,S Thakur,Mumbai Indians,MI,All-rounder,82,Silver
+Devdutt Padikkal,D Padikkal,Royal Challengers Bengaluru,RCB,Batsman,82,Silver
+Romario Shepherd,R Shepherd,Royal Challengers Bengaluru,RCB,All-rounder,82,Silver
+Nuwan Thushara,N Thushara,Royal Challengers Bengaluru,RCB,Bowler,82,Silver
+Ajinkya Rahane,A Rahane,Kolkata Knight Riders,KKR,Batsman,82,Silver
+Brydon Carse,B Carse,Sunrisers Hyderabad,SRH,Bowler,82,Silver
+Tushar Deshpande,T Deshpande,Rajasthan Royals,RR,Bowler,82,Silver
+Akash Deep,A Deep,Rajasthan Royals,RR,Bowler,82,Silver
+Ashutosh Sharma,A Sharma,Delhi Capitals,DC,Batsman,82,Silver
+Dushmantha Chameera,D Chameera,Delhi Capitals,DC,Bowler,82,Silver
+Prabhsimran Singh,P Singh,Punjab Kings,PBKS,Wicket-keeper,82,Silver
+Nehal Wadhera,N Wadhera,Punjab Kings,PBKS,Batsman,82,Silver
+Harpreet Brar,H Brar,Punjab Kings,PBKS,All-rounder,82,Silver
+Yash Thakur,Y Thakur,Punjab Kings,PBKS,Bowler,82,Silver
+Shahbaz Ahmed,S Ahmed,Lucknow Super Giants,LSG,All-rounder,82,Silver
+Shahrukh Khan,S Khan,Gujarat Titans,GT,Batsman,82,Silver
+Ishant Sharma,I Sharma,Gujarat Titans,GT,Bowler,82,Silver
+Dewald Brevis,D Brevis,Chennai Super Kings,CSK,Batsman,81,Silver
+Ryan Rickelton,R Rickelton,Mumbai Indians,MI,Wicket-keeper,81,Silver
+Suyash Sharma,S Sharma,Royal Challengers Bengaluru,RCB,Bowler,81,Silver
+Angkrish Raghuvanshi,A Raghuvanshi,Kolkata Knight Riders,KKR,Batsman,81,Silver
+Ramandeep Singh,R Singh,Kolkata Knight Riders,KKR,All-rounder,81,Silver
+Vaibhav Arora,V Arora,Kolkata Knight Riders,KKR,Bowler,81,Silver
+Shivam Mavi,S Mavi,Sunrisers Hyderabad,SRH,Bowler,81,Silver
+Kwena Maphaka,K Maphaka,Rajasthan Royals,RR,Bowler,81,Silver
+Abishek Porel,A Porel,Delhi Capitals,DC,Wicket-keeper,81,Silver
+Kyle Jamieson,K Jamieson,Delhi Capitals,DC,Bowler,81,Silver
+Ben Dwarshuis,B Dwarshuis,Punjab Kings,PBKS,Bowler,81,Silver
+Abdul Samad,A Samad,Lucknow Super Giants,LSG,All-rounder,81,Silver
+Luke Wood,L Wood,Gujarat Titans,GT,Bowler,81,Silver
+Sarfaraz Khan,S Khan,Chennai Super Kings,CSK,Batsman,80,Silver
+Mukesh Choudhary,M Choudhary,Chennai Super Kings,CSK,Bowler,80,Silver
+Shreyas Gopal,S Gopal,Chennai Super Kings,CSK,Bowler,80,Silver
+Mayank Markande,M Markande,Mumbai Indians,MI,Bowler,80,Silver
+Rasikh Salam,R Salam,Royal Challengers Bengaluru,RCB,Bowler,80,Silver
+Manish Pandey,M Pandey,Kolkata Knight Riders,KKR,Batsman,80,Silver
+Tim Seifert,T Seifert,Kolkata Knight Riders,KKR,Wicket-keeper,80,Silver
+Kartik Tyagi,K Tyagi,Kolkata Knight Riders,KKR,Bowler,80,Silver
+Jaydev Unadkat,J Unadkat,Sunrisers Hyderabad,SRH,Bowler,80,Silver
+Donovan Ferreira,D Ferreira,Rajasthan Royals,RR,All-rounder,80,Silver
+Musheer Khan,M Khan,Punjab Kings,PBKS,All-rounder,80,Silver
+Vyshak Vijaykumar,V Vijaykumar,Punjab Kings,PBKS,Bowler,80,Silver
+Matthew Breetzke,M Breetzke,Lucknow Super Giants,LSG,Batsman,80,Silver
+Jayant Yadav,J Yadav,Gujarat Titans,GT,Bowler,80,Silver
+Anshul Kamboj,A Kamboj,Chennai Super Kings,CSK,Bowler,79,Bronze
+Naman Dhir,N Dhir,Mumbai Indians,MI,Batsman,79,Bronze
+Allah Ghazanfar,A Ghazanfar,Mumbai Indians,MI,Bowler,79,Bronze
+Jordan Cox,J Cox,Royal Challengers Bengaluru,RCB,Wicket-keeper,79,Bronze
+Jack Edwards,J Edwards,Sunrisers Hyderabad,SRH,All-rounder,79,Bronze
+Yudhvir Singh,Y Singh,Rajasthan Royals,RR,Bowler,79,Bronze
+Sameer Rizvi,S Rizvi,Delhi Capitals,DC,All-rounder,79,Bronze
+Cooper Connolly,C Connolly,Punjab Kings,PBKS,All-rounder,79,Bronze
+Arshin Kulkarni,A Kulkarni,Lucknow Super Giants,LSG,All-rounder,79,Bronze
+Manimaran Siddharth,M Siddharth,Lucknow Super Giants,LSG,Bowler,79,Bronze
+Anuj Rawat,A Rawat,Gujarat Titans,GT,Wicket-keeper,79,Bronze
+Arshad Khan,A Khan,Gujarat Titans,GT,All-rounder,79,Bronze
+Aman Khan,A Khan,Chennai Super Kings,CSK,All-rounder,78,Bronze
+Robin Minz,R Minz,Mumbai Indians,MI,Wicket-keeper,78,Bronze
+Corbin Bosch,C Bosch,Mumbai Indians,MI,All-rounder,78,Bronze
+Swapnil Singh,S Singh,Royal Challengers Bengaluru,RCB,All-rounder,78,Bronze
+Jacob Bethell,J Bethell,Royal Challengers Bengaluru,RCB,All-rounder,78,Bronze
+Anukul Roy,A Roy,Kolkata Knight Riders,KKR,All-rounder,78,Bronze
+R. Smaran,R Smaran,Sunrisers Hyderabad,SRH,Batsman,78,Bronze
+Shubham Dubey,S Dubey,Rajasthan Royals,RR,Batsman,78,Bronze
+Lhuan-dre Pretorius,L Pretorius,Rajasthan Royals,RR,Wicket-keeper,78,Bronze
+Vishnu Vinod,V Vinod,Punjab Kings,PBKS,Wicket-keeper,78,Bronze
+Kartik Sharma,K Sharma,Chennai Super Kings,CSK,Batsman,77,Bronze
+Raj Angad Bawa,R Bawa,Mumbai Indians,MI,All-rounder,77,Bronze
+Eshan Malinga,E Malinga,Sunrisers Hyderabad,SRH,Bowler,77,Bronze
+Harsh Dubey,H Dubey,Sunrisers Hyderabad,SRH,All-rounder,77,Bronze
+Auqib Nabi Dar,A Dar,Delhi Capitals,DC,All-rounder,77,Bronze
+Arjun Tendulkar,A Tendulkar,Lucknow Super Giants,LSG,All-rounder,77,Bronze
+Zeeshan Ansari,Z Ansari,Sunrisers Hyderabad,SRH,Bowler,76,Bronze
+Aniket Verma,A Verma,Sunrisers Hyderabad,SRH,Batsman,76,Bronze

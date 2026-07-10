@@ -48,7 +48,7 @@ class MatchHistoryEntry {
   });
 
   final String id;
-  final String mode; // 'match' | 'shootout'
+  final String mode; // 'match' | 'shootout' | 'grandprix' | 'super_over' | 'basketball'
   final String deckName;
   final String timestampIso;
   final String resultLabel;
@@ -60,6 +60,8 @@ class MatchHistoryEntry {
   final int? xpEarned;
 
   bool get isShootout => mode == 'shootout';
+  bool get isGrandPrix => mode == 'grandprix';
+  bool get isBasketball => mode == 'basketball';
 
   Map<String, dynamic> toJson() => {
     'id': id,

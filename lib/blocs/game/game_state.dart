@@ -55,6 +55,36 @@ class PackRevealData {
     maxAnimatedPlayerCards: 5,
   );
 
+  factory PackRevealData.cricketStarter({
+    required PackResult result,
+    required List<int> levelsGained,
+  }) => PackRevealData(
+    playerCards: result.playerCards,
+    actionCards: result.actionCards,
+    headline: 'CRICKET\nSTARTER',
+    statusLabel: 'UNLOCKED',
+    ctaLabel: 'ENTER SUPER OVER',
+    summaryLabel: '${result.cardCount} CARDS ADDED TO YOUR COLLECTION',
+    xpGained: result.xpGained,
+    levelsGained: levelsGained,
+    maxAnimatedPlayerCards: 3,
+  );
+
+  factory PackRevealData.basketballStarter({
+    required PackResult result,
+    required List<int> levelsGained,
+  }) => PackRevealData(
+    playerCards: result.playerCards,
+    actionCards: result.actionCards,
+    headline: 'HOOP\nSTARTER',
+    statusLabel: 'UNLOCKED',
+    ctaLabel: 'ENTER HOOP DUEL',
+    summaryLabel: '${result.cardCount} CARDS ADDED TO YOUR ROSTER DECK',
+    xpGained: result.xpGained,
+    levelsGained: levelsGained,
+    maxAnimatedPlayerCards: 3,
+  );
+
   factory PackRevealData.shop({
     required String packName,
     required PackResult result,
@@ -165,6 +195,9 @@ class GameState {
     required this.deckDefenders,
     required this.deckActions,
     required this.deckKeeper,
+    required this.deckBatsmen,
+    required this.deckBasketballPlayers,
+    required this.deckBasketballStarter,
     required this.coins,
     required this.coinLedger,
     required this.xpLedger,
@@ -180,6 +213,8 @@ class GameState {
     required this.tutorialSeen,
     required this.pendingPackReveal,
     required this.starterPackClaimed,
+    required this.cricketStarterPackClaimed,
+    required this.basketballStarterPackClaimed,
     required this.dailyDropLastClaimedAt,
     required this.phase,
     required this.currentRound,
@@ -220,6 +255,15 @@ class GameState {
       goalkeepers,
       [defaultDeckSlots.first.keeper].whereType<String>().toList(),
     ).firstOrNull,
+    deckBatsmen: cardsByIds(batsmen, defaultDeckSlots.first.batsmen),
+    deckBasketballPlayers: cardsByIds(
+      basketballPlayerCards,
+      defaultDeckSlots.first.basketballPlayers,
+    ),
+    deckBasketballStarter: cardsByIds(
+      basketballPlayerCards,
+      [defaultDeckSlots.first.basketballStarter].whereType<String>().toList(),
+    ).firstOrNull,
     coins: 0,
     coinLedger: const [],
     xpLedger: const [],
@@ -235,6 +279,8 @@ class GameState {
     tutorialSeen: const {},
     pendingPackReveal: null,
     starterPackClaimed: false,
+    cricketStarterPackClaimed: false,
+    basketballStarterPackClaimed: false,
     dailyDropLastClaimedAt: null,
     phase: MatchPhase.idle,
     currentRound: 0,
@@ -270,6 +316,9 @@ class GameState {
   final List<PlayerCard> deckDefenders;
   final List<ActionCard> deckActions;
   final PlayerCard? deckKeeper;
+  final List<PlayerCard> deckBatsmen;
+  final List<PlayerCard> deckBasketballPlayers;
+  final PlayerCard? deckBasketballStarter;
   final int coins;
   final List<OzCoinLedgerEntry> coinLedger;
   final List<XpLedgerEntry> xpLedger;
@@ -287,6 +336,8 @@ class GameState {
   final Set<String> tutorialSeen;
   final PackRevealData? pendingPackReveal;
   final bool starterPackClaimed;
+  final bool cricketStarterPackClaimed;
+  final bool basketballStarterPackClaimed;
   final DateTime? dailyDropLastClaimedAt;
   final MatchPhase phase;
   final int currentRound;
@@ -320,7 +371,9 @@ class GameState {
 
   bool get hasLevelUp => pendingLevelUps.isNotEmpty;
 
-  bool get deckReady =>
+  bool get deckReady => pitchDuelDeckReady;
+
+  bool get pitchDuelDeckReady =>
       deckAttackers.length == 2 &&
       deckDefenders.length == 2 &&
       deckActions.length == 6 &&
@@ -330,6 +383,27 @@ class GameState {
       deckActions.every((card) => ownedActionCardIds.contains(card.id)) &&
       ownedCardIds.contains(deckKeeper!.id);
 
+  bool get superOverDeckReady =>
+      deckBatsmen.length == 3 &&
+      deckBatsmen.every((card) => ownedCardIds.contains(card.id));
+
+  bool get hoopDuelDeckReady =>
+      deckBasketballPlayers.length == 3 &&
+      deckBasketballStarter != null &&
+      deckBasketballPlayers.any(
+        (card) => card.id == deckBasketballStarter!.id,
+      ) &&
+      deckBasketballPlayers.any(
+        (card) => card.role == PlayerRole.basketballGuard,
+      ) &&
+      deckBasketballPlayers.any(
+        (card) => card.role == PlayerRole.basketballWing,
+      ) &&
+      deckBasketballPlayers.any(
+        (card) => card.role == PlayerRole.basketballBig,
+      ) &&
+      deckBasketballPlayers.every((card) => ownedCardIds.contains(card.id));
+
   GameState copyWith({
     bool? loading,
     List<StoredDeckSlot>? deckSlots,
@@ -338,6 +412,9 @@ class GameState {
     List<PlayerCard>? deckDefenders,
     List<ActionCard>? deckActions,
     Object? deckKeeper = _sentinel,
+    List<PlayerCard>? deckBatsmen,
+    List<PlayerCard>? deckBasketballPlayers,
+    Object? deckBasketballStarter = _sentinel,
     int? coins,
     List<OzCoinLedgerEntry>? coinLedger,
     List<XpLedgerEntry>? xpLedger,
@@ -353,6 +430,8 @@ class GameState {
     Set<String>? tutorialSeen,
     Object? pendingPackReveal = _sentinel,
     bool? starterPackClaimed,
+    bool? cricketStarterPackClaimed,
+    bool? basketballStarterPackClaimed,
     Object? dailyDropLastClaimedAt = _sentinel,
     MatchPhase? phase,
     int? currentRound,
@@ -390,6 +469,11 @@ class GameState {
     deckKeeper: deckKeeper == _sentinel
         ? this.deckKeeper
         : deckKeeper as PlayerCard?,
+    deckBatsmen: deckBatsmen ?? this.deckBatsmen,
+    deckBasketballPlayers: deckBasketballPlayers ?? this.deckBasketballPlayers,
+    deckBasketballStarter: deckBasketballStarter == _sentinel
+        ? this.deckBasketballStarter
+        : deckBasketballStarter as PlayerCard?,
     coins: coins ?? this.coins,
     coinLedger: coinLedger ?? this.coinLedger,
     xpLedger: xpLedger ?? this.xpLedger,
@@ -398,8 +482,7 @@ class GameState {
     ownedCardBackIds: ownedCardBackIds ?? this.ownedCardBackIds,
     equippedCardBackId: equippedCardBackId ?? this.equippedCardBackId,
     ownedAvatarFrameIds: ownedAvatarFrameIds ?? this.ownedAvatarFrameIds,
-    equippedAvatarFrameId:
-        equippedAvatarFrameId ?? this.equippedAvatarFrameId,
+    equippedAvatarFrameId: equippedAvatarFrameId ?? this.equippedAvatarFrameId,
     ownedAvatarIds: ownedAvatarIds ?? this.ownedAvatarIds,
     ownedBannerIds: ownedBannerIds ?? this.ownedBannerIds,
     matchHistory: matchHistory ?? this.matchHistory,
@@ -408,6 +491,10 @@ class GameState {
         ? this.pendingPackReveal
         : pendingPackReveal as PackRevealData?,
     starterPackClaimed: starterPackClaimed ?? this.starterPackClaimed,
+    cricketStarterPackClaimed:
+        cricketStarterPackClaimed ?? this.cricketStarterPackClaimed,
+    basketballStarterPackClaimed:
+        basketballStarterPackClaimed ?? this.basketballStarterPackClaimed,
     dailyDropLastClaimedAt: dailyDropLastClaimedAt == _sentinel
         ? this.dailyDropLastClaimedAt
         : dailyDropLastClaimedAt as DateTime?,

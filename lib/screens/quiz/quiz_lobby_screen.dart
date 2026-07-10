@@ -8,6 +8,7 @@ import '../../blocs/quiz/quiz_state.dart';
 import '../../config/theme.dart';
 import '../../models/oz_coin_ledger.dart';
 import '../../models/quiz_trivia.dart';
+import '../../models/sport_match.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
@@ -15,21 +16,22 @@ import '../shop/widgets/shop_card.dart';
 import 'quiz_play_screen.dart';
 
 class QuizLobbyScreen extends StatelessWidget {
-  const QuizLobbyScreen({required this.onBack, super.key});
+  const QuizLobbyScreen({required this.sport, required this.onBack, super.key});
 
+  final Sport sport;
   final VoidCallback onBack;
 
   void _openSets(BuildContext context, QuizMode mode) {
     playSound(SoundEffect.uiTap);
     Navigator.of(
       context,
-    ).push(MaterialPageRoute<void>(builder: (_) => QuizSetScreen(mode: mode)));
+    ).push(MaterialPageRoute<void>(builder: (_) => QuizSetScreen(sport: sport, mode: mode)));
   }
 
   @override
   Widget build(BuildContext context) {
     return GameScaffold(
-      title: 'Football Quiz',
+      title: '${sport.name.toUpperCase()} QUIZ',
       subtitle: 'TRIVIA SET LADDER',
       leading: _BackButton(onTap: onBack),
       child: BlocBuilder<QuizCubit, QuizState>(
@@ -42,7 +44,7 @@ class QuizLobbyScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             children: [
-              _ProgressHeader(progress: state.progress),
+              _ProgressHeader(sport: sport, progress: state.progressForSport(sport)),
               const SizedBox(height: 16),
               Text(
                 'CHOOSE YOUR CATEGORY',
@@ -54,7 +56,7 @@ class QuizLobbyScreen extends StatelessWidget {
                   index: mode.index,
                   child: _ModeTile(
                     mode: mode,
-                    progress: state.progressFor(mode),
+                    progress: state.progressFor(sport, mode),
                     onTap: () => _openSets(context, mode),
                   ),
                 ),
@@ -69,8 +71,9 @@ class QuizLobbyScreen extends StatelessWidget {
 }
 
 class QuizSetScreen extends StatefulWidget {
-  const QuizSetScreen({required this.mode, super.key});
+  const QuizSetScreen({required this.sport, required this.mode, super.key});
 
+  final Sport sport;
   final QuizMode mode;
 
   @override
@@ -83,7 +86,7 @@ class _QuizSetScreenState extends State<QuizSetScreen> {
   Future<void> _startSet(int setNumber) async {
     if (_launchingSet != null) return;
     final quiz = context.read<QuizCubit>();
-    if (!quiz.isSetUnlocked(widget.mode, setNumber)) return;
+    if (!quiz.isSetUnlocked(widget.sport, widget.mode, setNumber)) return;
 
     final game = context.read<GameBloc>();
     if (game.state.coins < kQuizEntryCost) {
@@ -97,7 +100,7 @@ class _QuizSetScreenState extends State<QuizSetScreen> {
       CoinsSpent(
         kQuizEntryCost,
         source: OzCoinTransactionSource.quizEntry,
-        title: 'FOOTBALL QUIZ ENTRY',
+        title: '${widget.sport.name.toUpperCase()} QUIZ ENTRY',
         subtitle: '${widget.mode.label} SET $setNumber',
       ),
     );
@@ -105,7 +108,7 @@ class _QuizSetScreenState extends State<QuizSetScreen> {
     if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => QuizPlayScreen(mode: widget.mode, setNumber: setNumber),
+        builder: (_) => QuizPlayScreen(sport: widget.sport, mode: widget.mode, setNumber: setNumber),
       ),
     );
     if (mounted) setState(() => _launchingSet = null);
@@ -132,7 +135,7 @@ class _QuizSetScreenState extends State<QuizSetScreen> {
       leading: _BackButton(onTap: () => Navigator.of(context).maybePop()),
       child: BlocBuilder<QuizCubit, QuizState>(
         builder: (context, state) {
-          final progress = state.progressFor(mode);
+          final progress = state.progressFor(widget.sport, mode);
           return ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             children: [
@@ -189,8 +192,9 @@ class _BackButton extends StatelessWidget {
 }
 
 class _ProgressHeader extends StatelessWidget {
-  const _ProgressHeader({required this.progress});
+  const _ProgressHeader({required this.sport, required this.progress});
 
+  final Sport sport;
   final QuizProgress progress;
 
   @override
@@ -202,7 +206,6 @@ class _ProgressHeader extends StatelessWidget {
     final total = QuizMode.values.length * kQuizSetCount;
     return CyberPanel(
       accent: Cyber.violet,
-      solidBackground: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -324,7 +327,6 @@ class _SetHeader extends StatelessWidget {
     final accent = mode.accent;
     return CyberPanel(
       accent: accent,
-      solidBackground: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

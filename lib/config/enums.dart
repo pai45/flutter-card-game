@@ -21,7 +21,16 @@ enum CardTier { bronze, silver, gold, platinum }
 
 enum PenaltyDirection { left, center, right }
 
-enum PlayerRole { attacker, defender, goalkeeper }
+enum PlayerRole {
+  attacker,
+  defender,
+  goalkeeper,
+  batsman,
+  bowler,
+  basketballGuard,
+  basketballWing,
+  basketballBig,
+}
 
 enum ActionCategory { attack, defense, special }
 
