@@ -1,0 +1,34 @@
+version: 1
+project: Final Over
+policy: clean-room-original
+assets:
+  - path: assets/backgrounds/final_over_stadium.png
+    type: bitmap-environment
+    provenance: generated specifically for Final Over with the built-in OpenAI image generation tool
+    constraints: no players, pitch, UI, text, logos, sponsors, or licensed marks
+  - path: assets/backgrounds/final_over_field.png
+    type: bitmap-environment
+    provenance: generated specifically for Final Over with the built-in OpenAI image generation tool
+    constraints: no pitch, players, fielders, UI, text, logos, sponsors, or licensed marks
+  - path: assets/audio
+    type: synthesized-audio-pack
+    provenance: generated from deterministic original waveforms by tool/generate_audio.dart
+  - path: lib/game/visuals
+    type: code-native-vector-art
+    provenance: authored specifically for Final Over
+  - path: assets/fonts/FinalOverCondensed-Regular.ttf
+    type: bundled-open-font
+    provenance: Roboto Condensed from the Flutter SDK material-font artifact; upstream Google font under Apache License 2.0
+    license: assets/fonts/LICENSE-RobotoCondensed.txt
+  - path: assets/fonts/FinalOverCondensed-Bold.ttf
+    type: bundled-open-font
+    provenance: Roboto Condensed Bold from the Flutter SDK material-font artifact; upstream Google font under Apache License 2.0
+    license: assets/fonts/LICENSE-RobotoCondensed.txt
+  - path: android/app/src/main/res/mipmap-*/ic_launcher.png
+    type: launcher-icon
+    provenance: generated from original Final Over geometry by tool/generate_launcher_icons.ps1
+forbidden_sources:
+  - host application game code
+  - host application cricket assets
+  - host application audio
+  - licensed players, teams, kits, logos, or sponsors

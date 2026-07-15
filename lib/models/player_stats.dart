@@ -13,6 +13,7 @@ class MatchRecord {
     required this.draws,
     required this.cleanSheets,
     required this.shootoutWins,
+    required this.basketballWins,
     required this.currentStreak,
     required this.bestStreak,
   });
@@ -23,12 +24,14 @@ class MatchRecord {
     var draws = 0;
     var cleanSheets = 0;
     var shootoutWins = 0;
+    var basketballWins = 0;
     for (final match in history) {
       switch (match.resultLabel) {
         case 'Victory':
           wins++;
           if (match.opponentScore == 0) cleanSheets++;
           if (match.isShootout) shootoutWins++;
+          if (match.isBasketball) basketballWins++;
         case 'Defeat':
           losses++;
         default:
@@ -42,6 +45,7 @@ class MatchRecord {
       draws: draws,
       cleanSheets: cleanSheets,
       shootoutWins: shootoutWins,
+      basketballWins: basketballWins,
       currentStreak: matchWinStreak(history),
       bestStreak: bestMatchWinStreak(history),
     );
@@ -53,6 +57,7 @@ class MatchRecord {
   final int draws;
   final int cleanSheets;
   final int shootoutWins;
+  final int basketballWins;
   final int currentStreak;
   final int bestStreak;
 

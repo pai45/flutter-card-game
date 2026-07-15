@@ -304,6 +304,7 @@ IconData _sourceIcon(OzCoinTransactionSource source) {
   return switch (source) {
     OzCoinTransactionSource.matchReward ||
     OzCoinTransactionSource.shootoutReward => Icons.sports_soccer,
+    OzCoinTransactionSource.tennisReward => Icons.sports_tennis,
     OzCoinTransactionSource.quizEntry => Icons.quiz_rounded,
     OzCoinTransactionSource.footballBingoLifeline => Icons.grid_view,
     OzCoinTransactionSource.streakReward => Icons.local_fire_department,

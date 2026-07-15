@@ -23,6 +23,7 @@ import '../../widgets/team_logo.dart';
 import 'market_detail_screen.dart';
 import 'widgets/score_prediction_picker.dart';
 import 'widgets/settlement_reveal.dart';
+import '../../utils/prediction_helpers.dart';
 
 /// The prediction quiz for one fixture, built as a gamified single-question
 /// flow that mirrors the design reference:
@@ -37,9 +38,22 @@ import 'widgets/settlement_reveal.dart';
 /// matches dock a REVEAL RESULTS action that plays the settlement reveal
 /// cinematic ([SettlementRevealOverlay]) and credits the earned XP.
 class MatchPredictionScreen extends StatefulWidget {
-  const MatchPredictionScreen({required this.match, super.key});
+  const MatchPredictionScreen({
+    required this.match,
+    this.quizId,
+    this.embedded = false,
+    this.showTopBar = true,
+    this.showMatchHeader = true,
+    this.onOpenPicks,
+    super.key,
+  });
 
   final SportMatch match;
+  final String? quizId;
+  final bool embedded;
+  final bool showTopBar;
+  final bool showMatchHeader;
+  final VoidCallback? onOpenPicks;
 
   @override
   State<MatchPredictionScreen> createState() => _MatchPredictionScreenState();
@@ -49,10 +63,12 @@ enum _QuizRevealPhase { numberIntro, questionReveal, optionsReveal, ready }
 
 class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     with TickerProviderStateMixin {
+  List<PredictionQuiz> _quizzes = const [];
   PredictionQuiz? _quiz;
   bool _loading = true;
   bool _submitting = false;
   bool _savingUpdates = false;
+  bool _showQuizHub = true;
   // True for the session right after a fresh submit: we stay on the review list
   // (the "quiz submitted" screen) instead of popping, the cards cascade in, and
   // the dock shows an OPEN PICKS CTA until the user edits an answer.
@@ -84,6 +100,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
 
   SportMatch get _match => widget.match;
   bool get _editable => _match.predictable;
+  String? get _quizId => _quiz?.id;
 
   @override
   void initState() {
@@ -119,42 +136,89 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
 
   Future<void> _load() async {
     final cubit = context.read<PredictionCubit>();
-    final quiz = await cubit.quizFor(_match.id);
-    final existing = cubit.state.predictionFor(_match.id);
-    if (existing != null) {
-      _answers.addAll(existing.answers);
-      _multipliersByQuestion.addAll(existing.multipliersByQuestion);
+    final quizzes = await cubit.quizzesFor(_match.id);
+    final initialQuiz = _initialQuiz(quizzes);
+    if (initialQuiz == null) {
+      if (!mounted) return;
+      setState(() {
+        _quizzes = quizzes;
+        _quiz = null;
+        _loading = false;
+        _showQuizHub = widget.embedded && quizzes.isNotEmpty;
+      });
+      return;
     }
-    final votes = <String, PredictionVoteBreakdown>{};
-    if (quiz != null) {
-      for (final question in quiz.questions) {
-        final vote = await cubit.votesFor(_match.id, question.id);
-        if (vote != null) votes[question.id] = vote;
+    await _loadQuiz(initialQuiz, quizzes: quizzes);
+  }
+
+  PredictionQuiz? _initialQuiz(List<PredictionQuiz> quizzes) {
+    if (quizzes.isEmpty) return null;
+    final targetId = widget.quizId;
+    if (targetId != null) {
+      for (final quiz in quizzes) {
+        if (quiz.id == targetId) return quiz;
       }
     }
-    final leaderboard = await cubit.matchLeaderboard(_match.id);
+    if (widget.embedded && quizzes.length > 1) return null;
+    return quizzes.first;
+  }
+
+  Future<void> _loadQuiz(
+    PredictionQuiz quiz, {
+    List<PredictionQuiz>? quizzes,
+  }) async {
+    final cubit = context.read<PredictionCubit>();
+    final existing = cubit.state.predictionFor(_match.id, quiz.id);
+    final nextAnswers = <String, int>{};
+    final nextMultipliers = <String, PredictionMultiplier>{};
+    final interactedScoreQuestions = <String>{};
+    if (existing != null) {
+      nextAnswers.addAll(existing.answers);
+      nextMultipliers.addAll(existing.multipliersByQuestion);
+      interactedScoreQuestions.addAll(
+        quiz.questions
+            .where(
+              (q) => q.isScorePrediction && existing.answers.containsKey(q.id),
+            )
+            .map((q) => q.id),
+      );
+    }
+    final votes = <String, PredictionVoteBreakdown>{};
+    for (final question in quiz.questions) {
+      final vote = await cubit.votesFor(_match.id, quiz.id, question.id);
+      if (vote != null) votes[question.id] = vote;
+    }
+    final leaderboard = await cubit.matchLeaderboard(_match.id, quiz.id);
     if (!mounted) return;
     setState(() {
+      _quizzes = quizzes ?? _quizzes;
       _quiz = quiz;
       _loading = false;
+      _showQuizHub = false;
+      _answers
+        ..clear()
+        ..addAll(nextAnswers);
+      _interactedScoreQuestions
+        ..clear()
+        ..addAll(interactedScoreQuestions);
+      _multipliersByQuestion
+        ..clear()
+        ..addAll(nextMultipliers);
+      _expandedQuestions.clear();
+      _settlementResults = null;
+      _justSubmitted = false;
+      _submitting = false;
+      _savingUpdates = false;
+      _index = 0;
+      _revealPhase = _QuizRevealPhase.ready;
       _votesByQuestion = votes;
       _leaderboard = leaderboard;
       _ensureScoreDefaults();
-      if (existing != null) {
-        _interactedScoreQuestions.addAll(
-          _questions
-              .where(
-                (q) =>
-                    q.isScorePrediction && existing.answers.containsKey(q.id),
-              )
-              .map((q) => q.id),
-        );
-      }
       _savedAnswers = Map<String, int>.from(_answers);
       _savedMultipliersByQuestion = Map<String, PredictionMultiplier>.from(
         _multipliersByQuestion,
       );
-      if (existing != null && !_match.predictable && quiz != null) {
+      if (existing != null && !_match.predictable) {
         _expandedQuestions
           ..clear()
           ..addAll(quiz.questions.map((q) => q.id));
@@ -342,9 +406,14 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
   }
 
   Future<void> _submit() async {
-    if (!_allAnswered || _submitting) return;
+    final quizId = _quizId;
+    if (quizId == null || !_allAnswered || _submitting) return;
     final isFresh =
-        context.read<PredictionCubit>().state.predictions[_match.id] == null;
+        context.read<PredictionCubit>().state.predictionFor(
+          _match.id,
+          quizId,
+        ) ==
+        null;
     _ensureScoreDefaults();
     playSound(SoundEffect.matchWin);
     // Hold the global achievement reveal so the post-submit cinematic plays
@@ -354,6 +423,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     setState(() => _submitting = true);
     await context.read<PredictionCubit>().submit(
       _match.id,
+      quizId,
       Map.of(_answers),
       multipliersByQuestion: Map.of(_multipliersByQuestion),
     );
@@ -376,7 +446,12 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
   }
 
   Future<void> _saveUpdates() async {
-    if (!_editable || _savingUpdates || !_hasDraftChanges || !_allAnswered) {
+    final quizId = _quizId;
+    if (quizId == null ||
+        !_editable ||
+        _savingUpdates ||
+        !_hasDraftChanges ||
+        !_allAnswered) {
       return;
     }
     _ensureScoreDefaults();
@@ -384,6 +459,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     setState(() => _savingUpdates = true);
     await context.read<PredictionCubit>().submit(
       _match.id,
+      quizId,
       Map.of(_answers),
       multipliersByQuestion: Map.of(_multipliersByQuestion),
     );
@@ -447,13 +523,17 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
         ? null
         : _leaderboard.where((e) => correctCount >= e.correct).length /
               _leaderboard.length;
-    final earnedXp = await context.read<PredictionCubit>().settle(_match.id);
+    final earnedXp = await context.read<PredictionCubit>().settle(
+      _match.id,
+      prediction.quizId,
+    );
     if (!mounted) return;
     if (earnedXp > 0) {
       context.read<GameBloc>().add(
         PredictionXpAdded(
           earnedXp,
-          details: '${_match.home.shortName} vs ${_match.away.shortName}',
+          details:
+              '${_match.home.shortName} vs ${_match.away.shortName} ${prediction.quizId}',
         ),
       );
     }
@@ -467,86 +547,99 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Cyber.bg,
-      body: Stack(
-        children: [
+    final content = Stack(
+      children: [
+        if (!widget.embedded)
           const Positioned.fill(
             child: CyberPlainBackground(child: SizedBox.expand()),
           ),
-          SafeArea(
-            child: _loading
-                ? const Center(
-                    child: CircularProgressIndicator(color: Cyber.cyan),
-                  )
-                : BlocBuilder<PredictionCubit, PredictionState>(
-                    builder: (context, state) =>
-                        _content(state.predictionFor(_match.id)),
-                  ),
+        Positioned.fill(
+          child: widget.embedded
+              ? _buildPredictionBody()
+              : SafeArea(child: _buildPredictionBody()),
+        ),
+        if (_settlementResults != null)
+          Positioned.fill(
+            child: SettlementRevealOverlay(
+              match: _match,
+              results: _settlementResults!,
+              totalXp: _settlementXp,
+              xpBefore: _settlementXpBefore,
+              beatenShare: _settlementBeatenShare,
+              onDone: () {
+                if (mounted) setState(() => _settlementResults = null);
+              },
+            ),
           ),
-          if (_settlementResults != null)
-            Positioned.fill(
-              child: SettlementRevealOverlay(
-                match: _match,
-                results: _settlementResults!,
-                totalXp: _settlementXp,
-                xpBefore: _settlementXpBefore,
-                beatenShare: _settlementBeatenShare,
-                onDone: () {
-                  if (mounted) setState(() => _settlementResults = null);
-                },
-              ),
+        if (_submitting)
+          Positioned.fill(
+            child: _SubmittedOverlay(
+              potentialXp: _potentialXp,
+              count: _questions.length,
+              onDone: () {
+                if (!mounted) return;
+                // Release the hold so any queued achievement reveal plays over
+                // the quiz-submitted list we land on (no longer pop home).
+                _heldCelebrations?.release();
+                _heldCelebrations = null;
+                // The prediction now exists in state, so the rebuild routes
+                // to _reviewContent — the all-questions list. _justSubmitted
+                // makes the cards cascade in and shows the OPEN PICKS dock.
+                setState(() {
+                  _submitting = false;
+                  _justSubmitted = true;
+                });
+              },
             ),
-          if (_submitting)
-            Positioned.fill(
-              child: _SubmittedOverlay(
-                potentialXp: _potentialXp,
-                count: _questions.length,
-                onDone: () {
-                  if (!mounted) return;
-                  // Release the hold so any queued achievement reveal plays over
-                  // the quiz-submitted list we land on (no longer pop home).
-                  _heldCelebrations?.release();
-                  _heldCelebrations = null;
-                  // The prediction now exists in state, so the rebuild routes
-                  // to _reviewContent — the all-questions list. _justSubmitted
-                  // makes the cards cascade in and shows the OPEN PICKS dock.
-                  setState(() {
-                    _submitting = false;
-                    _justSubmitted = true;
-                  });
-                },
-              ),
-            ),
-          if (!_loading && _questions.isNotEmpty)
-            Positioned.fill(
-              child: IgnorePointer(
-                child: AnimatedBuilder(
-                  animation: _numberIntro,
-                  builder: (context, _) => _QuizNumberBurst(
-                    number: _index + 1,
-                    progress: _revealPhase == _QuizRevealPhase.numberIntro
-                        ? _numberIntro.value
-                        : 0,
-                  ),
+          ),
+        if (!_loading && _questions.isNotEmpty)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AnimatedBuilder(
+                animation: _numberIntro,
+                builder: (context, _) => _QuizNumberBurst(
+                  number: _index + 1,
+                  progress: _revealPhase == _QuizRevealPhase.numberIntro
+                      ? _numberIntro.value
+                      : 0,
                 ),
               ),
             ),
-        ],
+          ),
+      ],
+    );
+
+    if (widget.embedded) return content;
+
+    return Scaffold(backgroundColor: Cyber.bg, body: content);
+  }
+
+  Widget _buildPredictionBody() {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator(color: Cyber.cyan));
+    }
+    return BlocBuilder<PredictionCubit, PredictionState>(
+      builder: (context, state) => _content(
+        _quizId == null ? null : state.predictionFor(_match.id, _quizId!),
       ),
     );
   }
 
   Widget _content(UserPrediction? prediction) {
-    if (_quiz == null || _questions.isEmpty) {
+    if (_quiz == null) {
+      if (widget.embedded && _quizzes.isNotEmpty) {
+        return _quizSetHubContent();
+      }
       return Column(
         children: [
-          _QuizTopBar(
-            onBack: () => Navigator.of(context).popUntil((r) => r.isFirst),
-            onLeaderboard: _showMatchLeaderboard,
-          ),
-          const SizedBox(height: 20),
-          _QuizHeader(match: _match),
+          if (widget.showTopBar)
+            _QuizTopBar(
+              onBack: () => Navigator.of(context).popUntil((r) => r.isFirst),
+            ),
+          if (widget.showMatchHeader) ...[
+            const SizedBox(height: 20),
+            _QuizHeader(match: _match),
+          ],
           Expanded(
             child: CyberNoDataState(
               icon: Icons.quiz_outlined,
@@ -561,8 +654,33 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
       );
     }
 
+    if (_questions.isEmpty) {
+      return Column(
+        children: [
+          if (widget.showTopBar)
+            _QuizTopBar(
+              onBack: () => Navigator.of(context).popUntil((r) => r.isFirst),
+            ),
+          Expanded(
+            child: CyberNoDataState(
+              icon: Icons.quiz_outlined,
+              title: 'Quiz not live yet',
+              message:
+                  'Prediction questions will appear here when this set opens.',
+              accent: Cyber.violet,
+              spark: Icons.schedule,
+            ),
+          ),
+        ],
+      );
+    }
+
     if (prediction != null) {
       return _reviewContent(prediction);
+    }
+
+    if (widget.embedded && _quizzes.length > 1 && _showQuizHub) {
+      return _quizSetHubContent();
     }
 
     final settled = prediction?.status == PredictionStatus.settled;
@@ -592,13 +710,17 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
               edge: _QuizChromeEdge.top,
               child: Column(
                 children: [
-                  _QuizTopBar(
-                    onBack: () =>
-                        Navigator.of(context).popUntil((r) => r.isFirst),
-                    onLeaderboard: _showMatchLeaderboard,
-                  ),
-                  const SizedBox(height: 20),
-                  _QuizHeader(match: _match),
+                  if (widget.showTopBar)
+                    _QuizTopBar(
+                      onBack: () =>
+                          Navigator.of(context).popUntil((r) => r.isFirst),
+                    ),
+                  if (widget.showMatchHeader) ...[
+                    const SizedBox(height: 20),
+                    _QuizHeader(match: _match),
+                  ],
+                  if (widget.embedded && _quizzes.length > 1)
+                    _AllQuizzesButton(onTap: _returnToQuizHub),
                   _LockLine(
                     match: _match,
                     untilLock: _untilLock,
@@ -718,15 +840,92 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
       (_quiz?.settleable ?? false) &&
       prediction.status != PredictionStatus.settled;
 
+  Widget _quizSetHubContent() {
+    return Column(
+      children: [
+        _QuizChromeShell(
+          edge: _QuizChromeEdge.top,
+          child: Column(
+            children: [
+              if (widget.showTopBar)
+                _QuizTopBar(
+                  onBack: () =>
+                      Navigator.of(context).popUntil((r) => r.isFirst),
+                ),
+              if (widget.showMatchHeader) ...[
+                const SizedBox(height: 20),
+                _QuizHeader(match: _match),
+              ],
+              _LockLine(match: _match, untilLock: _untilLock),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 22),
+            children: [
+              for (var i = 0; i < _quizzes.length; i++)
+                Padding(
+	                  padding: EdgeInsets.only(
+	                    bottom: i == _quizzes.length - 1 ? 0 : 26,
+	                  ),
+                  child: _QuizSetHubCard(
+                    match: _match,
+                    quiz: _quizzes[i],
+                    index: i + 1,
+                    prediction: context
+                        .read<PredictionCubit>()
+                        .state
+                        .predictionFor(_match.id, _quizzes[i].id),
+                    onTap: () => _openQuizSet(_quizzes[i]),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _openQuizSet(PredictionQuiz quiz) {
+    playSound(SoundEffect.uiTap);
+    if (widget.embedded) {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => MatchPredictionScreen(match: _match, quizId: quiz.id),
+        ),
+      );
+      return;
+    }
+    unawaited(_loadQuiz(quiz));
+  }
+
+  void _returnToQuizHub() {
+    playSound(SoundEffect.uiTap);
+    setState(() {
+      _quiz = null;
+      _showQuizHub = true;
+      _answers.clear();
+      _multipliersByQuestion.clear();
+      _interactedScoreQuestions.clear();
+      _savedAnswers = {};
+      _savedMultipliersByQuestion = {};
+      _expandedQuestions.clear();
+      _settlementResults = null;
+      _justSubmitted = false;
+      _index = 0;
+    });
+  }
+
   Widget _reviewContent(UserPrediction prediction) {
     final editable = _editable;
     final readOnly = !editable;
     return Column(
       children: [
-        _QuizTopBar(
-          onBack: () => Navigator.of(context).popUntil((r) => r.isFirst),
-          onLeaderboard: _showMatchLeaderboard,
-        ),
+        if (widget.showTopBar)
+          _QuizTopBar(
+            onBack: () => Navigator.of(context).popUntil((r) => r.isFirst),
+          ),
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.fromLTRB(0, 0, 0, 18),
@@ -735,8 +934,12 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
               if (i == 0) {
                 return Column(
                   children: [
-                    const SizedBox(height: 20),
-                    _QuizHeader(match: _match),
+                    if (widget.showMatchHeader) ...[
+                      const SizedBox(height: 20),
+                      _QuizHeader(match: _match),
+                    ],
+                    if (widget.embedded && _quizzes.length > 1)
+                      _AllQuizzesButton(onTap: _returnToQuizHub),
                     _LockLine(match: _match, untilLock: _untilLock),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
@@ -804,7 +1007,10 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
         if (editable && _justSubmitted && !_hasDraftChanges)
           // Fresh submit, no edits yet: hand the player into the same match's
           // picks market when one exists.
-          _OpenPicksDock(market: _sameMatchPickMarket())
+          _OpenPicksDock(
+            market: _sameMatchPickMarket(),
+            onOpenPicks: widget.onOpenPicks,
+          )
         else if (editable)
           _ReviewSaveDock(
             enabled: _hasDraftChanges && _allAnswered && !_savingUpdates,
@@ -834,23 +1040,6 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
       return 'Final answers are in. Review results and crowd votes.';
     }
     return 'Predictions are locked. Review crowd votes as the match unfolds.';
-  }
-
-  void _showMatchLeaderboard() {
-    playSound(SoundEffect.uiTap);
-    final prediction = context.read<PredictionCubit>().state.predictionFor(
-      _match.id,
-    );
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => _MatchLeaderboardScreen(
-          match: _match,
-          quiz: _quiz,
-          prediction: prediction,
-          entries: _leaderboard,
-        ),
-      ),
-    );
   }
 
   /// The forward CTA's state for the current page. NEXT pages forward; the
@@ -952,10 +1141,9 @@ class _QuizChromeShell extends StatelessWidget {
 
 // ── Top bar (collapse chevron) ────────────────────────────────────────────────
 class _QuizTopBar extends StatelessWidget {
-  const _QuizTopBar({required this.onBack, required this.onLeaderboard});
+  const _QuizTopBar({required this.onBack});
 
   final VoidCallback onBack;
-  final VoidCallback onLeaderboard;
 
   @override
   Widget build(BuildContext context) {
@@ -989,26 +1177,6 @@ class _QuizTopBar extends StatelessWidget {
                 fontWeight: FontWeight.w600,
                 fontSize: 18,
                 height: 1,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Semantics(
-            button: true,
-            label: 'Match leaderboard',
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: onLeaderboard,
-              child: Container(
-                width: 40,
-                height: 40,
-                alignment: Alignment.center,
-                color: const Color(0xff11182a),
-                child: const Icon(
-                  Icons.emoji_events_outlined,
-                  color: Colors.white,
-                  size: 22,
-                ),
               ),
             ),
           ),
@@ -1058,7 +1226,7 @@ class _QuizHeader extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  _HeaderBadge(team: match.home, cutBottomRight: true),
+                  _HeaderBadge(team: match.home, cutBottomRight: true, sport: match.sport),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -1079,7 +1247,7 @@ class _QuizHeader extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  _HeaderBadge(team: match.away, cutBottomRight: false),
+                  _HeaderBadge(team: match.away, cutBottomRight: false, sport: match.sport),
                 ],
               ),
               const SizedBox(height: 12),
@@ -1106,9 +1274,10 @@ class _QuizHeader extends StatelessWidget {
 }
 
 class _HeaderBadge extends StatelessWidget {
-  const _HeaderBadge({required this.team, required this.cutBottomRight});
+  const _HeaderBadge({required this.team, required this.cutBottomRight, this.sport});
   final SportTeam team;
   final bool cutBottomRight;
+  final Sport? sport;
 
   @override
   Widget build(BuildContext context) {
@@ -1117,6 +1286,7 @@ class _HeaderBadge extends StatelessWidget {
       width: 44,
       height: 44,
       cutBottomRight: cutBottomRight,
+      sport: sport,
     );
   }
 }
@@ -1284,6 +1454,601 @@ class _XpPotTickerState extends State<_XpPotTicker>
 }
 
 // ── The single question panel ─────────────────────────────────────────────────
+class _AllQuizzesButton extends StatelessWidget {
+  const _AllQuizzesButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.arrow_back, color: Cyber.cyan, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                'ALL QUIZZES',
+                style: Cyber.label(10, color: Cyber.cyan, letterSpacing: 1.2),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _QuizChamferPanelPainter extends CustomPainter {
+  const _QuizChamferPanelPainter({
+    required this.bigCut,
+    required this.smallCut,
+    required this.borderColor,
+  });
+
+  final double bigCut;
+  final double smallCut;
+  final Color borderColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+    final path = HudChamferClipper(
+      bigCut: bigCut,
+      smallCut: smallCut,
+    ).buildPath(size);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2
+        ..color = borderColor,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _QuizChamferPanelPainter old) =>
+      old.bigCut != bigCut ||
+      old.smallCut != smallCut ||
+      old.borderColor != borderColor;
+}
+
+/// Resolved per-state look for a quiz-set hub card. Keeps the visual language
+/// gamified: every state reads as an "objective" with a status tag, a reward
+/// stake, a completion/accuracy meter and a call-to-action.
+class _QuizHubVisual {
+  const _QuizHubVisual({
+    required this.accent,
+    required this.tag,
+    required this.progress,
+    required this.progressAccent,
+    required this.ctaIcon,
+    required this.ctaText,
+    required this.rewardText,
+    required this.rewardColor,
+    this.glow = false,
+    this.pulse = false,
+    this.showChevron = true,
+    this.outcomes,
+  });
+
+  final Color accent;
+  final String tag;
+  final double progress;
+  final Color progressAccent;
+  final IconData ctaIcon;
+  final String ctaText;
+  final String rewardText;
+  final Color rewardColor;
+
+  /// Full-card glow — reserved for the reward-reveal "moment" only (glow rule).
+  final bool glow;
+
+  /// Beckon pulse (drives the reveal moment's breathing glow).
+  final bool pulse;
+  final bool showChevron;
+  final List<QuestionOutcome>? outcomes;
+}
+
+_QuizHubVisual _resolveQuizHubVisual(
+  SportMatch match,
+  PredictionQuiz quiz,
+  UserPrediction? prediction,
+) {
+  final total = quiz.questions.length;
+  final answered = prediction?.answers.length ?? 0;
+  final potentialXp = quiz.maxReward;
+  final settled = prediction?.status == PredictionStatus.settled;
+  final locked = prediction?.status == PredictionStatus.locked;
+
+  // Finished + settled → verdict card (calm; the moment already happened).
+  if (match.status == MatchStatus.finished && settled) {
+    final correct = prediction!.correctCount ?? 0;
+    final won = correct > 0;
+    final earned = prediction.rewardEarned;
+    return _QuizHubVisual(
+      accent: won ? Cyber.gold : Cyber.muted,
+      tag: 'SETTLED',
+      progress: total == 0 ? 0 : correct / total,
+      progressAccent: won ? Cyber.success : Cyber.muted,
+      ctaIcon: won ? Icons.military_tech : Icons.done_all,
+      ctaText: '$correct / $total CORRECT',
+      rewardText: earned > 0 ? '+$earned XP' : 'NO XP',
+      rewardColor: earned > 0 ? Cyber.success : Cyber.muted,
+      showChevron: false,
+      outcomes: questionOutcomes(quiz, prediction),
+    );
+  }
+
+  // Finished + rewards waiting → the ONE glowing focal moment on the screen.
+  if (match.status == MatchStatus.finished &&
+      (prediction != null || quiz.settleable)) {
+    return const _QuizHubVisual(
+      accent: Cyber.gold,
+      tag: 'REWARD READY',
+      progress: 1,
+      progressAccent: Cyber.gold,
+      ctaIcon: Icons.redeem,
+      ctaText: 'TAP TO REVEAL RESULTS',
+      rewardText: 'REVEAL',
+      rewardColor: Cyber.gold,
+      glow: true,
+      pulse: true,
+    );
+  }
+
+  // Finished, no entry → closed/expired.
+  if (match.status == MatchStatus.finished) {
+    return const _QuizHubVisual(
+      accent: Cyber.muted,
+      tag: 'CLOSED',
+      progress: 0,
+      progressAccent: Cyber.muted,
+      ctaIcon: Icons.flag_outlined,
+      ctaText: 'RESULT RECORDED · NO ENTRY',
+      rewardText: 'MISSED',
+      rewardColor: Cyber.muted,
+      showChevron: false,
+    );
+  }
+
+  // Live / locked → predictions closed while the match runs.
+  if (match.status == MatchStatus.live || locked) {
+    return _QuizHubVisual(
+      accent: Cyber.danger,
+      tag: match.status == MatchStatus.live ? 'LIVE' : 'LOCKED',
+      progress: total == 0 ? 0 : answered / total,
+      progressAccent: Cyber.danger,
+      ctaIcon: Icons.lock_outline,
+      ctaText: 'LOCKED · MATCH IN PROGRESS',
+      rewardText: prediction != null ? 'IN PLAY' : 'CLOSED',
+      rewardColor: Cyber.danger,
+      showChevron: false,
+    );
+  }
+
+  // Upcoming + already predicted → locked-in / resume.
+  if (prediction != null) {
+    final complete = answered >= total;
+    return _QuizHubVisual(
+      accent: Cyber.lime,
+      tag: complete ? 'LOCKED IN' : 'IN PROGRESS',
+      progress: total == 0 ? 0 : answered / total,
+      progressAccent: Cyber.lime,
+      ctaIcon: complete ? Icons.verified : Icons.edit,
+      ctaText: complete
+          ? 'PREDICTION SET · TAP TO EDIT'
+          : 'RESUME · $answered/$total ANSWERED',
+      rewardText: '+$potentialXp XP',
+      rewardColor: Cyber.gold,
+    );
+  }
+
+  // Upcoming, fresh objective → the actionable entry point.
+  return _QuizHubVisual(
+    accent: Cyber.cyan,
+    tag: 'OBJECTIVE',
+    progress: 0,
+    progressAccent: Cyber.cyan,
+    ctaIcon: Icons.bolt,
+    ctaText: 'TAP TO PREDICT · $total QUESTIONS',
+    rewardText: '+$potentialXp XP',
+    rewardColor: Cyber.gold,
+  );
+}
+
+/// Hard (un-blurred) offset copy of the hub-card silhouette, drawn behind the
+/// card and shifted straight down so its bottom peeks out as a solid thick
+/// edge — the "embossed" elevation used by the home fixture cards.
+class _QuizHubHardShadowPainter extends CustomPainter {
+  const _QuizHubHardShadowPainter(this.color);
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+    final path = const HudChamferClipper(bigCut: 12, smallCut: 3)
+        .buildPath(size)
+        .shift(const Offset(0, 5));
+    canvas.drawPath(path, Paint()..color = color);
+  }
+
+  @override
+  bool shouldRepaint(covariant _QuizHubHardShadowPainter old) =>
+      old.color != color;
+}
+
+class _QuizSetHubCard extends StatefulWidget {
+  const _QuizSetHubCard({
+    required this.match,
+    required this.quiz,
+    required this.index,
+    required this.prediction,
+    required this.onTap,
+  });
+
+  final SportMatch match;
+  final PredictionQuiz quiz;
+  final int index;
+  final UserPrediction? prediction;
+  final VoidCallback onTap;
+
+  @override
+  State<_QuizSetHubCard> createState() => _QuizSetHubCardState();
+}
+
+class _QuizSetHubCardState extends State<_QuizSetHubCard>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final v = _resolveQuizHubVisual(widget.match, widget.quiz, widget.prediction);
+
+    // Only the reward-reveal moment breathes; everything else is still.
+    if (v.pulse && !_pulse.isAnimating) {
+      _pulse.repeat(reverse: true);
+    } else if (!v.pulse && _pulse.isAnimating) {
+      _pulse
+        ..stop()
+        ..value = 0;
+    }
+
+    return Semantics(
+      button: true,
+      label: 'Open ${widget.quiz.title}',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onTap,
+        child: AnimatedBuilder(
+          animation: _pulse,
+          builder: (context, child) {
+            final t = Curves.easeInOut.transform(_pulse.value);
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Hard, un-blurred offset edge behind the card — a solid thick
+                // bottom border that reads as elevation (matches the home
+                // fixture cards), tinted to the card's state accent.
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _QuizHubHardShadowPainter(
+                      v.accent.withValues(alpha: 0.30),
+                    ),
+                  ),
+                ),
+                // The reveal moment adds a soft pulsing accent glow on top.
+                if (v.glow)
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      boxShadow: Cyber.glow(
+                        v.accent,
+                        alpha: 0.18 + 0.22 * t,
+                        blur: 18 + 8 * t,
+                        spread: -3,
+                      ),
+                    ),
+                    child: child,
+                  )
+                else
+                  child!,
+              ],
+            );
+          },
+          child: CustomPaint(
+            painter: _QuizChamferPanelPainter(
+              bigCut: 12,
+              smallCut: 3,
+              borderColor: v.accent.withValues(alpha: v.glow ? 0.6 : 0.4),
+            ),
+            child: ClipPath(
+              clipper: const HudChamferClipper(bigCut: 12, smallCut: 3),
+              child: Container(
+                decoration: BoxDecoration(
+                  // Team-vs-team wash: each corner carries its team's colour at
+                  // 16% composited over the #06152B base, so the card reads as
+                  // "this fixture" while text stays legible.
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color.alphaBlend(
+                        widget.match.home.color.withValues(alpha: 0.16),
+                        _hubCardBase,
+                      ),
+                      Color.alphaBlend(
+                        widget.match.away.color.withValues(alpha: 0.16),
+                        _hubCardBase,
+                      ),
+                    ],
+                  ),
+                ),
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 13),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 84),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _IndexPlate(index: widget.index, accent: v.accent),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        v.tag,
+                                        style: Cyber.label(
+                                          8.5,
+                                          color: v.accent,
+                                          letterSpacing: 1.6,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        widget.quiz.title,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: Cyber.display(
+                                          14.5,
+                                          color: Colors.white,
+                                          letterSpacing: 0.2,
+                                        ).copyWith(height: 1.2),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                _RewardPill(
+                                  text: v.rewardText,
+                                  color: v.rewardColor,
+                                ),
+                              ],
+                            ),
+                            if (widget.quiz.subtitle != null) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                widget.quiz.subtitle!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Cyber.body(11.5, color: Cyber.muted),
+                              ),
+                            ],
+                            const SizedBox(height: 11),
+                            CyberProgressBar(
+                              value: v.progress.clamp(0.0, 1.0),
+                              accent: v.progressAccent,
+                              height: 6,
+                              trackColor: Colors.black.withValues(alpha: 0.35),
+                              trackBorderColor:
+                                  v.accent.withValues(alpha: 0.22),
+                            ),
+                            const SizedBox(height: 10),
+                            _HubDivider(accent: v.accent),
+                            const SizedBox(height: 9),
+                            Row(
+                              children: [
+                                Icon(v.ctaIcon, color: v.accent, size: 14),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    v.ctaText,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Cyber.label(
+                                      9,
+                                      color: v.accent,
+                                      letterSpacing: 1,
+                                      fontFeatures: const [
+                                        FontFeature.tabularFigures(),
+                                      ],
+                                    ).copyWith(
+                                      shadows: v.pulse
+                                          ? [
+                                              Shadow(
+                                                color: v.accent.withValues(
+                                                  alpha: 0.5,
+                                                ),
+                                                blurRadius: 10,
+                                              ),
+                                            ]
+                                          : null,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                if (v.outcomes != null)
+                                  _HubOutcomeDots(
+                                    outcomes: v.outcomes!,
+                                    compact: true,
+                                  )
+                                else if (v.showChevron)
+                                  _ChevronChip(accent: v.accent),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Chamfered "mission number" plate on the left edge of a quiz-set hub card.
+class _IndexPlate extends StatelessWidget {
+  const _IndexPlate({required this.index, required this.accent});
+
+  final int index;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 38,
+      height: 38,
+      child: CustomPaint(
+        painter: _QuizChamferPanelPainter(
+          bigCut: 8,
+          smallCut: 2,
+          borderColor: accent.withValues(alpha: 0.6),
+        ),
+        child: ClipPath(
+          clipper: const HudChamferClipper(bigCut: 8, smallCut: 2),
+          child: Container(
+            alignment: Alignment.center,
+            color: accent.withValues(alpha: 0.16),
+            child: Text(
+              index.toString().padLeft(2, '0'),
+              style: Cyber.display(
+                15,
+                color: accent,
+                letterSpacing: 0,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The XP / status stake shown top-right of a quiz-set hub card.
+class _RewardPill extends StatelessWidget {
+  const _RewardPill({required this.text, required this.color});
+
+  final String text;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+      ),
+      child: Text(
+        text,
+        style: Cyber.label(
+          9,
+          color: color,
+          letterSpacing: 0.6,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
+      ),
+    );
+  }
+}
+
+/// Calm state-tinted hairline separating the meter from the CTA line. Fades in
+/// from the edges so it reads as HUD chrome, not a hard rule (and never glows).
+class _HubDivider extends StatelessWidget {
+  const _HubDivider({required this.accent});
+
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 1,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.transparent,
+            accent.withValues(alpha: 0.35),
+            Colors.transparent,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Chamfered "go" affordance for actionable quiz-set hub cards.
+class _ChevronChip extends StatelessWidget {
+  const _ChevronChip({required this.accent});
+
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 26,
+      height: 26,
+      child: CustomPaint(
+        painter: _QuizChamferPanelPainter(
+          bigCut: 6,
+          smallCut: 2,
+          borderColor: accent.withValues(alpha: 0.55),
+        ),
+        child: ClipPath(
+          clipper: const HudChamferClipper(bigCut: 6, smallCut: 2),
+          child: Container(
+            color: accent.withValues(alpha: 0.14),
+            alignment: Alignment.center,
+            child: Icon(Icons.arrow_forward, size: 15, color: accent),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ReviewNotice extends StatelessWidget {
   const _ReviewNotice({required this.text});
 
@@ -1802,9 +2567,10 @@ class _ReviewSaveDock extends StatelessWidget {
 /// the same match's pick market. If no market is linked yet, it drops them back
 /// to the matches list.
 class _OpenPicksDock extends StatelessWidget {
-  const _OpenPicksDock({required this.market});
+  const _OpenPicksDock({required this.market, this.onOpenPicks});
 
   final PickMarket? market;
+  final VoidCallback? onOpenPicks;
 
   @override
   Widget build(BuildContext context) {
@@ -1821,6 +2587,10 @@ class _OpenPicksDock extends StatelessWidget {
           trailingIcon: Icons.keyboard_double_arrow_right,
           onTap: () {
             playSound(SoundEffect.playMatch);
+            if (onOpenPicks != null) {
+              onOpenPicks!();
+              return;
+            }
             if (market == null) {
               Navigator.of(context).popUntil((r) => r.isFirst);
             } else {
@@ -1871,519 +2641,6 @@ class _SettleDock extends StatelessWidget {
           onTap: onSettle,
         ),
       ),
-    );
-  }
-}
-
-enum _MatchLeaderboardMode {
-  notEntered,
-  editable,
-  locked,
-  revealReady,
-  settled,
-  closed,
-}
-
-const double _matchLeaderboardCardHeight = 70;
-
-class _MatchLeaderboardScreen extends StatelessWidget {
-  const _MatchLeaderboardScreen({
-    required this.match,
-    required this.quiz,
-    required this.prediction,
-    required this.entries,
-  });
-
-  final SportMatch match;
-  final PredictionQuiz? quiz;
-  final UserPrediction? prediction;
-  final List<MatchPredictionLeaderboardEntry> entries;
-
-  _MatchLeaderboardMode get _mode {
-    if (prediction?.status == PredictionStatus.settled) {
-      return _MatchLeaderboardMode.settled;
-    }
-    if (match.status == MatchStatus.finished) {
-      if (prediction != null && (quiz?.settleable ?? false)) {
-        return _MatchLeaderboardMode.revealReady;
-      }
-      return _MatchLeaderboardMode.closed;
-    }
-    if (match.status == MatchStatus.live ||
-        prediction?.status == PredictionStatus.locked) {
-      return _MatchLeaderboardMode.locked;
-    }
-    if (prediction != null) return _MatchLeaderboardMode.editable;
-    return _MatchLeaderboardMode.notEntered;
-  }
-
-  MatchPredictionLeaderboardEntry? get _userEntry {
-    for (final entry in entries) {
-      if (entry.name.toLowerCase() == 'you') return entry;
-    }
-    return null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final totalQuestions = quiz?.questions.length ?? 0;
-    final user = _userEntry;
-
-    return Scaffold(
-      backgroundColor: Cyber.bg,
-      body: Stack(
-        children: [
-          const Positioned.fill(
-            child: CyberPlainBackground(child: SizedBox.expand()),
-          ),
-          SafeArea(
-            child: Column(
-              children: [
-                _MatchLeaderboardTopBar(
-                  onBack: () => Navigator.of(context).pop(),
-                ),
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 22),
-                    children: [
-                      _MatchLeaderboardStats(
-                        user: user,
-                        prediction: prediction,
-                        entries: entries,
-                        totalQuestions: totalQuestions,
-                      ),
-                      const SizedBox(height: 16),
-                      _RankSectionHeader(mode: _mode, count: entries.length),
-                      const SizedBox(height: 10),
-                      for (final entry in entries)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 9),
-                          child: _MatchRankRow(entry: entry),
-                        ),
-                      if (entries.isEmpty)
-                        SizedBox(
-                          height: MediaQuery.sizeOf(context).height * 0.42,
-                          child: _EmptyLeaderboard(mode: _mode),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MatchLeaderboardTopBar extends StatelessWidget {
-  const _MatchLeaderboardTopBar({required this.onBack});
-
-  final VoidCallback onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 70,
-      padding: const EdgeInsets.fromLTRB(8, 10, 16, 10),
-      decoration: BoxDecoration(
-        color: const Color(0xff11182a).withValues(alpha: 0.96),
-        border: Border(
-          bottom: BorderSide(color: Cyber.cyan.withValues(alpha: 0.34)),
-        ),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: onBack,
-            icon: const Icon(Icons.arrow_back, color: Color(0xffd9e5f6)),
-          ),
-          const SizedBox(width: 2),
-          const Icon(Icons.emoji_events_outlined, color: Cyber.gold, size: 22),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Text(
-              'MATCH LEADERBOARD',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Cyber.display(15, color: Colors.white, letterSpacing: 1.1),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MatchLeaderboardStats extends StatelessWidget {
-  const _MatchLeaderboardStats({
-    required this.user,
-    required this.prediction,
-    required this.entries,
-    required this.totalQuestions,
-  });
-
-  final MatchPredictionLeaderboardEntry? user;
-  final UserPrediction? prediction;
-  final List<MatchPredictionLeaderboardEntry> entries;
-  final int totalQuestions;
-
-  @override
-  Widget build(BuildContext context) {
-    final predictions = prediction?.answers.length ?? user?.correct ?? 0;
-    return Row(
-      children: [
-        Expanded(
-          child: _LeaderboardStatCard(
-            label: 'YOUR RANK',
-            value: user == null ? '--' : '#${user!.rank}',
-            color: Cyber.cyan,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _LeaderboardStatCard(
-            label: 'PREDICTIONS',
-            value: totalQuestions == 0
-                ? '$predictions'
-                : '$predictions/$totalQuestions',
-            color: Cyber.gold,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _LeaderboardStatCard(
-            label: 'PLAYERS',
-            value: '${entries.length}',
-            color: Cyber.lime,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _RankSectionHeader extends StatelessWidget {
-  const _RankSectionHeader({required this.mode, required this.count});
-
-  final _MatchLeaderboardMode mode;
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    final label = switch (mode) {
-      _MatchLeaderboardMode.notEntered => 'JOIN BEFORE LOCK',
-      _MatchLeaderboardMode.editable => 'LIVE STANDINGS PREVIEW',
-      _MatchLeaderboardMode.locked => 'LOCKED PICKS',
-      _MatchLeaderboardMode.revealReady => 'FINAL RANKS READY',
-      _MatchLeaderboardMode.settled => 'FINAL RESULTS',
-      _MatchLeaderboardMode.closed => 'MATCH CLOSED',
-    };
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1.0),
-          ),
-        ),
-        Text(
-          '$count PLAYERS',
-          style: Cyber.label(9, color: Cyber.cyan, letterSpacing: 0.8),
-        ),
-      ],
-    );
-  }
-}
-
-class _MatchRankRow extends StatelessWidget {
-  const _MatchRankRow({required this.entry});
-
-  final MatchPredictionLeaderboardEntry entry;
-
-  @override
-  Widget build(BuildContext context) {
-    final isUser = entry.name.toLowerCase() == 'you';
-    final rankColor = entry.rank <= 3 ? Cyber.gold : Cyber.cyan;
-    final accent = isUser ? Cyber.cyan : rankColor;
-    return SizedBox(
-      height: _matchLeaderboardCardHeight,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: isUser
-              ? Cyber.cyan.withValues(alpha: 0.10)
-              : Cyber.panel.withValues(alpha: 0.34),
-          border: Border.all(
-            color: isUser
-                ? Cyber.cyan.withValues(alpha: 0.55)
-                : Cyber.line.withValues(alpha: entry.rank <= 3 ? 0.24 : 0.0),
-          ),
-        ),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 36,
-              child: Text(
-                '#${entry.rank}',
-                style: Cyber.display(
-                  13,
-                  color: rankColor,
-                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-              ),
-            ),
-            const SizedBox(width: 10),
-            _MatchPlayerAvatar(
-              name: entry.name,
-              size: 44,
-              highlight: isUser,
-              ring: entry.rank <= 3 ? rankColor : null,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          entry.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Cyber.body(
-                            14,
-                            weight: isUser ? FontWeight.w800 : FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      if (isUser) ...[
-                        const SizedBox(width: 7),
-                        const _StatusPill(
-                          label: 'YOU',
-                          color: Cyber.cyan,
-                          small: true,
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${entry.correct} correct',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Cyber.label(
-                      8.5,
-                      color: Cyber.muted,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 72),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      '${entry.points}',
-                      maxLines: 1,
-                      style: Cyber.display(16, color: accent).copyWith(
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ),
-                  Text(
-                    'XP',
-                    style: Cyber.label(
-                      8,
-                      color: Cyber.muted.withValues(alpha: 0.82),
-                      letterSpacing: 0.4,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MatchPlayerAvatar extends StatelessWidget {
-  const _MatchPlayerAvatar({
-    required this.name,
-    required this.size,
-    required this.highlight,
-    this.ring,
-  });
-
-  final String name;
-  final double size;
-  final bool highlight;
-  final Color? ring;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = ring ?? (highlight ? Cyber.cyan : Cyber.line);
-    final fill = _avatarFill(name);
-    return Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Color.lerp(fill, Cyber.panel, 0.42),
-        border: Border.all(
-          color: color.withValues(alpha: highlight ? 0.9 : 0.42),
-          width: highlight ? 2 : 1.2,
-        ),
-      ),
-      child: Text(
-        _initials(name),
-        style: Cyber.display(
-          size >= 44 ? 13 : 11,
-          color: Colors.white,
-          letterSpacing: 0,
-        ),
-      ),
-    );
-  }
-}
-
-String _initials(String name) {
-  final parts = name
-      .trim()
-      .split(RegExp(r'\s+'))
-      .where((part) => part.isNotEmpty)
-      .toList();
-  if (parts.isEmpty) return '?';
-  if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
-  return '${parts.first.substring(0, 1)}${parts.last.substring(0, 1)}'
-      .toUpperCase();
-}
-
-Color _avatarFill(String name) {
-  const palette = [
-    Cyber.cyan,
-    Cyber.violet,
-    Cyber.gold,
-    Cyber.lime,
-    Cyber.danger,
-  ];
-  final seed = name.codeUnits.fold<int>(0, (sum, unit) => sum + unit);
-  return palette[seed % palette.length];
-}
-
-class _LeaderboardStatCard extends StatelessWidget {
-  const _LeaderboardStatCard({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 62,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-        decoration: BoxDecoration(
-          color: Cyber.panel.withValues(alpha: 0.58),
-          border: Border.all(color: color.withValues(alpha: 0.28)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Cyber.label(9, color: Cyber.muted, letterSpacing: 0.7),
-            ),
-            const Spacer(),
-            Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Cyber.display(
-                17,
-                color: color,
-              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({
-    required this.label,
-    required this.color,
-    this.small = false,
-  });
-
-  final String label;
-  final Color color;
-  final bool small;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: small ? 6 : 9,
-        vertical: small ? 3 : 5,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        border: Border.all(color: color.withValues(alpha: 0.55)),
-      ),
-      child: Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: Cyber.label(
-          small ? 7 : 8.5,
-          color: color,
-          letterSpacing: small ? 0.5 : 0.8,
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyLeaderboard extends StatelessWidget {
-  const _EmptyLeaderboard({required this.mode});
-
-  final _MatchLeaderboardMode mode;
-
-  @override
-  Widget build(BuildContext context) {
-    final canJoin =
-        mode == _MatchLeaderboardMode.notEntered ||
-        mode == _MatchLeaderboardMode.editable;
-    return CyberNoDataState(
-      icon: canJoin ? Icons.sports_esports : Icons.emoji_events_outlined,
-      title: canJoin ? 'Be the 1st to play' : 'No players yet',
-      message: canJoin
-          ? 'No one has submitted this prediction quiz yet. Play first and set the rank to beat.'
-          : 'No prediction quiz results were submitted before this board closed.',
-      accent: canJoin ? Cyber.cyan : Cyber.gold,
-      spark: canJoin ? Icons.bolt : Icons.lock_clock,
     );
   }
 }
@@ -3775,8 +4032,64 @@ String _formatCountdown(Duration d) {
 
 const _panelTop = Color(0xff1b2336);
 const _panelBottom = Color(0xff131b2a);
+// Solid base the team-colour wash sits over on quiz-set hub cards.
+const _hubCardBase = Color(0xff06152b);
 const _panelBorder = Color(0xff2a3550);
 const _quizSurfaceOpacity = 0.90;
 const _optionFill = Color(0xff0f1826);
 const _optionBorder = Color(0xff283448);
 const _letterFill = Color(0xff1a2434);
+
+class _HubOutcomeDots extends StatelessWidget {
+  const _HubOutcomeDots({required this.outcomes, this.compact = false});
+
+  final List<QuestionOutcome> outcomes;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final gap = compact ? 4.0 : 5.0;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < outcomes.length; i++) ...[
+          _HubOutcomeDot(outcome: outcomes[i], compact: compact),
+          if (i != outcomes.length - 1) SizedBox(width: gap),
+        ],
+      ],
+    );
+  }
+}
+
+class _HubOutcomeDot extends StatelessWidget {
+  const _HubOutcomeDot({required this.outcome, required this.compact});
+
+  final QuestionOutcome outcome;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (outcome) {
+      QuestionOutcome.correct => Cyber.success,
+      QuestionOutcome.wrong => Cyber.red,
+      QuestionOutcome.pending => Cyber.muted,
+    };
+    final icon = switch (outcome) {
+      QuestionOutcome.correct => Icons.check,
+      QuestionOutcome.wrong => Icons.close,
+      QuestionOutcome.pending => Icons.more_horiz,
+    };
+    final box = compact ? 13.0 : 17.0;
+    final iconSize = compact ? 9.0 : 11.0;
+    return Container(
+      width: box,
+      height: box,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        border: Border.all(color: color.withValues(alpha: 0.55)),
+      ),
+      child: Icon(icon, size: iconSize, color: color),
+    );
+  }
+}

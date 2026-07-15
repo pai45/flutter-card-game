@@ -66,7 +66,7 @@ class FootballBingoState {
   PlayerCard? get currentPlayer {
     final cell = currentCell;
     if (cell == null) return null;
-    return allPlayerCards
+    return footballPlayerCards
         .where((player) => player.id == cell.playerId)
         .firstOrNull;
   }

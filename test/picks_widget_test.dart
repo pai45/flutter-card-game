@@ -50,9 +50,9 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
 
     expect(find.text('ALL'), findsOneWidget);
-    expect(find.text('France'), findsAtLeastNWidgets(1));
-    expect(find.text('Iraq'), findsAtLeastNWidgets(1));
-    expect(find.text('72%'), findsAtLeastNWidgets(1));
+    expect(find.text('Punjab'), findsAtLeastNWidgets(1));
+    expect(find.text('Bangalore'), findsAtLeastNWidgets(1));
+    expect(find.text('68%'), findsAtLeastNWidgets(1));
     expect(find.byIcon(Icons.settings), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.settings));

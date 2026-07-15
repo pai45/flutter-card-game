@@ -38,39 +38,88 @@ enum SoundEffect {
   rarityPlatinum, // pack reveal payoff — top tier (walkout sting)
   matchWin, // victory screen
   matchLose, // defeat screen
+  cheering, // crowd cheering for 4, 6, or out
+  tennisContact, // procedural racket impact
+  tennisBounce, // procedural court bounce
+  tennisNet, // procedural net-cord rattle
+  cricketRelease, // ball leaves the bowler's hand
+  cricketBounce, // pitch contact
+  cricketPerfect, // centred bat contact
+  cricketGreat, // strong bat contact
+  cricketGood, // controlled bat contact
+  cricketEdge, // thin outside/inside edge
+  cricketKeeper, // wicketkeeper glove collection
+  cricketStumps, // stump and bail impact
+  cricketBoundary, // four confirmation
+  cricketSix, // six confirmation
+  cricketCrowdPressure, // final-ball pressure swell
+  cricketVictory, // successful chase sting
+  cricketDefeat, // failed chase sting
+  bbSwish, // clean make — net snap
+  bbRimRattle, // missed shot clanks off the iron
+  bbBackboard, // block swatted into the glass
+  bbDunkSlam, // dunk throwdown boom
+  bbBuzzer, // half/OT horn
+  bbCrowdRoar, // heat ignites / big-play crowd swell
+  bbSneakerSqueak, // hard cut / steal / ankle breaker
 }
 
 extension _SoundEffectAsset on SoundEffect {
   /// Asset path relative to `assets/` (audioplayers' default prefix).
-  String get asset => 'audio/${switch (this) {
-    SoundEffect.uiTap => 'ui_tap',
-    SoundEffect.cardSelect => 'card_select',
-    SoundEffect.playMatch => 'play_match',
-    SoundEffect.attack => 'attack',
-    SoundEffect.defense => 'defense',
-    SoundEffect.special => 'special',
-    SoundEffect.commit => 'commit',
-    SoundEffect.cardSlam => 'card_slam',
-    SoundEffect.cardReveal => 'card_reveal',
-    SoundEffect.packOpen => 'pack_open',
-    SoundEffect.whoosh => 'whoosh',
-    SoundEffect.riser => 'riser',
-    SoundEffect.goal => 'goal',
-    SoundEffect.save => 'save',
-    SoundEffect.redCard => 'red_card',
-    SoundEffect.coinFlip => 'coin_flip',
-    SoundEffect.coinLand => 'coin_land',
-    SoundEffect.countdownTick => 'tick',
-    SoundEffect.bannerSlam => 'banner_slam',
-    SoundEffect.coins => 'coins',
-    SoundEffect.levelUp => 'level_up',
-    SoundEffect.rarityBronze => 'rarity_bronze',
-    SoundEffect.raritySilver => 'rarity_silver',
-    SoundEffect.rarityGold => 'rarity_gold',
-    SoundEffect.rarityPlatinum => 'rarity_platinum',
-    SoundEffect.matchWin => 'match_win',
-    SoundEffect.matchLose => 'match_lose',
-  }}.wav';
+  String get asset =>
+      'audio/${switch (this) {
+        SoundEffect.uiTap => 'ui_tap',
+        SoundEffect.cardSelect => 'card_select',
+        SoundEffect.playMatch => 'play_match',
+        SoundEffect.attack => 'attack',
+        SoundEffect.defense => 'defense',
+        SoundEffect.special => 'special',
+        SoundEffect.commit => 'commit',
+        SoundEffect.cardSlam => 'card_slam',
+        SoundEffect.cardReveal => 'card_reveal',
+        SoundEffect.packOpen => 'pack_open',
+        SoundEffect.whoosh => 'whoosh',
+        SoundEffect.riser => 'riser',
+        SoundEffect.goal => 'goal',
+        SoundEffect.save => 'save',
+        SoundEffect.redCard => 'red_card',
+        SoundEffect.coinFlip => 'coin_flip',
+        SoundEffect.coinLand => 'coin_land',
+        SoundEffect.countdownTick => 'tick',
+        SoundEffect.bannerSlam => 'banner_slam',
+        SoundEffect.coins => 'coins',
+        SoundEffect.levelUp => 'level_up',
+        SoundEffect.rarityBronze => 'rarity_bronze',
+        SoundEffect.raritySilver => 'rarity_silver',
+        SoundEffect.rarityGold => 'rarity_gold',
+        SoundEffect.rarityPlatinum => 'rarity_platinum',
+        SoundEffect.matchWin => 'match_win',
+        SoundEffect.matchLose => 'match_lose',
+        SoundEffect.cheering => 'cheering',
+        SoundEffect.tennisContact => 'tennis_contact',
+        SoundEffect.tennisBounce => 'tennis_bounce',
+        SoundEffect.tennisNet => 'tennis_net',
+        SoundEffect.cricketRelease => 'cricket_release',
+        SoundEffect.cricketBounce => 'cricket_bounce',
+        SoundEffect.cricketPerfect => 'cricket_perfect',
+        SoundEffect.cricketGreat => 'cricket_great',
+        SoundEffect.cricketGood => 'cricket_good',
+        SoundEffect.cricketEdge => 'cricket_edge',
+        SoundEffect.cricketKeeper => 'cricket_keeper',
+        SoundEffect.cricketStumps => 'cricket_stumps',
+        SoundEffect.cricketBoundary => 'cricket_boundary',
+        SoundEffect.cricketSix => 'cricket_six',
+        SoundEffect.cricketCrowdPressure => 'cricket_crowd_pressure',
+        SoundEffect.cricketVictory => 'cricket_victory',
+        SoundEffect.cricketDefeat => 'cricket_defeat',
+        SoundEffect.bbSwish => 'bb_swish',
+        SoundEffect.bbRimRattle => 'bb_rim_rattle',
+        SoundEffect.bbBackboard => 'bb_backboard',
+        SoundEffect.bbDunkSlam => 'bb_dunk_slam',
+        SoundEffect.bbBuzzer => 'bb_buzzer',
+        SoundEffect.bbCrowdRoar => 'bb_crowd_roar',
+        SoundEffect.bbSneakerSqueak => 'bb_sneaker_squeak',
+      }}.wav';
 
   /// Per-effect mix level so loud/percussive cues don't overpower subtle ones.
   double get volume => switch (this) {
@@ -101,21 +150,48 @@ extension _SoundEffectAsset on SoundEffect {
     SoundEffect.rarityPlatinum => 0.95,
     SoundEffect.matchWin => 0.95,
     SoundEffect.matchLose => 0.85,
+    SoundEffect.cheering => 0.8,
+    SoundEffect.tennisContact => 0.68,
+    SoundEffect.tennisBounce => 0.42,
+    SoundEffect.tennisNet => 0.56,
+    SoundEffect.cricketRelease => 0.48,
+    SoundEffect.cricketBounce => 0.52,
+    SoundEffect.cricketPerfect => 0.88,
+    SoundEffect.cricketGreat => 0.78,
+    SoundEffect.cricketGood => 0.66,
+    SoundEffect.cricketEdge => 0.68,
+    SoundEffect.cricketKeeper => 0.58,
+    SoundEffect.cricketStumps => 0.9,
+    SoundEffect.cricketBoundary => 0.84,
+    SoundEffect.cricketSix => 0.96,
+    SoundEffect.cricketCrowdPressure => 0.48,
+    SoundEffect.cricketVictory => 0.92,
+    SoundEffect.cricketDefeat => 0.78,
+    SoundEffect.bbSwish => 0.7,
+    SoundEffect.bbRimRattle => 0.55,
+    SoundEffect.bbBackboard => 0.6,
+    SoundEffect.bbDunkSlam => 0.95,
+    SoundEffect.bbBuzzer => 0.85,
+    SoundEffect.bbCrowdRoar => 0.8,
+    SoundEffect.bbSneakerSqueak => 0.4,
   };
 }
 
 /// Looping background tracks (ambient bed). Played on a dedicated channel that
 /// is independent of the one-shot SFX pool so effects never evict the loop.
-enum MusicTrack { matchAmbient }
+enum MusicTrack { matchAmbient, superOverAmbient }
 
 extension _MusicTrackAsset on MusicTrack {
-  String get asset => 'audio/${switch (this) {
-    MusicTrack.matchAmbient => 'match_ambient',
-  }}.wav';
+  String get asset =>
+      'audio/${switch (this) {
+        MusicTrack.matchAmbient => 'match_ambient',
+        MusicTrack.superOverAmbient => 'super_over_ambient',
+      }}.wav';
 
   /// Resting volume — sits low under everything by design.
   double get baseVolume => switch (this) {
     MusicTrack.matchAmbient => 0.25,
+    MusicTrack.superOverAmbient => 0.2,
   };
 }
 
@@ -151,6 +227,11 @@ class AudioController {
     SoundEffect.rarityPlatinum,
     SoundEffect.matchWin,
     SoundEffect.matchLose,
+    SoundEffect.cricketSix,
+    SoundEffect.cricketVictory,
+    SoundEffect.cricketDefeat,
+    SoundEffect.bbDunkSlam,
+    SoundEffect.bbCrowdRoar,
   };
 
   final List<AudioPlayer> _pool = [];
@@ -220,8 +301,7 @@ class AudioController {
     if (muted.value) return;
     _musicVol = _musicBase;
     try {
-      final player = _music ??= AudioPlayer()
-        ..setReleaseMode(ReleaseMode.loop);
+      final player = _music ??= AudioPlayer()..setReleaseMode(ReleaseMode.loop);
       await player.setReleaseMode(ReleaseMode.loop);
       await player.play(AssetSource(track.asset), volume: _musicBase);
     } catch (e) {

@@ -28,6 +28,32 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
+  test('user prediction json defaults missing quiz id to main', () {
+    final prediction = UserPrediction.fromJson({
+      'matchId': 'legacy_match',
+      'answers': {'q1': 0},
+      'submittedAt': DateTime(2026, 1, 1).millisecondsSinceEpoch,
+      'status': 'open',
+      'correctCount': null,
+      'rewardEarned': 0,
+    });
+
+    expect(prediction.quizId, kDefaultPredictionQuizId);
+    expect(prediction.key, 'legacy_match::main');
+  });
+
+  test('submitting two quiz sets keeps predictions independent', () async {
+    final cubit = PredictionCubit(_QuizRepo(_quiz), SecureGameStorage());
+    addTearDown(cubit.close);
+
+    await cubit.submit(_match.id, 'main', const {'q1': 0});
+    await cubit.submit(_match.id, 'events', const {'q1': 1});
+
+    expect(cubit.state.predictions, hasLength(2));
+    expect(cubit.state.predictionFor(_match.id, 'main')?.answers['q1'], 0);
+    expect(cubit.state.predictionFor(_match.id, 'events')?.answers['q1'], 1);
+  });
+
   testWidgets('prediction quiz reveals number, words, then options', (
     tester,
   ) async {
@@ -478,7 +504,7 @@ void main() {
     expect(gameBloc.state.coins, coinsBefore);
   });
 
-  testWidgets('match leaderboard button opens leaderboard sheet', (
+  testWidgets('quiz top bar no longer exposes standalone leaderboard button', (
     tester,
   ) async {
     final cubit = _TestPredictionCubit(_QuizRepo(_quiz));
@@ -487,12 +513,8 @@ void main() {
 
     await _pumpPredictionScreen(tester, cubit: cubit, match: _match);
 
-    await tester.tap(find.byIcon(Icons.emoji_events_outlined).first);
-    await tester.pumpAndSettle();
-
-    expect(find.text('MATCH LEADERBOARD'), findsOneWidget);
-    expect(find.text('You'), findsOneWidget);
-    expect(find.text('640'), findsOneWidget);
+    expect(find.byIcon(Icons.emoji_events_outlined), findsNothing);
+    expect(find.text('MATCH LEADERBOARD'), findsNothing);
   });
 }
 
@@ -554,11 +576,18 @@ class _QuizRepo implements PredictionRepository {
   Future<List<League>> leagues() async => const [];
 
   @override
-  Future<List<SportMatch>> fixtures({DateTime? day}) async => const [];
+  Future<List<SportMatch>> fixtures({DateTime? day, Sport? sport}) async => const [];
 
   @override
-  Future<PredictionQuiz?> quizFor(String matchId) async =>
-      matchId == quiz.matchId ? quiz : null;
+  Future<List<SportMatch>> enrichFixturesForSport(List<SportMatch> fixtures, Sport sport) async => fixtures;
+
+  @override
+  Future<List<PredictionQuiz>> quizzesFor(String matchId) async =>
+      matchId == quiz.matchId ? [quiz] : const [];
+
+  @override
+  Future<PredictionQuiz?> quizFor(String matchId, String quizId) async =>
+      matchId == quiz.matchId && quizId == quiz.id ? quiz : null;
 
   @override
   Future<List<TeamStanding>> standings(String leagueId) async => const [];
@@ -566,6 +595,7 @@ class _QuizRepo implements PredictionRepository {
   @override
   Future<PredictionVoteBreakdown?> votesFor(
     String matchId,
+    String quizId,
     String questionId,
   ) async => PredictionVoteBreakdown(
     matchId: matchId,
@@ -576,6 +606,7 @@ class _QuizRepo implements PredictionRepository {
   @override
   Future<List<MatchPredictionLeaderboardEntry>> matchLeaderboard(
     String matchId,
+    String quizId,
   ) async => const [
     MatchPredictionLeaderboardEntry(
       rank: 1,
@@ -615,7 +646,7 @@ class _TestPredictionCubit extends PredictionCubit {
     : super(repository, SecureGameStorage());
 
   void seed(UserPrediction prediction) {
-    emit(state.copyWith(predictions: {prediction.matchId: prediction}));
+    emit(state.copyWith(predictions: {prediction.key: prediction}));
   }
 
   void seedFixtures(List<SportMatch> fixtures) {

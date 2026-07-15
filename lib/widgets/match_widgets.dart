@@ -1020,11 +1020,18 @@ class MatchHistoryTile extends StatelessWidget {
     final accent = switch (entry.resultLabel) {
       'Victory' => Cyber.success,
       'Defeat' => Cyber.danger,
+      'Podium' => Cyber.gold,
+      'Points' => Cyber.cyan,
       _ => Cyber.amber,
     };
     final resultIcon = switch (entry.resultLabel) {
       'Victory' => Icons.emoji_events,
       'Defeat' => Icons.sentiment_dissatisfied,
+      'Podium' => Icons.military_tech,
+      'Points' => Icons.flag,
+      _ when entry.isGrandPrix => Icons.sports_motorsports,
+      _ when entry.isBasketball => Icons.sports_basketball,
+      _ when entry.isTennis => Icons.sports_tennis,
       _ => Icons.balance,
     };
 
@@ -1097,28 +1104,48 @@ class MatchHistoryTile extends StatelessWidget {
                             ),
                           ),
                         ),
-                        // Score
-                        Row(
-                          children: [
-                            Text(
-                              '${entry.playerScore}',
-                              style: Cyber.display(18, color: Cyber.cyan),
-                            ),
-                            Text(
-                              ' – ',
-                              style: TextStyle(
-                                color: Cyber.muted,
-                                fontFamily: 'Orbitron',
-                                fontWeight: FontWeight.w900,
-                                fontSize: 14,
+                        // Score — races show a finishing position, not a
+                        // head-to-head scoreline.
+                        if (entry.isGrandPrix)
+                          Row(
+                            children: [
+                              Text(
+                                'P${entry.playerScore}',
+                                style: Cyber.display(18, color: accent),
                               ),
-                            ),
-                            Text(
-                              '${entry.opponentScore}',
-                              style: Cyber.display(18, color: Cyber.danger),
-                            ),
-                          ],
-                        ),
+                              Text(
+                                '/${entry.opponentScore}',
+                                style: TextStyle(
+                                  color: Cyber.muted,
+                                  fontFamily: 'Orbitron',
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          )
+                        else
+                          Row(
+                            children: [
+                              Text(
+                                '${entry.playerScore}',
+                                style: Cyber.display(18, color: Cyber.cyan),
+                              ),
+                              Text(
+                                ' – ',
+                                style: TextStyle(
+                                  color: Cyber.muted,
+                                  fontFamily: 'Orbitron',
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Text(
+                                '${entry.opponentScore}',
+                                style: Cyber.display(18, color: Cyber.danger),
+                              ),
+                            ],
+                          ),
                       ],
                     ),
                     const SizedBox(height: 5),
@@ -1149,6 +1176,78 @@ class MatchHistoryTile extends StatelessWidget {
                               'SHOOTOUT',
                               style: TextStyle(
                                 color: Cyber.violet,
+                                fontSize: 9,
+                                fontFamily: 'Orbitron',
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (entry.isGrandPrix) ...[
+                          const SizedBox(width: 7),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Cyber.f1Red.withValues(alpha: 0.14),
+                              border: Border.all(
+                                color: Cyber.f1Red.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: const Text(
+                              'GRAND PRIX',
+                              style: TextStyle(
+                                color: Cyber.f1Red,
+                                fontSize: 9,
+                                fontFamily: 'Orbitron',
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (entry.isBasketball) ...[
+                          const SizedBox(width: 7),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Cyber.gold.withValues(alpha: 0.14),
+                              border: Border.all(
+                                color: Cyber.gold.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: const Text(
+                              'HOOP DUEL',
+                              style: TextStyle(
+                                color: Cyber.gold,
+                                fontSize: 9,
+                                fontFamily: 'Orbitron',
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (entry.isTennis) ...[
+                          const SizedBox(width: 7),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Cyber.lime.withValues(alpha: 0.14),
+                              border: Border.all(
+                                color: Cyber.lime.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: const Text(
+                              'TENNIS RALLY',
+                              style: TextStyle(
+                                color: Cyber.lime,
                                 fontSize: 9,
                                 fontFamily: 'Orbitron',
                                 fontWeight: FontWeight.w900,

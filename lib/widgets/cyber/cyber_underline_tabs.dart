@@ -10,8 +10,8 @@ import '../../utils/sound_effects.dart';
 /// the single "live" element — it slides between tabs on change.
 ///
 /// Compared with [CyberSegmentedTabs] (the raised glowing trapezoid), this is
-/// the lower-key, text-only variant — reach for it on dense catalogue screens
-/// that already carry their own focal element.
+/// the lower-key tab variant — reach for it on dense catalogue screens that
+/// already carry their own focal element.
 class CyberUnderlineTabs extends StatelessWidget {
   const CyberUnderlineTabs({
     required this.labels,
@@ -19,14 +19,16 @@ class CyberUnderlineTabs extends StatelessWidget {
     required this.onTap,
     this.accent = Cyber.cyan,
     this.height = 50,
+    this.icons,
     super.key,
-  });
+  }) : assert(icons == null || icons.length == labels.length);
 
   final List<String> labels;
   final int activeIndex;
   final ValueChanged<int> onTap;
   final Color accent;
   final double height;
+  final List<IconData>? icons;
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +51,7 @@ class CyberUnderlineTabs extends StatelessWidget {
                     Expanded(
                       child: _UnderlineTab(
                         label: labels[i],
+                        icon: icons?[i],
                         active: activeIndex == i,
                         accent: accent,
                         onTap: () {
@@ -91,12 +94,14 @@ class CyberUnderlineTabs extends StatelessWidget {
 class _UnderlineTab extends StatefulWidget {
   const _UnderlineTab({
     required this.label,
+    required this.icon,
     required this.active,
     required this.accent,
     required this.onTap,
   });
 
   final String label;
+  final IconData? icon;
   final bool active;
   final Color accent;
   final VoidCallback onTap;
@@ -128,18 +133,30 @@ class _UnderlineTabState extends State<_UnderlineTab> {
                 : Colors.transparent,
           ),
           child: Center(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                widget.label,
-                maxLines: 1,
-                style: TextStyle(
-                  color: color,
-                  fontFamily: Cyber.displayFont,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
-                ),
+            child: Semantics(
+              button: true,
+              selected: widget.active,
+              label: widget.label,
+              child: ExcludeSemantics(
+                child: widget.icon == null
+                    ? FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          widget.label,
+                          maxLines: 1,
+                          style: TextStyle(
+                            color: color,
+                            fontFamily: Cyber.displayFont,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      )
+                    : Tooltip(
+                        message: widget.label,
+                        child: Icon(widget.icon, color: color, size: 21),
+                      ),
               ),
             ),
           ),

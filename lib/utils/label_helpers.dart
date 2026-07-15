@@ -8,6 +8,11 @@ String playerRoleLabel(PlayerCard card) => switch (card.role) {
   PlayerRole.attacker => 'ATK',
   PlayerRole.defender => 'DEF',
   PlayerRole.goalkeeper => 'GK',
+  PlayerRole.batsman => 'BAT',
+  PlayerRole.bowler => 'BOWL',
+  PlayerRole.basketballGuard => 'G',
+  PlayerRole.basketballWing => 'W',
+  PlayerRole.basketballBig => 'BIG',
 };
 
 Color tierColor(CardTier tier) => switch (tier) {
@@ -69,18 +74,22 @@ String outcomeNarration(
   RoundOutcome outcome, {
   required bool playerAttacking,
 }) => switch (outcome) {
-  RoundOutcome.goal => playerAttacking
-      ? 'Top corner — you find the net!'
-      : 'CPU buries it past your keeper.',
-  RoundOutcome.saved => playerAttacking
-      ? 'Denied — the keeper gets a strong hand to it.'
-      : 'Your keeper stands tall and saves!',
-  RoundOutcome.blocked => playerAttacking
-      ? 'Wall holds — the shot is smothered.'
-      : 'You throw a body in the way — blocked!',
-  RoundOutcome.missed => playerAttacking
-      ? 'Dragged wide — the chance is gone.'
-      : 'CPU skews it wide — let off!',
+  RoundOutcome.goal =>
+    playerAttacking
+        ? 'Top corner — you find the net!'
+        : 'CPU buries it past your keeper.',
+  RoundOutcome.saved =>
+    playerAttacking
+        ? 'Denied — the keeper gets a strong hand to it.'
+        : 'Your keeper stands tall and saves!',
+  RoundOutcome.blocked =>
+    playerAttacking
+        ? 'Wall holds — the shot is smothered.'
+        : 'You throw a body in the way — blocked!',
+  RoundOutcome.missed =>
+    playerAttacking
+        ? 'Dragged wide — the chance is gone.'
+        : 'CPU skews it wide — let off!',
   RoundOutcome.foul => 'Cynical challenge — the whistle blows.',
   RoundOutcome.redCard => 'Straight red — down to ten!',
 };

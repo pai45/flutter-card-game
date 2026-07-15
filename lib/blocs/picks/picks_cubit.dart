@@ -299,8 +299,17 @@ class PicksCubit extends Cubit<PicksState> {
       String? note,
       Duration age = const Duration(hours: 4),
     }) {
-      final market = markets.firstWhere((m) => m.id == marketId);
-      final outcome = market.outcomeFor(outcomeId)!;
+      final market = markets.cast<PickMarket?>().firstWhere(
+        (m) => m?.id == marketId,
+        orElse: () => null,
+      );
+      if (market == null) {
+        return;
+      }
+      final outcome = market.outcomeFor(outcomeId);
+      if (outcome == null) {
+        return;
+      }
       final shares = PickMath.sharesForStake(
         stakeOz: stake,
         probabilityPercent: outcome.probabilityPercent,
@@ -377,6 +386,17 @@ class PicksCubit extends Cubit<PicksState> {
       payout: 44,
       note: 'Stake refunded',
       age: const Duration(days: 1, hours: 6),
+    );
+    // Won Oz pick on the revealed demo fixture (matchId fifa_arg_jor) so its
+    // match card shows a coins-won figure next to the XP.
+    add(
+      marketId: 'fifa_arg_jor_winner',
+      outcomeId: 'arg',
+      stake: 90,
+      status: PickPositionStatus.won,
+      payout: 170,
+      note: 'Argentina won 3-1',
+      age: const Duration(days: 1, hours: 2),
     );
   }
 

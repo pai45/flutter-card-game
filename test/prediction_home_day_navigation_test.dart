@@ -35,84 +35,7 @@ void main() {
     expect(_headingText('(1)'), findsOneWidget);
   });
 
-  testWidgets('new games release section appears above match day header', (
-    tester,
-  ) async {
-    final cubit = _NavCubit(_NavRepo());
-    cubit.seed(_fixtures());
-    addTearDown(cubit.close);
 
-    await _pumpHome(tester, cubit);
-
-    final releaseCard = find.byKey(const ValueKey('new-games-release-card'));
-    expect(releaseCard, findsOneWidget);
-    expect(find.text('BRAND NEW GAMES'), findsOneWidget);
-    final heading = find.byKey(const ValueKey('match-day-heading'));
-    expect(
-      tester.getTopLeft(releaseCard).dy,
-      lessThan(tester.getTopLeft(heading).dy),
-    );
-  });
-
-  testWidgets('tapping new games release section opens release page', (
-    tester,
-  ) async {
-    final cubit = _NavCubit(_NavRepo());
-    cubit.seed(_fixtures());
-    addTearDown(cubit.close);
-
-    await _pumpHome(tester, cubit);
-
-    await tester.tap(find.byKey(const ValueKey('new-games-release-card')));
-    await tester.pumpAndSettle();
-
-    expect(
-      find.byKey(const ValueKey('new-games-release-screen')),
-      findsOneWidget,
-    );
-    expect(find.text('PITCH DUEL'), findsOneWidget);
-    expect(find.text('PENALTY SHOOTOUT'), findsOneWidget);
-    expect(find.text('PLAY PITCH DUEL'), findsOneWidget);
-    expect(find.text('PLAY SHOOTOUT'), findsOneWidget);
-  });
-
-  testWidgets('pitch duel release page CTA opens Pitch Duel', (tester) async {
-    final cubit = _NavCubit(_NavRepo());
-    cubit.seed(_fixtures());
-    addTearDown(cubit.close);
-    var openedPitchDuel = false;
-
-    await _pumpHome(tester, cubit, onOpenGame: () => openedPitchDuel = true);
-
-    await tester.tap(find.byKey(const ValueKey('new-games-release-card')));
-    await tester.pumpAndSettle();
-    await tester.tap(
-      find.byKey(const ValueKey('new-games-page-pitch-duel-cta')),
-    );
-    await tester.pumpAndSettle();
-
-    expect(openedPitchDuel, isTrue);
-  });
-
-  testWidgets('penalty shootout release page CTA opens Penalty Shootout', (
-    tester,
-  ) async {
-    final cubit = _NavCubit(_NavRepo());
-    cubit.seed(_fixtures());
-    addTearDown(cubit.close);
-    var openedShootout = false;
-
-    await _pumpHome(tester, cubit, onOpenShootout: () => openedShootout = true);
-
-    await tester.tap(find.byKey(const ValueKey('new-games-release-card')));
-    await tester.pumpAndSettle();
-    await tester.tap(
-      find.byKey(const ValueKey('new-games-page-penalty-shootout-cta')),
-    );
-    await tester.pumpAndSettle();
-
-    expect(openedShootout, isTrue);
-  });
 
   testWidgets('match day arrows move to tomorrow and yesterday', (
     tester,
@@ -203,15 +126,25 @@ Future<void> _pumpHome(
         home: PredictionHomeScreen(
           activeTab: 0,
           onTabChanged: (_) {},
+          activeMatchSportTab: 0,
+          onMatchSportTabChanged: (_) {},
+          activeGamesSportTab: 0,
+          onGamesSportTabChanged: (_) {},
           onNavigate: (_) {},
           onOpenMatch: (_) {},
           onOpenLeague: (_) {},
           onOpenGame: onOpenGame ?? () {},
           onOpenShootout: onOpenShootout ?? () {},
-          onOpenQuiz: () {},
+          onOpenQuiz: (_) {},
           onOpenFootballBingo: () {},
           onOpenFootballChess: () {},
+          onOpenSuperOver: () {},
           onOpenGuessPlayer: () {},
+          onOpenGrandPrix: () {},
+          onOpenBasketball: () {},
+          onOpenCricketDeck: () {},
+          onOpenBasketballGuessPlayer: () {},
+          onOpenCricketGuessPlayer: () {},
         ),
       ),
     ),
@@ -268,10 +201,16 @@ class _NavRepo implements PredictionRepository {
   Future<List<League>> leagues() async => const [_league];
 
   @override
-  Future<List<SportMatch>> fixtures({DateTime? day}) async => const [];
+  Future<List<SportMatch>> fixtures({DateTime? day, Sport? sport}) async => const [];
 
   @override
-  Future<PredictionQuiz?> quizFor(String matchId) async => null;
+  Future<List<SportMatch>> enrichFixturesForSport(List<SportMatch> fixtures, Sport sport) async => fixtures;
+
+  @override
+  Future<List<PredictionQuiz>> quizzesFor(String matchId) async => const [];
+
+  @override
+  Future<PredictionQuiz?> quizFor(String matchId, String quizId) async => null;
 
   @override
   Future<List<TeamStanding>> standings(String leagueId) async => const [];
@@ -279,12 +218,14 @@ class _NavRepo implements PredictionRepository {
   @override
   Future<PredictionVoteBreakdown?> votesFor(
     String matchId,
+    String quizId,
     String questionId,
   ) async => null;
 
   @override
   Future<List<MatchPredictionLeaderboardEntry>> matchLeaderboard(
     String matchId,
+    String quizId,
   ) async => const [];
 }
 

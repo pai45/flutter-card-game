@@ -162,7 +162,6 @@ class _MysteryAvatarPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return CyberPanel(
       accent: Cyber.panel,
-      solidBackground: true,
       padding: const EdgeInsets.symmetric(vertical: 48),
       child: Center(
         child: Container(

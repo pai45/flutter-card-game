@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+
 
 import '../config/theme.dart';
 import '../models/streak.dart';
@@ -59,10 +59,10 @@ class StreakBadge extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SvgPicture.asset(
-              'assets/icons/streak.svg',
-              width: StreakTheme.badgeIconSize,
-              height: StreakTheme.badgeIconSize,
+            Icon(
+              Icons.local_fire_department_outlined,
+              color: StreakTheme.primary,
+              size: StreakTheme.badgeIconSize,
             ),
             if (!compact) const SizedBox(width: StreakTheme.space4),
             if (!compact)

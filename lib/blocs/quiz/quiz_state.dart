@@ -1,21 +1,27 @@
 import '../../models/quiz_trivia.dart';
+import '../../models/sport_match.dart';
 
-/// Holds the player's persisted Football Quiz progress (per-mode cleared flags
-/// and best runs). [loading] is true until the first read from storage lands.
+/// Holds the player's persisted Quiz progress (per-mode cleared flags
+/// and best runs) keyed by Sport. [loading] is true until the first read from storage lands.
 class QuizState {
   const QuizState({
     this.loading = true,
-    this.progress = const QuizProgress({}),
+    this.progressBySport = const {},
   });
 
   final bool loading;
-  final QuizProgress progress;
+  final Map<Sport, QuizProgress> progressBySport;
 
-  bool isUnlocked(QuizMode mode) => progress.isUnlocked(mode);
-  QuizModeProgress progressFor(QuizMode mode) => progress.forMode(mode);
+  QuizProgress progressForSport(Sport sport) =>
+      progressBySport[sport] ?? const QuizProgress({});
 
-  QuizState copyWith({bool? loading, QuizProgress? progress}) => QuizState(
+  bool isUnlocked(Sport sport, QuizMode mode) =>
+      progressForSport(sport).isUnlocked(mode);
+  QuizModeProgress progressFor(Sport sport, QuizMode mode) =>
+      progressForSport(sport).forMode(mode);
+
+  QuizState copyWith({bool? loading, Map<Sport, QuizProgress>? progressBySport}) => QuizState(
     loading: loading ?? this.loading,
-    progress: progress ?? this.progress,
+    progressBySport: progressBySport ?? this.progressBySport,
   );
 }

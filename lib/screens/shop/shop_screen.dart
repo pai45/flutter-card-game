@@ -7,10 +7,12 @@ import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_event.dart';
 import '../../blocs/game/game_state.dart';
 import '../../config/enums.dart';
+import '../../config/sport_modules.dart';
 import '../../models/avatar_frame_option.dart';
 import '../../models/cards.dart';
 import '../../models/oz_coin_ledger.dart';
 import '../../models/shop.dart';
+import '../../models/sport_match.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/avatar_frame_ring.dart';
 import '../../widgets/card_unpack_animation.dart';
@@ -64,21 +66,53 @@ Color _tierAccent(String id) => switch (id) {
 
 const int _shopTabCount = 6;
 
-// Sport-filter chips shared by the FRAME and BANNER tabs (mirrors the
-// leaderboard's sport strip). NBA/F1 have no items seeded yet → empty state.
-const List<String> _shopSportFilters = [
-  'ALL',
-  'FIFA',
-  'IPL',
-  'UCL',
-  'NBA',
-  'F1',
+// Sport order mirrors the Matches/Games hub. Some sports have empty shop
+// sections until their drops are seeded.
+const _shopSports = <Sport>[
+  Sport.football,
+  Sport.cricket,
+  Sport.basketball,
+  Sport.tennis,
+  Sport.f1,
 ];
+
+final _shopSportLabels = _shopSports
+    .map((sport) => sportModuleFor(sport).label.toUpperCase())
+    .toList(growable: false);
+
+final _shopSportIcons = _shopSports
+    .map((sport) => sportModuleFor(sport).icon)
+    .toList(growable: false);
+
+String _shopSportCode(Sport sport) => switch (sport) {
+  Sport.football => 'FOOTBALL',
+  Sport.cricket => 'CRICKET',
+  Sport.basketball => 'BASKETBALL',
+  Sport.tennis => 'TENNIS',
+  Sport.f1 => 'F1',
+};
 
 // shortName → countryCode, built once from the card catalogue, so the AVATAR
 // tab can filter player portraits by nation.
+Sport _cardSport(PlayerCard card) {
+  if (card.id.startsWith('cricket-') || card.icon == Icons.sports_cricket) {
+    return Sport.cricket;
+  }
+  if (card.icon == Icons.sports_basketball) {
+    return Sport.basketball;
+  }
+  if (card.icon == Icons.sports_tennis) {
+    return Sport.tennis;
+  }
+  return Sport.football;
+}
+
 final Map<String, String> _avatarNationByShortName = {
   for (final card in allPlayerCards) card.shortName: card.countryCode,
+};
+
+final Map<String, Sport> _avatarSportByShortName = {
+  for (final card in allPlayerCards) card.shortName: _cardSport(card),
 };
 
 final List<({String shortName, String imagePath, int price})>
@@ -107,7 +141,7 @@ _bannerPlaceholders = [
     end: Color(0xff050b1e),
     accent: Color(0xff5cdfff),
     icon: Icons.waves,
-    sport: 'FIFA',
+    sport: 'FOOTBALL',
   ),
   (
     id: 'sunburst',
@@ -127,7 +161,7 @@ _bannerPlaceholders = [
     end: Color(0xff130018),
     accent: Color(0xffff3df7),
     icon: Icons.nightlight_round,
-    sport: 'UCL',
+    sport: 'FOOTBALL',
   ),
   (
     id: 'inferno',
@@ -137,7 +171,7 @@ _bannerPlaceholders = [
     end: Color(0xff1b0207),
     accent: Color(0xffffd166),
     icon: Icons.local_fire_department,
-    sport: 'IPL',
+    sport: 'CRICKET',
   ),
   (
     id: 'flare',
@@ -147,7 +181,7 @@ _bannerPlaceholders = [
     end: Color(0xffffc02e),
     accent: Color(0xffffffff),
     icon: Icons.wb_sunny,
-    sport: 'NBA',
+    sport: 'BASKETBALL',
   ),
 ];
 
@@ -164,6 +198,7 @@ class ShopScreen extends StatefulWidget {
 class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
   late final TabController _tabController;
   int _activeTab = 0;
+  int _activeSportTab = 0;
   int? _celebrationCoins;
   // The one shared "ACQUIRED" reveal, shown over the whole shop on any coin buy.
   Widget? _acquireOverlay;
@@ -238,6 +273,11 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                       accent: _cyan,
                       onAddCoins: () => _setTab(3),
                     ),
+                    _ShopSportsTabs(
+                      activeIndex: _activeSportTab,
+                      selectedSport: _selectedSport,
+                      onTap: (index) => setState(() => _activeSportTab = index),
+                    ),
                     CyberUnderlineTabs(
                       labels: const [
                         'AVATAR',
@@ -292,16 +332,41 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
     );
   }
 
+  Sport get _selectedSport => _shopSports[_activeSportTab];
+
   Widget _buildTab(GameState state) {
     return switch (_activeTab) {
-      0 => AvatarsTab(onAcquired: _showAcquired),
-      1 => FramesTab(onAcquired: _showAcquired),
-      2 => BannersTab(onAcquired: _showAcquired),
+      0 => AvatarsTab(sport: _selectedSport, onAcquired: _showAcquired),
+      1 => FramesTab(sport: _selectedSport, onAcquired: _showAcquired),
+      2 => BannersTab(sport: _selectedSport, onAcquired: _showAcquired),
       3 => CoinsTab(onPurchased: _showCelebration),
       // Packs keep their own richer 5-card reveal as the acquire moment.
       4 => const PacksTab(),
-      _ => CardsTab(onAcquired: _showAcquired),
+      _ => CardsTab(sport: _selectedSport, onAcquired: _showAcquired),
     };
+  }
+}
+
+class _ShopSportsTabs extends StatelessWidget {
+  const _ShopSportsTabs({
+    required this.activeIndex,
+    required this.selectedSport,
+    required this.onTap,
+  });
+
+  final int activeIndex;
+  final Sport selectedSport;
+  final ValueChanged<int> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return CyberUnderlineTabs(
+      labels: _shopSportLabels,
+      icons: _shopSportIcons,
+      activeIndex: activeIndex,
+      accent: sportModuleFor(selectedSport).accent,
+      onTap: onTap,
+    );
   }
 }
 
@@ -317,8 +382,9 @@ final List<String> _avatarNationFilters = () {
 }();
 
 class AvatarsTab extends StatefulWidget {
-  const AvatarsTab({required this.onAcquired, super.key});
+  const AvatarsTab({required this.sport, required this.onAcquired, super.key});
 
+  final Sport sport;
   final OnAcquired onAcquired;
 
   @override
@@ -330,9 +396,12 @@ class _AvatarsTabState extends State<AvatarsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final sportItems = _playerAvatarItems
+        .where((e) => _avatarSportByShortName[e.shortName] == widget.sport)
+        .toList();
     final items = _nation == 'ALL'
-        ? _playerAvatarItems
-        : _playerAvatarItems
+        ? sportItems
+        : sportItems
               .where((e) => _avatarNationByShortName[e.shortName] == _nation)
               .toList();
     return Column(
@@ -344,43 +413,48 @@ class _AvatarsTabState extends State<AvatarsTab> {
           onSelect: (value) => setState(() => _nation = value),
         ),
         Expanded(
-          child: BlocBuilder<GameBloc, GameState>(
-            builder: (BuildContext context, GameState state) {
-              return LayoutBuilder(
-                builder: (BuildContext context, BoxConstraints constraints) {
-                  final int columns = constraints.maxWidth >= 720
-                      ? 5
-                      : constraints.maxWidth >= 480
-                      ? 4
-                      : 3;
-                  return GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                    itemCount: items.length,
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: columns,
-                      mainAxisSpacing: 12,
-                      crossAxisSpacing: 12,
-                      childAspectRatio: 0.60,
-                    ),
-                    itemBuilder: (BuildContext context, int index) {
-                      final item = items[index];
-                      // Same cascade entrance the match cards use — each tile
-                      // slides + fades in on a per-index stagger.
-                      return StaggeredCardEntrance(
-                        index: index,
-                        animate: true,
-                        child: _AvatarShopTile(
-                          item: item,
-                          owned: state.ownedAvatarIds.contains(item.shortName),
-                          onAcquired: widget.onAcquired,
-                        ),
-                      );
-                    },
-                  );
-                },
-              );
-            },
-          ),
+          child: items.isEmpty
+              ? _ShopEmptyFilter(sport: _shopSportCode(widget.sport))
+              : BlocBuilder<GameBloc, GameState>(
+                  builder: (BuildContext context, GameState state) {
+                    return LayoutBuilder(
+                      builder: (BuildContext context, BoxConstraints constraints) {
+                        final int columns = constraints.maxWidth >= 720
+                            ? 5
+                            : constraints.maxWidth >= 480
+                            ? 4
+                            : 3;
+                        return GridView.builder(
+                          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                          itemCount: items.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: columns,
+                                mainAxisSpacing: 12,
+                                crossAxisSpacing: 12,
+                                childAspectRatio: 0.60,
+                              ),
+                          itemBuilder: (BuildContext context, int index) {
+                            final item = items[index];
+                            // Same cascade entrance the match cards use — each tile
+                            // slides + fades in on a per-index stagger.
+                            return StaggeredCardEntrance(
+                              index: index,
+                              animate: true,
+                              child: _AvatarShopTile(
+                                item: item,
+                                owned: state.ownedAvatarIds.contains(
+                                  item.shortName,
+                                ),
+                                onAcquired: widget.onAcquired,
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
         ),
       ],
     );
@@ -388,8 +462,9 @@ class _AvatarsTabState extends State<AvatarsTab> {
 }
 
 class BannersTab extends StatefulWidget {
-  const BannersTab({required this.onAcquired, super.key});
+  const BannersTab({required this.sport, required this.onAcquired, super.key});
 
+  final Sport sport;
   final OnAcquired onAcquired;
 
   @override
@@ -397,24 +472,17 @@ class BannersTab extends StatefulWidget {
 }
 
 class _BannersTabState extends State<BannersTab> {
-  String _sport = 'ALL';
-
   @override
   Widget build(BuildContext context) {
-    final items = _sport == 'ALL'
-        ? _bannerPlaceholders
-        : _bannerPlaceholders.where((e) => e.sport == _sport).toList();
+    final sportCode = _shopSportCode(widget.sport);
+    final items = _bannerPlaceholders
+        .where((e) => e.sport == sportCode)
+        .toList();
     return Column(
       children: [
-        CyberFilterChips(
-          labels: _shopSportFilters,
-          selected: _sport,
-          accent: _cyan,
-          onSelect: (value) => setState(() => _sport = value),
-        ),
         Expanded(
           child: items.isEmpty
-              ? _ShopEmptyFilter(sport: _sport)
+              ? _ShopEmptyFilter(sport: sportCode)
               : BlocBuilder<GameBloc, GameState>(
                   builder: (BuildContext context, GameState state) {
                     return ListView.separated(
@@ -453,8 +521,9 @@ class _BannersTabState extends State<BannersTab> {
 
 // ─── Borders tab ─────────────────────────────────────────────────────────────
 class FramesTab extends StatefulWidget {
-  const FramesTab({required this.onAcquired, super.key});
+  const FramesTab({required this.sport, required this.onAcquired, super.key});
 
+  final Sport sport;
   final OnAcquired onAcquired;
 
   @override
@@ -462,24 +531,17 @@ class FramesTab extends StatefulWidget {
 }
 
 class _FramesTabState extends State<FramesTab> {
-  String _sport = 'ALL';
-
   @override
   Widget build(BuildContext context) {
-    final items = _sport == 'ALL'
-        ? avatarFrameOptions
-        : avatarFrameOptions.where((b) => b.sports.contains(_sport)).toList();
+    final sportCode = _shopSportCode(widget.sport);
+    final items = avatarFrameOptions
+        .where((b) => b.sports.contains(sportCode))
+        .toList();
     return Column(
       children: [
-        CyberFilterChips(
-          labels: _shopSportFilters,
-          selected: _sport,
-          accent: _cyan,
-          onSelect: (value) => setState(() => _sport = value),
-        ),
         Expanded(
           child: items.isEmpty
-              ? _ShopEmptyFilter(sport: _sport)
+              ? _ShopEmptyFilter(sport: sportCode)
               : BlocBuilder<GameBloc, GameState>(
                   builder: (BuildContext context, GameState state) {
                     return LayoutBuilder(
@@ -1161,7 +1223,10 @@ class _CoinTierTile extends StatelessWidget {
                     ),
                     child: Center(
                       child: Text(
-                        tier.name.toUpperCase(),
+                        tier.coins.toString().replaceAllMapped(
+                          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                          (Match m) => '${m[1]},',
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
@@ -2157,8 +2222,9 @@ class _PackDesignPainter extends CustomPainter {
 }
 
 class CardsTab extends StatefulWidget {
-  const CardsTab({required this.onAcquired, super.key});
+  const CardsTab({required this.sport, required this.onAcquired, super.key});
 
+  final Sport sport;
   final OnAcquired onAcquired;
 
   @override
@@ -2171,6 +2237,13 @@ class _CardsTabState extends State<CardsTab> with TickerProviderStateMixin {
   String? _flashingCardId;
 
   @override
+  void didUpdateWidget(CardsTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final labels = _filtersForSport(widget.sport);
+    if (!labels.contains(_filter)) _filter = 'All';
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BlocBuilder<GameBloc, GameState>(
       builder: (BuildContext context, GameState state) {
@@ -2178,42 +2251,44 @@ class _CardsTabState extends State<CardsTab> with TickerProviderStateMixin {
         return Column(
           children: [
             CyberFilterChips(
-              labels: _filters,
+              labels: _filtersForSport(widget.sport),
               selected: _filter,
               accent: _cyan,
               onSelect: (value) => setState(() => _filter = value),
             ),
             Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                itemCount: cards.length,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: MediaQuery.sizeOf(context).width >= 720
-                      ? 3
-                      : 2,
-                  mainAxisSpacing: 10,
-                  crossAxisSpacing: 10,
-                  childAspectRatio: 0.68,
-                ),
-                itemBuilder: (BuildContext context, int index) {
-                  final PlayerCard card = cards[index];
-                  // Same match-card cascade — each card slides + fades in to fill
-                  // the page on a per-index stagger.
-                  return StaggeredCardEntrance(
-                    index: index,
-                    animate: true,
-                    child: _PurchasableCardTile(
-                      card: card,
-                      owned: state.ownedCardIds.contains(card.id),
-                      shake: _shakingCardId == card.id,
-                      flash: _flashingCardId == card.id,
-                      onInsufficient: () => _shake(card.id),
-                      onPurchased: () => _flash(card.id),
-                      onAcquired: widget.onAcquired,
+              child: cards.isEmpty
+                  ? _ShopEmptyFilter(sport: _shopSportCode(widget.sport))
+                  : GridView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                      itemCount: cards.length,
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: MediaQuery.sizeOf(context).width >= 720
+                            ? 3
+                            : 2,
+                        mainAxisSpacing: 10,
+                        crossAxisSpacing: 10,
+                        childAspectRatio: 0.68,
+                      ),
+                      itemBuilder: (BuildContext context, int index) {
+                        final PlayerCard card = cards[index];
+                        // Same match-card cascade — each card slides + fades in to fill
+                        // the page on a per-index stagger.
+                        return StaggeredCardEntrance(
+                          index: index,
+                          animate: true,
+                          child: _PurchasableCardTile(
+                            card: card,
+                            owned: state.ownedCardIds.contains(card.id),
+                            shake: _shakingCardId == card.id,
+                            flash: _flashingCardId == card.id,
+                            onInsufficient: () => _shake(card.id),
+                            onPurchased: () => _flash(card.id),
+                            onAcquired: widget.onAcquired,
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
             ),
           ],
         );
@@ -2222,11 +2297,20 @@ class _CardsTabState extends State<CardsTab> with TickerProviderStateMixin {
   }
 
   List<PlayerCard> _filteredCards() {
-    final List<PlayerCard> source = allPlayerCards.take(48).toList();
+    final List<PlayerCard> source = allPlayerCards
+        .where((card) => _cardSport(card) == widget.sport)
+        .take(48)
+        .toList();
     return source.where((PlayerCard card) {
       return switch (_filter) {
         'Attackers' => card.role == PlayerRole.attacker,
-        'Defenders' => card.role != PlayerRole.attacker,
+        'Defenders' => card.role == PlayerRole.defender,
+        'Keepers' => card.role == PlayerRole.goalkeeper,
+        'Batters' => card.role == PlayerRole.batsman,
+        'Bowlers' => card.role == PlayerRole.bowler,
+        'Guards' => card.role == PlayerRole.basketballGuard,
+        'Wings' => card.role == PlayerRole.basketballWing,
+        'Bigs' => card.role == PlayerRole.basketballBig,
         'Bronze' => card.tier == CardTier.bronze,
         'Silver' => card.tier == CardTier.silver,
         'Gold' => card.tier == CardTier.gold,
@@ -2772,12 +2856,18 @@ String _formatInt(int value) {
   return buffer.toString();
 }
 
-const List<String> _filters = [
-  'All',
-  'Attackers',
-  'Defenders',
-  'Bronze',
-  'Silver',
-  'Gold',
-  'Platinum',
-];
+const List<String> _filters = ['All', 'Bronze', 'Silver', 'Gold', 'Platinum'];
+
+List<String> _filtersForSport(Sport sport) => switch (sport) {
+  Sport.football => [
+    'All',
+    'Attackers',
+    'Defenders',
+    'Keepers',
+    ..._filters.skip(1),
+  ],
+  Sport.cricket => ['All', 'Batters', 'Bowlers', ..._filters.skip(1)],
+  Sport.basketball => ['All', 'Guards', 'Wings', 'Bigs', ..._filters.skip(1)],
+  Sport.tennis => ['All', 'ATP', 'WTA', ..._filters.skip(1)],
+  Sport.f1 => _filters,
+};

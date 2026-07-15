@@ -34,9 +34,10 @@ class FootballBingoScreen extends StatefulWidget {
   State<FootballBingoScreen> createState() => _FootballBingoScreenState();
 }
 
-class _FootballBingoScreenState extends State<FootballBingoScreen> {
+class _FootballBingoScreenState extends State<FootballBingoScreen> with WidgetsBindingObserver {
   Timer? _timer;
   DateTime _now = DateTime.now();
+  int _elapsedSeconds = 0;
   bool _showCompletion = false;
   final _stackKey = GlobalKey();
   final _activePlayerKey = GlobalKey();
@@ -47,16 +48,35 @@ class _FootballBingoScreenState extends State<FootballBingoScreen> {
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
+    WidgetsBinding.instance.addObserver(this);
+    final cubit = context.read<FootballBingoCubit>();
+    _elapsedSeconds = cubit.state.progress.elapsedSeconds;
+    
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
-      setState(() => _now = DateTime.now());
+      final currentState = context.read<FootballBingoCubit>().state;
+      setState(() {
+        _now = DateTime.now();
+        if (!currentState.readOnly && !currentState.completed && !currentState.loading) {
+          _elapsedSeconds++;
+        }
+      });
     });
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    context.read<FootballBingoCubit>().updateElapsedTime(_elapsedSeconds);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      context.read<FootballBingoCubit>().updateElapsedTime(_elapsedSeconds);
+    }
   }
 
   Future<void> _selectCell(String cellId) async {
@@ -85,6 +105,7 @@ class _FootballBingoScreenState extends State<FootballBingoScreen> {
         );
       }
       if (cubit.state.completed) {
+        cubit.updateElapsedTime(_elapsedSeconds);
         await _showCompletedAndReturn();
       }
     } else {
@@ -190,7 +211,11 @@ class _FootballBingoScreenState extends State<FootballBingoScreen> {
                         child: ListView(
                           padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
                           children: [
-                            _StatusStrip(state: state, now: _now),
+                            _StatusStrip(
+                              state: state,
+                              now: _now,
+                              elapsedSeconds: _elapsedSeconds,
+                            ),
                             const SizedBox(height: 14),
                             _BingoGrid(
                               state: state,
@@ -288,10 +313,15 @@ class _BingoHeader extends StatelessWidget implements PreferredSizeWidget {
 }
 
 class _StatusStrip extends StatelessWidget {
-  const _StatusStrip({required this.state, required this.now});
+  const _StatusStrip({
+    required this.state,
+    required this.now,
+    required this.elapsedSeconds,
+  });
 
   final FootballBingoState state;
   final DateTime now;
+  final int elapsedSeconds;
 
   @override
   Widget build(BuildContext context) {
@@ -300,7 +330,7 @@ class _StatusStrip extends StatelessWidget {
         ? 'VIEW'
         : state.completed
         ? formatFootballBingoCountdown(status.remaining)
-        : 'LIVE';
+        : formatFootballBingoTimer(elapsedSeconds);
     return Row(
       children: [
         Expanded(
@@ -331,7 +361,7 @@ class _StatusStrip extends StatelessWidget {
               ? 'ARCHIVE'
               : state.completed
               ? 'NEXT'
-              : 'DAILY',
+              : 'TIMER',
           value: timer,
         ),
       ],

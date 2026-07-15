@@ -4,7 +4,7 @@ Profile And Identity is the user's personal setup and display layer. It gives th
 
 ## Product Purpose
 
-Profile setup makes the first launch feel intentional instead of anonymous. The user chooses how they appear, which competitions they follow, and which teams they want attached to their profile.
+Profile setup makes the first launch feel intentional instead of anonymous. The user chooses how they appear, which sport module they want as their primary experience, which competitions they follow, and which teams they want attached to their profile.
 
 This also gives future prediction and leaderboard features a clean place to read identity preferences from without mixing them into match or game state.
 
@@ -18,12 +18,13 @@ After onboarding, identity is visible and editable through **Profile**. Shop rem
 
 The first-run gate is now **Profile Setup**, replacing the older single-step avatar entry.
 
-The setup flow has four possible steps:
+The setup flow has five possible steps:
 
 1. **Choose avatar**: pick one profile portrait from the seeded avatar options.
 2. **Choose banner**: pick a profile banner visual.
-3. **Follow leagues**: optionally choose competitions to follow.
-4. **Pick teams**: for each followed league, optionally choose one favorite team.
+3. **Select sport**: pick one primary module from Football, Cricket, F1, or Basketball.
+4. **Follow leagues**: optionally choose competitions for the selected sport.
+5. **Pick teams**: for each followed league, optionally choose one favorite team.
 
 Following leagues is optional. If the user skips league selection, setup can finish without favorite teams.
 
@@ -45,13 +46,15 @@ The Following band renders nothing until the user has at least one followed leag
 
 ## Followable League Catalog
 
-The followable league catalog is seeded locally. It currently includes:
+The followable league catalog is seeded locally and filtered by the selected primary sport. It currently includes:
 
 - English Premier League
 - La Liga
 - Serie A
 - Bundesliga
 - Indian Premier League
+- Formula 1
+- National Basketball Association
 
 EPL and IPL ids mirror the prediction repository ids so favorite teams can line up with fixture data later. Seeded leagues that do not currently have prediction fixtures are still valid identity preferences and should not create empty match sections.
 
@@ -61,6 +64,7 @@ Identity preferences are saved locally through `SecureGameStorage`:
 
 - selected avatar id
 - selected profile banner id
+- selected primary sport
 - followed league ids
 - favorite team per followed league
 - onboarding completion flag
@@ -88,7 +92,7 @@ The avatar shop tiles now use real player portrait assets from the player image 
 ## Current Product Notes
 
 - Profile setup is built and replaces the old single-step avatar onboarding gate.
-- Avatar, banner, followed leagues, favorite teams, and onboarding completion are persistent local preferences.
+- Avatar, banner, primary sport, followed leagues, favorite teams, and onboarding completion are persistent local preferences.
 - Favorite leagues and teams are seeded locally and are not yet powered by a live personalization service.
 - Profile can display selected favorite teams, but those preferences do not yet reorder fixtures, filter prediction markets, or drive leaderboard membership.
 - Shop avatar tiles use player portrait art for browsing, while first-run profile avatars still use the seeded `avatarOptions` set.

@@ -8,7 +8,17 @@ import '../../widgets/game_scaffold.dart';
 
 /// The four playable modes that have a How To Play guide. Order matches the
 /// [_guides] table so a mode maps straight to its guide by index.
-enum HowToPlayMode { predict, pick, pitchDuel, penaltyShootout, bingoGrid, footballChess }
+// NOTE: guides are looked up by `mode.index` into `_guides` — always APPEND
+// new modes so existing indices keep resolving.
+enum HowToPlayMode {
+  predict,
+  pick,
+  pitchDuel,
+  penaltyShootout,
+  bingoGrid,
+  footballChess,
+  hoopDuel,
+}
 
 /// Opens the standalone How To Play guide for a single [mode]. Used by the in-
 /// context help affordances inside the Predict and Pick surfaces.
@@ -113,7 +123,6 @@ class _ModeCard extends StatelessWidget {
       ),
       child: CyberPanel(
         accent: guide.accent,
-        solidBackground: true,
         padding: const EdgeInsets.all(14),
         child: Row(
           children: [
@@ -217,7 +226,6 @@ class _GuideHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return CyberPanel(
       accent: guide.accent,
-      solidBackground: true,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -314,7 +322,6 @@ class _StepsPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return CyberPanel(
       accent: accent,
-      solidBackground: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -401,7 +408,6 @@ class _FactsPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return CyberPanel(
       accent: accent,
-      solidBackground: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1013,6 +1019,104 @@ const _guides = <_ModeGuide>[
       ),
     ],
     facts: [
+      _GuideFact(
+        icon: Icons.workspace_premium,
+        label: 'XP Only',
+        body: 'This mode rewards XP for progression. Coins stay in the shop.',
+      ),
+    ],
+  ),
+
+  // ── Hoop Duel ───────────────────────────────────────────────────────────────
+  _ModeGuide(
+    title: 'HOOP DUEL',
+    tagline: 'Street 1-on-1 arcade basketball',
+    subtitle: '// Real-Time Duel · XP Only',
+    purpose:
+        'Two 45-second halves of half-court 1-on-1. Move with the arrows, '
+        'and one contextual ACTION pad does everything else — shots, fakes, '
+        'steals and blocks — depending on where you are and what\'s happening.',
+    icon: Icons.sports_basketball,
+    accent: Cyber.gold,
+    stats: [
+      _GuideStat(
+        icon: Icons.timer,
+        label: '2 HALVES',
+        sub: '45s + halftime sub',
+        color: Cyber.gold,
+      ),
+      _GuideStat(
+        icon: Icons.av_timer,
+        label: '12s CLOCK',
+        sub: 'shoot before it dies',
+        color: Cyber.danger,
+      ),
+      _GuideStat(
+        icon: Icons.local_fire_department,
+        label: 'HEAT',
+        sub: '3 straight = on fire',
+        color: Cyber.amber,
+      ),
+    ],
+    steps: [
+      _GuideStep(
+        title: 'Move & Drive',
+        body:
+            'Hold ◀ ▶ to move. Double-tap a direction to burst-drive at the '
+            'rim. Quick direction flips are crossovers — they shake defenders '
+            'but expose the ball for a beat.',
+      ),
+      _GuideStep(
+        title: 'Shoot on the meter',
+        body:
+            'Hold ACTION to rise, release at the green band for a PERFECT '
+            'shot. Feet beyond the arc line = 3 points. Tired legs shrink the '
+            'perfect window.',
+      ),
+      _GuideStep(
+        title: 'Finish inside',
+        body:
+            'Tap ACTION on the move near the rim for a layup. Hold it through '
+            'a burst-drive for a dunk — dunks always slam home unless a big '
+            'body meets you up there.',
+      ),
+      _GuideStep(
+        title: 'Create space',
+        body:
+            'Tap while standing to pump fake — a defender who bites is left '
+            'staggering. Swipe the pad away from the rim for a step-back '
+            'jumper.',
+      ),
+      _GuideStep(
+        title: 'Defend with timing',
+        body:
+            'Hold ACTION near the handler for a defensive stance, tap to jab '
+            'a steal at exposed dribbles, and hold-release as the shooter '
+            'rises to leap for the block. Whiffed lunges leave you beat.',
+      ),
+      _GuideStep(
+        title: 'Clear it & crash boards',
+        body:
+            'Misses are live — tap under the drop marker to rebound. After a '
+            'steal or defensive board, carry the ball back beyond the arc '
+            'before you can score.',
+      ),
+    ],
+    facts: [
+      _GuideFact(
+        icon: Icons.local_fire_department,
+        label: 'Heat',
+        body:
+            'Three unanswered baskets set you on fire: faster, wider perfect '
+            'window, until the opponent answers.',
+      ),
+      _GuideFact(
+        icon: Icons.groups,
+        label: 'Roster of 3',
+        body:
+            'Pick three athletes; one plays at a time. The bench rests to '
+            'full — sub fresh legs at halftime.',
+      ),
       _GuideFact(
         icon: Icons.workspace_premium,
         label: 'XP Only',

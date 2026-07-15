@@ -6,13 +6,19 @@ import '../../blocs/game/game_state.dart';
 import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../models/cards.dart';
+import '../../services/card_share_service.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
 
 class AllCardsScreen extends StatefulWidget {
-  const AllCardsScreen({required this.onNavigate, super.key});
+  const AllCardsScreen({
+    required this.onNavigate,
+    this.shareController = const CardShareController(),
+    super.key,
+  });
 
   final ValueChanged<AppSection> onNavigate;
+  final CardShareController shareController;
 
   @override
   State<AllCardsScreen> createState() => _AllCardsScreenState();
@@ -21,13 +27,14 @@ class AllCardsScreen extends StatefulWidget {
 class _AllCardsScreenState extends State<AllCardsScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tab;
-  PlayerRole? _roleFilter;
+  PlayerRole? _footballRoleFilter;
+  PlayerRole? _cricketRoleFilter;
   ActionCategory? _actionFilter;
 
   @override
   void initState() {
     super.initState();
-    _tab = TabController(length: 2, vsync: this);
+    _tab = TabController(length: 3, vsync: this);
     _tab.addListener(() => setState(() {}));
   }
 
@@ -37,14 +44,24 @@ class _AllCardsScreenState extends State<AllCardsScreen>
     super.dispose();
   }
 
-  List<PlayerCard> _players(GameState state) {
-    final all = [
-      ...attackers,
-      ...defenders,
-    ].where((card) => state.ownedCardIds.contains(card.id)).toList()
-      ..sort((a, b) => b.rating.compareTo(a.rating));
-    if (_roleFilter == null) return all;
-    return all.where((c) => c.role == _roleFilter).toList();
+  List<PlayerCard> _footballPlayers(GameState state) {
+    final all =
+        footballPlayerCards
+            .where((card) => state.ownedCardIds.contains(card.id))
+            .toList()
+          ..sort((a, b) => b.rating.compareTo(a.rating));
+    if (_footballRoleFilter == null) return all;
+    return all.where((c) => c.role == _footballRoleFilter).toList();
+  }
+
+  List<PlayerCard> _cricketPlayers(GameState state) {
+    final all =
+        cricketPlayerCards
+            .where((card) => state.ownedCardIds.contains(card.id))
+            .toList()
+          ..sort((a, b) => b.rating.compareTo(a.rating));
+    if (_cricketRoleFilter == null) return all;
+    return all.where((c) => c.role == _cricketRoleFilter).toList();
   }
 
   List<ActionCard> _actions(GameState state) {
@@ -74,14 +91,24 @@ class _AllCardsScreenState extends State<AllCardsScreen>
                   controller: _tab,
                   children: [
                     _PlayersTab(
-                      cards: _players(state),
-                      filter: _roleFilter,
-                      onFilter: (r) => setState(() => _roleFilter = r),
+                      cards: _footballPlayers(state),
+                      filter: _footballRoleFilter,
+                      onFilter: (r) => setState(() => _footballRoleFilter = r),
+                      cricket: false,
+                      shareController: widget.shareController,
+                    ),
+                    _PlayersTab(
+                      cards: _cricketPlayers(state),
+                      filter: _cricketRoleFilter,
+                      onFilter: (r) => setState(() => _cricketRoleFilter = r),
+                      cricket: true,
+                      shareController: widget.shareController,
                     ),
                     _ActionsTab(
                       cards: _actions(state),
                       filter: _actionFilter,
                       onFilter: (c) => setState(() => _actionFilter = c),
+                      shareController: widget.shareController,
                     ),
                   ],
                 ),
@@ -118,7 +145,8 @@ class _TabBar extends StatelessWidget {
           letterSpacing: 1.5,
         ),
         tabs: const [
-          Tab(text: 'PLAYERS'),
+          Tab(text: 'FOOTBALL'),
+          Tab(text: 'CRICKET'),
           Tab(text: 'ACTIONS'),
         ],
       ),
@@ -133,11 +161,15 @@ class _PlayersTab extends StatelessWidget {
     required this.cards,
     required this.filter,
     required this.onFilter,
+    required this.cricket,
+    required this.shareController,
   });
 
   final List<PlayerCard> cards;
   final PlayerRole? filter;
   final ValueChanged<PlayerRole?> onFilter;
+  final bool cricket;
+  final CardShareController shareController;
 
   @override
   Widget build(BuildContext context) {
@@ -151,18 +183,39 @@ class _PlayersTab extends StatelessWidget {
               selected: filter == null,
               onTap: () => onFilter(null),
             ),
-            _FilterChip(
-              label: 'ATK',
-              color: Cyber.lime,
-              selected: filter == PlayerRole.attacker,
-              onTap: () => onFilter(PlayerRole.attacker),
-            ),
-            _FilterChip(
-              label: 'DEF',
-              color: Cyber.violet,
-              selected: filter == PlayerRole.defender,
-              onTap: () => onFilter(PlayerRole.defender),
-            ),
+            if (cricket) ...[
+              _FilterChip(
+                label: 'BAT',
+                color: Cyber.lime,
+                selected: filter == PlayerRole.batsman,
+                onTap: () => onFilter(PlayerRole.batsman),
+              ),
+              _FilterChip(
+                label: 'BOWL',
+                color: Cyber.violet,
+                selected: filter == PlayerRole.bowler,
+                onTap: () => onFilter(PlayerRole.bowler),
+              ),
+            ] else ...[
+              _FilterChip(
+                label: 'ATK',
+                color: Cyber.lime,
+                selected: filter == PlayerRole.attacker,
+                onTap: () => onFilter(PlayerRole.attacker),
+              ),
+              _FilterChip(
+                label: 'DEF',
+                color: Cyber.violet,
+                selected: filter == PlayerRole.defender,
+                onTap: () => onFilter(PlayerRole.defender),
+              ),
+              _FilterChip(
+                label: 'GK',
+                color: Cyber.gold,
+                selected: filter == PlayerRole.goalkeeper,
+                onTap: () => onFilter(PlayerRole.goalkeeper),
+              ),
+            ],
           ],
           count: cards.length,
         ),
@@ -175,7 +228,8 @@ class _PlayersTab extends StatelessWidget {
                 card: card,
                 selected: false,
                 size: VisualCardSize.md,
-                onTap: () => _showPlayerCardDetail(context, card),
+                onTap: () =>
+                    _showPlayerCardDetail(context, card, shareController),
               );
             },
           ),
@@ -192,11 +246,13 @@ class _ActionsTab extends StatelessWidget {
     required this.cards,
     required this.filter,
     required this.onFilter,
+    required this.shareController,
   });
 
   final List<ActionCard> cards;
   final ActionCategory? filter;
   final ValueChanged<ActionCategory?> onFilter;
+  final CardShareController shareController;
 
   @override
   Widget build(BuildContext context) {
@@ -240,7 +296,8 @@ class _ActionsTab extends StatelessWidget {
                 card: card,
                 selected: false,
                 size: VisualCardSize.md,
-                onTap: () => _showActionCardDetail(context, card),
+                onTap: () =>
+                    _showActionCardDetail(context, card, shareController),
               );
             },
           ),
@@ -326,10 +383,7 @@ class _FilterChip extends StatelessWidget {
 }
 
 class _CardGrid extends StatelessWidget {
-  const _CardGrid({
-    required this.itemCount,
-    required this.itemBuilder,
-  });
+  const _CardGrid({required this.itemCount, required this.itemBuilder});
 
   final int itemCount;
   final Widget Function(BuildContext context, int index) itemBuilder;
@@ -357,7 +411,11 @@ class _CardGrid extends StatelessWidget {
 
 // ── Card detail overlays ──────────────────────────────────────────────────────
 
-void _showPlayerCardDetail(BuildContext context, PlayerCard card) {
+void _showPlayerCardDetail(
+  BuildContext context,
+  PlayerCard card,
+  CardShareController shareController,
+) {
   showGeneralDialog<void>(
     context: context,
     barrierDismissible: true,
@@ -378,11 +436,16 @@ void _showPlayerCardDetail(BuildContext context, PlayerCard card) {
         ),
       );
     },
-    pageBuilder: (ctx, anim, secondary) => _PlayerCardDetailOverlay(card: card),
+    pageBuilder: (ctx, anim, secondary) =>
+        _PlayerCardDetailOverlay(card: card, shareController: shareController),
   );
 }
 
-void _showActionCardDetail(BuildContext context, ActionCard card) {
+void _showActionCardDetail(
+  BuildContext context,
+  ActionCard card,
+  CardShareController shareController,
+) {
   showGeneralDialog<void>(
     context: context,
     barrierDismissible: true,
@@ -403,15 +466,21 @@ void _showActionCardDetail(BuildContext context, ActionCard card) {
         ),
       );
     },
-    pageBuilder: (ctx, anim, secondary) => _ActionCardDetailOverlay(card: card),
+    pageBuilder: (ctx, anim, secondary) =>
+        _ActionCardDetailOverlay(card: card, shareController: shareController),
   );
 }
 
 // ── Player card detail overlay ────────────────────────────────────────────────
 
 class _PlayerCardDetailOverlay extends StatefulWidget {
-  const _PlayerCardDetailOverlay({required this.card});
+  const _PlayerCardDetailOverlay({
+    required this.card,
+    required this.shareController,
+  });
+
   final PlayerCard card;
+  final CardShareController shareController;
 
   @override
   State<_PlayerCardDetailOverlay> createState() =>
@@ -421,6 +490,7 @@ class _PlayerCardDetailOverlay extends StatefulWidget {
 class _PlayerCardDetailOverlayState extends State<_PlayerCardDetailOverlay>
     with SingleTickerProviderStateMixin {
   late final AnimationController _pulse;
+  bool _sharing = false;
 
   @override
   void initState() {
@@ -450,6 +520,39 @@ class _PlayerCardDetailOverlayState extends State<_PlayerCardDetailOverlay>
     CardTier.gold => 'GOLD',
     CardTier.platinum => 'PLATINUM',
   };
+
+  Future<void> _shareCard(BuildContext buttonContext) async {
+    if (_sharing) return;
+    final box = buttonContext.findRenderObject() as RenderBox?;
+    final origin = box == null
+        ? null
+        : box.localToGlobal(Offset.zero) & box.size;
+    setState(() => _sharing = true);
+    try {
+      await widget.shareController.sharePlayer(
+        context,
+        widget.card,
+        sharePositionOrigin: origin,
+      );
+      if (mounted) _showShareMessage('Card ready to share');
+    } catch (_) {
+      if (mounted) _showShareMessage('Sharing unavailable. Try again.');
+    } finally {
+      if (mounted) setState(() => _sharing = false);
+    }
+  }
+
+  void _showShareMessage(String message) {
+    ScaffoldMessenger.maybeOf(context)
+      ?..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(milliseconds: 1800),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -542,16 +645,20 @@ class _PlayerCardDetailOverlayState extends State<_PlayerCardDetailOverlay>
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  _StatBadge(
-                                    label: 'OVR',
-                                    value: '${card.rating}',
-                                    color: accent,
+                                  Flexible(
+                                    child: _StatBadge(
+                                      label: 'OVR',
+                                      value: '${card.rating}',
+                                      color: accent,
+                                    ),
                                   ),
                                   const SizedBox(width: 8),
-                                  _StatBadge(
-                                    label: 'TRAIT',
-                                    value: card.trait.toUpperCase(),
-                                    color: Cyber.cyan,
+                                  Flexible(
+                                    child: _StatBadge(
+                                      label: 'TRAIT',
+                                      value: card.trait.toUpperCase(),
+                                      color: Cyber.cyan,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -582,6 +689,17 @@ class _PlayerCardDetailOverlayState extends State<_PlayerCardDetailOverlay>
                   right: -4,
                   child: _CloseButton(onClose: () => Navigator.pop(context)),
                 ),
+                Positioned(
+                  top: -4,
+                  left: -4,
+                  child: Builder(
+                    builder: (buttonContext) => _ShareButton(
+                      sharing: _sharing,
+                      color: accent,
+                      onShare: () => _shareCard(buttonContext),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -594,8 +712,13 @@ class _PlayerCardDetailOverlayState extends State<_PlayerCardDetailOverlay>
 // ── Action card detail overlay ────────────────────────────────────────────────
 
 class _ActionCardDetailOverlay extends StatefulWidget {
-  const _ActionCardDetailOverlay({required this.card});
+  const _ActionCardDetailOverlay({
+    required this.card,
+    required this.shareController,
+  });
+
   final ActionCard card;
+  final CardShareController shareController;
 
   @override
   State<_ActionCardDetailOverlay> createState() =>
@@ -605,6 +728,7 @@ class _ActionCardDetailOverlay extends StatefulWidget {
 class _ActionCardDetailOverlayState extends State<_ActionCardDetailOverlay>
     with SingleTickerProviderStateMixin {
   late final AnimationController _pulse;
+  bool _sharing = false;
 
   @override
   void initState() {
@@ -632,6 +756,39 @@ class _ActionCardDetailOverlayState extends State<_ActionCardDetailOverlay>
     ActionCategory.defense => 'DEFENSE',
     ActionCategory.special => 'SPECIAL',
   };
+
+  Future<void> _shareCard(BuildContext buttonContext) async {
+    if (_sharing) return;
+    final box = buttonContext.findRenderObject() as RenderBox?;
+    final origin = box == null
+        ? null
+        : box.localToGlobal(Offset.zero) & box.size;
+    setState(() => _sharing = true);
+    try {
+      await widget.shareController.shareAction(
+        context,
+        widget.card,
+        sharePositionOrigin: origin,
+      );
+      if (mounted) _showShareMessage('Card ready to share');
+    } catch (_) {
+      if (mounted) _showShareMessage('Sharing unavailable. Try again.');
+    } finally {
+      if (mounted) setState(() => _sharing = false);
+    }
+  }
+
+  void _showShareMessage(String message) {
+    ScaffoldMessenger.maybeOf(context)
+      ?..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(milliseconds: 1800),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -768,6 +925,17 @@ class _ActionCardDetailOverlayState extends State<_ActionCardDetailOverlay>
                   right: -4,
                   child: _CloseButton(onClose: () => Navigator.pop(context)),
                 ),
+                Positioned(
+                  top: -4,
+                  left: -4,
+                  child: Builder(
+                    builder: (buttonContext) => _ShareButton(
+                      sharing: _sharing,
+                      color: accent,
+                      onShare: () => _shareCard(buttonContext),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -845,6 +1013,8 @@ class _StatBadge extends StatelessWidget {
         children: [
           Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: color.withValues(alpha: 0.75),
               fontFamily: 'Orbitron',
@@ -856,6 +1026,8 @@ class _StatBadge extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: color,
               fontFamily: 'Orbitron',
@@ -912,6 +1084,68 @@ class _CloseButtonState extends State<_CloseButton> {
 }
 
 // ── Glow rings painter ────────────────────────────────────────────────────────
+
+class _ShareButton extends StatefulWidget {
+  const _ShareButton({
+    required this.sharing,
+    required this.color,
+    required this.onShare,
+  });
+
+  final bool sharing;
+  final Color color;
+  final VoidCallback onShare;
+
+  @override
+  State<_ShareButton> createState() => _ShareButtonState();
+}
+
+class _ShareButtonState extends State<_ShareButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: widget.sharing ? null : (_) => setState(() => _pressed = true),
+      onTapUp: widget.sharing ? null : (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTap: widget.sharing ? null : widget.onShare,
+      child: Semantics(
+        button: true,
+        label: 'Share card',
+        child: AnimatedScale(
+          duration: const Duration(milliseconds: 120),
+          scale: _pressed ? 0.88 : 1.0,
+          child: Container(
+            width: 36,
+            height: 36,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Cyber.bg,
+              border: Border.all(color: widget.color, width: 1.5),
+              boxShadow: [
+                BoxShadow(
+                  color: widget.color.withValues(alpha: 0.45),
+                  blurRadius: 14,
+                ),
+              ],
+            ),
+            child: widget.sharing
+                ? SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: widget.color,
+                    ),
+                  )
+                : Icon(Icons.ios_share, color: widget.color, size: 18),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _GlowRingsPainter extends CustomPainter {
   const _GlowRingsPainter({required this.accent, required this.t});

@@ -126,6 +126,47 @@ int calculateFootballChessXP({
   return 2;
 }
 
+// Longer Grand Prix race distances multiply the position payout — a 5-lap
+// endurance run is worth the grind. Shown on the lobby's distance selector so
+// keep the lobby chip and the payout reading from this one function.
+int grandPrixXpMultiplier(int laps) => switch (laps) {
+  >= 5 => 3,
+  >= 3 => 2,
+  _ => 1,
+};
+
+// XP for Grand Prix Dash — an arcade race, so it pays by finishing position:
+// a one-lap win matches Football Chess's ceiling, a backmarker finish still
+// earns a little, and longer distances multiply the position payout (see
+// [grandPrixXpMultiplier]). A new personal best on the circuit+distance adds
+// +3. XP only — racing never subtracts XP and never pays coins.
+int calculateGrandPrixXP(int position, {bool personalBest = false, int laps = 1}) {
+  final base = switch (position) {
+    1 => 26,
+    2 => 22,
+    3 => 18,
+    <= 6 => 12,
+    <= 10 => 8,
+    _ => 4,
+  };
+  return base * grandPrixXpMultiplier(laps) + (personalBest ? 3 : 0);
+}
+
+// XP for Hoop Duel — a two-half basketball duel on the same scale as the other
+// arcade modes: a win scales with the margin (+16 base, +2 per point of
+// margin, capped at Football Chess's +26 ceiling; +2 more for surviving
+// overtime), a loss still earns a little (+6 if it forced overtime). XP only —
+// the court never pays coins.
+int calculateBasketballXP({
+  required bool won,
+  required int margin,
+  required bool overtime,
+}) {
+  if (!won) return overtime ? 6 : 4;
+  final base = min(26, 16 + margin * 2);
+  return overtime ? min(26, base + 2) : base;
+}
+
 class PlayerProgression {
   const PlayerProgression({required this.totalXP});
 

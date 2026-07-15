@@ -9,6 +9,8 @@ import 'starter_pack.dart';
 /// format requires 6, so the starter pack rolls 6 here even though a freshly
 /// rolled [StarterPack] defaults to 5.
 const starterDeckActionCount = 6;
+const cricketStarterCardCount = 3;
+const basketballStarterCardCount = 3;
 
 class CardPack {
   const CardPack({
@@ -140,6 +142,58 @@ PackResult buildStarterPack(
     random: random,
   );
   return _finalize(pack.players, pack.actions);
+}
+
+PackResult buildCricketStarterPack(
+  List<PlayerCard> battingPool, {
+  Random? random,
+}) {
+  final rng = random ?? Random();
+  final available = [...battingPool];
+  final players = <PlayerCard>[];
+  for (var i = 0; i < cricketStarterCardCount && available.isNotEmpty; i++) {
+    final card = _rollFrom<PlayerCard>(
+      available,
+      (card) => card.tier,
+      kProgressionPacks.first.odds,
+      rng,
+    );
+    if (card == null) break;
+    players.add(card);
+    available.removeWhere((item) => item.id == card.id);
+  }
+  return _finalize(players, const []);
+}
+
+PackResult buildBasketballStarterPack(
+  List<PlayerCard> basketballPool, {
+  Random? random,
+}) {
+  final rng = random ?? Random();
+  final players = <PlayerCard>[];
+  final roles = [
+    PlayerRole.basketballGuard,
+    PlayerRole.basketballWing,
+    PlayerRole.basketballBig,
+  ];
+  for (final role in roles) {
+    final available = basketballPool
+        .where(
+          (card) =>
+              card.role == role &&
+              card.tier != CardTier.platinum &&
+              !players.any((picked) => picked.id == card.id),
+        )
+        .toList();
+    final card = _rollFrom<PlayerCard>(
+      available,
+      (card) => card.tier,
+      kProgressionPacks.first.odds,
+      rng,
+    );
+    if (card != null) players.add(card);
+  }
+  return _finalize(players, const []);
 }
 
 PackResult rollPack(

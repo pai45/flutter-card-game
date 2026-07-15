@@ -948,7 +948,7 @@ class _ScoreImpactStrip extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
         decoration: BoxDecoration(
-          gradient: Cyber.panelGradient(),
+          color: Cyber.panel,
           border: const Border(
             top: BorderSide(color: Cyber.borderSubtle),
             bottom: BorderSide(color: Cyber.borderSubtle),

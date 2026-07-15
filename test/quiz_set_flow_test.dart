@@ -2,6 +2,7 @@ import 'package:card_game/blocs/game/game_bloc.dart';
 import 'package:card_game/blocs/game/game_event.dart';
 import 'package:card_game/blocs/quiz/quiz_cubit.dart';
 import 'package:card_game/models/quiz_trivia.dart';
+import 'package:card_game/models/sport_match.dart';
 import 'package:card_game/screens/quiz/quiz_lobby_screen.dart';
 import 'package:card_game/screens/quiz/quiz_play_screen.dart';
 import 'package:card_game/services/quiz_trivia_bank.dart';
@@ -62,7 +63,7 @@ void main() {
       _wrap(
         gameBloc: gameBloc,
         quizCubit: quizCubit,
-        child: const QuizSetScreen(mode: QuizMode.easy),
+        child: const QuizSetScreen(sport: Sport.football, mode: QuizMode.easy),
       ),
     );
     await tester.pump();
@@ -85,7 +86,7 @@ void main() {
       _wrap(
         gameBloc: gameBloc,
         quizCubit: quizCubit,
-        child: const QuizSetScreen(mode: QuizMode.easy),
+        child: const QuizSetScreen(sport: Sport.football, mode: QuizMode.easy),
       ),
     );
     await tester.pump();
@@ -108,12 +109,12 @@ void main() {
       _wrap(
         gameBloc: gameBloc,
         quizCubit: quizCubit,
-        child: const QuizPlayScreen(mode: QuizMode.easy, setNumber: 1),
+        child: const QuizPlayScreen(sport: Sport.football, mode: QuizMode.easy, setNumber: 1),
       ),
     );
     await tester.pump();
 
-    final questions = buildQuizSet(QuizMode.easy, 1);
+    final questions = buildQuizSet(Sport.football, QuizMode.easy, 1);
     for (var i = 0; i < questions.length; i++) {
       final q = questions[i];
       final option = find.byKey(ValueKey('quiz-option-${q.correctIndex}')).last;
@@ -127,7 +128,7 @@ void main() {
     }
 
     expect(gameBloc.state.progression.totalXP, 50);
-    expect(quizCubit.isSetUnlocked(QuizMode.easy, 2), isTrue);
+    expect(quizCubit.isSetUnlocked(Sport.football, QuizMode.easy, 2), isTrue);
     await tester.pump(const Duration(seconds: 10));
   });
 
@@ -143,12 +144,12 @@ void main() {
       _wrap(
         gameBloc: gameBloc,
         quizCubit: quizCubit,
-        child: const QuizPlayScreen(mode: QuizMode.easy, setNumber: 1),
+        child: const QuizPlayScreen(sport: Sport.football, mode: QuizMode.easy, setNumber: 1),
       ),
     );
     await tester.pump();
 
-    final questions = buildQuizSet(QuizMode.easy, 1);
+    final questions = buildQuizSet(Sport.football, QuizMode.easy, 1);
     for (var i = 0; i < questions.length; i++) {
       final q = questions[i];
       final wrong = (q.correctIndex + 1) % q.options.length;
@@ -166,7 +167,7 @@ void main() {
     expect(find.text('RETRY - 25 COINS'), findsOneWidget);
     expect(find.textContaining('ANS '), findsNothing);
     expect(gameBloc.state.progression.totalXP, 0);
-    expect(quizCubit.isSetUnlocked(QuizMode.easy, 2), isFalse);
+    expect(quizCubit.isSetUnlocked(Sport.football, QuizMode.easy, 2), isFalse);
 
     await tester.tap(find.text('RETRY - 25 COINS'));
     await tester.pump(const Duration(milliseconds: 250));

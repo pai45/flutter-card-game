@@ -640,7 +640,10 @@ bool _matches(XpLedgerEntry entry, _XpHistoryFilter filter) {
       entry.source == XpTransactionSource.match ||
           entry.source == XpTransactionSource.shootout ||
           entry.source == XpTransactionSource.quiz ||
-          entry.source == XpTransactionSource.footballChess,
+          entry.source == XpTransactionSource.footballChess ||
+          entry.source == XpTransactionSource.superOver ||
+          entry.source == XpTransactionSource.basketball ||
+          entry.source == XpTransactionSource.finalOver,
     _XpHistoryFilter.predictions =>
       entry.source == XpTransactionSource.prediction,
     _XpHistoryFilter.rewards =>
@@ -702,6 +705,11 @@ IconData _sourceIcon(XpTransactionSource source) {
     XpTransactionSource.shootout => Icons.sports_score,
     XpTransactionSource.quiz => Icons.quiz_rounded,
     XpTransactionSource.footballChess => Icons.grid_on,
+    XpTransactionSource.grandPrix => Icons.sports_motorsports,
+    XpTransactionSource.superOver => Icons.sports_cricket,
+    XpTransactionSource.basketball => Icons.sports_basketball,
+    XpTransactionSource.tennis => Icons.sports_tennis,
+    XpTransactionSource.finalOver => Icons.sports_cricket,
     XpTransactionSource.prediction => Icons.analytics,
     XpTransactionSource.pack => Icons.inventory_2,
     XpTransactionSource.dailyDrop => Icons.calendar_today,

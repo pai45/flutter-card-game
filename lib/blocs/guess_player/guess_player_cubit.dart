@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../models/sport_match.dart';
 import '../../data/guess_player_data.dart';
 import '../../models/cards.dart';
 import '../../models/guess_player.dart';
@@ -58,9 +59,15 @@ class GuessPlayerState {
 }
 
 class GuessPlayerCubit extends Cubit<GuessPlayerState> {
-  GuessPlayerCubit({required this.allPlayers, required this.storage})
-    : super(_initialState(allPlayers));
+  GuessPlayerCubit({
+    required this.sport,
+    required this.timelines,
+    required this.allPlayers,
+    required this.storage,
+  }) : super(_initialState(allPlayers, timelines));
 
+  final Sport sport;
+  final List<GuessPlayerTimeline> timelines;
   final List<PlayerCard> allPlayers;
   final SecureGameStorage storage;
 
@@ -70,12 +77,14 @@ class GuessPlayerCubit extends Cubit<GuessPlayerState> {
     return DateTime.now().toIso8601String().split('T')[0];
   }
 
-  static GuessPlayerState _initialState(List<PlayerCard> players) {
+  static GuessPlayerState _initialState(
+    List<PlayerCard> players,
+    List<GuessPlayerTimeline> timelines,
+  ) {
     // Pick a deterministic player for today based on the date string
     final todayKey = _getTodayKey();
     final random = Random(todayKey.hashCode);
-    final timeline =
-        guessPlayerTimelines[random.nextInt(guessPlayerTimelines.length)];
+    final timeline = timelines[random.nextInt(timelines.length)];
 
     final target = players.firstWhere(
       (p) => p.name == timeline.playerName,
@@ -97,7 +106,7 @@ class GuessPlayerCubit extends Cubit<GuessPlayerState> {
 
   Future<void> load() async {
     final archive =
-        await storage.loadGuessPlayerArchive() ?? const GuessPlayerArchive();
+        await storage.loadGuessPlayerArchive(sport) ?? const GuessPlayerArchive();
 
     // We unlock days based on the archive, plus today.
     // In a real app we'd have a backend schedule, but here we just show today and any past played days.
@@ -129,8 +138,7 @@ class GuessPlayerCubit extends Cubit<GuessPlayerState> {
   // Opens a specific day for viewing (can't play past days in this simple logic, just view result)
   Future<void> openDay(String dayKey) async {
     final random = Random(dayKey.hashCode);
-    final timeline =
-        guessPlayerTimelines[random.nextInt(guessPlayerTimelines.length)];
+    final timeline = timelines[random.nextInt(timelines.length)];
 
     final target = allPlayers.firstWhere(
       (p) => p.name == timeline.playerName,
@@ -211,6 +219,6 @@ class GuessPlayerCubit extends Cubit<GuessPlayerState> {
 
     final newArchive = GuessPlayerArchive(resultsByDay: updatedMap);
     emit(state.copyWith(archive: newArchive));
-    storage.saveGuessPlayerArchive(newArchive);
+    storage.saveGuessPlayerArchive(sport, newArchive);
   }
 }

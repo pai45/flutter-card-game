@@ -1,6 +1,9 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../models/league.dart';
 import '../../models/prediction.dart';
+import '../../models/sport_match.dart';
+import '../../models/team_standing.dart';
 import '../../services/prediction_repository.dart';
 import '../../services/secure_storage_service.dart';
 import 'prediction_state.dart';
@@ -80,60 +83,144 @@ class PredictionCubit extends Cubit<PredictionState> {
         correctCount: 3,
         rewardEarned: 20,
       ),
+      // Demo: finished FIFA fixture predicted but NOT yet revealed → the card
+      // shows the gold "RESULTS ARE OUT — TAP TO REVEAL" (unclaimed) state.
+      UserPrediction(
+        matchId: 'fifa_demo_esp_ger',
+        answers: const {'q1': 0, 'q2': 1, 'q3': 0, 'q4': 1, 'q5': 0},
+        submittedAt: now.subtract(const Duration(hours: 20)),
+        status: PredictionStatus.locked,
+      ),
+      // Demo: finished FIFA fixture settled as a win → the card shows the
+      // revealed "+XP" (paired with a won Oz pick for the coins figure).
+      UserPrediction(
+        matchId: 'fifa_arg_jor',
+        answers: const {'q1': 0, 'q2': 0, 'q3': 0, 'q4': 0, 'q5': 0},
+        submittedAt: now.subtract(const Duration(hours: 22)),
+        status: PredictionStatus.settled,
+        correctCount: 4,
+        rewardEarned: 240,
+      ),
     ];
     for (final demo in demos) {
-      predictions.putIfAbsent(demo.matchId, () => demo);
+      predictions.putIfAbsent(demo.key, () => demo);
     }
   }
 
   Future<void> load() async {
     final leagues = await _repository.leagues();
-    final fixtures = await _repository.fixtures();
-    final standings = {
-      for (final league in leagues)
-        league.id: await _repository.standings(league.id),
-    };
+    
     final stored = await _storage.loadPredictions();
-    final predictions = {for (final p in stored) p.matchId: p};
+    final predictions = {for (final p in stored) p.key: p};
     applyHistoryDemos(predictions);
+
+    // Emit fast initial state so UI renders immediately
     emit(
       state.copyWith(
         loading: false,
         leagues: leagues,
-        fixtures: fixtures,
         predictions: predictions,
-        standingsByLeague: standings,
+        standingsByLeague: const {},
       ),
     );
+
+    // Fetch slow network data asynchronously
+    _loadLiveStandings(leagues);
   }
 
-  Future<PredictionQuiz?> quizFor(String matchId) =>
-      _repository.quizFor(matchId);
+  Future<void> _loadLiveStandings(List<League> leagues) async {
+    for (final league in leagues) {
+      try {
+        final standing = await _repository.standings(league.id);
+        if (!isClosed) {
+          final nextStandings = Map<String, List<TeamStanding>>.from(state.standingsByLeague);
+          nextStandings[league.id] = standing;
+          emit(state.copyWith(standingsByLeague: nextStandings));
+        }
+      } catch (_) {}
+    }
+  }
+
+  Future<void> loadSport(Sport sport) async {
+    if (state.loadedSports.contains(sport) || state.loadingSports.contains(sport)) {
+      return;
+    }
+    
+    emit(state.copyWith(loadingSports: {...state.loadingSports, sport}));
+    
+    try {
+      final localFixtures = await _repository.fixtures(sport: sport);
+      final enrichedFixtures = await _repository.enrichFixturesForSport(localFixtures, sport);
+      
+      final quizzes = <String, PredictionQuiz>{...state.quizzes};
+      for (final fixture in enrichedFixtures) {
+        if (fixture.sport == sport) {
+          final matchQuizzes = await _repository.quizzesFor(fixture.id);
+          for (final quiz in matchQuizzes) {
+            quizzes[predictionStorageKey(fixture.id, quiz.id)] = quiz;
+          }
+        }
+      }
+      
+      final allFixturesMap = <String, SportMatch>{};
+      for (final f in state.fixtures) {
+        allFixturesMap[f.id] = f;
+      }
+      for (final f in enrichedFixtures) {
+        allFixturesMap[f.id] = f;
+      }
+      
+      if (!isClosed) {
+        emit(state.copyWith(
+          fixtures: allFixturesMap.values.toList(),
+          quizzes: quizzes,
+          loadingSports: state.loadingSports.where((s) => s != sport).toSet(),
+          loadedSports: {...state.loadedSports, sport},
+        ));
+      }
+    } catch (_) {
+      if (!isClosed) {
+        emit(state.copyWith(loadingSports: state.loadingSports.where((s) => s != sport).toSet()));
+      }
+    }
+  }
+
+  Future<List<PredictionQuiz>> quizzesFor(String matchId) =>
+      _repository.quizzesFor(matchId);
+
+  Future<PredictionQuiz?> quizFor(
+    String matchId, [
+    String quizId = kDefaultPredictionQuizId,
+  ]) => _repository.quizFor(matchId, quizId);
 
   Future<PredictionVoteBreakdown?> votesFor(
     String matchId,
+    String quizId,
     String questionId,
-  ) => _repository.votesFor(matchId, questionId);
+  ) => _repository.votesFor(matchId, quizId, questionId);
 
   Future<List<MatchPredictionLeaderboardEntry>> matchLeaderboard(
     String matchId,
-  ) => _repository.matchLeaderboard(matchId);
+    String quizId,
+  ) => _repository.matchLeaderboard(matchId, quizId);
 
   /// Stores (or replaces) the user's answers for a fixture.
   Future<void> submit(
     String matchId,
+    String quizId,
     Map<String, int> answers, {
     Map<String, PredictionMultiplier> multipliersByQuestion = const {},
   }) async {
     final prediction = UserPrediction(
       matchId: matchId,
+      quizId: quizId,
       answers: answers,
       multipliersByQuestion: multipliersByQuestion,
       submittedAt: DateTime.now(),
       status: PredictionStatus.open,
     );
     final next = Map<String, UserPrediction>.from(state.predictions)
-      ..[matchId] = prediction;
+      ..[prediction.key] = prediction;
     emit(state.copyWith(predictions: next));
     await _storage.savePredictions(next.values.toList());
   }
@@ -141,12 +228,15 @@ class PredictionCubit extends Cubit<PredictionState> {
   /// Mock settlement: scores the stored answers against the quiz's
   /// [QuizQuestion.settledOptionIndex] and returns the XP earned so the
   /// caller can credit progression. Returns 0 if nothing to settle.
-  Future<int> settle(String matchId) async {
-    final prediction = state.predictions[matchId];
+  Future<int> settle(
+    String matchId, [
+    String quizId = kDefaultPredictionQuizId,
+  ]) async {
+    final prediction = state.predictionFor(matchId, quizId);
     if (prediction == null || prediction.status == PredictionStatus.settled) {
       return 0;
     }
-    final quiz = await _repository.quizFor(matchId);
+    final quiz = await _repository.quizFor(matchId, quizId);
     if (quiz == null || !quiz.settleable) return 0;
 
     var correct = 0;
@@ -171,7 +261,7 @@ class PredictionCubit extends Cubit<PredictionState> {
       rewardEarned: reward,
     );
     final next = Map<String, UserPrediction>.from(state.predictions)
-      ..[matchId] = settled;
+      ..[settled.key] = settled;
     emit(state.copyWith(predictions: next));
     await _storage.savePredictions(next.values.toList());
     return reward;

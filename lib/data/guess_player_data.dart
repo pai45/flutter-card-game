@@ -12,7 +12,7 @@ class GuessPlayerTimeline {
   const GuessPlayerTimeline({required this.playerName, required this.career});
 }
 
-const List<GuessPlayerTimeline> guessPlayerTimelines = [
+const List<GuessPlayerTimeline> footballGuessTimelines = [
   GuessPlayerTimeline(
     playerName: 'Lionel Messi',
     career: [
@@ -66,6 +66,62 @@ const List<GuessPlayerTimeline> guessPlayerTimelines = [
     career: [
       ClubSpell(clubName: 'Flamengo', startYear: 2017),
       ClubSpell(clubName: 'Real Madrid', startYear: 2018),
+    ],
+  ),
+];
+
+const List<GuessPlayerTimeline> basketballGuessTimelines = [
+  GuessPlayerTimeline(
+    playerName: 'LeBron James',
+    career: [
+      ClubSpell(clubName: 'Cleveland', startYear: 2003),
+      ClubSpell(clubName: 'Miami Heat', startYear: 2010),
+      ClubSpell(clubName: 'Cleveland', startYear: 2014),
+      ClubSpell(clubName: 'LA Lakers', startYear: 2018),
+    ],
+  ),
+  GuessPlayerTimeline(
+    playerName: 'Kevin Durant',
+    career: [
+      ClubSpell(clubName: 'Seattle', startYear: 2007),
+      ClubSpell(clubName: 'Oklahoma', startYear: 2008),
+      ClubSpell(clubName: 'Golden State', startYear: 2016),
+      ClubSpell(clubName: 'Brooklyn', startYear: 2019),
+      ClubSpell(clubName: 'Phoenix', startYear: 2023),
+    ],
+  ),
+  GuessPlayerTimeline(
+    playerName: 'Jayson Tatum',
+    career: [
+      ClubSpell(clubName: 'Boston', startYear: 2017),
+    ],
+  ),
+];
+
+const List<GuessPlayerTimeline> cricketGuessTimelines = [
+  GuessPlayerTimeline(
+    playerName: 'Virat Kohli',
+    career: [
+      ClubSpell(clubName: 'Delhi', startYear: 2006),
+      ClubSpell(clubName: 'India U19', startYear: 2008),
+      ClubSpell(clubName: 'RCB', startYear: 2008),
+    ],
+  ),
+  GuessPlayerTimeline(
+    playerName: 'Suryakumar Yadav',
+    career: [
+      ClubSpell(clubName: 'Mumbai', startYear: 2010),
+      ClubSpell(clubName: 'MI', startYear: 2012),
+      ClubSpell(clubName: 'KKR', startYear: 2014),
+      ClubSpell(clubName: 'MI', startYear: 2018),
+    ],
+  ),
+  GuessPlayerTimeline(
+    playerName: 'Shubman Gill',
+    career: [
+      ClubSpell(clubName: 'Punjab', startYear: 2017),
+      ClubSpell(clubName: 'KKR', startYear: 2018),
+      ClubSpell(clubName: 'GT', startYear: 2022),
     ],
   ),
 ];

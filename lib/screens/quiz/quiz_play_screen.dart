@@ -8,6 +8,7 @@ import '../../blocs/quiz/quiz_cubit.dart';
 import '../../config/theme.dart';
 import '../../models/oz_coin_ledger.dart';
 import '../../models/quiz_trivia.dart';
+import '../../models/sport_match.dart';
 import '../../models/xp_ledger.dart';
 import '../../services/quiz_trivia_bank.dart';
 import '../../utils/sound_effects.dart';
@@ -16,14 +17,15 @@ import '../predictions/widgets/settlement_reveal.dart'
     show SettlementQuestionResult;
 import 'widgets/quiz_reveal.dart';
 
-/// A single Football Quiz run for one [QuizMode]: a gamified, one-question-at-a-
+/// A single Quiz run for one [QuizMode]: a gamified, one-question-at-a-
 /// time flow (numbered HUD panel, A/B/C/D options, progress segments, a docked
 /// PREVIOUS + NEXT→SUBMIT pair) that ends in the answer-all-then-settle
 /// [QuizRevealOverlay]. XP is credited (XP-only — never coins) on submit and the
 /// run is folded into [QuizCubit] progress.
 class QuizPlayScreen extends StatefulWidget {
-  const QuizPlayScreen({required this.mode, this.setNumber = 1, super.key});
+  const QuizPlayScreen({required this.sport, required this.mode, this.setNumber = 1, super.key});
 
+  final Sport sport;
   final QuizMode mode;
   final int setNumber;
 
@@ -49,6 +51,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
   QuizMode? _revealUnlocked;
 
   QuizMode get _mode => widget.mode;
+  Sport get _sport => widget.sport;
   int get _setNumber => widget.setNumber;
   bool get _isLast => _index >= _questions.length - 1;
   bool get _currentAnswered => _answers.containsKey(_index);
@@ -60,7 +63,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
   @override
   void initState() {
     super.initState();
-    _questions = buildQuizSet(_mode, _setNumber);
+    _questions = buildQuizSet(_sport, _mode, _setNumber);
   }
 
   void _select(int option) {
@@ -116,17 +119,19 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
         PredictionXpAdded(
           totalXp,
           source: XpTransactionSource.quiz,
-          title: 'FOOTBALL QUIZ REWARD',
+          title: '${_sport.name.toUpperCase()} QUIZ REWARD',
           details: '${_mode.label} SET $_setNumber',
         ),
       );
     }
     final outcome = await context.read<QuizCubit>().recordResult(
+      _sport,
       _mode,
       setNumber: _setNumber,
       correct: correct,
       total: _questions.length,
     );
+
     if (!mounted) return;
     setState(() {
       _revealResults = results;
@@ -150,7 +155,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
       CoinsSpent(
         kQuizEntryCost,
         source: OzCoinTransactionSource.quizEntry,
-        title: 'FOOTBALL QUIZ ENTRY',
+        title: '${_sport.name.toUpperCase()} QUIZ ENTRY',
         subtitle: '${_mode.label} SET $_setNumber RETRY',
       ),
     );
@@ -158,7 +163,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
     if (!mounted) return;
     playSound(SoundEffect.playMatch);
     setState(() {
-      _questions = buildQuizSet(_mode, _setNumber);
+      _questions = buildQuizSet(_sport, _mode, _setNumber);
       _index = 0;
       _answers.clear();
       _submitting = false;

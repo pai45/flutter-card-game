@@ -56,8 +56,8 @@ class RivalDossier {
     final predictionsMade = 14 + (strength * 60).round() + rng.nextInt(18);
     final predictionAccuracy =
         (40 + (strength * 34).round() + rng.nextInt(11) - 5).clamp(28, 88);
-    final correctPredictions =
-        (predictionsMade * predictionAccuracy / 100).round();
+    final correctPredictions = (predictionsMade * predictionAccuracy / 100)
+        .round();
 
     final picksPlaced = 8 + (strength * 36).round() + rng.nextInt(12);
     final pickWinRate = (38 + (strength * 30).round() + rng.nextInt(11) - 5)
@@ -128,6 +128,9 @@ class RivalDossier {
     bestMatchStreak: bestStreak,
     cleanSheets: cleanSheets,
     shootoutWins: shootoutWins,
+    // Rivals haven't hit the court yet — no fabricated hoop record.
+    basketballWins: 0,
+    tennisAchievements: const <String>{},
     predictionsMade: predictionsMade,
     correctPredictions: correctPredictions,
     picksPlaced: picksPlaced,

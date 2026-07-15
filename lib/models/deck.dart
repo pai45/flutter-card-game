@@ -8,6 +8,9 @@ class StoredDeckSlot {
     required this.defenders,
     required this.actions,
     this.keeper,
+    this.batsmen = const [],
+    this.basketballPlayers = const [],
+    this.basketballStarter,
     this.chessFormation,
   });
 
@@ -16,6 +19,9 @@ class StoredDeckSlot {
   final List<String> attackers;
   final List<String> defenders;
   final List<String> actions;
+  final List<String> batsmen;
+  final List<String> basketballPlayers;
+  final String? basketballStarter;
 
   /// Card id of the deck's goalkeeper, or null if none is assigned yet.
   final String? keeper;
@@ -30,6 +36,9 @@ class StoredDeckSlot {
     'attackers': attackers,
     'defenders': defenders,
     'actions': actions,
+    'batsmen': batsmen,
+    'basketballPlayers': basketballPlayers,
+    'basketballStarter': basketballStarter,
     'keeper': keeper,
     if (chessFormation != null) 'chessFormation': chessFormation!.name,
   };
@@ -40,6 +49,13 @@ class StoredDeckSlot {
     attackers: List<String>.from(json['attackers'] as List),
     defenders: List<String>.from(json['defenders'] as List),
     actions: List<String>.from(json['actions'] as List),
+    batsmen: json['batsmen'] != null
+        ? List<String>.from(json['batsmen'] as List)
+        : [],
+    basketballPlayers: json['basketballPlayers'] != null
+        ? List<String>.from(json['basketballPlayers'] as List)
+        : [],
+    basketballStarter: json['basketballStarter'] as String?,
     // Older saved decks predate the keeper slot, so it may be absent.
     keeper: json['keeper'] as String?,
     chessFormation: _parseFormation(json['chessFormation'] as String?),
@@ -69,5 +85,6 @@ const defaultDeckSlots = [
       'act15-gold',
     ],
     keeper: 'bra-alisson-becker',
+    batsmen: ['ind-virat-kohli', 'eng-joe-root', 'afg-rahmanullah-gurbaz'],
   ),
 ];

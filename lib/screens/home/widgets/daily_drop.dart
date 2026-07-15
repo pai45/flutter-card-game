@@ -8,6 +8,7 @@ import '../../../blocs/game/game_event.dart';
 import '../../../blocs/game/game_state.dart';
 import '../../../config/theme.dart';
 import '../../../models/progression.dart';
+import '../../../widgets/cyber/cyber_widgets.dart';
 
 class DailyDropButton extends StatefulWidget {
   const DailyDropButton({super.key});
@@ -109,8 +110,14 @@ class _DailyDropButtonState extends State<DailyDropButton>
                           context.read<GameBloc>().add(DailyDropClaimed());
                         }
                       : null,
-                  child: ClipPath(
+                  child: ChamferedActionSurface(
                     clipper: const _DailyDropCtaClipper(cut: 18),
+                    borderColor: ready
+                        ? Colors.white.withValues(alpha: 0.82)
+                        : Cyber.line.withValues(alpha: 0.55),
+                    borderWidth: ready ? 1.6 : 1.2,
+                    glowColor: accent,
+                    glow: ready ? 1 : 0,
                     child: Stack(
                       children: [
                         DecoratedBox(

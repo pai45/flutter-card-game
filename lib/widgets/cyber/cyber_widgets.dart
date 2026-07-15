@@ -41,7 +41,6 @@ class CyberConfirmDialog extends StatelessWidget {
         child: CyberPanel(
           accent: destructive ? Cyber.magenta : Cyber.cyan,
           padding: EdgeInsets.zero,
-          solidBackground: true,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -786,6 +785,133 @@ class CyberProgressBar extends StatelessWidget {
   }
 }
 
+/// What a [CyberChargeMeter] needs to draw itself. Every field is a 0..1
+/// fraction of the track, so the meter never has to know what it is measuring —
+/// Hoop Duel feeds it a jump, Final Over feeds it a backlift.
+class ChargeMeterView {
+  const ChargeMeterView({
+    required this.progress,
+    required this.perfectCenter,
+    required this.perfectHalf,
+    required this.goodHalf,
+    this.overswingFrom,
+    this.hot = false,
+  });
+
+  /// Where the needle sits.
+  final double progress;
+
+  /// Centre of the PERFECT band, and its half-width.
+  final double perfectCenter;
+  final double perfectHalf;
+
+  /// How far the GOOD band extends *beyond* the perfect band on each side.
+  final double goodHalf;
+
+  /// Above this, you have overcooked it — drawn as a danger zone. Null for
+  /// meters where holding longer simply cannot hurt you.
+  final double? overswingFrom;
+
+  /// The moment to release is NOW. Lights the track's edge — the only thing in
+  /// here that glows, because it is the one live beat.
+  final bool hot;
+}
+
+/// The shot meter, shared by Hoop Duel and Final Over: a dim GOOD band, a bright
+/// PERFECT band, and a gold needle riding up the track. Release inside the lime.
+class CyberChargeMeter extends StatelessWidget {
+  const CyberChargeMeter({required this.view, super.key});
+
+  final ChargeMeterView view;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: 26,
+    height: 150,
+    child: CustomPaint(painter: _ChargeMeterPainter(view)),
+  );
+}
+
+class _ChargeMeterPainter extends CustomPainter {
+  _ChargeMeterPainter(this.view);
+
+  final ChargeMeterView view;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final left = size.width / 2 - 5;
+    final right = size.width / 2 + 5;
+    final track = RRect.fromRectAndRadius(
+      Rect.fromLTWH(left, 0, 10, size.height),
+      const Radius.circular(2),
+    );
+    canvas.drawRRect(track, Paint()..color = Cyber.bg.withValues(alpha: 0.75));
+    canvas.drawRRect(
+      track,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = view.hot ? 1.6 : 1
+        ..color = view.hot ? Cyber.lime : Cyber.border,
+    );
+
+    double y(double frac) => size.height * (1 - frac.clamp(0.0, 1.0));
+
+    // Charged-so-far fill goes UNDER the bands: it tints the empty track, it
+    // does not wash out the very zones you are aiming at.
+    final needleY = y(view.progress);
+    canvas.drawRect(
+      Rect.fromLTRB(left, needleY, right, size.height),
+      Paint()..color = Cyber.gold.withValues(alpha: 0.42),
+    );
+
+    // Good window (wider, dimmer) behind the perfect band.
+    canvas.drawRect(
+      Rect.fromLTRB(
+        left,
+        y(view.perfectCenter + view.perfectHalf + view.goodHalf),
+        right,
+        y(view.perfectCenter - view.perfectHalf - view.goodHalf),
+      ),
+      Paint()..color = Cyber.cyan.withValues(alpha: 0.26),
+    );
+    // Overswing: held too long, and it costs you control.
+    final overswing = view.overswingFrom;
+    if (overswing != null) {
+      canvas.drawRect(
+        Rect.fromLTRB(left, y(1), right, y(overswing)),
+        Paint()..color = Cyber.danger.withValues(alpha: 0.55),
+      );
+    }
+    // Perfect band.
+    canvas.drawRect(
+      Rect.fromLTRB(
+        left,
+        y(view.perfectCenter + view.perfectHalf),
+        right,
+        y(view.perfectCenter - view.perfectHalf),
+      ),
+      Paint()..color = Cyber.lime.withValues(alpha: 0.85),
+    );
+
+    // The needle.
+    canvas.drawLine(
+      Offset(0, needleY),
+      Offset(size.width, needleY),
+      Paint()
+        ..color = Cyber.gold
+        ..strokeWidth = 2.5,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_ChargeMeterPainter old) =>
+      old.view.progress != view.progress ||
+      old.view.perfectCenter != view.perfectCenter ||
+      old.view.perfectHalf != view.perfectHalf ||
+      old.view.overswingFrom != view.overswingFrom ||
+      old.view.hot != view.hot;
+}
+
 class CyberCtaButton extends StatelessWidget {
   const CyberCtaButton({
     required this.label,
@@ -812,7 +938,9 @@ class CyberCtaButton extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         gradient: bg,
-        border: Border.all(color: primary ? Cyber.cyan : Cyber.line),
+        border: clip
+            ? null
+            : Border.all(color: primary ? Cyber.cyan : Cyber.line),
         boxShadow: [
           BoxShadow(
             color: (primary ? Cyber.cyan : Cyber.bg).withValues(alpha: 0.3),
@@ -833,8 +961,15 @@ class CyberCtaButton extends StatelessWidget {
     return Opacity(
       opacity: enabled ? 1 : 0.45,
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onPressed,
-        child: clip ? ClipPath(clipper: CyberClipper(), child: inner) : inner,
+        child: clip
+            ? ChamferedActionSurface(
+                clipper: CyberClipper(),
+                borderColor: primary ? Cyber.cyan : Cyber.line,
+                child: inner,
+              )
+            : inner,
       ),
     );
   }
@@ -846,7 +981,6 @@ class CyberPanel extends StatelessWidget {
     this.accent = Cyber.cyan,
     this.padding = const EdgeInsets.all(16),
     this.glow = false,
-    this.solidBackground = false,
     super.key,
   });
 
@@ -855,13 +989,9 @@ class CyberPanel extends StatelessWidget {
   final EdgeInsetsGeometry padding;
 
   /// Whether this is a focal / active surface that should glow. Off by default:
-  /// most panels are plain surfaces and rely on the gradient + border for depth.
+  /// most panels are plain surfaces and rely on the fill + border for depth.
   /// Reserve [glow] for the panel the user should look at first on a screen.
   final bool glow;
-
-  /// Flat panel fill instead of the accent-tinted gradient. Used for modal chrome
-  /// (confirm dialogs, walkthrough) where the gradient reads too busy.
-  final bool solidBackground;
 
   @override
   Widget build(BuildContext context) {
@@ -872,8 +1002,7 @@ class CyberPanel extends StatelessWidget {
         clipper: CyberClipper(),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: solidBackground ? Cyber.panel : null,
-            gradient: solidBackground ? null : Cyber.panelGradient(accent),
+            color: Cyber.panel,
             boxShadow: glow
                 ? Cyber.glow(accent, alpha: 0.18, blur: 18, spread: 1)
                 : null,
@@ -970,6 +1099,89 @@ class HudChamferClipper extends CustomClipper<Path> {
   @override
   bool shouldReclip(covariant HudChamferClipper old) =>
       old.bigCut != bigCut || old.smallCut != smallCut;
+}
+
+/// Clips an interactive surface and strokes that exact path in the foreground.
+///
+/// A rectangular [BoxDecoration.border] is clipped along with its child and
+/// therefore cannot paint the diagonal chamfer segments. CTA implementations
+/// use this shell so every straight and cut edge receives the same border.
+class ChamferedActionSurface extends StatelessWidget {
+  const ChamferedActionSurface({
+    required this.clipper,
+    required this.borderColor,
+    required this.child,
+    this.borderWidth = 1,
+    this.glowColor,
+    this.glow = 0,
+    super.key,
+  });
+
+  final CustomClipper<Path> clipper;
+  final Color borderColor;
+  final double borderWidth;
+  final Color? glowColor;
+  final double glow;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(
+    foregroundPainter: ChamferedActionBorderPainter(
+      clipper: clipper,
+      color: borderColor,
+      width: borderWidth,
+      glowColor: glowColor,
+      glow: glow,
+    ),
+    child: ClipPath(clipper: clipper, child: child),
+  );
+}
+
+/// Border painter shared by app CTAs that use a clipped action silhouette.
+class ChamferedActionBorderPainter extends CustomPainter {
+  const ChamferedActionBorderPainter({
+    required this.clipper,
+    required this.color,
+    required this.width,
+    this.glowColor,
+    this.glow = 0,
+  });
+
+  final CustomClipper<Path> clipper;
+  final Color color;
+  final double width;
+  final Color? glowColor;
+  final double glow;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = clipper.getClip(size);
+    if (glow > 0 && glowColor != null) {
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = glowColor!.withValues(alpha: 0.22 * glow.clamp(0, 1))
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = width + 1.5
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, 7 * glow),
+      );
+    }
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = width,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant ChamferedActionBorderPainter oldDelegate) =>
+      oldDelegate.clipper != clipper ||
+      oldDelegate.color != color ||
+      oldDelegate.width != width ||
+      oldDelegate.glowColor != glowColor ||
+      oldDelegate.glow != glow;
 }
 
 enum VisualCardSize { sm, md, lg }
@@ -1320,6 +1532,11 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
       PlayerRole.attacker => Cyber.cyan,
       PlayerRole.defender => Cyber.violet,
       PlayerRole.goalkeeper => Cyber.gold,
+      PlayerRole.batsman => Cyber.cyan,
+      PlayerRole.bowler => Cyber.magenta,
+      PlayerRole.basketballGuard => Cyber.gold,
+      PlayerRole.basketballWing => Cyber.cyan,
+      PlayerRole.basketballBig => Cyber.violet,
     };
     final small = size == VisualCardSize.sm;
     final large = size == VisualCardSize.lg;
@@ -2209,6 +2426,45 @@ class _CyberSlideUpFadeInState extends State<CyberSlideUpFadeIn>
   }
 }
 
+/// A looping pulse driver for "live" HUD elements (alerts, active indicators,
+/// ON FIRE states). Rebuilds [builder] with `t` sweeping 0 → 1 → 0 each
+/// [period]. Keep it scarce — a pulse marks the one live thing on screen.
+class CyberPulse extends StatefulWidget {
+  const CyberPulse({
+    required this.builder,
+    this.period = const Duration(milliseconds: 900),
+    super.key,
+  });
+
+  final Widget Function(BuildContext context, double t) builder;
+  final Duration period;
+
+  @override
+  State<CyberPulse> createState() => _CyberPulseState();
+}
+
+class _CyberPulseState extends State<CyberPulse>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: widget.period,
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) => widget.builder(context, _controller.value),
+    );
+  }
+}
+
 /// A one-shot "dealt card" entrance: the child flies up from below with a slight
 /// alternating tilt and an easeOutBack settle, fading in along the way. Use for
 /// rows of stat cells / action buttons; stagger via [index] + [staggerMs].
@@ -2311,8 +2567,10 @@ class HudSheetFramePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final path =
-        HudChamferClipper(bigCut: bigCut, smallCut: smallCut).buildPath(size);
+    final path = HudChamferClipper(
+      bigCut: bigCut,
+      smallCut: smallCut,
+    ).buildPath(size);
     canvas.drawPath(
       path,
       Paint()
@@ -2387,26 +2645,31 @@ class HudPagerButton extends StatelessWidget {
         height: 56,
         child: CustomPaint(
           painter: _HudPagerButtonPainter(focal: focal, enabled: enabled),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (leadingIcon != null) ...[
-                Icon(leadingIcon, color: content, size: 20),
-                const SizedBox(width: 8),
-              ],
-              Text(
-                label,
-                style: Cyber.body(
-                  16,
-                  color: content,
-                  weight: FontWeight.w800,
-                ).copyWith(letterSpacing: 0.8),
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (leadingIcon != null) ...[
+                    Icon(leadingIcon, color: content, size: 20),
+                    const SizedBox(width: 8),
+                  ],
+                  Text(
+                    label,
+                    style: Cyber.body(
+                      16,
+                      color: content,
+                      weight: FontWeight.w800,
+                    ).copyWith(letterSpacing: 0.8),
+                  ),
+                  if (trailingIcon != null) ...[
+                    const SizedBox(width: 8),
+                    Icon(trailingIcon, color: content, size: 20),
+                  ],
+                ],
               ),
-              if (trailingIcon != null) ...[
-                const SizedBox(width: 8),
-                Icon(trailingIcon, color: content, size: 20),
-              ],
-            ],
+            ),
           ),
         ),
       ),
@@ -2440,6 +2703,13 @@ class _HudPagerButtonPainter extends CustomPainter {
             end: Alignment.bottomCenter,
             colors: [Color.lerp(Cyber.cyan, Colors.white, 0.28)!, Cyber.cyan],
           ).createShader(Offset.zero & size),
+      );
+      canvas.drawPath(
+        path,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.4
+          ..color = Colors.white.withValues(alpha: enabled ? 0.72 : 0.32),
       );
     } else {
       // Calm dark plate (PREVIOUS, or a disabled forward action).
@@ -2498,7 +2768,9 @@ class HudProgressSegment extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: gradient,
         color: gradient == null ? _segTrack : null,
-        boxShadow: current ? Cyber.glow(Cyber.amber, alpha: 0.35, blur: 8) : null,
+        boxShadow: current
+            ? Cyber.glow(Cyber.amber, alpha: 0.35, blur: 8)
+            : null,
       ),
     );
   }

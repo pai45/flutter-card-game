@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/sport_match.dart';
+import '../utils/tennis_country_map.dart';
 
 Path buildOctagonPath(Rect rect, {double cutRatio = 0.15}) {
   final cut = rect.shortestSide * cutRatio;
@@ -82,6 +83,7 @@ class TeamLogo extends StatelessWidget {
     required this.width,
     required this.height,
     this.cutBottomRight = true,
+    this.sport,
     super.key,
   });
 
@@ -89,17 +91,29 @@ class TeamLogo extends StatelessWidget {
   final double width;
   final double height;
   final bool cutBottomRight;
+  /// When [Sport.tennis], the logo shows the player's country abbreviation
+  /// (e.g. "ESP") tinted with the country's primary flag colour.
+  final Sport? sport;
 
   @override
   Widget build(BuildContext context) {
+    String label = team.shortName;
+    Color color = team.id == 'mc' ? const Color(0xff74acde) : team.color;
+
+    // For tennis, resolve country abbreviation + flag colour.
+    if (sport == Sport.tennis) {
+      final code = TennisCountryMap.countryCodeFor(team.name);
+      if (code != null) {
+        label = code;
+        color = TennisCountryMap.colorFor(code);
+      }
+    }
+
     return SizedBox(
       width: width,
       height: height,
       child: CustomPaint(
-        painter: _TeamLogoPainter(
-          label: team.shortName,
-          color: team.id == 'mc' ? const Color(0xff74acde) : team.color,
-        ),
+        painter: _TeamLogoPainter(label: label, color: color),
       ),
     );
   }

@@ -2,41 +2,58 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'blocs/achievement/achievement_celebration_controller.dart';
+import 'blocs/final_over/final_over_cubit.dart';
 import 'blocs/friends/friends_cubit.dart';
 import 'blocs/game/game_bloc.dart';
 import 'blocs/game/game_event.dart';
 import 'blocs/game/game_state.dart';
+import 'blocs/match_circle/match_circle_cubit.dart';
 import 'blocs/picks/picks_cubit.dart';
 import 'blocs/picks/picks_state.dart';
 import 'blocs/prediction/prediction_cubit.dart';
 import 'blocs/prediction/prediction_state.dart';
 import 'blocs/quiz/quiz_cubit.dart';
+import 'blocs/tennis/tennis_cubit.dart';
+import 'blocs/tennis/tennis_state.dart';
 import 'config/enums.dart';
 import 'config/theme.dart';
 import 'models/league.dart';
 import 'models/sport_match.dart';
+import 'screens/deck/cricket_deck_builder_screen.dart';
+import 'screens/final_over/final_over_hub.dart';
 import 'screens/football_bingo/football_bingo_hub.dart';
 import 'screens/football_chess/football_chess_hub.dart';
+import 'screens/basketball/basketball_hub.dart';
+import 'screens/grand_prix/grand_prix_hub.dart';
 import 'screens/game/game_screen.dart';
 import 'screens/shootout/shootout_hub.dart';
+import 'screens/super_over/super_over_hub.dart';
+import 'screens/tennis/tennis_hub.dart';
 import 'screens/home/widgets/starter_pack_onboarding.dart';
 import 'screens/onboarding/profile_setup_screen.dart';
 import 'screens/predictions/league_detail_screen.dart';
-import 'screens/predictions/match_prediction_screen.dart';
+import 'screens/predictions/match_detail_screen.dart';
 import 'screens/predictions/prediction_home_screen.dart';
 import 'screens/quiz/quiz_hub.dart';
 import 'screens/guess_player/guess_player_hub.dart';
+import 'data/guess_player_data.dart';
 import 'models/cards.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/leaderboard/leaderboard_screen.dart';
 import 'screens/shop/shop_screen.dart';
 import 'services/achievement_progress.dart';
+import 'services/live_prediction_repository.dart';
+import 'services/live_score_service.dart';
+import 'services/match_circle_repository.dart';
+import 'services/espn_service.dart';
 import 'services/pick_repository.dart';
 import 'services/prediction_repository.dart';
 import 'services/secure_storage_service.dart';
 import 'widgets/achievement_celebration_host.dart';
 import 'widgets/reward_settlement_popup.dart';
 import 'widgets/streak_celebration_host.dart';
+
+enum _PendingGameLaunchKind { football, cricket, basketball }
 
 class PitchDuelApp extends StatelessWidget {
   const PitchDuelApp({super.key});
@@ -49,9 +66,20 @@ class PitchDuelApp extends StatelessWidget {
           create: (_) => GameBloc(SecureGameStorage())..add(GameLoaded()),
         ),
         BlocProvider(
-          create: (_) =>
-              PredictionCubit(MockPredictionRepository(), SecureGameStorage())
-                ..load(),
+          create: (_) => MatchCircleCubit(
+            LocalMatchCircleRepository(),
+            SecureGameStorage(),
+          ),
+        ),
+        BlocProvider(
+          create: (_) => PredictionCubit(
+            LivePredictionRepository(
+              MockPredictionRepository(),
+              LiveScoreService(),
+              const EspnService(),
+            ),
+            SecureGameStorage(),
+          )..load(),
         ),
         BlocProvider(
           create: (_) =>
@@ -62,6 +90,10 @@ class PitchDuelApp extends StatelessWidget {
         ),
         BlocProvider(create: (_) => FriendsCubit(SecureGameStorage())..load()),
         BlocProvider(create: (_) => QuizCubit(SecureGameStorage())..load()),
+        BlocProvider(create: (_) => TennisCubit(SecureGameStorage())..load()),
+        BlocProvider(
+          create: (_) => FinalOverCubit(SecureGameStorage())..load(),
+        ),
       ],
       child: MaterialApp(
         title: 'Pitch Duel',
@@ -79,6 +111,9 @@ class PitchDuelApp extends StatelessWidget {
                 listener: (context, _) => _syncAchievements(context),
               ),
               BlocListener<PicksCubit, PicksState>(
+                listener: (context, _) => _syncAchievements(context),
+              ),
+              BlocListener<TennisCubit, TennisState>(
                 listener: (context, _) => _syncAchievements(context),
               ),
             ],
@@ -121,9 +156,12 @@ class _AppShellState extends State<AppShell> {
   // Default landing is Matches; its first internal tab is Predict.
   AppSection section = AppSection.predictions;
   int _predictionTab = 0;
+  int _predictionMatchSportTab = 0;
+  int _predictionGamesSportTab = 0;
   int _shopInitialTab = 0;
   // A game flow to push once the starter-pack reveal finishes (first launch).
   VoidCallback? _pendingGameLaunch;
+  _PendingGameLaunchKind? _pendingGameLaunchKind;
   final SecureGameStorage _storage = SecureGameStorage();
   bool _onboardingLoading = true;
   bool _onboardingComplete = false;
@@ -162,7 +200,9 @@ class _AppShellState extends State<AppShell> {
   /// Launch a card match against a CPU themed as a leaderboard rival. Reuses the
   /// starter-pack gate, then opens the game flow straight into the match.
   void _openChallenge(String opponentName, int opponentLevel) {
-    _enterGameFlow(() => _pushChallengeMatch(opponentName, opponentLevel));
+    _enterFootballGameFlow(
+      () => _pushChallengeMatch(opponentName, opponentLevel),
+    );
   }
 
   void _pushChallengeMatch(String opponentName, int opponentLevel) {
@@ -186,6 +226,7 @@ class _AppShellState extends State<AppShell> {
   Future<void> _completeProfileSetup(ProfileSetupResult result) async {
     await _storage.saveSelectedAvatarId(result.avatarId);
     await _storage.saveSelectedProfileBannerId(result.bannerId);
+    await _storage.savePrimarySportName(result.primarySport.name);
     await _storage.saveFollowedLeagueIds(result.followedLeagueIds);
     await _storage.saveFavoriteTeams(result.favoriteTeams);
     await _storage.saveOnboardingComplete(true);
@@ -209,7 +250,10 @@ class _AppShellState extends State<AppShell> {
     setState(() {
       section = AppSection.predictions;
       _predictionTab = 0;
+      _predictionMatchSportTab = 0;
+      _predictionGamesSportTab = 0;
       _pendingGameLaunch = null;
+      _pendingGameLaunchKind = null;
       _selectedAvatarId = null;
       _onboardingComplete = false;
       _demoRewardSettlementSeen = false;
@@ -219,22 +263,65 @@ class _AppShellState extends State<AppShell> {
   /// Enter the card game ("Pitch Duel") as a full-screen pushed flow from the
   /// GAMES tab. App-level destinations selected inside it pop back and switch
   /// the shell; card-game-internal sections are handled within GameTabContent.
-  void _openGame() => _enterGameFlow(_pushGame);
+  void _openGame() => _enterFootballGameFlow(_pushGame);
 
   /// Enter the standalone Penalty Shootout game from the GAMES tab.
-  void _openShootout() => _enterGameFlow(_pushShootout);
+  void _openShootout() => _enterFootballGameFlow(_pushShootout);
 
   /// Enter 5v5 Football Chess from the GAMES tab — it fields the equipped deck,
   /// so it shares the starter-pack gate with the other deck-based games.
-  void _openFootballChess() => _enterGameFlow(_pushFootballChess);
+  void _openFootballChess() => _enterFootballGameFlow(_pushFootballChess);
+
+  /// Enter Super Over from the GAMES tab's Cricket section.
+  void _openSuperOver() => _enterCricketGameFlow(_pushSuperOver);
+
+  /// Enter Final Over from Cricket GAMES. The rules engine lives in the
+  /// `final_over` package; the lobby, pitch and HUD are ours.
+  void _openFinalOver() {
+    final navigator = Navigator.of(context);
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => FinalOverHub(onExit: navigator.pop),
+      ),
+    );
+  }
+
+  /// Open the cricket-only deck editor from the GAMES tab's Cricket section.
+  void _openCricketDeck() => _enterCricketGameFlow(_pushCricketDeck);
+
+  /// Enter Hoop Duel from the GAMES tab's Basketball section.
+  void _openBasketball() => _enterBasketballGameFlow(_pushBasketball);
 
   /// Both games share the starter deck — claim the starter pack first on a
   /// first launch, then push the requested flow once the reveal completes.
-  void _enterGameFlow(VoidCallback push) {
+  void _enterFootballGameFlow(VoidCallback push) {
     final bloc = context.read<GameBloc>();
     if (!bloc.state.starterPackClaimed) {
       _pendingGameLaunch = push;
+      _pendingGameLaunchKind = _PendingGameLaunchKind.football;
       bloc.add(StarterPackOpened());
+      return;
+    }
+    push();
+  }
+
+  void _enterCricketGameFlow(VoidCallback push) {
+    final bloc = context.read<GameBloc>();
+    if (!bloc.state.cricketStarterPackClaimed) {
+      _pendingGameLaunch = push;
+      _pendingGameLaunchKind = _PendingGameLaunchKind.cricket;
+      bloc.add(CricketStarterPackOpened());
+      return;
+    }
+    push();
+  }
+
+  void _enterBasketballGameFlow(VoidCallback push) {
+    final bloc = context.read<GameBloc>();
+    if (!bloc.state.basketballStarterPackClaimed) {
+      _pendingGameLaunch = push;
+      _pendingGameLaunchKind = _PendingGameLaunchKind.basketball;
+      bloc.add(BasketballStarterPackOpened());
       return;
     }
     push();
@@ -282,13 +369,38 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
-  /// Open the Football Quiz from the GAMES tab. Unlike the card games it needs
+  void _pushSuperOver() {
+    final navigator = Navigator.of(context);
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => SuperOverHub(onExit: navigator.pop),
+      ),
+    );
+  }
+
+  void _pushCricketDeck() {
+    final navigator = Navigator.of(context);
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => CricketDeckBuilderScreen(
+          onBack: () => navigator.pop(),
+          onPlaySuperOver: () {
+            navigator.pop();
+            _pushSuperOver();
+          },
+        ),
+      ),
+    );
+  }
+
+  /// Open the Quiz from the GAMES tab. Unlike the card games it needs
   /// no starter deck, so it pushes straight in (no starter-pack gate).
-  void _openQuiz() {
+  void _openQuiz(Sport sport) {
     final navigator = Navigator.of(context);
     navigator.push(
       MaterialPageRoute<void>(
         builder: (_) => QuizTabContent(
+          sport: sport,
           onNavigate: (next) {
             navigator.pop();
             _go(next);
@@ -303,7 +415,43 @@ class _AppShellState extends State<AppShell> {
     navigator.push(
       MaterialPageRoute<void>(
         builder: (_) => GuessPlayerTabContent(
-          allPlayers: allPlayerCards,
+          sport: Sport.football,
+          timelines: footballGuessTimelines,
+          allPlayers: footballPlayerCards,
+          onNavigate: (next) {
+            navigator.pop();
+            _go(next);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _openBasketballGuessPlayer() {
+    final navigator = Navigator.of(context);
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => GuessPlayerTabContent(
+          sport: Sport.basketball,
+          timelines: basketballGuessTimelines,
+          allPlayers: basketballPlayerCards,
+          onNavigate: (next) {
+            navigator.pop();
+            _go(next);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _openCricketGuessPlayer() {
+    final navigator = Navigator.of(context);
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => GuessPlayerTabContent(
+          sport: Sport.cricket,
+          timelines: cricketGuessTimelines,
+          allPlayers: cricketPlayerCards,
           onNavigate: (next) {
             navigator.pop();
             _go(next);
@@ -327,11 +475,49 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
+  /// Open Grand Prix Dash from the GAMES tab's F1 section. The car is purely
+  /// cosmetic — no deck, so no starter-pack gate (like the quiz and bingo).
+  void _openGrandPrix() {
+    final navigator = Navigator.of(context);
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => GrandPrixTabContent(
+          onNavigate: (next) {
+            navigator.pop();
+            _go(next);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _openTennisRally() {
+    final navigator = Navigator.of(context);
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => TennisRallyHub(onExit: navigator.pop),
+      ),
+    );
+  }
+
+  /// Push Hoop Duel after its basketball starter pack gate is satisfied.
+  void _pushBasketball() {
+    final navigator = Navigator.of(context);
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => BasketballTabContent(
+          onNavigate: (next) {
+            navigator.pop();
+            _go(next);
+          },
+        ),
+      ),
+    );
+  }
+
   void _openMatch(SportMatch match) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => MatchPredictionScreen(match: match),
-      ),
+      MaterialPageRoute<void>(builder: (_) => MatchDetailScreen(match: match)),
     );
   }
 
@@ -351,10 +537,16 @@ class _AppShellState extends State<AppShell> {
             previous.pendingPackReveal != current.pendingPackReveal,
         listener: (context, state) {
           final pending = _pendingGameLaunch;
-          if (pending != null &&
-              state.pendingPackReveal == null &&
-              state.starterPackClaimed) {
+          final ready = switch (_pendingGameLaunchKind) {
+            _PendingGameLaunchKind.cricket => state.cricketStarterPackClaimed,
+            _PendingGameLaunchKind.basketball =>
+              state.basketballStarterPackClaimed,
+            _PendingGameLaunchKind.football => state.starterPackClaimed,
+            null => false,
+          };
+          if (pending != null && state.pendingPackReveal == null && ready) {
             _pendingGameLaunch = null;
+            _pendingGameLaunchKind = null;
             pending();
           }
         },
@@ -410,6 +602,12 @@ class _AppShellState extends State<AppShell> {
             _ => PredictionHomeScreen(
               activeTab: _predictionTab,
               onTabChanged: (tab) => setState(() => _predictionTab = tab),
+              activeMatchSportTab: _predictionMatchSportTab,
+              onMatchSportTabChanged: (tab) =>
+                  setState(() => _predictionMatchSportTab = tab),
+              activeGamesSportTab: _predictionGamesSportTab,
+              onGamesSportTabChanged: (tab) =>
+                  setState(() => _predictionGamesSportTab = tab),
               onNavigate: _go,
               onOpenMatch: _openMatch,
               onOpenLeague: _openLeague,
@@ -418,7 +616,15 @@ class _AppShellState extends State<AppShell> {
               onOpenQuiz: _openQuiz,
               onOpenFootballBingo: _openFootballBingo,
               onOpenFootballChess: _openFootballChess,
+              onOpenSuperOver: _openSuperOver,
+              onOpenFinalOver: _openFinalOver,
+              onOpenCricketDeck: _openCricketDeck,
               onOpenGuessPlayer: _openGuessPlayer,
+              onOpenBasketballGuessPlayer: _openBasketballGuessPlayer,
+              onOpenCricketGuessPlayer: _openCricketGuessPlayer,
+              onOpenGrandPrix: _openGrandPrix,
+              onOpenBasketball: _openBasketball,
+              onOpenTennisRally: _openTennisRally,
               onAddCoins: _openShopCoins,
             ),
           };

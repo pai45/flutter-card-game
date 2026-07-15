@@ -14,6 +14,7 @@ enum OzCoinTransactionSource {
   referralReward,
   quizEntry,
   footballBingoLifeline,
+  tennisReward,
   manual,
 }
 
