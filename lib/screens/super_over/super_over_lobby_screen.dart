@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_state.dart';
 import '../../config/theme.dart';
+import '../../data/super_over_batter_profiles.dart';
 import '../../data/super_over_jerseys.dart';
 import '../../games/super_over/cricket_rig.dart';
 import '../../models/cards.dart';
@@ -25,7 +26,10 @@ class SuperOverLobbyScreen extends StatelessWidget {
     required this.onStartGame,
     required this.onEditDeck,
     required this.onJerseySelected,
+    required this.selectedMode,
+    required this.onModeChanged,
     required this.stats,
+    this.onTutorial,
     super.key,
   });
 
@@ -33,7 +37,10 @@ class SuperOverLobbyScreen extends StatelessWidget {
   final VoidCallback onStartGame;
   final VoidCallback onEditDeck;
   final ValueChanged<CricketJersey> onJerseySelected;
+  final SuperOverMode selectedMode;
+  final ValueChanged<SuperOverMode> onModeChanged;
   final SuperOverStats stats;
+  final VoidCallback? onTutorial;
 
   @override
   Widget build(BuildContext context) {
@@ -52,9 +59,8 @@ class SuperOverLobbyScreen extends StatelessWidget {
           backgroundColor: Cyber.bg,
           appBar: ReactHeaderBar(
             title: 'SUPER OVER',
-            subtitle: '// ONE-TAP CHASE',
+            subtitle: '// 2D CRICKET ARCADE',
             onBack: onBack,
-            showTitle: false,
             rightSlot: PlayerLevelBadge(progression: gameState.progression),
           ),
           body: _SuperOverArenaBackground(
@@ -82,9 +88,51 @@ class SuperOverLobbyScreen extends StatelessWidget {
                               CyberSlideUpFadeIn(
                                 delay: const Duration(milliseconds: 80),
                                 offset: 24,
-                                child: _HeroBlock(ready: ready, avgRating: avg),
+                                child: _HeroBlock(
+                                  ready: ready,
+                                  avgRating: avg,
+                                  jersey: stats.lastJersey,
+                                ),
                               ),
-                              const SizedBox(height: 20),
+                              const SizedBox(height: 18),
+                              const SectionLabel(label: 'PLAY MODE'),
+                              const SizedBox(height: 9),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _ModeCard(
+                                      mode: SuperOverMode.chase,
+                                      selected:
+                                          selectedMode == SuperOverMode.chase,
+                                      icon: Icons.flag_outlined,
+                                      subtitle: 'BEAT THE TARGET',
+                                      onTap: () =>
+                                          onModeChanged(SuperOverMode.chase),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: _ModeCard(
+                                      mode: SuperOverMode.scoreAttack,
+                                      selected:
+                                          selectedMode ==
+                                          SuperOverMode.scoreAttack,
+                                      icon: Icons.bolt,
+                                      subtitle: 'MAX RUNS / 6 BALLS',
+                                      onTap: () => onModeChanged(
+                                        SuperOverMode.scoreAttack,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 18),
+                              _BattingOrderPanel(
+                                batsmen: batsmen,
+                                stats: stats,
+                                onEdit: onEditDeck,
+                              ),
+                              const SizedBox(height: 18),
                               _RecordPanel(stats: stats),
                               const SizedBox(height: 20),
                               const SectionLabel(label: 'TEAM JERSEY'),
@@ -106,16 +154,18 @@ class SuperOverLobbyScreen extends StatelessWidget {
                                 delay: const Duration(milliseconds: 390),
                                 offset: 22,
                                 child: HudCtaButton(
-                                  label: ready ? 'START CHASE' : 'ADD BATTERS',
+                                  label: ready
+                                      ? 'START ${selectedMode.label}'
+                                      : 'ADD BATTERS',
                                   icon: ready
                                       ? Icons.keyboard_double_arrow_right
                                       : Icons.add,
                                   helper: ready
-                                      ? 'AVG OVR $avg  /  SIX BALLS'
+                                      ? 'AVG OVR $avg  /  6 BALLS  /  2 WICKETS'
                                       : 'FILL THREE BATTING SLOTS',
                                   tapSound: ready
                                       ? SoundEffect.playMatch
-                                      : SoundEffect.cardSelect,
+                                      : SoundEffect.uiTap,
                                   accent: ready ? Cyber.cyan : Cyber.amber,
                                   onTap: ready ? onStartGame : onEditDeck,
                                 ),
@@ -193,6 +243,23 @@ class SuperOverLobbyScreen extends StatelessWidget {
                                   ),
                                 ],
                               ),
+                              if (onTutorial != null) ...[
+                                const SizedBox(height: 12),
+                                CyberCtaButton(
+                                  key: const ValueKey(
+                                    'super-over-tutorial-button',
+                                  ),
+                                  label: stats.tutorialCompleted
+                                      ? 'Replay Tutorial'
+                                      : 'How To Play',
+                                  clip: false,
+                                  onPressed: () {
+                                    HapticFeedback.selectionClick();
+                                    playSound(SoundEffect.uiTap);
+                                    onTutorial!();
+                                  },
+                                ),
+                              ],
                               const SizedBox(height: 16),
                               const CyberSlideUpFadeIn(
                                 delay: Duration(milliseconds: 650),
@@ -277,16 +344,21 @@ class _LobbyStatusBar extends StatelessWidget {
 }
 
 class _HeroBlock extends StatelessWidget {
-  const _HeroBlock({required this.ready, required this.avgRating});
+  const _HeroBlock({
+    required this.ready,
+    required this.avgRating,
+    required this.jersey,
+  });
 
   final bool ready;
   final int avgRating;
+  final CricketJersey jersey;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const _CricketHeroEmblem(size: 92),
+        _CricketHeroEmblem(size: 104, jersey: jersey),
         const SizedBox(width: 16),
         Expanded(
           child: Column(
@@ -306,7 +378,7 @@ class _HeroBlock extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'ONE-TAP CRICKET CHASE',
+                'READ. AIM. STRIKE.',
                 style: TextStyle(
                   color: Cyber.muted,
                   fontFamily: Cyber.displayFont,
@@ -337,9 +409,10 @@ class _HeroBlock extends StatelessWidget {
 }
 
 class _CricketHeroEmblem extends StatefulWidget {
-  const _CricketHeroEmblem({required this.size});
+  const _CricketHeroEmblem({required this.size, required this.jersey});
 
   final double size;
+  final CricketJersey jersey;
 
   @override
   State<_CricketHeroEmblem> createState() => _CricketHeroEmblemState();
@@ -365,8 +438,21 @@ class _CricketHeroEmblemState extends State<_CricketHeroEmblem>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _pulse
+        ..stop()
+        ..value = .5;
+    } else if (!_pulse.isAnimating) {
+      _pulse.repeat();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final size = widget.size;
+    final jersey = cricketJerseySpec(widget.jersey);
     return SizedBox(
       width: size,
       height: size,
@@ -395,18 +481,15 @@ class _CricketHeroEmblemState extends State<_CricketHeroEmblem>
                   ),
                 ),
               ),
-              Transform.rotate(
-                angle: math.sin(phase) * 0.12,
-                child: Icon(
-                  Icons.sports_cricket,
-                  size: size * 0.58,
-                  color: Cyber.cyan,
-                  shadows: [
-                    Shadow(
-                      color: Cyber.cyan.withValues(alpha: 0.64),
-                      blurRadius: 16 + glow * 4,
-                    ),
-                  ],
+              Transform.translate(
+                offset: Offset(0, math.sin(phase * 2) * 1.5),
+                child: CustomPaint(
+                  size: Size.square(size),
+                  painter: _HeroBatterPainter(
+                    primary: jersey.primary,
+                    accent: jersey.accent,
+                    phase: phase,
+                  ),
                 ),
               ),
               CustomPaint(
@@ -423,6 +506,253 @@ class _CricketHeroEmblemState extends State<_CricketHeroEmblem>
   }
 }
 
+class _HeroBatterPainter extends CustomPainter {
+  const _HeroBatterPainter({
+    required this.primary,
+    required this.accent,
+    required this.phase,
+  });
+
+  final Color primary;
+  final Color accent;
+  final double phase;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bowler = bowlerPose(
+      runProgress: .62 + math.sin(phase) * .08,
+      time: phase,
+      isDeliveryActive: true,
+    );
+    CricketRigPainter.drawBowlerRig(
+      canvas,
+      Offset(size.width * .53, size.height * .42),
+      bowler,
+      primary: const Color(0xff252d42),
+      accent: const Color(0xff9da9c7),
+      skin: const Color(0xff8f5e45),
+      scale: size.width * .19,
+      holdingBall: false,
+    );
+    final trajectory = Path()
+      ..moveTo(size.width * .53, size.height * .36)
+      ..quadraticBezierTo(
+        size.width * .67,
+        size.height * .55,
+        size.width * .52,
+        size.height * .7,
+      );
+    canvas.drawPath(
+      trajectory,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..shader = LinearGradient(
+          colors: [
+            Cyber.cyan.withValues(alpha: 0),
+            Cyber.cyan.withValues(alpha: .85),
+          ],
+        ).createShader(Offset.zero & size),
+    );
+    canvas.drawCircle(
+      Offset(size.width * .52, size.height * .7),
+      2.4,
+      Paint()..color = Colors.white,
+    );
+    final pose = batsmanPose(
+      swing: -0.20 + math.sin(phase) * 0.05,
+      time: phase,
+      onFire: false,
+    );
+    CricketRigPainter.drawBatsmanRig(
+      canvas,
+      Offset(size.width * 0.48, size.height * 0.93),
+      pose,
+      primary: primary,
+      accent: accent,
+      skin: const Color(0xffb97852),
+      scale: size.width * 0.42,
+      onFire: false,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _HeroBatterPainter oldDelegate) =>
+      oldDelegate.primary != primary ||
+      oldDelegate.accent != accent ||
+      oldDelegate.phase != phase;
+}
+
+class _ModeCard extends StatelessWidget {
+  const _ModeCard({
+    required this.mode,
+    required this.selected,
+    required this.icon,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final SuperOverMode mode;
+  final bool selected;
+  final IconData icon;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = selected ? Cyber.lime : Cyber.cyan;
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: InkWell(
+        key: ValueKey('super-over-mode-${mode.name}'),
+        onTap: onTap,
+        child: CyberPanel(
+          accent: accent,
+          padding: const EdgeInsets.all(12),
+          child: SizedBox(
+            height: 66,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(icon, color: accent, size: 19),
+                    const Spacer(),
+                    if (selected)
+                      Icon(Icons.check_circle, color: accent, size: 16),
+                  ],
+                ),
+                const Spacer(),
+                Text(mode.label, style: Cyber.display(10, color: Colors.white)),
+                const SizedBox(height: 3),
+                Text(subtitle, style: Cyber.label(7, color: Cyber.muted)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BattingOrderPanel extends StatelessWidget {
+  const _BattingOrderPanel({
+    required this.batsmen,
+    required this.stats,
+    required this.onEdit,
+  });
+
+  final List<PlayerCard> batsmen;
+  final SuperOverStats stats;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    return CyberPanel(
+      accent: Cyber.cyan,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const SectionLabel(label: 'BATTING UNIT'),
+              const Spacer(),
+              TextButton(
+                onPressed: onEdit,
+                child: Text('EDIT', style: Cyber.display(8, color: Cyber.cyan)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 7),
+          if (batsmen.isEmpty)
+            Text('ADD THREE BATTERS TO DEPLOY', style: Cyber.label(9))
+          else
+            ...batsmen.take(3).indexed.map((entry) {
+              final orderIndex = entry.$1;
+              final batter = entry.$2;
+              final profile = SuperOverBatterProfiles.fromCard(
+                batter,
+                orderIndex: orderIndex,
+              );
+              final xp = stats.batterMastery[batter.id] ?? 0;
+              final level = 1 + xp ~/ 100;
+              final style = profile.archetype;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: Cyber.bg,
+                        border: Border.all(
+                          color: Cyber.cyan.withValues(alpha: .4),
+                        ),
+                      ),
+                      clipBehavior: Clip.hardEdge,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Icon(
+                            Icons.person_rounded,
+                            color: Cyber.cyan.withValues(alpha: .82),
+                          ),
+                          Positioned(
+                            right: 2,
+                            bottom: 1,
+                            child: Text(
+                              '${orderIndex + 1}',
+                              style: Cyber.display(7, color: Cyber.gold),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 9),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            profile.displayName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Cyber.display(9, color: Colors.white),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            '${profile.archetypeLabel} // OVR ${profile.rating}',
+                            style: Cyber.label(7, color: Cyber.muted),
+                          ),
+                          const SizedBox(height: 5),
+                          CyberProgressBar(
+                            value: (xp % 100) / 100,
+                            accent: style == CricketBattingStyle.powerHitter
+                                ? Cyber.gold
+                                : Cyber.lime,
+                            animate: false,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'LV $level',
+                      style: Cyber.display(8, color: Cyber.cyan),
+                    ),
+                  ],
+                ),
+              );
+            }),
+        ],
+      ),
+    );
+  }
+}
+
 class _RecordPanel extends StatelessWidget {
   const _RecordPanel({required this.stats});
 
@@ -432,8 +762,8 @@ class _RecordPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       _RecordItem(
-        label: 'HIGH',
-        value: '${stats.highScore}',
+        label: 'ATTACK',
+        value: '${stats.scoreAttackHighScore}',
         accent: Cyber.gold,
       ),
       _RecordItem(
@@ -442,9 +772,9 @@ class _RecordPanel extends StatelessWidget {
         accent: Cyber.lime,
       ),
       _RecordItem(
-        label: 'LOSSES',
-        value: '${stats.chaseLosses}',
-        accent: Cyber.danger,
+        label: 'PERFECT',
+        value: '${stats.perfectContacts}',
+        accent: Cyber.lime,
       ),
       _RecordItem(
         label: 'SIXES',
@@ -452,8 +782,8 @@ class _RecordPanel extends StatelessWidget {
         accent: Cyber.cyan,
       ),
       _RecordItem(
-        label: 'STREAK',
-        value: '${stats.bestStreak}',
+        label: 'COMBO',
+        value: '${stats.bestCombo}',
         accent: Cyber.violet,
       ),
     ];
@@ -550,9 +880,9 @@ class _ModeHint extends StatelessWidget {
       spacing: 12,
       runSpacing: 6,
       children: [
-        _HudLink(label: 'ONE TAP TO SWING'),
+        _HudLink(label: 'AIM / CHOOSE / SWING'),
         Text('/', style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1)),
-        _HudLink(label: 'TIMING SETS DIRECTION', faint: true),
+        _HudLink(label: 'READ THE FIELD', faint: true),
       ],
     );
   }
@@ -606,6 +936,18 @@ class _SuperOverArenaBackgroundState extends State<_SuperOverArenaBackground>
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller
+        ..stop()
+        ..value = 0;
+    } else if (!_controller.isAnimating) {
+      _controller.repeat();
+    }
   }
 
   @override
@@ -812,8 +1154,7 @@ class _CornerBracketsPainter extends CustomPainter {
       oldDelegate.color != color;
 }
 
-/// Jersey picker — each tile shows a mini batsman rig preview in the IPL team's
-/// colors, matching the Grand Prix livery picker pattern.
+/// Sponsor-free jersey picker with a procedural batter preview.
 class _JerseyPicker extends StatelessWidget {
   const _JerseyPicker({required this.selected, required this.onSelect});
 

@@ -1,430 +1,241 @@
 # Super Over
 
-Super Over is StatOz's cricket arcade chase mode. It converts the user's cricket batting deck into a six-ball, two-wicket target chase: read the field, pick a scoring sector, time the delivery, and beat the CPU target before the over ends.
+Super Over is StatOz's six-ball cricket arcade mode. Build a three-batter unit, read each delivery and field, choose an aim and shot type, then time the swing to either chase a target or set the best possible score.
 
-## Product Purpose
+It is a short-form skill mode rather than a full cricket simulation. Card ratings, batter archetypes, field placement, delivery plans, timing, and shot choice all influence the result.
 
-Super Over gives the Cricket section a fast, repeatable skill mode that makes batting cards matter without requiring a full cricket match simulation.
+## Purpose
 
-The mode is built around three player skills:
+Super Over gives cricket batting cards a fast, replayable use case built around:
 
-- team preparation through a legal cricket batting deck
-- tactical shot selection through field-sector reading
-- execution through timing-window mastery
+- preparing a legal three-batter deck;
+- reading the field and the incoming ball;
+- deliberately selecting a scoring sector and shot style; and
+- executing the swing in the timing window.
 
-It shares the app's progression economy through XP and uses local lifetime stats for mastery goals. It currently does not award coins.
+The mode contributes XP, match history, and its own saved lifetime stats. It does not award coins or save an unfinished over.
 
 ## Where It Lives
 
-Super Over is opened from the **Games** tab's Cricket section.
+Open **Games -> Cricket -> Super Over**. `SuperOverHub` owns the lobby, deck-builder handoff, live Flame scene, pause flow, results, and progression dispatch.
 
-The app-level entry delegates into `SuperOverHub`, which owns the mode-specific BLoC, lobby/game routing, Flame game instance, deck-builder handoff, and result overlay.
+## Requirements and Match Format
 
-## Entry Requirements
+**START CHASE** or **START SCORE ATTACK** is available only when the active Cricket deck contains exactly three owned batting cards. Those cards become the batting order:
 
-The lobby requires the cricket Super Over deck to be ready before **START CHASE** is enabled. The live batting order is read from `GameBloc.state.deckBatsmen`.
-
-The current gameplay format uses three batsmen:
-
-- striker starts at batting-order index 0
-- non-striker starts at batting-order index 1
-- third batsman comes in after the first wicket
-
-The over ends after six legal balls or two wickets. In chase mode, it also ends immediately when the user passes the CPU target.
-
-## End-To-End User Flow
-
-1. User opens **Games -> Cricket -> Super Over**.
-2. Super Over lobby loads persisted lifetime stats from secure storage.
-3. Lobby shows readiness, deck status, career record, and start/history/deck actions.
-4. User may open the Cricket Deck Builder and return directly into play.
-5. User taps **START CHASE** when the deck is ready.
-6. The BLoC generates a CPU target from player level, rolls the first field, and rolls the first delivery type.
-7. The live play screen opens over a Flame cricket scene.
-8. For each ball, the user reads field intel and chooses OFF, V, or LEG.
-9. The delivery begins; the user taps **SHOOT** to stop the timing meter.
-10. Timing, field placement, delivery type, card rating, and ON FIRE state resolve the shot outcome.
-11. A ground-view animation plays the shot result.
-12. Score, wicket, combo, momentum, striker, field, and next delivery update.
-13. The flow repeats until the target is chased, the user runs out of balls, or the user loses two wickets.
-14. Result overlay shows the chase verdict, ball-by-ball over summary, XP, and CTAs.
-15. The mode persists lifetime Super Over stats and dispatches shared XP through `GameBloc`.
-
-Leaving from the live game exits to the predictions area. A completed over returns to lobby through **CHASE AGAIN** or exits through **EXIT TO LOBBY**.
-
-## Match Format
+1. Batter 1 starts on strike.
+2. Batter 2 starts at the non-striker's end.
+3. Batter 3 replaces the striker after the first wicket.
 
 | Rule | Value |
-|------|-------|
-| Mode used by UI | Chase |
-| Balls | 6 |
+| --- | --- |
+| Balls | 6 legal balls |
 | Wickets | 2 |
-| Batsmen | 3 |
-| Hit sectors | OFF, V, LEG |
-| Delivery types | Pace, Spin, Yorker |
-| Target source | CPU target scaled by player level |
-| Immediate win condition | User score greater than CPU target |
-| Immediate loss condition | Over ends without passing target |
+| Batters | 3 |
+| Aim sectors | OFF, STRAIGHT, LEG |
+| Shot styles | GROUND, LOFT |
+| Modes | Chase and Score Attack |
+| End conditions | 6 balls, 2 wickets, or (in Chase) a successful target chase |
 
-The domain model also supports `scoreAttack`, but the current lobby starts `SuperOverMode.chase`.
+Odd runs rotate the strike. Dots and wickets reset the scoring combo. A wicket clears the active momentum/on-fire build-up; the third batter comes in as striker.
 
-## Target Generation
+## Modes
 
-In chase mode, the CPU target is based on the user's player level:
+### Chase
+
+The CPU target is selected from the player-level band below. The displayed chase requirement is one more than that target, so the player must exceed it rather than tie it.
+
+| Player level | CPU target | Required score to win |
+| --- | ---: | ---: |
+| 1-3 | 8-12 | 9-13 |
+| 4-7 | 11-16 | 12-17 |
+| 8-12 | 14-19 | 15-20 |
+| 13-18 | 16-21 | 17-22 |
+| 19+ | 18-23 | 19-24 |
+
+The chase ends as soon as the score passes the CPU target. Otherwise it is lost after the final ball or second wicket.
+
+### Score Attack
+
+Score Attack has no CPU target. Play all available balls to maximise runs and beat the saved Score Attack high score. Its result is recorded as **Completed** in shared match history; chase results are recorded as **Victory** or **Defeat**.
+
+## Round Flow
+
+1. Choose **CHASE** or **SCORE ATTACK** in the lobby.
+2. Confirm the three-batter unit and optionally choose a team jersey.
+3. Start the mode. The target (for Chase) and a bonus objective are revealed.
+4. Each ball rolls a fresh field and delivery plan.
+5. Before swinging, choose OFF, STRAIGHT, or LEG, then choose GROUND or LOFT.
+6. Read the ball's type, length, and line. Tap the bat after release to swing.
+7. The Flame scene plays the delivery, contact, and outcome. The BLoC updates score, strike, confidence, objectives, and match state.
+8. After the animation, the next ball starts unless the over is complete.
+9. The result screen shows the score, ball trail, key statistics, XP, and **PLAY AGAIN** / **Back To Games** actions.
+
+The close button exits to Games. Pause freezes the current ball; **RESUME** continues it and **QUIT TO HUB** abandons it without saving a completed-over result.
+
+## Ball Setup and Player Choices
+
+### Field
+
+Nine fielders are distributed across OFF / STRAIGHT / LEG using one of these presets:
+
+`[2,4,3]`, `[3,3,3]`, `[4,3,2]`, `[2,3,4]`, `[3,4,2]`, `[4,2,3]`, `[1,5,3]`, `[3,5,1]`.
+
+The sector with the fewest fielders is shown as **OPEN**. A scoring shot into that sector counts toward an *Attack the Open Gap* objective. Sectors with four or more fielders are packed, making catches and low-value outcomes more likely; a sector with one or fewer fielders receives boundary/dot weighting in the batter's favour.
+
+### Delivery plan
+
+A delivery plan has a type, line, length, and pace factor. The HUD reveals the type/length cue and line when the ball can be played.
+
+- Types: **pace**, **slower**, and **spin**. The model also supports the legacy **yorker** type.
+- Lines: **off**, **middle**, or **leg**.
+- At levels 1-4, lengths are good length or full. Levels 5-9 also unlock short balls; level 10+ can receive yorkers.
+- Type probabilities are 52% pace, 20% slower, and 28% spin.
+
+The aim is intentionally selected by the player. Matching the ball's natural line (off -> OFF, middle -> STRAIGHT, leg -> LEG) avoids the normal off-line timing penalty. Improvisers are exempt from that penalty.
+
+### Shot styles
+
+| Style | Trade-off |
+| --- | --- |
+| **GROUND** | Lower peak power, no sixes from the base result table, and a substantially lower caught chance. Anchors gain an extra safety/boundary adjustment. It is favoured against yorkers. |
+| **LOFT** | Higher power and boundary weighting, but a higher caught chance. Power hitters gain an additional loft bonus. It is favoured against short balls. |
+
+## Batting Archetypes and Form
+
+The game derives a lightweight batting style from the striker's card trait:
+
+| Card trait | Style | Gameplay effect |
+| --- | --- | --- |
+| Batsman and other traits | Anchor | 10% wider timing window; safer ground shots |
+| All-rounder | Power Hitter | 6% tighter timing window; loft power/boundary bonus |
+| Wicket-keeper | Improviser | Standard window; no off-line aim penalty and one fewer effective fielder in the chosen sector |
+
+Card rating starts from a 360 ms base timing window:
 
 ```dart
-targetRatingForLevel(level) = min(95, 66 + level * 2)
+ratingScale = clamp(1 + (rating - 75) * 0.012, 0.85, 1.30)
 ```
 
-That rating is mapped into a rough target band from 8 to 22, then randomized by plus or minus 2. The target is floored at 4.
+The legacy delivery multipliers are pace `0.92`, slower `1.04`, spin `1.10`, and yorker `0.78`; **ON FIRE** adds 8%. Archetype, delivery-length matchup, line matchup, and confidence then tune the window used for the shot.
 
-The player must score `target + 1` to win, matching cricket chase language where tying the target is not enough.
+Confidence starts at 0 and is displayed under the striker. A clean scoring contact earns +13 confidence (+20 for perfect timing). A dot/poor contact loses 15 and a wicket loses 32, clamped to 0-100.
 
-## Shot Mechanics
+Three consecutive clean scoring contacts arm **ON FIRE** for the next resolved delivery. It increases the timing window and shot power, reduces catch risk, then is spent after that delivery. The HUD also tracks a run combo and its best value for the over.
 
-Each delivery resolves in four stages.
+## Timing and Outcome Resolution
 
-### 1. Delivery Setup
+Timing error is measured against the tuned contact window. The normalized absolute error maps to tiers as follows:
 
-The BLoC rolls:
+| Absolute normalized error | Tier |
+| --- | --- |
+| `<= 0.14` | Perfect |
+| `<= 0.32` | Great |
+| `<= 0.58` | Good |
+| `<= 0.90` | Edge/Poor |
+| `> 0.90` | Miss |
 
-- a delivery type: `pace`, `spin`, or `yorker`
-- a field preset for OFF, V, and LEG
+No swing before the ball passes the playable window is treated as an automatic late miss using the currently selected aim and shot style.
 
-Field presets distribute outfielders so at least one sector is readable as a scoring opportunity. The hit-zone buttons expose this as:
+The tier determines a weighted starting outcome set, then the game applies field pressure, shot style, archetype, ON FIRE, and catch geometry. This makes the table a guide rather than a promise:
 
-- **GAP** when the sector has 0 or 1 fielder
-- fielder dots for normal coverage
-- **PACKED** when the sector has 4 or more fielders
+| Tier | Base outcomes |
+| --- | --- |
+| Perfect | Six or four |
+| Great | Four, three, two, or one |
+| Good | Four, two, one, or dot |
+| Edge/Poor | Caught, dot, one, or two |
+| Miss | Usually bowled; otherwise dot |
 
-### 2. Timing Window
+Caught and bowled are wickets. Perfect shots cannot be caught by the geometric catching pass; great, good, and edge/poor contacts can be.
 
-When the user chooses a sector, the Flame strike world starts the delivery. Timing-window length is affected by card rating and delivery type:
+## Objectives
 
-```dart
-windowScale(rating) = (1.0 + (rating - 75) * 0.012).clamp(0.85, 1.30)
-```
+Every over rolls one optional objective, shown below the live HUD:
 
-Delivery multipliers:
+- **Score N Runs** - in Chase, `N` is the bottom of the current level's CPU target band; in Score Attack it is `12 + min(6, level ~/ 4)`.
+- **Hit the Open Gap 2 Times** - score runs in the currently least-covered sector twice.
+- **Finish Without a Wicket** - completes only when the over ends with zero wickets.
 
-| Delivery | Multiplier | Product Meaning |
-|----------|------------|-----------------|
-| Yorker | 0.75 | Tightest window |
-| Pace | 0.90 | Standard fast ball |
-| Spin | 1.10 | More readable timing |
+Objective progress is updated after each resolved ball. Completion increases stored objective totals, adds mastery progress, and awards bonus XP.
 
-The final delivery duration is clamped between 0.6s and 1.5s.
+## Screens
 
-### 3. Timing Tier
+### Lobby
 
-The user taps **SHOOT** to stop the meter. The timing error maps to:
+The cyber-styled lobby provides:
 
-| Timing Error | Tier |
-|--------------|------|
-| `< 0.10` | Perfect |
-| `< 0.25` | Great |
-| `< 0.50` | Good |
-| `< 0.80` | Early/Late |
-| otherwise | Miss |
+- mode cards for Chase and Score Attack;
+- a three-batter unit panel with card archetype, rating, and Super Over mastery level;
+- five headline stats: Score Attack record, chase wins, perfect contacts, sixes, and best combo;
+- a horizontal IPL-style team jersey picker;
+- start / add-batters action, deck builder, and Super Over-filtered match history.
 
-If the user never hits in time, the game auto-stops and reports a miss-like late outcome.
+The selected jersey is saved immediately and is used by the batter rendered in the live scene.
 
-### 4. Field And Momentum Adjustment
+### Live match
 
-Field placement modifies the timing tier:
+The live HUD has score/wickets, balls, target or Score Attack status, six-ball tracker, exit and pause controls. It also shows the active objective, selected batter and confidence bar, field counts for each sector, shot-style controls, delivery feedback, and the central bat button when the input window is armed.
 
-- open sector with 0 fielders upgrades one tier
-- packed sector with 2 or more fielders downgrades one tier
-- perfect shots are protected from downgrade in the live hub logic
+The Flame renderer depicts the run-up, release, swing, stadium, fielders, selected jersey, outcome animation, and impact effects. It respects the device's reduced-motion setting.
 
-If the batsman is **ON FIRE**, the effective tier is boosted one step before outcome resolution. ON FIRE is earned after three consecutive scoring, non-wicket shots and is spent on the next resolved delivery.
+### Result
 
-### Outcome Table
+Chase games show **CHASE WON** or **CHASE LOST**; Score Attack shows **OVER COMPLETE**. The result includes a margin/summary, new-record indication, six-ball trail, sixes, fours, strike rate, and XP.
 
-| Effective Tier | Outcome Distribution |
-|----------------|----------------------|
-| Perfect | 75% six, 25% four |
-| Great | 60% four, 20% three, 20% two |
-| Good | 50% two, 50% one |
-| Early/Late | 50% dot, 30% caught, 20% one |
-| Miss | Bowled |
+## Rewards, Stats, and History
 
-Runs are `6/4/3/2/1/0` according to outcome. Caught and bowled count as wickets.
-
-## Batting State Rules
-
-After every ball:
-
-- score increases by runs
-- balls faced increments by 1
-- caught or bowled increments wickets
-- wicket clears momentum and ON FIRE
-- odd runs rotate strike
-- a wicket brings in batsman index 2 as striker
-- consecutive scoring shots increase combo
-- dot balls and wickets reset combo
-
-The BLoC rolls the next field and delivery immediately after a delivery is resolved.
-
-## Screens And UI
-
-### 1. Super Over Lobby
-
-The lobby is a vertically scrolling cyber-styled screen with a maximum content width of 420px.
-
-Primary UI:
-
-- top `ReactHeaderBar` with player level badge
-- **PITCH READY** status strip
-- animated cricket emblem
-- title `SUPER OVER`
-- format line `6 BALLS / 2 WICKETS / 3 BATSMEN`
-- career chip showing debutant, career runs, or chase wins
-- record panel with high score, chase wins, chase losses, total sixes, and best streak
-- **START CHASE** CTA
-- **Deck Builder** secondary action
-- **Match History** secondary action filtered to `mode == 'super_over'`
-
-Animation and feedback:
-
-- `CyberBackground(animated: true)` gives ambient motion
-- content enters through staggered `CyberSlideUpFadeIn`
-- cricket emblem spins and pulses with lime glow
-- action cards use dealt-card entrance animation
-- start tap plays the match-start sound
-
-Working behavior:
-
-- **START CHASE** is muted when the Super Over deck is incomplete
-- helper text shows deck readiness and average OVR when available
-- deck builder can return directly into `_startGame()`
-- stats are loaded from `SecureGameStorage.loadSuperOverStats()`
-
-### 2. Deck Builder Handoff
-
-When the user taps **Deck Builder**, `SuperOverHub` replaces the lobby with `CricketDeckBuilderScreen`.
-
-Working behavior:
-
-- **Back** returns to Super Over lobby
-- **Play Super Over** closes deck editing and starts the chase
-- the live game always reads the latest `GameBloc.state.deckBatsmen`
-
-### 3. Live Ready Phase
-
-The Flame game renders the strike world beneath Flutter overlays. The ready phase is the pre-ball decision state.
-
-Top HUD:
-
-- close button
-- score plate with score/wickets and balls faced
-- chase plate with target and live need/off-balls readout
-- six-ball timeline
-
-Bottom action bar:
-
-- incoming delivery chip
-- striker plate with portrait, name, rating, momentum meter, and ON FIRE styling
-- three hit-zone buttons: OFF, V, LEG
-- field intel under each zone
-
-Contextual warnings:
-
-- target reveal appears on the first ball
-- **LAST MAN** warning appears after one wicket
-- **LAST BALL** warning appears before ball 6
-
-Animation and feedback:
-
-- score plate flashes lime/gold for runs and red for wickets
-- ball timeline uses elastic pop for completed deliveries
-- target reveal scales in with `bannerSlam` sound and haptics
-- gap labels pulse
-- hit-zone tap compresses the button, plays commit sound, and triggers haptics
-
-Working behavior:
-
-- tapping a sector records `selectedSector`
-- phase changes to `delivery`
-- strike world begins bowler run-up and ball animation
-
-### 4. Live Delivery Phase
-
-During delivery, hit-zone buttons are replaced by the shot meter and **SHOOT** CTA.
-
-UI:
-
-- **TIME YOUR SHOT** incoming strip pulses
-- shot meter shows early, good, perfect, and late regions
-- gold needle advances across the track
-- perfect band glows lime
-
-Flame animation:
-
-- bowler runs up from deeper pitch position
-- bowler arm windmills through release
-- ball travels toward the stumps
-- ball color matches delivery type
-- ball emits delivery-specific trail particles
-- batsman idles with breathing motion
-- ON FIRE batsman emits amber particles
-
-Working behavior:
-
-- pressing **SHOOT** stops the meter
-- strike world calculates timing error against the perfect time
-- batsman swings toward OFF, V, or LEG
-- timing feedback text appears: PERFECT, GREAT, GOOD, EARLY/LATE, or MISS
-- camera shakes lightly on contact
-- game switches to ground world for outcome animation
-
-### 5. Ground Outcome Beat
-
-After the shot is resolved, the Flame camera moves to the top-down ground world.
-
-Ground visuals:
-
-- circular cricket ground with glowing boundary rope
-- 30-yard circle
-- pitch and creases
-- two batsmen
-- keeper, bowler, and fielders
-- fielders reposition each ball according to the rolled field sectors
-
-Outcome animations:
-
-- one/two/three: batsmen run between creases
-- four: ball travels to boundary, boundary rope pulses lime
-- six: ball arcs through scale animation, boundary flashes gold, confetti bursts
-- caught: nearest fielder moves to ball and jumps
-- bowled: stump fragments scatter
-- dot: subdued single-dot celebration
-
-Effects:
-
-- fielders near the ball chase toward it
-- non-boundary balls can be thrown back
-- ball trail particles follow motion
-- big outcomes spawn text such as `MAXIMUM!`, `BOUNDARY!`, `CAUGHT!`, or `BOWLED!`
-- camera shake intensity scales by outcome
-- sound/haptics land after the ball beat, not immediately on tap
-
-Working behavior:
-
-- after about 1.5s, BLoC records `SuperOverDeliveryResolved`
-- result phase updates score and timeline
-- after about 2s, if the over is not finished, phase returns to ready and camera switches back to strike world
-
-### 6. Effects Overlay
-
-`EffectsOverlay` sits between the Flame game and HUD.
-
-It provides:
-
-- colored full-screen flash on transition from delivery to result
-- amber ON FIRE vignette
-- combo counter when combo is at least 2
-
-Flash colors:
-
-- six: gold
-- four: lime
-- wicket: danger red
-- other: white
-
-The combo counter elastically pops on every combo increment and turns gold from 4x upward.
-
-### 7. Result Screen
-
-The result screen is a full-screen end-of-over cinematic.
-
-Content sequence:
-
-1. `// OVER COMPLETE` greeble header
-2. verdict slam: **CHASE WON** or **CHASE LOST**
-3. margin line: wickets/balls left, last-ball note, all-out note, or runs short
-4. score line with target and balls
-5. optional **NEW HIGH SCORE** flare
-6. ball-by-ball over summary
-7. stat chips for sixes, fours, and strike rate
-8. XP count-up panel
-9. **CHASE AGAIN** and **EXIT TO LOBBY**
-
-Animation and feedback:
-
-- banner slam plays at 180ms
-- match win/loss sound plays at 900ms
-- verdict uses elastic scale-in
-- summary balls appear staggered
-- XP count animates after the panel is visible
-- new high score pulses gold
-
-Working behavior:
-
-- **CHASE AGAIN** resets the BLoC, switches Flame back to strike world, refreshes stats, and returns to lobby
-- **EXIT TO LOBBY** calls the hub exit callback
-
-## Rewards And Progression
-
-Super Over awards XP once, when the over ends.
-
-XP formula:
+XP is dispatched once after a completed over:
 
 | Component | XP |
-|-----------|----|
+| --- | ---: |
 | Completion | +10 |
 | Runs | +1 per run |
 | Sixes | +4 per six |
 | Chase win | +15 |
+| Objective complete | +8 |
 
-Example: a 17-run winning chase with two sixes awards `10 + 17 + 8 + 15 = 50 XP`.
+The shared XP ledger labels the source **SUPER OVER** and records runs/wickets. No coin transaction is made.
 
-The screen dispatches `SuperOverFinished` to `GameBloc` with runs, wickets, chase result, and calculated XP.
+`SuperOverStats` persists separately in secure storage:
 
-## Persistence And History
+- chase high score and Score Attack high score;
+- chase wins, losses, current streak, and best streak;
+- total runs, sixes, perfect contacts, and best combo;
+- objectives completed;
+- mastery XP per batter; and
+- the most recently selected jersey.
 
-`SuperOverStats` persists:
+Each completed over grants every batter in the selected three-card unit the same mastery gain: `max(1, score + perfectContacts * 2 + (objectiveComplete ? 5 : 0))`. A mastery level is displayed as `1 + floor(masteryXP / 100)`.
 
-- high score
-- chase wins
-- chase losses
-- total sixes
-- total runs
-- current chase streak
-- best chase streak
+The lobby's **Match History** is the shared archive filtered to `mode == 'super_over'`; it keeps the latest 12 shared entries.
 
-Stats are saved through `SecureGameStorage` when the over ends.
+## Current Notes
 
-The lobby's Match History button reads shared match history entries filtered to `mode == 'super_over'`. XP is dispatched to the shared progression system through `GameBloc`.
-
-## Current Product Notes
-
-- The current user-facing mode is chase-only.
-- Score Attack exists in the domain model but is not exposed from the lobby.
-- The mode is XP-only; no coin payout is currently defined.
-- In-progress overs are not persisted if the user exits mid-over.
-- The BLoC persists Super Over lifetime stats independently of the shared match-history archive.
+- Both Chase and Score Attack are user-selectable from the lobby.
+- Score Attack has its own high score and does not alter the chase win streak.
+- Objectives are awarded in the progression event (+8 XP). The current result-card calculation displays completion/runs/sixes/chase-win XP but does not yet include that objective bonus, so it can understate the ledger award by 8 XP.
+- Statistics and history are written only once the over ends. Quitting mid-over discards it.
 
 ## Implementation Reference
 
 | Concern | Source |
-|---------|--------|
-| Domain enums, shot resolution, timing windows | [`lib/models/super_over.dart`](../../lib/models/super_over.dart) |
-| Persisted Super Over stats | [`lib/models/super_over_stats.dart`](../../lib/models/super_over_stats.dart) |
-| Super Over state fields | [`lib/blocs/super_over/super_over_state.dart`](../../lib/blocs/super_over/super_over_state.dart) |
-| Events and BLoC resolution/persistence | [`lib/blocs/super_over/super_over_bloc.dart`](../../lib/blocs/super_over/super_over_bloc.dart) |
-| Hub, routing, XP dispatch, Flame bridge | [`lib/screens/super_over/super_over_hub.dart`](../../lib/screens/super_over/super_over_hub.dart) |
-| Lobby UI | [`lib/screens/super_over/super_over_lobby_screen.dart`](../../lib/screens/super_over/super_over_lobby_screen.dart) |
-| Live HUD and shot meter | [`lib/screens/super_over/widgets/super_over_overlays.dart`](../../lib/screens/super_over/widgets/super_over_overlays.dart) |
-| Effects overlay | [`lib/screens/super_over/widgets/effects_overlay.dart`](../../lib/screens/super_over/widgets/effects_overlay.dart) |
-| Result overlay | [`lib/screens/super_over/widgets/super_over_result.dart`](../../lib/screens/super_over/widgets/super_over_result.dart) |
-| Flame game shell | [`lib/games/super_over/super_over_game.dart`](../../lib/games/super_over/super_over_game.dart) |
-| Strike-world delivery renderer | [`lib/games/super_over/strike_world.dart`](../../lib/games/super_over/strike_world.dart) |
-| Ground-world shot renderer | [`lib/games/super_over/ground_world.dart`](../../lib/games/super_over/ground_world.dart) |
-| XP dispatch handler | [`lib/blocs/game/game_bloc.dart`](../../lib/blocs/game/game_bloc.dart) |
+| --- | --- |
+| Enums, timing, field and base outcome resolution | [`lib/models/super_over.dart`](../../lib/models/super_over.dart) |
+| Delivery plans, objectives, archetype tuning | [`lib/games/super_over/super_over_engine.dart`](../../lib/games/super_over/super_over_engine.dart) |
+| Persistent stats | [`lib/models/super_over_stats.dart`](../../lib/models/super_over_stats.dart) |
+| State, scoring, objectives, and persistence | [`lib/blocs/super_over/super_over_bloc.dart`](../../lib/blocs/super_over/super_over_bloc.dart) |
+| Hub, pause handling, animation bridge, and XP dispatch | [`lib/screens/super_over/super_over_hub.dart`](../../lib/screens/super_over/super_over_hub.dart) |
+| Lobby, mode picker, batting unit, and jersey picker | [`lib/screens/super_over/super_over_lobby_screen.dart`](../../lib/screens/super_over/super_over_lobby_screen.dart) |
+| Live HUD and controls | [`lib/screens/super_over/widgets/super_over_overlays.dart`](../../lib/screens/super_over/widgets/super_over_overlays.dart) |
+| Result UI | [`lib/screens/super_over/widgets/super_over_result.dart`](../../lib/screens/super_over/widgets/super_over_result.dart) |
+| Flame game renderer | [`lib/games/super_over/super_over_game.dart`](../../lib/games/super_over/super_over_game.dart) |
+| Cricket character rig and jersey data | [`lib/games/super_over/cricket_rig.dart`](../../lib/games/super_over/cricket_rig.dart), [`lib/data/super_over_jerseys.dart`](../../lib/data/super_over_jerseys.dart) |
+| Shared XP/history settlement | [`lib/blocs/game/game_bloc.dart`](../../lib/blocs/game/game_bloc.dart) |
 
 Relevant tests:
 
+- [`test/super_over_engine_test.dart`](../../test/super_over_engine_test.dart)
 - [`test/super_over_bloc_test.dart`](../../test/super_over_bloc_test.dart)
 - [`test/super_over_resolution_test.dart`](../../test/super_over_resolution_test.dart)
 - [`test/super_over_lobby_screen_test.dart`](../../test/super_over_lobby_screen_test.dart)

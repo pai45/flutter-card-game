@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/sport_match.dart';
 import '../models/basketball.dart';
+import '../models/final_over.dart';
 import '../models/deck.dart';
 import '../models/football_bingo.dart';
 import '../models/football_chess.dart';
@@ -17,8 +18,10 @@ import '../models/progression.dart';
 import '../models/quiz_trivia.dart';
 import '../models/referral.dart';
 import '../models/streak.dart';
+import '../models/tennis.dart';
 import '../models/xp_ledger.dart';
 import '../models/guess_player.dart';
+import '../models/super_over.dart';
 import '../models/super_over_stats.dart';
 import '../data/rival_roster.dart' show randomPlayerTag;
 
@@ -143,14 +146,26 @@ class SecureGameStorage {
   static const _friendsKey = 'pd_friends_v1';
   static const _playerTagKey = 'pd_player_tag_v1';
   static const _referralEntriesKey = 'pd_referral_entries_v1';
-  String _quizProgressKey(Sport sport) => sport == Sport.football ? 'pd_quiz_progress_v1' : 'pd_quiz_progress_${sport.name}_v1';
+  String _quizProgressKey(Sport sport) => sport == Sport.football
+      ? 'pd_quiz_progress_v1'
+      : 'pd_quiz_progress_${sport.name}_v1';
   static const _footballBingoProgressKey = 'pd_football_bingo_progress_v1';
   static const _footballBingoArchiveKey = 'pd_football_bingo_archive_v1';
-  String _guessPlayerArchiveKey(Sport sport) => 'pd_guess_player_archive_${sport.name}_v1';
+  String _guessPlayerArchiveKey(Sport sport) =>
+      'pd_guess_player_archive_${sport.name}_v1';
   static const _footballChessStatsKey = 'pd_football_chess_stats_v1';
   static const _grandPrixStatsKey = 'pd_grand_prix_stats_v1';
+  // Keep the v1 key for one-time migration. All new writes use the versioned
+  // profile key so a failed/partial migration never destroys legacy progress.
   static const _superOverStatsKey = 'pd_super_over_stats_v1';
+  static const _superOverProfileKey = 'pd_super_over_profile_v2';
+  static const _superOverSettlementKey = 'pd_super_over_settlements_v1';
+  static const _superOverSnapshotKey = 'pd_super_over_snapshot_v1';
   static const _basketballStatsKey = 'pd_basketball_stats_v1';
+  static const _finalOverStatsKey = 'pd_final_over_stats_v1';
+  static const _tennisProfileKey = 'pd_tennis_profile_v1';
+  static const _tennisResumeKey = 'pd_tennis_resume_v1';
+  static const _tennisSettlementKey = 'pd_tennis_settlements_v1';
 
   final FlutterSecureStorage _storage;
 
@@ -386,9 +401,15 @@ class SecureGameStorage {
     }
   }
 
-  Future<void> saveGuessPlayerArchive(Sport sport, GuessPlayerArchive archive) async {
+  Future<void> saveGuessPlayerArchive(
+    Sport sport,
+    GuessPlayerArchive archive,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_guessPlayerArchiveKey(sport), jsonEncode(archive.toJson()));
+    await prefs.setString(
+      _guessPlayerArchiveKey(sport),
+      jsonEncode(archive.toJson()),
+    );
   }
 
   Future<FootballChessStats> loadFootballChessStats() async {
@@ -741,11 +762,29 @@ class SecureGameStorage {
   Future<SuperOverStats> loadSuperOverStats() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_superOverStatsKey);
-      if (raw == null || raw.isEmpty) return const SuperOverStats();
-      return SuperOverStats.fromJson(
-        Map<String, dynamic>.from(jsonDecode(raw) as Map),
+      final profileRaw = prefs.getString(_superOverProfileKey);
+      if (profileRaw != null && profileRaw.isNotEmpty) {
+        try {
+          return SuperOverStats.fromJson(
+            Map<String, dynamic>.from(jsonDecode(profileRaw) as Map),
+          );
+        } catch (_) {
+          // A damaged v2 value must not hide an intact legacy profile.
+        }
+      }
+
+      final legacyRaw = prefs.getString(_superOverStatsKey);
+      if (legacyRaw == null || legacyRaw.isEmpty) {
+        return const SuperOverStats();
+      }
+      final migrated = SuperOverStats.fromJson(
+        Map<String, dynamic>.from(jsonDecode(legacyRaw) as Map),
       );
+      await prefs.setString(
+        _superOverProfileKey,
+        jsonEncode(migrated.toJson()),
+      );
+      return migrated;
     } catch (_) {
       return const SuperOverStats();
     }
@@ -753,7 +792,74 @@ class SecureGameStorage {
 
   Future<void> saveSuperOverStats(SuperOverStats stats) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_superOverStatsKey, jsonEncode(stats.toJson()));
+    await prefs.setString(_superOverProfileKey, jsonEncode(stats.toJson()));
+  }
+
+  Future<SuperOverProfile> loadSuperOverProfile() => loadSuperOverStats();
+
+  Future<void> saveSuperOverProfile(SuperOverProfile profile) =>
+      saveSuperOverStats(profile);
+
+  Future<Set<String>> loadSuperOverSettlementIds() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return (prefs.getStringList(_superOverSettlementKey) ?? const <String>[])
+          .where((id) => id.isNotEmpty)
+          .toSet();
+    } catch (_) {
+      return <String>{};
+    }
+  }
+
+  Future<void> saveSuperOverSettlementIds(Set<String> ids) async {
+    final prefs = await SharedPreferences.getInstance();
+    final ordered = ids.where((id) => id.isNotEmpty).toList(growable: false);
+    final bounded = ordered.length <= superOverSettlementIdLimit
+        ? ordered
+        : ordered.sublist(ordered.length - superOverSettlementIdLimit);
+    await prefs.setStringList(_superOverSettlementKey, bounded);
+  }
+
+  Future<SuperOverMatchSnapshot?> loadSuperOverMatchSnapshot() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_superOverSnapshotKey);
+      if (raw == null || raw.isEmpty) return null;
+      final snapshot = SuperOverMatchSnapshot.fromJson(
+        Map<String, dynamic>.from(jsonDecode(raw) as Map),
+      );
+      if (!_isRestorableSuperOverSnapshot(snapshot)) {
+        await prefs.remove(_superOverSnapshotKey);
+        return null;
+      }
+      // Never resume halfway through contact/outcome. Re-run the unresolved
+      // committed ball from its field reveal without consuming a legal ball.
+      return snapshot.copyWith(playPhase: SuperOverPlayPhase.fieldReveal);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveSuperOverMatchSnapshot(
+    SuperOverMatchSnapshot snapshot,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!_isRestorableSuperOverSnapshot(snapshot)) {
+      await prefs.remove(_superOverSnapshotKey);
+      return;
+    }
+    final safeBoundary = snapshot.copyWith(
+      playPhase: SuperOverPlayPhase.fieldReveal,
+    );
+    await prefs.setString(
+      _superOverSnapshotKey,
+      jsonEncode(safeBoundary.toJson()),
+    );
+  }
+
+  Future<void> clearSuperOverMatchSnapshot() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_superOverSnapshotKey);
   }
 
   Future<BasketballStats> loadBasketballStats() async {
@@ -773,4 +879,93 @@ class SecureGameStorage {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_basketballStatsKey, jsonEncode(stats.toJson()));
   }
+
+  Future<FinalOverStats> loadFinalOverStats() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_finalOverStatsKey);
+      if (raw == null || raw.isEmpty) return const FinalOverStats();
+      return FinalOverStats.fromJson(
+        Map<String, dynamic>.from(jsonDecode(raw) as Map),
+      );
+    } catch (_) {
+      return const FinalOverStats();
+    }
+  }
+
+  Future<void> saveFinalOverStats(FinalOverStats stats) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_finalOverStatsKey, jsonEncode(stats.toJson()));
+  }
+
+  Future<TennisProfile> loadTennisProfile() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_tennisProfileKey);
+      if (raw == null || raw.isEmpty) return const TennisProfile();
+      return TennisProfile.fromJson(
+        Map<String, dynamic>.from(jsonDecode(raw) as Map),
+      );
+    } catch (_) {
+      return const TennisProfile();
+    }
+  }
+
+  Future<void> saveTennisProfile(TennisProfile profile) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_tennisProfileKey, jsonEncode(profile.toJson()));
+  }
+
+  Future<TennisMatchSnapshot?> loadTennisMatchSnapshot() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_tennisResumeKey);
+      if (raw == null || raw.isEmpty) return null;
+      return TennisMatchSnapshot.fromJson(
+        Map<String, dynamic>.from(jsonDecode(raw) as Map),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveTennisMatchSnapshot(TennisMatchSnapshot snapshot) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_tennisResumeKey, jsonEncode(snapshot.toJson()));
+  }
+
+  Future<void> clearTennisMatchSnapshot() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_tennisResumeKey);
+  }
+
+  Future<Set<String>> loadTennisRewardSettlementIds() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return (prefs.getStringList(_tennisSettlementKey) ?? const <String>[])
+          .toSet();
+    } catch (_) {
+      return <String>{};
+    }
+  }
+
+  Future<void> saveTennisRewardSettlementIds(Set<String> ids) async {
+    final prefs = await SharedPreferences.getInstance();
+    final bounded = ids.toList(growable: false);
+    await prefs.setStringList(
+      _tennisSettlementKey,
+      bounded.length <= 256 ? bounded : bounded.sublist(bounded.length - 256),
+    );
+  }
+}
+
+bool _isRestorableSuperOverSnapshot(SuperOverMatchSnapshot snapshot) {
+  if (snapshot.config.matchId.isEmpty ||
+      snapshot.ballRecords.length >= 6 ||
+      snapshot.wickets >= 2) {
+    return false;
+  }
+  return snapshot.config.mode != SuperOverMode.chase ||
+      snapshot.target == null ||
+      snapshot.score <= snapshot.target!;
 }

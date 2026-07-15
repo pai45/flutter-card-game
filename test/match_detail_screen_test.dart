@@ -476,19 +476,19 @@ class _TestPredictionCubit extends PredictionCubit {
 
 class _PredictionRepo implements PredictionRepository {
   @override
-  Future<List<SportMatch>> enrichFixtures(List<SportMatch> fixtures) async {
-    return fixtures;
-  }
-  @override
   Future<List<League>> leagues() async => const [_league];
 
   @override
-  Future<List<SportMatch>> fixtures({DateTime? day}) async => [_match];
+  Future<List<SportMatch>> fixtures({DateTime? day, Sport? sport}) async => [_match];
 
   @override
-  Future<List<PredictionQuiz>> quizzesFor(String matchId) async => [
-    ?await quizFor(matchId, kDefaultPredictionQuizId),
-  ];
+  Future<List<SportMatch>> enrichFixturesForSport(List<SportMatch> fixtures, Sport sport) async => fixtures;
+
+  @override
+  Future<List<PredictionQuiz>> quizzesFor(String matchId) async {
+    final quiz = await quizFor(matchId, kDefaultPredictionQuizId);
+    return quiz != null ? [quiz] : [];
+  }
 
   @override
   Future<PredictionQuiz?> quizFor(String matchId, String quizId) async =>

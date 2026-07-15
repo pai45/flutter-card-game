@@ -16,14 +16,15 @@ import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_underline_tabs.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
+import '../../widgets/match_summary_header.dart';
 import '../../widgets/staggered_card_entrance.dart';
 import '../../widgets/stat_oz_top_bar.dart';
 import '../../widgets/streak_widgets.dart';
 import '../profile/widgets/profile_card.dart';
-import '../shop/shop_screen.dart' show CoinIcon;
 import 'streak_calendar_screen.dart';
 import 'widgets/history_hud.dart';
 import 'widgets/match_prediction_card.dart';
+import 'match_detail_screen.dart' show MatchTabsView;
 
 /// A compact sports prediction hub with StatOz styling.
 class PredictionHomeScreen extends StatefulWidget {
@@ -49,6 +50,8 @@ class PredictionHomeScreen extends StatefulWidget {
     required this.onOpenCricketGuessPlayer,
     required this.onOpenGrandPrix,
     required this.onOpenBasketball,
+    this.onOpenFinalOver,
+    this.onOpenTennisRally,
     this.onAddCoins,
     super.key,
   });
@@ -74,6 +77,8 @@ class PredictionHomeScreen extends StatefulWidget {
   final VoidCallback onOpenCricketGuessPlayer;
   final VoidCallback onOpenGrandPrix;
   final VoidCallback onOpenBasketball;
+  final VoidCallback? onOpenFinalOver;
+  final VoidCallback? onOpenTennisRally;
   final VoidCallback? onAddCoins;
 
   @override
@@ -157,12 +162,14 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
         onOpenFootballBingo: widget.onOpenFootballBingo,
         onOpenFootballChess: widget.onOpenFootballChess,
         onOpenSuperOver: widget.onOpenSuperOver,
+        onOpenFinalOver: widget.onOpenFinalOver ?? () {},
         onOpenCricketDeck: widget.onOpenCricketDeck,
         onOpenGuessPlayer: widget.onOpenGuessPlayer,
         onOpenBasketballGuessPlayer: widget.onOpenBasketballGuessPlayer,
         onOpenCricketGuessPlayer: widget.onOpenCricketGuessPlayer,
         onOpenGrandPrix: widget.onOpenGrandPrix,
         onOpenBasketball: widget.onOpenBasketball,
+        onOpenTennisRally: widget.onOpenTennisRally ?? () {},
         animateIntro: _shouldAnimateIntro(1),
         onIntroPlayed: () => _markIntroPlayed(1),
       ),
@@ -180,11 +187,16 @@ const _predictionSports = <Sport>[
   Sport.football,
   Sport.cricket,
   Sport.basketball,
+  Sport.tennis,
   Sport.f1,
 ];
 
 final _predictionSportLabels = _predictionSports
     .map((sport) => sportModuleFor(sport).label.toUpperCase())
+    .toList(growable: false);
+
+final _predictionSportIcons = _predictionSports
+    .map((sport) => sportModuleFor(sport).icon)
     .toList(growable: false);
 
 class _PredictionSportsTabs extends StatelessWidget {
@@ -202,6 +214,7 @@ class _PredictionSportsTabs extends StatelessWidget {
   Widget build(BuildContext context) {
     return CyberUnderlineTabs(
       labels: _predictionSportLabels,
+      icons: _predictionSportIcons,
       activeIndex: activeIndex,
       accent: sportModuleFor(selectedSport).accent,
       onTap: onTap,
@@ -278,15 +291,24 @@ class _MatchesTabState extends State<_MatchesTab> {
   double _daySwipeDelta = 0;
   int _dayGeneration = 0;
   bool _slideFromLeft = true;
-  bool _showNewGamesCallout = true;
+  bool _showNewGamesCallout = false;
+  bool _hasAutoSelectedDay = false;
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<PredictionCubit>().loadSport(widget.selectedSport);
+  }
 
   @override
   void didUpdateWidget(covariant _MatchesTab oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.selectedSport != widget.selectedSport) {
+      context.read<PredictionCubit>().loadSport(widget.selectedSport);
       _selectedDay = _startOfDay(DateTime.now());
       _slideFromLeft = true;
       _dayGeneration++;
+      _hasAutoSelectedDay = false;
     }
   }
 
@@ -374,12 +396,56 @@ class _MatchesTabState extends State<_MatchesTab> {
         Expanded(
           child: BlocBuilder<PredictionCubit, PredictionState>(
             builder: (context, state) {
-              if (state.loading) return const _PickSkeleton();
+              if (state.loading ||
+                  state.loadingSports.contains(widget.selectedSport)) {
+                return const Center(
+                  child: CircularProgressIndicator(color: Cyber.cyan),
+                );
+              }
+              final validLeagueIds = state.leagues.map((l) => l.id).toSet();
               final sportFixtures = state.fixtures
-                  .where((fixture) => fixture.sport == widget.selectedSport)
+                  .where(
+                    (fixture) =>
+                        fixture.sport == widget.selectedSport &&
+                        validLeagueIds.contains(fixture.leagueId),
+                  )
                   .toList();
+              // F1 is weekend-based: one race weekend = one "match". Surface the
+              // whole PREDICT/PICKS/TOPS/STATS hub inline (no tap-through) and
+              // step the navigator weekend-to-weekend instead of day-to-day.
+              if (widget.selectedSport == Sport.f1) {
+                return _F1WeekendHub(fixtures: sportFixtures);
+              }
               final days = _calendarDays(sportFixtures);
               final today = _startOfDay(DateTime.now());
+
+              if (!_hasAutoSelectedDay && sportFixtures.isNotEmpty) {
+                _hasAutoSelectedDay = true;
+                final todayHasMatches = sportFixtures.any(
+                  (f) => _sameDay(f.kickoff, today),
+                );
+                if (!todayHasMatches) {
+                  DateTime? closestDay;
+                  int minDiff = 999999;
+                  for (final f in sportFixtures) {
+                    final d = _startOfDay(f.kickoff);
+                    final diff = (d.difference(today).inDays).abs();
+                    if (diff < minDiff) {
+                      minDiff = diff;
+                      closestDay = d;
+                    } else if (diff == minDiff && closestDay != null) {
+                      if (d.isBefore(closestDay)) {
+                        closestDay = d;
+                      }
+                    }
+                  }
+                  if (closestDay != null) {
+                    _selectedDay = closestDay;
+                    _slideFromLeft = closestDay.isBefore(today);
+                  }
+                }
+              }
+
               if (!days.any((day) => _sameDay(day, _selectedDay)) &&
                   !_sameDay(_selectedDay, today)) {
                 _selectedDay = days.any((day) => _sameDay(day, today))
@@ -398,10 +464,10 @@ class _MatchesTabState extends State<_MatchesTab> {
                     .where((fixture) => _sameDay(fixture.kickoff, day))
                     .toList();
                 if (dayFixtures.isNotEmpty) {
-                  groupedByDay[day] = _groupByLeague(
-                    state.leagues,
-                    dayFixtures,
-                  );
+                  final grouped = _groupByLeague(state.leagues, dayFixtures);
+                  if (grouped.isNotEmpty) {
+                    groupedByDay[day] = grouped;
+                  }
                 }
               }
               final animateIntro =
@@ -930,7 +996,7 @@ class _MatchDayNavigator extends StatelessWidget {
   });
 
   final String dayLabel;
-  final int matchCount;
+  final int? matchCount;
   final bool canGoPrevious;
   final bool canGoNext;
   final VoidCallback onPrevious;
@@ -965,11 +1031,13 @@ class _MatchDayNavigator extends StatelessWidget {
                     style: Cyber.display(15, letterSpacing: 1.5),
                   ),
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  '($matchCount)',
-                  style: Cyber.label(13, color: Cyber.muted),
-                ),
+                if (matchCount != null) ...[
+                  const SizedBox(width: 6),
+                  Text(
+                    '($matchCount)',
+                    style: Cyber.label(13, color: Cyber.muted),
+                  ),
+                ],
                 const SizedBox(width: 8),
                 IconButton(
                   key: const ValueKey('match-day-calendar-button'),
@@ -1101,7 +1169,7 @@ List<DateTime> _calendarDays(List<SportMatch> fixtures) {
   final today = _startOfDay(DateTime.now());
   final daysByEpoch = <int, DateTime>{};
 
-  for (var offset = -1; offset <= 4; offset++) {
+  for (var offset = -7; offset <= 4; offset++) {
     final day = today.add(Duration(days: offset));
     daysByEpoch[day.millisecondsSinceEpoch] = day;
   }
@@ -1149,989 +1217,174 @@ String _monthDayLabel(DateTime day) {
   return '${months[day.month - 1]} ${day.day}';
 }
 
-// ignore: unused_element
-class _SportsTabs extends StatelessWidget {
-  const _SportsTabs();
+String _f1WeekendLabel(List<SportMatch> f1Fixtures, DateTime day) {
+  if (f1Fixtures.isEmpty) return _dayHeading(day);
+  final match = f1Fixtures.first;
+  final start = match.kickoff;
+  final end = match.f1WeekendEndDate ?? start;
 
-  static const tabs = ['ALL', 'IPL', 'EPL', 'NBA', 'LALIGA', 'SERIE A'];
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 28,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: tabs.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 22),
-        itemBuilder: (context, index) {
-          final active = index == 0;
-          return Align(
-            alignment: Alignment.center,
-            child: Text(
-              tabs[index],
-              style: Cyber.label(
-                10,
-                color: active
-                    ? Colors.white
-                    : Cyber.muted.withValues(alpha: 0.8),
-                letterSpacing: 0.9,
-              ),
-            ),
-          );
-        },
-      ),
-    );
+  String monthName(int m) {
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return months[m - 1];
   }
+
+  final startStr = '${start.day} ${monthName(start.month)}';
+  final endStr = '${end.day} ${monthName(end.month)}';
+  if (startStr == endStr) return startStr.toUpperCase();
+  return '$startStr - $endStr'.toUpperCase();
 }
 
-// ignore: unused_element
-class _MarketFilterTabs extends StatelessWidget {
-  const _MarketFilterTabs();
+/// F1 weekend hub — the inline match-home surface for Formula 1.
+///
+/// Each F1 fixture is one race weekend, so instead of a day-grouped card list
+/// this shows a single weekend at a time: a weekend navigator (steps GP-to-GP,
+/// always resolving to the current/next race), the GP scorecard header, and the
+/// shared [MatchTabsView] (PREDICT / PICKS / TOPS / STATS) inline — no
+/// tap-through required.
+class _F1WeekendHub extends StatefulWidget {
+  const _F1WeekendHub({required this.fixtures});
 
-  static const tabs = ['ALL', 'MATCHES', 'EVENT', 'FUTURES'];
+  final List<SportMatch> fixtures;
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 31,
-      child: Row(
-        children: [
-          for (var i = 0; i < tabs.length; i++) ...[
-            Expanded(
-              child: _MarketFilterChip(label: tabs[i], active: i == 0),
-            ),
-            if (i != tabs.length - 1) const SizedBox(width: 8),
-          ],
-        ],
-      ),
-    );
+  State<_F1WeekendHub> createState() => _F1WeekendHubState();
+}
+
+class _F1WeekendHubState extends State<_F1WeekendHub> {
+  late int _index = _resolveIndex(_sorted(widget.fixtures));
+
+  @override
+  void didUpdateWidget(covariant _F1WeekendHub oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_ids(oldWidget.fixtures) != _ids(widget.fixtures)) {
+      _index = _resolveIndex(_sorted(widget.fixtures));
+    }
   }
-}
 
-class _MarketFilterChip extends StatelessWidget {
-  const _MarketFilterChip({required this.label, required this.active});
+  List<SportMatch> _sorted(List<SportMatch> fixtures) =>
+      [...fixtures]..sort((a, b) => a.kickoff.compareTo(b.kickoff));
 
-  final String label;
-  final bool active;
+  String _ids(List<SportMatch> fixtures) =>
+      _sorted(fixtures).map((m) => m.id).join(',');
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: active
-            ? const Color(0xff12304a)
-            : const Color(0xff111827).withValues(alpha: 0.86),
-        border: Border.all(
-          color: active
-              ? Cyber.cyan.withValues(alpha: 0.7)
-              : const Color(0xff273654),
-        ),
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          label,
-          style: Cyber.label(
-            9,
-            color: active ? Cyber.cyan : Cyber.muted.withValues(alpha: 0.72),
-            letterSpacing: 0.7,
-          ),
-        ),
-      ),
-    );
+  /// Prefer the weekend containing today, else the next upcoming, else the last.
+  int _resolveIndex(List<SportMatch> sorted) {
+    if (sorted.isEmpty) return 0;
+    final today = _startOfDay(DateTime.now());
+    for (var i = 0; i < sorted.length; i++) {
+      final start = _startOfDay(sorted[i].kickoff);
+      final end = _startOfDay(sorted[i].f1WeekendEndDate ?? sorted[i].kickoff);
+      if (!today.isBefore(start) && !today.isAfter(end)) return i;
+    }
+    for (var i = 0; i < sorted.length; i++) {
+      if (!_startOfDay(sorted[i].kickoff).isBefore(today)) return i;
+    }
+    return sorted.length - 1;
   }
-}
 
-typedef _PickHandler =
-    void Function({
-      required String key,
-      required String question,
-      required String selectedPick,
-      required int price,
-      required Color color,
-    });
-
-// ignore: unused_element
-class _MatchMarketCard extends StatelessWidget {
-  const _MatchMarketCard({required this.selectedKey, required this.onPick});
-
-  final String? selectedKey;
-  final _PickHandler onPick;
-
-  static const question = 'Punjab vs Bangalore';
-
-  @override
-  Widget build(BuildContext context) {
-    return _MarketCardShell(
-      height: 146,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    children: const [
-                      _ScoreRow(
-                        badge: 'PJK',
-                        badgeColor: Color(0xffffefe8),
-                        textColor: Color(0xfff04e3e),
-                        team: 'Punjab',
-                        score: '221 - 4 (20vr)',
-                      ),
-                      SizedBox(height: 8),
-                      _ScoreRow(
-                        badge: 'RCB',
-                        badgeColor: Color(0xff6b5600),
-                        textColor: Color(0xffffd000),
-                        team: 'Bangalore',
-                        score: '221 - 4',
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      'IPL',
-                      style: Cyber.label(
-                        10,
-                        color: Cyber.muted,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                    const SizedBox(height: 9),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 5,
-                          height: 5,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Color(0xffff2f35),
-                          ),
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          'LIVE',
-                          style: Cyber.label(
-                            8,
-                            color: const Color(0xffff2f35),
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const Spacer(),
-          Row(
-            children: [
-              Expanded(
-                child: _MarketPriceButton(
-                  keyName: 'match-pjk',
-                  label: 'PJK',
-                  price: 32,
-                  color: const Color(0xffdf101d),
-                  selected: selectedKey == 'match-pjk',
-                  onTap: () => onPick(
-                    key: 'match-pjk',
-                    question: question,
-                    selectedPick: 'PJK',
-                    price: 32,
-                    color: const Color(0xffdf101d),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: _MarketPriceButton(
-                  keyName: 'match-rcb',
-                  label: 'RCB',
-                  price: 68,
-                  color: const Color(0xff6d5700),
-                  selected: selectedKey == 'match-rcb',
-                  onTap: () => onPick(
-                    key: 'match-rcb',
-                    question: question,
-                    selectedPick: 'RCB',
-                    price: 68,
-                    color: const Color(0xff6d5700),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const _MarketMetaRow(
-            values: ['Volume 2.4K Oz', '24h +8', 'Ends after match'],
-          ),
-        ],
-      ),
-    );
+  void _move(int delta, int count) {
+    final next = _index + delta;
+    if (next < 0 || next >= count) return;
+    playSound(SoundEffect.uiTap);
+    setState(() => _index = next);
   }
-}
 
-class _ScoreRow extends StatelessWidget {
-  const _ScoreRow({
-    required this.badge,
-    required this.badgeColor,
-    required this.textColor,
-    required this.team,
-    required this.score,
-  });
-
-  final String badge;
-  final Color badgeColor;
-  final Color textColor;
-  final String team;
-  final String score;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _TinyBadge(label: badge, color: badgeColor, textColor: textColor),
-        const SizedBox(width: 8),
-        Text(team, style: Cyber.body(12, weight: FontWeight.w800, height: 1)),
-        const SizedBox(width: 7),
-        Text(
-          score,
-          style: Cyber.label(
-            10,
-            color: Colors.white,
-            letterSpacing: 0.3,
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ignore: unused_element
-class _BinaryMarketCard extends StatelessWidget {
-  const _BinaryMarketCard({
-    required this.badge,
-    required this.badgeColor,
-    required this.question,
-    required this.league,
-    required this.marketType,
-    required this.volume,
-    required this.closes,
-    required this.selectedKey,
-    required this.onPick,
-  });
-
-  final String badge;
-  final Color badgeColor;
-  final String question;
-  final String league;
-  final String marketType;
-  final String volume;
-  final String closes;
-  final String? selectedKey;
-  final _PickHandler onPick;
-
-  @override
-  Widget build(BuildContext context) {
-    final yesKey = '$question-yes';
-    final noKey = '$question-no';
-    return _MarketCardShell(
-      height: 118,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 9, 12, 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _TinyBadge(label: badge, color: badgeColor),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    question,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: Cyber.body(
-                      13,
-                      weight: FontWeight.w700,
-                      height: 1.15,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  league,
-                  style: Cyber.label(
-                    10,
-                    color: Cyber.muted,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Spacer(),
-          Row(
-            children: [
-              Expanded(
-                child: _MarketPriceButton(
-                  keyName: yesKey,
-                  label: 'YES',
-                  price: 32,
-                  color: const Color(0xff36b86a),
-                  selected: selectedKey == yesKey,
-                  onTap: () => onPick(
-                    key: yesKey,
-                    question: question,
-                    selectedPick: 'YES',
-                    price: 32,
-                    color: const Color(0xff36b86a),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: _MarketPriceButton(
-                  keyName: noKey,
-                  label: 'NO',
-                  price: 32,
-                  color: const Color(0xffff332e),
-                  selected: selectedKey == noKey,
-                  onTap: () => onPick(
-                    key: noKey,
-                    question: question,
-                    selectedPick: 'NO',
-                    price: 32,
-                    color: const Color(0xffff332e),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          _MarketMetaRow(values: [marketType, volume, closes]),
-        ],
-      ),
-    );
-  }
-}
-
-// ignore: unused_element
-class _FuturesMarketCard extends StatelessWidget {
-  const _FuturesMarketCard({required this.selectedKey, required this.onPick});
-
-  final String? selectedKey;
-  final _PickHandler onPick;
-
-  static const question = 'Who will win IPL 2026?';
-
-  @override
-  Widget build(BuildContext context) {
-    return _MarketCardShell(
-      height: 174,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const _TinyBadge(label: 'IPL', color: Color(0xff2f55b8)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    question,
-                    style: Cyber.body(
-                      13,
-                      weight: FontWeight.w700,
-                      height: 1.12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _FuturesOptionRow(
-              keyName: 'futures-mi',
-              badge: 'MI',
-              badgeColor: const Color(0xff1345a6),
-              team: 'Mumbai',
-              price: 60,
-              strength: 0.64,
-              selected: selectedKey == 'futures-mi',
-              onTap: () => onPick(
-                key: 'futures-mi',
-                question: question,
-                selectedPick: 'Mumbai',
-                price: 60,
-                color: const Color(0xff334fd5),
-              ),
-            ),
-            const SizedBox(height: 10),
-            _FuturesOptionRow(
-              keyName: 'futures-csk',
-              badge: 'CSK',
-              badgeColor: const Color(0xffffd400),
-              textColor: const Color(0xff17367f),
-              team: 'Chennai',
-              price: 60,
-              strength: 0.50,
-              selected: selectedKey == 'futures-csk',
-              onTap: () => onPick(
-                key: 'futures-csk',
-                question: question,
-                selectedPick: 'Chennai',
-                price: 60,
-                color: const Color(0xffffd400),
-              ),
-            ),
-            const Spacer(),
-            Row(
-              children: [
-                Text(
-                  'Futures market',
-                  style: Cyber.body(
-                    10,
-                    color: Cyber.muted.withValues(alpha: 0.7),
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  '12 more options',
-                  style: Cyber.body(
-                    10,
-                    color: Cyber.muted.withValues(alpha: 0.7),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FuturesOptionRow extends StatelessWidget {
-  const _FuturesOptionRow({
-    required this.keyName,
-    required this.badge,
-    required this.badgeColor,
-    required this.team,
-    required this.price,
-    required this.strength,
-    required this.selected,
-    required this.onTap,
-    this.textColor = Colors.white,
-  });
-
-  final String keyName;
-  final String badge;
-  final Color badgeColor;
-  final Color textColor;
-  final String team;
-  final int price;
-  final double strength;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        height: 35,
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: selected ? Cyber.cyan : Colors.transparent,
-            width: selected ? 1 : 0,
-          ),
-          boxShadow: selected
-              ? Cyber.glow(Cyber.cyan, alpha: 0.24, blur: 12, spread: -4)
-              : null,
-        ),
-        child: Row(
-          children: [
-            _TinyBadge(label: badge, color: badgeColor, textColor: textColor),
-            const SizedBox(width: 8),
-            SizedBox(
-              width: 68,
-              child: Text(
-                team,
-                overflow: TextOverflow.ellipsis,
-                style: Cyber.body(11, weight: FontWeight.w800, height: 1),
-              ),
-            ),
-            Expanded(
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: FractionallySizedBox(
-                  widthFactor: strength.clamp(0.0, 1.0),
-                  child: Container(
-                    height: 2,
-                    color: badgeColor == const Color(0xffffd400)
-                        ? const Color(0xffffd400)
-                        : const Color(0xff315df8),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            _PricePill(price: price),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MarketCardShell extends StatelessWidget {
-  const _MarketCardShell({required this.height, required this.child});
-
-  final double height;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipPath(
-      clipper: const HudChamferClipper(bigCut: 15, smallCut: 2),
-      child: Container(
-        height: height,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xff121b30), Color(0xff0e1628)],
-          ),
-          border: Border.all(color: const Color(0xff243654)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x66000000),
-              blurRadius: 18,
-              offset: Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                height: 2,
-                color: Cyber.cyan.withValues(alpha: 0.35),
-              ),
-            ),
-            Positioned.fill(child: child),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MarketPriceButton extends StatefulWidget {
-  const _MarketPriceButton({
-    required this.keyName,
-    required this.label,
-    required this.price,
-    required this.color,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String keyName;
-  final String label;
-  final int price;
-  final Color color;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  State<_MarketPriceButton> createState() => _MarketPriceButtonState();
-}
-
-class _MarketPriceButtonState extends State<_MarketPriceButton> {
-  bool _pressed = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapCancel: () => setState(() => _pressed = false),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTap: widget.onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 110),
-        height: 44,
-        transform: Matrix4.translationValues(0, _pressed ? 1 : 0, 0),
-        decoration: BoxDecoration(
-          color: _pressed
-              ? Color.lerp(widget.color, Colors.black, 0.18)
-              : widget.color,
-          border: Border.all(
-            color: widget.selected ? Cyber.cyan : Colors.transparent,
-            width: widget.selected ? 1.5 : 0,
-          ),
-          boxShadow: widget.selected
-              ? Cyber.glow(Cyber.cyan, alpha: 0.4, blur: 14, spread: -3)
-              : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(widget.label, style: Cyber.label(11, letterSpacing: 0.8)),
-            const SizedBox(width: 5),
-            CoinIcon(size: 15),
-            const SizedBox(width: 3),
-            Text(
-              '${widget.price}',
-              style: Cyber.label(
-                13,
-                letterSpacing: 0.2,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-            const SizedBox(width: 7),
-            Text(
-              'BUY PICK',
-              style: Cyber.label(
-                6,
-                color: Colors.white.withValues(alpha: 0.58),
-                letterSpacing: 0.6,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MarketMetaRow extends StatelessWidget {
-  const _MarketMetaRow({required this.values});
-
-  final List<String> values;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 23,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.12),
-        border: Border(
-          top: BorderSide(
-            color: const Color(0xff243654).withValues(alpha: 0.7),
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          for (var i = 0; i < values.length; i++) ...[
-            Flexible(
-              fit: i == values.length - 1 ? FlexFit.tight : FlexFit.loose,
-              child: Text(
-                values[i],
-                overflow: TextOverflow.ellipsis,
-                textAlign: i == values.length - 1
-                    ? TextAlign.right
-                    : TextAlign.left,
-                style: Cyber.body(
-                  9,
-                  color: Cyber.muted.withValues(alpha: 0.72),
-                  weight: FontWeight.w700,
-                  height: 1,
-                ),
-              ),
-            ),
-            if (i != values.length - 1)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 7),
-                child: Container(
-                  width: 2,
-                  height: 2,
-                  color: Cyber.cyan.withValues(alpha: 0.5),
-                ),
-              ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _TinyBadge extends StatelessWidget {
-  const _TinyBadge({
-    required this.label,
-    required this.color,
-    this.textColor = Colors.white,
-  });
-
-  final String label;
-  final Color color;
-  final Color textColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 28,
-      height: 22,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: color,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(
-          label,
-          style: Cyber.label(9, color: textColor, letterSpacing: 0.2),
-        ),
-      ),
-    );
-  }
-}
-
-class _PricePill extends StatelessWidget {
-  const _PricePill({required this.price});
-
-  final int price;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 66,
-      height: 32,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: const Color(0xff334fd5),
-        border: Border.all(color: Cyber.border),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CoinIcon(size: 15),
-          const SizedBox(width: 4),
-          Text(
-            '$price',
-            style: Cyber.label(
-              12,
-              letterSpacing: 0.2,
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PickConfirmSheet extends StatefulWidget {
-  const _PickConfirmSheet({
-    required this.question,
-    required this.selectedPick,
-    required this.price,
-    required this.color,
-  });
-
-  final String question;
-  final String selectedPick;
-  final int price;
-  final Color color;
-
-  @override
-  State<_PickConfirmSheet> createState() => _PickConfirmSheetState();
-}
-
-class _PickConfirmSheetState extends State<_PickConfirmSheet> {
-  late int _amount = widget.price;
-
-  @override
-  Widget build(BuildContext context) {
-    final balance = context.select<GameBloc, int>((b) => b.state.coins);
-    final safeBalance = balance == 0 ? 100 : balance;
-    final bottom = MediaQuery.viewInsetsOf(context).bottom;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(12, 0, 12, bottom + 12),
-      child: ClipPath(
-        clipper: const HudChamferClipper(bigCut: 18, smallCut: 4),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xff152139), Color(0xff0b101c)],
-            ),
-            border: Border.all(color: Cyber.border),
-          ),
+  Future<void> _openWeekendPicker(List<SportMatch> sorted) async {
+    playSound(SoundEffect.uiTap);
+    final picked = await showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: Cyber.bg2,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const HudLine(),
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'CONFIRM PICK',
-                      style: Cyber.label(
-                        12,
-                        color: Cyber.cyan,
-                        letterSpacing: 1.8,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      widget.question,
-                      style: Cyber.body(
-                        16,
-                        weight: FontWeight.w700,
-                        height: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        _SheetSummaryTile(
-                          label: 'PICK',
-                          child: Text(
-                            widget.selectedPick,
-                            style: Cyber.label(13, color: widget.color),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        _SheetSummaryTile(
-                          label: 'PRICE',
-                          child: _InlineCoinValue(value: widget.price),
-                        ),
-                        const SizedBox(width: 8),
-                        _SheetSummaryTile(
-                          label: 'BALANCE',
-                          child: _InlineCoinValue(value: safeBalance),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    _AmountSelector(
-                      value: _amount,
-                      step: widget.price,
-                      max: safeBalance,
-                      onChanged: (value) => setState(() => _amount = value),
-                    ),
-                  ],
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+                child: Text(
+                  'SELECT RACE WEEKEND',
+                  style: Cyber.label(
+                    11,
+                    color: Cyber.muted,
+                    letterSpacing: 1.6,
+                  ),
                 ),
               ),
-              SizedBox(
-                height: 50,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _SheetAction(
-                        label: 'CANCEL',
-                        color: Cyber.muted,
-                        onTap: () => Navigator.of(context).pop(),
-                      ),
+              for (var i = 0; i < sorted.length; i++)
+                ListTile(
+                  onTap: () => Navigator.of(context).pop(i),
+                  selected: i == _index,
+                  selectedTileColor: Cyber.cyan.withValues(alpha: 0.08),
+                  leading: Icon(
+                    Icons.sports_motorsports,
+                    color: i == _index ? Cyber.cyan : Cyber.muted,
+                    size: 20,
+                  ),
+                  title: Text(
+                    sorted[i].home.name.toUpperCase(),
+                    style: Cyber.display(
+                      14,
+                      color: i == _index ? Cyber.cyan : Colors.white,
+                      letterSpacing: 0.5,
                     ),
-                    Container(width: 1, color: const Color(0xff243654)),
-                    Expanded(
-                      child: _SheetAction(
-                        label: 'CONFIRM PICK',
-                        color: Cyber.cyan,
-                        onTap: () {
-                          Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              backgroundColor: const Color(0xff121b30),
-                              content: Text(
-                                'Pick confirmed with $_amount Oz Coins',
-                                style: Cyber.body(12),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+                  ),
+                  subtitle: Text(
+                    _f1WeekendLabel([sorted[i]], sorted[i].kickoff),
+                    style: Cyber.body(12, color: Cyber.muted),
+                  ),
                 ),
-              ),
+              const SizedBox(height: 8),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
+    if (picked == null || !mounted) return;
+    setState(() => _index = picked);
   }
-}
-
-class _SheetSummaryTile extends StatelessWidget {
-  const _SheetSummaryTile({required this.label, required this.child});
-
-  final String label;
-  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        height: 55,
-        padding: const EdgeInsets.all(9),
-        decoration: BoxDecoration(
-          color: Cyber.bg.withValues(alpha: 0.62),
-          border: Border.all(color: const Color(0xff243654)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              style: Cyber.label(
-                7,
-                color: Cyber.muted.withValues(alpha: 0.72),
-                letterSpacing: 1,
-              ),
-            ),
-            child,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _InlineCoinValue extends StatelessWidget {
-  const _InlineCoinValue({required this.value});
-
-  final int value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    final sorted = _sorted(widget.fixtures);
+    if (sorted.isEmpty) {
+      return _EmptyMatchDay(day: _startOfDay(DateTime.now()));
+    }
+    final index = _index.clamp(0, sorted.length - 1);
+    final match = sorted[index];
+    return Column(
       children: [
-        CoinIcon(size: 15),
-        const SizedBox(width: 4),
-        Text(
-          _formatInt(value),
-          style: Cyber.label(
-            12,
-            fontFeatures: const [FontFeature.tabularFigures()],
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+          child: _MatchDayNavigator(
+            dayLabel: _f1WeekendLabel([match], match.kickoff),
+            matchCount: null,
+            canGoPrevious: index > 0,
+            canGoNext: index < sorted.length - 1,
+            onPrevious: () => _move(-1, sorted.length),
+            onNext: () => _move(1, sorted.length),
+            onCalendar: () => _openWeekendPicker(sorted),
+          ),
+        ),
+        Expanded(
+          child: MatchTabsView(
+            key: ValueKey('f1-weekend-${match.id}'),
+            match: match,
+            headerBuilder: (m) => MatchSummaryHeader(match: m),
           ),
         ),
       ],
@@ -2139,169 +1392,9 @@ class _InlineCoinValue extends StatelessWidget {
   }
 }
 
-class _AmountSelector extends StatelessWidget {
-  const _AmountSelector({
-    required this.value,
-    required this.step,
-    required this.max,
-    required this.onChanged,
-  });
-
-  final int value;
-  final int step;
-  final int max;
-  final ValueChanged<int> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final canDecrease = value > step;
-    final canIncrease = value + step <= max;
-    return Container(
-      height: 48,
-      decoration: BoxDecoration(
-        color: Cyber.bg.withValues(alpha: 0.62),
-        border: Border.all(color: Cyber.border),
-      ),
-      child: Row(
-        children: [
-          _AmountButton(
-            icon: Icons.remove,
-            enabled: canDecrease,
-            onTap: () => onChanged(value - step),
-          ),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'AMOUNT',
-                  style: Cyber.label(
-                    7,
-                    color: Cyber.muted.withValues(alpha: 0.72),
-                    letterSpacing: 1,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                _InlineCoinValue(value: value),
-              ],
-            ),
-          ),
-          _AmountButton(
-            icon: Icons.add,
-            enabled: canIncrease,
-            onTap: () => onChanged(value + step),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AmountButton extends StatelessWidget {
-  const _AmountButton({
-    required this.icon,
-    required this.enabled,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final bool enabled;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: enabled ? onTap : null,
-      child: SizedBox(
-        width: 48,
-        child: Icon(
-          icon,
-          color: enabled ? Cyber.cyan : Cyber.muted.withValues(alpha: 0.35),
-          size: 18,
-        ),
-      ),
-    );
-  }
-}
-
-class _SheetAction extends StatelessWidget {
-  const _SheetAction({
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        splashColor: color.withValues(alpha: 0.12),
-        highlightColor: color.withValues(alpha: 0.08),
-        child: Center(
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: Cyber.label(10, color: color, letterSpacing: 1.6),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PickSkeleton extends StatelessWidget {
-  const _PickSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(12, 16, 12, 28),
-      itemCount: 4,
-      separatorBuilder: (_, _) => const SizedBox(height: 16),
-      itemBuilder: (_, index) => ClipPath(
-        clipper: const HudChamferClipper(bigCut: 15, smallCut: 2),
-        child: Container(
-          height: index == 3 ? 174 : 118,
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppTheme.skeletonFill,
-            border: Border.all(color: AppTheme.borderMuted),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 120,
-                height: 10,
-                color: Cyber.cyan.withValues(alpha: 0.18),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                width: double.infinity,
-                height: 12,
-                color: Cyber.muted.withValues(alpha: 0.12),
-              ),
-              const Spacer(),
-              Container(
-                width: double.infinity,
-                height: 35,
-                color: Cyber.cyan.withValues(alpha: 0.1),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
+/// GP scorecard header for the F1 weekend hub — status line, Grand Prix name,
+/// and the cyan→red accent divider, framed by HUD corner brackets.
+// Sport-specific games hub content.
 class _GamesTab extends StatefulWidget {
   const _GamesTab({
     required this.selectedSport,
@@ -2313,12 +1406,14 @@ class _GamesTab extends StatefulWidget {
     required this.onOpenFootballBingo,
     required this.onOpenFootballChess,
     required this.onOpenSuperOver,
+    required this.onOpenFinalOver,
     required this.onOpenCricketDeck,
     required this.onOpenGuessPlayer,
     required this.onOpenBasketballGuessPlayer,
     required this.onOpenCricketGuessPlayer,
     required this.onOpenGrandPrix,
     required this.onOpenBasketball,
+    required this.onOpenTennisRally,
     required this.animateIntro,
     required this.onIntroPlayed,
   });
@@ -2332,12 +1427,14 @@ class _GamesTab extends StatefulWidget {
   final VoidCallback onOpenFootballBingo;
   final VoidCallback onOpenFootballChess;
   final VoidCallback onOpenSuperOver;
+  final VoidCallback onOpenFinalOver;
   final VoidCallback onOpenCricketDeck;
   final VoidCallback onOpenGuessPlayer;
   final VoidCallback onOpenBasketballGuessPlayer;
   final VoidCallback onOpenCricketGuessPlayer;
   final VoidCallback onOpenGrandPrix;
   final VoidCallback onOpenBasketball;
+  final VoidCallback onOpenTennisRally;
   final bool animateIntro;
   final VoidCallback? onIntroPlayed;
 
@@ -2400,7 +1497,35 @@ class _GamesTabState extends State<_GamesTab> {
       Sport.f1 => _buildF1Games(animateIntro),
       Sport.basketball => _buildBasketballGames(animateIntro),
       Sport.cricket => _buildCricketGames(animateIntro),
+      Sport.tennis => _buildTennisGames(animateIntro),
     };
+  }
+
+  Widget _buildTennisGames(bool animateIntro) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      children: [
+        StaggeredCardEntrance(
+          index: 0,
+          animate: animateIntro,
+          child: _TennisRallyGameTile(onTap: widget.onOpenTennisRally),
+        ),
+        const SizedBox(height: 12),
+        StaggeredCardEntrance(
+          index: 1,
+          animate: animateIntro,
+          child: _GameTile(
+            title: 'TENNIS TRIVIA',
+            subtitle: 'TEST YOUR GRAND SLAM KNOWLEDGE',
+            icon: Icons.quiz,
+            accent: Cyber.cyan,
+            featured: true,
+            showTrailingIcon: false,
+            onTap: () => widget.onOpenQuiz(Sport.tennis),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildBasketballGames(bool animateIntro) {
@@ -2410,13 +1535,14 @@ class _GamesTabState extends State<_GamesTab> {
         StaggeredCardEntrance(
           index: 0,
           animate: animateIntro,
-          child: _GameTile(
+          child: _ArcadeHeroGameTile(
+            key: const ValueKey('hoop-duel-hero-card'),
             title: 'HOOP DUEL',
             subtitle: 'STREET 1-ON-1 ARCADE HOOPS',
-            icon: Icons.sports_basketball,
+            badgeLabel: 'FEATURED // STREET',
+            ctaLabel: 'HIT THE COURT',
             accent: Cyber.gold,
-            featured: true,
-            showTrailingIcon: false,
+            background: const CustomPaint(painter: _HoopDuelMiniCourtPainter()),
             onTap: widget.onOpenBasketball,
           ),
         ),
@@ -2459,14 +1585,17 @@ class _GamesTabState extends State<_GamesTab> {
         StaggeredCardEntrance(
           index: 0,
           animate: animateIntro,
-          child: _GameTile(
-            title: 'SUPER OVER',
-            subtitle: 'ARCADE CRICKET BATTING',
-            icon: Icons.sports_cricket,
-            accent: Cyber.lime,
-            featured: true,
-            showTrailingIcon: false,
-            onTap: widget.onOpenSuperOver,
+          child: _ArcadeHeroGameTile(
+            key: const ValueKey('final-over-hero-card'),
+            title: 'FINAL OVER',
+            subtitle: 'SIX-BALL CRICKET CHASE',
+            badgeLabel: 'FEATURED // SIX BALLS',
+            ctaLabel: 'START THE CHASE',
+            accent: Cyber.cyan,
+            background: const CustomPaint(
+              painter: _FinalOverMiniPitchPainter(),
+            ),
+            onTap: widget.onOpenFinalOver,
           ),
         ),
         const SizedBox(height: 12),
@@ -2511,14 +1640,17 @@ class _GamesTabState extends State<_GamesTab> {
         StaggeredCardEntrance(
           index: 0,
           animate: animateIntro,
-          child: _GameTile(
+          child: _ArcadeHeroGameTile(
+            key: const ValueKey('pitch-duel-hero-card'),
             title: 'PITCH DUEL',
             subtitle: 'TACTICAL CARD GAME',
-            icon: Icons.sports_soccer,
+            badgeLabel: 'FEATURED // TACTICAL',
+            ctaLabel: 'ENTER THE DUEL',
             accent: Cyber.cyan,
             streak: streaks.pitch,
-            featured: true,
-            showTrailingIcon: false,
+            background: const CustomPaint(
+              painter: _PitchDuelMiniTacticsPainter(),
+            ),
             onTap: widget.onOpenGame,
           ),
         ),
@@ -2526,14 +1658,18 @@ class _GamesTabState extends State<_GamesTab> {
         StaggeredCardEntrance(
           index: 1,
           animate: animateIntro,
-          child: _GameTile(
+          child: _ArcadeHeroGameTile(
+            key: const ValueKey('penalty-shootout-hero-card'),
             title: 'PENALTY SHOOTOUT',
+            titleLines: const ['PENALTY', 'SHOOTOUT'],
             subtitle: 'SUDDEN-DEATH SPOT KICKS',
-            icon: Icons.gps_fixed,
+            badgeLabel: 'FEATURED // SUDDEN DEATH',
+            ctaLabel: 'TAKE THE SHOT',
             accent: Cyber.lime,
             streak: streaks.penalty,
-            featured: true,
-            showTrailingIcon: false,
+            background: const CustomPaint(
+              painter: _PenaltyShootoutMiniGoalPainter(),
+            ),
             onTap: widget.onOpenShootout,
           ),
         ),
@@ -2541,13 +1677,17 @@ class _GamesTabState extends State<_GamesTab> {
         StaggeredCardEntrance(
           index: 2,
           animate: animateIntro,
-          child: _GameTile(
+          child: _ArcadeHeroGameTile(
+            key: const ValueKey('football-chess-hero-card'),
             title: '5V5 FOOTBALL CHESS',
+            titleLines: const ['5V5 FOOTBALL', 'CHESS'],
             subtitle: 'TACTICAL SQUAD DUEL',
-            icon: Icons.grid_on,
+            badgeLabel: 'FEATURED // 5V5',
+            ctaLabel: 'MAKE YOUR MOVE',
             accent: Cyber.gold,
-            featured: true,
-            showTrailingIcon: false,
+            background: const CustomPaint(
+              painter: _FootballChessMiniBoardPainter(),
+            ),
             onTap: widget.onOpenFootballChess,
           ),
         ),
@@ -2604,13 +1744,16 @@ class _GamesTabState extends State<_GamesTab> {
         StaggeredCardEntrance(
           index: 0,
           animate: animateIntro,
-          child: _GameTile(
+          child: _ArcadeHeroGameTile(
+            key: const ValueKey('grand-prix-dash-hero-card'),
             title: 'GRAND PRIX DASH',
             subtitle: 'ONE-LAP ARCADE RACER',
-            icon: Icons.sports_motorsports,
+            badgeLabel: 'FEATURED // RACE',
+            ctaLabel: 'RACE NOW',
             accent: Cyber.f1Red,
-            featured: true,
-            showTrailingIcon: false,
+            background: const CustomPaint(
+              painter: _GrandPrixMiniCircuitPainter(),
+            ),
             onTap: widget.onOpenGrandPrix,
           ),
         ),
@@ -2635,6 +1778,955 @@ class _GamesTabState extends State<_GamesTab> {
 
 /// HUD game card — flat dark fill, [HudChamferClipper] silhouette and a painted
 /// stroke that follows every cut edge (no gradient wash).
+// ignore: unused_element
+class _SuperOverGameTile extends StatelessWidget {
+  const _SuperOverGameTile({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Play Super Over Final Stand',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: CustomPaint(
+          painter: _HudChamferCardPainter(
+            bigCut: 14,
+            smallCut: 4,
+            fillColor: Cyber.panel,
+            borderColor: Cyber.cyan.withValues(alpha: .86),
+            borderGlow: true,
+          ),
+          child: ClipPath(
+            clipper: const HudChamferClipper(bigCut: 14, smallCut: 4),
+            child: SizedBox(
+              height: 184,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  const CustomPaint(painter: _SuperOverMiniArenaPainter()),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(17, 15, 17, 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 4,
+                          ),
+                          color: Cyber.cyan.withValues(alpha: .14),
+                          child: Text(
+                            'FINAL STAND // NIGHT ARENA',
+                            style: Cyber.display(7, color: Cyber.cyan),
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          'SUPER OVER',
+                          style: Cyber.display(
+                            21,
+                            color: Colors.white,
+                            letterSpacing: 1.1,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'CHASE OR SCORE ATTACK // 6 BALLS',
+                          style: Cyber.display(8, color: Cyber.gold),
+                        ),
+                        const SizedBox(height: 11),
+                        Row(
+                          children: [
+                            for (var i = 1; i <= 3; i++) ...[
+                              Container(
+                                width: 23,
+                                height: 23,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: Cyber.bg.withValues(alpha: .82),
+                                  border: Border.all(color: Cyber.cyan),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Text(
+                                  '$i',
+                                  style: Cyber.display(8, color: Cyber.cyan),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                            ],
+                            const SizedBox(width: 5),
+                            Text(
+                              'PLAY NOW',
+                              style: Cyber.display(9, color: Cyber.cyan),
+                            ),
+                            const SizedBox(width: 3),
+                            const Icon(
+                              Icons.arrow_forward,
+                              size: 14,
+                              color: Cyber.cyan,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SuperOverMiniArenaPainter extends CustomPainter {
+  const _SuperOverMiniArenaPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xff06111f), Color(0xff10362f)],
+        ).createShader(Offset.zero & size),
+    );
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(size.width * .77, size.height * .42),
+        width: size.width * .72,
+        height: size.height * .36,
+      ),
+      Paint()..color = Cyber.violet.withValues(alpha: .16),
+    );
+    final pitch = Path()
+      ..moveTo(size.width * .69, size.height * .24)
+      ..lineTo(size.width * .82, size.height * .24)
+      ..lineTo(size.width * .96, size.height * 1.04)
+      ..lineTo(size.width * .56, size.height * 1.04)
+      ..close();
+    canvas.drawPath(pitch, Paint()..color = const Color(0xff826b31));
+    canvas.drawPath(
+      pitch,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.3
+        ..color = Cyber.gold.withValues(alpha: .66),
+    );
+    canvas.drawLine(
+      Offset(size.width * .61, size.height * .82),
+      Offset(size.width * .91, size.height * .82),
+      Paint()
+        ..color = Colors.white.withValues(alpha: .7)
+        ..strokeWidth = 1,
+    );
+    final striker = Offset(size.width * .76, size.height * .76);
+    canvas.drawCircle(
+      striker.translate(0, -18),
+      5,
+      Paint()..color = const Color(0xffd4a373),
+    );
+    canvas.drawLine(
+      striker.translate(0, -13),
+      striker,
+      Paint()
+        ..color = Cyber.cyan
+        ..strokeWidth = 7
+        ..strokeCap = StrokeCap.round,
+    );
+    canvas.drawLine(
+      striker.translate(4, -11),
+      striker.translate(19, -31),
+      Paint()
+        ..color = Cyber.gold
+        ..strokeWidth = 4
+        ..strokeCap = StrokeCap.round,
+    );
+    final ball = Offset(size.width * .76, size.height * .50);
+    canvas.drawCircle(ball, 4, Paint()..color = Cyber.danger);
+    canvas.drawCircle(
+      ball,
+      11,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..color = Cyber.cyan.withValues(alpha: .42),
+    );
+    for (final x in [.62, .76, .90]) {
+      canvas.drawCircle(
+        Offset(size.width * x, size.height * .36),
+        2.5,
+        Paint()..color = Cyber.cyan,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _TennisRallyGameTile extends StatelessWidget {
+  const _TennisRallyGameTile({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return _ArcadeHeroGameTile(
+      key: const ValueKey('tennis-rally-hero-card'),
+      title: 'TENNIS RALLY',
+      subtitle: '2D ARCADE SETS // 5 MODES',
+      badgeLabel: 'FEATURED // NEW',
+      ctaLabel: 'STEP ON COURT',
+      accent: Cyber.lime,
+      background: const CustomPaint(painter: _TennisMiniCourtPainter()),
+      onTap: onTap,
+    );
+  }
+}
+
+class _ArcadeHeroGameTile extends StatelessWidget {
+  const _ArcadeHeroGameTile({
+    required this.title,
+    required this.subtitle,
+    required this.badgeLabel,
+    required this.ctaLabel,
+    required this.accent,
+    required this.background,
+    required this.onTap,
+    this.titleLines,
+    this.streak = 0,
+    super.key,
+  });
+
+  final String title;
+  final List<String>? titleLines;
+  final String subtitle;
+  final String badgeLabel;
+  final String ctaLabel;
+  final Color accent;
+  final Widget background;
+  final VoidCallback onTap;
+  final int streak;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: '$title, $ctaLabel',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: CustomPaint(
+          painter: _HudChamferCardPainter(
+            bigCut: 14,
+            smallCut: 4,
+            fillColor: Cyber.panel,
+            borderColor: accent.withValues(alpha: 0.86),
+            borderGlow: true,
+          ),
+          child: ClipPath(
+            clipper: const HudChamferClipper(bigCut: 14, smallCut: 4),
+            child: SizedBox(
+              height: 174,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  background,
+                  Padding(
+                    padding: const EdgeInsets.all(17),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 4,
+                          ),
+                          color: accent.withValues(alpha: 0.16),
+                          child: Text(
+                            badgeLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Cyber.display(7, color: accent),
+                          ),
+                        ),
+                        const Spacer(),
+                        _HeroTitle(
+                          title: title,
+                          titleLines: titleLines,
+                          streak: streak,
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Cyber.display(8, color: accent),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HeroTitle extends StatelessWidget {
+  const _HeroTitle({
+    required this.title,
+    required this.titleLines,
+    required this.streak,
+  });
+
+  final String title;
+  final List<String>? titleLines;
+  final int streak;
+
+  TextStyle get _style => Cyber.display(
+    20,
+    color: Colors.white,
+    letterSpacing: 1,
+  ).copyWith(height: 1.02);
+
+  @override
+  Widget build(BuildContext context) {
+    final lines = titleLines;
+    if (lines == null || lines.isEmpty) {
+      return Row(
+        children: [
+          Flexible(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: _style,
+            ),
+          ),
+          if (streak > 0) ...[
+            const SizedBox(width: StreakTheme.space8),
+            StreakBadge(value: streak),
+          ],
+        ],
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final titleWidth = (constraints.maxWidth * 0.56).clamp(168.0, 214.0);
+
+        return ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: titleWidth.toDouble()),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < lines.length; i++)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        lines[i],
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: _style,
+                      ),
+                    ),
+                    if (streak > 0 && i == lines.length - 1) ...[
+                      const SizedBox(width: StreakTheme.space8),
+                      StreakBadge(value: streak),
+                    ],
+                  ],
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _GrandPrixMiniCircuitPainter extends CustomPainter {
+  const _GrandPrixMiniCircuitPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [Color(0x00101825), Color(0xd126111d)],
+          stops: [0.36, 1],
+        ).createShader(Offset.zero & size),
+    );
+
+    final track = Path()
+      ..moveTo(size.width * 0.70, -12)
+      ..cubicTo(
+        size.width * 1.01,
+        size.height * 0.10,
+        size.width * 0.68,
+        size.height * 0.43,
+        size.width * 0.84,
+        size.height * 0.61,
+      )
+      ..cubicTo(
+        size.width * 0.98,
+        size.height * 0.78,
+        size.width * 0.72,
+        size.height * 0.87,
+        size.width * 0.96,
+        size.height * 1.08,
+      );
+    canvas.drawPath(
+      track,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 42
+        ..strokeCap = StrokeCap.round
+        ..color = const Color(0xff303646),
+    );
+    canvas.drawPath(
+      track,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 46
+        ..strokeCap = StrokeCap.round
+        ..color = Cyber.f1Red.withValues(alpha: 0.22),
+    );
+    canvas.drawPath(
+      track,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.3
+        ..color = Colors.white.withValues(alpha: 0.34),
+    );
+
+    final carCenter = Offset(size.width * 0.82, size.height * 0.60);
+    final carBody = RRect.fromRectAndRadius(
+      Rect.fromCenter(center: carCenter, width: 48, height: 18),
+      const Radius.circular(5),
+    );
+    canvas.save();
+    canvas.translate(carCenter.dx, carCenter.dy);
+    canvas.rotate(-0.22);
+    canvas.translate(-carCenter.dx, -carCenter.dy);
+    canvas.drawRRect(carBody, Paint()..color = Cyber.f1Red);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromCenter(
+          center: carCenter.translate(2, 0),
+          width: 17,
+          height: 12,
+        ),
+        const Radius.circular(5),
+      ),
+      Paint()..color = const Color(0xff111827),
+    );
+    for (final dy in [-10.0, 10.0]) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: carCenter.translate(-12, dy),
+            width: 13,
+            height: 5,
+          ),
+          const Radius.circular(2),
+        ),
+        Paint()..color = const Color(0xff080b12),
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: carCenter.translate(14, dy),
+            width: 13,
+            height: 5,
+          ),
+          const Radius.circular(2),
+        ),
+        Paint()..color = const Color(0xff080b12),
+      );
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _HoopDuelMiniCourtPainter extends CustomPainter {
+  const _HoopDuelMiniCourtPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [Color(0x00101825), Color(0xd12c260d)],
+          stops: [0.36, 1],
+        ).createShader(Offset.zero & size),
+    );
+
+    final court = Path()
+      ..moveTo(size.width * 0.64, size.height * 0.16)
+      ..lineTo(size.width, size.height * 0.16)
+      ..lineTo(size.width, size.height)
+      ..lineTo(size.width * 0.52, size.height)
+      ..close();
+    canvas.drawPath(court, Paint()..color = const Color(0xff665116));
+    final line = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..color = Cyber.gold.withValues(alpha: 0.58);
+    canvas.drawPath(court, line);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(size.width * 0.79, size.height * 0.73),
+        width: 108,
+        height: 76,
+      ),
+      line,
+    );
+    canvas.drawLine(
+      Offset(size.width * 0.82, size.height * 0.16),
+      Offset(size.width * 0.82, size.height * 0.52),
+      line,
+    );
+    canvas.drawLine(
+      Offset(size.width * 0.74, size.height * 0.28),
+      Offset(size.width * 0.91, size.height * 0.28),
+      Paint()
+        ..strokeWidth = 3
+        ..color = Colors.white.withValues(alpha: 0.55),
+    );
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(size.width * 0.82, size.height * 0.39),
+        width: 36,
+        height: 10,
+      ),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..color = Cyber.gold,
+    );
+
+    final ball = Offset(size.width * 0.91, size.height * 0.60);
+    canvas.drawCircle(ball, 17, Paint()..color = Cyber.gold);
+    final seam = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4
+      ..color = const Color(0xff17120a).withValues(alpha: 0.78);
+    canvas.drawLine(ball.translate(-17, 0), ball.translate(17, 0), seam);
+    canvas.drawLine(ball.translate(0, -17), ball.translate(0, 17), seam);
+    canvas.drawOval(Rect.fromCenter(center: ball, width: 16, height: 34), seam);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _FinalOverMiniPitchPainter extends CustomPainter {
+  const _FinalOverMiniPitchPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [Color(0x00101825), Color(0xd10b2b39)],
+          stops: [0.36, 1],
+        ).createShader(Offset.zero & size),
+    );
+
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(size.width * 0.79, size.height * 0.55),
+        width: size.width * 0.58,
+        height: size.height * 0.68,
+      ),
+      Paint()..color = const Color(0xff153e36),
+    );
+    final pitch = Path()
+      ..moveTo(size.width * 0.74, size.height * 0.20)
+      ..lineTo(size.width * 0.84, size.height * 0.20)
+      ..lineTo(size.width * 0.96, size.height * 1.02)
+      ..lineTo(size.width * 0.57, size.height * 1.02)
+      ..close();
+    canvas.drawPath(pitch, Paint()..color = const Color(0xff8b7545));
+    canvas.drawPath(
+      pitch,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2
+        ..color = Cyber.cyan.withValues(alpha: 0.48),
+    );
+    final crease = Paint()
+      ..strokeWidth = 1.3
+      ..color = Colors.white.withValues(alpha: 0.66);
+    canvas.drawLine(
+      Offset(size.width * 0.61, size.height * 0.83),
+      Offset(size.width * 0.93, size.height * 0.83),
+      crease,
+    );
+
+    final wicketX = size.width * 0.80;
+    for (final dx in [-6.0, 0.0, 6.0]) {
+      canvas.drawLine(
+        Offset(wicketX + dx, size.height * 0.28),
+        Offset(wicketX + dx, size.height * 0.48),
+        Paint()
+          ..strokeWidth = 2.2
+          ..strokeCap = StrokeCap.round
+          ..color = Cyber.cyan,
+      );
+    }
+    canvas.drawLine(
+      Offset(wicketX - 7, size.height * 0.30),
+      Offset(wicketX + 7, size.height * 0.30),
+      Paint()
+        ..strokeWidth = 2
+        ..color = Cyber.cyan,
+    );
+
+    final ball = Offset(size.width * 0.88, size.height * 0.65);
+    canvas.drawLine(
+      Offset(size.width * 0.72, size.height * 0.52),
+      ball,
+      Paint()
+        ..strokeWidth = 2
+        ..color = Cyber.cyan.withValues(alpha: 0.28),
+    );
+    canvas.drawCircle(ball, 7, Paint()..color = const Color(0xfff3f6f8));
+    canvas.drawArc(
+      Rect.fromCircle(center: ball, radius: 5),
+      -1.2,
+      2.4,
+      false,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..color = Cyber.danger,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _PitchDuelMiniTacticsPainter extends CustomPainter {
+  const _PitchDuelMiniTacticsPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [Color(0x00101825), Color(0xd10a2a34)],
+          stops: [0.36, 1],
+        ).createShader(Offset.zero & size),
+    );
+
+    final field = Rect.fromLTRB(
+      size.width * 0.57,
+      size.height * 0.10,
+      size.width * 1.03,
+      size.height * 1.02,
+    );
+    canvas.drawRect(field, Paint()..color = const Color(0xff124b43));
+    final line = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..color = Colors.white.withValues(alpha: 0.42);
+    canvas.drawRect(field, line);
+    canvas.drawLine(
+      Offset(field.left, field.center.dy),
+      Offset(field.right, field.center.dy),
+      line,
+    );
+    canvas.drawCircle(field.center, 27, line);
+    canvas.drawRect(
+      Rect.fromCenter(
+        center: Offset(field.center.dx, field.top),
+        width: 82,
+        height: 52,
+      ),
+      line,
+    );
+
+    final nodes = [
+      Offset(size.width * 0.69, size.height * 0.77),
+      Offset(size.width * 0.86, size.height * 0.58),
+      Offset(size.width * 0.75, size.height * 0.34),
+      Offset(size.width * 0.94, size.height * 0.23),
+    ];
+    final route = Paint()
+      ..strokeWidth = 1.5
+      ..color = Cyber.cyan.withValues(alpha: 0.65);
+    for (var i = 0; i < nodes.length - 1; i++) {
+      canvas.drawLine(nodes[i], nodes[i + 1], route);
+    }
+    for (var i = 0; i < nodes.length; i++) {
+      canvas.drawCircle(
+        nodes[i],
+        7,
+        Paint()..color = i == nodes.length - 1 ? Cyber.gold : Cyber.cyan,
+      );
+      canvas.drawCircle(
+        nodes[i],
+        11,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1
+          ..color = Cyber.cyan.withValues(alpha: 0.34),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _PenaltyShootoutMiniGoalPainter extends CustomPainter {
+  const _PenaltyShootoutMiniGoalPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [Color(0x00101825), Color(0xd10c3021)],
+          stops: [0.36, 1],
+        ).createShader(Offset.zero & size),
+    );
+
+    final goal = Rect.fromLTRB(
+      size.width * 0.62,
+      size.height * 0.18,
+      size.width * 0.98,
+      size.height * 0.62,
+    );
+    final frame = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.6
+      ..color = Colors.white.withValues(alpha: 0.60);
+    canvas.drawRect(goal, frame);
+    final net = Paint()
+      ..strokeWidth = 0.8
+      ..color = Cyber.lime.withValues(alpha: 0.28);
+    for (var i = 1; i < 5; i++) {
+      final x = goal.left + goal.width * i / 5;
+      canvas.drawLine(Offset(x, goal.top), Offset(x, goal.bottom), net);
+    }
+    for (var i = 1; i < 4; i++) {
+      final y = goal.top + goal.height * i / 4;
+      canvas.drawLine(Offset(goal.left, y), Offset(goal.right, y), net);
+    }
+
+    final target = Offset(size.width * 0.86, size.height * 0.34);
+    for (final radius in [24.0, 15.0, 6.0]) {
+      canvas.drawCircle(
+        target,
+        radius,
+        Paint()
+          ..style = radius == 6 ? PaintingStyle.fill : PaintingStyle.stroke
+          ..strokeWidth = 1.4
+          ..color = Cyber.lime.withValues(alpha: radius == 6 ? 0.92 : 0.55),
+      );
+    }
+
+    final ball = Offset(size.width * 0.74, size.height * 0.79);
+    canvas.drawCircle(ball, 15, Paint()..color = const Color(0xffedf4f6));
+    canvas.drawCircle(ball, 5, Paint()..color = const Color(0xff18202a));
+    for (final offset in const [
+      Offset(-9, -7),
+      Offset(9, -7),
+      Offset(-8, 8),
+      Offset(8, 8),
+    ]) {
+      canvas.drawCircle(
+        ball + offset,
+        3.2,
+        Paint()..color = const Color(0xff18202a),
+      );
+    }
+    canvas.drawLine(
+      ball.translate(10, -12),
+      target.translate(-8, 8),
+      Paint()
+        ..strokeWidth = 2
+        ..color = Cyber.lime.withValues(alpha: 0.34),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _FootballChessMiniBoardPainter extends CustomPainter {
+  const _FootballChessMiniBoardPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+          colors: [Color(0x00101825), Color(0xd12f290b)],
+          stops: [0.36, 1],
+        ).createShader(Offset.zero & size),
+    );
+
+    final board = Rect.fromLTRB(
+      size.width * 0.59,
+      size.height * 0.10,
+      size.width * 1.01,
+      size.height * 1.02,
+    );
+    const cells = 5;
+    final cellWidth = board.width / cells;
+    final cellHeight = board.height / cells;
+    for (var row = 0; row < cells; row++) {
+      for (var column = 0; column < cells; column++) {
+        final rect = Rect.fromLTWH(
+          board.left + column * cellWidth,
+          board.top + row * cellHeight,
+          cellWidth,
+          cellHeight,
+        );
+        canvas.drawRect(
+          rect,
+          Paint()
+            ..color = (row + column).isEven
+                ? const Color(0xff514718)
+                : const Color(0xff202b31),
+        );
+      }
+    }
+    canvas.drawRect(
+      board,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.4
+        ..color = Cyber.gold.withValues(alpha: 0.72),
+    );
+
+    final pieces = [
+      (Offset(size.width * 0.69, size.height * 0.74), Cyber.cyan),
+      (Offset(size.width * 0.84, size.height * 0.74), Cyber.cyan),
+      (Offset(size.width * 0.76, size.height * 0.55), Cyber.cyan),
+      (Offset(size.width * 0.91, size.height * 0.36), Cyber.gold),
+      (Offset(size.width * 0.69, size.height * 0.27), Cyber.gold),
+    ];
+    for (final piece in pieces) {
+      canvas.drawCircle(piece.$1, 9, Paint()..color = piece.$2);
+      canvas.drawCircle(
+        piece.$1,
+        13,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1
+          ..color = piece.$2.withValues(alpha: 0.34),
+      );
+    }
+    canvas.drawLine(
+      pieces[2].$1,
+      pieces[3].$1,
+      Paint()
+        ..strokeWidth = 2
+        ..color = Cyber.gold.withValues(alpha: 0.58),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _TennisMiniCourtPainter extends CustomPainter {
+  const _TennisMiniCourtPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final shade = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+        colors: [Color(0x00101825), Color(0xcc0a2530)],
+        stops: [0.36, 1],
+      ).createShader(Offset.zero & size);
+    canvas.drawRect(Offset.zero & size, shade);
+    final court = Path()
+      ..moveTo(size.width * 0.67, size.height * 0.12)
+      ..lineTo(size.width * 0.94, size.height * 0.12)
+      ..lineTo(size.width * 1.08, size.height * 1.03)
+      ..lineTo(size.width * 0.48, size.height * 1.03)
+      ..close();
+    canvas.drawPath(court, Paint()..color = const Color(0xff155461));
+    final line = Paint()
+      ..color = Colors.white.withValues(alpha: 0.52)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    canvas.drawPath(court, line);
+    canvas.drawLine(
+      Offset(size.width * 0.57, size.height * 0.57),
+      Offset(size.width, size.height * 0.57),
+      line,
+    );
+    canvas.drawLine(
+      Offset(size.width * 0.75, size.height * 0.12),
+      Offset(size.width * 0.67, size.height),
+      line,
+    );
+    canvas.drawCircle(
+      Offset(size.width * 0.83, size.height * 0.39),
+      6,
+      Paint()..color = Cyber.lime,
+    );
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(size.width * 0.83, size.height * 0.78),
+        width: 27,
+        height: 9,
+      ),
+      Paint()
+        ..color = Cyber.lime.withValues(alpha: 0.36)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
 class _GameTile extends StatelessWidget {
   const _GameTile({
     required this.title,
@@ -2643,7 +2735,6 @@ class _GameTile extends StatelessWidget {
     required this.accent,
     this.onTap,
     this.featured = false,
-    this.streak = 0,
     this.showTrailingIcon = true,
   });
 
@@ -2653,7 +2744,6 @@ class _GameTile extends StatelessWidget {
   final Color accent;
   final VoidCallback? onTap;
   final bool featured;
-  final int streak;
   final bool showTrailingIcon;
 
   static const _bigCut = 14.0;
@@ -2687,7 +2777,6 @@ class _GameTile extends StatelessWidget {
                     subtitle: subtitle,
                     icon: icon,
                     accent: accent,
-                    streak: streak,
                     onTap: onTap,
                     showTrailingIcon: showTrailingIcon,
                   )
@@ -2769,7 +2858,6 @@ class _FeaturedBody extends StatelessWidget {
     required this.icon,
     required this.accent,
     required this.onTap,
-    required this.streak,
     required this.showTrailingIcon,
   });
 
@@ -2778,7 +2866,6 @@ class _FeaturedBody extends StatelessWidget {
   final IconData icon;
   final Color accent;
   final VoidCallback? onTap;
-  final int streak;
   final bool showTrailingIcon;
 
   @override
@@ -2812,21 +2899,11 @@ class _FeaturedBody extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: Cyber.display(18, letterSpacing: 1.1),
-                              ),
-                            ),
-                            if (streak > 0) ...[
-                              const SizedBox(width: StreakTheme.space8),
-                              StreakBadge(value: streak),
-                            ],
-                          ],
+                        Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Cyber.display(18, letterSpacing: 1.1),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -2845,7 +2922,7 @@ class _FeaturedBody extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 14),
-              _GameFreeButton(onTap: onTap, accent: accent),
+              _GameFreeButton(onTap: onTap, accent: accent, label: 'Free'),
             ],
           ),
         ),
@@ -2883,10 +2960,15 @@ class _GameIconBox extends StatelessWidget {
 }
 
 class _GameFreeButton extends StatelessWidget {
-  const _GameFreeButton({required this.onTap, required this.accent});
+  const _GameFreeButton({
+    required this.onTap,
+    required this.accent,
+    required this.label,
+  });
 
   final VoidCallback? onTap;
   final Color accent;
+  final String label;
 
   static const _bigCut = 10.0;
   static const _smallCut = 3.0;
@@ -2901,7 +2983,7 @@ class _GameFreeButton extends StatelessWidget {
           bigCut: _bigCut,
           smallCut: _smallCut,
           fillColor: accent,
-          borderColor: Colors.transparent,
+          borderColor: Color.lerp(accent, Colors.white, 0.58)!,
         ),
         child: ClipPath(
           clipper: const HudChamferClipper(
@@ -2914,14 +2996,16 @@ class _GameFreeButton extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
-                  Icons.toll_rounded,
+                Icon(
+                  label == 'PLAY NOW'
+                      ? Icons.play_arrow_rounded
+                      : Icons.toll_rounded,
                   size: 18,
                   color: AppTheme.darkInk,
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Free',
+                  label,
                   style: Cyber.display(
                     16,
                     color: AppTheme.darkInk,
@@ -3013,15 +3097,4 @@ class _GameCornerBracketsPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _GameCornerBracketsPainter old) => false;
-}
-
-String _formatInt(int value) {
-  final raw = value.toString();
-  final buffer = StringBuffer();
-  for (var i = 0; i < raw.length; i++) {
-    final fromEnd = raw.length - i;
-    buffer.write(raw[i]);
-    if (fromEnd > 1 && fromEnd % 3 == 1) buffer.write(',');
-  }
-  return buffer.toString();
 }

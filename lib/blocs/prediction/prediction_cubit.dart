@@ -6,7 +6,6 @@ import '../../models/sport_match.dart';
 import '../../models/team_standing.dart';
 import '../../services/prediction_repository.dart';
 import '../../services/secure_storage_service.dart';
-import '../../services/espn_score_service.dart';
 import 'prediction_state.dart';
 
 /// Owns the prediction hub's data: fixtures (from [PredictionRepository]) and
@@ -84,6 +83,24 @@ class PredictionCubit extends Cubit<PredictionState> {
         correctCount: 3,
         rewardEarned: 20,
       ),
+      // Demo: finished FIFA fixture predicted but NOT yet revealed → the card
+      // shows the gold "RESULTS ARE OUT — TAP TO REVEAL" (unclaimed) state.
+      UserPrediction(
+        matchId: 'fifa_demo_esp_ger',
+        answers: const {'q1': 0, 'q2': 1, 'q3': 0, 'q4': 1, 'q5': 0},
+        submittedAt: now.subtract(const Duration(hours: 20)),
+        status: PredictionStatus.locked,
+      ),
+      // Demo: finished FIFA fixture settled as a win → the card shows the
+      // revealed "+XP" (paired with a won Oz pick for the coins figure).
+      UserPrediction(
+        matchId: 'fifa_arg_jor',
+        answers: const {'q1': 0, 'q2': 0, 'q3': 0, 'q4': 0, 'q5': 0},
+        submittedAt: now.subtract(const Duration(hours: 22)),
+        status: PredictionStatus.settled,
+        correctCount: 4,
+        rewardEarned: 240,
+      ),
     ];
     for (final demo in demos) {
       predictions.putIfAbsent(demo.key, () => demo);
@@ -92,35 +109,23 @@ class PredictionCubit extends Cubit<PredictionState> {
 
   Future<void> load() async {
     final leagues = await _repository.leagues();
-    final fixtures = await _repository.fixtures();
     
     final stored = await _storage.loadPredictions();
     final predictions = {for (final p in stored) p.key: p};
     applyHistoryDemos(predictions);
-
-    final quizzes = <String, PredictionQuiz>{};
-    for (final fixture in fixtures) {
-      final matchQuizzes = await _repository.quizzesFor(fixture.id);
-      for (final quiz in matchQuizzes) {
-        quizzes[predictionStorageKey(fixture.id, quiz.id)] = quiz;
-      }
-    }
 
     // Emit fast initial state so UI renders immediately
     emit(
       state.copyWith(
         loading: false,
         leagues: leagues,
-        fixtures: fixtures,
         predictions: predictions,
         standingsByLeague: const {},
-        quizzes: quizzes,
       ),
     );
 
     // Fetch slow network data asynchronously
     _loadLiveStandings(leagues);
-    _enrichLiveFixtures(fixtures);
   }
 
   Future<void> _loadLiveStandings(List<League> leagues) async {
@@ -136,19 +141,48 @@ class PredictionCubit extends Cubit<PredictionState> {
     }
   }
 
-  Future<void> _enrichLiveFixtures(List<SportMatch> baseFixtures) async {
+  Future<void> loadSport(Sport sport) async {
+    if (state.loadedSports.contains(sport) || state.loadingSports.contains(sport)) {
+      return;
+    }
+    
+    emit(state.copyWith(loadingSports: {...state.loadingSports, sport}));
+    
     try {
-      var enriched = await _repository.enrichFixtures(baseFixtures);
-      if (!isClosed) {
-        emit(state.copyWith(fixtures: enriched));
+      final localFixtures = await _repository.fixtures(sport: sport);
+      final enrichedFixtures = await _repository.enrichFixturesForSport(localFixtures, sport);
+      
+      final quizzes = <String, PredictionQuiz>{...state.quizzes};
+      for (final fixture in enrichedFixtures) {
+        if (fixture.sport == sport) {
+          final matchQuizzes = await _repository.quizzesFor(fixture.id);
+          for (final quiz in matchQuizzes) {
+            quizzes[predictionStorageKey(fixture.id, quiz.id)] = quiz;
+          }
+        }
       }
-
-      final espnService = EspnScoreService();
-      enriched = await espnService.enrichAll(enriched);
-      if (!isClosed) {
-        emit(state.copyWith(fixtures: enriched));
+      
+      final allFixturesMap = <String, SportMatch>{};
+      for (final f in state.fixtures) {
+        allFixturesMap[f.id] = f;
       }
-    } catch (_) {}
+      for (final f in enrichedFixtures) {
+        allFixturesMap[f.id] = f;
+      }
+      
+      if (!isClosed) {
+        emit(state.copyWith(
+          fixtures: allFixturesMap.values.toList(),
+          quizzes: quizzes,
+          loadingSports: state.loadingSports.where((s) => s != sport).toSet(),
+          loadedSports: {...state.loadedSports, sport},
+        ));
+      }
+    } catch (_) {
+      if (!isClosed) {
+        emit(state.copyWith(loadingSports: state.loadingSports.where((s) => s != sport).toSet()));
+      }
+    }
   }
 
   Future<List<PredictionQuiz>> quizzesFor(String matchId) =>

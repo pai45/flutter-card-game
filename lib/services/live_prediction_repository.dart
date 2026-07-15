@@ -4,39 +4,36 @@ import '../models/sport_match.dart';
 import '../models/team_standing.dart';
 import 'espn_service.dart';
 import 'live_score_service.dart';
-import 'open_f1_service.dart';
 import 'prediction_repository.dart';
 
 class LivePredictionRepository implements PredictionRepository {
-  const LivePredictionRepository(this._inner, this._liveScoreService, this._openF1Service, this._espnService);
+  const LivePredictionRepository(this._inner, this._liveScoreService, this._espnService);
 
   final PredictionRepository _inner;
   final LiveScoreService _liveScoreService;
-  final OpenF1Service _openF1Service;
   final EspnService _espnService;
 
   @override
   Future<List<League>> leagues() => _inner.leagues();
 
   @override
-  Future<List<SportMatch>> fixtures({DateTime? day}) async {
+  Future<List<SportMatch>> fixtures({DateTime? day, Sport? sport}) async {
     // Return base fixtures immediately for fast initial loading
-    return _inner.fixtures(day: day);
+    return _inner.fixtures(day: day, sport: sport);
   }
 
   @override
-  Future<List<SportMatch>> enrichFixtures(List<SportMatch> fixtures) async {
-    final enriched = <SportMatch>[];
-    for (final match in fixtures) {
+  Future<List<SportMatch>> enrichFixturesForSport(List<SportMatch> fixtures, Sport sport) async {
+    final baseEnriched = await _inner.enrichFixturesForSport(fixtures, sport);
+    final finalEnriched = <SportMatch>[];
+    for (final match in baseEnriched) {
       if (match.id == 'fifa_fra_par') {
-        enriched.add(await _liveScoreService.enrich(match));
-      } else if (match.sport == Sport.f1) {
-        enriched.add(await _openF1Service.enrich(match));
+        finalEnriched.add(await _liveScoreService.enrich(match));
       } else {
-        enriched.add(match);
+        finalEnriched.add(match);
       }
     }
-    return List.unmodifiable(enriched);
+    return List.unmodifiable(finalEnriched);
   }
 
   @override

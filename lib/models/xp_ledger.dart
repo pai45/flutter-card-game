@@ -16,6 +16,8 @@ enum XpTransactionSource {
   grandPrix,
   superOver,
   basketball,
+  tennis,
+  finalOver,
 }
 
 class XpLedgerEntry {

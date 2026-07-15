@@ -59,6 +59,48 @@ const List<BasketballTeamLivery> basketballTeams = [
     secondary: Color(0xFF006BB6), // Blue
     accent: Color(0xFFFFFFFF), // White
   ),
+  BasketballTeamLivery(
+    id: 'nets',
+    name: 'Brooklyn',
+    primary: Color(0xFF000000), // Black
+    secondary: Color(0xFFFFFFFF), // White
+    accent: Color(0xFF707271), // Grey
+  ),
+  BasketballTeamLivery(
+    id: 'spurs',
+    name: 'San Antonio',
+    primary: Color(0xFFC4CED4), // Silver
+    secondary: Color(0xFF000000), // Black
+    accent: Color(0xFFEF426F), // Pink
+  ),
+  BasketballTeamLivery(
+    id: 'suns',
+    name: 'Phoenix',
+    primary: Color(0xFF1D1160), // Dark Purple
+    secondary: Color(0xFFE56020), // Orange
+    accent: Color(0xFFF9AD1B), // Yellow
+  ),
+  BasketballTeamLivery(
+    id: 'bucks',
+    name: 'Milwaukee',
+    primary: Color(0xFF00471B), // Hunter Green
+    secondary: Color(0xFFEEE1C6), // Cream
+    accent: Color(0xFFFFFFFF), // White
+  ),
+  BasketballTeamLivery(
+    id: 'mavs',
+    name: 'Dallas',
+    primary: Color(0xFF00538C), // Royal Blue
+    secondary: Color(0xFFB8C4CA), // Silver
+    accent: Color(0xFFFFFFFF), // White
+  ),
+  BasketballTeamLivery(
+    id: 'nuggets',
+    name: 'Denver',
+    primary: Color(0xFF0E2240), // Midnight Blue
+    secondary: Color(0xFFFEC524), // Sunshine Yellow
+    accent: Color(0xFF8B2131), // Maroon
+  ),
 ];
 
 BasketballTeamLivery basketballTeamById(String id) {

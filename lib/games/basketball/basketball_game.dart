@@ -13,7 +13,7 @@ import 'dart:collection';
 import 'dart:math';
 import 'dart:ui';
 
-import 'package:flutter/material.dart' show Colors;
+import 'package:flutter/material.dart' show Colors, TextPainter;
 
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
@@ -22,6 +22,7 @@ import 'package:flame/text.dart';
 import 'package:flutter/foundation.dart' show ValueNotifier;
 
 import '../../config/theme.dart';
+import '../../data/basketball_teams.dart';
 import '../../models/basketball.dart';
 import 'basketball_ai.dart';
 import 'basketball_engine.dart';
@@ -95,13 +96,21 @@ class BasketballGame extends FlameGame {
   double _slowMoT = 0;
   double _shakeT = 0;
   double _shakeMag = 0;
-  double _zoomPulse = 0;
+  double _cineT = 0;
   double _camX = kBbCheckSpotX + 2;
   Offset _shake = Offset.zero;
   int _stingId = 0;
 
   /// Net sway impulse, consumed by the court renderer.
   double netSway = 0;
+
+  /// Crowd surge impulse (0..1) on big plays — lifts the bob amplitude and
+  /// camera flashes beyond the sustained heat "hyped" state.
+  double crowdHype = 0;
+
+  /// Backboard score-flash: decaying timer + the scorer's livery color.
+  double scoreFlashT = 0;
+  Color scoreFlashColor = Cyber.cyan;
 
   /// Global dribble phase so both ball and player rig can sync.
   double dribblePhase = 0;
@@ -110,7 +119,7 @@ class BasketballGame extends FlameGame {
 
   // -- world → screen mapping -------------------------------------------------
 
-  double get pxPerUnit => size.x / 8.2 * (1 + _zoomPulse * 0.05);
+  double get pxPerUnit => size.x / 8.2;
 
   double get floorY => size.y * 0.62;
 
@@ -121,6 +130,30 @@ class BasketballGame extends FlameGame {
 
   @override
   Color backgroundColor() => Cyber.bg;
+
+  /// Impact cinematic (Super Over technique): a decaying focal zoom-punch +
+  /// jitter about the rim, applied to the whole canvas for the first ~0.3s
+  /// after a dunk/poster/big block. Replaces the old global zoom pulse.
+  @override
+  void render(Canvas canvas) {
+    if (_cineT > 0 && !reducedMotion) {
+      final impact = _cineT / kBbCineSeconds;
+      final focal = worldToScreen(kBbRimX, kBbRimHeight);
+      canvas.save();
+      canvas.translate(
+        sin(_cineT * 47) * impact * 3,
+        cos(_cineT * 53) * impact * 3,
+      );
+      final zoom = 1 + impact * kBbCineZoom;
+      canvas.translate(focal.dx, focal.dy);
+      canvas.scale(zoom, zoom);
+      canvas.translate(-focal.dx, -focal.dy);
+      super.render(canvas);
+      canvas.restore();
+      return;
+    }
+    super.render(canvas);
+  }
 
   @override
   Future<void> onLoad() async {
@@ -267,7 +300,9 @@ class BasketballGame extends FlameGame {
     } else {
       _shake = Offset.zero;
     }
-    _zoomPulse = max(0, _zoomPulse - wallDt * 2.2);
+    _cineT = max(0, _cineT - wallDt);
+    crowdHype = max(0, crowdHype - wallDt * 0.8);
+    scoreFlashT = max(0, scoreFlashT - wallDt);
     netSway = max(0, netSway - wallDt * 2.4);
   }
 
@@ -307,6 +342,11 @@ class BasketballGame extends FlameGame {
         case BasketballEventType.basketMade:
           netSway = 1;
           _swishBurst();
+          crowdHype = 1;
+          scoreFlashT = kBbScoreFlashSeconds;
+          scoreFlashColor = basketballTeamById(
+            event.team == 0 ? config.teamId : config.cpuTeamId,
+          ).primary;
           final mine = event.team == 0;
           final three = event.points == 3;
           if (event.grade == ReleaseGrade.perfect && three && mine) {
@@ -319,35 +359,66 @@ class BasketballGame extends FlameGame {
           );
         case BasketballEventType.buzzerBeater:
           _slowMo(0.5);
+          crowdHype = 1;
           _sting('BUZZER BEATER!', Cyber.gold, major: true);
         case BasketballEventType.dunk:
           _shakeNow(0.28, 9);
-          _zoomPulse = 1;
+          _cineT = kBbCineSeconds;
+          crowdHype = 1;
+          _sting(
+            event.team == 0
+                ? _pick(const ['THROWN DOWN!', 'HAMMER TIME!', 'WITH AUTHORITY!'])
+                : 'DUNKED ON YOUR RIM',
+            event.team == 0 ? Cyber.gold : Cyber.danger,
+            major: event.team == 0,
+          );
         case BasketballEventType.poster:
           _slowMo(0.4);
-          _sting('POSTERIZED!', Cyber.gold, major: true);
+          _cineT = kBbCineSeconds;
+          _sting(
+            _pick(const ['POSTERIZED!', 'PUT ON A POSTER!']),
+            Cyber.gold,
+            major: true,
+          );
         case BasketballEventType.block:
           _shakeNow(0.22, 7);
+          crowdHype = 1;
+          if (event.onDunk) _cineT = kBbCineSeconds;
           _sparkBurst(
             worldToScreen(engine.ball.x, engine.ball.h),
             Cyber.cyan,
             14,
           );
           _sting(
-            event.team == 0 ? 'BLOCKED!' : 'REJECTED!',
+            event.team == 0
+                ? _pick(const ['BLOCKED!', 'NOT TODAY!', 'SENT BACK!'])
+                : _pick(const ['REJECTED!', 'SWATTED AWAY!']),
             event.team == 0 ? Cyber.cyan : Cyber.danger,
             major: event.onDunk,
           );
         case BasketballEventType.steal:
           _sting(
-            event.team == 0 ? 'STOLEN!' : 'TURNOVER!',
+            event.team == 0 ? _pick(const ['STOLEN!', 'PICKED HIS POCKET!']) : 'TURNOVER!',
             event.team == 0 ? Cyber.cyan : Cyber.danger,
           );
         case BasketballEventType.ankleBreaker:
           _slowMo(0.25);
-          _sting('ANKLE BREAKER!', Cyber.violet, major: true);
+          _sting(
+            _pick(const ['ANKLE BREAKER!', 'SHIFTED!', 'CROSSED UP!']),
+            Cyber.violet,
+            major: true,
+          );
+        case BasketballEventType.spinMove:
+          _sting(
+            event.team == 0
+                ? _pick(const ['SPIN CYCLE!', 'REVERSED!'])
+                : 'SPUN PAST YOU',
+            event.team == 0 ? Cyber.violet : Cyber.danger,
+          );
         case BasketballEventType.perfectRelease:
-          if (event.team == 0) _sting('PERFECT', Cyber.lime);
+          if (event.team == 0) {
+            _sting(_pick(const ['PERFECT', 'SPLASH INCOMING']), Cyber.lime);
+          }
         case BasketballEventType.heatStarted:
           _sting(
             event.team == 0 ? 'YOU\'RE ON FIRE!' : 'OPPONENT HEATING UP',
@@ -386,6 +457,10 @@ class BasketballGame extends FlameGame {
   void _sting(String label, Color color, {bool major = false}) {
     sting.value = BasketballSting(++_stingId, label, color, major: major);
   }
+
+  /// Render-side label variety — uses the fx RNG, never the sim RNG.
+  String _pick(List<String> options) =>
+      options[_fxRng.nextInt(options.length)];
 
   void _swishBurst() {
     if (reducedMotion || !isLoaded) return;
@@ -489,6 +564,20 @@ class _CourtComponent extends PositionComponent
       fontFeatures: const [FontFeature.tabularFigures()],
     ),
   );
+  static final TextPaint _tickerStyle = TextPaint(
+    style: TextStyle(
+      fontFamily: Cyber.displayFont,
+      fontSize: 10,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 2,
+      color: Cyber.cyan.withValues(alpha: 0.5),
+      fontFeatures: const [FontFeature.tabularFigures()],
+    ),
+  );
+
+  // Cached ticker layout — rebuilt only when the score/half changes.
+  int _tickerKey = -1;
+  TextPainter? _tickerPainter;
 
   @override
   void update(double dt) {
@@ -505,9 +594,75 @@ class _CourtComponent extends PositionComponent
     final px = gameRef.pxPerUnit;
 
     _skyline(canvas, gameRef, size, floorY, px);
+    _roofProps(canvas, gameRef, size, floorY, px);
     _crowd(canvas, gameRef, size, floorY, px);
     _floor(canvas, gameRef, size, floorY, px);
     _hoop(canvas, gameRef, px);
+  }
+
+  /// Near-rooftop props (AC units, antennas, railing) at parallax 0.3 —
+  /// the depth layer between the far towers (0.15) and the crowd (1.0).
+  void _roofProps(
+    Canvas canvas,
+    BasketballGame gameRef,
+    Vector2 size,
+    double floorY,
+    double px,
+  ) {
+    final rng = Random(23);
+    final dark = Paint()..color = const Color(0xff0d1220);
+    final darker = Paint()..color = const Color(0xff161d30);
+    final baseY = floorY - 1.62 * px;
+    for (var i = 0; i < 12; i++) {
+      final worldX = i * 1.45 - 1.8;
+      final at = gameRef.worldToScreen(
+        worldX * 0.7 + gameRef._camX * 0.3,
+        0,
+      );
+      switch (rng.nextInt(3)) {
+        case 0: // AC unit with a fan hint.
+          final w = (0.5 + rng.nextDouble() * 0.3) * px;
+          final h = 0.30 * px;
+          canvas.drawRect(
+            Rect.fromLTWH(at.dx - w / 2, baseY - h, w, h),
+            dark,
+          );
+          canvas.drawCircle(Offset(at.dx, baseY - h / 2), h * 0.28, darker);
+        case 1: // Antenna mast with a cross-bar.
+          final h = (0.7 + rng.nextDouble() * 0.5) * px;
+          final mast = Paint()
+            ..color = const Color(0xff0d1220)
+            ..strokeWidth = 2;
+          canvas.drawLine(
+            Offset(at.dx, baseY),
+            Offset(at.dx, baseY - h),
+            mast,
+          );
+          canvas.drawLine(
+            Offset(at.dx - 0.1 * px, baseY - h * 0.6),
+            Offset(at.dx + 0.1 * px, baseY - h * 0.6),
+            mast,
+          );
+        case 2: // Railing run.
+          final w = (0.8 + rng.nextDouble() * 0.4) * px;
+          final rail = Paint()
+            ..color = const Color(0xff0d1220)
+            ..strokeWidth = 2;
+          canvas.drawLine(
+            Offset(at.dx - w / 2, baseY - 0.16 * px),
+            Offset(at.dx + w / 2, baseY - 0.16 * px),
+            rail,
+          );
+          for (var p = 0; p <= 3; p++) {
+            final postX = at.dx - w / 2 + w * p / 3;
+            canvas.drawLine(
+              Offset(postX, baseY),
+              Offset(postX, baseY - 0.16 * px),
+              rail,
+            );
+          }
+      }
+    }
   }
 
   void _skyline(
@@ -517,6 +672,83 @@ class _CourtComponent extends PositionComponent
     double floorY,
     double px,
   ) {
+    // Night-sky gradient: deep violet up top settling into the base bg at
+    // the tower line — the farthest depth layer.
+    final skyBottom = floorY - 2.2 * px;
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.x, max(0, skyBottom)),
+      Paint()
+        ..shader = Gradient.linear(
+          Offset.zero,
+          Offset(0, skyBottom),
+          [const Color(0xff140b1e), Cyber.bg],
+        ),
+    );
+
+    // Star specks (seeded, screen-fixed — infinite-distance parallax).
+    final starRng = Random(11);
+    for (var i = 0; i < 16; i++) {
+      final sx = starRng.nextDouble() * size.x;
+      final sy = starRng.nextDouble() * max(0, skyBottom) * 0.65;
+      canvas.drawCircle(
+        Offset(sx, sy),
+        0.4 + starRng.nextDouble() * 1.2,
+        Paint()
+          ..color = const Color(0xffe8ecf2).withValues(
+            alpha: 0.10 + starRng.nextDouble() * 0.15,
+          ),
+      );
+    }
+
+    // Crescent moon: two offset flat circles, no blur.
+    final moonC = Offset(
+      size.x * 0.78 - gameRef._camX * px * 0.05,
+      size.y * 0.14,
+    );
+    canvas.drawCircle(
+      moonC,
+      px * 0.30,
+      Paint()..color = const Color(0xffe8ecf2).withValues(alpha: 0.45),
+    );
+    canvas.drawCircle(
+      moonC + Offset(-px * 0.11, -px * 0.05),
+      px * 0.27,
+      Paint()..color = const Color(0xff140b1e),
+    );
+
+    // Drifting blimp with a holo side-banner in the player's livery.
+    final blimpW = px * 1.4;
+    final blimpX =
+        (_time * 8) % (size.x + blimpW * 2) - blimpW;
+    final blimpY = size.y * 0.09;
+    final hull = Rect.fromCenter(
+      center: Offset(blimpX, blimpY),
+      width: blimpW,
+      height: px * 0.4,
+    );
+    final hullPaint = Paint()..color = const Color(0xff10172a);
+    canvas.drawOval(hull, hullPaint);
+    // Tail fin.
+    final fin = Path()
+      ..moveTo(blimpX - blimpW * 0.42, blimpY)
+      ..lineTo(blimpX - blimpW * 0.62, blimpY - px * 0.22)
+      ..lineTo(blimpX - blimpW * 0.62, blimpY + px * 0.22)
+      ..close();
+    canvas.drawPath(fin, hullPaint);
+    canvas.drawRect(
+      Rect.fromCenter(
+        center: Offset(blimpX, blimpY),
+        width: blimpW * 0.6,
+        height: px * 0.16,
+      ),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.4
+        ..color = basketballTeamById(gameRef.config.teamId)
+            .primary
+            .withValues(alpha: 0.15),
+    );
+
     // Background Grid
     for (var i = 0; i < 15; i++) {
        final gridY = floorY - px * 2.5 - i * px * 0.45;
@@ -577,27 +809,56 @@ class _CourtComponent extends PositionComponent
   ) {
     final engine = gameRef.engine;
     final hyped = engine.teams[0].heatActive || engine.teams[1].heatActive;
-    final amp = hyped ? 0.08 : 0.03;
+    // Sustained heat sets the floor; big-play hype surges on top (the crowd
+    // "stands up" for a beat, then settles).
+    final amp = (hyped ? 0.08 : 0.03) + gameRef.crowdHype * 0.06;
+    final freq = hyped ? 7.0 : 2.4 + gameRef.crowdHype * 3;
+    final userLivery = basketballTeamById(gameRef.config.teamId);
+    final cpuLivery = basketballTeamById(gameRef.config.cpuTeamId);
     for (final layer in const [0, 1]) {
       final baseY = floorY - (1.35 - layer * 0.55) * px;
-      final paint = Paint()
-        ..color = layer == 0
-            ? const Color(0xff0b101c)
-            : const Color(0xff10172a);
+      final base = layer == 0
+          ? const Color(0xff0b101c)
+          : const Color(0xff10172a);
+      final paint = Paint()..color = base;
       final path = Path()..moveTo(0, baseY + px);
+      final pockets = <Rect>[];
+      final pocketColors = <Color>[];
+      var col = 0;
       for (var sx = -20.0; sx <= size.x + 20; sx += px * 0.5) {
-        final bob =
-            sin(_time * (hyped ? 7 : 2.4) + sx * 0.11 + layer * 2) * amp * px;
-        path.lineTo(sx, baseY - (0.24 + layer * 0.1) * px + bob);
+        // Stable per-column head-height variance (seedless hash — no
+        // per-frame Random allocations).
+        final hash = sin(sx * 12.9898 + layer * 78.233) * 43758.5453;
+        final variance = (hash - hash.floorToDouble()) * 0.16;
+        final head = 0.16 + variance + layer * 0.1;
+        final bob = sin(_time * freq + sx * 0.11 + layer * 2) * amp * px;
+        path.lineTo(sx, baseY - head * px + bob);
         path.lineTo(sx + px * 0.25, baseY - (0.05 + layer * 0.1) * px + bob);
+        // Team-color fan pockets, alternating supporters.
+        if (col % 6 == 0 && layer == 1) {
+          pockets.add(
+            Rect.fromLTWH(sx, baseY - head * px + bob, px * 0.4, px * 0.16),
+          );
+          pocketColors.add(
+            Color.lerp(
+              base,
+              (col ~/ 6).isEven ? userLivery.primary : cpuLivery.primary,
+              0.3,
+            )!,
+          );
+        }
+        col++;
       }
       path
         ..lineTo(size.x + 20, baseY + px)
         ..close();
       canvas.drawPath(path, paint);
+      for (var i = 0; i < pockets.length; i++) {
+        canvas.drawRect(pockets[i], Paint()..color = pocketColors[i]);
+      }
     }
-    // Camera flashes in the crowd when hyped.
-    if (hyped) {
+    // Camera flashes when hyped or surging on a big play.
+    if (hyped || gameRef.crowdHype > 0.3) {
       final flashRng = Random((_time * 12).floor());
       for (var i = 0; i < 4; i++) {
          if (flashRng.nextDouble() < 0.15) {
@@ -612,19 +873,63 @@ class _CourtComponent extends PositionComponent
       }
     }
 
-    // Hoarding line between crowd and court.
+    // Hoarding rail between crowd and court, with a scrolling LED ticker.
     final railY = floorY - 0.78 * px;
+    final railH = 0.78 * px;
     canvas.drawRect(
-      Rect.fromLTWH(0, railY, size.x, 0.78 * px),
+      Rect.fromLTWH(0, railY, size.x, railH),
       Paint()..color = const Color(0xff070b14),
     );
+    _ticker(canvas, gameRef, size, railY, railH);
+    // The rail edge lifts briefly when a basket flashes the boards.
+    final edgeLift =
+        gameRef.scoreFlashT > 0 ? gameRef.scoreFlashT / kBbScoreFlashSeconds : 0.0;
     canvas.drawLine(
       Offset(0, railY),
       Offset(size.x, railY),
       Paint()
-        ..color = Cyber.cyan.withValues(alpha: 0.25)
+        ..color = Cyber.cyan.withValues(alpha: 0.25 + edgeLift * 0.4)
         ..strokeWidth = 2.0,
     );
+  }
+
+  /// Scrolling LED score/flavor line on the hoarding rail. The laid-out text
+  /// is cached and only rebuilt when the score changes.
+  void _ticker(
+    Canvas canvas,
+    BasketballGame gameRef,
+    Vector2 size,
+    double railY,
+    double railH,
+  ) {
+    final engine = gameRef.engine;
+    final key = engine.teams[0].score * 1000 +
+        engine.teams[1].score +
+        engine.halfIndex * 1000000;
+    if (key != _tickerKey || _tickerPainter == null) {
+      _tickerKey = key;
+      const flavors = [
+        'HOOP DUEL LIVE',
+        'ROOFTOP CIRCUIT',
+        'NEON COURT NIGHTS',
+        'HEAT CHECK SEASON',
+      ];
+      final text =
+          'YOU ${engine.teams[0].score} — ${engine.teams[1].score} CPU'
+          '  •  ${flavors[key % flavors.length]}  •  ';
+      _tickerPainter = _tickerStyle.toTextPainter(text);
+    }
+    final tp = _tickerPainter!;
+    if (tp.width <= 0) return;
+    canvas.save();
+    canvas.clipRect(Rect.fromLTWH(0, railY, size.x, railH));
+    final textY = railY + (railH - tp.height) / 2;
+    var dx = ((_time * -40) % tp.width) - tp.width;
+    while (dx < size.x) {
+      tp.paint(canvas, Offset(dx, textY));
+      dx += tp.width;
+    }
+    canvas.restore();
   }
 
   void _floor(
@@ -725,6 +1030,33 @@ class _CourtComponent extends PositionComponent
     final boardTop = gameRef.worldToScreen(kBbBackboardX, kBbRimHeight + 0.8);
     final poleBase = gameRef.worldToScreen(kBbBackboardX + 0.35, 0);
 
+    // Reflection ghost on the polished hardwood (pole + board), drawn
+    // before the assembly so it always sits underneath.
+    if (!gameRef.reducedMotion) {
+      final floorLine = poleBase.dy;
+      final poleTopY = boardTop.dy - px * 0.2;
+      canvas.drawLine(
+        Offset(poleBase.dx, floorLine),
+        Offset(
+          poleBase.dx,
+          floorLine + (floorLine - poleTopY) * kBbReflectSquash,
+        ),
+        Paint()
+          ..color = const Color(0xff232b3d).withValues(alpha: 0.35)
+          ..strokeWidth = px * 0.14
+          ..strokeCap = StrokeCap.round,
+      );
+      canvas.drawRect(
+        Rect.fromLTRB(
+          boardBase.dx - px * 0.06,
+          floorLine + (floorLine - boardBase.dy) * kBbReflectSquash,
+          boardBase.dx + px * 0.06,
+          floorLine + (floorLine - boardTop.dy) * kBbReflectSquash,
+        ),
+        Paint()..color = Cyber.cyan.withValues(alpha: 0.06),
+      );
+    }
+
     // Pole + arm.
     final polePaint = Paint()
       ..color = const Color(0xff232b3d)
@@ -756,6 +1088,18 @@ class _CourtComponent extends PositionComponent
         ..strokeWidth = 1.6
         ..color = Cyber.cyan.withValues(alpha: 0.5),
     );
+    // Score flash: the board's LED frame pulses in the scorer's livery —
+    // event-driven and decaying, not an always-on glow.
+    if (gameRef.scoreFlashT > 0) {
+      final flash = gameRef.scoreFlashT / kBbScoreFlashSeconds;
+      canvas.drawRect(
+        board.inflate(2),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.4
+          ..color = gameRef.scoreFlashColor.withValues(alpha: 0.7 * flash),
+      );
+    }
 
     // Rim (side view) + hook to the board.
     final rimPaint = Paint()
@@ -870,6 +1214,15 @@ class _BallComponent extends PositionComponent
       ),
       Paint()..color = const Color(0x4d000000),
     );
+
+    // Reflection ghost in the hardwood polish.
+    if (!gameRef.reducedMotion && world.dy < 4) {
+      canvas.drawCircle(
+        Offset(at.dx, ground.dy + world.dy * px * kBbReflectSquash),
+        r * 0.9,
+        Paint()..color = Cyber.amber.withValues(alpha: kBbReflectAlpha),
+      );
+    }
 
     canvas.drawCircle(at, r, Paint()..color = Cyber.amber);
     final seam = Paint()

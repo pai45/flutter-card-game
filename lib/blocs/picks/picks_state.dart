@@ -80,6 +80,27 @@ class PicksState {
       .where((position) => position.isFinal)
       .fold(0, (sum, position) => sum + position.realizedProfit);
 
+  /// Total trading volume (Oz) across every Pick market wired to [matchId] —
+  /// the "Total Vol" figure surfaced on the fixture card. Zero when no market
+  /// links to the fixture (callers fall back to a seeded figure).
+  int volumeOzForMatch(String matchId) => markets
+      .where((market) => market.matchId == matchId)
+      .fold(0, (sum, market) => sum + market.volumeOz);
+
+  /// The player's realized Oz P&L on [matchId] and whether they hold any
+  /// position there. Joins position → market → matchId; sums
+  /// [PickPosition.realizedProfit] (payout − stake) over settled positions.
+  ({int pnl, bool staked}) picksOutcomeForMatch(String matchId) {
+    var pnl = 0;
+    var staked = false;
+    for (final position in positions.values) {
+      if (marketFor(position.marketId)?.matchId != matchId) continue;
+      staked = true;
+      if (position.isFinal) pnl += position.realizedProfit;
+    }
+    return (pnl: pnl, staked: staked);
+  }
+
   PickMarket? marketFor(String marketId) {
     for (final market in markets) {
       if (market.id == marketId) return market;

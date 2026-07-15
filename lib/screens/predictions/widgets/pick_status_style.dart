@@ -109,6 +109,19 @@ String pickClosesLabel(DateTime closesAt) {
   return '${diff.inDays}D';
 }
 
+/// A deterministic per-match trading volume (Oz) so every fixture card reads
+/// like a live market even when no real Pick market is linked to it. Seeded
+/// from the match id and quantised to a tidy value in the ~1.5K–95K Oz band.
+int seededMatchVolumeOz(String matchId) {
+  // FNV-1a style hash → stable across sessions for a given id.
+  var hash = 0x811c9dc5;
+  for (final code in matchId.codeUnits) {
+    hash = (hash ^ code) * 0x01000193 & 0xffffffff;
+  }
+  final span = 1500 + hash % 93500; // 1_500 .. 94_999
+  return (span ~/ 100) * 100; // round to the nearest 100 Oz
+}
+
 String formatOzCompact(int value) {
   if (value >= 1000) {
     final k = value / 1000;

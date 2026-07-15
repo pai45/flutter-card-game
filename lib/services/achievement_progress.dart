@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/game/game_bloc.dart';
 import '../blocs/picks/picks_cubit.dart';
 import '../blocs/prediction/prediction_cubit.dart';
+import '../blocs/tennis/tennis_cubit.dart';
 import '../models/achievement.dart';
 import '../models/picks.dart';
 import '../models/player_stats.dart';
@@ -16,6 +17,7 @@ AchievementStats currentAchievementStats(BuildContext context) {
   final game = context.read<GameBloc>().state;
   final pred = context.read<PredictionCubit>().state;
   final picks = context.read<PicksCubit>().state;
+  final tennis = context.read<TennisCubit>().state;
   final record = MatchRecord.fromHistory(game.matchHistory);
 
   final wonPicks = picks.positions.values
@@ -31,6 +33,7 @@ AchievementStats currentAchievementStats(BuildContext context) {
     cleanSheets: record.cleanSheets,
     shootoutWins: record.shootoutWins,
     basketballWins: record.basketballWins,
+    tennisAchievements: tennis.profile.achievements,
     predictionsMade: pred.predictionsMade,
     correctPredictions: pred.correctPredictions,
     picksPlaced: picks.positions.length,

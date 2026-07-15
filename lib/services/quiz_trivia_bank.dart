@@ -90,6 +90,12 @@ TriviaQuestion _generatedQuestion(Sport sport, QuizMode mode, int number) {
       QuizMode.hard => _f1Scaffold('Hard', variant, cycle),
       QuizMode.global => _f1Scaffold('Global', variant, cycle),
     },
+    Sport.tennis => switch (mode) {
+      QuizMode.easy => _tennisScaffold('Easy', variant, cycle),
+      QuizMode.medium => _tennisScaffold('Medium', variant, cycle),
+      QuizMode.hard => _tennisScaffold('Hard', variant, cycle),
+      QuizMode.global => _tennisScaffold('Global', variant, cycle),
+    },
   };
 
   return TriviaQuestion(
@@ -371,6 +377,14 @@ TriviaQuestion _generatedQuestion(Sport sport, QuizMode mode, int number) {
     prompt: 'Set $cycle: what does the checkered flag mean? ($difficulty variant $variant)',
     options: ['Start', 'End of session', 'Hazard', 'Pit stop'],
     correctIndex: 1,
+  );
+}
+
+({String prompt, List<String> options, int correctIndex}) _tennisScaffold(String difficulty, int variant, int cycle) {
+  return (
+    prompt: 'Set $cycle: which tournament is played on clay? ($difficulty variant $variant)',
+    options: ['Wimbledon', 'US Open', 'French Open', 'Australian Open'],
+    correctIndex: 2,
   );
 }
 

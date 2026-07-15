@@ -364,6 +364,47 @@ const List<FollowableLeague> followableLeagues = [
       ),
     ],
   ),
+
+  // ── Tennis ────────────────────────────────────────────────────────────────
+  FollowableLeague(
+    sport: Sport.tennis,
+    league: League(
+      id: 'atp',
+      name: 'ATP Tour',
+      shortCode: 'ATP',
+      accent: Color(0xff002865),
+    ),
+    teams: [
+      SportTeam(
+        id: 'alcaraz',
+        name: 'Carlos Alcaraz',
+        shortName: 'ALC',
+        color: Color(0xffc60b1e),
+      ),
+      SportTeam(
+        id: 'sinner',
+        name: 'Jannik Sinner',
+        shortName: 'SIN',
+        color: Color(0xff008c45),
+      ),
+      SportTeam(
+        id: 'djokovic',
+        name: 'Novak Djokovic',
+        shortName: 'DJO',
+        color: Color(0xffc6363c),
+      ),
+    ],
+  ),
+  FollowableLeague(
+    sport: Sport.tennis,
+    league: League(
+      id: 'wimbledon',
+      name: 'Wimbledon',
+      shortCode: 'WIM',
+      accent: Color(0xff006233),
+    ),
+    teams: [], // Individual athletes are fetched dynamically
+  ),
 ];
 
 List<FollowableLeague> followableLeaguesForSport(Sport sport) => [

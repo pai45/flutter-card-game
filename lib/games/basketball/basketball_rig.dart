@@ -5,6 +5,10 @@
 /// engine's body state, in the app's stylized-silhouette tradition
 /// (Football Chess tokens / Grand Prix cars). Team + look colors are content
 /// colors; everything else pulls from `Cyber` tokens.
+///
+/// The pose type and the drawing primitives are shared with the other rigs —
+/// see `games/rig/athlete_rig.dart`. This file only holds what is basketball:
+/// the pose-per-[BodyState] switch and the jersey/hardwood draw pass.
 library;
 
 import 'dart:math';
@@ -17,32 +21,15 @@ import 'package:flame/components.dart';
 import '../../config/theme.dart';
 import '../../data/basketball_athletes.dart';
 import '../../data/basketball_teams.dart';
+import '../rig/athlete_rig.dart';
 import 'basketball_engine.dart';
 import 'basketball_game.dart';
 import 'basketball_tuning.dart';
 
-/// A pose in athlete-local metres: hip height, torso lean, foot targets
-/// (relative to the point under the hip) and hand targets (relative to the
-/// shoulder). x is forward (facing direction), y is up.
-class BasketballPose {
-  const BasketballPose({
-    required this.hip,
-    this.lean = 0,
-    required this.footNear,
-    required this.footFar,
-    required this.handNear,
-    required this.handFar,
-    this.headBob = 0,
-  });
-
-  final double hip;
-  final double lean;
-  final Offset footNear;
-  final Offset footFar;
-  final Offset handNear;
-  final Offset handFar;
-  final double headBob;
-}
+/// Hoop Duel's pose is the shared [RigPose] — hip height, torso lean, foot
+/// targets (relative to the point under the hip) and hand targets (relative to
+/// the shoulder).
+typedef BasketballPose = RigPose;
 
 /// Computes the pose for the current engine body state. All motion in here is
 /// a pure function of state + timers, so rendering stays deterministic.
@@ -204,6 +191,44 @@ BasketballPose _basePoseFor(BasketballAthleteBody body, double runPhase) {
         handFar: Offset(-0.34 - wob, -0.6),
         headBob: wob * 0.4,
       );
+    case BodyState.celebrate:
+      // Fist pump: arm punches the sky on a springy hop.
+      final pump = sin(t * 10).abs();
+      return BasketballPose(
+        hip: 0.94 + pump * 0.05,
+        lean: -0.12,
+        footNear: const Offset(0.18, 0),
+        footFar: const Offset(-0.18, 0),
+        handNear: Offset(0.1, -1.08 - pump * 0.08),
+        handFar: const Offset(-0.2, -0.55),
+        headBob: pump * 0.03,
+      );
+    case BodyState.dejected:
+      // Head down, shoulders slumped, hands hanging low.
+      final sag = min(1.0, t * 3);
+      return BasketballPose(
+        hip: 0.9 - sag * 0.04,
+        lean: 0.3 * sag,
+        footNear: const Offset(0.14, 0),
+        footFar: const Offset(-0.14, 0),
+        handNear: Offset(0.08, -0.22 - sag * 0.02),
+        handFar: const Offset(-0.1, -0.22),
+        headBob: -0.05 * sag,
+      );
+    case BodyState.spin:
+      // Sweeping low turn: the lean whips front-to-back through the spin
+      // (reads as a body rotation side-on), ball arm wrapped in tight.
+      final k = (t / kBbSpinDuration).clamp(0.0, 1.0);
+      final whirl = sin(k * pi);
+      return BasketballPose(
+        hip: 0.72 + whirl * 0.06,
+        lean: 0.45 - k * 0.9,
+        footNear: Offset(0.3 - k * 0.5, 0.06 * whirl),
+        footFar: Offset(-0.2 + k * 0.42, 0),
+        handNear: Offset(-0.28 * whirl + 0.06, -0.5),
+        handFar: Offset(0.34 * whirl, -0.66),
+        headBob: whirl * 0.02,
+      );
   }
 }
 
@@ -342,7 +367,50 @@ class AthleteComponent extends PositionComponent
     }
 
     final pose = poseFor(b, _runPhase, dribbleBallY: dribbleBallY);
-    _drawRig(canvas, b, pose, look, px);
+    final livery = basketballTeamById(
+      team == 0 ? gameRef.config.teamId : gameRef.config.cpuTeamId,
+    );
+
+    // Hardwood reflection: the same rig mirrored about the ground line,
+    // squashed and faded. Skipped under reduced motion (also the perf guard).
+    if (!gameRef.reducedMotion) {
+      canvas.save();
+      canvas.translate(0, lift * 2);
+      canvas.scale(1, -kBbReflectSquash);
+      final bounds = Rect.fromLTWH(
+        -heightPx,
+        -heightPx * 1.3,
+        heightPx * 2,
+        heightPx * 1.6,
+      );
+      canvas.saveLayer(
+        bounds,
+        Paint()..color = const Color(0xFFFFFFFF).withValues(alpha: kBbReflectAlpha),
+      );
+      drawBasketballRig(
+        canvas,
+        b,
+        pose,
+        look,
+        px,
+        primary: livery.primary,
+        secondary: livery.secondary,
+        accent: livery.accent,
+      );
+      canvas.restore();
+      canvas.restore();
+    }
+
+    drawBasketballRig(
+      canvas,
+      b,
+      pose,
+      look,
+      px,
+      primary: livery.primary,
+      secondary: livery.secondary,
+      accent: livery.accent,
+    );
     canvas.restore();
   }
 
@@ -356,20 +424,28 @@ class AthleteComponent extends PositionComponent
     return const Offset(1, 1);
   }
 
-  void _drawRig(
-    Canvas canvas,
-    BasketballAthleteBody b,
-    BasketballPose pose,
-    BasketballAthleteLook look,
-    double px,
-  ) {
-    final userTeam = basketballTeamById(game.config.teamId);
-    final isUser = team == 0;
-    
-    // Apply selected team colors for the user, and a fallback for CPU.
-    final primaryColor = isUser ? userTeam.primary : Cyber.magenta;
-    final secondaryColor = isUser ? userTeam.secondary : Cyber.cyan;
-    final accentColor = isUser ? userTeam.accent : Colors.white;
+}
+
+// -----------------------------------------------------------------------------
+// Rig drawing — top-level so extra passes (floor reflections) can reuse it.
+// -----------------------------------------------------------------------------
+
+/// Draws one athlete rig in the given jersey livery colors. Called by
+/// [AthleteComponent] for the main pass and again (flipped + faded) for the
+/// hardwood reflection.
+void drawBasketballRig(
+  Canvas canvas,
+  BasketballAthleteBody b,
+  BasketballPose pose,
+  BasketballAthleteLook look,
+  double px, {
+  required Color primary,
+  required Color secondary,
+  required Color accent,
+}) {
+    final primaryColor = primary;
+    final secondaryColor = secondary;
+    final accentColor = accent;
 
     final h = b.spec.heightM;
     final scaleM = h / 1.95; // proportions relative to a 1.95m frame
@@ -387,7 +463,7 @@ class AthleteComponent extends PositionComponent
 
     final strokeBody = Paint()
       ..color = primaryColor
-      ..strokeWidth = px * 0.17
+      ..strokeWidth = px * 0.19
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
     final strokeSkin = Paint()
@@ -396,12 +472,12 @@ class AthleteComponent extends PositionComponent
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
     final strokeSkinFar = Paint()
-      ..color = _darken(look.skin, 0.25)
+      ..color = rigDarken(look.skin, 0.25)
       ..strokeWidth = px * 0.095
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
     final strokeShorts = Paint()
-      ..color = _darken(primaryColor, 0.15)
+      ..color = rigDarken(primaryColor, 0.15)
       ..strokeWidth = px * 0.15
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
@@ -419,19 +495,19 @@ class AthleteComponent extends PositionComponent
       ..style = PaintingStyle.stroke;
 
     // Legs (far first, darker).
-    _limb(
+    rigLimb(
       canvas,
       hip,
       pt(pose.footFar.dx * scaleM, pose.footFar.dy * scaleM),
       bend: -0.22 * px,
       upper: strokeShorts,
       lower: strokeSkinFar,
-      lowerOverlay: _darken(padPaint.color, 0.25),
-      shoe: _darken(accentColor, 0.2),
-      shoeAccent: _darken(secondaryColor, 0.2),
+      lowerOverlay: rigDarken(padPaint.color, 0.25),
+      shoe: rigDarken(accentColor, 0.2),
+      shoeAccent: rigDarken(secondaryColor, 0.2),
       px: px,
     );
-    _limb(
+    rigLimb(
       canvas,
       hip,
       pt(pose.footNear.dx * scaleM, pose.footNear.dy * scaleM),
@@ -446,14 +522,14 @@ class AthleteComponent extends PositionComponent
 
     // Far arm behind the torso. Hand offsets use canvas convention already
     // (negative dy = up), so they add to the shoulder directly.
-    _limb(
+    rigLimb(
       canvas,
       shoulder,
       shoulder + pose.handFar * (scaleM * px),
       bend: 0.2 * px,
       upper: strokeSkinFar,
       lower: strokeSkinFar,
-      lowerOverlay: _darken(sleevePaint.color, 0.25),
+      lowerOverlay: rigDarken(sleevePaint.color, 0.25),
       px: px,
     );
 
@@ -487,6 +563,30 @@ class AthleteComponent extends PositionComponent
         ..strokeWidth = px * 0.05
         ..strokeCap = StrokeCap.round,
     );
+
+    // Shoulder bar — widens the silhouette into a T at the top of the jersey.
+    canvas.drawLine(
+      shoulder + Offset(-0.15 * scaleM * px, 0),
+      shoulder + Offset(0.15 * scaleM * px, 0),
+      Paint()
+        ..color = primaryColor
+        ..strokeWidth = px * 0.15
+        ..strokeCap = StrokeCap.round,
+    );
+
+    // Jersey number — the surrounding canvas is X-flipped by facing, so
+    // un-flip locally to keep the digits readable in both directions.
+    final numberPos = Offset.lerp(hip, shoulder, 0.55)!;
+    canvas.save();
+    canvas.translate(numberPos.dx, numberPos.dy);
+    canvas.scale(b.facing.toDouble(), 1);
+    rigNumberPaint(accentColor, px * 0.2).render(
+      canvas,
+      '${jerseyNumberFor(b.spec.id)}',
+      Vector2.zero(),
+      anchor: Anchor.center,
+    );
+    canvas.restore();
 
     // Head + hair + headband.
     final headR = 0.155 * scaleM * px;
@@ -522,8 +622,19 @@ class AthleteComponent extends PositionComponent
         ..strokeWidth = headR * 0.26,
     );
 
+    // Visor face hint — a lit line across the front of the face. Flat color,
+    // no blur: a lit line is not a glow (THE GLOW RULE stays intact).
+    canvas.drawLine(
+      headCenter + Offset(headR * 0.15, headR * 0.42),
+      headCenter + Offset(headR * 0.95, headR * 0.42),
+      Paint()
+        ..color = Cyber.cyan.withValues(alpha: 0.85)
+        ..strokeWidth = headR * 0.2
+        ..strokeCap = StrokeCap.round,
+    );
+
     // Near arm in front.
-    _limb(
+    rigLimb(
       canvas,
       shoulder,
       shoulder + pose.handNear * (scaleM * px),
@@ -534,85 +645,3 @@ class AthleteComponent extends PositionComponent
       px: px,
     );
   }
-
-  /// Two-segment limb: joint solved as midpoint pushed along the normal.
-  void _limb(
-    Canvas canvas,
-    Offset from,
-    Offset to, {
-    required double bend,
-    required Paint upper,
-    required Paint lower,
-    required double px,
-    Color? lowerOverlay,
-    Color? shoe,
-    Color? shoeAccent,
-  }) {
-    final mid = Offset.lerp(from, to, 0.5)!;
-    final dir = to - from;
-    final len = dir.distance;
-    final normal = len > 0.001
-        ? Offset(-dir.dy / len, dir.dx / len)
-        : const Offset(1, 0);
-    final joint = mid + normal * bend;
-    
-    // Draw limb segments
-    canvas.drawLine(from, joint, upper);
-    canvas.drawLine(joint, to, lower);
-    
-    // Shadow pass for volume
-    final shadow = Paint()
-       ..color = Colors.black.withValues(alpha: 0.15)
-       ..strokeWidth = upper.strokeWidth * 0.25
-       ..strokeCap = StrokeCap.round
-       ..style = PaintingStyle.stroke;
-    canvas.drawLine(from - normal * (upper.strokeWidth * 0.2), joint - normal * (upper.strokeWidth * 0.2), shadow);
-    canvas.drawLine(joint - normal * (lower.strokeWidth * 0.2), to - normal * (lower.strokeWidth * 0.2), shadow);
-
-    // Overlay (e.g. arm sleeve or knee pad)
-    if (lowerOverlay != null) {
-       canvas.drawLine(
-         joint, 
-         Offset.lerp(joint, to, 0.5)!, 
-         Paint()
-           ..color = lowerOverlay
-           ..strokeWidth = lower.strokeWidth * 1.05
-           ..strokeCap = StrokeCap.round
-       );
-    }
-
-    if (shoe != null) {
-      // Intricate sneakers
-      final shoeDir = len > 0.001 ? dir / len : const Offset(0, 1);
-      final shoeR = px * 0.085;
-      
-      canvas.save();
-      canvas.translate(to.dx, to.dy);
-      final angle = atan2(shoeDir.dy, shoeDir.dx);
-      canvas.rotate(angle);
-      
-      canvas.drawOval(
-         Rect.fromCenter(center: Offset(shoeR * 0.3, 0), width: shoeR * 2.2, height: shoeR * 1.4),
-         Paint()..color = shoe
-      );
-      
-      if (shoeAccent != null) {
-         // Sole highlight
-         canvas.drawArc(
-            Rect.fromCenter(center: Offset(shoeR * 0.3, shoeR * 0.3), width: shoeR * 2.0, height: shoeR * 0.8),
-            0,
-            pi,
-            false,
-            Paint()..color = shoeAccent..style = PaintingStyle.stroke..strokeWidth = px * 0.03
-         );
-      }
-      canvas.restore();
-    }
-  }
-
-  Color _darken(Color color, double amount) => Color.lerp(
-        color,
-        const Color(0xFF05070B),
-        amount,
-      )!;
-}

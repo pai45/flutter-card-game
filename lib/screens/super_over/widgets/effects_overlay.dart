@@ -1,11 +1,12 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../../blocs/super_over/super_over_state.dart';
 import '../../../config/theme.dart';
 import '../../../models/super_over.dart';
 
-/// Full-screen effects overlay layered between GameWidget and HUD.
-/// Handles: screen flash on shots, ON FIRE vignette, combo counter.
+/// Restrained contact effects layered between the Flame scene and HUD.
 class EffectsOverlay extends StatefulWidget {
   const EffectsOverlay({required this.state, super.key});
 
@@ -43,14 +44,34 @@ class _EffectsOverlayState extends State<EffectsOverlay>
         widget.state.lastOutcome != null) {
       final lastOutcome = widget.state.lastOutcome;
       if (lastOutcome != null) {
-        _flashColor = switch (lastOutcome) {
-          ShotOutcome.six => Cyber.gold,
-          ShotOutcome.four => Cyber.lime,
-          ShotOutcome.caught || ShotOutcome.bowled => Cyber.danger,
-          _ => Colors.white,
+        _flashColor = switch (widget.state.timingTier) {
+          TimingTier.perfect => Cyber.cyan,
+          TimingTier.great => Cyber.lime,
+          TimingTier.good => Colors.white,
+          TimingTier.edgePoor => Cyber.amber,
+          TimingTier.miss || null =>
+            lastOutcome == ShotOutcome.bowled ? Cyber.danger : Cyber.muted,
         };
-        _flashController.forward(from: 0);
+        if (!widget.state.settings.reducedMotion &&
+            !MediaQuery.disableAnimationsOf(context)) {
+          _flashController.forward(from: 0);
+        } else {
+          _flashController.value = 1;
+        }
       }
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _vignetteController
+        ..stop()
+        ..value = .5;
+      _flashController.value = 1;
+    } else if (!_vignetteController.isAnimating) {
+      _vignetteController.repeat(reverse: true);
     }
   }
 
@@ -63,32 +84,46 @@ class _EffectsOverlayState extends State<EffectsOverlay>
 
   @override
   Widget build(BuildContext context) {
+    final reducedMotion =
+        widget.state.settings.reducedMotion ||
+        MediaQuery.disableAnimationsOf(context);
     return IgnorePointer(
       child: Stack(
         fit: StackFit.expand,
         children: [
           // ── ON FIRE vignette ──
           if (widget.state.onFire)
-            AnimatedBuilder(
-              animation: _vignetteController,
-              builder: (context, _) {
-                final t = _vignetteController.value;
-                return CustomPaint(
-                  painter: _VignettePainter(
-                    color: Cyber.amber,
-                    intensity: 0.25 + t * 0.15,
-                  ),
-                );
-              },
-            ),
+            if (reducedMotion)
+              CustomPaint(
+                painter: _VignettePainter(color: Cyber.cyan, intensity: .12),
+              )
+            else
+              AnimatedBuilder(
+                animation: _vignetteController,
+                builder: (context, _) {
+                  final t = _vignetteController.value;
+                  return CustomPaint(
+                    painter: _VignettePainter(
+                      color: Cyber.cyan,
+                      intensity: 0.14 + t * 0.08,
+                    ),
+                  );
+                },
+              ),
 
           // ── Screen flash ──
           AnimatedBuilder(
             animation: _flashController,
             builder: (context, _) {
-              final opacity = (1.0 - _flashController.value) * 0.35;
+              final opacity = (1.0 - _flashController.value) * 0.46;
               if (opacity <= 0.01) return const SizedBox.shrink();
-              return Container(color: _flashColor.withValues(alpha: opacity));
+              return CustomPaint(
+                painter: _ContactBurstPainter(
+                  color: _flashColor,
+                  progress: _flashController.value,
+                  opacity: opacity,
+                ),
+              );
             },
           ),
 
@@ -103,6 +138,57 @@ class _EffectsOverlayState extends State<EffectsOverlay>
       ),
     );
   }
+}
+
+class _ContactBurstPainter extends CustomPainter {
+  const _ContactBurstPainter({
+    required this.color,
+    required this.progress,
+    required this.opacity,
+  });
+
+  final Color color;
+  final double progress;
+  final double opacity;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final centre = Offset(size.width * .5, size.height * .69);
+    final radius = 14 + progress * 42;
+    canvas.drawCircle(
+      centre,
+      radius,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2 * (1 - progress).clamp(.25, 1)
+        ..color = color.withValues(alpha: opacity * .72),
+    );
+    for (var i = 0; i < 6; i++) {
+      final angle = i * math.pi / 3;
+      final innerRadius = 10 + progress * 14;
+      final inner = Offset(
+        centre.dx + math.sin(angle) * innerRadius,
+        centre.dy + math.cos(angle) * innerRadius,
+      );
+      final outer = Offset(
+        centre.dx + math.sin(angle) * radius,
+        centre.dy + math.cos(angle) * radius,
+      );
+      canvas.drawLine(
+        inner,
+        outer,
+        Paint()
+          ..strokeWidth = 1.2
+          ..color = color.withValues(alpha: opacity * .55),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_ContactBurstPainter oldDelegate) =>
+      oldDelegate.progress != progress ||
+      oldDelegate.opacity != opacity ||
+      oldDelegate.color != color;
 }
 
 class _VignettePainter extends CustomPainter {
@@ -142,7 +228,9 @@ class _ComboCounter extends StatelessWidget {
     return TweenAnimationBuilder<double>(
       key: ValueKey(combo),
       tween: Tween(begin: 1.4, end: 1.0),
-      duration: const Duration(milliseconds: 350),
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 350),
       curve: Curves.elasticOut,
       builder: (context, scale, child) =>
           Transform.scale(scale: scale, child: child),
@@ -154,12 +242,7 @@ class _ComboCounter extends StatelessWidget {
             color: combo >= 4 ? Cyber.gold : Cyber.cyan,
             width: 1.5,
           ),
-          borderRadius: BorderRadius.circular(4),
-          boxShadow: Cyber.glow(
-            combo >= 4 ? Cyber.gold : Cyber.cyan,
-            alpha: 0.4,
-            blur: 12,
-          ),
+          borderRadius: BorderRadius.zero,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'basketball_scorecard.dart';
 import 'cricket_scorecard.dart';
+import 'tennis_scorecard.dart';
 
 /// Lifecycle of a fixture, which drives whether a prediction can still be made.
 enum MatchStatus { upcoming, live, finished }
@@ -71,8 +72,17 @@ class MatchLineup {
   final String? manager; // Manager/Coach name
 }
 
+class F1SessionResult {
+  const F1SessionResult({
+    required this.name,
+    required this.results,
+  });
+  final String name; // e.g. "Practice 1", "Qualifying"
+  final List<String> results; // e.g. ["1. Verstappen", "2. Hamilton"]
+}
+
 /// Sport governs how sport-specific surfaces lay out scores and modules.
-enum Sport { football, cricket, f1, basketball }
+enum Sport { football, cricket, f1, basketball, tennis }
 
 /// One side of a fixture. Crest art can be added later via [crestAsset];
 /// until then the UI falls back to an initials badge tinted with [color].
@@ -117,8 +127,11 @@ class SportMatch {
     this.awayLineup,
     this.cricketScorecard,
     this.basketballScorecard,
+    this.tennisScorecard,
     this.commentary,
+    this.f1Sessions,
     this.f1DriverStandings,
+    this.f1WeekendEndDate,
     this.rewardXp = 0,
   });
 
@@ -159,12 +172,19 @@ class SportMatch {
 
   final CricketScorecard? cricketScorecard;
   final BasketballScorecard? basketballScorecard;
+  final TennisScorecard? tennisScorecard;
 
   /// Play-by-play commentary.
   final List<MatchCommentary>? commentary;
 
   /// F1 Driver Standings.
   final List<String>? f1DriverStandings;
+
+  /// F1 specific sessions (Practice, Qualifying, Race)
+  final List<F1SessionResult>? f1Sessions;
+
+  /// The end date of the F1 weekend, for displaying a date range.
+  final DateTime? f1WeekendEndDate;
 
   /// XP shown on the reward strip once the match is finished/settled.
   final int rewardXp;
@@ -194,8 +214,11 @@ class SportMatch {
     MatchLineup? awayLineup,
     CricketScorecard? cricketScorecard,
     BasketballScorecard? basketballScorecard,
+    TennisScorecard? tennisScorecard,
     List<MatchCommentary>? commentary,
+    List<F1SessionResult>? f1Sessions,
     List<String>? f1DriverStandings,
+    DateTime? f1WeekendEndDate,
     int? rewardXp,
     bool clearLiveMinute = false,
     bool clearHomeScore = false,
@@ -227,8 +250,11 @@ class SportMatch {
     awayLineup: awayLineup ?? this.awayLineup,
     cricketScorecard: cricketScorecard ?? this.cricketScorecard,
     basketballScorecard: basketballScorecard ?? this.basketballScorecard,
+    tennisScorecard: tennisScorecard ?? this.tennisScorecard,
     commentary: commentary ?? this.commentary,
+    f1Sessions: f1Sessions ?? this.f1Sessions,
     f1DriverStandings: f1DriverStandings ?? this.f1DriverStandings,
+    f1WeekendEndDate: f1WeekendEndDate ?? this.f1WeekendEndDate,
     rewardXp: rewardXp ?? this.rewardXp,
   );
 }

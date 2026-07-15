@@ -15,6 +15,7 @@ class AchievementStats {
     required this.cleanSheets,
     required this.shootoutWins,
     required this.basketballWins,
+    required this.tennisAchievements,
     required this.predictionsMade,
     required this.correctPredictions,
     required this.picksPlaced,
@@ -35,6 +36,7 @@ class AchievementStats {
       cleanSheets = 0,
       shootoutWins = 0,
       basketballWins = 0,
+      tennisAchievements = const <String>{},
       predictionsMade = 0,
       correctPredictions = 0,
       picksPlaced = 0,
@@ -53,6 +55,7 @@ class AchievementStats {
   final int cleanSheets;
   final int shootoutWins;
   final int basketballWins;
+  final Set<String> tennisAchievements;
   final int predictionsMade;
   final int correctPredictions;
   final int picksPlaced;
@@ -64,7 +67,13 @@ class AchievementStats {
   final int coins;
 }
 
-enum AchievementCategory { matches, progression, predictions, picks, collection }
+enum AchievementCategory {
+  matches,
+  progression,
+  predictions,
+  picks,
+  collection,
+}
 
 /// The three tabs the full achievements page groups badges under. Categories
 /// fold into tabs: predictions → prediction, picks → picks, and everything
@@ -194,6 +203,106 @@ final List<Achievement> achievementCatalog = [
     category: AchievementCategory.matches,
     target: 5,
     measure: (s) => s.basketballWins,
+  ),
+  Achievement(
+    id: 'tennis_clean_hold',
+    title: 'Clean Hold',
+    description: 'Win a tennis service game without losing a point.',
+    icon: Icons.verified_user_outlined,
+    tier: CardTier.bronze,
+    category: AchievementCategory.matches,
+    target: 1,
+    measure: (s) => s.tennisAchievements.contains('clean-hold') ? 1 : 0,
+  ),
+  Achievement(
+    id: 'tennis_break_through',
+    title: 'Break Through',
+    description: 'Convert a break point in Tennis Rally.',
+    icon: Icons.flash_on,
+    tier: CardTier.bronze,
+    category: AchievementCategory.matches,
+    target: 1,
+    measure: (s) => s.tennisAchievements.contains('break-through') ? 1 : 0,
+  ),
+  Achievement(
+    id: 'tennis_unbreakable',
+    title: 'Unbreakable',
+    description: 'Save three break points in one tennis match.',
+    icon: Icons.shield_outlined,
+    tier: CardTier.silver,
+    category: AchievementCategory.matches,
+    target: 1,
+    measure: (s) => s.tennisAchievements.contains('unbreakable') ? 1 : 0,
+  ),
+  Achievement(
+    id: 'tennis_ace_high',
+    title: 'Ace High',
+    description: 'Hit five aces across completed tennis sets.',
+    icon: Icons.sports_tennis,
+    tier: CardTier.silver,
+    category: AchievementCategory.matches,
+    target: 1,
+    measure: (s) => s.tennisAchievements.contains('ace-high') ? 1 : 0,
+  ),
+  Achievement(
+    id: 'tennis_rally_architect',
+    title: 'Rally Architect',
+    description: 'Complete a 20-shot rally.',
+    icon: Icons.all_inclusive,
+    tier: CardTier.gold,
+    category: AchievementCategory.matches,
+    target: 1,
+    measure: (s) => s.tennisAchievements.contains('rally-architect') ? 1 : 0,
+  ),
+  Achievement(
+    id: 'tennis_net_authority',
+    title: 'Net Authority',
+    description: 'Win ten net points with a serve-and-volley athlete.',
+    icon: Icons.grid_on,
+    tier: CardTier.gold,
+    category: AchievementCategory.matches,
+    target: 1,
+    measure: (s) => s.tennisAchievements.contains('net-authority') ? 1 : 0,
+  ),
+  Achievement(
+    id: 'tennis_comeback_set',
+    title: 'Comeback Set',
+    description: 'Win a tennis set after trailing by three games.',
+    icon: Icons.trending_up,
+    tier: CardTier.gold,
+    category: AchievementCategory.matches,
+    target: 1,
+    measure: (s) => s.tennisAchievements.contains('comeback-set') ? 1 : 0,
+  ),
+  Achievement(
+    id: 'tennis_tiebreak_nerve',
+    title: 'Tiebreak Nerve',
+    description: 'Win after saving set point in a tiebreak.',
+    icon: Icons.psychology_alt_outlined,
+    tier: CardTier.gold,
+    category: AchievementCategory.matches,
+    target: 1,
+    measure: (s) => s.tennisAchievements.contains('tiebreak-nerve') ? 1 : 0,
+  ),
+  Achievement(
+    id: 'tennis_all_styles',
+    title: 'All Styles',
+    description: 'Win with every base tennis archetype.',
+    icon: Icons.style_outlined,
+    tier: CardTier.platinum,
+    category: AchievementCategory.matches,
+    target: 1,
+    measure: (s) => s.tennisAchievements.contains('all-styles') ? 1 : 0,
+  ),
+  Achievement(
+    id: 'tennis_champion',
+    title: 'Champion',
+    description: 'Win the eight-player Tennis Rally tournament.',
+    icon: Icons.emoji_events,
+    tier: CardTier.platinum,
+    category: AchievementCategory.matches,
+    target: 1,
+    measure: (s) => s.tennisAchievements.contains('champion') ? 1 : 0,
   ),
   Achievement(
     id: 'veteran',
@@ -374,8 +483,10 @@ List<Achievement> achievementsForTab(AchievementTab tab) =>
     achievementCatalog.where((a) => a.tab == tab).toList();
 
 /// How many badges in [tab] are unlocked for [stats].
-int unlockedAchievementCountForTab(AchievementStats stats, AchievementTab tab) =>
-    achievementsForTab(tab).where((a) => a.unlocked(stats)).length;
+int unlockedAchievementCountForTab(
+  AchievementStats stats,
+  AchievementTab tab,
+) => achievementsForTab(tab).where((a) => a.unlocked(stats)).length;
 
 /// The ids of every catalogue badge currently unlocked for [stats]. Used by the
 /// celebration watcher to snapshot what the player has already earned.

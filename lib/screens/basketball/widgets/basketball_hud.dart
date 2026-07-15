@@ -295,86 +295,17 @@ class BasketballShotMeter extends StatelessWidget {
       valueListenable: game.meter,
       builder: (context, view, _) {
         if (view == null) return const SizedBox.shrink();
-        return SizedBox(
-          width: 26,
-          height: 150,
-          child: CustomPaint(painter: _ShotMeterPainter(view)),
+        return CyberChargeMeter(
+          view: ChargeMeterView(
+            progress: view.progress,
+            perfectCenter: view.perfectCenter,
+            perfectHalf: view.perfectHalf,
+            goodHalf: view.goodHalf,
+          ),
         );
       },
     );
   }
-}
-
-class _ShotMeterPainter extends CustomPainter {
-  _ShotMeterPainter(this.view);
-
-  final ShotMeterView view;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final track = RRect.fromRectAndRadius(
-      Rect.fromLTWH(size.width / 2 - 5, 0, 10, size.height),
-      const Radius.circular(2),
-    );
-    canvas.drawRRect(
-      track,
-      Paint()..color = Cyber.bg.withValues(alpha: 0.75),
-    );
-    canvas.drawRRect(
-      track,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1
-        ..color = Cyber.border,
-    );
-
-    double y(double frac) => size.height * (1 - frac.clamp(0.0, 1.0));
-
-    // Good window (wider, dimmer) behind the perfect band.
-    final goodTop = y(view.perfectCenter + view.perfectHalf + view.goodHalf);
-    final goodBottom = y(view.perfectCenter - view.perfectHalf - view.goodHalf);
-    canvas.drawRect(
-      Rect.fromLTRB(size.width / 2 - 5, goodTop, size.width / 2 + 5, goodBottom),
-      Paint()..color = Cyber.cyan.withValues(alpha: 0.22),
-    );
-    // Perfect band.
-    final perfectTop = y(view.perfectCenter + view.perfectHalf);
-    final perfectBottom = y(view.perfectCenter - view.perfectHalf);
-    canvas.drawRect(
-      Rect.fromLTRB(
-        size.width / 2 - 5,
-        perfectTop,
-        size.width / 2 + 5,
-        perfectBottom,
-      ),
-      Paint()..color = Cyber.lime.withValues(alpha: 0.85),
-    );
-
-    // Progress needle.
-    final needleY = y(view.progress);
-    canvas.drawRect(
-      Rect.fromLTRB(
-        size.width / 2 - 5,
-        needleY,
-        size.width / 2 + 5,
-        size.height,
-      ),
-      Paint()..color = Cyber.gold.withValues(alpha: 0.45),
-    );
-    canvas.drawLine(
-      Offset(0, needleY),
-      Offset(size.width, needleY),
-      Paint()
-        ..color = Cyber.gold
-        ..strokeWidth = 2.5,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_ShotMeterPainter oldDelegate) =>
-      oldDelegate.view.progress != view.progress ||
-      oldDelegate.view.perfectCenter != view.perfectCenter ||
-      oldDelegate.view.perfectHalf != view.perfectHalf;
 }
 
 // ---------------------------------------------------------------------------

@@ -36,6 +36,23 @@ double goalChanceForDiff(double diff) {
   return 0.05;
 }
 
+List<MatchHistoryEntry> _retainHistoryByMode(
+  Iterable<MatchHistoryEntry> entries, {
+  int perMode = 12,
+}) {
+  final counts = <String, int>{};
+  final retained = <MatchHistoryEntry>[];
+  final ids = <String>{};
+  for (final entry in entries) {
+    if (!ids.add(entry.id)) continue;
+    final count = counts[entry.mode] ?? 0;
+    if (count >= perMode) continue;
+    counts[entry.mode] = count + 1;
+    retained.add(entry);
+  }
+  return retained;
+}
+
 class GameBloc extends Bloc<GameEvent, GameState> {
   GameBloc(this._storage) : super(GameState.initial()) {
     on<GameLoaded>(_onLoaded);
@@ -100,6 +117,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<GrandPrixFinished>(_onGrandPrixFinished);
     on<SuperOverFinished>(_onSuperOverFinished);
     on<BasketballFinished>(_onBasketballFinished);
+    on<FinalOverFinished>(_onFinalOverFinished);
+    on<TennisFinished>(_onTennisFinished);
   }
 
   final SecureGameStorage _storage;
@@ -1274,7 +1293,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           .toList(),
       xpEarned: xp.appliedDelta,
     );
-    final history = [historyEntry, ...state.matchHistory].take(12).toList();
+    final history = _retainHistoryByMode([historyEntry, ...state.matchHistory]);
     final streak = state.streak.record(
       StreakActivity.pitchDuel,
       DateTime.now(),
@@ -1342,7 +1361,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       rounds: const [],
       xpEarned: xp.appliedDelta,
     );
-    final history = [historyEntry, ...state.matchHistory].take(12).toList();
+    final history = _retainHistoryByMode([historyEntry, ...state.matchHistory]);
     final streak = state.streak.record(
       StreakActivity.penaltyShootout,
       DateTime.now(),
@@ -1389,7 +1408,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       rounds: const [],
       xpEarned: xp.appliedDelta,
     );
-    final history = [historyEntry, ...state.matchHistory].take(12).toList();
+    final history = _retainHistoryByMode([historyEntry, ...state.matchHistory]);
     emit(
       state.copyWith(
         matchHistory: history,
@@ -1428,7 +1447,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       rounds: const [],
       xpEarned: xp.appliedDelta,
     );
-    final history = [historyEntry, ...state.matchHistory].take(12).toList();
+    final history = _retainHistoryByMode([historyEntry, ...state.matchHistory]);
     emit(
       state.copyWith(
         matchHistory: history,
@@ -1444,33 +1463,34 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _storage.saveXpLedger(xp.ledger);
   }
 
-  Future<void> _onSuperOverFinished(
-    SuperOverFinished event,
+  Future<void> _onFinalOverFinished(
+    FinalOverFinished event,
     Emitter<GameState> emit,
   ) async {
+    // The result cinematic can be re-entered (rematch, back-navigation). The
+    // match id is the history entry id, so a replayed settle is a no-op.
+    if (state.matchHistory.any((entry) => entry.id == event.matchId)) return;
+
     final xp = _nextXpSnapshot(
       delta: event.xp,
-      source: XpTransactionSource.superOver,
-      title: 'SUPER OVER',
-      details: '${event.runs} RUNS (${event.wickets} WKT)',
+      source: XpTransactionSource.finalOver,
+      title: 'FINAL OVER',
+      details:
+          '${event.resultLabel} ${event.runs}/${event.wickets} '
+          'CHASING ${event.target} · ${event.stars}★',
     );
-    final activeDeck = state.deckSlots
-        .where((slot) => slot.id == state.activeDeckId)
-        .firstOrNull;
     final historyEntry = MatchHistoryEntry(
-      id: 'superover-${DateTime.now().microsecondsSinceEpoch}',
-      mode: 'super_over',
-      deckName: activeDeck?.name ?? 'Unknown Deck',
+      id: event.matchId,
+      mode: 'finalover',
+      deckName: 'FINAL OVER · ${event.tierLabel}',
       timestampIso: DateTime.now().toIso8601String(),
-      resultLabel: event.wonChase == null
-          ? 'Completed'
-          : (event.wonChase! ? 'Victory' : 'Defeat'),
+      resultLabel: event.resultLabel,
       playerScore: event.runs,
-      opponentScore: event.wickets,
+      opponentScore: event.target,
       rounds: const [],
       xpEarned: xp.appliedDelta,
     );
-    final history = [historyEntry, ...state.matchHistory].take(12).toList();
+    final history = _retainHistoryByMode([historyEntry, ...state.matchHistory]);
     emit(
       state.copyWith(
         matchHistory: history,
@@ -1484,6 +1504,132 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _storage.saveMatchHistory(history);
     await _storage.saveProgression(xp.progression);
     await _storage.saveXpLedger(xp.ledger);
+  }
+
+  Future<void> _onTennisFinished(
+    TennisFinished event,
+    Emitter<GameState> emit,
+  ) async {
+    final settled = await _storage.loadTennisRewardSettlementIds();
+    if (settled.contains(event.matchId)) return;
+
+    final xp = _nextXpSnapshot(
+      delta: event.xp,
+      source: XpTransactionSource.tennis,
+      title: 'TENNIS RALLY',
+      details:
+          '${event.resultLabel} ${event.playerGames}-${event.opponentGames} / '
+          '${event.grade} GRADE',
+    );
+    final coinSnapshot = _nextCoinSnapshot(
+      delta: event.coins,
+      source: OzCoinTransactionSource.tennisReward,
+      type: OzCoinTransactionType.earn,
+      title: 'TENNIS RALLY REWARD',
+      subtitle: '${event.modeLabel} / ${event.difficultyLabel}',
+    );
+    final coins = coinSnapshot?.coins ?? state.coins;
+    final coinLedger = coinSnapshot?.ledger ?? state.coinLedger;
+    final historyEntry = MatchHistoryEntry(
+      id: event.matchId,
+      mode: 'tennis',
+      deckName:
+          '${event.playerName} vs ${event.opponentName} / '
+          '${event.difficultyLabel}',
+      timestampIso: DateTime.now().toIso8601String(),
+      resultLabel: event.resultLabel,
+      playerScore: event.playerGames,
+      opponentScore: event.opponentGames,
+      rounds: const [],
+      xpEarned: xp.appliedDelta,
+    );
+    final history = _retainHistoryByMode([historyEntry, ...state.matchHistory]);
+    emit(
+      state.copyWith(
+        matchHistory: history,
+        coins: coins,
+        coinLedger: coinLedger,
+        progression: xp.progression,
+        previousProgression: state.progression,
+        pendingLevelUps: xp.levelsGained,
+        lastMatchXP: xp.appliedDelta,
+        xpLedger: xp.ledger,
+      ),
+    );
+    settled.add(event.matchId);
+    await Future.wait([
+      _storage.saveMatchHistory(history),
+      _storage.saveProgression(xp.progression),
+      _storage.saveXpLedger(xp.ledger),
+      _saveWallet(coins: coins),
+      _storage.saveCoinLedger(coinLedger),
+      _storage.saveTennisRewardSettlementIds(settled),
+    ]);
+  }
+
+  Future<void> _onSuperOverFinished(
+    SuperOverFinished event,
+    Emitter<GameState> emit,
+  ) async {
+    final summary = event.summary;
+    final settlementId = 'super-over:${summary.matchId}';
+    final settled = await _storage.loadSuperOverSettlementIds();
+    if (settled.contains(settlementId) ||
+        state.matchHistory.any((entry) => entry.id == settlementId)) {
+      return;
+    }
+    final reward = summary.rewardBreakdown;
+    final xp = _nextXpSnapshot(
+      delta: reward.totalXp,
+      source: XpTransactionSource.superOver,
+      title: 'SUPER OVER',
+      details: '${summary.score} RUNS (${summary.wickets} WKT)',
+    );
+    final activeDeck = state.deckSlots
+        .where((slot) => slot.id == state.activeDeckId)
+        .firstOrNull;
+    final historyEntry = MatchHistoryEntry(
+      id: settlementId,
+      mode: 'super_over',
+      deckName: activeDeck?.name ?? 'Unknown Deck',
+      timestampIso: DateTime.fromMillisecondsSinceEpoch(
+        summary.completedAtEpochMs == 0
+            ? DateTime.now().millisecondsSinceEpoch
+            : summary.completedAtEpochMs,
+      ).toIso8601String(),
+      resultLabel: summary.wonChase == null
+          ? 'Completed'
+          : (summary.wonChase! ? 'Victory' : 'Defeat'),
+      playerScore: summary.score,
+      opponentScore: summary.target ?? 0,
+      rounds: [
+        for (final ball in summary.ballRecords)
+          MatchHistoryRound(
+            round: ball.ballNumber,
+            scenarioTitle: 'BALL ${ball.ballNumber}',
+            outcomeLabel: ball.outcome.name.toUpperCase(),
+            playerAttacking: true,
+          ),
+      ],
+      xpEarned: xp.appliedDelta,
+      superOverSummary: summary,
+    );
+    final history = _retainHistoryByMode([historyEntry, ...state.matchHistory]);
+    settled.add(settlementId);
+    emit(
+      state.copyWith(
+        matchHistory: history,
+        progression: xp.progression,
+        previousProgression: state.progression,
+        pendingLevelUps: xp.levelsGained,
+        lastMatchXP: xp.appliedDelta,
+        xpLedger: xp.ledger,
+      ),
+    );
+    await _storage.saveMatchHistory(history);
+    await _storage.saveProgression(xp.progression);
+    await _storage.saveXpLedger(xp.ledger);
+    await _storage.saveSuperOverSettlementIds(settled);
   }
 
   RoundOutcome _resolveRound(
@@ -1943,6 +2089,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     return switch (source) {
       OzCoinTransactionSource.matchReward => 'MATCH REWARD',
       OzCoinTransactionSource.shootoutReward => 'SHOOTOUT REWARD',
+      OzCoinTransactionSource.tennisReward => 'TENNIS RALLY REWARD',
       OzCoinTransactionSource.pickStake => 'PICK STAKE',
       OzCoinTransactionSource.pickPayout => 'PICK PAYOUT',
       OzCoinTransactionSource.packPurchase => 'PACK PURCHASE',

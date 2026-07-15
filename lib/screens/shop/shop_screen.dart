@@ -72,6 +72,7 @@ const _shopSports = <Sport>[
   Sport.football,
   Sport.cricket,
   Sport.basketball,
+  Sport.tennis,
   Sport.f1,
 ];
 
@@ -79,10 +80,15 @@ final _shopSportLabels = _shopSports
     .map((sport) => sportModuleFor(sport).label.toUpperCase())
     .toList(growable: false);
 
+final _shopSportIcons = _shopSports
+    .map((sport) => sportModuleFor(sport).icon)
+    .toList(growable: false);
+
 String _shopSportCode(Sport sport) => switch (sport) {
   Sport.football => 'FOOTBALL',
   Sport.cricket => 'CRICKET',
   Sport.basketball => 'BASKETBALL',
+  Sport.tennis => 'TENNIS',
   Sport.f1 => 'F1',
 };
 
@@ -94,6 +100,9 @@ Sport _cardSport(PlayerCard card) {
   }
   if (card.icon == Icons.sports_basketball) {
     return Sport.basketball;
+  }
+  if (card.icon == Icons.sports_tennis) {
+    return Sport.tennis;
   }
   return Sport.football;
 }
@@ -353,6 +362,7 @@ class _ShopSportsTabs extends StatelessWidget {
   Widget build(BuildContext context) {
     return CyberUnderlineTabs(
       labels: _shopSportLabels,
+      icons: _shopSportIcons,
       activeIndex: activeIndex,
       accent: sportModuleFor(selectedSport).accent,
       onTap: onTap,
@@ -2858,5 +2868,6 @@ List<String> _filtersForSport(Sport sport) => switch (sport) {
   ],
   Sport.cricket => ['All', 'Batters', 'Bowlers', ..._filters.skip(1)],
   Sport.basketball => ['All', 'Guards', 'Wings', 'Bigs', ..._filters.skip(1)],
+  Sport.tennis => ['All', 'ATP', 'WTA', ..._filters.skip(1)],
   Sport.f1 => _filters,
 };

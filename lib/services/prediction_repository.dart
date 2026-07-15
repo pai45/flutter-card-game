@@ -4,6 +4,7 @@ import '../models/league.dart';
 import '../models/prediction.dart';
 import '../models/sport_match.dart';
 import '../models/team_standing.dart';
+import '../models/tennis_scorecard.dart';
 import 'espn_score_service.dart';
 import 'football_question_bank.dart';
 
@@ -14,7 +15,7 @@ abstract class PredictionRepository {
   Future<List<League>> leagues();
 
   /// Fixtures for [day] (defaults to "today" in mock terms — returns all).
-  Future<List<SportMatch>> fixtures({DateTime? day});
+  Future<List<SportMatch>> fixtures({DateTime? day, Sport? sport});
 
   /// All quiz sets for a fixture.
   Future<List<PredictionQuiz>> quizzesFor(String matchId);
@@ -39,7 +40,7 @@ abstract class PredictionRepository {
   );
 
   /// Enrich fixtures with live network data asynchronously
-  Future<List<SportMatch>> enrichFixtures(List<SportMatch> fixtures);
+  Future<List<SportMatch>> enrichFixturesForSport(List<SportMatch> fixtures, Sport sport);
 }
 
 /// Hardcoded fixtures + quizzes mirroring the home mockup, spanning every card
@@ -71,20 +72,88 @@ class MockPredictionRepository implements PredictionRepository {
     shortCode: 'WNBA',
     accent: Color(0xffff6600),
   );
+  static const _nba = League(
+    id: 'nba',
+    name: 'NBA',
+    shortCode: 'NBA',
+    accent: Color(0xffc9082a),
+  );
+  static const _atp = League(
+    id: 'atp',
+    name: 'ATP Tour',
+    shortCode: 'ATP',
+    accent: Color(0xff002865),
+  );
+  static const _wta = League(
+    id: 'wta',
+    name: 'WTA Tour',
+    shortCode: 'WTA',
+    accent: Color(0xff8a2be2),
+  );
 
   // ── Teams ──────────────────────────────────────────────────────────────────
-  static const _mercedes = SportTeam(
-    id: 'mercedes',
-    name: 'Mercedes',
-    shortName: 'MER',
-    color: Color(0xff00a19c),
+  // ── F1 race weekends ────────────────────────────────────────────────────────
+  // Each F1 fixture is one race weekend; `home` carries the Grand Prix name so
+  // it reads in the weekend-hub header, `away` is the field placeholder.
+  static const _f1Field = SportTeam(
+    id: 'f1_field',
+    name: 'Formula 1',
+    shortName: 'F1',
+    color: Color(0xffe10600),
   );
-  static const _ferrari = SportTeam(
-    id: 'ferrari',
-    name: 'Ferrari',
-    shortName: 'FER',
-    color: Color(0xffdc0000),
+  static const _gpBritish = SportTeam(
+    id: 'gp_british',
+    name: 'British Grand Prix',
+    shortName: 'GBR',
+    color: Color(0xff012169),
   );
+  static const _gpBelgian = SportTeam(
+    id: 'gp_belgian',
+    name: 'Belgian Grand Prix',
+    shortName: 'BEL',
+    color: Color(0xfffdda24),
+  );
+  static const _gpHungarian = SportTeam(
+    id: 'gp_hungarian',
+    name: 'Hungarian Grand Prix',
+    shortName: 'HUN',
+    color: Color(0xffcd2a3e),
+  );
+
+  // Championship standings — shared across weekends (order = points table).
+  static const _f1Standings = <String>[
+    'Charles Leclerc',
+    'George Russell',
+    'Lewis Hamilton',
+    'Lando Norris',
+    'Isack Hadjar',
+    'Liam Lawson',
+    'Arvid Lindblad',
+    'Gabriel Bortoleto',
+    'Franco Colapinto',
+    'Pierre Gasly',
+    'Oscar Piastri',
+    'Oliver Bearman',
+    'Esteban Ocon',
+    'Sergio Pérez',
+    'Kimi Antonelli',
+    'Valtteri Bottas',
+    'Carlos Sainz',
+    'Fernando Alonso',
+    'Lance Stroll',
+    'Max Verstappen',
+    'Alexander Albon',
+    'Nico Hülkenberg',
+  ];
+
+  // Session line-up for a weekend that has not run yet (results fill in later).
+  static const _f1UpcomingSessions = <F1SessionResult>[
+    F1SessionResult(name: 'Practice 1', results: []),
+    F1SessionResult(name: 'Practice 2', results: []),
+    F1SessionResult(name: 'Practice 3', results: []),
+    F1SessionResult(name: 'Qualifying', results: []),
+    F1SessionResult(name: 'Race', results: []),
+  ];
   static const _france = SportTeam(
     id: 'fra',
     name: 'France',
@@ -438,6 +507,32 @@ class MockPredictionRepository implements PredictionRepository {
     color: Color(0xffd81920),
   );
 
+  // Tennis Teams (Players)
+  static const _alcaraz = SportTeam(
+    id: 'carlos_alcaraz',
+    name: 'Carlos Alcaraz',
+    shortName: 'C. Alcaraz',
+    color: Color(0xffffffff),
+  );
+  static const _djokovic = SportTeam(
+    id: 'novak_djokovic',
+    name: 'Novak Djokovic',
+    shortName: 'N. Djokovic',
+    color: Color(0xffffffff),
+  );
+  static const _paolini = SportTeam(
+    id: 'jasmine_paolini',
+    name: 'Jasmine Paolini',
+    shortName: 'J. Paolini',
+    color: Color(0xffffffff),
+  );
+  static const _krejcikova = SportTeam(
+    id: 'barbora_krejcikova',
+    name: 'Barbora Krejcikova',
+    shortName: 'B. Krejcikova',
+    color: Color(0xffffffff),
+  );
+
   // Fixtures are built relative to "now" so statuses stay believable on launch.
   late final DateTime _now = DateTime.now();
   late final DateTime _today = DateTime(_now.year, _now.month, _now.day);
@@ -454,6 +549,42 @@ class MockPredictionRepository implements PredictionRepository {
   }
 
   late final List<SportMatch> _fixtures = [
+    // Wimbledon Men's Final (Mock)
+    SportMatch(
+      id: 'wimbledon_mens_final_26',
+      leagueId: 'atp',
+      sport: Sport.tennis,
+      home: _alcaraz,
+      away: _djokovic,
+      kickoff: DateTime(2026, 7, 12, 14),
+      status: MatchStatus.finished,
+      homeScore: '3',
+      awayScore: '0',
+      prizeLabel: 'Win 8500 coins',
+      tennisScorecard: const TennisScorecard(sets: [
+        TennisSet(homeScore: 6, awayScore: 4, isHomeWinner: true),
+        TennisSet(homeScore: 6, awayScore: 2, isHomeWinner: true),
+        TennisSet(homeScore: 6, awayScore: 1, isHomeWinner: true),
+      ]),
+    ),
+    // Wimbledon Women's Final (Mock)
+    SportMatch(
+      id: 'wimbledon_womens_final_26',
+      leagueId: 'wta',
+      sport: Sport.tennis,
+      home: _krejcikova,
+      away: _paolini,
+      kickoff: DateTime(2026, 7, 11, 14),
+      status: MatchStatus.finished,
+      homeScore: '2',
+      awayScore: '1',
+      prizeLabel: 'Win 8200 coins',
+      tennisScorecard: const TennisScorecard(sets: [
+        TennisSet(homeScore: 6, awayScore: 2, isHomeWinner: true),
+        TennisSet(homeScore: 2, awayScore: 6, isAwayWinner: true),
+        TennisSet(homeScore: 6, awayScore: 4, isHomeWinner: true),
+      ]),
+    ),
     // FIFA World Cup 26 knockout stage only: Round of 32 through Final.
     SportMatch(
       id: 'fifa_r32_mex_rsa',
@@ -776,6 +907,45 @@ class MockPredictionRepository implements PredictionRepository {
       status: _fallbackStatusFor(DateTime(2026, 7, 19, 23, 30)),
       prizeLabel: 'Win 12000 coins',
     ),
+    // ── Demo fixtures (yesterday) for the redesigned match-card states. All
+    // finished so they sit together under one day-back on the MATCH tab.
+    // 1) Finished + an unsettled prediction → gold "RESULTS ARE OUT" (unclaimed).
+    SportMatch(
+      id: 'fifa_demo_esp_ger',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _spain,
+      away: _germany,
+      kickoff: _at(-1, 18, 30),
+      status: MatchStatus.finished,
+      homeScore: '2',
+      awayScore: '1',
+    ),
+    // 2) Finished + settled win + a won Oz pick → revealed "+XP | +OZ". Reuses
+    // the orphan 'fifa_arg_jor_winner' market (matchId fifa_arg_jor) for volume.
+    SportMatch(
+      id: 'fifa_arg_jor',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _argentina,
+      away: _jordan,
+      kickoff: _at(-1, 16),
+      status: MatchStatus.finished,
+      homeScore: '3',
+      awayScore: '1',
+    ),
+    // 3) Finished, never engaged → "FULL TIME | VOL" (ignored).
+    SportMatch(
+      id: 'fifa_demo_eng_cro',
+      leagueId: 'fifa',
+      sport: Sport.football,
+      home: _england,
+      away: _croatia,
+      kickoff: _at(-1, 21),
+      status: MatchStatus.finished,
+      homeScore: '1',
+      awayScore: '0',
+    ),
     // EPL — today's headline fixture: Man Utd vs Arsenal.
     SportMatch(
       id: 'epl_mu_ars',
@@ -1005,13 +1175,15 @@ class MockPredictionRepository implements PredictionRepository {
       status: MatchStatus.upcoming,
       prizeLabel: 'Win 3500 coins',
     ),
+    // British GP — completed weekend (reveal-ready predictions).
     SportMatch(
       id: 'f1_british_gp',
       leagueId: 'f1',
       sport: Sport.f1,
-      home: _mercedes,
-      away: _ferrari,
-      kickoff: _at(0, 14), // Changed to today so it appears instantly on the active tab
+      home: _gpBritish,
+      away: _f1Field,
+      kickoff: DateTime(2026, 7, 3, 12, 30),
+      f1WeekendEndDate: DateTime(2026, 7, 5, 16, 0),
       status: MatchStatus.finished,
       homeScore: 'P1',
       awayScore: 'P3',
@@ -1033,36 +1205,91 @@ class MockPredictionRepository implements PredictionRepository {
           secondaryPlayerName: 'Wins the Race!',
         ),
       ],
-      f1DriverStandings: const [
-        'Charles Leclerc',
-        'George Russell',
-        'Lewis Hamilton',
-        'Lando Norris',
-        'Isack Hadjar',
-        'Liam Lawson',
-        'Arvid Lindblad',
-        'Gabriel Bortoleto',
-        'Franco Colapinto',
-        'Pierre Gasly',
-        'Oscar Piastri',
-        'Oliver Bearman',
-        'Esteban Ocon',
-        'Sergio Pérez',
-        'Kimi Antonelli',
-        'Valtteri Bottas',
-        'Carlos Sainz',
-        'Fernando Alonso',
-        'Lance Stroll',
-        'Max Verstappen',
-        'Alexander Albon',
-        'Nico Hülkenberg',
+      f1DriverStandings: _f1Standings,
+      f1Sessions: const [
+        F1SessionResult(
+          name: 'Practice 1',
+          results: ['1. Norris', '2. Piastri', '3. Leclerc'],
+        ),
+        F1SessionResult(
+          name: 'Practice 2',
+          results: ['1. Leclerc', '2. Hamilton', '3. Russell'],
+        ),
+        F1SessionResult(
+          name: 'Practice 3',
+          results: ['1. Russell', '2. Norris', '3. Hamilton'],
+        ),
+        F1SessionResult(
+          name: 'Qualifying',
+          results: ['1. Leclerc', '2. Russell', '3. Hamilton'],
+        ),
+        F1SessionResult(
+          name: 'Race',
+          results: ['1. Hamilton', '2. Leclerc', '3. Russell'],
+        ),
       ],
+    ),
+    // Belgian GP — next race weekend (open predictions).
+    SportMatch(
+      id: 'f1_belgian_gp',
+      leagueId: 'f1',
+      sport: Sport.f1,
+      home: _gpBelgian,
+      away: _f1Field,
+      kickoff: DateTime(2026, 7, 24, 12, 30),
+      f1WeekendEndDate: DateTime(2026, 7, 26, 15, 0),
+      status: MatchStatus.upcoming,
+      rewardXp: 150,
+      f1DriverStandings: _f1Standings,
+      f1Sessions: _f1UpcomingSessions,
+    ),
+    // Hungarian GP — following weekend (open predictions).
+    SportMatch(
+      id: 'f1_hungarian_gp',
+      leagueId: 'f1',
+      sport: Sport.f1,
+      home: _gpHungarian,
+      away: _f1Field,
+      kickoff: DateTime(2026, 7, 31, 12, 30),
+      f1WeekendEndDate: DateTime(2026, 8, 2, 15, 0),
+      status: MatchStatus.upcoming,
+      rewardXp: 150,
+      f1DriverStandings: _f1Standings,
+      f1Sessions: _f1UpcomingSessions,
+    ),
+    // 10th: Tennis match (Wimbledon)
+    SportMatch(
+      id: 'wimbledon_mock_1',
+      leagueId: 'wimbledon',
+      sport: Sport.tennis,
+      home: const SportTeam(
+        id: 'alcaraz',
+        name: 'Carlos Alcaraz',
+        shortName: 'ALC',
+        color: Color(0xffc60b1e),
+      ),
+      away: const SportTeam(
+        id: 'djokovic',
+        name: 'Novak Djokovic',
+        shortName: 'DJO',
+        color: Color(0xffc6363c),
+      ),
+      kickoff: _now.add(const Duration(hours: 3)),
+      status: MatchStatus.upcoming,
     ),
   ];
 
   late final Map<String, List<PredictionQuiz>> _quizSets = {
     'fifa_fra_par': _franceParaguayQuizzes(),
-    'f1_british_gp': _f1BritishGpQuizzes(),
+    // British GP is settled (reveal-ready); the two upcoming GPs are open.
+    'f1_british_gp': _f1Quizzes(
+      'f1_british_gp',
+      winnerSettled: 0,
+      safetyCarSettled: 0,
+      fastLapSettled: 2,
+    ),
+    'f1_belgian_gp': _f1Quizzes('f1_belgian_gp'),
+    'f1_hungarian_gp': _f1Quizzes('f1_hungarian_gp'),
   };
 
   late final Map<String, PredictionQuiz> _quizzes = {
@@ -1112,10 +1339,22 @@ class MockPredictionRepository implements PredictionRepository {
         QuizQuestion(
           id: 'q3',
           text: 'Who will win Punjab vs KKR?',
-          options: ['Punjab', 'Tie', 'KKR'],
-          reward: 100,
+          options: ['Punjab', 'KKR'],
+          reward: 75,
         ),
       ],
+    ),
+    'wimbledon_mens_final_26': _tennisQuiz(
+      matchId: 'wimbledon_mens_final_26',
+      home: 'C. Alcaraz',
+      away: 'N. Djokovic',
+      isMens: true,
+    ),
+    'wimbledon_womens_final_26': _tennisQuiz(
+      matchId: 'wimbledon_womens_final_26',
+      home: 'B. Krejcikova',
+      away: 'J. Paolini',
+      isMens: false,
     ),
     // Settled quiz so history / finished demos can show mixed ✓/✕ rows.
     'epl_mu_whu': const PredictionQuiz(
@@ -1335,6 +1574,11 @@ class MockPredictionRepository implements PredictionRepository {
         title: 'Match Basics Quiz',
         subtitle: 'Toss, sixes, and match winner',
       ),
+      Sport.tennis => _withQuizMeta(
+        primary,
+        title: 'Match Basics Quiz',
+        subtitle: 'Winner, sets, and tiebreaks',
+      ),
       _ => primary,
     };
     final events = switch (match.sport) {
@@ -1357,6 +1601,37 @@ class MockPredictionRepository implements PredictionRepository {
     prizeLabel: '${quiz.maxReward} XP available',
     questions: quiz.questions,
   );
+
+  static PredictionQuiz _tennisQuiz({
+    required String matchId,
+    required String home,
+    required String away,
+    required bool isMens,
+  }) {
+    return PredictionQuiz(
+      matchId: matchId,
+      questions: [
+        QuizQuestion(
+          id: 'q1',
+          text: 'Who will win the match?',
+          options: [home, away],
+          reward: 100,
+        ),
+        QuizQuestion(
+          id: 'q2',
+          text: 'Total sets played?',
+          options: isMens ? ['3 sets', '4 sets', '5 sets'] : ['2 sets', '3 sets'],
+          reward: 50,
+        ),
+        QuizQuestion(
+          id: 'q3',
+          text: 'Will there be a tiebreak in the match?',
+          options: ['Yes', 'No'],
+          reward: 75,
+        ),
+      ],
+    );
+  }
 
   static List<PredictionQuiz> _franceParaguayQuizzes() => const [
     PredictionQuiz(
@@ -1789,23 +2064,16 @@ class MockPredictionRepository implements PredictionRepository {
   };
 
   @override
-  Future<List<League>> leagues() async => const [_fifa, _intl, _f1, _wnba];
+  Future<List<League>> leagues() async => const [_fifa, _intl, _f1, _wnba, _nba, _atp, _wta];
 
   @override
-  Future<List<SportMatch>> fixtures({DateTime? day}) async {
-    final now = DateTime.now();
-    final mockFixtures = _fixtures.where((f) => f.leagueId != 'epl' && f.leagueId != 'ipl').map((f) {
-      if (f.id == 'f1_british_gp') {
-        return f.copyWith(kickoff: DateTime(now.year, now.month, now.day, 14, 0));
-      }
-      return f;
-    }).toList();
-    
-    // Fetch dynamic matches (yesterday, today, next 3 days).
-    final espnService = EspnScoreService();
-    final dynamicMatches = await espnService.fetchDynamicMatches();
+  Future<List<SportMatch>> fixtures({DateTime? day, Sport? sport}) async {
+    final mockFixtures = _fixtures
+        .where((f) => f.leagueId != 'epl' && f.leagueId != 'ipl')
+        .where((f) => sport == null || f.sport == sport)
+        .toList();
 
-    return List.unmodifiable([...mockFixtures, ...dynamicMatches]);
+    return List.unmodifiable(mockFixtures);
   }
 
   @override
@@ -1860,8 +2128,27 @@ class MockPredictionRepository implements PredictionRepository {
   }
 
   @override
-  Future<List<SportMatch>> enrichFixtures(List<SportMatch> fixtures) async {
-    return fixtures; // Mock does no enrichment
+  Future<List<SportMatch>> enrichFixturesForSport(List<SportMatch> fixtures, Sport sport) async {
+    final espnService = EspnScoreService();
+    final dynamicMatches = await espnService.fetchDynamicMatchesForSport(sport);
+    
+    // Combine local and dynamic fixtures avoiding duplicates by id
+    final Map<String, SportMatch> allFixturesMap = {};
+    for (final f in fixtures) {
+      if (f.sport == sport) {
+        allFixturesMap[f.id] = f;
+      }
+    }
+    for (final f in dynamicMatches) {
+      allFixturesMap[f.id] = f;
+    }
+    
+    final allFixturesForSport = allFixturesMap.values.toList();
+    final enriched = await espnService.enrichAllForSport(allFixturesForSport, sport);
+    
+    // Merge back with other sports
+    final otherFixtures = fixtures.where((f) => f.sport != sport).toList();
+    return [...otherFixtures, ...enriched];
   }
 
   @override
@@ -1926,39 +2213,51 @@ class MockPredictionRepository implements PredictionRepository {
     return hash;
   }
 
-  static List<PredictionQuiz> _f1BritishGpQuizzes() => const [
+  // Reusable per-weekend F1 quiz set. Settled indices are supplied for a
+  // completed weekend and left null (open) for upcoming ones.
+  static List<PredictionQuiz> _f1Quizzes(
+    String matchId, {
+    int? winnerSettled,
+    int? safetyCarSettled,
+    int? fastLapSettled,
+  }) => [
     PredictionQuiz(
       id: 'main',
-      matchId: 'f1_british_gp',
+      matchId: matchId,
       title: 'Race Predictions',
       questions: [
         QuizQuestion(
           id: 'q1',
           text: 'Who will win the race?',
-          options: ['Lewis Hamilton', 'Charles Leclerc', 'Kimi Antonelli', 'George Russell'],
+          options: const [
+            'Lewis Hamilton',
+            'Charles Leclerc',
+            'Kimi Antonelli',
+            'George Russell',
+          ],
           reward: 100,
-          settledOptionIndex: 0,
+          settledOptionIndex: winnerSettled,
         ),
         QuizQuestion(
           id: 'q2',
           text: 'Will there be a safety car?',
-          options: ['Yes', 'No'],
+          options: const ['Yes', 'No'],
           reward: 50,
-          settledOptionIndex: 0,
+          settledOptionIndex: safetyCarSettled,
         ),
       ],
     ),
     PredictionQuiz(
       id: 'bonus',
-      matchId: 'f1_british_gp',
+      matchId: matchId,
       title: 'Bonus Predictions',
       questions: [
         QuizQuestion(
           id: 'b1',
           text: 'Who gets the fastest lap?',
-          options: ['Lewis Hamilton', 'Charles Leclerc', 'George Russell'],
+          options: const ['Lewis Hamilton', 'Charles Leclerc', 'George Russell'],
           reward: 75,
-          settledOptionIndex: 2,
+          settledOptionIndex: fastLapSettled,
         ),
       ],
     ),

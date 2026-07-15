@@ -96,17 +96,11 @@ class _CricketDeckBuilderScreenState extends State<CricketDeckBuilderScreen> {
                 ),
               ),
               BottomActionBar(
-                primaryLabel: 'PLAY',
-                primaryEnabled: valid && widget.onPlaySuperOver != null,
-                primaryOnTap: () async {
-                  await _save(active);
-                  if (!context.mounted) return;
-                  widget.onPlaySuperOver?.call();
-                },
-                secondaryLabel: 'SAVE',
-                secondaryOnTap: () async => _save(active),
-                tertiaryLabel: 'BACK',
-                tertiaryOnTap: widget.onBack,
+                primaryLabel: 'SAVE',
+                primaryEnabled: true,
+                primaryOnTap: () async => _save(active),
+                secondaryLabel: 'BACK',
+                secondaryOnTap: widget.onBack,
               ),
             ],
           ),

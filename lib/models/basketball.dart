@@ -143,6 +143,7 @@ class BasketballMatchConfig {
     required this.seed,
     this.showHints = false,
     this.teamId = 'lakers',
+    this.cpuTeamId = 'bulls',
   });
 
   /// Three athletes picked in the lobby; one is active at a time.
@@ -158,6 +159,9 @@ class BasketballMatchConfig {
 
   /// The user's selected team livery ID.
   final String teamId;
+
+  /// The CPU's team livery ID — always different from [teamId].
+  final String cpuTeamId;
 }
 
 /// Player-side box score, accumulated by the engine for the result screen.

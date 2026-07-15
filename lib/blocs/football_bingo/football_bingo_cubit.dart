@@ -103,6 +103,16 @@ class FootballBingoCubit extends Cubit<FootballBingoState> {
     return true;
   }
 
+  Future<void> updateElapsedTime(int elapsedSeconds) async {
+    if (state.readOnly) return;
+    final progress = state.progress.copyWith(elapsedSeconds: elapsedSeconds);
+    await _saveActiveProgress(
+      progress,
+      lastAnswerCorrect: state.lastAnswerCorrect,
+      lastTappedCellId: state.lastTappedCellId,
+    );
+  }
+
   Future<void> _saveActiveProgress(
     FootballBingoProgress progress, {
     required bool? lastAnswerCorrect,

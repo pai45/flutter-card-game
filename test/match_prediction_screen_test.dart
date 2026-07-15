@@ -568,10 +568,6 @@ Future<void> _tapOption(WidgetTester tester, String label) async {
 }
 
 class _QuizRepo implements PredictionRepository {
-  @override
-  Future<List<SportMatch>> enrichFixtures(List<SportMatch> fixtures) async {
-    return fixtures;
-  }
   const _QuizRepo(this.quiz);
 
   final PredictionQuiz quiz;
@@ -580,7 +576,10 @@ class _QuizRepo implements PredictionRepository {
   Future<List<League>> leagues() async => const [];
 
   @override
-  Future<List<SportMatch>> fixtures({DateTime? day}) async => const [];
+  Future<List<SportMatch>> fixtures({DateTime? day, Sport? sport}) async => const [];
+
+  @override
+  Future<List<SportMatch>> enrichFixturesForSport(List<SportMatch> fixtures, Sport sport) async => fixtures;
 
   @override
   Future<List<PredictionQuiz>> quizzesFor(String matchId) async =>

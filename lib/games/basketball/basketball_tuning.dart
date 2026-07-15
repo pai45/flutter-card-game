@@ -191,6 +191,42 @@ const double kBbHeatSpeedMult = 1.08;
 const double kBbHeatDrainMult = 0.6;
 
 // ---------------------------------------------------------------------------
+// Spin move (second double-tap mid-drive)
+// ---------------------------------------------------------------------------
+const double kBbSpinDuration = 0.38;
+const double kBbSpinSpeedMult = 1.35;
+const double kBbSpinStaminaCost = 10;
+
+/// Ball-exposed window at spin start — the steal counterplay.
+const double kBbSpinExposed = 0.10;
+
+/// Fresh drive time granted when a spin beats the defender.
+const double kBbSpinCarryDrive = 0.30;
+
+/// Lockout when a set defender absorbs the spin (they held their ground).
+const double kBbSpinAbsorbRecover = 0.30;
+
+// ---------------------------------------------------------------------------
+// Presentation beats (render-facing, still engine-timed for determinism)
+// ---------------------------------------------------------------------------
+
+/// Post-basket reaction beat (scorer celebrates, victim slumps). Must stay
+/// inside [kBbResetSeconds] so both athletes are idle when play resumes.
+const double kBbReactSeconds = 0.8;
+
+/// Impact cinematic: focal zoom-punch duration + strength (dunk/poster/big
+/// block), applied to the whole canvas in [BasketballGame.render].
+const double kBbCineSeconds = 0.30;
+const double kBbCineZoom = 0.03;
+
+/// Backboard score-flash decay.
+const double kBbScoreFlashSeconds = 0.5;
+
+/// Hardwood reflection ghosts (rig/ball/hoop): opacity + vertical squash.
+const double kBbReflectAlpha = 0.09;
+const double kBbReflectSquash = 0.38;
+
+// ---------------------------------------------------------------------------
 // AI
 // ---------------------------------------------------------------------------
 const double kBbAiLatencyRookie = 0.40;

@@ -60,6 +60,15 @@ const sportModules = <SportModule>[
     accent: Cyber.gold,
     availableModules: ['FOLLOWING', 'COMING SOON'],
   ),
+  SportModule(
+    sport: Sport.tennis,
+    label: 'Tennis',
+    shortLabel: 'TENNIS',
+    systemCode: 'SPORT://TENNIS',
+    icon: Icons.sports_tennis,
+    accent: Cyber.cyan,
+    availableModules: ['FOLLOWING', 'COMING SOON'],
+  ),
 ];
 
 SportModule sportModuleFor(Sport sport) {

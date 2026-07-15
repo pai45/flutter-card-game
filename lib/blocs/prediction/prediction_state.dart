@@ -11,9 +11,13 @@ class PredictionState {
     this.predictions = const {},
     this.standingsByLeague = const {},
     this.quizzes = const {},
+    this.loadedSports = const {},
+    this.loadingSports = const {},
   });
 
   final bool loading;
+  final Set<Sport> loadedSports;
+  final Set<Sport> loadingSports;
   final List<League> leagues;
   final List<SportMatch> fixtures;
 
@@ -86,6 +90,8 @@ class PredictionState {
 
   PredictionState copyWith({
     bool? loading,
+    Set<Sport>? loadedSports,
+    Set<Sport>? loadingSports,
     List<League>? leagues,
     List<SportMatch>? fixtures,
     Map<String, UserPrediction>? predictions,
@@ -93,6 +99,8 @@ class PredictionState {
     Map<String, PredictionQuiz>? quizzes,
   }) => PredictionState(
     loading: loading ?? this.loading,
+    loadedSports: loadedSports ?? this.loadedSports,
+    loadingSports: loadingSports ?? this.loadingSports,
     leagues: leagues ?? this.leagues,
     fixtures: fixtures ?? this.fixtures,
     predictions: predictions ?? this.predictions,

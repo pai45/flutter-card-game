@@ -1226,7 +1226,7 @@ class _QuizHeader extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  _HeaderBadge(team: match.home, cutBottomRight: true),
+                  _HeaderBadge(team: match.home, cutBottomRight: true, sport: match.sport),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -1247,7 +1247,7 @@ class _QuizHeader extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  _HeaderBadge(team: match.away, cutBottomRight: false),
+                  _HeaderBadge(team: match.away, cutBottomRight: false, sport: match.sport),
                 ],
               ),
               const SizedBox(height: 12),
@@ -1274,9 +1274,10 @@ class _QuizHeader extends StatelessWidget {
 }
 
 class _HeaderBadge extends StatelessWidget {
-  const _HeaderBadge({required this.team, required this.cutBottomRight});
+  const _HeaderBadge({required this.team, required this.cutBottomRight, this.sport});
   final SportTeam team;
   final bool cutBottomRight;
+  final Sport? sport;
 
   @override
   Widget build(BuildContext context) {
@@ -1285,6 +1286,7 @@ class _HeaderBadge extends StatelessWidget {
       width: 44,
       height: 44,
       cutBottomRight: cutBottomRight,
+      sport: sport,
     );
   }
 }

@@ -2,11 +2,7 @@ import 'dart:ui';
 
 import '../models/super_over.dart';
 
-/// IPL team jersey palettes for Super Over.
-///
-/// These are CONTENT colors (like card-rarity and team colors), not UI chrome.
-/// Names use generic city archetypes to avoid trademark issues. All UI around
-/// them still uses `AppTheme`/`Cyber` tokens.
+/// Original, sponsor-free jersey colourways used only by Super Over.
 class CricketJerseySpec {
   const CricketJerseySpec({
     required this.jersey,
@@ -21,80 +17,86 @@ class CricketJerseySpec {
   final String shortName;
   final Color primary;
   final Color accent;
+
+  String get id => jersey.name;
 }
 
 const List<CricketJerseySpec> cricketJerseys = [
   CricketJerseySpec(
-    jersey: CricketJersey.mumbai,
-    name: 'MUMBAI INDIANS',
-    shortName: 'MI',
-    primary: Color(0xFF004BA0),
-    accent: Color(0xFFD4AF37),
+    jersey: CricketJersey.nightCyan,
+    name: 'NIGHT CYAN',
+    shortName: 'NIGHT',
+    primary: Color(0xFF083C5C),
+    accent: Color(0xFF5CDFFF),
   ),
   CricketJerseySpec(
-    jersey: CricketJersey.chennai,
-    name: 'CHENNAI KINGS',
-    shortName: 'CSK',
-    primary: Color(0xFFFFCE00),
-    accent: Color(0xFF0066B2),
+    jersey: CricketJersey.violetPulse,
+    name: 'VIOLET PULSE',
+    shortName: 'PULSE',
+    primary: Color(0xFF3A245D),
+    accent: Color(0xFFC27AFF),
   ),
   CricketJerseySpec(
-    jersey: CricketJersey.bangalore,
-    name: 'ROYAL BANGALORE',
-    shortName: 'RCB',
-    primary: Color(0xFFD4213D),
-    accent: Color(0xFF000000),
+    jersey: CricketJersey.goldStrike,
+    name: 'GOLD STRIKE',
+    shortName: 'STRIKE',
+    primary: Color(0xFF4A3812),
+    accent: Color(0xFFFDC700),
   ),
   CricketJerseySpec(
-    jersey: CricketJersey.kolkata,
-    name: 'KOLKATA RIDERS',
-    shortName: 'KKR',
-    primary: Color(0xFF3A225D),
-    accent: Color(0xFFD4AF37),
+    jersey: CricketJersey.emberRed,
+    name: 'EMBER RED',
+    shortName: 'EMBER',
+    primary: Color(0xFF541C2A),
+    accent: Color(0xFFFF5573),
   ),
   CricketJerseySpec(
-    jersey: CricketJersey.delhi,
-    name: 'DELHI CAPITALS',
-    shortName: 'DC',
-    primary: Color(0xFF1A4A8A),
-    accent: Color(0xFFEF3E42),
+    jersey: CricketJersey.tealVector,
+    name: 'TEAL VECTOR',
+    shortName: 'VECTOR',
+    primary: Color(0xFF0A4544),
+    accent: Color(0xFF42E8C8),
   ),
   CricketJerseySpec(
-    jersey: CricketJersey.rajasthan,
-    name: 'RAJASTHAN ROYALS',
-    shortName: 'RR',
-    primary: Color(0xFFE83E8C),
-    accent: Color(0xFF254AA5),
-  ),
-  CricketJerseySpec(
-    jersey: CricketJersey.punjab,
-    name: 'PUNJAB KINGS',
-    shortName: 'PBKS',
-    primary: Color(0xFFD71920),
-    accent: Color(0xFFDCDDDF),
-  ),
-  CricketJerseySpec(
-    jersey: CricketJersey.hyderabad,
-    name: 'SUNRISERS',
-    shortName: 'SRH',
-    primary: Color(0xFFFF822A),
-    accent: Color(0xFF000000),
-  ),
-  CricketJerseySpec(
-    jersey: CricketJersey.lucknow,
-    name: 'LUCKNOW GIANTS',
-    shortName: 'LSG',
-    primary: Color(0xFF3496CC),
-    accent: Color(0xFF88C540),
-  ),
-  CricketJerseySpec(
-    jersey: CricketJersey.gujarat,
-    name: 'GUJARAT TITANS',
-    shortName: 'GT',
-    primary: Color(0xFF1C1C2E),
-    accent: Color(0xFF69B3E7),
+    jersey: CricketJersey.monoIce,
+    name: 'MONO ICE',
+    shortName: 'ICE',
+    primary: Color(0xFF26313D),
+    accent: Color(0xFFE8F4FF),
   ),
 ];
 
 CricketJerseySpec cricketJerseySpec(CricketJersey jersey) =>
     cricketJerseys.firstWhere((spec) => spec.jersey == jersey);
+
+/// Reads both the current neutral IDs and every legacy IPL-style enum value.
+///
+/// The mapping is fixed so an existing selection always migrates to the same
+/// original colour family on every device.
+CricketJersey superOverJerseyFromStoredId(String? storedId) {
+  final id = _normalizedId(storedId);
+  return switch (id) {
+    'nightcyan' => CricketJersey.nightCyan,
+    'violetpulse' => CricketJersey.violetPulse,
+    'goldstrike' => CricketJersey.goldStrike,
+    'emberred' => CricketJersey.emberRed,
+    'tealvector' => CricketJersey.tealVector,
+    'monoice' => CricketJersey.monoIce,
+
+    // v1 enum/display/code aliases.
+    'mumbai' || 'mumbaiindians' || 'mi' => CricketJersey.nightCyan,
+    'chennai' || 'chennaikings' || 'csk' => CricketJersey.goldStrike,
+    'bangalore' || 'royalbangalore' || 'rcb' => CricketJersey.emberRed,
+    'kolkata' || 'kolkatariders' || 'kkr' => CricketJersey.violetPulse,
+    'delhi' || 'delhicapitals' || 'dc' => CricketJersey.nightCyan,
+    'rajasthan' || 'rajasthanroyals' || 'rr' => CricketJersey.violetPulse,
+    'punjab' || 'punjabkings' || 'pbks' => CricketJersey.emberRed,
+    'hyderabad' || 'sunrisers' || 'srh' => CricketJersey.tealVector,
+    'lucknow' || 'lucknowgiants' || 'lsg' => CricketJersey.monoIce,
+    'gujarat' || 'gujarattitans' || 'gt' => CricketJersey.tealVector,
+    _ => CricketJersey.nightCyan,
+  };
+}
+
+String _normalizedId(String? value) =>
+    (value ?? '').trim().toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');

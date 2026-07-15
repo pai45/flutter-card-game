@@ -70,6 +70,9 @@ enum BodyState {
   contest,
   fake,
   stagger,
+  celebrate,
+  dejected,
+  spin,
 }
 
 enum JumpPurpose { shot, layup, dunk, putback, block, rebound }
@@ -110,6 +113,10 @@ class BasketballAthleteBody {
   /// The defender jumped at a pump fake; staggers on landing.
   bool baited = false;
 
+  /// A defender was in the lane when the spin started (the spin had someone
+  /// to beat — gates the SPIN CYCLE payoff event).
+  bool spinTargeted = false;
+
   /// Steal lunge has rolled already (one roll per lunge).
   bool lungeRolled = false;
 
@@ -122,6 +129,7 @@ class BasketballAthleteBody {
       body == BodyState.jump ||
       body == BodyState.stagger ||
       body == BodyState.stepback ||
+      body == BodyState.spin ||
       recoverT > 0;
 
   double get stamina01 => stamina / 100;
@@ -260,6 +268,8 @@ enum BasketballEventType {
   dunk,
   shotReleased,
   buzzerBeater,
+  spinMove,
+  crossover,
 }
 
 class BasketballEvent {
@@ -529,6 +539,37 @@ class BasketballEngine {
           }
         case BodyState.stagger:
           if (body.stateT >= kBbStaggerSeconds) body.enter(BodyState.idle);
+        case BodyState.celebrate:
+        case BodyState.dejected:
+          if (body.stateT >= kBbReactSeconds) body.enter(BodyState.idle);
+        case BodyState.spin:
+          if (body.stateT >= kBbSpinDuration) {
+            final defender = bodies[1 - body.team];
+            final setDefender =
+                defender.body == BodyState.stance ||
+                defender.body == BodyState.contest;
+            // Ending the turn on top of a planted body = the defender held
+            // their ground. To beat a set stance the spin must be launched
+            // close enough to carry fully PAST it — a timing skill.
+            if (setDefender &&
+                (defender.x - body.x).abs() <= kBbBodyGap * 1.4) {
+              body.enter(BodyState.idle);
+              body.recoverT = kBbSpinAbsorbRecover;
+            } else {
+              body.driveT = kBbSpinCarryDrive;
+              body.enter(BodyState.drive);
+              if (body.spinTargeted &&
+                  (defender.x - body.x) * body.facing < 0) {
+                _emit(
+                  BasketballEvent(
+                    BasketballEventType.spinMove,
+                    team: body.team,
+                  ),
+                );
+              }
+            }
+            body.spinTargeted = false;
+          }
         case BodyState.lunge:
           if (body.stateT >= 0.35) {
             body.enter(BodyState.idle);
@@ -559,9 +600,12 @@ class BasketballEngine {
           break;
       }
 
-      // Calm regeneration.
+      // Calm regeneration. Reaction beats count as calm so the reset-walk
+      // regen is unchanged from before reactions existed.
       final calm =
           body.body == BodyState.idle ||
+          body.body == BodyState.celebrate ||
+          body.body == BodyState.dejected ||
           (body.body == BodyState.run && body.lastMoveDir == 0);
       if (calm) {
         final rate = playPhase == PlayPhase.deadReset
@@ -637,6 +681,23 @@ class BasketballEngine {
 
   void _resolveOffense(BasketballAthleteBody body, BasketballIntent intent) {
     if (playPhase != PlayPhase.live) return;
+
+    // O1.5 — spin move: a second double-tap mid-drive whips past the defender.
+    // Deterministic counterplay: a defender holding a set stance in the lane
+    // absorbs the spin (resolved in _advanceTimers) — no RNG rolls.
+    if (intent.burst &&
+        body.body == BodyState.drive &&
+        !body.airborne &&
+        body.stamina >= kBbSpinStaminaCost) {
+      final defender = bodies[1 - body.team];
+      body.drain(kBbSpinStaminaCost);
+      body.exposedT = kBbSpinExposed;
+      body.spinTargeted =
+          (defender.x - body.x) * body.facing > 0 &&
+          (defender.x - body.x).abs() <= 1.6;
+      body.enter(BodyState.spin);
+      return;
+    }
 
     // Burst drive.
     if (intent.burst &&
@@ -886,6 +947,12 @@ class BasketballEngine {
       body.x = body.x.clamp(kBbCourtMinX, kBbCourtMaxX);
       return;
     }
+    // Scripted spin slide — the turn carries the handler forward.
+    if (body.body == BodyState.spin) {
+      body.x = (body.x + body.facing * kBbBaseSpeed * kBbSpinSpeedMult * dt)
+          .clamp(kBbCourtMinX, kBbCourtMaxX);
+      return;
+    }
     if (body.locked || body.airborne || playPhase != PlayPhase.live) {
       return;
     }
@@ -909,6 +976,7 @@ class BasketballEngine {
       body.drain(kBbDrainCrossover);
       body.exposedT = 0.12;
       body.enter(BodyState.crossover);
+      _emit(BasketballEvent(BasketballEventType.crossover, team: body.team));
       _checkAnkleBreaker(body);
     }
     if (axis != 0 && axis.sign != body.lastMoveDir.sign) {
@@ -969,6 +1037,9 @@ class BasketballEngine {
   void _separateBodies() {
     final a = bodies[0];
     final b = bodies[1];
+    // A spinning handler rotates around the defender's body rather than
+    // bulldozing them — separation is suspended for the spin's duration.
+    if (a.body == BodyState.spin || b.body == BodyState.spin) return;
     final dx = b.x - a.x;
     if (dx.abs() >= kBbBodyGap || dx == 0) return;
     final overlap = kBbBodyGap - dx.abs();
@@ -1433,7 +1504,7 @@ class BasketballEngine {
       _finishHalfNow(buzzerBeater: true);
       return;
     }
-    _beginReset(newPossession: 1 - scorer);
+    _beginReset(newPossession: 1 - scorer, scoredBy: scorer);
   }
 
   void _maybeIgniteHeat(int teamIndex) {
@@ -1581,7 +1652,7 @@ class BasketballEngine {
     }
   }
 
-  void _beginReset({required int newPossession}) {
+  void _beginReset({required int newPossession, int? scoredBy}) {
     possession = newPossession;
     playPhase = PlayPhase.deadReset;
     resetT = kBbResetSeconds;
@@ -1591,7 +1662,12 @@ class BasketballEngine {
     for (final body in bodies) {
       body.jumpPurpose = null;
       body.putbackT = 0;
-      if (body.body != BodyState.idle) body.enter(BodyState.idle);
+      // A scored-on reset plays a reaction beat (scorer celebrates, victim
+      // slumps); both time out to idle well inside the reset walk-back.
+      final react = scoredBy == null
+          ? BodyState.idle
+          : (body.team == scoredBy ? BodyState.celebrate : BodyState.dejected);
+      if (body.body != react) body.enter(react);
     }
   }
 

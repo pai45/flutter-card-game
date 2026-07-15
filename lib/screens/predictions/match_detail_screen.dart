@@ -5,28 +5,35 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/picks/picks_cubit.dart';
 import '../../blocs/picks/picks_state.dart';
 import '../../blocs/prediction/prediction_cubit.dart';
+import '../../blocs/match_circle/match_circle_cubit.dart';
+import '../../blocs/match_circle/match_circle_state.dart';
 import '../../config/theme.dart';
+import '../../models/match_circle.dart';
 import '../../models/picks.dart';
 import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
 import '../../services/live_score_service.dart';
+import '../../services/match_circle_repository.dart';
+import '../../services/secure_storage_service.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_underline_tabs.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/cyber/cyber_filter_chips.dart';
-import '../../widgets/team_logo.dart';
 import '../../widgets/cricket_lineup_view.dart';
 import '../../widgets/cricket_scorecard_view.dart';
 import '../../widgets/basketball_scorecard_view.dart';
+import '../../widgets/tennis_scorecard_view.dart';
+import '../../widgets/match_summary_header.dart';
 import 'all_picks_screen.dart';
 import 'market_detail_screen.dart';
+import 'match_circle_screen.dart';
 import 'match_prediction_screen.dart';
 import 'widgets/pick_market_card.dart';
 import 'widgets/pick_trade_sheet.dart';
 import 'widgets/standings_table.dart' show DetailTopBar;
 import '../../widgets/match_pitch_view.dart';
 
-class MatchDetailScreen extends StatefulWidget {
+class MatchDetailScreen extends StatelessWidget {
   const MatchDetailScreen({
     required this.match,
     this.initialTab = 0,
@@ -39,10 +46,58 @@ class MatchDetailScreen extends StatefulWidget {
   final bool refreshLiveScore;
 
   @override
-  State<MatchDetailScreen> createState() => _MatchDetailScreenState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      key: const ValueKey('match-detail-screen'),
+      backgroundColor: Cyber.bg,
+      body: CyberPlainBackground(
+        child: SafeArea(
+          child: Column(
+            children: [
+              const DetailTopBar(title: 'MATCH'),
+              Expanded(
+                child: MatchTabsView(
+                  match: match,
+                  initialTab: initialTab,
+                  refreshLiveScore: refreshLiveScore,
+                  headerBuilder: (m) => MatchSummaryHeader(match: m),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class _MatchDetailScreenState extends State<MatchDetailScreen> {
+/// The reusable PREDICT / PICKS / TOPS / STATS tabbed body.
+///
+/// Lives here (not in a shared file) so it keeps package-private access to the
+/// tab widgets below (`_MatchPicksTab`, `_MatchLeaderboardTab`,
+/// `_ScoreboardTab`). Used full-screen by [MatchDetailScreen] and inline on the
+/// match home page by the F1 weekend hub. Owns the active-tab state and the
+/// football live-score polling; [headerBuilder] receives the live-enriched
+/// match so headers can reflect score updates.
+class MatchTabsView extends StatefulWidget {
+  const MatchTabsView({
+    required this.match,
+    required this.headerBuilder,
+    this.initialTab = 0,
+    this.refreshLiveScore = false,
+    super.key,
+  });
+
+  final SportMatch match;
+  final Widget Function(SportMatch match) headerBuilder;
+  final int initialTab;
+  final bool refreshLiveScore;
+
+  @override
+  State<MatchTabsView> createState() => _MatchTabsViewState();
+}
+
+class _MatchTabsViewState extends State<MatchTabsView> {
   static const _tabs = ['PREDICT', 'PICKS', 'TOPS', 'STATS'];
 
   late int _activeTab = widget.initialTab.clamp(0, _tabs.length - 1);
@@ -59,7 +114,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
   }
 
   @override
-  void didUpdateWidget(covariant MatchDetailScreen oldWidget) {
+  void didUpdateWidget(covariant MatchTabsView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!identical(oldWidget.match, widget.match)) {
       _match = widget.match;
@@ -104,238 +159,175 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: const ValueKey('match-detail-screen'),
-      backgroundColor: Cyber.bg,
-      body: CyberPlainBackground(
-        child: SafeArea(
-          child: Column(
-            children: [
-              const DetailTopBar(title: 'MATCH'),
-              _MatchDetailHeader(match: _match),
-              CyberUnderlineTabs(
-                labels: _tabs,
-                activeIndex: _activeTab,
-                onTap: _setTab,
-              ),
-              Expanded(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 220),
-                  child: KeyedSubtree(
-                    key: ValueKey<int>(_activeTab),
-                    child: switch (_activeTab) {
-                      0 => MatchPredictionScreen(
-                        match: _match,
-                        embedded: true,
-                        showTopBar: false,
-                        showMatchHeader: false,
-                        onOpenPicks: () => _setTab(1),
-                      ),
-                      1 => _MatchPicksTab(match: _match),
-                      2 => _MatchLeaderboardTab(match: _match),
-                      _ => _ScoreboardTab(match: _match),
-                    },
-                  ),
+    return Column(
+      children: [
+        widget.headerBuilder(_match),
+        CyberUnderlineTabs(
+          labels: _tabs,
+          activeIndex: _activeTab,
+          onTap: _setTab,
+        ),
+        Expanded(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            child: KeyedSubtree(
+              key: ValueKey<int>(_activeTab),
+              child: switch (_activeTab) {
+                0 => MatchPredictionScreen(
+                  match: _match,
+                  embedded: true,
+                  showTopBar: false,
+                  showMatchHeader: false,
+                  onOpenPicks: () => _setTab(1),
                 ),
-              ),
-            ],
+                1 => _MatchPicksTab(match: _match),
+                2 => _MatchLeaderboardTab(match: _match),
+                _ => _ScoreboardTab(match: _match),
+              },
+            ),
           ),
         ),
-      ),
+        _MatchCircleCta(match: _match),
+      ],
     );
   }
 }
 
-class _MatchDetailHeader extends StatelessWidget {
-  const _MatchDetailHeader({required this.match});
+class _MatchCircleCta extends StatefulWidget {
+  const _MatchCircleCta({required this.match});
 
   final SportMatch match;
 
-  Color get _statusColor => switch (match.status) {
-    MatchStatus.upcoming => Cyber.gold,
-    MatchStatus.live => Cyber.danger,
-    MatchStatus.finished => Cyber.muted,
-  };
+  @override
+  State<_MatchCircleCta> createState() => _MatchCircleCtaState();
+}
+
+class _MatchCircleCtaState extends State<_MatchCircleCta> {
+  MatchCircleCubit? _cubit;
+  MatchCircleCubit? _ownedCubit;
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-      child: CustomPaint(
-        painter: const _MatchHeaderBracketsPainter(),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 10, 8, 0),
-          child: Column(
-            children: [
-              Text(
-                _statusText(match),
-                style: Cyber.display(
-                  15,
-                  color: _statusColor,
-                  letterSpacing: 1.5,
-                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  _HeaderBadge(team: match.home, cutBottomRight: true),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          match.home.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Cyber.body(14, weight: FontWeight.w800),
-                        ),
-                        if (match.sport == Sport.cricket &&
-                            match.homeScore != null &&
-                            match.homeScore!.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            match.homeScore!,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: Cyber.display(
-                              12,
-                              color: Colors.white,
-                              letterSpacing: 0,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  if (match.sport != Sport.cricket)
-                    SizedBox(
-                      width: match.hasScore ? 72 : 22,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          _headerScoreText(match),
-                          maxLines: 1,
-                          style:
-                              Cyber.display(
-                                match.hasScore ? 16 : 17,
-                                color: match.hasScore
-                                    ? Colors.white
-                                    : Cyber.muted,
-                                letterSpacing: 0,
-                              ).copyWith(
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures(),
-                                ],
-                              ),
-                        ),
-                      ),
-                    )
-                  else
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Text(
-                        'vs',
-                        style: Cyber.display(12, color: Cyber.muted),
-                      ),
-                    ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          match.away.name,
-                          textAlign: TextAlign.end,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Cyber.body(14, weight: FontWeight.w800),
-                        ),
-                        if (match.sport == Sport.cricket &&
-                            match.awayScore != null &&
-                            match.awayScore!.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            match.awayScore!,
-                            textAlign: TextAlign.end,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: Cyber.display(
-                              12,
-                              color: Colors.white,
-                              letterSpacing: 0,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  _HeaderBadge(team: match.away, cutBottomRight: false),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(height: 3, color: match.home.color),
-                  ),
-                  const SizedBox(width: 3),
-                  Expanded(
-                    child: Container(
-                      height: 3,
-                      color: match.away.color.withValues(alpha: 0.92),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_cubit != null) return;
+    final inherited = context.read<MatchCircleCubit?>();
+    _cubit = inherited;
+    if (_cubit == null) {
+      _ownedCubit = MatchCircleCubit(
+        LocalMatchCircleRepository(),
+        SecureGameStorage(),
+      );
+      _cubit = _ownedCubit;
+    }
+    unawaited(_cubit!.ensureThread(widget.match));
+  }
+
+  @override
+  void didUpdateWidget(covariant _MatchCircleCta oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (matchCircleThreadKey(oldWidget.match) !=
+        matchCircleThreadKey(widget.match)) {
+      unawaited(_cubit?.ensureThread(widget.match));
+    }
+  }
+
+  @override
+  void dispose() {
+    unawaited(_ownedCubit?.close());
+    super.dispose();
+  }
+
+  void _openCircle() {
+    final cubit = _cubit;
+    if (cubit == null) return;
+    playSound(SoundEffect.uiTap);
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => BlocProvider.value(
+          value: cubit,
+          child: MatchCircleScreen(match: widget.match),
         ),
       ),
     );
   }
-}
-
-class _HeaderBadge extends StatelessWidget {
-  const _HeaderBadge({required this.team, required this.cutBottomRight});
-
-  final SportTeam team;
-  final bool cutBottomRight;
 
   @override
   Widget build(BuildContext context) {
-    return TeamLogo(
-      team: team,
-      width: 44,
-      height: 44,
-      cutBottomRight: cutBottomRight,
+    final cubit = _cubit;
+    if (cubit == null) return const SizedBox.shrink();
+    return BlocBuilder<MatchCircleCubit, MatchCircleState>(
+      bloc: cubit,
+      builder: (context, state) {
+        final thread = state.threadFor(widget.match);
+        final loading = state.loading(widget.match) && thread == null;
+        final countLabel = thread == null
+            ? null
+            : compactMatchCircleCount(thread.visibleCount);
+        final semanticCount = countLabel == null
+            ? ''
+            : ', $countLabel discussion posts';
+        return Semantics(
+          key: const ValueKey('match-circle-cta'),
+          button: true,
+          label: 'Open Match Circle$semanticCount',
+          child: Material(
+            color: Colors.transparent,
+            child: Ink(
+              height: 62,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Cyber.panel.withValues(alpha: 0.88),
+                    const Color(0xff17233d),
+                  ],
+                ),
+                border: Border(
+                  top: BorderSide(color: Cyber.cyan.withValues(alpha: 0.16)),
+                ),
+              ),
+              child: InkWell(
+                onTap: _openCircle,
+                child: Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.forum_outlined,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 9),
+                      Text(
+                        'Match Circle',
+                        style: Cyber.body(12, weight: FontWeight.w700),
+                      ),
+                      const SizedBox(width: 5),
+                      if (loading)
+                        const SizedBox(
+                          width: 12,
+                          height: 12,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 1.5,
+                            color: Cyber.cyan,
+                          ),
+                        )
+                      else if (countLabel != null)
+                        Text(
+                          countLabel,
+                          style: Cyber.body(10, color: Cyber.muted),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
-}
-
-class _MatchHeaderBracketsPainter extends CustomPainter {
-  const _MatchHeaderBracketsPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const len = 16.0;
-    final paint = Paint()
-      ..color = Cyber.cyan.withValues(alpha: 0.4)
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-
-    canvas.drawLine(const Offset(0, 0), const Offset(len, 0), paint);
-    canvas.drawLine(const Offset(0, 0), const Offset(0, len), paint);
-    canvas.drawLine(Offset(size.width, 0), Offset(size.width - len, 0), paint);
-    canvas.drawLine(Offset(size.width, 0), Offset(size.width, len), paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _MatchHeaderBracketsPainter oldDelegate) =>
-      false;
 }
 
 class _MatchPicksTab extends StatelessWidget {
@@ -838,22 +830,29 @@ class _ScoreboardTab extends StatefulWidget {
 }
 
 class _ScoreboardTabState extends State<_ScoreboardTab> {
-  late String _activeTab = widget.match.sport == Sport.basketball ? 'BOX SCORE' : 'FACTS';
+  late String _activeTab = widget.match.sport == Sport.basketball
+      ? 'BOX SCORE'
+      : (widget.match.sport == Sport.tennis ? 'SETS' : 'FACTS');
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         CyberFilterChips(
-          labels: widget.match.sport == Sport.basketball 
-            ? const ['BOX SCORE', 'LINEUP', 'COMMENTARY'] 
-            : const ['FACTS', 'LINEUP', 'COMMENTARY'],
+          labels: widget.match.sport == Sport.basketball
+              ? const ['BOX SCORE', 'LINEUP', 'COMMENTARY']
+              : (widget.match.sport == Sport.tennis
+                    ? const ['SETS', 'LINEUP', 'COMMENTARY']
+                    : const ['FACTS', 'LINEUP', 'COMMENTARY']),
           selected: _activeTab,
           accent: Cyber.cyan,
           onSelect: (value) => setState(() => _activeTab = value),
         ),
         Expanded(
-          child: (_activeTab == 'FACTS' || _activeTab == 'BOX SCORE')
+          child:
+              (_activeTab == 'FACTS' ||
+                  _activeTab == 'BOX SCORE' ||
+                  _activeTab == 'SETS')
               ? (widget.match.sport == Sport.cricket &&
                         widget.match.cricketScorecard != null)
                     ? ListView(
@@ -866,23 +865,48 @@ class _ScoreboardTabState extends State<_ScoreboardTab> {
                           ),
                         ],
                       )
-                    : (widget.match.sport == Sport.basketball && 
-                       widget.match.basketballScorecard != null)
-                        ? ListView(
-                            key: const ValueKey('match-scoreboard-basketball-facts'),
-                            padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
-                            children: [
-                              BasketballScorecardView(
-                                scorecard: widget.match.basketballScorecard!,
-                                accent: const Color(0xffff6600), // WNBA orange/nba reference
-                              ),
-                            ],
-                          )
-                        : ListView(
+                    : (widget.match.sport == Sport.basketball &&
+                          widget.match.basketballScorecard != null)
+                    ? ListView(
+                        key: const ValueKey(
+                          'match-scoreboard-basketball-facts',
+                        ),
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+                        children: [
+                          BasketballScorecardView(
+                            scorecard: widget.match.basketballScorecard!,
+                            accent: const Color(
+                              0xffff6600,
+                            ), // WNBA orange/nba reference
+                          ),
+                        ],
+                      )
+                    : (widget.match.sport == Sport.tennis &&
+                          widget.match.tennisScorecard != null)
+                    ? ListView(
+                        key: const ValueKey('match-scoreboard-tennis-facts'),
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+                        children: [
+                          _MatchFactPanel(match: widget.match),
+                          const SizedBox(height: 14),
+                          TennisScorecardView(
+                            scorecard: widget.match.tennisScorecard!,
+                            match: widget.match,
+                            accent: Cyber.cyan,
+                          ),
+                        ],
+                      )
+                    : ListView(
                         key: const ValueKey('match-scoreboard-facts'),
                         padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
                         children: [
                           _MatchFactPanel(match: widget.match),
+                          if (widget.match.sport == Sport.f1 &&
+                              widget.match.f1Sessions != null &&
+                              widget.match.f1Sessions!.isNotEmpty) ...[
+                            const SizedBox(height: 14),
+                            _F1SessionsPanel(match: widget.match),
+                          ],
                           if (widget.match.sport == Sport.f1 &&
                               widget.match.f1DriverStandings != null) ...[
                             const SizedBox(height: 14),
@@ -1185,6 +1209,59 @@ class _DriverStandingsPanel extends StatelessWidget {
   }
 }
 
+class _F1SessionsPanel extends StatelessWidget {
+  const _F1SessionsPanel({required this.match});
+  final SportMatch match;
+
+  @override
+  Widget build(BuildContext context) {
+    final sessions = match.f1Sessions;
+    if (sessions == null || sessions.isEmpty) return const SizedBox.shrink();
+
+    return _Panel(
+      title: 'SESSION RESULTS',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var s = 0; s < sessions.length; s++) ...[
+            if (s > 0) ...[
+              const SizedBox(height: 10),
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: Cyber.line.withValues(alpha: 0.1),
+              ),
+              const SizedBox(height: 10),
+            ],
+            Text(
+              sessions[s].name.toUpperCase(),
+              style: Cyber.label(11, color: Cyber.cyan, letterSpacing: 1.2),
+            ),
+            const SizedBox(height: 6),
+            if (sessions[s].results.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Text(
+                  'Not yet run.',
+                  style: Cyber.body(12, color: Cyber.muted),
+                ),
+              )
+            else
+              for (final result in sessions[s].results)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 3),
+                  child: Text(
+                    result,
+                    style: Cyber.body(13, color: Colors.white),
+                  ),
+                ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _StatePanel extends StatelessWidget {
   const _StatePanel({required this.match});
 
@@ -1366,19 +1443,6 @@ int _marketStatusRank(PickMarketStatus status) => switch (status) {
   PickMarketStatus.closed || PickMarketStatus.unresolved => 2,
   PickMarketStatus.settled || PickMarketStatus.voided => 3,
 };
-
-String _headerScoreText(SportMatch match) {
-  if (!match.hasScore) return '-';
-  if (match.sport == Sport.cricket) {
-    final home = match.homeScore;
-    final away = match.awayScore;
-    if (home != null && away != null) {
-      return '$home  v  $away';
-    }
-    return home ?? away ?? '-';
-  }
-  return '${match.homeScore ?? '-'} - ${match.awayScore ?? '-'}';
-}
 
 String _statusText(SportMatch match) => switch (match.status) {
   MatchStatus.upcoming => _formatTime(match.kickoff),

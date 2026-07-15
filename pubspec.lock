@@ -177,6 +177,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.1"
+  final_over:
+    dependency: "direct main"
+    description:
+      path: final_over
+      relative: true
+    source: path
+    version: "1.0.0+1"
   fixnum:
     dependency: transitive
     description:

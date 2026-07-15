@@ -3,7 +3,12 @@ import '../../models/super_over.dart';
 
 class SuperOverState {
   const SuperOverState({
-    this.jersey = CricketJersey.mumbai,
+    this.flowPhase = SuperOverFlowPhase.landing,
+    this.playPhase = SuperOverPlayPhase.fieldReveal,
+    this.phase = SuperOverPhase.ready,
+    this.config,
+    this.settings = const SuperOverSettings(),
+    this.jersey = CricketJersey.nightCyan,
     this.score = 0,
     this.wickets = 0,
     this.ballsFaced = 0,
@@ -13,14 +18,32 @@ class SuperOverState {
     this.momentum = 0,
     this.onFire = false,
     this.combo = 0,
+    this.maxCombo = 0,
     this.mode = SuperOverMode.scoreAttack,
     this.cpuTarget = 0,
     this.isOver = false,
     this.wonChase,
     this.wagonWheel = const [],
-    this.phase = SuperOverPhase.ready,
+    this.ballRecords = const [],
     this.fieldSectors = const [3, 3, 3],
-    this.upcomingDelivery = DeliveryType.pace,
+    this.fieldPlan,
+    this.committedBall,
+    this.deliveryPlan = const DeliveryPlan(),
+    this.selectedSector = ShotSector.v,
+    this.selectedShotStyle = ShotStyle.ground,
+    this.confidence = 0,
+    this.rhythmByCardId = const {},
+    this.cleanContactStreak = 0,
+    this.finisherProgress = 0,
+    this.finisherReady = false,
+    this.finisherActive = false,
+    this.objective = const SuperOverObjective(
+      type: SuperOverObjectiveType.runs,
+      target: 12,
+    ),
+    this.objectiveProgress = 0,
+    this.openGapHits = 0,
+    this.perfectContacts = 0,
     this.inputEnabled = false,
     this.swingLocked = false,
     this.timingErrorMs,
@@ -29,8 +52,16 @@ class SuperOverState {
     this.shotSector,
     this.shotPower,
     this.lastOutcome,
+    this.summary,
   });
 
+  final SuperOverFlowPhase flowPhase;
+  final SuperOverPlayPhase playPhase;
+
+  /// Compatibility phase consumed by the existing Flame bridge.
+  final SuperOverPhase phase;
+  final SuperOverMatchConfig? config;
+  final SuperOverSettings settings;
   final CricketJersey jersey;
   final int score;
   final int wickets;
@@ -41,18 +72,34 @@ class SuperOverState {
   final int momentum;
   final bool onFire;
   final int combo;
+  final int maxCombo;
   final SuperOverMode mode;
   final int cpuTarget;
   final bool isOver;
   final bool? wonChase;
   final List<ShotOutcome> wagonWheel;
-  final SuperOverPhase phase;
+  final List<SuperOverBallRecord> ballRecords;
 
-  /// Fielders guarding OFF / V / LEG for the upcoming ball. Totals 9 in play.
+  /// Compatibility counts in OFF / STRAIGHT / LEG order.
   final List<int> fieldSectors;
-  final DeliveryType upcomingDelivery;
+  final SuperOverFieldPlan? fieldPlan;
+  final SuperOverCommittedBall? committedBall;
+  final DeliveryPlan deliveryPlan;
+  final ShotSector selectedSector;
+  final ShotStyle selectedShotStyle;
 
-  /// Live input and result feedback for the Flame scene and HUD.
+  /// [confidence] remains as a compatibility alias for current-batter Rhythm.
+  final int confidence;
+  final Map<String, int> rhythmByCardId;
+  final int cleanContactStreak;
+  final int finisherProgress;
+  final bool finisherReady;
+  final bool finisherActive;
+  final SuperOverObjective objective;
+  final int objectiveProgress;
+  final int openGapHits;
+  final int perfectContacts;
+
   final bool inputEnabled;
   final bool swingLocked;
   final int? timingErrorMs;
@@ -61,8 +108,14 @@ class SuperOverState {
   final ShotSector? shotSector;
   final int? shotPower;
   final ShotOutcome? lastOutcome;
+  final SuperOverMatchSummary? summary;
 
   SuperOverState copyWith({
+    SuperOverFlowPhase? flowPhase,
+    SuperOverPlayPhase? playPhase,
+    SuperOverPhase? phase,
+    Object? config = _sentinel,
+    SuperOverSettings? settings,
     CricketJersey? jersey,
     int? score,
     int? wickets,
@@ -73,14 +126,29 @@ class SuperOverState {
     int? momentum,
     bool? onFire,
     int? combo,
+    int? maxCombo,
     SuperOverMode? mode,
     int? cpuTarget,
     bool? isOver,
-    bool? wonChase,
+    Object? wonChase = _sentinel,
     List<ShotOutcome>? wagonWheel,
-    SuperOverPhase? phase,
+    List<SuperOverBallRecord>? ballRecords,
     List<int>? fieldSectors,
-    DeliveryType? upcomingDelivery,
+    Object? fieldPlan = _sentinel,
+    Object? committedBall = _sentinel,
+    DeliveryPlan? deliveryPlan,
+    ShotSector? selectedSector,
+    ShotStyle? selectedShotStyle,
+    int? confidence,
+    Map<String, int>? rhythmByCardId,
+    int? cleanContactStreak,
+    int? finisherProgress,
+    bool? finisherReady,
+    bool? finisherActive,
+    SuperOverObjective? objective,
+    int? objectiveProgress,
+    int? openGapHits,
+    int? perfectContacts,
     bool? inputEnabled,
     bool? swingLocked,
     Object? timingErrorMs = _sentinel,
@@ -89,8 +157,16 @@ class SuperOverState {
     Object? shotSector = _sentinel,
     Object? shotPower = _sentinel,
     Object? lastOutcome = _sentinel,
+    Object? summary = _sentinel,
   }) {
     return SuperOverState(
+      flowPhase: flowPhase ?? this.flowPhase,
+      playPhase: playPhase ?? this.playPhase,
+      phase: phase ?? this.phase,
+      config: config == _sentinel
+          ? this.config
+          : config as SuperOverMatchConfig?,
+      settings: settings ?? this.settings,
       jersey: jersey ?? this.jersey,
       score: score ?? this.score,
       wickets: wickets ?? this.wickets,
@@ -101,14 +177,33 @@ class SuperOverState {
       momentum: momentum ?? this.momentum,
       onFire: onFire ?? this.onFire,
       combo: combo ?? this.combo,
+      maxCombo: maxCombo ?? this.maxCombo,
       mode: mode ?? this.mode,
       cpuTarget: cpuTarget ?? this.cpuTarget,
       isOver: isOver ?? this.isOver,
-      wonChase: wonChase ?? this.wonChase,
+      wonChase: wonChase == _sentinel ? this.wonChase : wonChase as bool?,
       wagonWheel: wagonWheel ?? this.wagonWheel,
-      phase: phase ?? this.phase,
+      ballRecords: ballRecords ?? this.ballRecords,
       fieldSectors: fieldSectors ?? this.fieldSectors,
-      upcomingDelivery: upcomingDelivery ?? this.upcomingDelivery,
+      fieldPlan: fieldPlan == _sentinel
+          ? this.fieldPlan
+          : fieldPlan as SuperOverFieldPlan?,
+      committedBall: committedBall == _sentinel
+          ? this.committedBall
+          : committedBall as SuperOverCommittedBall?,
+      deliveryPlan: deliveryPlan ?? this.deliveryPlan,
+      selectedSector: selectedSector ?? this.selectedSector,
+      selectedShotStyle: selectedShotStyle ?? this.selectedShotStyle,
+      confidence: confidence ?? this.confidence,
+      rhythmByCardId: rhythmByCardId ?? this.rhythmByCardId,
+      cleanContactStreak: cleanContactStreak ?? this.cleanContactStreak,
+      finisherProgress: finisherProgress ?? this.finisherProgress,
+      finisherReady: finisherReady ?? this.finisherReady,
+      finisherActive: finisherActive ?? this.finisherActive,
+      objective: objective ?? this.objective,
+      objectiveProgress: objectiveProgress ?? this.objectiveProgress,
+      openGapHits: openGapHits ?? this.openGapHits,
+      perfectContacts: perfectContacts ?? this.perfectContacts,
       inputEnabled: inputEnabled ?? this.inputEnabled,
       swingLocked: swingLocked ?? this.swingLocked,
       timingErrorMs: timingErrorMs == _sentinel
@@ -127,6 +222,9 @@ class SuperOverState {
       lastOutcome: lastOutcome == _sentinel
           ? this.lastOutcome
           : lastOutcome as ShotOutcome?,
+      summary: summary == _sentinel
+          ? this.summary
+          : summary as SuperOverMatchSummary?,
     );
   }
 
@@ -137,9 +235,53 @@ class SuperOverState {
       ? battingOrder[nonStrikerIndex]
       : null;
 
+  String? get strikerCardId => striker?.id;
   int get runsToWin => cpuTarget + 1 - score;
   int get ballsLeft => 6 - ballsFaced;
   bool get canTap => inputEnabled && !swingLocked && !isOver;
+  bool get canSelectIntent =>
+      !swingLocked &&
+      !isOver &&
+      (playPhase == SuperOverPlayPhase.fieldReveal ||
+          playPhase == SuperOverPlayPhase.intentSelection ||
+          playPhase == SuperOverPlayPhase.bowlerPreparation ||
+          playPhase == SuperOverPlayPhase.runUp);
+
+  DeliveryType get upcomingDelivery => deliveryPlan.type;
+
+  ShotSector? get openSector =>
+      fieldPlan?.openSector ??
+      SuperOverFieldPlan.fromCounts(fieldSectors).openSector;
+
+  Set<ShotSector> get packedSectors =>
+      fieldPlan?.packedSectors ??
+      SuperOverFieldPlan.fromCounts(fieldSectors).packedSectors;
+
+  int get currentRhythm {
+    final id = strikerCardId;
+    return id == null ? confidence : rhythmByCardId[id] ?? confidence;
+  }
+
+  CricketBattingStyle get battingStyle {
+    final trait = striker?.trait.toLowerCase();
+    return switch (trait) {
+      'all-rounder' => CricketBattingStyle.powerHitter,
+      'wicket-keeper' => CricketBattingStyle.improviser,
+      _ => CricketBattingStyle.anchor,
+    };
+  }
+
+  bool get objectiveComplete => objectiveProgress >= objective.target;
+
+  SuperOverMatchPosition get position => SuperOverMatchPosition(
+    score: score,
+    wickets: wickets,
+    ballsFaced: ballsFaced,
+    strikerIndex: strikerIndex,
+    nonStrikerIndex: nonStrikerIndex,
+    isComplete: isOver,
+    wonChase: wonChase,
+  );
 }
 
 const Object _sentinel = Object();

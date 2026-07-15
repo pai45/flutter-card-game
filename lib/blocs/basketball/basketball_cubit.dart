@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/basketball_athletes.dart';
+import '../../data/basketball_teams.dart';
 import '../../models/basketball.dart';
 import '../../models/progression.dart';
 import '../../services/secure_storage_service.dart';
@@ -132,6 +133,10 @@ class BasketballCubit extends Cubit<BasketballState> {
     ];
     final cpuPool = List.of(basketballAthletes)..shuffle(_random);
     final cpuRoster = cpuPool.take(3).toList();
+    final rivalLiveries = [
+      for (final team in basketballTeams)
+        if (team.id != state.teamId) team.id,
+    ]..shuffle(_random);
     final config = BasketballMatchConfig(
       playerRoster: playerRoster,
       playerStarterIndex: rosterIds.indexOf(starterId),
@@ -141,6 +146,7 @@ class BasketballCubit extends Cubit<BasketballState> {
       seed: _random.nextInt(1 << 31),
       showHints: !state.stats.hintsSeen,
       teamId: state.teamId,
+      cpuTeamId: rivalLiveries.first,
     );
     emit(
       state.copyWith(

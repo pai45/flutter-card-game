@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import '../../../config/theme.dart';
 import '../../../models/prediction.dart';
 import '../../../models/sport_match.dart';
-import '../../../utils/prediction_helpers.dart';
 import '../../../utils/sound_effects.dart';
+import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../../widgets/team_logo.dart';
+import 'pick_status_style.dart';
 
 /// Fixture card on the prediction home — a faithful build of the design
 /// reference. A neutral dark-navy panel (NOT league-tinted) with:
@@ -16,18 +17,23 @@ import '../../../widgets/team_logo.dart';
 ///   • mirrored team badges (single chamfered outer-bottom corner + a bright
 ///     bottom accent edge) with the team name beneath;
 ///   • football score in the centre / cricket innings under each name;
-///   • a full-width bottom strip whose chamfered corners match the card:
-///       - upcoming + open → bluer "Make prediction and …" CTA (focal),
-///       - upcoming + predicted → calm "Predicted … ago",
-///       - finished + predicted + unsettled → gold "Results ready" CTA (focal),
-///       - finished + predicted + settled → the user's earned "△ +N XP",
-///       - finished, no prediction → the fixture's "△ +N XP",
-///       - live → no strip.
+///   • a full-width bottom strip whose chamfered corners match the card, read
+///     like a live market — potential XP on the left, Total Vol (Oz) on the
+///     right — and telegraphing lifecycle:
+///       - upcoming → "POTENTIAL +N XP"  |  "VOL … OZ" (✓ prefix if predicted),
+///       - live → "● IN PLAY"            |  "VOL … OZ",
+///       - finished + reward pending → focal gold, breathing
+///         "◆ RESULTS ARE OUT — TAP TO REVEAL" (the reveal cinematic runs onTap),
+///       - finished + revealed → "+N XP" | coins P&L ("±N OZ") if the player
+///         staked, else "VOL … OZ",
+///       - finished, no engagement → "FULL TIME" | "VOL … OZ".
 class MatchPredictionCard extends StatelessWidget {
   const MatchPredictionCard({
     required this.match,
     required this.prediction,
     this.quiz,
+    this.volumeOz = 0,
+    this.picks,
     this.onTap,
     super.key,
   });
@@ -35,6 +41,16 @@ class MatchPredictionCard extends StatelessWidget {
   final SportMatch match;
   final UserPrediction? prediction;
   final PredictionQuiz? quiz;
+
+  /// Total trading volume (Oz) for the fixture — real linked-market volume, or a
+  /// seeded fallback. Shown as the "VOL … OZ" readout in the bottom strip.
+  final int volumeOz;
+
+  /// The player's realized Oz P&L on this fixture, present only when they hold a
+  /// Pick position on it. Drives the coins-won/lost figure in the revealed
+  /// state; null → the strip shows Total Vol instead.
+  final ({int pnl, bool staked})? picks;
+
   final VoidCallback? onTap;
 
   bool get _predicted => prediction != null;
@@ -52,8 +68,9 @@ class MatchPredictionCard extends StatelessWidget {
         ),
       ),
       child: Padding(
-        // Extra top room so the teams clear the notch cut into the top edge.
-        padding: const EdgeInsets.fromLTRB(16, 28, 16, 14),
+        // Extra top room so the teams clear the notch cut into the top edge;
+        // the bottom 8 mirrors the gap above each team name.
+        padding: const EdgeInsets.fromLTRB(16, 28, 16, _namePad),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -69,10 +86,6 @@ class MatchPredictionCard extends StatelessWidget {
                   weight: FontWeight.w600,
                 ),
               ),
-              // Reserve room so the bottom strip (an overlay, not part of this
-              // Column's own height) doesn't sit on top of this text.
-              if (match.status != MatchStatus.live)
-                const SizedBox(height: _stripReserve),
             ],
           ],
         ),
@@ -111,25 +124,26 @@ class MatchPredictionCard extends StatelessWidget {
                 width: 1.5,
               ),
             ),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [body]),
-          ),
-          // Bottom strip gets drawn above the shadow but below the notch
-          if (match.status != MatchStatus.live)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: ClipPath(
-                clipper: _StripClipper(cut: 12),
-                child: _StatusStrip(
+            // The strip is a real Column child, not an overlay, so the card's
+            // height is genuinely intrinsic — long team names wrap and push the
+            // strip down instead of being clipped behind it. The Material's
+            // antiAlias clip against _CyberCardBorder chamfers the strip's
+            // bottom corners for free.
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                body,
+                _StatusStrip(
                   match: match,
                   prediction: prediction,
                   quiz: quiz,
                   predicted: _predicted,
-                  submittedAt: prediction?.submittedAt,
+                  volumeOz: volumeOz,
+                  picks: picks,
                 ),
-              ),
+              ],
             ),
+          ),
           // The status tag sits inside the notch, reading against the page
           // background that shows through the cut.
           Positioned(
@@ -143,27 +157,6 @@ class MatchPredictionCard extends StatelessWidget {
       ),
     );
   }
-}
-
-class _StripClipper extends CustomClipper<Path> {
-  const _StripClipper({required this.cut});
-  final double cut;
-
-  @override
-  Path getClip(Size size) {
-    final r = Offset.zero & size;
-    return Path()
-      ..moveTo(r.left, r.top)
-      ..lineTo(r.right, r.top)
-      ..lineTo(r.right, r.bottom - cut)
-      ..lineTo(r.right - cut, r.bottom)
-      ..lineTo(r.left + cut, r.bottom)
-      ..lineTo(r.left, r.bottom - cut)
-      ..close();
-  }
-
-  @override
-  bool shouldReclip(covariant _StripClipper oldClipper) => oldClipper.cut != cut;
 }
 
 // ── Status tag content (sits inside the top notch, against the background) ─────
@@ -238,6 +231,7 @@ class _TeamsRow extends StatelessWidget {
             team: match.home,
             alignEnd: false,
             dim: dimNames,
+            sport: match.sport,
             scoreLine: perTeamScores ? match.homeScore : null,
           ),
         ),
@@ -247,6 +241,7 @@ class _TeamsRow extends StatelessWidget {
             team: match.away,
             alignEnd: true,
             dim: dimNames,
+            sport: match.sport,
             scoreLine: perTeamScores ? match.awayScore : null,
           ),
         ),
@@ -260,12 +255,14 @@ class _TeamColumn extends StatelessWidget {
     required this.team,
     required this.alignEnd,
     required this.dim,
+    this.sport,
     this.scoreLine,
   });
 
   final SportTeam team;
   final bool alignEnd;
   final bool dim;
+  final Sport? sport;
   final String? scoreLine;
 
   @override
@@ -276,12 +273,15 @@ class _TeamColumn extends StatelessWidget {
           : CrossAxisAlignment.start,
       children: [
         // Mirror the badge chamfer toward the centre of the card.
-        _TeamBadge(team: team, cutBottomRight: !alignEnd),
-        const SizedBox(height: 8),
+        _TeamBadge(team: team, cutBottomRight: !alignEnd, sport: sport),
+        const SizedBox(height: _namePad),
+        // Long club names (cricket especially — "Los Angeles Knight Riders")
+        // wrap onto a second line and grow the card rather than ellipsing.
         Text(
           team.name,
-          maxLines: 1,
+          maxLines: 2,
           overflow: TextOverflow.ellipsis,
+          textAlign: alignEnd ? TextAlign.end : TextAlign.start,
           style: Cyber.body(
             14.5,
             color: dim ? _dimName : Colors.white,
@@ -290,10 +290,13 @@ class _TeamColumn extends StatelessWidget {
         ),
         if (scoreLine != null) ...[
           const SizedBox(height: 3),
+          // Cricket's chase line ("172/4 (19.1/20 ov, target 172)") is long —
+          // wrap it rather than ellipse away the target.
           Text(
             scoreLine!,
-            maxLines: 1,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
+            textAlign: alignEnd ? TextAlign.end : TextAlign.start,
             style: Cyber.body(
               10.5,
               color: _scoreSub,
@@ -307,9 +310,10 @@ class _TeamColumn extends StatelessWidget {
 }
 
 class _TeamBadge extends StatelessWidget {
-  const _TeamBadge({required this.team, required this.cutBottomRight});
+  const _TeamBadge({required this.team, required this.cutBottomRight, this.sport});
   final SportTeam team;
   final bool cutBottomRight;
+  final Sport? sport;
 
   @override
   Widget build(BuildContext context) {
@@ -318,6 +322,7 @@ class _TeamBadge extends StatelessWidget {
       width: 46,
       height: 46,
       cutBottomRight: cutBottomRight,
+      sport: sport,
     );
   }
 }
@@ -328,16 +333,36 @@ class _ScoreCentre extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if ((match.sport == Sport.football || match.sport == Sport.basketball) && match.hasScore) {
+    if ((match.sport == Sport.football || match.sport == Sport.basketball || match.sport == Sport.tennis) && match.hasScore) {
+      final isTennis = match.sport == Sport.tennis;
+      final sets = match.tennisScorecard?.sets;
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
-        child: Text(
-          '${match.homeScore ?? '-'}  -  ${match.awayScore ?? '-'}',
-          style: Cyber.display(
-            21,
-            color: Colors.white,
-            letterSpacing: 0.5,
-          ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '${match.homeScore ?? '-'}  -  ${match.awayScore ?? '-'}',
+              style: Cyber.display(
+                21,
+                color: Colors.white,
+                letterSpacing: 0.5,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            ),
+            // Tennis set scores row (e.g. 6-4  6-2  6-1)
+            if (isTennis && sets != null && sets.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (int i = 0; i < sets.length; i++) ...[
+                    if (i > 0) const SizedBox(width: 6),
+                    _SetScoreChip(homeScore: sets[i].homeScore, awayScore: sets[i].awayScore),
+                  ],
+                ],
+              ),
+            ],
+          ],
         ),
       );
     }
@@ -366,274 +391,325 @@ class _ScoreCentre extends StatelessWidget {
   }
 }
 
+/// A compact bordered chip showing a single set's score (e.g. "6-4").
+class _SetScoreChip extends StatelessWidget {
+  const _SetScoreChip({required this.homeScore, required this.awayScore});
+  final int homeScore;
+  final int awayScore;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: Cyber.cyan.withValues(alpha: 0.35),
+          width: 1,
+        ),
+        color: Cyber.cyan.withValues(alpha: 0.06),
+      ),
+      child: Text(
+        '$homeScore-$awayScore',
+        style: Cyber.body(
+          10.5,
+          color: Cyber.cyan,
+          weight: FontWeight.w700,
+        ).copyWith(
+          fontFeatures: const [FontFeature.tabularFigures()],
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+}
+
 // ── Bottom status strip ───────────────────────────────────────────────────────
+/// The fixture card reads like a live market: potential XP on the left, Total
+/// Vol (Oz) on the right before kickoff; a focal, breathing gold "results are
+/// out" cue once a reward is claimable; and the earned XP + the player's Oz P&L
+/// once revealed. See the class doc on [MatchPredictionCard] for the full map.
 class _StatusStrip extends StatelessWidget {
   const _StatusStrip({
     required this.match,
     required this.prediction,
     required this.quiz,
     required this.predicted,
-    required this.submittedAt,
+    required this.volumeOz,
+    required this.picks,
   });
 
   final SportMatch match;
   final UserPrediction? prediction;
   final PredictionQuiz? quiz;
   final bool predicted;
-  final DateTime? submittedAt;
+  final int volumeOz;
+  final ({int pnl, bool staked})? picks;
 
   @override
   Widget build(BuildContext context) {
-    // If it's a quiz, use the quiz-specific UI
-    if (quiz != null) {
-      final answered = prediction?.answers.length ?? 0;
-      final total = quiz!.questions.length;
-      final potentialXp = quiz!.maxReward;
-      final isSettled = prediction?.status == PredictionStatus.settled;
-      final correct = prediction?.correctCount ?? 0;
-      
-      if (match.status == MatchStatus.upcoming) {
-        return _Strip(
-          fill: _stripDark,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Text(
-                  'QUIZ $answered/$total',
-                  style: Cyber.label(
-                    9,
-                    color: Cyber.muted,
-                    letterSpacing: 0.8,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  'POTENTIAL +$potentialXp XP',
-                  style: Cyber.label(
-                    9,
-                    color: Cyber.cyan.withValues(alpha: 0.85),
-                    letterSpacing: 0.8,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-              ],
-            ),
-          ),
+    final volText = 'VOL ${formatOzCompact(volumeOz)} OZ';
+
+    switch (match.status) {
+      // Live — in-play beacon + the market's running volume.
+      case MatchStatus.live:
+        return _InfoStrip(
+          left: const _LiveInPlay(),
+          right: _VolText(volText),
         );
-      }
-      
-      if (match.status == MatchStatus.finished) {
-        if (!isSettled && (prediction != null || quiz!.settleable)) {
-          return _Strip(
-            fill: _stripDark,
-            topBorder: Cyber.gold.withValues(alpha: 0.35),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.redeem, color: Cyber.gold, size: 14),
-                const SizedBox(width: 7),
-                Text(
-                  'RESULTS READY — TAP TO REVEAL',
-                  style: Cyber.label(9, color: Cyber.gold, letterSpacing: 1)
-                      .copyWith(
-                        shadows: [
-                          Shadow(
-                            color: Cyber.gold.withValues(alpha: 0.45),
-                            blurRadius: 10,
-                          ),
-                        ],
-                      ),
-                ),
-              ],
-            ),
-          );
-        }
-        
+
+      // Upcoming — the two-figure market row the redesign leads with.
+      case MatchStatus.upcoming:
+        final potentialXp = quiz?.maxReward ?? match.rewardXp;
+        return _InfoStrip(
+          left: _PotentialXp(xp: potentialXp, predicted: predicted),
+          right: _VolText(volText),
+        );
+
+      // Finished — reward-pending (focal gold) → revealed → no-engagement.
+      case MatchStatus.finished:
+        final isSettled = prediction?.status == PredictionStatus.settled;
+        final rewardPending =
+            !isSettled && (prediction != null || (quiz?.settleable ?? false));
+
+        if (rewardPending) return const _RewardReadyStrip();
+
         if (isSettled) {
+          final total = quiz?.questions.length ?? 0;
+          final correct = prediction!.correctCount ?? 0;
           final isWon = correct > 0;
-          return _Strip(
-            fill: _stripDark,
-            topBorder: (isWon ? Cyber.success : Cyber.red).withValues(alpha: 0.25),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  if (isWon) ...[
-                    const Icon(Icons.trending_up, color: Cyber.success, size: 13),
-                    const SizedBox(width: 6),
-                    Text(
-                      '+${prediction!.rewardEarned} XP',
-                      style: Cyber.body(
-                        12,
-                        color: Cyber.success,
-                        weight: FontWeight.w800,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ] else ...[
-                    Text(
-                      '$correct/$total CORRECT',
-                      style: Cyber.label(
-                        9,
-                        color: Cyber.muted,
-                        letterSpacing: 0.8,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ],
-                  const Spacer(),
-                  _OutcomeDots(
-                    outcomes: questionOutcomes(quiz!, prediction!),
-                    compact: true,
-                  ),
-                ],
-              ),
+          return _InfoStrip(
+            topBorder: (isWon ? Cyber.success : Cyber.muted).withValues(
+              alpha: 0.25,
             ),
+            left: isWon
+                ? _XpWon(prediction!.rewardEarned)
+                : _MutedLabel(total > 0 ? '$correct/$total CORRECT' : 'SETTLED'),
+            // Coins P&L only when the player actually staked Oz on this match;
+            // otherwise fall back to the market's final volume.
+            right: picks != null
+                ? _CoinsPnl(picks!.pnl)
+                : _VolText(volText),
           );
         }
-      }
-    }
 
-    // Fallback/classic match status strip
-    if (match.status == MatchStatus.finished &&
-        prediction != null &&
-        prediction!.status != PredictionStatus.settled) {
-      return _Strip(
-        fill: _stripDark,
-        topBorder: Cyber.gold.withValues(alpha: 0.28),
-        child: Text(
-          'RESULTS READY — TAP TO REVEAL',
-          style: Cyber.label(9, color: Cyber.gold, letterSpacing: 1)
-              .copyWith(
-                shadows: [
-                  Shadow(
-                    color: Cyber.gold.withValues(alpha: 0.45),
-                    blurRadius: 10,
-                  ),
-                ],
-              ),
-        ),
-      );
+        // Finished, never engaged — a calm closed-market readout.
+        return _InfoStrip(
+          left: const _MutedLabel('FULL TIME'),
+          right: _VolText(volText),
+        );
     }
-
-    final settledXp = prediction?.status == PredictionStatus.settled
-        ? prediction!.rewardEarned
-        : null;
-    final rewardXp = settledXp ?? match.rewardXp;
-    if (match.status == MatchStatus.finished && rewardXp > 0) {
-      return _Strip(
-        fill: _stripDark,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.change_history, color: Cyber.cyan, size: 15),
-            const SizedBox(width: 6),
-            Text(
-              '+$rewardXp XP',
-              style:
-                  Cyber.body(
-                    12.5,
-                    color: Cyber.cyan,
-                    weight: FontWeight.w700,
-                  ).copyWith(
-                    letterSpacing: 0.5,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (match.status == MatchStatus.upcoming && predicted) {
-      return _Strip(
-        fill: _stripDark,
-        child: Text(
-          'Predicted ${_timeAgo(submittedAt)}',
-          style: Cyber.body(
-            12.5,
-            color: _predictedText,
-            weight: FontWeight.w500,
-          ),
-        ),
-      );
-    }
-
-    if (match.status == MatchStatus.upcoming && match.prizeLabel != null) {
-      return _Strip(
-        fill: _stripBlue,
-        topBorder: Cyber.cyan.withValues(alpha: 0.28),
-        child: Text(
-          'Make prediction and ${match.prizeLabel}',
-          style: Cyber.body(13, color: Cyber.cyan, weight: FontWeight.w700)
-              .copyWith(
-                shadows: [
-                  Shadow(
-                    color: Cyber.cyan.withValues(alpha: 0.45),
-                    blurRadius: 10,
-                  ),
-                ],
-              ),
-        ),
-      );
-    }
-
-    return const SizedBox.shrink();
   }
 }
 
-class _OutcomeDots extends StatelessWidget {
-  const _OutcomeDots({required this.outcomes, this.compact = false});
+/// Two-slot strip: a left cue and a right figure, on the shared dark fill.
+class _InfoStrip extends StatelessWidget {
+  const _InfoStrip({required this.left, required this.right, this.topBorder});
 
-  final List<QuestionOutcome> outcomes;
-  final bool compact;
+  final Widget left;
+  final Widget right;
+  final Color? topBorder;
 
   @override
   Widget build(BuildContext context) {
-    final gap = compact ? 4.0 : 5.0;
+    return _Strip(
+      fill: _stripDark,
+      topBorder: topBorder,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(children: [left, const Spacer(), right]),
+      ),
+    );
+  }
+}
+
+/// The right-slot Total Vol readout — muted, tabular, always-on (never glows).
+class _VolText extends StatelessWidget {
+  const _VolText(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Text(
+    text,
+    style: Cyber.label(
+      9,
+      color: Cyber.muted,
+      letterSpacing: 0.8,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    ),
+  );
+}
+
+/// Left-slot potential-XP cue for upcoming fixtures; a ✓ marks a placed pick.
+class _PotentialXp extends StatelessWidget {
+  const _PotentialXp({required this.xp, required this.predicted});
+  final int xp;
+  final bool predicted;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Cyber.cyan.withValues(alpha: 0.85);
+    if (xp <= 0) {
+      return _MutedLabel(
+        predicted ? '✓ PREDICTED' : 'OPEN',
+        color: predicted ? color : Cyber.muted,
+      );
+    }
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (var i = 0; i < outcomes.length; i++) ...[
-          _OutcomeDot(outcome: outcomes[i], compact: compact),
-          if (i != outcomes.length - 1) SizedBox(width: gap),
+        if (predicted) ...[
+          Icon(Icons.check, size: 11, color: color),
+          const SizedBox(width: 4),
         ],
+        Text(
+          'POTENTIAL +$xp XP',
+          style: Cyber.label(
+            9,
+            color: color,
+            letterSpacing: 0.8,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
       ],
     );
   }
 }
 
-class _OutcomeDot extends StatelessWidget {
-  const _OutcomeDot({required this.outcome, required this.compact});
+/// Live in-play beacon — a legit glow per THE GLOW RULE (this fixture is live).
+class _LiveInPlay extends StatelessWidget {
+  const _LiveInPlay();
 
-  final QuestionOutcome outcome;
-  final bool compact;
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(
+        width: 6,
+        height: 6,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Cyber.danger,
+          boxShadow: Cyber.glow(Cyber.danger, alpha: 0.8, blur: 6),
+        ),
+      ),
+      const SizedBox(width: 6),
+      Text(
+        'IN PLAY',
+        style: Cyber.label(9, color: Cyber.danger, letterSpacing: 1),
+      ),
+    ],
+  );
+}
+
+/// Revealed XP win.
+class _XpWon extends StatelessWidget {
+  const _XpWon(this.xp);
+  final int xp;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      const Icon(Icons.trending_up, color: Cyber.success, size: 13),
+      const SizedBox(width: 6),
+      Text(
+        '+$xp XP',
+        style: Cyber.body(
+          12,
+          color: Cyber.success,
+          weight: FontWeight.w800,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
+      ),
+    ],
+  );
+}
+
+/// Revealed coins P&L — the player's realized Oz on this match (green up / red
+/// down). Uses a real minus glyph so it lines up with the "+N OZ" wins.
+class _CoinsPnl extends StatelessWidget {
+  const _CoinsPnl(this.pnl);
+  final int pnl;
 
   @override
   Widget build(BuildContext context) {
-    final color = switch (outcome) {
-      QuestionOutcome.correct => Cyber.success,
-      QuestionOutcome.wrong => Cyber.red,
-      QuestionOutcome.pending => Cyber.muted,
-    };
-    final icon = switch (outcome) {
-      QuestionOutcome.correct => Icons.check,
-      QuestionOutcome.wrong => Icons.close,
-      QuestionOutcome.pending => Icons.more_horiz,
-    };
-    final box = compact ? 13.0 : 17.0;
-    final iconSize = compact ? 9.0 : 11.0;
-    return Container(
-      width: box,
-      height: box,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        border: Border.all(color: color.withValues(alpha: 0.55)),
+    final up = pnl >= 0;
+    final color = up ? Cyber.success : Cyber.red;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          up ? Icons.trending_up : Icons.trending_down,
+          color: color,
+          size: 12,
+        ),
+        const SizedBox(width: 5),
+        Text(
+          '${up ? '+' : '−'}${formatOzCompact(pnl.abs())} OZ',
+          style: Cyber.body(
+            12,
+            color: color,
+            weight: FontWeight.w800,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A calm muted label (FULL TIME / SETTLED / n/m CORRECT / OPEN).
+class _MutedLabel extends StatelessWidget {
+  const _MutedLabel(this.text, {this.color});
+  final String text;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) => Text(
+    text,
+    style: Cyber.label(
+      9,
+      color: color ?? Cyber.muted,
+      letterSpacing: 0.8,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    ),
+  );
+}
+
+/// The one focal element on a finished-but-unclaimed card: a breathing gold
+/// "results are out" cue. The glow is gated to this state only — tapping the
+/// card runs the existing settlement reveal cinematic.
+class _RewardReadyStrip extends StatelessWidget {
+  const _RewardReadyStrip();
+
+  @override
+  Widget build(BuildContext context) {
+    return CyberPulse(
+      period: const Duration(milliseconds: 1100),
+      builder: (context, t) => _Strip(
+        fill: _stripDark,
+        topBorder: Cyber.gold.withValues(alpha: 0.28 + 0.30 * t),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.redeem, color: Cyber.gold, size: 14),
+            const SizedBox(width: 7),
+            Text(
+              'RESULTS ARE OUT — TAP TO REVEAL',
+              style: Cyber.label(9, color: Cyber.gold, letterSpacing: 1)
+                  .copyWith(
+                    shadows: [
+                      Shadow(
+                        color: Cyber.gold.withValues(alpha: 0.25 + 0.35 * t),
+                        blurRadius: 8 + 8 * t,
+                      ),
+                    ],
+                  ),
+            ),
+          ],
+        ),
       ),
-      child: Icon(icon, size: iconSize, color: color),
     );
   }
 }
@@ -787,22 +863,19 @@ const _borderPredicted = Color(
   0xff2c7a8c,
 ); // dark cyan — predicted, not started
 const _stripDark = Color(0xff0f1826);
-const _stripBlue = Color(0xff173a5e);
 const _timeGold = Color(0xffc8a45a);
 const _dimName = Color(0xffaeb7c5);
 const _scoreSub = Color(0xff9fb0c2);
 const _resultCol = Color(0xffbac5d3);
-const _predictedText = Color(0xff93a1b2);
 
 // Top-centre notch geometry (shared by the card shape + the tag overlay).
 const _notchFloorW = 96.0;
 const _notchDepth = 22.0;
 const _notchSlope = 12.0;
 
-// Approximate rendered height of the single-line bottom strip (11 vertical
-// padding × 2 + a line of 9-13pt text) — the strip is a Stack overlay, not a
-// Column child, so its own height isn't otherwise reserved.
-const _stripReserve = 44.0;
+// Breathing room around the team name — the same 8 above (badge → name) and
+// below (name → bottom strip), so the block sits evenly however it wraps.
+const _namePad = 8.0;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 /// The card border colour telegraphs where the fixture sits in its lifecycle:
@@ -827,17 +900,4 @@ String _formatTime(DateTime dt) {
   final h = dt.hour.toString().padLeft(2, '0');
   final m = dt.minute.toString().padLeft(2, '0');
   return '$h:$m';
-}
-
-String _timeAgo(DateTime? dt) {
-  if (dt == null) return 'just now';
-  final diff = DateTime.now().difference(dt);
-  if (diff.inMinutes < 1) return 'just now';
-  if (diff.inMinutes < 60) {
-    return '${diff.inMinutes} minute${diff.inMinutes == 1 ? '' : 's'} ago';
-  }
-  if (diff.inHours < 24) {
-    return '${diff.inHours} hour${diff.inHours == 1 ? '' : 's'} ago';
-  }
-  return '${diff.inDays} day${diff.inDays == 1 ? '' : 's'} ago';
 }

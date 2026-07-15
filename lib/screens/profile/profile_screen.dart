@@ -2197,8 +2197,10 @@ class _AvatarTossCtaState extends State<_AvatarTossCta>
             widget.onPressed();
           },
           onTapCancel: () => _press.reverse(),
-          child: ClipPath(
+          child: ChamferedActionSurface(
             clipper: const _AvatarCtaClipper(),
+            borderColor: Colors.white.withValues(alpha: 0.78),
+            borderWidth: 1.4,
             child: Container(
               width: double.infinity,
               height: 52,

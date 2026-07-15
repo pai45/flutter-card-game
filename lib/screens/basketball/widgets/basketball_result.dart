@@ -2,12 +2,15 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../blocs/game/game_bloc.dart';
 import '../../../config/theme.dart';
 import '../../../models/basketball.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_cta_button.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
+import '../../../widgets/level_up_celebration.dart';
 
 /// Full-time result reveal: verdict banner → score + grade plate → box-score
 /// grid → XP count-up + record → CTAs. Staged like the quiz/settlement
@@ -38,6 +41,7 @@ class _BasketballResultOverlayState extends State<BasketballResultOverlay> {
   static const _maxStage = 3;
   int _stage = 0;
   Timer? _timer;
+  bool _showLevelUp = false;
 
   @override
   void initState() {
@@ -50,6 +54,7 @@ class _BasketballResultOverlayState extends State<BasketballResultOverlay> {
       }
       setState(() => _stage += 1);
       playSound(SoundEffect.cardSlam);
+      if (_stage >= _maxStage) _maybeLevelUp();
     });
   }
 
@@ -57,6 +62,16 @@ class _BasketballResultOverlayState extends State<BasketballResultOverlay> {
     if (_stage >= _maxStage) return;
     _timer?.cancel();
     setState(() => _stage = _maxStage);
+    _maybeLevelUp();
+  }
+
+  /// After the reveal lands, celebrate any levels this match's XP crossed —
+  /// same beat as the Grand Prix result.
+  void _maybeLevelUp() {
+    if (!mounted) return;
+    if (context.read<GameBloc>().state.pendingLevelUps.isNotEmpty) {
+      setState(() => _showLevelUp = true);
+    }
   }
 
   @override
@@ -74,7 +89,9 @@ class _BasketballResultOverlayState extends State<BasketballResultOverlay> {
       onTap: _skip,
       child: ColoredBox(
         color: Cyber.bg.withValues(alpha: 0.97),
-        child: SafeArea(
+        child: Stack(
+          children: [
+            SafeArea(
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 18),
@@ -208,6 +225,13 @@ class _BasketballResultOverlayState extends State<BasketballResultOverlay> {
               ),
             ),
           ),
+        ),
+            if (_showLevelUp)
+              LevelUpCelebration(
+                levels: context.read<GameBloc>().state.pendingLevelUps,
+                onDismissed: () => setState(() => _showLevelUp = false),
+              ),
+          ],
         ),
       ),
     );

@@ -21,6 +21,7 @@ void main() {
 
       expect(SuperOverResolution.deliveryMultiplier(DeliveryType.yorker), 0.78);
       expect(SuperOverResolution.deliveryMultiplier(DeliveryType.pace), 0.92);
+      expect(SuperOverResolution.deliveryMultiplier(DeliveryType.slower), 1.04);
       expect(SuperOverResolution.deliveryMultiplier(DeliveryType.spin), 1.10);
     });
 
@@ -53,6 +54,50 @@ void main() {
       expect(SuperOverResolution.sectorForTiming(0.4), ShotSector.off);
     });
 
+    test('early and late contact drift an explicit intent by one sector', () {
+      final early = SuperOverResolution.resolveShot(
+        timingErrorMs: -100,
+        rating: 75,
+        delivery: DeliveryType.pace,
+        fieldSectors: const [3, 3, 3],
+        intendedSector: ShotSector.v,
+        random: Random(4),
+      );
+      final late = SuperOverResolution.resolveShot(
+        timingErrorMs: 100,
+        rating: 75,
+        delivery: DeliveryType.pace,
+        fieldSectors: const [3, 3, 3],
+        intendedSector: ShotSector.v,
+        random: Random(4),
+      );
+
+      expect(early.drift, TimingDrift.early);
+      expect(early.sector, ShotSector.leg);
+      expect(late.drift, TimingDrift.late);
+      expect(late.sector, ShotSector.off);
+      expect(late.power, lessThan(early.power));
+    });
+
+    test('left-handed contact mirrors early and late drift', () {
+      expect(
+        SuperOverResolution.sectorForIntentAndTiming(
+          intendedSector: ShotSector.v,
+          normalizedError: -0.4,
+          leftHanded: true,
+        ),
+        ShotSector.off,
+      );
+      expect(
+        SuperOverResolution.sectorForIntentAndTiming(
+          intendedSector: ShotSector.v,
+          normalizedError: 0.4,
+          leftHanded: true,
+        ),
+        ShotSector.leg,
+      );
+    });
+
     test('resolveShot reports tier, sector, power and outcome', () {
       final shot = SuperOverResolution.resolveShot(
         timingErrorMs: 0,
@@ -77,6 +122,51 @@ void main() {
       expect(spots.where((s) => s.sector == ShotSector.leg), hasLength(3));
       expect(spots.map((s) => s.radial).reduce(max), greaterThan(0.6));
       expect(spots.map((s) => s.radial).reduce(min), lessThan(0.4));
+    });
+
+    test('field plan exposes only a unique least-covered sector as Open', () {
+      final unique = SuperOverFieldPlan.fromCounts(const [2, 4, 3]);
+      final tied = SuperOverFieldPlan.fromCounts(const [3, 3, 3]);
+
+      expect(unique.openSector, ShotSector.off);
+      expect(unique.packedSectors, {ShotSector.v});
+      expect(tied.openSector, isNull);
+      expect(tied.packedSectors, isEmpty);
+      expect(SuperOverResolution.openSectorForSectors(const [1, 1, 7]), isNull);
+    });
+
+    test('Perfect Ground never produces a six', () {
+      final outcomes = [
+        for (var seed = 0; seed < 100; seed++)
+          SuperOverResolution.resolveShot(
+            timingErrorMs: 0,
+            rating: 99,
+            delivery: DeliveryType.pace,
+            fieldSectors: const [3, 3, 3],
+            intendedSector: ShotSector.v,
+            shotStyle: ShotStyle.ground,
+            random: Random(seed),
+          ).outcome,
+      ];
+
+      expect(outcomes, isNot(contains(ShotOutcome.six)));
+      expect(outcomes, everyElement(anyOf(ShotOutcome.four, ShotOutcome.two)));
+    });
+
+    test('Perfect contact bypasses geometric catching', () {
+      final outcomes = [
+        for (var seed = 0; seed < 100; seed++)
+          SuperOverResolution.resolveShot(
+            timingErrorMs: 0,
+            rating: 75,
+            delivery: DeliveryType.pace,
+            fieldSectors: const [0, 9, 0],
+            intendedSector: ShotSector.v,
+            random: Random(seed),
+          ).outcome,
+      ];
+
+      expect(outcomes, isNot(contains(ShotOutcome.caught)));
     });
 
     test('fielder on the ball path can convert catchable shot into caught', () {
@@ -135,6 +225,26 @@ void main() {
       );
 
       expect(firePower, normalPower + 12);
+    });
+
+    test('difficulty assistance changes windows without pressure input', () {
+      final rookie = SuperOverResolution.effectiveTimingWindowMs(
+        80,
+        DeliveryType.pace,
+        difficulty: SuperOverDifficulty.rookie,
+      );
+      final pro = SuperOverResolution.effectiveTimingWindowMs(
+        80,
+        DeliveryType.pace,
+      );
+      final allStar = SuperOverResolution.effectiveTimingWindowMs(
+        80,
+        DeliveryType.pace,
+        difficulty: SuperOverDifficulty.allStar,
+      );
+
+      expect(rookie, greaterThan(pro));
+      expect(allStar, lessThan(pro));
     });
   });
 }

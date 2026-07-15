@@ -2,6 +2,7 @@ import '../../models/cards.dart';
 import '../../models/deck.dart';
 import '../../models/oz_coin_ledger.dart';
 import '../../models/streak.dart';
+import '../../models/super_over.dart';
 import '../../models/xp_ledger.dart';
 
 sealed class GameEvent {}
@@ -312,18 +313,66 @@ class BasketballFinished extends GameEvent {
   final int xp;
 }
 
-/// Fired once by Super Over mode when an over finishes to award XP
-/// and record history.
-class SuperOverFinished extends GameEvent {
-  SuperOverFinished({
+/// Settles one completed Final Over chase in the global XP and history owner.
+/// XP only — Final Over pays no coins.
+class FinalOverFinished extends GameEvent {
+  FinalOverFinished({
+    required this.matchId,
     required this.runs,
+    required this.target,
     required this.wickets,
-    required this.wonChase,
+    required this.resultLabel,
+    required this.tierLabel,
+    required this.grade,
+    required this.stars,
     required this.xp,
   });
 
+  final String matchId;
   final int runs;
+  final int target;
   final int wickets;
-  final bool? wonChase;
+  final String resultLabel; // 'CHASE COMPLETE' | 'CHASE FAILED'
+  final String tierLabel;
+  final String grade;
+  final int stars;
   final int xp;
+}
+
+/// Settles one completed Tennis Rally session in the global XP, wallet, and
+/// history owner. [matchId] is persisted separately so retries cannot pay twice.
+class TennisFinished extends GameEvent {
+  TennisFinished({
+    required this.matchId,
+    required this.playerName,
+    required this.opponentName,
+    required this.modeLabel,
+    required this.difficultyLabel,
+    required this.resultLabel,
+    required this.grade,
+    required this.playerGames,
+    required this.opponentGames,
+    required this.xp,
+    required this.coins,
+  });
+
+  final String matchId;
+  final String playerName;
+  final String opponentName;
+  final String modeLabel;
+  final String difficultyLabel;
+  final String resultLabel;
+  final String grade;
+  final int playerGames;
+  final int opponentGames;
+  final int xp;
+  final int coins;
+}
+
+/// Fired once by Super Over mode when an over finishes to award XP
+/// and record history.
+class SuperOverFinished extends GameEvent {
+  SuperOverFinished({required this.summary});
+
+  final SuperOverMatchSummary summary;
 }

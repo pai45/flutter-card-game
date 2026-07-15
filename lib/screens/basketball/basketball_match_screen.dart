@@ -88,26 +88,29 @@ class _BasketballMatchScreenState extends State<BasketballMatchScreen> {
     for (final event in events) {
       switch (event.type) {
         case BasketballEventType.basketMade:
-          if (event.team == 0) {
-            playSound(SoundEffect.goal);
-            HapticFeedback.mediumImpact();
-          } else {
-            playSound(SoundEffect.whoosh);
-          }
+          playSound(SoundEffect.bbSwish);
+          if (event.team == 0) HapticFeedback.mediumImpact();
+        case BasketballEventType.shotMissed:
+          playSound(SoundEffect.bbRimRattle);
         case BasketballEventType.dunk:
-          playSound(SoundEffect.cardSlam);
+          playSound(SoundEffect.bbDunkSlam);
           HapticFeedback.heavyImpact();
         case BasketballEventType.poster:
           playSound(SoundEffect.bannerSlam);
         case BasketballEventType.block:
-          playSound(SoundEffect.save);
+          playSound(SoundEffect.bbBackboard);
           HapticFeedback.heavyImpact();
         case BasketballEventType.steal:
-          playSound(SoundEffect.whoosh);
+          playSound(SoundEffect.bbSneakerSqueak);
           HapticFeedback.mediumImpact();
         case BasketballEventType.ankleBreaker:
-          playSound(SoundEffect.whoosh);
+          playSound(SoundEffect.bbSneakerSqueak);
           HapticFeedback.mediumImpact();
+        case BasketballEventType.spinMove:
+          playSound(SoundEffect.bbSneakerSqueak);
+          if (event.team == 0) HapticFeedback.selectionClick();
+        case BasketballEventType.crossover:
+          if (event.team == 0) playSound(SoundEffect.bbSneakerSqueak);
         case BasketballEventType.perfectRelease:
           if (event.team == 0) {
             playSound(SoundEffect.commit);
@@ -117,14 +120,16 @@ class _BasketballMatchScreenState extends State<BasketballMatchScreen> {
           if (event.team == 0) playSound(SoundEffect.whoosh);
         case BasketballEventType.heatStarted:
           playSound(SoundEffect.riser);
+          playSound(SoundEffect.bbCrowdRoar);
           if (event.team == 0) HapticFeedback.mediumImpact();
         case BasketballEventType.shotClockViolation:
           playSound(SoundEffect.redCard);
         case BasketballEventType.buzzerBeater:
+          playSound(SoundEffect.bbBuzzer);
           playSound(SoundEffect.bannerSlam);
           HapticFeedback.heavyImpact();
         case BasketballEventType.halfEnded:
-          playSound(SoundEffect.bannerSlam);
+          playSound(SoundEffect.bbBuzzer);
           HapticFeedback.heavyImpact();
           if (event.halfIndex == 0) _cubit.markHintsSeen();
           _cubit.onHalfEnded(

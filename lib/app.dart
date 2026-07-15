@@ -2,20 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'blocs/achievement/achievement_celebration_controller.dart';
+import 'blocs/final_over/final_over_cubit.dart';
 import 'blocs/friends/friends_cubit.dart';
 import 'blocs/game/game_bloc.dart';
 import 'blocs/game/game_event.dart';
 import 'blocs/game/game_state.dart';
+import 'blocs/match_circle/match_circle_cubit.dart';
 import 'blocs/picks/picks_cubit.dart';
 import 'blocs/picks/picks_state.dart';
 import 'blocs/prediction/prediction_cubit.dart';
 import 'blocs/prediction/prediction_state.dart';
 import 'blocs/quiz/quiz_cubit.dart';
+import 'blocs/tennis/tennis_cubit.dart';
+import 'blocs/tennis/tennis_state.dart';
 import 'config/enums.dart';
 import 'config/theme.dart';
 import 'models/league.dart';
 import 'models/sport_match.dart';
 import 'screens/deck/cricket_deck_builder_screen.dart';
+import 'screens/final_over/final_over_hub.dart';
 import 'screens/football_bingo/football_bingo_hub.dart';
 import 'screens/football_chess/football_chess_hub.dart';
 import 'screens/basketball/basketball_hub.dart';
@@ -23,6 +28,7 @@ import 'screens/grand_prix/grand_prix_hub.dart';
 import 'screens/game/game_screen.dart';
 import 'screens/shootout/shootout_hub.dart';
 import 'screens/super_over/super_over_hub.dart';
+import 'screens/tennis/tennis_hub.dart';
 import 'screens/home/widgets/starter_pack_onboarding.dart';
 import 'screens/onboarding/profile_setup_screen.dart';
 import 'screens/predictions/league_detail_screen.dart';
@@ -38,8 +44,8 @@ import 'screens/shop/shop_screen.dart';
 import 'services/achievement_progress.dart';
 import 'services/live_prediction_repository.dart';
 import 'services/live_score_service.dart';
+import 'services/match_circle_repository.dart';
 import 'services/espn_service.dart';
-import 'services/open_f1_service.dart';
 import 'services/pick_repository.dart';
 import 'services/prediction_repository.dart';
 import 'services/secure_storage_service.dart';
@@ -60,11 +66,16 @@ class PitchDuelApp extends StatelessWidget {
           create: (_) => GameBloc(SecureGameStorage())..add(GameLoaded()),
         ),
         BlocProvider(
+          create: (_) => MatchCircleCubit(
+            LocalMatchCircleRepository(),
+            SecureGameStorage(),
+          ),
+        ),
+        BlocProvider(
           create: (_) => PredictionCubit(
             LivePredictionRepository(
               MockPredictionRepository(),
               LiveScoreService(),
-              OpenF1Service(),
               const EspnService(),
             ),
             SecureGameStorage(),
@@ -79,6 +90,10 @@ class PitchDuelApp extends StatelessWidget {
         ),
         BlocProvider(create: (_) => FriendsCubit(SecureGameStorage())..load()),
         BlocProvider(create: (_) => QuizCubit(SecureGameStorage())..load()),
+        BlocProvider(create: (_) => TennisCubit(SecureGameStorage())..load()),
+        BlocProvider(
+          create: (_) => FinalOverCubit(SecureGameStorage())..load(),
+        ),
       ],
       child: MaterialApp(
         title: 'Pitch Duel',
@@ -96,6 +111,9 @@ class PitchDuelApp extends StatelessWidget {
                 listener: (context, _) => _syncAchievements(context),
               ),
               BlocListener<PicksCubit, PicksState>(
+                listener: (context, _) => _syncAchievements(context),
+              ),
+              BlocListener<TennisCubit, TennisState>(
                 listener: (context, _) => _syncAchievements(context),
               ),
             ],
@@ -257,6 +275,17 @@ class _AppShellState extends State<AppShell> {
   /// Enter Super Over from the GAMES tab's Cricket section.
   void _openSuperOver() => _enterCricketGameFlow(_pushSuperOver);
 
+  /// Enter Final Over from Cricket GAMES. The rules engine lives in the
+  /// `final_over` package; the lobby, pitch and HUD are ours.
+  void _openFinalOver() {
+    final navigator = Navigator.of(context);
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => FinalOverHub(onExit: navigator.pop),
+      ),
+    );
+  }
+
   /// Open the cricket-only deck editor from the GAMES tab's Cricket section.
   void _openCricketDeck() => _enterCricketGameFlow(_pushCricketDeck);
 
@@ -344,17 +373,7 @@ class _AppShellState extends State<AppShell> {
     final navigator = Navigator.of(context);
     navigator.push(
       MaterialPageRoute<void>(
-        builder: (_) => SuperOverHub(
-          onNavigate: (next) {
-            navigator.pop();
-            _go(
-              // Assume navigating to predictions by default, or mapping next if needed
-              next == 'predictions'
-                  ? AppSection.predictions
-                  : AppSection.predictions,
-            );
-          },
-        ),
+        builder: (_) => SuperOverHub(onExit: navigator.pop),
       ),
     );
   }
@@ -468,6 +487,15 @@ class _AppShellState extends State<AppShell> {
             _go(next);
           },
         ),
+      ),
+    );
+  }
+
+  void _openTennisRally() {
+    final navigator = Navigator.of(context);
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => TennisRallyHub(onExit: navigator.pop),
       ),
     );
   }
@@ -589,12 +617,14 @@ class _AppShellState extends State<AppShell> {
               onOpenFootballBingo: _openFootballBingo,
               onOpenFootballChess: _openFootballChess,
               onOpenSuperOver: _openSuperOver,
+              onOpenFinalOver: _openFinalOver,
               onOpenCricketDeck: _openCricketDeck,
               onOpenGuessPlayer: _openGuessPlayer,
               onOpenBasketballGuessPlayer: _openBasketballGuessPlayer,
               onOpenCricketGuessPlayer: _openCricketGuessPlayer,
               onOpenGrandPrix: _openGrandPrix,
               onOpenBasketball: _openBasketball,
+              onOpenTennisRally: _openTennisRally,
               onAddCoins: _openShopCoins,
             ),
           };

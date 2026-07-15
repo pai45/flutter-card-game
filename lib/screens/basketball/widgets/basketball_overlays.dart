@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../config/theme.dart';
 import '../../../data/basketball_athletes.dart';
+import '../../../data/basketball_teams.dart';
 import '../../../games/basketball/basketball_game.dart';
 import '../../../models/basketball.dart';
 import '../../../utils/sound_effects.dart';
@@ -81,6 +82,8 @@ class _BasketballIntroOverlayState extends State<BasketballIntroOverlay>
     final config = widget.config;
     final mine = config.playerRoster[config.playerStarterIndex];
     final theirs = config.cpuRoster[config.cpuStarterIndex];
+    final myTeam = basketballTeamById(config.teamId);
+    final rivalTeam = basketballTeamById(config.cpuTeamId);
     return GestureDetector(
       onTap: _finish,
       child: ColoredBox(
@@ -106,8 +109,8 @@ class _BasketballIntroOverlayState extends State<BasketballIntroOverlay>
                     Expanded(
                       child: _IntroAthleteCard(
                         athlete: mine,
-                        label: 'YOU',
-                        accent: Cyber.cyan,
+                        label: 'YOU · ${myTeam.name.toUpperCase()}',
+                        accent: _liveryAccent(myTeam, fallback: Cyber.cyan),
                       ),
                     ),
                     Padding(
@@ -127,8 +130,8 @@ class _BasketballIntroOverlayState extends State<BasketballIntroOverlay>
                     Expanded(
                       child: _IntroAthleteCard(
                         athlete: theirs,
-                        label: 'CPU',
-                        accent: Cyber.magenta,
+                        label: 'CPU · ${rivalTeam.name.toUpperCase()}',
+                        accent: _liveryAccent(rivalTeam, fallback: Cyber.magenta),
                       ),
                     ),
                   ],
@@ -163,6 +166,14 @@ class _BasketballIntroOverlayState extends State<BasketballIntroOverlay>
       ),
     );
   }
+}
+
+/// Livery primary as the card tint, falling back through secondary to the
+/// cyber accent when a jersey color is too dark to read on the panel.
+Color _liveryAccent(BasketballTeamLivery team, {required Color fallback}) {
+  if (team.primary.computeLuminance() >= 0.05) return team.primary;
+  if (team.secondary.computeLuminance() >= 0.05) return team.secondary;
+  return fallback;
 }
 
 class _IntroAthleteCard extends StatelessWidget {

@@ -114,6 +114,7 @@ class FootballBingoProgress {
     required this.lifelines,
     required this.completed,
     required this.cellOrderIds,
+    required this.elapsedSeconds,
   });
 
   factory FootballBingoProgress.initial(String puzzleId, DateTime now) =>
@@ -125,6 +126,7 @@ class FootballBingoProgress {
         lifelines: kFootballBingoStartingLifelines,
         completed: false,
         cellOrderIds: const [],
+        elapsedSeconds: 0,
       );
 
   factory FootballBingoProgress.fromJson(Map<String, dynamic> json) =>
@@ -142,6 +144,7 @@ class FootballBingoProgress {
         cellOrderIds: List<String>.from(
           json['cellOrderIds'] as List? ?? const [],
         ),
+        elapsedSeconds: json['elapsedSeconds'] as int? ?? 0,
       );
 
   final String puzzleId;
@@ -151,6 +154,7 @@ class FootballBingoProgress {
   final int lifelines;
   final bool completed;
   final List<String> cellOrderIds;
+  final int elapsedSeconds;
 
   Map<String, dynamic> toJson() => {
     'puzzleId': puzzleId,
@@ -160,6 +164,7 @@ class FootballBingoProgress {
     'lifelines': lifelines,
     'completed': completed,
     'cellOrderIds': cellOrderIds,
+    'elapsedSeconds': elapsedSeconds,
   };
 
   FootballBingoProgress copyWith({
@@ -170,6 +175,7 @@ class FootballBingoProgress {
     int? lifelines,
     bool? completed,
     List<String>? cellOrderIds,
+    int? elapsedSeconds,
   }) => FootballBingoProgress(
     puzzleId: puzzleId ?? this.puzzleId,
     startedAt: startedAt ?? this.startedAt,
@@ -178,6 +184,7 @@ class FootballBingoProgress {
     lifelines: lifelines ?? this.lifelines,
     completed: completed ?? this.completed,
     cellOrderIds: cellOrderIds ?? this.cellOrderIds,
+    elapsedSeconds: elapsedSeconds ?? this.elapsedSeconds,
   );
 }
 
@@ -330,4 +337,10 @@ String formatFootballBingoCountdown(Duration duration) {
   final hours = totalMinutes ~/ 60;
   final minutes = totalMinutes % 60;
   return hours <= 0 ? '${minutes}m' : '${hours}h ${minutes}m';
+}
+
+String formatFootballBingoTimer(int totalSeconds) {
+  final minutes = totalSeconds ~/ 60;
+  final seconds = totalSeconds % 60;
+  return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
 }

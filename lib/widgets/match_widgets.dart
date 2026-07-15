@@ -1031,6 +1031,7 @@ class MatchHistoryTile extends StatelessWidget {
       'Points' => Icons.flag,
       _ when entry.isGrandPrix => Icons.sports_motorsports,
       _ when entry.isBasketball => Icons.sports_basketball,
+      _ when entry.isTennis => Icons.sports_tennis,
       _ => Icons.balance,
     };
 
@@ -1223,6 +1224,30 @@ class MatchHistoryTile extends StatelessWidget {
                               'HOOP DUEL',
                               style: TextStyle(
                                 color: Cyber.gold,
+                                fontSize: 9,
+                                fontFamily: 'Orbitron',
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (entry.isTennis) ...[
+                          const SizedBox(width: 7),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 5,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Cyber.lime.withValues(alpha: 0.14),
+                              border: Border.all(
+                                color: Cyber.lime.withValues(alpha: 0.5),
+                              ),
+                            ),
+                            child: const Text(
+                              'TENNIS RALLY',
+                              style: TextStyle(
+                                color: Cyber.lime,
                                 fontSize: 9,
                                 fontFamily: 'Orbitron',
                                 fontWeight: FontWeight.w900,

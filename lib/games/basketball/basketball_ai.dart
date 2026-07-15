@@ -70,6 +70,7 @@ class BasketballAI {
   bool _releaseIsBlock = false;
 
   double _stealCooldown = 0;
+  double _spinCooldown = 0;
   double _fakeBiteChance = 0;
   bool _fakeBiteInit = false;
   double _wiggleT = 0;
@@ -107,6 +108,7 @@ class BasketballAI {
       };
     }
     _stealCooldown = max(0, _stealCooldown - dt);
+    _spinCooldown = max(0, _spinCooldown - dt);
     _replanT -= dt;
     _wiggleT -= dt;
 
@@ -238,6 +240,17 @@ class BasketballAI {
             return _hold(dt, moveAxis: 1);
           }
           return _tap(moveAxis: 1); // layup
+        }
+        // Spin past a defender planted in the driving lane (a second burst
+        // mid-drive is the spin input — same thumb edge a player uses).
+        final laneBlocked = obs.oppX > me.x && (obs.oppX - me.x) <= 1.2;
+        if (me.body == BodyState.drive &&
+            laneBlocked &&
+            _spinCooldown <= 0 &&
+            me.stamina >= kBbSpinStaminaCost + 10 &&
+            _rng.nextDouble() > _epsilon) {
+          _spinCooldown = 2.5;
+          return _emit(moveAxis: 1, burst: true);
         }
         return _emit(
           moveAxis: 1,
@@ -386,6 +399,15 @@ class BasketballAI {
         _releaseIsBlock = true;
         return _hold(dt, moveAxis: 0);
       }
+    }
+
+    // A spinning handler beats a lunge — disciplined defenders plant a set
+    // stance instead (the engine absorbs a spin into a set body). Rookies
+    // don't read it and keep chasing/lunging, so spins beat them clean.
+    if (obs.oppBody == BodyState.spin &&
+        difficulty != BasketballDifficulty.rookie) {
+      final holdX = (obs.oppX + 0.5).clamp(kBbCourtMinX, kBbRimX - 0.4);
+      return _moveToward(me, holdX, stance: true, dt: dt);
     }
 
     // Steal only when the ball is exposed (and not too often).

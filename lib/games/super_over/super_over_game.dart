@@ -6,34 +6,85 @@ import 'package:flutter/material.dart';
 
 import '../../blocs/super_over/super_over_state.dart';
 import '../../config/theme.dart';
+import '../../data/super_over_batter_profiles.dart';
 import '../../data/super_over_jerseys.dart';
 import '../../models/super_over.dart';
 import 'cricket_rig.dart';
+
+/// Shared batting-end perspective used by every on-field element.
+///
+/// Keeping scene geometry in one place prevents the pitch, actors, ball,
+/// shadow and outcome paths from drifting apart on different phone sizes.
+class _CricketSceneLayout {
+  const _CricketSceneLayout(this.size);
+
+  final Size size;
+
+  double get w => size.width;
+  double get h => size.height;
+  double get horizonY => h * .385;
+  double get strikerY => h * .665;
+  Offset get fieldOrigin => Offset(w * .5, h * .65);
+  Offset get strikerFeet => Offset(w * .43, strikerY);
+  Offset get strikerWicket => Offset(w * .51, strikerY);
+  Offset get keeperFeet => Offset(w * .575, strikerY + h * .004);
+  Offset get farWicket => Offset(w * .5, h * .425);
+  Offset get nonStrikerFeet => Offset(w * .545, h * .442);
+  Offset get bowlerStart => Offset(w * .5, h * .28);
+  Offset get bowlerRelease => Offset(w * .5, h * .39);
+
+  double pitchHalfWidth(double t) =>
+      ui.lerpDouble(w * .105, w * .245, t.clamp(0, 1))!;
+
+  double pitchY(double t) => ui.lerpDouble(horizonY, h * .83, t.clamp(0, 1))!;
+
+  Path get pitchPath => Path()
+    ..moveTo(w * .5 - pitchHalfWidth(0), pitchY(0))
+    ..lineTo(w * .5 + pitchHalfWidth(0), pitchY(0))
+    ..lineTo(w * .5 + pitchHalfWidth(1), pitchY(1))
+    ..lineTo(w * .5 - pitchHalfWidth(1), pitchY(1))
+    ..close();
+
+  Offset fieldPoint(double angle, double radial) => Offset(
+    fieldOrigin.dx + cos(angle) * w * .42 * radial,
+    fieldOrigin.dy + sin(angle) * h * .43 * radial,
+  );
+
+  double actorScaleAt(double y) => ui.lerpDouble(
+    .52,
+    1.05,
+    ((y - horizonY) / (strikerY - horizonY)).clamp(0, 1),
+  )!;
+}
 
 class SuperOverGame extends FlameGame {
   SuperOverGame({
     required this.initialState,
     required this.onPhaseChanged,
     required this.onInputArmed,
+    required this.onBallBounce,
     required this.onSwingLocked,
     required this.onShotResolved,
+    required this.onNoInput,
     required this.onOutcomeAnimationComplete,
   });
 
   SuperOverState initialState;
   final ValueChanged<SuperOverPhase> onPhaseChanged;
   final VoidCallback onInputArmed;
+  final VoidCallback onBallBounce;
   final VoidCallback onSwingLocked;
-  final ValueChanged<int> onShotResolved;
+  final ValueChanged<ShotIntent> onShotResolved;
+  final VoidCallback onNoInput;
   final VoidCallback onOutcomeAnimationComplete;
 
   SuperOverState _state = const SuperOverState();
-  ui.Image? _stadium;
 
   bool _deliveryActive = false;
   bool _inputArmed = false;
   bool _swingLocked = false;
   bool _shotReported = false;
+  bool _bounceReported = false;
   bool _outcomeActive = false;
   bool _outcomeReported = false;
 
@@ -44,25 +95,24 @@ class SuperOverGame extends FlameGame {
   double _timeSinceTap = 0;
   double _outcomeTime = 0;
   int _pendingTimingErrorMs = 0;
+  ShotIntent _pendingIntent = const ShotIntent(
+    sector: ShotSector.v,
+    style: ShotStyle.ground,
+    timingErrorMs: 0,
+  );
   ShotSector _liveSector = ShotSector.v;
+  bool reducedMotion = false;
 
   static const double _setupDuration = 0.45;
   static const double _runUpDuration = 0.78;
   static const double _contactDelay = 0.16;
-  static const double _outcomeDuration = 1.75;
+  static const double _outcomeDuration = 2.05;
 
   @override
   Color backgroundColor() => Cyber.bg;
 
   @override
-  Future<void> onLoad() async {
-    _state = initialState;
-    try {
-      _stadium = await images.load('backgrounds/home_stadium.png');
-    } catch (_) {
-      _stadium = null;
-    }
-  }
+  Future<void> onLoad() async => _state = initialState;
 
   void syncState(SuperOverState state) {
     _state = state;
@@ -78,6 +128,7 @@ class SuperOverGame extends FlameGame {
     _inputArmed = false;
     _swingLocked = false;
     _shotReported = false;
+    _bounceReported = false;
     _outcomeActive = false;
     _outcomeReported = false;
     _sequenceTime = 0;
@@ -91,19 +142,16 @@ class SuperOverGame extends FlameGame {
       rating,
       state.upcomingDelivery,
       onFire: state.onFire,
+      difficulty: state.settings.difficulty,
     );
     _flightDuration =
-        switch (state.upcomingDelivery) {
-          DeliveryType.pace => 0.70,
-          DeliveryType.spin => 1.04,
-          DeliveryType.yorker => 0.76,
-        } *
+        (0.78 / state.deliveryPlan.paceFactor.clamp(0.65, 1.22)) *
         (window / SuperOverResolution.baseTimingWindowMs).clamp(0.84, 1.18);
 
     onPhaseChanged(SuperOverPhase.ballSetup);
   }
 
-  void tapBat() {
+  void tapBat({required ShotSector sector, required ShotStyle style}) {
     if (!_deliveryActive || !_inputArmed || _swingLocked || _shotReported) {
       return;
     }
@@ -111,15 +159,12 @@ class SuperOverGame extends FlameGame {
     _tapReleaseTime = max(0, _sequenceTime - _releaseTime);
     _pendingTimingErrorMs = ((_tapReleaseTime - _flightDuration) * 1000)
         .round();
-    _liveSector = SuperOverResolution.sectorForTiming(
-      SuperOverResolution.normalizedTimingError(
-        timingErrorMs: _pendingTimingErrorMs,
-        effectiveWindowMs: SuperOverResolution.effectiveTimingWindowMs(
-          _state.striker?.rating ?? 75,
-          _state.upcomingDelivery,
-          onFire: _state.onFire,
-        ),
-      ),
+    _liveSector = sector;
+    _pendingIntent = ShotIntent(
+      sector: sector,
+      style: style,
+      timingErrorMs: _pendingTimingErrorMs,
+      leftHanded: _state.settings.leftHandedControls,
     );
     _timeSinceTap = 0;
     onSwingLocked();
@@ -161,11 +206,23 @@ class SuperOverGame extends FlameGame {
       if (_timeSinceTap >= _contactDelay) {
         _shotReported = true;
         _deliveryActive = false;
-        onShotResolved(_pendingTimingErrorMs);
+        onShotResolved(_pendingIntent);
       }
     }
 
     final releaseElapsed = _sequenceTime - _releaseTime;
+    final bounceFraction = switch (_state.deliveryPlan.length) {
+      DeliveryLength.short => .55,
+      DeliveryLength.good => .68,
+      DeliveryLength.full => .80,
+      DeliveryLength.yorker => .90,
+    };
+    if (_inputArmed &&
+        !_bounceReported &&
+        releaseElapsed >= _flightDuration * bounceFraction) {
+      _bounceReported = true;
+      onBallBounce();
+    }
     if (_inputArmed &&
         !_swingLocked &&
         !_shotReported &&
@@ -175,15 +232,7 @@ class SuperOverGame extends FlameGame {
       _deliveryActive = false;
       _liveSector = ShotSector.v;
       onSwingLocked();
-      onShotResolved(
-        (SuperOverResolution.effectiveTimingWindowMs(
-                  _state.striker?.rating ?? 75,
-                  _state.upcomingDelivery,
-                  onFire: _state.onFire,
-                ) *
-                1.05)
-            .round(),
-      );
+      onNoInput();
     }
   }
 
@@ -199,7 +248,26 @@ class SuperOverGame extends FlameGame {
   @override
   void render(Canvas canvas) {
     super.render(canvas);
+    canvas.save();
+    if (!reducedMotion && _outcomeActive) {
+      final impact = (1 - (_outcomeTime / .30).clamp(0.0, 1.0));
+      final heavy =
+          _state.lastOutcome == ShotOutcome.six ||
+          _state.lastOutcome == ShotOutcome.bowled ||
+          _state.lastOutcome == ShotOutcome.caught;
+      if (heavy && impact > 0) {
+        canvas.translate(
+          sin(_outcomeTime * 90) * 2.5 * impact,
+          cos(_outcomeTime * 76) * 1.5 * impact,
+        );
+      }
+      final push = 1 + impact * (heavy ? .028 : .014);
+      canvas.translate(size.x / 2, size.y * .7);
+      canvas.scale(push, push);
+      canvas.translate(-size.x / 2, -size.y * .7);
+    }
     _renderScene(canvas, Size(size.x, size.y));
+    canvas.restore();
   }
 
   void _renderScene(Canvas canvas, Size screen) {
@@ -208,63 +276,76 @@ class SuperOverGame extends FlameGame {
     if (w <= 0 || h <= 0) return;
 
     _drawSkyAndStadium(canvas, screen);
-    if (_shouldShowTopDownOutcome) {
-      _drawTopDownOutcome(canvas, screen);
-      _drawOutcome(canvas, screen);
-      return;
-    }
     _drawField(canvas, screen);
-    _drawFielders(canvas, screen);
     _drawPitch(canvas, screen);
+    if (_outcomeActive) {
+      _drawFielders(canvas, screen);
+      _drawNonStriker(canvas, screen);
+      _drawWicketkeeper(canvas, screen);
+    }
     _drawBowler(canvas, screen);
-    _drawBall(canvas, screen);
     _drawWickets(canvas, screen);
     _drawBatter(canvas, screen);
+    _drawRunningBatters(canvas, screen);
+    _drawBall(canvas, screen);
     _drawOutcome(canvas, screen);
+    if (_showTopView) _drawTopViewOutcome(canvas, screen);
   }
 
-  bool get _shouldShowTopDownOutcome {
-    final outcome = _state.lastOutcome;
-    return _outcomeActive &&
-        outcome != null &&
-        outcome != ShotOutcome.bowled &&
-        _outcomeTime > 0.16;
-  }
+  // Super Over intentionally stays in one elevated batting-end camera. The
+  // tactical top view is retained below only as unreachable legacy drawing
+  // code until the renderer is split into smaller files.
+  bool get _showTopView => false;
+
+  @visibleForTesting
+  bool get debugTopViewActive => _showTopView;
+
+  @visibleForTesting
+  String get debugCameraMode => 'batting-end';
 
   void _drawSkyAndStadium(Canvas canvas, Size screen) {
     final rect = Offset.zero & screen;
-    final bg = _stadium;
-    if (bg != null) {
-      paintImage(
-        canvas: canvas,
-        rect: rect,
-        image: bg,
-        fit: BoxFit.cover,
-        alignment: Alignment.topCenter,
-      );
-      canvas.drawRect(rect, Paint()..color = Cyber.bg.withValues(alpha: 0.72));
-      canvas.drawRect(
-        rect,
+    final sky = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [Color(0xff0b1c2b), Color(0xff07131f), Color(0xff030912)],
+        stops: [0, .48, 1],
+      ).createShader(rect);
+    canvas.drawRect(rect, sky);
+
+    final nightHalo = Rect.fromCenter(
+      center: Offset(screen.width * .5, screen.height * .23),
+      width: screen.width * .82,
+      height: screen.height * .38,
+    );
+    canvas.drawOval(
+      nightHalo,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [
+            Cyber.cyan.withValues(alpha: .075),
+            const Color(0xff10253a).withValues(alpha: .035),
+            Colors.transparent,
+          ],
+        ).createShader(nightHalo),
+    );
+
+    for (final x in [.18, .82]) {
+      final beam = Path()
+        ..moveTo(screen.width * x, screen.height * .16)
+        ..lineTo(screen.width * (x < .5 ? .38 : .62), screen.height * .47)
+        ..lineTo(screen.width * (x < .5 ? .55 : .45), screen.height * .47)
+        ..close();
+      canvas.drawPath(
+        beam,
         Paint()
           ..shader = LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Cyber.cyan.withValues(alpha: 0.10),
-              Colors.transparent,
-              Cyber.bg.withValues(alpha: 0.58),
-            ],
+            colors: [Colors.white.withValues(alpha: .035), Colors.transparent],
           ).createShader(rect),
       );
-    } else {
-      final sky = Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [const Color(0xff020812), const Color(0xff071522), Cyber.bg],
-          stops: const [0, 0.42, 1],
-        ).createShader(rect);
-      canvas.drawRect(rect, sky);
     }
     _drawStadiumArchitecture(canvas, screen);
   }
@@ -273,8 +354,8 @@ class SuperOverGame extends FlameGame {
     final w = screen.width;
     final h = screen.height;
     final phase = _sequenceTime + _outcomeTime;
-    final crowdTop = h * 0.265;
-    final crowdHeight = h * 0.105;
+    final crowdTop = h * 0.252;
+    final crowdHeight = h * 0.112;
 
     _drawFloodlightTower(canvas, Offset(w * 0.05, h * 0.33), flip: false);
     _drawFloodlightTower(canvas, Offset(w * 0.95, h * 0.33), flip: true);
@@ -302,6 +383,33 @@ class SuperOverGame extends FlameGame {
           ],
         ).createShader(Offset.zero & screen),
     );
+
+    final roof = Path()
+      ..moveTo(0, crowdTop - h * .014)
+      ..quadraticBezierTo(w * .5, crowdTop - h * .095, w, crowdTop - h * .014)
+      ..lineTo(w, crowdTop + h * .012)
+      ..quadraticBezierTo(w * .5, crowdTop - h * .065, 0, crowdTop + h * .012)
+      ..close();
+    canvas.drawPath(roof, Paint()..color = const Color(0xff0f2334));
+    canvas.drawPath(
+      roof,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.1
+        ..color = Cyber.cyan.withValues(alpha: .24),
+    );
+
+    for (var i = 1; i < 8; i++) {
+      final x = w * i / 8;
+      final inset = (i - 4).abs() * h * .006;
+      canvas.drawLine(
+        Offset(x, crowdTop - h * .018 - inset),
+        Offset(x, crowdTop + crowdHeight),
+        Paint()
+          ..color = Cyber.cyan.withValues(alpha: .075)
+          ..strokeWidth = 1,
+      );
+    }
     canvas.drawPath(
       standBack,
       Paint()
@@ -310,7 +418,7 @@ class SuperOverGame extends FlameGame {
         ..color = Cyber.cyan.withValues(alpha: 0.22),
     );
 
-    for (var row = 0; row < 5; row++) {
+    for (var row = 0; row < 4; row++) {
       final y = crowdTop + 10 + row * crowdHeight / 6;
       canvas.drawLine(
         Offset(0, y),
@@ -321,17 +429,23 @@ class SuperOverGame extends FlameGame {
       );
     }
 
-    const colors = [Cyber.cyan, Cyber.magenta, Cyber.gold, Cyber.lime];
-    for (var i = 0; i < 138; i++) {
-      final x = (i * 23.0) % (w + 36) - 18;
-      final band = i % 6;
-      final wave = sin(phase * 3 + i * 0.61) * 1.8;
-      final y = crowdTop + 12 + band * crowdHeight / 7 + wave;
-      final r = 1.5 + (i % 4) * 0.35;
+    for (var i = 0; i < 84; i++) {
+      final x = (i * 31.0) % (w + 24) - 12;
+      final band = i % 5;
+      final wave = reducedMotion ? 0.0 : sin(phase * 1.6 + i * 0.61) * .65;
+      final y = crowdTop + 13 + band * crowdHeight / 6 + wave;
+      final r = 1.1 + (i % 3) * 0.24;
       canvas.drawCircle(
         Offset(x, y),
         r,
-        Paint()..color = colors[i % colors.length].withValues(alpha: 0.82),
+        Paint()
+          ..color =
+              (i % 7 == 0
+                      ? Cyber.cyan
+                      : i % 4 == 0
+                      ? Cyber.gold
+                      : const Color(0xffff8f00))
+                  .withValues(alpha: 0.56),
       );
     }
 
@@ -340,12 +454,11 @@ class SuperOverGame extends FlameGame {
       Offset(0, ropeY),
       Offset(w, ropeY),
       Paint()
-        ..color = Cyber.gold.withValues(alpha: 0.62)
-        ..strokeWidth = 2,
+        ..color = Cyber.cyan.withValues(alpha: 0.42)
+        ..strokeWidth = 1.5,
     );
 
     _drawAdBoards(canvas, screen, ropeY + 4);
-    _drawMiniScoreboard(canvas, screen);
   }
 
   void _drawFloodlightTower(Canvas canvas, Offset base, {required bool flip}) {
@@ -394,11 +507,11 @@ class SuperOverGame extends FlameGame {
   }
 
   void _drawAdBoards(Canvas canvas, Size screen, double y) {
-    final labels = ['STATOZ', 'POWERPLAY', 'SUPER OVER', 'ONE TAP'];
+    final labels = ['STATOZ', 'FINAL STAND', 'SUPER OVER', 'AIM · TIME · HIT'];
     final boardW = screen.width / labels.length;
     for (var i = 0; i < labels.length; i++) {
       final rect = Rect.fromLTWH(i * boardW, y, boardW - 2, 24);
-      final accent = [Cyber.cyan, Cyber.gold, Cyber.lime, Cyber.magenta][i % 4];
+      final accent = [Cyber.cyan, Cyber.gold, Cyber.cyan, Cyber.amber][i % 4];
       canvas.drawRect(
         rect,
         Paint()..color = Cyber.panel.withValues(alpha: 0.82),
@@ -420,373 +533,10 @@ class SuperOverGame extends FlameGame {
     }
   }
 
-  void _drawMiniScoreboard(Canvas canvas, Size screen) {
-    final rect = RRect.fromRectAndRadius(
-      Rect.fromCenter(
-        center: Offset(screen.width * 0.50, screen.height * 0.235),
-        width: screen.width * 0.44,
-        height: 34,
-      ),
-      const Radius.circular(6),
-    );
-    canvas.drawRRect(rect, Paint()..color = Cyber.bg.withValues(alpha: 0.78));
-    canvas.drawRRect(
-      rect,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1
-        ..color = Cyber.cyan.withValues(alpha: 0.28),
-    );
-    _drawCanvasText(
-      canvas,
-      'SUPER OVER',
-      Offset(rect.left + 14, rect.top + 9),
-      Cyber.label(9, color: Cyber.cyan, letterSpacing: 1.8),
-      maxWidth: rect.width - 28,
-    );
-    _drawCanvasText(
-      canvas,
-      '${_state.score}/${_state.wickets}',
-      Offset(rect.right - 58, rect.top + 7),
-      Cyber.display(14, color: Cyber.gold, letterSpacing: 0),
-      maxWidth: 46,
-      textAlign: TextAlign.right,
-    );
-  }
-
-  void _drawTopDownOutcome(Canvas canvas, Size screen) {
-    final outcome = _state.lastOutcome;
-    if (outcome == null) return;
-
-    final intro = Curves.easeOutCubic.transform(
-      ((_outcomeTime - 0.16) / 0.22).clamp(0.0, 1.0),
-    );
-    final rect = Offset.zero & screen;
-    canvas.drawRect(
-      rect,
-      Paint()..color = Cyber.bg.withValues(alpha: 0.36 + intro * 0.42),
-    );
-
-    final field = Rect.fromLTWH(
-      screen.width * 0.08,
-      screen.height * 0.18,
-      screen.width * 0.84,
-      screen.height * 0.64,
-    );
-    canvas.save();
-    canvas.translate(0, (1 - intro) * 24);
-    canvas.scale(0.96 + intro * 0.04, 0.96 + intro * 0.04);
-
-    _drawTopDownField(canvas, field);
-    final origin = Offset(field.center.dx, field.top + field.height * 0.70);
-    _drawTopDownPitch(canvas, field, origin);
-    _drawTopDownFielders(canvas, field, origin);
-    _drawTopDownShot(canvas, field, origin, outcome);
-    _drawTopDownTelemetry(canvas, field, outcome);
-
-    canvas.restore();
-  }
-
-  void _drawTopDownField(Canvas canvas, Rect field) {
-    canvas.drawOval(
-      field,
-      Paint()
-        ..shader = RadialGradient(
-          center: const Alignment(0, 0.22),
-          radius: 0.86,
-          colors: [
-            const Color(0xff0b6a43).withValues(alpha: 0.96),
-            const Color(0xff07382f).withValues(alpha: 0.96),
-            Cyber.bg.withValues(alpha: 0.98),
-          ],
-          stops: const [0.0, 0.62, 1.0],
-        ).createShader(field),
-    );
-    canvas.drawOval(
-      field,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2
-        ..color = Cyber.cyan.withValues(alpha: 0.52),
-    );
-    canvas.drawOval(
-      field.inflate(-10),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1
-        ..color = Cyber.cyan.withValues(alpha: 0.18),
-    );
-    for (var i = 1; i <= 4; i++) {
-      canvas.drawOval(
-        Rect.fromCenter(
-          center: field.center,
-          width: field.width * (0.18 + i * 0.16),
-          height: field.height * (0.18 + i * 0.16),
-        ),
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 0.8
-          ..color = Cyber.cyan.withValues(alpha: 0.08),
-      );
-    }
-  }
-
-  void _drawTopDownPitch(Canvas canvas, Rect field, Offset origin) {
-    final pitch = RRect.fromRectAndRadius(
-      Rect.fromCenter(
-        center: Offset(field.center.dx, origin.dy - field.height * 0.20),
-        width: field.width * 0.14,
-        height: field.height * 0.48,
-      ),
-      const Radius.circular(3),
-    );
-    canvas.drawRRect(
-      pitch,
-      Paint()..color = const Color(0xff8f6a36).withValues(alpha: 0.72),
-    );
-    canvas.drawRRect(
-      pitch,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2
-        ..color = Cyber.gold.withValues(alpha: 0.42),
-    );
-
-    final line = Paint()
-      ..color = Cyber.cyan.withValues(alpha: 0.58)
-      ..strokeWidth = 1.2;
-    canvas.drawLine(
-      origin.translate(-field.width * 0.08, 0),
-      origin.translate(field.width * 0.08, 0),
-      line,
-    );
-    canvas.drawCircle(origin, 4, Paint()..color = Cyber.gold);
-
-    final sectorLine = Paint()
-      ..color = Cyber.cyan.withValues(alpha: 0.18)
-      ..strokeWidth = 1;
-    for (final sector in ShotSector.values) {
-      final angle = SuperOverResolution.shotAngleForSector(sector);
-      final end = _topDownPoint(field, origin, angle, 1.04);
-      canvas.drawLine(origin, end, sectorLine);
-    }
-  }
-
-  void _drawTopDownFielders(Canvas canvas, Rect field, Offset origin) {
-    final spots = SuperOverResolution.fielderSpotsForSectors(
-      _state.fieldSectors,
-    );
-    for (final spot in spots) {
-      final pos = _topDownPoint(field, origin, spot.angle, spot.radial);
-      final color = switch (spot.sector) {
-        ShotSector.off => Cyber.cyan,
-        ShotSector.v => Cyber.gold,
-        ShotSector.leg => Cyber.lime,
-      };
-      _drawRadarFielder(canvas, pos, color);
-    }
-  }
-
-  void _drawRadarFielder(Canvas canvas, Offset pos, Color color) {
-    canvas.drawCircle(
-      pos,
-      7,
-      Paint()
-        ..color = color.withValues(alpha: 0.18)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
-    );
-    canvas.drawCircle(pos, 4.2, Paint()..color = color);
-    canvas.drawCircle(
-      pos,
-      5.6,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1
-        ..color = Cyber.bg,
-    );
-  }
-
-  void _drawTopDownShot(
-    Canvas canvas,
-    Rect field,
-    Offset origin,
-    ShotOutcome outcome,
-  ) {
-    final sector = _state.shotSector ?? _liveSector;
-    final angle = SuperOverResolution.shotAngleForSector(sector);
-    final destination = outcome == ShotOutcome.caught
-        ? _topDownCatchPoint(field, origin, sector)
-        : _topDownPoint(field, origin, angle, _topDownOutcomeRange(outcome));
-    final control = Offset(
-      (origin.dx + destination.dx) / 2,
-      min(origin.dy, destination.dy) - field.height * 0.10,
-    );
-    final path = Path()
-      ..moveTo(origin.dx, origin.dy)
-      ..quadraticBezierTo(
-        control.dx,
-        control.dy,
-        destination.dx,
-        destination.dy,
-      );
-    final progress = Curves.easeOutCubic.transform(
-      ((_outcomeTime - 0.22) / (_outcomeDuration - 0.22)).clamp(0.0, 1.0),
-    );
-    final metric = path.computeMetrics().first;
-    final partial = metric.extractPath(0, metric.length * progress);
-    final shotColor = _outcomeColor(outcome);
-
-    canvas.drawPath(
-      partial,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 9
-        ..strokeCap = StrokeCap.round
-        ..color = shotColor.withValues(alpha: 0.13)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
-    );
-    canvas.drawPath(
-      partial,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3
-        ..strokeCap = StrokeCap.round
-        ..color = shotColor.withValues(alpha: 0.86),
-    );
-
-    final tangent = metric.getTangentForOffset(metric.length * progress);
-    final ball = tangent?.position ?? origin;
-    canvas.drawCircle(ball, 8, Paint()..color = Cyber.bg);
-    canvas.drawCircle(ball, 5.5, Paint()..color = Cyber.danger);
-    canvas.drawCircle(
-      ball.translate(-1.4, -1.2),
-      1.5,
-      Paint()..color = Colors.white.withValues(alpha: 0.82),
-    );
-
-    if (progress > 0.82) {
-      final ringT = ((progress - 0.82) / 0.18).clamp(0.0, 1.0);
-      final ringRadius = ui.lerpDouble(10, 32, ringT)!;
-      canvas.drawCircle(
-        destination,
-        ringRadius,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 2
-          ..color = shotColor.withValues(alpha: 1 - ringT),
-      );
-      if (outcome == ShotOutcome.caught) {
-        _drawCanvasText(
-          canvas,
-          'CATCH ZONE',
-          destination.translate(-42, -26),
-          Cyber.label(9, color: Cyber.danger, letterSpacing: 1.2),
-          maxWidth: 90,
-        );
-      }
-    }
-  }
-
-  void _drawTopDownTelemetry(Canvas canvas, Rect field, ShotOutcome outcome) {
-    final sector = _state.shotSector ?? _liveSector;
-    final panel = RRect.fromRectAndRadius(
-      Rect.fromLTWH(field.left + 14, field.top + 12, field.width - 28, 36),
-      const Radius.circular(6),
-    );
-    canvas.drawRRect(
-      panel,
-      Paint()..color = Cyber.panel.withValues(alpha: 0.84),
-    );
-    canvas.drawRRect(
-      panel,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1
-        ..color = Cyber.cyan.withValues(alpha: 0.42),
-    );
-    _drawCanvasText(
-      canvas,
-      'FIELD RADAR',
-      Offset(panel.left + 12, panel.top + 8),
-      Cyber.label(8.5, color: Cyber.cyan, letterSpacing: 1.5),
-      maxWidth: 110,
-    );
-    _drawCanvasText(
-      canvas,
-      '${_outcomeLabel(outcome)}  /  ${_sectorLabel(sector)}',
-      Offset(panel.right - 156, panel.top + 8),
-      Cyber.label(8.5, color: _outcomeColor(outcome), letterSpacing: 1.2),
-      maxWidth: 146,
-      textAlign: TextAlign.right,
-    );
-
-    final labels = [
-      ('OFF ${_state.fieldSectors.elementAtOrNull(0) ?? 0}', field.left + 20),
-      (
-        'V ${_state.fieldSectors.elementAtOrNull(1) ?? 0}',
-        field.center.dx - 18,
-      ),
-      ('LEG ${_state.fieldSectors.elementAtOrNull(2) ?? 0}', field.right - 70),
-    ];
-    for (final (label, x) in labels) {
-      _drawCanvasText(
-        canvas,
-        label,
-        Offset(x, field.bottom - 28),
-        Cyber.label(8, color: Cyber.muted, letterSpacing: 1.1),
-        maxWidth: 58,
-      );
-    }
-  }
-
-  Offset _topDownPoint(Rect field, Offset origin, double angle, double radial) {
-    return Offset(
-      origin.dx + cos(angle) * field.width * 0.46 * radial,
-      origin.dy + sin(angle) * field.height * 0.52 * radial,
-    );
-  }
-
-  double _topDownOutcomeRange(ShotOutcome outcome) {
-    return switch (outcome) {
-      ShotOutcome.six => 1.08,
-      ShotOutcome.four => 0.96,
-      ShotOutcome.three => 0.80,
-      ShotOutcome.two => 0.64,
-      ShotOutcome.one => 0.48,
-      ShotOutcome.dot => 0.28,
-      ShotOutcome.caught => 0.68,
-      ShotOutcome.bowled => 0.0,
-    };
-  }
-
-  Offset _topDownCatchPoint(Rect field, Offset origin, ShotSector sector) {
-    final shotAngle = SuperOverResolution.shotAngleForSector(sector);
-    Offset? bestPoint;
-    var bestScore = double.infinity;
-    for (final spot in SuperOverResolution.fielderSpotsForSectors(
-      _state.fieldSectors,
-    )) {
-      final point = _topDownPoint(field, origin, spot.angle, spot.radial);
-      final sectorPenalty = spot.sector == sector ? 0.0 : 0.35;
-      final score = (spot.angle - shotAngle).abs() + sectorPenalty;
-      if (score < bestScore) {
-        bestScore = score;
-        bestPoint = point;
-      }
-    }
-    return bestPoint ??
-        _topDownPoint(
-          field,
-          origin,
-          shotAngle,
-          _topDownOutcomeRange(ShotOutcome.caught),
-        );
-  }
-
   Color _outcomeColor(ShotOutcome outcome) {
     return switch (outcome) {
       ShotOutcome.six => Cyber.gold,
-      ShotOutcome.four => Cyber.lime,
+      ShotOutcome.four => Cyber.cyan,
       ShotOutcome.caught || ShotOutcome.bowled => Cyber.danger,
       _ => Cyber.cyan,
     };
@@ -802,14 +552,6 @@ class SuperOverGame extends FlameGame {
       ShotOutcome.dot => 'DOT BALL',
       ShotOutcome.caught => 'CAUGHT',
       ShotOutcome.bowled => 'BOWLED',
-    };
-  }
-
-  String _sectorLabel(ShotSector sector) {
-    return switch (sector) {
-      ShotSector.off => 'OFF SIDE',
-      ShotSector.v => 'STRAIGHT',
-      ShotSector.leg => 'LEG SIDE',
     };
   }
 
@@ -829,8 +571,508 @@ class SuperOverGame extends FlameGame {
     tp.paint(canvas, offset);
   }
 
+  /// Tennis Rally-inspired tactical camera used only after a played contact.
+  /// The delivery and contact remain in the batting-end view; this camera then
+  /// makes placement, running, interception, catches and the rope readable.
+  void _drawTopViewOutcome(Canvas canvas, Size screen) {
+    final outcome = _state.lastOutcome;
+    if (outcome == null) return;
+    final rect = Offset.zero & screen;
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xff101f2b), Color(0xff07141f), Color(0xff040814)],
+        ).createShader(rect),
+    );
+
+    final field = Rect.fromLTWH(
+      screen.width * .055,
+      screen.height * .135,
+      screen.width * .89,
+      screen.height * .69,
+    );
+    canvas.drawOval(
+      field,
+      Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(0, .15),
+          radius: .88,
+          colors: const [
+            Color(0xff17644f),
+            Color(0xff0c453c),
+            Color(0xff072d2c),
+          ],
+        ).createShader(field),
+    );
+    canvas.drawOval(
+      field,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 3
+        ..color = Cyber.gold.withValues(alpha: .82),
+    );
+    canvas.drawOval(
+      field.deflate(8),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..color = Colors.white.withValues(alpha: .24),
+    );
+    for (var i = 1; i <= 4; i++) {
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: field.center,
+          width: field.width * (.22 + i * .15),
+          height: field.height * (.22 + i * .15),
+        ),
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1
+          ..color = Cyber.cyan.withValues(alpha: .055),
+      );
+    }
+
+    final origin = Offset(field.center.dx, field.top + field.height * .73);
+    _drawTopPitch(canvas, field, origin);
+    final destination = _topOutcomeDestination(field, origin, outcome);
+    final interceptor = _topInterceptor(field, origin, destination, outcome);
+    _drawTopFielders(canvas, field, origin, interceptor, outcome);
+    _drawTopShot(canvas, field, origin, destination, outcome);
+    _drawTopBatters(canvas, field, origin, outcome);
+    _drawTopCameraTag(canvas, field, outcome);
+  }
+
+  void _drawTopPitch(Canvas canvas, Rect field, Offset origin) {
+    final pitch = RRect.fromRectAndRadius(
+      Rect.fromCenter(
+        center: Offset(field.center.dx, field.center.dy + field.height * .04),
+        width: field.width * .13,
+        height: field.height * .43,
+      ),
+      const Radius.circular(4),
+    );
+    canvas.drawRRect(
+      pitch,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xff9b7a43), Color(0xff75572e)],
+        ).createShader(pitch.outerRect),
+    );
+    canvas.drawRRect(
+      pitch,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2
+        ..color = Cyber.gold.withValues(alpha: .62),
+    );
+    final crease = Paint()
+      ..color = Colors.white.withValues(alpha: .72)
+      ..strokeWidth = 1.2;
+    canvas.drawLine(
+      origin.translate(-field.width * .075, 0),
+      origin.translate(field.width * .075, 0),
+      crease,
+    );
+    final far = Offset(field.center.dx, field.top + field.height * .30);
+    canvas.drawLine(
+      far.translate(-field.width * .055, 0),
+      far.translate(field.width * .055, 0),
+      crease,
+    );
+    for (final dx in [-4.0, 0.0, 4.0]) {
+      canvas.drawLine(
+        origin.translate(dx, -9),
+        origin.translate(dx, 2),
+        Paint()
+          ..color = Cyber.cyan
+          ..strokeWidth = 1.7
+          ..strokeCap = StrokeCap.round,
+      );
+    }
+  }
+
+  void _drawTopFielders(
+    Canvas canvas,
+    Rect field,
+    Offset origin,
+    int interceptor,
+    ShotOutcome outcome,
+  ) {
+    final spots = SuperOverResolution.fielderSpotsForSectors(
+      _state.fieldSectors,
+    );
+    for (var i = 0; i < spots.length; i++) {
+      final spot = spots[i];
+      final point = _topFieldPoint(field, origin, spot.angle, spot.radial);
+      _drawTopAthlete(
+        canvas,
+        point,
+        scale: .72 + (1 - spot.radial) * .16,
+        shirt: i == interceptor ? Cyber.gold : Cyber.cyan,
+        shorts: const Color(0xff17263e),
+        skin: _skinForSeed((_state.config?.seed ?? 31) + i * 19),
+        catching: i == interceptor && outcome == ShotOutcome.caught,
+        fielding: i == interceptor,
+      );
+    }
+  }
+
+  void _drawTopAthlete(
+    Canvas canvas,
+    Offset feet, {
+    required double scale,
+    required Color shirt,
+    required Color shorts,
+    required Color skin,
+    bool catching = false,
+    bool fielding = false,
+  }) {
+    final movement = fielding
+        ? Curves.easeOut.transform(((_outcomeTime - .30) / .72).clamp(0.0, 1.0))
+        : 0.0;
+    final base = feet.translate(
+      fielding ? sin(_outcomeTime * 13) * 4 * movement : 0,
+      0,
+    );
+    final hip = base.translate(0, -13 * scale);
+    final shoulder = hip.translate(0, -14 * scale);
+    final head = shoulder.translate(0, -7 * scale);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: base.translate(0, 2),
+        width: 19 * scale,
+        height: 5 * scale,
+      ),
+      Paint()..color = Colors.black.withValues(alpha: .38),
+    );
+    final stride = fielding ? sin(_outcomeTime * 18) * 5 * scale : 3 * scale;
+    final legs = Paint()
+      ..color = shorts
+      ..strokeWidth = 5.5 * scale
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(hip, base.translate(-stride, 0), legs);
+    canvas.drawLine(hip, base.translate(stride, 0), legs);
+    canvas.drawLine(
+      hip,
+      shoulder,
+      Paint()
+        ..color = shirt
+        ..strokeWidth = 10 * scale
+        ..strokeCap = StrokeCap.round,
+    );
+    final handY = catching ? -13 * scale : 7 * scale;
+    final arm = Paint()
+      ..color = skin
+      ..strokeWidth = 4 * scale
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(shoulder, shoulder.translate(-8 * scale, handY), arm);
+    canvas.drawLine(shoulder, shoulder.translate(8 * scale, handY), arm);
+    canvas.drawCircle(head, 5.2 * scale, Paint()..color = skin);
+    canvas.drawArc(
+      Rect.fromCircle(center: head.translate(0, -1), radius: 5.4 * scale),
+      pi,
+      pi,
+      false,
+      Paint()
+        ..color = const Color(0xff12131a)
+        ..strokeWidth = 3 * scale
+        ..style = PaintingStyle.stroke,
+    );
+    if (fielding) {
+      canvas.drawCircle(
+        shoulder.translate(0, handY),
+        11 * scale,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.2
+          ..color = shirt.withValues(alpha: .72),
+      );
+    }
+  }
+
+  void _drawTopShot(
+    Canvas canvas,
+    Rect field,
+    Offset origin,
+    Offset destination,
+    ShotOutcome outcome,
+  ) {
+    final record = _state.ballRecords.lastOrNull;
+    final loft = record?.intent?.style == ShotStyle.loft;
+    final progress = Curves.easeOutCubic.transform(
+      ((_outcomeTime - .24) / (_outcomeDuration - .36)).clamp(0.0, 1.0),
+    );
+    final control = Offset(
+      (origin.dx + destination.dx) / 2,
+      min(origin.dy, destination.dy) - field.height * (loft ? .16 : .055),
+    );
+    final route = Path()
+      ..moveTo(origin.dx, origin.dy)
+      ..quadraticBezierTo(
+        control.dx,
+        control.dy,
+        destination.dx,
+        destination.dy,
+      );
+    final metric = route.computeMetrics().first;
+    final partial = metric.extractPath(0, metric.length * progress);
+    final color = _outcomeColor(outcome);
+    canvas.drawPath(
+      partial,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeWidth = 10
+        ..color = color.withValues(alpha: .10)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+    );
+    canvas.drawPath(
+      partial,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeWidth = 2.4
+        ..color = color.withValues(alpha: .84),
+    );
+    final tangent = metric.getTangentForOffset(metric.length * progress);
+    final ball = tangent?.position ?? origin;
+    final floor = Offset.lerp(origin, destination, progress)!;
+    canvas.drawOval(
+      Rect.fromCenter(center: floor, width: 13, height: 5),
+      Paint()..color = Colors.black.withValues(alpha: .30),
+    );
+    for (var i = 1; i <= 5; i++) {
+      final p = max(0.0, progress - i * .035);
+      final trail = metric.getTangentForOffset(metric.length * p)?.position;
+      if (trail != null) {
+        canvas.drawCircle(
+          trail,
+          2.2,
+          Paint()..color = color.withValues(alpha: .24 / i),
+        );
+      }
+    }
+    canvas.drawCircle(ball, 7, Paint()..color = Cyber.bg);
+    canvas.drawCircle(
+      ball,
+      4.7,
+      Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(-.35, -.35),
+          colors: const [Color(0xffff8d78), Color(0xffba2434)],
+        ).createShader(Rect.fromCircle(center: ball, radius: 6)),
+    );
+    if (progress > .86) {
+      final pulse = ((progress - .86) / .14).clamp(0.0, 1.0);
+      canvas.drawCircle(
+        destination,
+        9 + pulse * 25,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2 * (1 - pulse)
+          ..color = color.withValues(alpha: 1 - pulse),
+      );
+    }
+  }
+
+  void _drawTopBatters(
+    Canvas canvas,
+    Rect field,
+    Offset origin,
+    ShotOutcome outcome,
+  ) {
+    final jersey = cricketJerseySpec(_state.jersey);
+    final skin = _batterSkin();
+    final runs = SuperOverResolution.runsForOutcome(outcome);
+    final far = Offset(field.center.dx, field.top + field.height * .30);
+    if (runs > 0 && runs < 4) {
+      final progress = Curves.easeInOut.transform(
+        ((_outcomeTime - .32) / 1.35).clamp(0.0, 1.0),
+      );
+      final lap = (progress * runs) % 1;
+      _drawTopAthlete(
+        canvas,
+        Offset.lerp(origin.translate(-8, 0), far.translate(-8, 0), lap)!,
+        scale: .94,
+        shirt: jersey.primary,
+        shorts: jersey.accent,
+        skin: skin,
+        fielding: true,
+      );
+      _drawTopAthlete(
+        canvas,
+        Offset.lerp(far.translate(8, 0), origin.translate(8, 0), lap)!,
+        scale: .88,
+        shirt: jersey.primary,
+        shorts: jersey.accent,
+        skin: _skinForSeed((_state.config?.seed ?? 9) + 71),
+        fielding: true,
+      );
+    } else {
+      _drawTopAthlete(
+        canvas,
+        origin.translate(-8, 0),
+        scale: .94,
+        shirt: jersey.primary,
+        shorts: jersey.accent,
+        skin: skin,
+      );
+      _drawTopAthlete(
+        canvas,
+        far.translate(8, 0),
+        scale: .84,
+        shirt: jersey.primary,
+        shorts: jersey.accent,
+        skin: _skinForSeed((_state.config?.seed ?? 9) + 71),
+      );
+    }
+  }
+
+  void _drawTopCameraTag(Canvas canvas, Rect field, ShotOutcome outcome) {
+    final color = _outcomeColor(outcome);
+    final panel = RRect.fromRectAndRadius(
+      Rect.fromCenter(
+        center: Offset(field.center.dx, field.top + 25),
+        width: field.width * .66,
+        height: 35,
+      ),
+      const Radius.circular(5),
+    );
+    canvas.drawRRect(panel, Paint()..color = Cyber.bg.withValues(alpha: .88));
+    canvas.drawRRect(
+      panel,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2
+        ..color = color.withValues(alpha: .74),
+    );
+    _drawCanvasText(
+      canvas,
+      'FIELD VIEW',
+      Offset(panel.left + 11, panel.top + 10),
+      Cyber.label(8, color: Cyber.muted, letterSpacing: 1.2),
+      maxWidth: 90,
+    );
+    _drawCanvasText(
+      canvas,
+      _outcomeLabel(outcome),
+      Offset(panel.right - 120, panel.top + 8),
+      Cyber.display(12, color: color, letterSpacing: 1.2),
+      maxWidth: 108,
+      textAlign: TextAlign.right,
+    );
+  }
+
+  Offset _topOutcomeDestination(
+    Rect field,
+    Offset origin,
+    ShotOutcome outcome,
+  ) {
+    final sector = _state.shotSector ?? _liveSector;
+    final angle = SuperOverResolution.shotAngleForSector(sector);
+    final range = switch (outcome) {
+      ShotOutcome.six => 1.30,
+      ShotOutcome.four => 1.16,
+      ShotOutcome.three => .90,
+      ShotOutcome.two => .70,
+      ShotOutcome.one => .50,
+      ShotOutcome.dot => .27,
+      ShotOutcome.caught => .70,
+      ShotOutcome.bowled => 0.0,
+    };
+    final natural = _topFieldPoint(field, origin, angle, range);
+    if (outcome != ShotOutcome.caught) return natural;
+    final spots = SuperOverResolution.fielderSpotsForSectors(
+      _state.fieldSectors,
+    );
+    Offset? nearest;
+    var distance = double.infinity;
+    for (final spot in spots) {
+      final point = _topFieldPoint(field, origin, spot.angle, spot.radial);
+      final score = (point - natural).distanceSquared;
+      if (score < distance) {
+        distance = score;
+        nearest = point;
+      }
+    }
+    return nearest ?? natural;
+  }
+
+  int _topInterceptor(
+    Rect field,
+    Offset origin,
+    Offset destination,
+    ShotOutcome outcome,
+  ) {
+    if (!const {
+      ShotOutcome.caught,
+      ShotOutcome.one,
+      ShotOutcome.two,
+      ShotOutcome.three,
+    }.contains(outcome)) {
+      return -1;
+    }
+    final spots = SuperOverResolution.fielderSpotsForSectors(
+      _state.fieldSectors,
+    );
+    var index = -1;
+    var distance = double.infinity;
+    for (var i = 0; i < spots.length; i++) {
+      final point = _topFieldPoint(
+        field,
+        origin,
+        spots[i].angle,
+        spots[i].radial,
+      );
+      final score = (point - destination).distanceSquared;
+      if (score < distance) {
+        distance = score;
+        index = i;
+      }
+    }
+    return index;
+  }
+
+  Offset _topFieldPoint(
+    Rect field,
+    Offset origin,
+    double angle,
+    double radial,
+  ) => Offset(
+    origin.dx + cos(angle) * field.width * .46 * radial,
+    origin.dy + sin(angle) * field.height * .58 * radial,
+  );
+
+  Color _batterSkin() {
+    final striker = _state.striker;
+    if (striker == null) return _skinForSeed(_state.config?.seed ?? 0);
+    final index = _state.battingOrder.indexOf(striker);
+    final profile = SuperOverBatterProfiles.fromCard(
+      striker,
+      orderIndex: max(0, index),
+    );
+    return _skinForSeed(profile.visualSeed);
+  }
+
+  Color _skinForSeed(int seed) {
+    const tones = [
+      Color(0xff70452f),
+      Color(0xff8f5738),
+      Color(0xffb97852),
+      Color(0xffd4a373),
+      Color(0xffe1b18e),
+    ];
+    return tones[seed.abs() % tones.length];
+  }
+
   void _drawField(Canvas canvas, Size screen) {
-    final top = screen.height * 0.405;
+    final layout = _CricketSceneLayout(screen);
+    final top = layout.horizonY;
     final path = Path()
       ..moveTo(0, top)
       ..quadraticBezierTo(
@@ -850,14 +1092,16 @@ class SuperOverGame extends FlameGame {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            const Color(0xff06362f).withValues(alpha: 0.92),
-            const Color(0xff0d5f3c).withValues(alpha: 0.86),
+            const Color(0xff174348).withValues(alpha: 0.97),
+            const Color(0xff0c3338).withValues(alpha: 0.99),
+            const Color(0xff06262d),
           ],
+          stops: const [0, .5, 1],
         ).createShader(rect),
     );
 
-    for (var i = 0; i < 12; i++) {
-      final bandY = top + i * screen.height * 0.052;
+    for (var i = 0; i < 3; i++) {
+      final bandY = top + i * screen.height * 0.076;
       final stripe = Path()
         ..moveTo(0, bandY)
         ..quadraticBezierTo(
@@ -877,8 +1121,8 @@ class SuperOverGame extends FlameGame {
       canvas.drawPath(
         stripe,
         Paint()
-          ..color = (i.isEven ? Cyber.lime : Cyber.cyan).withValues(
-            alpha: i.isEven ? 0.028 : 0.018,
+          ..color = (i.isEven ? Cyber.cyan : Colors.black).withValues(
+            alpha: i.isEven ? 0.008 : 0.016,
           ),
       );
     }
@@ -902,26 +1146,26 @@ class SuperOverGame extends FlameGame {
       boundary,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 3.2
+        ..strokeWidth = 2.2
         ..strokeCap = StrokeCap.round
-        ..color = Cyber.cyan.withValues(alpha: 0.34),
+        ..color = Cyber.cyan.withValues(alpha: 0.50),
     );
     canvas.drawPath(
       boundary.shift(const Offset(0, 3)),
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.6
+        ..strokeWidth = 1
         ..strokeCap = StrokeCap.round
-        ..color = Cyber.gold.withValues(alpha: 0.44),
+        ..color = Colors.white.withValues(alpha: 0.22),
     );
 
-    for (var i = 0; i < 9; i++) {
-      final y = top + i * screen.height * 0.07;
+    for (var i = 0; i < 2; i++) {
+      final y = top + screen.height * (.16 + i * .16);
       canvas.drawArc(
         Rect.fromCenter(
           center: Offset(screen.width / 2, y),
-          width: screen.width * (0.35 + i * 0.09),
-          height: screen.height * 0.08,
+          width: screen.width * (.78 + i * .16),
+          height: screen.height * (.20 + i * .08),
         ),
         pi,
         pi,
@@ -929,9 +1173,25 @@ class SuperOverGame extends FlameGame {
         Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.2
-          ..color = Cyber.cyan.withValues(alpha: 0.11),
+          ..color = Cyber.cyan.withValues(alpha: 0.045),
       );
     }
+
+    final innerField = Rect.fromCenter(
+      center: Offset(screen.width * .5, screen.height * .68),
+      width: screen.width * .84,
+      height: screen.height * .54,
+    );
+    canvas.drawArc(
+      innerField,
+      pi * 1.08,
+      pi * .84,
+      false,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..color = Colors.white.withValues(alpha: .055),
+    );
     canvas.drawRect(
       Rect.fromLTWH(
         0,
@@ -949,15 +1209,11 @@ class SuperOverGame extends FlameGame {
   }
 
   void _drawPitch(Canvas canvas, Size screen) {
-    final topY = screen.height * 0.39;
-    final bottomY = screen.height * 0.90;
+    final layout = _CricketSceneLayout(screen);
+    final topY = layout.pitchY(0);
+    final bottomY = layout.pitchY(1);
     final cx = screen.width / 2;
-    final pitch = Path()
-      ..moveTo(cx - screen.width * 0.11, topY)
-      ..lineTo(cx + screen.width * 0.11, topY)
-      ..lineTo(cx + screen.width * 0.25, bottomY)
-      ..lineTo(cx - screen.width * 0.25, bottomY)
-      ..close();
+    final pitch = layout.pitchPath;
     canvas.drawPath(
       pitch.shift(const Offset(0, 8)),
       Paint()
@@ -971,9 +1227,9 @@ class SuperOverGame extends FlameGame {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            const Color(0xffb58a45).withValues(alpha: 0.92),
-            const Color(0xff7b5a2e).withValues(alpha: 0.90),
-            const Color(0xff4f3b23).withValues(alpha: 0.94),
+            const Color(0xffd0ab63),
+            const Color(0xffb48949),
+            const Color(0xff8c6438),
           ],
           stops: const [0.0, 0.52, 1.0],
         ).createShader(Offset.zero & screen),
@@ -986,22 +1242,21 @@ class SuperOverGame extends FlameGame {
       ..close();
     canvas.drawPath(
       centerStrip,
-      Paint()..color = Cyber.gold.withValues(alpha: 0.10),
+      Paint()..color = Colors.white.withValues(alpha: 0.035),
     );
 
     double yAt(double t) => ui.lerpDouble(topY, bottomY, t)!;
-    double halfWidthAt(double t) =>
-        ui.lerpDouble(screen.width * 0.105, screen.width * 0.245, t)!;
+    double halfWidthAt(double t) => layout.pitchHalfWidth(t);
 
     final roughPaint = Paint()
       ..color = Cyber.bg.withValues(alpha: 0.13)
       ..strokeCap = StrokeCap.round;
-    for (var i = 0; i < 30; i++) {
+    for (var i = 0; i < 10; i++) {
       final t = 0.08 + (i % 10) * 0.087;
       final half = halfWidthAt(t);
       final xNorm = ((i * 37) % 100) / 100 * 1.55 - 0.775;
       final p = Offset(cx + xNorm * half, yAt(t));
-      roughPaint.strokeWidth = 0.9 + (i % 4) * 0.35;
+      roughPaint.strokeWidth = 0.8 + (i % 3) * 0.25;
       canvas.drawLine(
         p,
         p.translate((i.isEven ? 1 : -1) * (6 + i % 5), 3 + (i % 4)),
@@ -1027,120 +1282,285 @@ class SuperOverGame extends FlameGame {
       pitch,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2
-        ..color = Cyber.gold.withValues(alpha: 0.42),
+        ..strokeWidth = 2.1
+        ..color = const Color(0xffffdc8a).withValues(alpha: .82),
     );
 
+    final creaseOutline = Paint()
+      ..color = Cyber.bg.withValues(alpha: .62)
+      ..strokeWidth = 3.6;
     final creasePaint = Paint()
-      ..color = Cyber.cyan.withValues(alpha: 0.78)
-      ..strokeWidth = 2;
-    final creaseGlow = Paint()
-      ..color = Cyber.cyan.withValues(alpha: 0.14)
-      ..strokeWidth = 8
-      ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+      ..color = const Color(0xffd9fbff).withValues(alpha: 0.94)
+      ..strokeWidth = 1.55;
+    final nearCreaseY = layout.strikerY - screen.height * .005;
+    final farCreaseY = layout.farWicket.dy;
     canvas.drawLine(
-      Offset(cx - screen.width * 0.22, screen.height * 0.79),
-      Offset(cx + screen.width * 0.22, screen.height * 0.79),
-      creaseGlow,
+      Offset(cx - screen.width * 0.21, nearCreaseY),
+      Offset(cx + screen.width * 0.21, nearCreaseY),
+      creaseOutline,
     );
     canvas.drawLine(
-      Offset(cx - screen.width * 0.21, screen.height * 0.79),
-      Offset(cx + screen.width * 0.21, screen.height * 0.79),
+      Offset(cx - screen.width * 0.21, nearCreaseY),
+      Offset(cx + screen.width * 0.21, nearCreaseY),
       creasePaint,
     );
     canvas.drawLine(
-      Offset(cx - screen.width * 0.11, screen.height * 0.455),
-      Offset(cx + screen.width * 0.11, screen.height * 0.455),
-      creaseGlow..strokeWidth = 5,
+      Offset(cx - screen.width * 0.10, farCreaseY),
+      Offset(cx + screen.width * 0.10, farCreaseY),
+      creasePaint..strokeWidth = 1.1,
     );
-    canvas.drawLine(
-      Offset(cx - screen.width * 0.10, screen.height * 0.45),
-      Offset(cx + screen.width * 0.10, screen.height * 0.45),
-      creasePaint..strokeWidth = 1.2,
-    );
+    for (var i = 1; i <= 2; i++) {
+      final y = nearCreaseY + screen.height * (.028 * i);
+      final width = screen.width * (.215 + i * .014);
+      canvas.drawLine(
+        Offset(cx - width, y),
+        Offset(cx + width, y),
+        Paint()
+          ..color = const Color(0xfffff5d2).withValues(alpha: .88)
+          ..strokeWidth = 1.3,
+      );
+    }
     for (final dx in [-0.075, 0.075]) {
       canvas.drawLine(
-        Offset(cx + screen.width * dx, screen.height * 0.765),
-        Offset(cx + screen.width * dx, screen.height * 0.835),
+        Offset(cx + screen.width * dx, nearCreaseY - screen.height * .025),
+        Offset(cx + screen.width * dx, nearCreaseY + screen.height * .035),
         Paint()
-          ..color = Cyber.cyan.withValues(alpha: 0.28)
+          ..color = const Color(0xffc8f7ff).withValues(alpha: 0.42)
           ..strokeWidth = 1,
       );
     }
   }
 
   void _drawFielders(Canvas canvas, Size screen) {
-    final origin = Offset(screen.width * 0.50, screen.height * 0.78);
+    final layout = _CricketSceneLayout(screen);
     final spots = SuperOverResolution.fielderSpotsForSectors(
       _state.fieldSectors,
     );
-    for (final spot in spots) {
-      final pos = Offset(
-        origin.dx + cos(spot.angle) * screen.width * 0.42 * spot.radial,
-        origin.dy + sin(spot.angle) * screen.height * 0.46 * spot.radial,
+    final positions = [
+      for (final spot in spots) layout.fieldPoint(spot.angle, spot.radial),
+    ];
+    var interceptor = -1;
+    if (_outcomeActive &&
+        const {
+          ShotOutcome.caught,
+          ShotOutcome.one,
+          ShotOutcome.two,
+          ShotOutcome.three,
+        }.contains(_state.lastOutcome)) {
+      final destination = _outcomeEnd(screen);
+      var nearest = double.infinity;
+      for (var i = 0; i < positions.length; i++) {
+        final distance = (positions[i] - destination).distanceSquared;
+        if (distance < nearest) {
+          nearest = distance;
+          interceptor = i;
+        }
+      }
+    }
+    for (var i = 0; i < spots.length; i++) {
+      final pos = positions[i];
+      final scale = layout.actorScaleAt(pos.dy) * .70;
+      _drawTinyFielder(
+        canvas,
+        pos,
+        scale,
+        skin: _skinForSeed((_state.config?.seed ?? 31) + i * 19),
+        active: i == interceptor,
+        catching: _state.lastOutcome == ShotOutcome.caught,
       );
-      final scale = ui.lerpDouble(0.88, 0.54, spot.radial.clamp(0, 1))!;
-      _drawTinyFielder(canvas, pos, scale);
     }
   }
 
-  void _drawTinyFielder(Canvas canvas, Offset pos, double scale) {
-    final radius = 5.5 * scale;
-    canvas.drawCircle(
-      pos,
-      radius * 2.2,
-      Paint()
-        ..color = Cyber.cyan.withValues(alpha: 0.14)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+  void _drawTinyFielder(
+    Canvas canvas,
+    Offset pos,
+    double scale, {
+    required Color skin,
+    bool active = false,
+    bool catching = false,
+  }) {
+    final chase = active
+        ? Curves.easeOut.transform(((_outcomeTime - .18) / .75).clamp(0.0, 1.0))
+        : 0.0;
+    final destination = _outcomeEnd(Size(size.x, size.y));
+    final body = active
+        ? Offset.lerp(pos, destination, chase * (catching ? .72 : .58))!
+        : pos;
+    final motion = !active
+        ? CricketActorMotion.ready
+        : catching && chase > .72
+        ? CricketActorMotion.catchBall
+        : chase > .82
+        ? CricketActorMotion.throwBall
+        : CricketActorMotion.run;
+    CricketActorPainter.draw(
+      canvas,
+      body,
+      scale: scale,
+      role: CricketActorRole.fielder,
+      motion: motion,
+      time: _outcomeActive ? _outcomeTime : _sequenceTime,
+      primary: active ? const Color(0xffff9b52) : Cyber.amber,
+      accent: Cyber.gold,
+      skin: skin,
+      facingLeft: destination.dx < body.dx,
     );
-    canvas.drawCircle(
-      pos,
-      radius * 1.35,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.4 * scale
-        ..color = Cyber.cyan.withValues(alpha: 0.72),
+  }
+
+  void _drawWicketkeeper(Canvas canvas, Size screen) {
+    final layout = _CricketSceneLayout(screen);
+    final dismissed =
+        _outcomeActive &&
+        (_state.lastOutcome == ShotOutcome.bowled ||
+            _state.lastOutcome == ShotOutcome.caught);
+    CricketActorPainter.draw(
+      canvas,
+      layout.keeperFeet,
+      scale: .88,
+      role: CricketActorRole.wicketkeeper,
+      motion: dismissed
+          ? CricketActorMotion.celebrate
+          : CricketActorMotion.ready,
+      time: _outcomeActive ? _outcomeTime : _sequenceTime,
+      primary: const Color(0xffff8b4c),
+      accent: Cyber.gold,
+      skin: _skinForSeed((_state.config?.seed ?? 11) + 107),
+      facingLeft: true,
     );
-    canvas.drawCircle(pos, radius, Paint()..color = Cyber.cyan);
-    canvas.drawCircle(
-      pos.translate(-radius * 0.25, -radius * 0.25),
-      radius * 0.28,
-      Paint()..color = Colors.white.withValues(alpha: 0.74),
+  }
+
+  void _drawNonStriker(Canvas canvas, Size screen) {
+    if (_outcomeActive &&
+        const {
+          ShotOutcome.one,
+          ShotOutcome.two,
+          ShotOutcome.three,
+        }.contains(_state.lastOutcome)) {
+      return;
+    }
+    final layout = _CricketSceneLayout(screen);
+    final jersey = cricketJerseySpec(_state.jersey);
+    CricketActorPainter.draw(
+      canvas,
+      layout.nonStrikerFeet,
+      scale: layout.actorScaleAt(layout.nonStrikerFeet.dy) * .72,
+      role: CricketActorRole.nonStriker,
+      motion: CricketActorMotion.battingGuard,
+      time: _sequenceTime,
+      primary: jersey.primary,
+      accent: jersey.accent,
+      skin: _skinForSeed((_state.config?.seed ?? 23) + 43),
+      facingLeft: true,
+    );
+  }
+
+  void _drawRunningBatters(Canvas canvas, Size screen) {
+    final outcome = _state.lastOutcome;
+    if (!_outcomeActive ||
+        outcome == null ||
+        !const {
+          ShotOutcome.one,
+          ShotOutcome.two,
+          ShotOutcome.three,
+        }.contains(outcome)) {
+      return;
+    }
+    final progress = Curves.easeInOut.transform(
+      ((_outcomeTime - .18) / 1.15).clamp(0.0, 1.0),
+    );
+    final laps = switch (outcome) {
+      ShotOutcome.three => 3,
+      ShotOutcome.two => 2,
+      _ => 1,
+    };
+    final run = (progress * laps) % 1;
+    final near = Offset.lerp(
+      Offset(screen.width * .45, screen.height * .69),
+      Offset(screen.width * .50, screen.height * .47),
+      run,
+    )!;
+    final far = Offset.lerp(
+      Offset(screen.width * .54, screen.height * .43),
+      Offset(screen.width * .57, screen.height * .69),
+      run,
+    )!;
+    final jersey = cricketJerseySpec(_state.jersey);
+    _drawRunnerSilhouette(canvas, near, 1 - run * .35, jersey.primary);
+    _drawRunnerSilhouette(canvas, far, .65 + run * .35, jersey.primary);
+  }
+
+  void _drawRunnerSilhouette(
+    Canvas canvas,
+    Offset base,
+    double scale,
+    Color color,
+  ) {
+    final jersey = cricketJerseySpec(_state.jersey);
+    CricketActorPainter.draw(
+      canvas,
+      base,
+      scale: scale * .78,
+      role: CricketActorRole.runner,
+      motion: CricketActorMotion.run,
+      time: _outcomeTime,
+      primary: color,
+      accent: jersey.accent,
+      skin: _batterSkin(),
+      facingLeft: base.dx > size.x * .5,
     );
   }
 
   void _drawBowler(Canvas canvas, Size screen) {
+    final layout = _CricketSceneLayout(screen);
     final releaseAt = _setupDuration + _runUpDuration;
     final t = (_sequenceTime / releaseAt).clamp(0.0, 1.0);
-    final pos = Offset(
-      screen.width / 2,
-      ui.lerpDouble(screen.height * 0.32, screen.height * 0.44, t)!,
+    final visualT = switch (_state.upcomingDelivery) {
+      DeliveryType.pace => Curves.easeIn.transform(t),
+      DeliveryType.slower => Curves.easeInOut.transform(t),
+      DeliveryType.spin => Curves.easeOut.transform(t * .94),
+      DeliveryType.yorker => pow(t, .78).toDouble(),
+    };
+    final start = layout.bowlerStart.translate(
+      0,
+      switch (_state.upcomingDelivery) {
+        DeliveryType.pace => -10,
+        DeliveryType.slower => -2,
+        DeliveryType.spin => 15,
+        DeliveryType.yorker => -6,
+      },
     );
-    final color = switch (_state.upcomingDelivery) {
+    final pos = Offset.lerp(start, layout.bowlerRelease, visualT)!;
+    final deliveryAccent = switch (_state.upcomingDelivery) {
       DeliveryType.pace => Cyber.cyan,
+      DeliveryType.slower => Cyber.lime,
       DeliveryType.spin => Cyber.gold,
       DeliveryType.yorker => Cyber.danger,
     };
-    _drawBowlerAvatar(canvas, pos, color: color, runProgress: t);
-    _drawDeliveryEmitter(
+    _drawBowlerAvatar(
       canvas,
       pos,
-      color: color,
-      progress: t,
-      active: _deliveryActive && _sequenceTime < releaseAt,
+      color: const Color(0xff315ff4),
+      accent: const Color(0xffff9818),
+      runProgress: visualT,
     );
+    if (_deliveryActive && _sequenceTime < releaseAt) {
+      canvas.drawCircle(
+        pos.translate(0, 3),
+        3,
+        Paint()..color = deliveryAccent.withValues(alpha: .48),
+      );
+    }
   }
 
   void _drawBatter(Canvas canvas, Size screen) {
-    final pos = Offset(screen.width * 0.43, screen.height * 0.795);
-    final swing = _swingLocked || _state.swingLocked
-        ? switch (_liveSector) {
-            ShotSector.leg => -0.95,
-            ShotSector.off => 0.85,
-            ShotSector.v => -0.20,
-          }
-        : 0.55 + sin(_sequenceTime * 3) * 0.04;
+    final pos = _CricketSceneLayout(screen).strikerFeet;
+    final swingProgress = _swingLocked
+        ? Curves.easeOutCubic.transform(
+            (_timeSinceTap / _contactDelay).clamp(0.0, 1.0),
+          )
+        : _state.swingLocked
+        ? 1.0
+        : 0.0;
 
     if (_state.onFire) {
       canvas.drawCircle(
@@ -1152,217 +1572,265 @@ class SuperOverGame extends FlameGame {
       );
     }
 
-    _drawStrikerMarker(canvas, pos, swing: swing);
+    _drawStrikerMarker(canvas, pos, swingProgress: swingProgress);
   }
 
   void _drawBowlerAvatar(
     Canvas canvas,
     Offset pos, {
     required Color color,
+    required Color accent,
     required double runProgress,
   }) {
-    final bob = _deliveryActive ? sin(_sequenceTime * 18) * 2.6 : 0.0;
+    final bob = _deliveryActive ? sin(_sequenceTime * 18) * 1.2 : 0.0;
     final anchor = pos.translate(0, bob);
-    final pose = bowlerPose(
-      runProgress: runProgress,
-      time: _sequenceTime,
-      isDeliveryActive: _deliveryActive,
-    );
-    CricketRigPainter.drawBowlerRig(
+    CricketActorPainter.drawReferenceBowler(
       canvas,
       anchor,
-      pose,
-      primary: Cyber.cyan,
-      accent: Cyber.magenta,
-      skin: const Color(0xFFD4A373),
-      scale: 48,
+      scale: 1.02,
+      runProgress: runProgress,
+      time: _sequenceTime,
+      primary: color,
+      accent: accent,
+      skin: _skinForSeed((_state.config?.seed ?? 17) + 211),
       holdingBall: _deliveryActive && runProgress < 0.86,
     );
   }
 
-  void _drawDeliveryEmitter(
+  void _drawStrikerMarker(
     Canvas canvas,
     Offset pos, {
-    required Color color,
-    required double progress,
-    required bool active,
+    required double swingProgress,
   }) {
-    final pulse = active ? 0.5 + 0.5 * sin(_sequenceTime * 14) : 0.2;
-    canvas.drawCircle(
-      pos,
-      24 + pulse * 8,
-      Paint()
-        ..color = color.withValues(alpha: 0.10 + pulse * 0.05)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
-    );
-    canvas.drawCircle(
-      pos,
-      13,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.7
-        ..color = color.withValues(alpha: 0.78),
-    );
-    canvas.drawCircle(pos, 6.5, Paint()..color = color);
-
-    final trailPaint = Paint()
-      ..color = color.withValues(alpha: 0.25)
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round;
-    for (var i = 1; i <= 4; i++) {
-      final y = pos.dy - i * 22 - progress * 12;
+    if (!_inputArmed && !_swingLocked) {
+      final dx = switch (_state.selectedSector) {
+        ShotSector.off => -42.0,
+        ShotSector.v => 0.0,
+        ShotSector.leg => 42.0,
+      };
+      final start = pos.translate(10, -12);
+      final end = start.translate(dx, -72);
       canvas.drawLine(
-        Offset(pos.dx - 9 + i * 3, y),
-        Offset(pos.dx + 9 - i * 3, y + 10),
-        trailPaint..color = color.withValues(alpha: 0.22 / i),
+        start,
+        end,
+        Paint()
+          ..color = Cyber.cyan.withValues(alpha: .24)
+          ..strokeWidth = 1
+          ..strokeCap = StrokeCap.round,
+      );
+      canvas.drawCircle(
+        end,
+        3,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1
+          ..color = Cyber.cyan.withValues(alpha: .52),
       );
     }
+
+    _drawBatterAvatar(canvas, pos, swingProgress: swingProgress);
   }
 
-  void _drawStrikerMarker(Canvas canvas, Offset pos, {required double swing}) {
-    final target = pos.translate(20, -22);
-    canvas.drawCircle(
-      target,
-      28,
-      Paint()
-        ..color = Cyber.lime.withValues(alpha: 0.10)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12),
-    );
-    canvas.drawCircle(
-      target,
-      18,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.6
-        ..color = Cyber.lime.withValues(alpha: 0.62),
-    );
-    canvas.drawCircle(target, 4.5, Paint()..color = Cyber.gold);
-
-    final pad = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: pos.translate(10, 6), width: 46, height: 18),
-      const Radius.circular(4),
-    );
-    canvas.drawRRect(pad, Paint()..color = Cyber.panel.withValues(alpha: 0.72));
-    canvas.drawRRect(
-      pad,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2
-        ..color = Cyber.lime.withValues(alpha: 0.38),
-    );
-
-    _drawBatterAvatar(canvas, pos.translate(-4, -14), swing: swing);
-
-    final pivot = pos.translate(6, -8);
-    canvas.save();
-    canvas.translate(pivot.dx, pivot.dy);
-    canvas.rotate(swing);
-    final batPath = Path()
-      ..moveTo(-4, -6)
-      ..lineTo(6, -5)
-      ..lineTo(12, 58)
-      ..lineTo(-8, 58)
-      ..close();
-    canvas.drawPath(
-      batPath,
-      Paint()
-        ..color = Cyber.gold
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.2),
-    );
-    canvas.drawPath(
-      batPath,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.4
-        ..color = Cyber.bg,
-    );
-    canvas.restore();
-  }
-
-  void _drawBatterAvatar(Canvas canvas, Offset pos, {required double swing}) {
-    final jerseySpec = cricketJerseySpec(_state.jersey);
-    final primary = _state.onFire ? Cyber.gold : jerseySpec.primary;
-    final accent = _state.onFire ? Cyber.amber : jerseySpec.accent;
-    final pose = batsmanPose(
-      swing: swing,
-      time: _sequenceTime,
-      onFire: _state.onFire,
-    );
-    CricketRigPainter.drawBatsmanRig(
+  void _drawBatterAvatar(
+    Canvas canvas,
+    Offset pos, {
+    required double swingProgress,
+  }) {
+    CricketActorPainter.drawReferenceBatter(
       canvas,
-      pos.translate(6, 0),
-      pose,
-      primary: primary,
-      accent: accent,
-      skin: const Color(0xFFD4A373),
-      scale: 52,
-      onFire: _state.onFire,
+      pos,
+      scale: 1.08,
+      swingProgress: swingProgress,
+      sector: _liveSector,
+      style: _state.selectedShotStyle,
+      time: _sequenceTime,
+      primary: _state.onFire ? Cyber.gold : const Color(0xff315ff4),
+      accent: _state.onFire ? Cyber.amber : const Color(0xff6f9dff),
+      skin: _batterSkin(),
     );
   }
 
   void _drawWickets(Canvas canvas, Size screen) {
-    final x = screen.width * 0.51;
-    final y = screen.height * 0.80;
-    final paint = Paint()
-      ..color = Cyber.cyan.withValues(alpha: 0.92)
-      ..strokeWidth = 4
+    final layout = _CricketSceneLayout(screen);
+    _drawWicketSet(canvas, layout.farWicket, scale: .55, bowled: false);
+    _drawWicketSet(
+      canvas,
+      layout.strikerWicket,
+      scale: 1,
+      bowled: _outcomeActive && _state.lastOutcome == ShotOutcome.bowled,
+    );
+  }
+
+  void _drawWicketSet(
+    Canvas canvas,
+    Offset base, {
+    required double scale,
+    required bool bowled,
+  }) {
+    final x = base.dx;
+    final y = base.dy;
+    final outline = Paint()
+      ..color = Cyber.bg.withValues(alpha: .92)
+      ..strokeWidth = 6.5 * scale
       ..strokeCap = StrokeCap.round;
-    for (final dx in [-8.0, 0.0, 8.0]) {
-      canvas.drawLine(Offset(x + dx, y - 28), Offset(x + dx, y + 12), paint);
+    final paint = Paint()
+      ..color = const Color(0xffffefc6)
+      ..strokeWidth = 3.4 * scale
+      ..strokeCap = StrokeCap.round;
+    for (final dx in [-8.0 * scale, 0.0, 8.0 * scale]) {
+      canvas.drawLine(
+        Offset(x + dx, y - 28 * scale),
+        Offset(x + dx, y + 12 * scale),
+        outline,
+      );
+      canvas.drawLine(
+        Offset(x + dx, y - 28 * scale),
+        Offset(x + dx, y + 12 * scale),
+        paint,
+      );
     }
-    canvas.drawLine(Offset(x - 11, y - 30), Offset(x + 11, y - 30), paint);
+    final bailT = bowled
+        ? Curves.easeOut.transform((_outcomeTime / .65).clamp(0.0, 1.0))
+        : 0.0;
+    canvas.save();
+    canvas.translate(bailT * 18 * scale, -bailT * 32 * scale);
+    canvas.rotate(bailT * 1.8);
+    canvas.drawLine(
+      Offset(x - 11 * scale, y - 30 * scale),
+      Offset(x - scale, y - 30 * scale),
+      paint,
+    );
+    canvas.restore();
+    canvas.save();
+    canvas.translate(-bailT * 15 * scale, -bailT * 25 * scale);
+    canvas.rotate(-bailT * 1.45);
+    canvas.drawLine(
+      Offset(x + scale, y - 30 * scale),
+      Offset(x + 11 * scale, y - 30 * scale),
+      paint,
+    );
+    canvas.restore();
   }
 
   void _drawBall(Canvas canvas, Size screen) {
     if (!_deliveryActive && !_outcomeActive) return;
 
+    final layout = _CricketSceneLayout(screen);
     Offset pos;
+    Offset floor;
     double radius;
+    double lift;
     if (_outcomeActive) {
+      final hitStop = reducedMotion ? 0.0 : .055;
       final t = Curves.easeOut.transform(
-        (_outcomeTime / _outcomeDuration).clamp(0.0, 1.0),
+        ((_outcomeTime - hitStop) / (_outcomeDuration - hitStop)).clamp(
+          0.0,
+          1.0,
+        ),
       );
-      final start = Offset(screen.width * 0.49, screen.height * 0.77);
+      final start = _contactPoint(layout);
       final end = _outcomeEnd(screen);
-      pos = Offset.lerp(start, end, t)!;
-      radius = ui.lerpDouble(
-        8,
-        _state.lastOutcome == ShotOutcome.six ? 16 : 6,
-        t,
-      )!;
+      floor = Offset.lerp(start.translate(0, 16), end, t)!;
+      final flight = switch (_state.lastOutcome) {
+        ShotOutcome.six => sin(pi * t) * screen.height * .16,
+        ShotOutcome.four => sin(pi * t) * screen.height * .055,
+        ShotOutcome.caught =>
+          sin(pi * t) * screen.height * .14 + t * screen.height * .038,
+        ShotOutcome.two ||
+        ShotOutcome.three => sin(pi * min(1, t * 1.35)) * screen.height * .035,
+        ShotOutcome.one ||
+        ShotOutcome.dot => sin(pi * min(1, t * 1.7)) * screen.height * .018,
+        ShotOutcome.bowled || null => 0.0,
+      };
+      lift = flight;
+      pos = floor.translate(0, -lift);
+      radius = 5.0 + layout.actorScaleAt(floor.dy) * 2.8;
     } else if (_inputArmed) {
       final t = ((_sequenceTime - _releaseTime) / _flightDuration).clamp(
         0.0,
         1.18,
       );
-      final start = Offset(screen.width / 2, screen.height * 0.43);
-      final end = Offset(screen.width * 0.50, screen.height * 0.78);
+      final visualT = _swingLocked ? 1.0 : t.clamp(0.0, 1.0);
+      final start = layout.bowlerRelease;
+      final contact = _contactPoint(layout);
       final lateral = switch (_state.upcomingDelivery) {
-        DeliveryType.spin => sin(t * pi) * 26,
+        DeliveryType.spin => sin(visualT * pi) * 26,
         DeliveryType.yorker => 12.0,
+        DeliveryType.slower => sin(visualT * pi) * -8,
         DeliveryType.pace => 0.0,
       };
-      pos = Offset.lerp(
+      final lineOffset = switch (_state.deliveryPlan.line) {
+        DeliveryLine.off => -18.0,
+        DeliveryLine.middle => 0.0,
+        DeliveryLine.leg => 18.0,
+      };
+      _drawBounceMarker(canvas, screen, lineOffset);
+      floor = Offset.lerp(
         start,
-        end.translate(lateral, 12),
-        Curves.easeIn.transform(t.clamp(0, 1)),
+        contact.translate(lateral + lineOffset, 16),
+        Curves.easeIn.transform(visualT),
       )!;
-      radius = ui.lerpDouble(4.5, 9.5, t.clamp(0, 1))!;
+      final bounceFraction = switch (_state.deliveryPlan.length) {
+        DeliveryLength.short => .55,
+        DeliveryLength.good => .68,
+        DeliveryLength.full => .80,
+        DeliveryLength.yorker => .90,
+      };
+      if (_swingLocked) {
+        floor = contact.translate(0, 16);
+        lift = 16;
+      } else if (visualT <= bounceFraction) {
+        final u = visualT / bounceFraction;
+        lift = ui.lerpDouble(92, 0, u)! + sin(pi * u) * 14;
+      } else {
+        final u = (visualT - bounceFraction) / (1 - bounceFraction);
+        lift = sin(u * pi / 2) * 16;
+      }
+      pos = floor.translate(0, -lift);
+      radius = ui.lerpDouble(4.5, 8.2, visualT)!;
     } else {
       return;
     }
 
     final trailColor = switch (_state.upcomingDelivery) {
       DeliveryType.pace => Cyber.cyan,
+      DeliveryType.slower => Cyber.lime,
       DeliveryType.spin => Cyber.gold,
       DeliveryType.yorker => Cyber.danger,
     };
+    final trailOrigin = _outcomeActive
+        ? _contactPoint(layout)
+        : layout.bowlerRelease.translate(0, -32);
+    final trailCount = reducedMotion ? 0 : 4;
+    for (var i = trailCount; i >= 1; i--) {
+      final fraction = (1 - i * .075).clamp(0.0, 1.0);
+      final point = Offset.lerp(trailOrigin, pos, fraction)!;
+      canvas.drawCircle(
+        point,
+        max(1.2, radius * (1 - i / (trailCount + 2)) * .42),
+        Paint()..color = trailColor.withValues(alpha: .18 / i),
+      );
+    }
+    final heightFactor = (lift / (screen.height * .18)).clamp(0.0, 1.0);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: floor.translate(0, 2),
+        width: radius * (2.45 - heightFactor * .55),
+        height: radius * (.78 - heightFactor * .22),
+      ),
+      Paint()
+        ..color = Colors.black.withValues(alpha: .38 - heightFactor * .22)
+        ..maskFilter = MaskFilter.blur(
+          BlurStyle.normal,
+          1.5 + heightFactor * 3,
+        ),
+    );
     canvas.drawCircle(
       pos.translate(-8, -10),
       radius * 1.3,
       Paint()
-        ..color = trailColor.withValues(alpha: 0.30)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 9),
+        ..color = trailColor.withValues(alpha: 0.20)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 7),
     );
     canvas.drawCircle(pos, radius + 2, Paint()..color = Cyber.bg);
     canvas.drawCircle(pos, radius, Paint()..color = Cyber.danger);
@@ -1371,73 +1839,183 @@ class SuperOverGame extends FlameGame {
       radius * 0.22,
       Paint()..color = Colors.white.withValues(alpha: 0.85),
     );
+    if (_outcomeActive && _outcomeTime < .34) {
+      final ringT = (_outcomeTime / .34).clamp(0.0, 1.0);
+      canvas.drawCircle(
+        pos,
+        radius + 8 + ringT * 30,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3 * (1 - ringT)
+          ..color = trailColor.withValues(alpha: .8 * (1 - ringT)),
+      );
+    }
+  }
+
+  Offset _contactPoint(_CricketSceneLayout layout) {
+    return switch (_liveSector) {
+      ShotSector.off => layout.strikerFeet.translate(28, -56),
+      ShotSector.v => layout.strikerFeet.translate(10, -38),
+      ShotSector.leg => layout.strikerFeet.translate(-27, -54),
+    };
+  }
+
+  void _drawBounceMarker(Canvas canvas, Size screen, double lineOffset) {
+    if (_swingLocked) return;
+    final y = switch (_state.deliveryPlan.length) {
+      DeliveryLength.short => screen.height * .50,
+      DeliveryLength.good => screen.height * .55,
+      DeliveryLength.full => screen.height * .61,
+      DeliveryLength.yorker => screen.height * .645,
+    };
+    final center = Offset(screen.width * .50 + lineOffset, y);
+    final pulse = reducedMotion ? .5 : .5 + sin(_sequenceTime * 8) * .10;
+    final markerStrength = switch (_state.settings.difficulty) {
+      SuperOverDifficulty.rookie => 1.0,
+      SuperOverDifficulty.pro => .72,
+      SuperOverDifficulty.allStar => .46,
+    };
+    final color = _state.deliveryPlan.length == DeliveryLength.yorker
+        ? Cyber.danger
+        : Cyber.cyan;
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: center,
+        width: (25 + pulse * 8) * markerStrength,
+        height: 6 + 2 * markerStrength,
+      ),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..color = color.withValues(alpha: .34 + .36 * markerStrength),
+    );
+    canvas.drawCircle(center, 2.5, Paint()..color = color);
   }
 
   Offset _outcomeEnd(Size screen) {
+    final layout = _CricketSceneLayout(screen);
     final outcome = _state.lastOutcome ?? ShotOutcome.dot;
     if (outcome == ShotOutcome.bowled) {
-      return Offset(screen.width * 0.52, screen.height * 0.82);
+      return layout.strikerWicket.translate(2, -4);
     }
     final sector = _state.shotSector ?? _liveSector;
     final angle = SuperOverResolution.shotAngleForSector(sector);
-    final distance = switch (outcome) {
-      ShotOutcome.six => screen.height * 0.46,
-      ShotOutcome.four => screen.height * 0.38,
-      ShotOutcome.three => screen.height * 0.31,
-      ShotOutcome.two => screen.height * 0.24,
-      ShotOutcome.one => screen.height * 0.18,
-      ShotOutcome.caught => screen.height * 0.28,
-      ShotOutcome.dot => screen.height * 0.11,
+    final radial = switch (outcome) {
+      ShotOutcome.six => 1.02,
+      ShotOutcome.four => .94,
+      ShotOutcome.three => .78,
+      ShotOutcome.two => .63,
+      ShotOutcome.one => .47,
+      ShotOutcome.caught => .67,
+      ShotOutcome.dot => .27,
       ShotOutcome.bowled => 0.0,
     };
-    return Offset(
-      screen.width * 0.50 + cos(angle) * distance,
-      screen.height * 0.77 + sin(angle) * distance,
-    );
+    return layout.fieldPoint(angle, radial);
   }
 
   void _drawOutcome(Canvas canvas, Size screen) {
     final outcome = _state.lastOutcome;
     if (!_outcomeActive || outcome == null) return;
     final t = (_outcomeTime / _outcomeDuration).clamp(0.0, 1.0);
-    final label = outcome == ShotOutcome.dot ? 'DOT' : _outcomeLabel(outcome);
+    final layout = _CricketSceneLayout(screen);
     final color = _outcomeColor(outcome);
 
-    if (outcome == ShotOutcome.bowled) {
-      final base = Offset(screen.width * 0.51, screen.height * 0.80);
+    final impactT = (_outcomeTime / .34).clamp(0.0, 1.0);
+    if (impactT < 1 && _state.timingTier == TimingTier.perfect) {
+      final contact = _contactPoint(layout);
       for (var i = 0; i < 6; i++) {
-        final a = i * pi / 3 + t * 0.8;
-        final d = 18 + t * 42;
+        final angle = i * pi / 3 - pi / 6;
+        final inner = 5 + impactT * 7;
+        final outer = 12 + impactT * 24;
         canvas.drawLine(
-          base,
-          base.translate(cos(a) * d, sin(a) * d),
+          contact.translate(cos(angle) * inner, sin(angle) * inner),
+          contact.translate(cos(angle) * outer, sin(angle) * outer),
           Paint()
-            ..color = Cyber.cyan.withValues(alpha: 1 - t)
-            ..strokeWidth = 3,
+            ..color = Cyber.cyan.withValues(alpha: .78 * (1 - impactT))
+            ..strokeWidth = 1.6 * (1 - impactT) + .4
+            ..strokeCap = StrokeCap.round,
         );
       }
     }
 
-    final tp = TextPainter(
-      text: TextSpan(
-        text: label,
-        style: TextStyle(
-          color: color,
-          fontFamily: 'Orbitron',
-          fontSize: 34 + sin(t * pi) * 7,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 2,
-          shadows: [
-            Shadow(color: Cyber.bg.withValues(alpha: 0.95), blurRadius: 4),
-            Shadow(color: color.withValues(alpha: 0.5), blurRadius: 18),
-          ],
+    if (outcome == ShotOutcome.four || outcome == ShotOutcome.six) {
+      final pulse = (1 - ((_outcomeTime - .18) / .7).clamp(0.0, 1.0));
+      if (pulse > 0) {
+        final boundary = Path()
+          ..moveTo(0, layout.horizonY)
+          ..quadraticBezierTo(
+            screen.width * .5,
+            screen.height * .45,
+            screen.width,
+            layout.horizonY,
+          );
+        canvas.drawPath(
+          boundary,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.5 + pulse * 2
+            ..color = color.withValues(alpha: .18 + pulse * .46),
+        );
+      }
+    }
+
+    if (outcome == ShotOutcome.bowled) {
+      final base = layout.strikerWicket;
+      for (var i = 0; i < 5; i++) {
+        final a = i * pi / 2.5 + t * 0.8;
+        final d = 12 + t * 28;
+        canvas.drawLine(
+          base,
+          base.translate(cos(a) * d, sin(a) * d),
+          Paint()
+            ..color = (i.isEven ? Cyber.danger : Cyber.amber).withValues(
+              alpha: (1 - t) * .82,
+            )
+            ..strokeWidth = 2,
+        );
+      }
+    }
+
+    if (const {
+      ShotOutcome.four,
+      ShotOutcome.six,
+      ShotOutcome.caught,
+      ShotOutcome.bowled,
+    }.contains(outcome)) {
+      final reveal = Curves.easeOutBack.transform(
+        ((_outcomeTime - .16) / .34).clamp(0.0, 1.0),
+      );
+      final fade = 1 - ((_outcomeTime - 1.42) / .55).clamp(0.0, 1.0);
+      final label = switch (outcome) {
+        ShotOutcome.four => '4',
+        ShotOutcome.six => '6',
+        ShotOutcome.caught || ShotOutcome.bowled => 'WICKET',
+        _ => _outcomeLabel(outcome),
+      };
+      final tp = TextPainter(
+        text: TextSpan(
+          text: label,
+          style:
+              Cyber.display(
+                outcome == ShotOutcome.four || outcome == ShotOutcome.six
+                    ? 36 * reveal
+                    : 20 * reveal,
+                color: color.withValues(alpha: fade),
+                letterSpacing: 1.2,
+              ).copyWith(
+                shadows: [
+                  Shadow(color: Cyber.bg.withValues(alpha: .9), blurRadius: 4),
+                ],
+              ),
         ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout(maxWidth: screen.width);
-    tp.paint(
-      canvas,
-      Offset(screen.width / 2 - tp.width / 2, screen.height * 0.22 - t * 18),
-    );
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: screen.width * .6);
+      final labelX = switch (_state.shotSector ?? _liveSector) {
+        ShotSector.off => screen.width * .74,
+        ShotSector.v => screen.width * .76,
+        ShotSector.leg => screen.width * .24,
+      };
+      tp.paint(canvas, Offset(labelX - tp.width * .5, screen.height * .225));
+    }
   }
 }

@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 
 import '../../../blocs/super_over/super_over_state.dart';
 import '../../../config/theme.dart';
+import '../../../data/super_over_batter_profiles.dart';
 import '../../../models/super_over.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_cta_button.dart';
@@ -17,6 +18,9 @@ class SuperOverResult extends StatefulWidget {
     required this.previousHigh,
     required this.onPlayAgain,
     required this.onExit,
+    this.settings = const SuperOverSettings(),
+    this.onChangeMode,
+    this.onChangeBatters,
     super.key,
   });
 
@@ -24,6 +28,9 @@ class SuperOverResult extends StatefulWidget {
   final int previousHigh;
   final VoidCallback onPlayAgain;
   final VoidCallback onExit;
+  final SuperOverSettings settings;
+  final VoidCallback? onChangeMode;
+  final VoidCallback? onChangeBatters;
 
   @override
   State<SuperOverResult> createState() => _SuperOverResultState();
@@ -38,6 +45,7 @@ class _SuperOverResultState extends State<SuperOverResult>
   );
 
   bool get _won => widget.state.wonChase == true;
+  bool get _scoreAttack => widget.state.mode == SuperOverMode.scoreAttack;
   bool get _record =>
       widget.state.score > widget.previousHigh && widget.state.score > 0;
 
@@ -46,8 +54,14 @@ class _SuperOverResultState extends State<SuperOverResult>
     super.initState();
     _seq.forward();
     _soundTimer = Timer(const Duration(milliseconds: 420), () {
-      playSound(_won ? SoundEffect.matchWin : SoundEffect.matchLose);
-      HapticFeedback.heavyImpact();
+      if (widget.settings.soundEnabled) {
+        playSound(
+          _won || _scoreAttack
+              ? SoundEffect.cricketVictory
+              : SoundEffect.cricketDefeat,
+        );
+      }
+      if (widget.settings.hapticsEnabled) HapticFeedback.heavyImpact();
     });
   }
 
@@ -59,15 +73,34 @@ class _SuperOverResultState extends State<SuperOverResult>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _seq.value = 1;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final state = widget.state;
-    final accent = _won ? Cyber.lime : Cyber.danger;
+    final accent = _scoreAttack
+        ? Cyber.gold
+        : _won
+        ? Cyber.lime
+        : Cyber.danger;
     final sixes = state.wagonWheel.where((o) => o == ShotOutcome.six).length;
     final fours = state.wagonWheel.where((o) => o == ShotOutcome.four).length;
-    final strikeRate = state.ballsFaced == 0
-        ? 0
-        : (state.score / state.ballsFaced * 100).round();
-    final totalXp = 10 + state.score + sixes * 4 + (_won ? 15 : 0);
+    final summary = state.summary;
+    final rewards = summary?.rewardBreakdown;
+    final finisherIndex = state.battingOrder.indexWhere(
+      (card) => card.id == summary?.finishingBatterCardId,
+    );
+    final finisher = finisherIndex < 0
+        ? null
+        : SuperOverBatterProfiles.fromCard(
+            state.battingOrder[finisherIndex],
+            orderIndex: finisherIndex,
+          ).displayName;
 
     return _ResultArenaBackground(
       child: SafeArea(
@@ -88,7 +121,10 @@ class _SuperOverResultState extends State<SuperOverResult>
                           parent: _seq,
                           curve: const Interval(0.0, 0.22),
                         ),
-                        child: _StatusStrip(won: _won),
+                        child: _StatusStrip(
+                          won: _won,
+                          scoreAttack: _scoreAttack,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       ScaleTransition(
@@ -102,11 +138,24 @@ class _SuperOverResultState extends State<SuperOverResult>
                         ),
                         child: _OutcomePanel(
                           won: _won,
+                          title: _scoreAttack
+                              ? 'OVER COMPLETE'
+                              : _won
+                              ? 'CHASE WON'
+                              : 'CHASE LOST',
+                          icon: _scoreAttack
+                              ? Icons.bolt
+                              : _won
+                              ? Icons.emoji_events
+                              : Icons.close,
                           accent: accent,
                           margin: _marginLine(state),
-                          score:
-                              '${state.score}/${state.wickets} chasing ${state.cpuTarget + 1}',
+                          score: _scoreAttack
+                              ? '${state.score}/${state.wickets} FROM ${state.ballsFaced} BALLS'
+                              : '${state.score}/${state.wickets} CHASING ${state.cpuTarget + 1}',
                           record: _record,
+                          grade: summary?.grade.label ?? 'C',
+                          finisher: finisher,
                         ),
                       ),
                       const SizedBox(height: 14),
@@ -126,20 +175,60 @@ class _SuperOverResultState extends State<SuperOverResult>
                         child: _StatGrid(
                           sixes: sixes,
                           fours: fours,
-                          strikeRate: strikeRate,
-                          totalXp: totalXp,
+                          perfect:
+                              summary?.perfectContacts ?? state.perfectContacts,
+                          openHits:
+                              summary?.openSectorHits ?? state.openGapHits,
                         ),
                       ),
+                      const SizedBox(height: 14),
+                      _InsightPanel(insight: _improvementInsight(state)),
+                      if (rewards != null) ...[
+                        const SizedBox(height: 14),
+                        _XpBreakdown(rewards: rewards),
+                      ],
                       const SizedBox(height: 20),
                       HudCtaButton(
-                        label: 'CHASE AGAIN',
+                        label: 'PLAY AGAIN',
                         icon: Icons.replay,
                         accent: _won ? Cyber.cyan : Cyber.gold,
-                        helper: _won ? 'RUN IT BACK' : 'TARGET LOCKED',
+                        helper: _scoreAttack
+                            ? 'BEAT YOUR SCORE'
+                            : _won
+                            ? 'RUN IT BACK'
+                            : 'TARGET LOCKED',
                         tapSound: SoundEffect.playMatch,
                         onTap: widget.onPlayAgain,
                       ),
                       const SizedBox(height: 12),
+                      if (widget.onChangeMode != null ||
+                          widget.onChangeBatters != null)
+                        Row(
+                          children: [
+                            if (widget.onChangeMode != null)
+                              Expanded(
+                                child: CyberCtaButton(
+                                  label: 'Change Mode',
+                                  clip: false,
+                                  onPressed: widget.onChangeMode,
+                                ),
+                              ),
+                            if (widget.onChangeMode != null &&
+                                widget.onChangeBatters != null)
+                              const SizedBox(width: 10),
+                            if (widget.onChangeBatters != null)
+                              Expanded(
+                                child: CyberCtaButton(
+                                  label: 'Change Batters',
+                                  clip: false,
+                                  onPressed: widget.onChangeBatters,
+                                ),
+                              ),
+                          ],
+                        ),
+                      if (widget.onChangeMode != null ||
+                          widget.onChangeBatters != null)
+                        const SizedBox(height: 12),
                       CyberCtaButton(
                         label: 'Back To Games',
                         clip: false,
@@ -160,6 +249,11 @@ class _SuperOverResultState extends State<SuperOverResult>
   }
 
   String _marginLine(SuperOverState state) {
+    if (state.mode == SuperOverMode.scoreAttack) {
+      return state.objectiveComplete
+          ? 'Objective complete // ${state.objective.label}'
+          : '${state.maxCombo}x best combo // ${state.perfectContacts} perfect';
+    }
     if (_won) {
       final ballsLeft = 6 - state.ballsFaced;
       final wicketsLeft = 2 - state.wickets;
@@ -172,16 +266,42 @@ class _SuperOverResultState extends State<SuperOverResult>
     final short = state.cpuTarget + 1 - state.score;
     return 'Lost by $short run${short == 1 ? '' : 's'}';
   }
+
+  String _improvementInsight(SuperOverState state) {
+    final summary = state.summary;
+    if (state.wickets >= 2) {
+      return 'Protect the second wicket: use Ground intent when a sector is packed.';
+    }
+    if ((summary?.perfectContacts ?? state.perfectContacts) == 0) {
+      return 'Track release and bounce longer. Perfect timing removes normal catch geometry.';
+    }
+    if ((summary?.openSectorHits ?? state.openGapHits) == 0) {
+      return 'Read the Field Radar before run-up and attack the labelled Open sector.';
+    }
+    if (state.ballRecords.any(
+      (ball) =>
+          ball.intent?.style == ShotStyle.loft &&
+          ball.outcome == ShotOutcome.caught,
+    )) {
+      return 'Mix in Ground shots against Packed sectors to lower interception risk.';
+    }
+    return 'Strong over. Build Rhythm early and save Finisher Mode for the decisive ball.';
+  }
 }
 
 class _StatusStrip extends StatelessWidget {
-  const _StatusStrip({required this.won});
+  const _StatusStrip({required this.won, required this.scoreAttack});
 
   final bool won;
+  final bool scoreAttack;
 
   @override
   Widget build(BuildContext context) {
-    final color = won ? Cyber.lime : Cyber.danger;
+    final color = scoreAttack
+        ? Cyber.gold
+        : won
+        ? Cyber.lime
+        : Cyber.danger;
     return Row(
       children: [
         Container(
@@ -194,9 +314,19 @@ class _StatusStrip extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Text(
-          won ? 'CHASE COMPLETE' : 'CHASE FAILED',
-          style: Cyber.label(9, color: color, letterSpacing: 1.8),
+        Flexible(
+          flex: 2,
+          child: Text(
+            scoreAttack
+                ? 'SCORE LOCKED'
+                : won
+                ? 'CHASE COMPLETE'
+                : 'CHASE FAILED',
+            maxLines: 1,
+            overflow: TextOverflow.fade,
+            softWrap: false,
+            style: Cyber.label(9, color: color, letterSpacing: 1.8),
+          ),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -206,9 +336,15 @@ class _StatusStrip extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        Text(
-          'SYS://SUPER_OVER RESULT',
-          style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.1),
+        Flexible(
+          child: Text(
+            'SYS://SUPER_OVER RESULT',
+            maxLines: 1,
+            overflow: TextOverflow.fade,
+            softWrap: false,
+            textAlign: TextAlign.end,
+            style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.1),
+          ),
         ),
       ],
     );
@@ -218,17 +354,25 @@ class _StatusStrip extends StatelessWidget {
 class _OutcomePanel extends StatelessWidget {
   const _OutcomePanel({
     required this.won,
+    required this.title,
+    required this.icon,
     required this.accent,
     required this.margin,
     required this.score,
     required this.record,
+    required this.grade,
+    required this.finisher,
   });
 
   final bool won;
+  final String title;
+  final IconData icon;
   final Color accent;
   final String margin;
   final String score;
   final bool record;
+  final String grade;
+  final String? finisher;
 
   @override
   Widget build(BuildContext context) {
@@ -239,7 +383,7 @@ class _OutcomePanel extends StatelessWidget {
       child: Column(
         children: [
           Icon(
-            won ? Icons.emoji_events : Icons.close,
+            icon,
             color: accent,
             size: 34,
             shadows: [
@@ -248,7 +392,7 @@ class _OutcomePanel extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            won ? 'CHASE WON' : 'CHASE LOST',
+            title,
             textAlign: TextAlign.center,
             style: Cyber.display(33, color: accent, letterSpacing: 2),
           ),
@@ -267,6 +411,14 @@ class _OutcomePanel extends StatelessWidget {
               color: Colors.white,
               letterSpacing: 0.1,
             ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            finisher == null
+                ? 'GRADE $grade'
+                : 'FINISHER $finisher  //  GRADE $grade',
+            textAlign: TextAlign.center,
+            style: Cyber.label(10, color: Cyber.cyan, letterSpacing: 1.1),
           ),
           if (record) ...[
             const SizedBox(height: 12),
@@ -378,14 +530,14 @@ class _StatGrid extends StatelessWidget {
   const _StatGrid({
     required this.sixes,
     required this.fours,
-    required this.strikeRate,
-    required this.totalXp,
+    required this.perfect,
+    required this.openHits,
   });
 
   final int sixes;
   final int fours;
-  final int strikeRate;
-  final int totalXp;
+  final int perfect;
+  final int openHits;
 
   @override
   Widget build(BuildContext context) {
@@ -395,10 +547,91 @@ class _StatGrid extends StatelessWidget {
         const SizedBox(width: 8),
         _Stat(label: 'FOURS', value: '$fours', accent: Cyber.lime),
         const SizedBox(width: 8),
-        _Stat(label: 'SR', value: '$strikeRate', accent: Cyber.cyan),
+        _Stat(label: 'PERFECT', value: '$perfect', accent: Cyber.cyan),
         const SizedBox(width: 8),
-        _Stat(label: 'XP', value: '+$totalXp', accent: Cyber.violet),
+        _Stat(label: 'OPEN', value: '$openHits', accent: Cyber.violet),
       ],
+    );
+  }
+}
+
+class _XpBreakdown extends StatelessWidget {
+  const _XpBreakdown({required this.rewards});
+
+  final SuperOverRewardBreakdown rewards;
+
+  @override
+  Widget build(BuildContext context) {
+    final entries = <(String, int)>[
+      ('COMPLETION', rewards.completionXp),
+      ('RUNS', rewards.runsXp),
+      ('SIXES', rewards.sixesXp),
+      ('CHASE WIN', rewards.chaseWinXp),
+      ('OBJECTIVE', rewards.objectiveXp),
+    ];
+    return CyberPanel(
+      accent: Cyber.violet,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Text('XP BREAKDOWN', style: Cyber.label(10, color: Cyber.muted)),
+              const Spacer(),
+              Text(
+                '+${rewards.totalXp} XP',
+                style: Cyber.display(16, color: Cyber.violet),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 12,
+            runSpacing: 5,
+            children: [
+              for (final entry in entries)
+                Text(
+                  '${entry.$1} +${entry.$2}',
+                  style: Cyber.label(8, color: Colors.white),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InsightPanel extends StatelessWidget {
+  const _InsightPanel({required this.insight});
+
+  final String insight;
+
+  @override
+  Widget build(BuildContext context) {
+    return CyberPanel(
+      accent: Cyber.cyan,
+      padding: const EdgeInsets.fromLTRB(13, 11, 13, 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.insights_outlined, color: Cyber.cyan, size: 18),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'IMPROVEMENT INSIGHT',
+                  style: Cyber.label(8, color: Cyber.cyan),
+                ),
+                const SizedBox(height: 4),
+                Text(insight, style: Cyber.body(10, color: Cyber.muted)),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -461,6 +694,18 @@ class _ResultArenaBackgroundState extends State<_ResultArenaBackground>
     vsync: this,
     duration: const Duration(seconds: 18),
   )..repeat();
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller
+        ..stop()
+        ..value = 0;
+    } else if (!_controller.isAnimating) {
+      _controller.repeat();
+    }
+  }
 
   @override
   void dispose() {

@@ -608,75 +608,102 @@ class _TeamPicker extends StatelessWidget {
   final String selected;
   final ValueChanged<String> onSelect;
 
+  static const int _perRow = 6;
+
   @override
   Widget build(BuildContext context) {
-    return Row(
+    // Chunk the liveries into fixed-width rows so the picker scales as more
+    // teams land (12 today) without crushing the tiles.
+    final rows = <List<BasketballTeamLivery>>[];
+    for (var i = 0; i < basketballTeams.length; i += _perRow) {
+      rows.add(
+        basketballTeams.sublist(
+          i,
+          math.min(i + _perRow, basketballTeams.length),
+        ),
+      );
+    }
+    return Column(
       children: [
-        for (final team in basketballTeams) ...[
-          Expanded(
-            child: GestureDetector(
-              onTap: () => onSelect(team.id),
-              child: Column(
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    height: 52,
-                    padding: const EdgeInsets.symmetric(vertical: 5),
-                    decoration: BoxDecoration(
-                      color: team.id == selected
-                          ? Color.alphaBlend(
-                              team.primary.withValues(alpha: 0.12),
-                              Cyber.panel,
-                            )
-                          : Cyber.panel,
-                      border: Border.all(
-                        color: team.id == selected
-                            ? Colors.white
-                            : Cyber.border.withValues(alpha: 0.5),
-                        width: team.id == selected ? 2 : 1,
-                      ),
-                    ),
-                    child: Center(
-                      child: Container(
-                        width: 24,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: team.primary,
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: team.secondary, width: 2),
-                          boxShadow: team.id == selected ? [
-                            BoxShadow(
-                              color: team.primary.withValues(alpha: 0.5),
-                              blurRadius: 8,
-                              spreadRadius: 2,
-                            )
-                          ] : null,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    team.name.toUpperCase(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: team.id == selected
-                          ? Colors.white
-                          : Cyber.muted,
-                      fontFamily: Cyber.displayFont,
-                      fontSize: 6.5,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.6,
-                    ),
-                  ),
-                ],
+        for (final row in rows) ...[
+          Row(
+            children: [
+              for (final team in row) ...[
+                Expanded(child: _tile(team)),
+                if (team != row.last) const SizedBox(width: 6),
+              ],
+              // Pad short rows so tiles keep the same width.
+              for (var i = row.length; i < _perRow; i++) ...[
+                const SizedBox(width: 6),
+                const Expanded(child: SizedBox.shrink()),
+              ],
+            ],
+          ),
+          if (row != rows.last) const SizedBox(height: 8),
+        ],
+      ],
+    );
+  }
+
+  Widget _tile(BasketballTeamLivery team) {
+    return GestureDetector(
+      onTap: () => onSelect(team.id),
+      child: Column(
+        children: [
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            height: 52,
+            padding: const EdgeInsets.symmetric(vertical: 5),
+            decoration: BoxDecoration(
+              color: team.id == selected
+                  ? Color.alphaBlend(
+                      team.primary.withValues(alpha: 0.12),
+                      Cyber.panel,
+                    )
+                  : Cyber.panel,
+              border: Border.all(
+                color: team.id == selected
+                    ? Colors.white
+                    : Cyber.border.withValues(alpha: 0.5),
+                width: team.id == selected ? 2 : 1,
+              ),
+            ),
+            child: Center(
+              child: Container(
+                width: 24,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: team.primary,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: team.secondary, width: 2),
+                  boxShadow: team.id == selected ? [
+                    BoxShadow(
+                      color: team.primary.withValues(alpha: 0.5),
+                      blurRadius: 8,
+                      spreadRadius: 2,
+                    )
+                  ] : null,
+                ),
               ),
             ),
           ),
-          if (team != basketballTeams.last) const SizedBox(width: 6),
+          const SizedBox(height: 5),
+          Text(
+            team.name.toUpperCase(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: team.id == selected
+                  ? Colors.white
+                  : Cyber.muted,
+              fontFamily: Cyber.displayFont,
+              fontSize: 6.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.6,
+            ),
+          ),
         ],
-      ],
+      ),
     );
   }
 }

@@ -564,3 +564,9 @@ BasketballAthleteLook basketballLookFor(String id) {
   final athlete = basketballAthletes.where((item) => item.id == id).firstOrNull;
   return _teamLooks[athlete?.teamCode] ?? _teamLooks.values.first;
 }
+
+/// Stable jersey number derived from the athlete id (0–99). Uses an explicit
+/// fold hash, not [String.hashCode], so numbers never change across Dart
+/// versions or runs.
+int jerseyNumberFor(String id) =>
+    id.codeUnits.fold(0, (acc, unit) => (acc * 31 + unit) & 0x7fffffff) % 100;

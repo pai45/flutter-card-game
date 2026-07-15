@@ -238,7 +238,8 @@ void main() {
 
     await tester.tap(find.text('CRICKET').last);
     await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('SUPER OVER'), findsOneWidget);
+    expect(find.text('FINAL OVER'), findsOneWidget);
+    expect(find.text('SIX-BALL CRICKET CHASE'), findsOneWidget);
     expect(find.text('PITCH DUEL'), findsNothing);
   });
 }

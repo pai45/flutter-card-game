@@ -473,6 +473,61 @@ void main() {
     });
   });
 
+  group('spin move', () {
+    test('a second burst mid-drive enters the spin and carries into a drive',
+        () {
+      final engine = _playerBallEngine();
+      // First burst → drive.
+      engine.step(
+        const BasketballIntent(moveAxis: 1, burst: true),
+        BasketballIntent.idle,
+        _dt,
+      );
+      expect(engine.playerBody.body, BodyState.drive);
+      // Second burst mid-drive → spin (the double-tap is reused; no new input).
+      engine.step(
+        const BasketballIntent(moveAxis: 1, burst: true),
+        BasketballIntent.idle,
+        _dt,
+      );
+      expect(engine.playerBody.body, BodyState.spin);
+      // Nobody set in the lane — the spin flows into a fresh drive.
+      _run(
+        engine,
+        kBbSpinDuration + 0.05,
+        player: (_) => const BasketballIntent(moveAxis: 1),
+      );
+      expect(engine.playerBody.body, BodyState.drive);
+    });
+
+    test('a set defender in the lane absorbs the spin into recovery', () {
+      final engine = _playerBallEngine();
+      // Plant the defender in the driving lane so the spin ends on their body.
+      engine.cpuBody.x = engine.playerBody.x + 1.3;
+      engine.step(
+        const BasketballIntent(moveAxis: 1, burst: true),
+        BasketballIntent.idle,
+        _dt,
+      );
+      engine.step(
+        const BasketballIntent(moveAxis: 1, burst: true),
+        BasketballIntent.idle,
+        _dt,
+      );
+      expect(engine.playerBody.body, BodyState.spin);
+      // Defender holds a set stance throughout the spin.
+      _run(
+        engine,
+        kBbSpinDuration + 0.05,
+        player: (_) => const BasketballIntent(moveAxis: 1),
+        cpu: (_) => const BasketballIntent(actionDown: true, heldSeconds: 0.3),
+      );
+      // Absorbed: the handler is locked out, not driving.
+      expect(engine.playerBody.body, BodyState.idle);
+      expect(engine.playerBody.recoverT, greaterThan(0));
+    });
+  });
+
   group('dunks, heat, overtime', () {
     test('a clean dunk always scores and pays into heat', () {
       final engine = _playerBallEngine(starter: 'mia-giannis-antetokounmpo');
