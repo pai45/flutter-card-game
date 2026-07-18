@@ -417,10 +417,60 @@ void main() {
 
     final reward = await cubit.settle(_match.id);
 
-    expect(reward, 8);
+    expect(reward.xp, 8);
+    expect(reward.prizeOz, 0); // free (non-contest) quiz → no coin prize
     final prediction = cubit.state.predictionFor(_match.id);
     expect(prediction?.correctCount, 1);
     expect(prediction?.rewardEarned, 8);
+  });
+
+  test('contest settlement pays a podium finish and is idempotent', () async {
+    final cubit = _TestPredictionCubit(_ContestRepo(_contestQuiz, _contestBoard));
+    cubit.seed(
+      UserPrediction(
+        matchId: _match.id,
+        // 3 of 4 correct (all correct is option 0).
+        answers: const {'q1': 0, 'q2': 0, 'q3': 0, 'q4': 1},
+        submittedAt: DateTime.now(),
+      ),
+    );
+    addTearDown(cubit.close);
+
+    final settlement = await cubit.settle(_match.id);
+
+    // One rival scored 4 (> the player's 3) → 2nd place → 1000 Oz.
+    expect(settlement.xp, 15);
+    expect(settlement.rank, 2);
+    expect(settlement.prizeOz, 1000);
+    expect(settlement.fieldSize, 4);
+    final prediction = cubit.state.predictionFor(_match.id);
+    expect(prediction?.contestRank, 2);
+    expect(prediction?.contestPrizeOz, 1000);
+
+    // Re-settling never re-awards the prize.
+    final again = await cubit.settle(_match.id);
+    expect(again.xp, 0);
+    expect(again.prizeOz, 0);
+  });
+
+  test('contest settlement pays nothing off the podium', () async {
+    final cubit = _TestPredictionCubit(_ContestRepo(_contestQuiz, _contestBoard));
+    cubit.seed(
+      UserPrediction(
+        matchId: _match.id,
+        // 0 correct → every rival finishes ahead → 4th → no prize.
+        answers: const {'q1': 1, 'q2': 1, 'q3': 1, 'q4': 1},
+        submittedAt: DateTime.now(),
+      ),
+    );
+    addTearDown(cubit.close);
+
+    final settlement = await cubit.settle(_match.id);
+
+    expect(settlement.rank, 4);
+    expect(settlement.prizeOz, 0);
+    final prediction = cubit.state.predictionFor(_match.id);
+    expect(prediction?.contestPrizeOz, 0);
   });
 
   testWidgets('live prediction review shows vote bars and no edit CTA', (
@@ -617,6 +667,19 @@ class _QuizRepo implements PredictionRepository {
   ];
 }
 
+/// [_QuizRepo] with a caller-supplied contest leaderboard, for settlement tests.
+class _ContestRepo extends _QuizRepo {
+  const _ContestRepo(super.quiz, this.board);
+
+  final List<MatchPredictionLeaderboardEntry> board;
+
+  @override
+  Future<List<MatchPredictionLeaderboardEntry>> matchLeaderboard(
+    String matchId,
+    String quizId,
+  ) async => board;
+}
+
 class _PickRepo implements PickRepository {
   const _PickRepo(this._markets);
 
@@ -788,3 +851,24 @@ const _settledQuiz = PredictionQuiz(
     ),
   ],
 );
+
+/// A settled paid-contest quiz: 4 questions, correct answer is option 0.
+const _contestQuiz = PredictionQuiz(
+  matchId: 'quiz_match',
+  entryFee: kScorelineQuizEntryFee,
+  questions: [
+    QuizQuestion(id: 'q1', text: 'q1', options: ['A', 'B'], reward: 5, settledOptionIndex: 0),
+    QuizQuestion(id: 'q2', text: 'q2', options: ['A', 'B'], reward: 5, settledOptionIndex: 0),
+    QuizQuestion(id: 'q3', text: 'q3', options: ['A', 'B'], reward: 5, settledOptionIndex: 0),
+    QuizQuestion(id: 'q4', text: 'q4', options: ['A', 'B'], reward: 5, settledOptionIndex: 0),
+  ],
+);
+
+/// Seeded field for the contest: "You" is ignored; one rival scored 4/4, so a
+/// player on 3/4 places 2nd and a player on 0/4 places 4th (field of 4).
+const _contestBoard = [
+  MatchPredictionLeaderboardEntry(rank: 1, name: 'You', points: 600, correct: 5),
+  MatchPredictionLeaderboardEntry(rank: 2, name: 'Aarav', points: 590, correct: 4),
+  MatchPredictionLeaderboardEntry(rank: 3, name: 'Maya', points: 560, correct: 3),
+  MatchPredictionLeaderboardEntry(rank: 4, name: 'Dev', points: 540, correct: 2),
+];

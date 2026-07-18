@@ -152,11 +152,13 @@ void main() {
       // Round 0: player's 1st shooter.
       expect(base.currentShooter.id, player[0].id);
       expect(base.playerTaking, isTrue);
+      expect(base.turnRole, ShootoutTurnRole.shooting);
       // Round 10: player's 6th kick wraps back to shooter index 0.
       expect(base.copyWith(round: 10).currentShooter.id, player[0].id);
       // Round 1: CPU's 1st shooter; the player's keeper is in goal.
       final cpuTurn = base.copyWith(round: 1);
       expect(cpuTurn.playerTaking, isFalse);
+      expect(cpuTurn.turnRole, ShootoutTurnRole.defending);
       expect(cpuTurn.currentShooter.id, cpu[0].id);
       expect(cpuTurn.currentKeeper.id, player.last.id);
     });

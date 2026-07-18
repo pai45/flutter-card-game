@@ -43,7 +43,7 @@ const double kSteerRate = 7.5; // lateral m/s at full stick
 /// game). The physics drifts the car to the OUTSIDE of a bend by the same
 /// amount as the road curves, so a straight-heading (un-steered) car runs wide
 /// and the player must steer INTO the corner to follow it. Keep the two in sync.
-const double kBendCompression = 0.18;
+const double kBendCompression = 0.21;
 
 /// Below this forward speed (m/s) the player counts as stuck — reached only by
 /// running off / into a barrier and stopping, never by normal cornering (the
@@ -71,10 +71,10 @@ const double kWallHitSpeedFactor = 0.35;
 const double kWallSpinMinSpeed = 30;
 const double kSpinSeconds = 0.8;
 const double kSpinSpeedFactor = 0.25; // crawl speed multiplier while spinning
-const double kContactRearDecel = 30; // m/s² lost by the rear car while touching
-const double kContactFrontDecel = 14; // m/s² lost by the car hit from behind
+const double kContactRearDecel = 22; // m/s² lost by the rear car while touching
+const double kContactFrontDecel = 10; // m/s² lost by the car hit from behind
 const double kContactPushRate = 12; // lateral separation m/s while overlapping
-const double kHeavyContactClosingSpeed = 15;
+const double kHeavyContactClosingSpeed = 22;
 const double kJumpStartCutSeconds = 2.0;
 const int kFieldSize = 20;
 const double kGridGap = 7.0; // metres between grid slots
@@ -784,8 +784,11 @@ class GrandPrixEngine {
 
       if (closing > kHeavyContactClosingSpeed && !rear.spinning) {
         rear.mode = CarMode.spinning;
-        rear.spinTimer = kSpinSeconds;
-        rear.speed = min(rear.speed, front.speed * 0.6);
+        // A car-contact spin is lighter than a wall smash: a shorter spin (vs
+        // the full kSpinSeconds a mid-corner wall hit keeps) and much less speed
+        // lost, so a heavy rear-end is a setback, not a race-ender.
+        rear.spinTimer = kSpinSeconds * 0.7;
+        rear.speed = min(rear.speed, front.speed * 0.78);
       }
       if (rear.isPlayer || front.isPlayer) events.playerContact = true;
     }

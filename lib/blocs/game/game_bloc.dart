@@ -2099,6 +2099,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       OzCoinTransactionSource.streakReward => 'STREAK REWARD',
       OzCoinTransactionSource.referralReward => 'FRIEND REFERRAL',
       OzCoinTransactionSource.quizEntry => 'FOOTBALL QUIZ ENTRY',
+      OzCoinTransactionSource.quizContestPayout => 'SCORELINE QUIZ PRIZE',
       OzCoinTransactionSource.footballBingoLifeline => 'BINGO LIFELINE',
       OzCoinTransactionSource.openingBalance => 'OPENING BALANCE',
       OzCoinTransactionSource.manual =>

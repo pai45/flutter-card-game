@@ -1,9 +1,15 @@
+import 'package:card_game/blocs/game/game_bloc.dart';
+import 'package:card_game/blocs/game/game_state.dart';
 import 'package:card_game/config/enums.dart';
 import 'package:card_game/models/cards.dart';
 import 'package:card_game/models/match.dart';
-import 'package:card_game/screens/game/widgets/round_result_cinematic.dart';
+import 'package:card_game/screens/game/widgets/duel_board_phase.dart';
+import 'package:card_game/services/secure_storage_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 RoundResult _sampleResult({
   required bool playerAttacking,
@@ -30,39 +36,62 @@ RoundResult _sampleResult({
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  Future<void> pumpArena(
+  setUp(() {
+    FlutterSecureStorage.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({});
+  });
+
+  Future<void> pumpResolveBeat(
     WidgetTester tester, {
     required RoundResult result,
-    required double progress,
   }) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
-    final arenaKey = GlobalKey<RoundClashArenaState>();
+    final bloc = GameBloc(SecureGameStorage());
+    addTearDown(bloc.close);
+    final base = GameState.initial().copyWith(loading: false);
+    bloc.emit(
+      base.copyWith(
+        phase: MatchPhase.roundResult,
+        currentRound: 1,
+        playerScore: 1,
+        opponentScore: 2,
+        playerAttacking: result.playerAttacking,
+        currentScenario: result.scenario,
+        opponentAttackers: base.deckAttackers,
+        opponentDefenders: base.deckDefenders,
+        opponentActions: base.deckActions,
+        roundResults: [result],
+        tutorialSeen: const {'scenario', 'play', 'round-result'},
+      ),
+    );
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: RoundClashArena(
-              key: arenaKey,
-              result: result,
-              playerScore: 1,
-              opponentScore: 2,
-              opponentLabel: 'OPP',
-            ),
-          ),
+      BlocProvider.value(
+        value: bloc,
+        child: MaterialApp(
+          theme: ThemeData.dark(),
+          home: DuelBoardPhase(state: bloc.state, onQuit: () {}),
         ),
       ),
     );
-    await tester.pump();
-    arenaKey.currentState!.jumpToProgress(progress);
-    await tester.pump();
     expect(tester.takeException(), isNull);
+
+    // Step through the deal-in → flip → power tick → verdict → score
+    // timeline (4.2s) checking for overflow at every beat...
+    for (var step = 0; step < 15; step++) {
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+    }
+    // ...then let the next-round countdown finish so no timers are pending.
+    for (var step = 0; step < 5; step++) {
+      await tester.pump(const Duration(seconds: 1));
+      expect(tester.takeException(), isNull);
+    }
   }
 
-  testWidgets('RoundClashArena has no overflow across animation timeline', (
+  testWidgets('Duel Board resolve beat has no overflow across the timeline', (
     tester,
   ) async {
     const outcomes = [
@@ -73,25 +102,10 @@ void main() {
     ];
     for (final attacking in [true, false]) {
       for (final outcome in outcomes) {
-        final result = _sampleResult(
-          playerAttacking: attacking,
-          outcome: outcome,
+        await pumpResolveBeat(
+          tester,
+          result: _sampleResult(playerAttacking: attacking, outcome: outcome),
         );
-        for (final progress in [
-          0.0,
-          0.12,
-          0.28,
-          0.35,
-          0.42,
-          0.55,
-          0.68,
-          0.8,
-          0.86,
-          0.92,
-          1.0,
-        ]) {
-          await pumpArena(tester, result: result, progress: progress);
-        }
       }
     }
   });

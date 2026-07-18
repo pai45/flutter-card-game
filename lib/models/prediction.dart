@@ -6,6 +6,19 @@ enum PredictionStatus { open, locked, settled }
 
 const kDefaultPredictionQuizId = 'main';
 
+/// Oz-coin entry fee to lock in a Scoreline Quiz (paid-contest) prediction.
+const int kScorelineQuizEntryFee = 25;
+
+/// Oz-coin prize pool for a Scoreline Quiz contest, indexed by finish rank
+/// (rank 1 → 2000, rank 2 → 1000, rank 3 → 500; everyone else wins nothing).
+const List<int> kScorelineContestPrizes = [2000, 1000, 500];
+
+/// Prize for finishing a contest at [rank] (1-based). Returns 0 off the podium.
+int scorelineContestPrizeFor(int rank) =>
+    (rank >= 1 && rank <= kScorelineContestPrizes.length)
+    ? kScorelineContestPrizes[rank - 1]
+    : 0;
+
 enum QuizQuestionType { multipleChoice, exactScore }
 
 enum PredictionMultiplier {
@@ -90,6 +103,7 @@ class PredictionQuiz {
     this.title = 'Prediction Quiz',
     this.subtitle,
     this.prizeLabel,
+    this.entryFee = 0,
   });
 
   final String id;
@@ -99,8 +113,14 @@ class PredictionQuiz {
   final String? prizeLabel;
   final List<QuizQuestion> questions;
 
+  /// Oz-coin cost to enter this quiz as a paid contest. 0 = free/XP-only.
+  final int entryFee;
+
   int get maxReward => questions.fold(0, (sum, q) => sum + q.reward);
   bool get settleable => questions.every((q) => q.isSettled);
+
+  /// A paid coin contest (top-3 finishers win [kScorelineContestPrizes]).
+  bool get isContest => entryFee > 0;
 }
 
 /// Aggregate crowd answers for one prediction question. For multiple-choice
@@ -168,6 +188,8 @@ class UserPrediction {
     this.status = PredictionStatus.open,
     this.correctCount,
     this.rewardEarned = 0,
+    this.contestRank,
+    this.contestPrizeOz = 0,
   });
 
   /// questionId → selected option index.
@@ -180,6 +202,13 @@ class UserPrediction {
   final int? correctCount;
   final int rewardEarned;
 
+  /// Finish position in the paid-contest field once settled (1-based). Null for
+  /// free quizzes or before settlement.
+  final int? contestRank;
+
+  /// Oz coins won from the contest prize pool (0 off the podium / free quizzes).
+  final int contestPrizeOz;
+
   String get key => predictionStorageKey(matchId, quizId);
 
   UserPrediction copyWith({
@@ -189,6 +218,8 @@ class UserPrediction {
     PredictionStatus? status,
     int? correctCount,
     int? rewardEarned,
+    int? contestRank,
+    int? contestPrizeOz,
   }) => UserPrediction(
     matchId: matchId,
     quizId: quizId ?? this.quizId,
@@ -198,6 +229,8 @@ class UserPrediction {
     status: status ?? this.status,
     correctCount: correctCount ?? this.correctCount,
     rewardEarned: rewardEarned ?? this.rewardEarned,
+    contestRank: contestRank ?? this.contestRank,
+    contestPrizeOz: contestPrizeOz ?? this.contestPrizeOz,
   );
 
   Map<String, dynamic> toJson() => {
@@ -211,6 +244,8 @@ class UserPrediction {
     'status': status.name,
     'correctCount': correctCount,
     'rewardEarned': rewardEarned,
+    'contestRank': contestRank,
+    'contestPrizeOz': contestPrizeOz,
   };
 
   factory UserPrediction.fromJson(Map<String, dynamic> json) => UserPrediction(
@@ -228,6 +263,8 @@ class UserPrediction {
     status: PredictionStatus.values.byName(json['status'] as String? ?? 'open'),
     correctCount: json['correctCount'] as int?,
     rewardEarned: json['rewardEarned'] as int? ?? 0,
+    contestRank: json['contestRank'] as int?,
+    contestPrizeOz: json['contestPrizeOz'] as int? ?? 0,
   );
 }
 

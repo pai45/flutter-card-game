@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -34,7 +33,8 @@ class FootballBingoScreen extends StatefulWidget {
   State<FootballBingoScreen> createState() => _FootballBingoScreenState();
 }
 
-class _FootballBingoScreenState extends State<FootballBingoScreen> with WidgetsBindingObserver {
+class _FootballBingoScreenState extends State<FootballBingoScreen>
+    with WidgetsBindingObserver {
   Timer? _timer;
   DateTime _now = DateTime.now();
   int _elapsedSeconds = 0;
@@ -44,20 +44,23 @@ class _FootballBingoScreenState extends State<FootballBingoScreen> with WidgetsB
   final Map<String, GlobalKey> _cellKeys = {};
   final Set<String> _settlingCellIds = {};
   _BingoPlayerFlight? _flight;
+  late final FootballBingoCubit _cubit;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    final cubit = context.read<FootballBingoCubit>();
-    _elapsedSeconds = cubit.state.progress.elapsedSeconds;
-    
+    _cubit = context.read<FootballBingoCubit>();
+    _elapsedSeconds = _cubit.state.progress.elapsedSeconds;
+
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
-      final currentState = context.read<FootballBingoCubit>().state;
+      final currentState = _cubit.state;
       setState(() {
         _now = DateTime.now();
-        if (!currentState.readOnly && !currentState.completed && !currentState.loading) {
+        if (!currentState.readOnly &&
+            !currentState.completed &&
+            !currentState.loading) {
           _elapsedSeconds++;
         }
       });
@@ -68,21 +71,21 @@ class _FootballBingoScreenState extends State<FootballBingoScreen> with WidgetsB
   void dispose() {
     _timer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
-    context.read<FootballBingoCubit>().updateElapsedTime(_elapsedSeconds);
+    _cubit.updateElapsedTime(_elapsedSeconds);
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
-      context.read<FootballBingoCubit>().updateElapsedTime(_elapsedSeconds);
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _cubit.updateElapsedTime(_elapsedSeconds);
     }
   }
 
   Future<void> _selectCell(String cellId) async {
     if (_flight != null) return;
-    final cubit = context.read<FootballBingoCubit>();
-    final state = cubit.state;
+    final state = _cubit.state;
     if (state.needsLifeline) {
       _showMessage('Buy a lifeline to keep playing.');
       return;
@@ -90,7 +93,7 @@ class _FootballBingoScreenState extends State<FootballBingoScreen> with WidgetsB
     final playerToPlace = state.currentPlayer;
     final startRect = _rectFor(_activePlayerKey);
     final endRect = _rectFor(_cellKey(cellId));
-    final correct = await cubit.selectCell(cellId);
+    final correct = await _cubit.selectCell(cellId);
     if (correct) {
       HapticFeedback.mediumImpact();
       if (playerToPlace != null) {
@@ -104,8 +107,8 @@ class _FootballBingoScreenState extends State<FootballBingoScreen> with WidgetsB
           end: endRect,
         );
       }
-      if (cubit.state.completed) {
-        cubit.updateElapsedTime(_elapsedSeconds);
+      if (_cubit.state.completed) {
+        _cubit.updateElapsedTime(_elapsedSeconds);
         await _showCompletedAndReturn();
       }
     } else {
@@ -157,9 +160,7 @@ class _FootballBingoScreenState extends State<FootballBingoScreen> with WidgetsB
 
   Future<void> _buyLifeline() async {
     final game = context.read<GameBloc>();
-    final bought = await context.read<FootballBingoCubit>().buyLifeline(
-      game.state.coins,
-    );
+    final bought = await _cubit.buyLifeline(game.state.coins);
     if (!bought) {
       _showMessage('Need 25 coins for a lifeline.');
       return;
@@ -192,7 +193,9 @@ class _FootballBingoScreenState extends State<FootballBingoScreen> with WidgetsB
     return Scaffold(
       backgroundColor: Cyber.bg,
       appBar: _BingoHeader(onBack: widget.onBack),
-      body: _BingoArenaBackground(
+      body: CyberArenaBackground(
+        assetPath: 'assets/backgrounds/football_bingo_stadium.png',
+        accent: Cyber.amber,
         child: BlocBuilder<FootballBingoCubit, FootballBingoState>(
           builder: (context, state) {
             if (state.loading) {
@@ -690,7 +693,11 @@ const _clubColors = <String, Color>{
 };
 
 class _PlayerPanel extends StatelessWidget {
-  const _PlayerPanel({required this.state, required this.portraitKey, required this.now});
+  const _PlayerPanel({
+    required this.state,
+    required this.portraitKey,
+    required this.now,
+  });
 
   final FootballBingoState state;
   final GlobalKey portraitKey;
@@ -718,7 +725,7 @@ class _PlayerPanel extends StatelessWidget {
           ),
         );
       }
-      
+
       final status = footballBingoStatus(state.progress, now);
       final timer = formatFootballBingoCountdown(status.remaining);
       return _FlatPanel(
@@ -730,10 +737,7 @@ class _PlayerPanel extends StatelessWidget {
               style: Cyber.label(10, color: Cyber.muted),
             ),
             const SizedBox(height: 8),
-            Text(
-              timer,
-              style: Cyber.display(24, color: Cyber.amber),
-            ),
+            Text(timer, style: Cyber.display(24, color: Cyber.amber)),
           ],
         ),
       );
@@ -1036,196 +1040,4 @@ class _FlatPanel extends StatelessWidget {
       child: child,
     );
   }
-}
-
-class _BingoArenaBackground extends StatefulWidget {
-  const _BingoArenaBackground({required this.child});
-
-  final Widget child;
-
-  @override
-  State<_BingoArenaBackground> createState() => _BingoArenaBackgroundState();
-}
-
-class _BingoArenaBackgroundState extends State<_BingoArenaBackground>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 18),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xff020812), Color(0xff071522), Color(0xff02050b)],
-        ),
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: AnimatedBuilder(
-              animation: _controller,
-              builder: (context, child) {
-                final phase = _controller.value * math.pi * 2;
-                return Transform.translate(
-                  offset: Offset(math.sin(phase) * 8, math.cos(phase) * 6),
-                  child: Transform.scale(
-                    scale: 1.05 + 0.008 * math.sin(phase * 2),
-                    child: child,
-                  ),
-                );
-              },
-              child: Opacity(
-                opacity: 0.2,
-                child: Image.asset(
-                  'assets/backgrounds/football_bingo_stadium.png',
-                  fit: BoxFit.cover,
-                  alignment: Alignment.center,
-                ),
-              ),
-            ),
-          ),
-          Positioned.fill(
-            child: AnimatedBuilder(
-              animation: _controller,
-              builder: (context, _) => CustomPaint(
-                painter: _ArenaMotionPainter(progress: _controller.value),
-              ),
-            ),
-          ),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Cyber.bg.withValues(alpha: 0.32),
-                    Colors.transparent,
-                    Cyber.bg.withValues(alpha: 0.62),
-                  ],
-                  stops: const [0.0, 0.48, 1.0],
-                ),
-              ),
-            ),
-          ),
-          const Positioned.fill(child: CyberTextureOverlay()),
-          widget.child,
-        ],
-      ),
-    );
-  }
-}
-
-class _ArenaMotionPainter extends CustomPainter {
-  const _ArenaMotionPainter({required this.progress});
-
-  final double progress;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (size.isEmpty) return;
-
-    final rect = Offset.zero & size;
-    final phase = progress * math.pi * 2;
-
-    final pulse = 0.5 + 0.5 * math.sin(phase * 2);
-    final fieldGlow = Paint()
-      ..shader = RadialGradient(
-        center: const Alignment(0, 0.72),
-        radius: 0.88,
-        colors: [
-          Cyber.amber.withValues(alpha: 0.08 + pulse * 0.035),
-          Cyber.amber.withValues(alpha: 0.025),
-          Colors.transparent,
-        ],
-        stops: const [0.0, 0.28, 1.0],
-      ).createShader(rect);
-    canvas.drawRect(rect, fieldGlow);
-
-    _drawBeam(
-      canvas,
-      size,
-      start: Offset(size.width * 0.08, size.height * 0.72),
-      end: Offset(size.width * (0.42 + math.sin(phase) * 0.06), 0),
-      width: size.width * 0.42,
-      opacity: 0.026 + pulse * 0.016,
-    );
-    _drawBeam(
-      canvas,
-      size,
-      start: Offset(size.width * 0.92, size.height * 0.72),
-      end: Offset(size.width * (0.58 + math.cos(phase) * 0.06), 0),
-      width: size.width * 0.42,
-      opacity: 0.026 + (1 - pulse) * 0.016,
-    );
-
-    final streakPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.055)
-      ..strokeWidth = 1.2
-      ..strokeCap = StrokeCap.round;
-
-    for (var i = 0; i < 14; i++) {
-      final seed = i * 37.0;
-      final x = ((seed * 19) % size.width) + math.sin(phase + i) * 18;
-      final travel = (progress + i * 0.071) % 1.0;
-      final y = size.height * (0.96 - travel * 0.82);
-      final length = 12.0 + (i % 4) * 5.0;
-      final opacity = 0.025 + 0.03 * math.sin(phase + i).abs();
-      streakPaint.color = Cyber.amber.withValues(alpha: opacity);
-      canvas.drawLine(
-        Offset(x, y),
-        Offset(x + length * 0.42, y - length),
-        streakPaint,
-      );
-    }
-  }
-
-  void _drawBeam(
-    Canvas canvas,
-    Size size, {
-    required Offset start,
-    required Offset end,
-    required double width,
-    required double opacity,
-  }) {
-    final path = Path()
-      ..moveTo(start.dx - width * 0.5, start.dy)
-      ..lineTo(start.dx + width * 0.5, start.dy)
-      ..lineTo(end.dx + width * 0.08, end.dy)
-      ..lineTo(end.dx - width * 0.08, end.dy)
-      ..close();
-
-    final paint = Paint()
-      ..shader = LinearGradient(
-        begin: Alignment.bottomCenter,
-        end: Alignment.topCenter,
-        colors: [
-          Cyber.amber.withValues(alpha: opacity),
-          Cyber.amber.withValues(alpha: opacity * 0.35),
-          Colors.transparent,
-        ],
-      ).createShader(path.getBounds());
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _ArenaMotionPainter oldDelegate) =>
-      oldDelegate.progress != progress;
 }

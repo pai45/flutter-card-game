@@ -68,6 +68,8 @@ void main() {
               onOpenBasketballGuessPlayer: () {},
               onOpenCricketGuessPlayer: () => guessPlayerOpens++,
               onOpenGrandPrix: () {},
+          onOpenF1GuessDriver: () {},
+              onOpenTennisGuessWinner: () {},
               onOpenBasketball: () {},
               onOpenFinalOver: () => finalOverOpens++,
             ),

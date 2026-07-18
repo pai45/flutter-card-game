@@ -358,6 +358,235 @@ class _CyberBackgroundState extends State<CyberBackground>
   }
 }
 
+/// Shared full-bleed stadium treatment for game hubs and landing screens.
+///
+/// The art drifts behind a restrained accent pulse, light beams, telemetry
+/// streaks, shade, and the standard cyber texture. Feature screens only choose
+/// their art and semantic accent instead of carrying private copies of the
+/// animation and painter.
+class CyberArenaBackground extends StatefulWidget {
+  const CyberArenaBackground({
+    required this.assetPath,
+    required this.accent,
+    required this.child,
+    this.secondaryAccent,
+    this.assetOpacity = 0.2,
+    this.horizonColor = Cyber.arenaHorizon,
+    this.topShadeAlpha = 0.32,
+    this.middleShadeAlpha = 0,
+    this.bottomShadeAlpha = 0.62,
+    this.additiveBeams = false,
+    super.key,
+  });
+
+  final String assetPath;
+  final Color accent;
+  final Color? secondaryAccent;
+  final Widget child;
+  final double assetOpacity;
+  final Color horizonColor;
+  final double topShadeAlpha;
+  final double middleShadeAlpha;
+  final double bottomShadeAlpha;
+  final bool additiveBeams;
+
+  @override
+  State<CyberArenaBackground> createState() => _CyberArenaBackgroundState();
+}
+
+class _CyberArenaBackgroundState extends State<CyberArenaBackground>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 18),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Cyber.arenaSky, widget.horizonColor, Cyber.arenaFloor],
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                final phase = _controller.value * pi * 2;
+                return Transform.translate(
+                  offset: Offset(sin(phase) * 8, cos(phase) * 6),
+                  child: Transform.scale(
+                    scale: 1.05 + 0.008 * sin(phase * 2),
+                    child: child,
+                  ),
+                );
+              },
+              child: Opacity(
+                opacity: widget.assetOpacity,
+                child: Image.asset(
+                  widget.assetPath,
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: AnimatedBuilder(
+              animation: _controller,
+              builder: (context, _) => CustomPaint(
+                painter: _CyberArenaMotionPainter(
+                  progress: _controller.value,
+                  accent: widget.accent,
+                  secondaryAccent: widget.secondaryAccent ?? widget.accent,
+                  additiveBeams: widget.additiveBeams,
+                ),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Cyber.bg.withValues(alpha: widget.topShadeAlpha),
+                    Cyber.bg.withValues(alpha: widget.middleShadeAlpha),
+                    Cyber.bg.withValues(alpha: widget.bottomShadeAlpha),
+                  ],
+                  stops: const [0, 0.48, 1],
+                ),
+              ),
+            ),
+          ),
+          const Positioned.fill(child: CyberTextureOverlay()),
+          widget.child,
+        ],
+      ),
+    );
+  }
+}
+
+class _CyberArenaMotionPainter extends CustomPainter {
+  const _CyberArenaMotionPainter({
+    required this.progress,
+    required this.accent,
+    required this.secondaryAccent,
+    required this.additiveBeams,
+  });
+
+  final double progress;
+  final Color accent;
+  final Color secondaryAccent;
+  final bool additiveBeams;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+
+    final rect = Offset.zero & size;
+    final phase = progress * pi * 2;
+    final pulse = 0.5 + 0.5 * sin(phase * 2);
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = RadialGradient(
+          center: const Alignment(0, 0.72),
+          radius: 0.88,
+          colors: [
+            accent.withValues(alpha: 0.08 + pulse * 0.035),
+            secondaryAccent.withValues(alpha: 0.025),
+            Colors.transparent,
+          ],
+          stops: const [0, 0.28, 1],
+        ).createShader(rect),
+    );
+
+    _drawBeam(
+      canvas,
+      size,
+      start: Offset(size.width * 0.08, size.height * 0.72),
+      end: Offset(size.width * (0.42 + sin(phase) * 0.06), 0),
+      width: size.width * 0.42,
+      opacity: 0.026 + pulse * 0.016,
+    );
+    _drawBeam(
+      canvas,
+      size,
+      start: Offset(size.width * 0.92, size.height * 0.72),
+      end: Offset(size.width * (0.58 + cos(phase) * 0.06), 0),
+      width: size.width * 0.42,
+      opacity: 0.026 + (1 - pulse) * 0.016,
+    );
+
+    final streakPaint = Paint()
+      ..strokeWidth = 1.2
+      ..strokeCap = StrokeCap.round;
+    for (var i = 0; i < 14; i++) {
+      final seed = i * 37.0;
+      final x = ((seed * 19) % size.width) + sin(phase + i) * 18;
+      final travel = (progress + i * 0.071) % 1.0;
+      final y = size.height * (0.96 - travel * 0.82);
+      final length = 12.0 + (i % 4) * 5.0;
+      final opacity = 0.025 + 0.03 * sin(phase + i).abs();
+      streakPaint.color = accent.withValues(alpha: opacity);
+      canvas.drawLine(
+        Offset(x, y),
+        Offset(x + length * 0.42, y - length),
+        streakPaint,
+      );
+    }
+  }
+
+  void _drawBeam(
+    Canvas canvas,
+    Size size, {
+    required Offset start,
+    required Offset end,
+    required double width,
+    required double opacity,
+  }) {
+    final path = Path()
+      ..moveTo(start.dx - width * 0.5, start.dy)
+      ..lineTo(start.dx + width * 0.5, start.dy)
+      ..lineTo(end.dx + width * 0.08, end.dy)
+      ..lineTo(end.dx - width * 0.08, end.dy)
+      ..close();
+    final paint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.bottomCenter,
+        end: Alignment.topCenter,
+        colors: [
+          accent.withValues(alpha: opacity),
+          accent.withValues(alpha: opacity * 0.35),
+          Colors.transparent,
+        ],
+      ).createShader(additiveBeams ? Offset.zero & size : path.getBounds());
+    if (additiveBeams) paint.blendMode = BlendMode.plus;
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _CyberArenaMotionPainter oldDelegate) =>
+      oldDelegate.progress != progress ||
+      oldDelegate.accent != accent ||
+      oldDelegate.secondaryAccent != secondaryAccent ||
+      oldDelegate.additiveBeams != additiveBeams;
+}
+
 class CyberPlainBackground extends StatelessWidget {
   const CyberPlainBackground({required this.child, super.key});
 
@@ -3246,4 +3475,102 @@ class _GlidingActiveTabPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _GlidingActiveTabPainter old) =>
       old.accent != accent || old.chamfer != chamfer;
+}
+
+/// A face-down card on the shared chamfered card silhouette: flat [Cyber.panel]
+/// fill, diagonal-line weave and a dim centre emblem. Used wherever a card
+/// exists but its value is hidden (Duel Board opponent deck row and
+/// placed-but-unrevealed arena slots). Size it from the outside (SizedBox /
+/// AspectRatio ~0.64 to match card tiles).
+class CardBackFace extends StatelessWidget {
+  const CardBackFace({
+    this.accent = Cyber.cyan,
+    this.dimmed = false,
+    super.key,
+  });
+
+  final Color accent;
+
+  /// Greys the back out (red-carded / spent slots in a face-down row).
+  final bool dimmed;
+
+  static const _clipper = HudChamferClipper(bigCut: 9, smallCut: 4.5);
+
+  @override
+  Widget build(BuildContext context) {
+    final tone = dimmed ? Cyber.muted : accent;
+    final weave = tone.withValues(alpha: dimmed ? 0.14 : 0.28);
+    final edge = tone.withValues(alpha: dimmed ? 0.30 : 0.55);
+    return CustomPaint(
+      foregroundPainter: _CardBackEdgePainter(color: edge),
+      child: ClipPath(
+        clipper: _clipper,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const DecoratedBox(decoration: BoxDecoration(color: Cyber.panel)),
+            CustomPaint(painter: _CardBackWeavePainter(lineColor: weave)),
+            Center(
+              child: Image.asset(
+                'assets/icons/app_logo.png',
+                width: 22,
+                height: 22,
+                color: edge,
+                errorBuilder: (_, _, _) =>
+                    Icon(Icons.bolt, size: 20, color: edge),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Diagonal-line weave confined to the card bounds (same pattern language as
+/// the pack-reveal card back).
+class _CardBackWeavePainter extends CustomPainter {
+  const _CardBackWeavePainter({required this.lineColor});
+
+  final Color lineColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.clipRect(Offset.zero & size);
+    final paint = Paint()
+      ..color = lineColor
+      ..strokeWidth = 1;
+    const spacing = 10.0;
+    final diag = size.width + size.height;
+    for (double d = -diag; d < diag; d += spacing) {
+      canvas.drawLine(
+        Offset(d, 0),
+        Offset(d + size.height, size.height),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_CardBackWeavePainter old) => old.lineColor != lineColor;
+}
+
+class _CardBackEdgePainter extends CustomPainter {
+  const _CardBackEdgePainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawPath(
+      CardBackFace._clipper.buildPath(size),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2
+        ..color = color,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_CardBackEdgePainter old) => old.color != color;
 }

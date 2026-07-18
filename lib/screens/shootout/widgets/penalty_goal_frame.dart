@@ -5,8 +5,10 @@ import 'package:flutter/services.dart';
 
 import '../../../config/enums.dart';
 import '../../../config/theme.dart';
+import '../../../models/cards.dart';
 import '../../../models/match.dart';
 import '../../../utils/sound_effects.dart';
+import 'penalty_keeper_rig.dart';
 
 /// Fraction of the result-scene timeline at which the ball reaches the goal.
 const _kSceneImpact = 0.55;
@@ -451,10 +453,503 @@ class _ZoneReticlePainter extends CustomPainter {
 
 // ─── Result phase: ball flight + keeper dive scene ───────────────────────────
 
+/// Role-aware penalty interaction. Shooting keeps the familiar goal targets;
+/// defending replaces them with explicit keeper controls below a non-tappable
+/// goal so the two responsibilities cannot be mistaken for each other.
+class PenaltyInteractionArena extends StatefulWidget {
+  const PenaltyInteractionArena({
+    required this.role,
+    required this.keeper,
+    required this.selected,
+    required this.onSelect,
+    super.key,
+  });
+
+  final ShootoutTurnRole role;
+  final PlayerCard keeper;
+  final PenaltyDirection? selected;
+  final ValueChanged<PenaltyDirection> onSelect;
+
+  @override
+  State<PenaltyInteractionArena> createState() =>
+      _PenaltyInteractionArenaState();
+}
+
+class _PenaltyInteractionArenaState extends State<PenaltyInteractionArena>
+    with TickerProviderStateMixin {
+  late final AnimationController _idle = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1600),
+  );
+  late final AnimationController _preview = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1050),
+  );
+  bool _reduceMotion = false;
+
+  bool get _shooting => widget.role == ShootoutTurnRole.shooting;
+
+  String _directionLabel(PenaltyDirection direction) => switch (direction) {
+    PenaltyDirection.left => 'LEFT',
+    PenaltyDirection.center => 'CENTER',
+    PenaltyDirection.right => 'RIGHT',
+  };
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reduceMotion = MediaQuery.disableAnimationsOf(context);
+    _syncMotion(resetPreview: false);
+  }
+
+  @override
+  void didUpdateWidget(covariant PenaltyInteractionArena oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final roleChanged = oldWidget.role != widget.role;
+    final directionChanged = oldWidget.selected != widget.selected;
+    if (roleChanged || directionChanged) {
+      _syncMotion(resetPreview: directionChanged);
+    }
+  }
+
+  void _syncMotion({required bool resetPreview}) {
+    if (_reduceMotion || _shooting) {
+      _idle
+        ..stop()
+        ..value = 0;
+    } else if (!_idle.isAnimating) {
+      _idle.repeat();
+    }
+
+    if (!_shooting || widget.selected == null) {
+      _preview
+        ..stop()
+        ..value = 0;
+    } else if (_reduceMotion) {
+      _preview
+        ..stop()
+        ..value = 0.78;
+    } else if (resetPreview || !_preview.isAnimating) {
+      _preview
+        ..value = 0
+        ..repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _idle.dispose();
+    _preview.dispose();
+    super.dispose();
+  }
+
+  void _select(PenaltyDirection direction) {
+    HapticFeedback.selectionClick();
+    playSound(SoundEffect.uiTap);
+    widget.onSelect(direction);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const goalHeight = 220.0;
+    final stateAccent = _shooting ? Cyber.cyan : Cyber.amber;
+    return Semantics(
+      container: true,
+      label: _shooting
+          ? widget.selected == null
+                ? 'Your shot. Choose a goal target.'
+                : 'Shot preview ${_directionLabel(widget.selected!).toLowerCase()}.'
+          : 'You are the goalkeeper. Choose a dive direction.',
+      child: FocusTraversalGroup(
+        policy: OrderedTraversalPolicy(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              height: goalHeight,
+              decoration: BoxDecoration(
+                color: Cyber.bg.withValues(alpha: 0.28),
+                border: Border.all(color: stateAccent.withValues(alpha: 0.22)),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    stateAccent.withValues(alpha: 0.06),
+                    Cyber.bg.withValues(alpha: 0.10),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final size = Size(constraints.maxWidth, goalHeight);
+                  final goal = _GoalGeom(size);
+                  return Stack(
+                    children: [
+                      Positioned.fill(
+                        child: TweenAnimationBuilder<double>(
+                          tween: Tween<double>(
+                            end: widget.selected == null ? 0 : 1,
+                          ),
+                          duration: MediaQuery.disableAnimationsOf(context)
+                              ? Duration.zero
+                              : const Duration(milliseconds: 180),
+                          curve: Curves.easeOutCubic,
+                          builder: (context, selectionT, _) => AnimatedBuilder(
+                            animation: Listenable.merge([_idle, _preview]),
+                            builder: (context, _) => CustomPaint(
+                              key: _shooting && widget.selected != null
+                                  ? ValueKey(
+                                      'shot-preview-${widget.selected!.name}',
+                                    )
+                                  : const ValueKey('penalty-arena-paint'),
+                              painter: _InteractionArenaPainter(
+                                role: widget.role,
+                                keeper: widget.keeper,
+                                selected: widget.selected,
+                                selectionT: selectionT,
+                                idleT: _idle.value,
+                                previewT: _preview.value,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (_shooting) ...[
+                        for (final direction in PenaltyDirection.values)
+                          Positioned(
+                            left: goal.zoneX(direction) - 30,
+                            top: goal.targetY - 30,
+                            width: 60,
+                            height: 60,
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 160),
+                              opacity: widget.selected == direction ? 1 : 0.42,
+                              child: CustomPaint(
+                                key: ValueKey('shot-reticle-${direction.name}'),
+                                painter: _ZoneReticlePainter(
+                                  accent: Cyber.cyan,
+                                  active: widget.selected == direction,
+                                ),
+                              ),
+                            ),
+                          ),
+                        for (final direction in PenaltyDirection.values)
+                          Positioned(
+                            left: goal.zoneX(direction) - 39,
+                            top: goal.targetY + 33,
+                            width: 78,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 160),
+                              alignment: Alignment.center,
+                              padding: const EdgeInsets.symmetric(vertical: 5),
+                              decoration: BoxDecoration(
+                                color: widget.selected == direction
+                                    ? Cyber.cyan.withValues(alpha: 0.16)
+                                    : Cyber.bg2.withValues(alpha: 0.34),
+                                border: Border.all(
+                                  color:
+                                      (widget.selected == direction
+                                              ? Cyber.cyan
+                                              : Cyber.line)
+                                          .withValues(
+                                            alpha: widget.selected == direction
+                                                ? 0.45
+                                                : 0.18,
+                                          ),
+                                ),
+                              ),
+                              child: Text(
+                                _directionLabel(direction),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Cyber.label(
+                                  9,
+                                  color: widget.selected == direction
+                                      ? Cyber.cyan
+                                      : Colors.white.withValues(alpha: 0.68),
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                            ),
+                          ),
+                        Positioned.fill(
+                          child: Row(
+                            children: [
+                              for (final (index, direction)
+                                  in PenaltyDirection.values.indexed)
+                                Expanded(
+                                  child: FocusTraversalOrder(
+                                    order: NumericFocusOrder(index.toDouble()),
+                                    child: Semantics(
+                                      button: true,
+                                      label:
+                                          'Shoot ${_directionLabel(direction).toLowerCase()}',
+                                      selected: widget.selected == direction,
+                                      child: Material(
+                                        type: MaterialType.transparency,
+                                        child: InkWell(
+                                          key: ValueKey(
+                                            'shoot-direction-${direction.name}',
+                                          ),
+                                          onTap: () => _select(direction),
+                                          child: const SizedBox.expand(),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  );
+                },
+              ),
+            ),
+            if (!_shooting) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  for (final (index, direction)
+                      in PenaltyDirection.values.indexed) ...[
+                    if (index > 0) const SizedBox(width: 8),
+                    Expanded(
+                      child: FocusTraversalOrder(
+                        order: NumericFocusOrder(index.toDouble()),
+                        child: _DivePad(
+                          direction: direction,
+                          selected: widget.selected == direction,
+                          onPressed: () => _select(direction),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DivePad extends StatelessWidget {
+  const _DivePad({
+    required this.direction,
+    required this.selected,
+    required this.onPressed,
+  });
+
+  final PenaltyDirection direction;
+  final bool selected;
+  final VoidCallback onPressed;
+
+  String get _label => switch (direction) {
+    PenaltyDirection.left => 'DIVE LEFT',
+    PenaltyDirection.center => 'HOLD CENTER',
+    PenaltyDirection.right => 'DIVE RIGHT',
+  };
+
+  IconData get _icon => switch (direction) {
+    PenaltyDirection.left => Icons.keyboard_double_arrow_left,
+    PenaltyDirection.center => Icons.shield_outlined,
+    PenaltyDirection.right => Icons.keyboard_double_arrow_right,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: 'Keeper ${_label.toLowerCase()}',
+      child: Material(
+        color: selected
+            ? Cyber.cyan.withValues(alpha: 0.18)
+            : Cyber.panel2.withValues(alpha: 0.86),
+        shape: RoundedRectangleBorder(
+          side: BorderSide(
+            color: (selected ? Cyber.cyan : Cyber.line).withValues(
+              alpha: selected ? 0.72 : 0.42,
+            ),
+          ),
+          borderRadius: BorderRadius.circular(3),
+        ),
+        child: InkWell(
+          key: ValueKey('dive-direction-${direction.name}'),
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(3),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 60),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    _icon,
+                    size: 20,
+                    color: selected ? Cyber.cyan : Colors.white,
+                  ),
+                  const SizedBox(height: 5),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      _label,
+                      maxLines: 1,
+                      style: Cyber.label(
+                        9,
+                        color: selected ? Cyber.cyan : Colors.white,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InteractionArenaPainter extends CustomPainter {
+  _InteractionArenaPainter({
+    required this.role,
+    required this.keeper,
+    required this.selected,
+    required this.selectionT,
+    required this.idleT,
+    required this.previewT,
+  });
+
+  final ShootoutTurnRole role;
+  final PlayerCard keeper;
+  final PenaltyDirection? selected;
+  final double selectionT;
+  final double idleT;
+  final double previewT;
+
+  Offset _previewPoint(Offset start, Offset control, Offset end, double t) {
+    final inverse = 1 - t;
+    return start * (inverse * inverse) +
+        control * (2 * inverse * t) +
+        end * (t * t);
+  }
+
+  void _paintShotPreview(
+    Canvas canvas,
+    _GoalGeom goal,
+    PenaltyDirection direction,
+  ) {
+    final target = goal.target(direction);
+    final control = Offset(
+      (goal.spot.dx + target.dx) / 2,
+      goal.crossbarY + goal.mouthH * 0.04,
+    );
+    final trajectory = Path()
+      ..moveTo(goal.spot.dx, goal.spot.dy)
+      ..quadraticBezierTo(control.dx, control.dy, target.dx, target.dy);
+    canvas.drawPath(
+      trajectory,
+      Paint()
+        ..color = Cyber.cyan.withValues(alpha: 0.22)
+        ..strokeWidth = 1.4
+        ..style = PaintingStyle.stroke,
+    );
+    for (var index = 1; index <= 5; index++) {
+      canvas.drawCircle(
+        _previewPoint(goal.spot, control, target, index / 6),
+        1.4,
+        Paint()..color = Cyber.cyan.withValues(alpha: 0.38),
+      );
+    }
+
+    // Keep a faint ball on the spot so this reads as an aim preview rather
+    // than the real kick resolving before the confirmation button is pressed.
+    _paintBall(canvas, goal.spot, 0.82, alpha: 0.28);
+    final flightT = Curves.easeIn.transform((previewT / 0.78).clamp(0.0, 1.0));
+    final fade = previewT <= 0.88
+        ? 1.0
+        : (1 - (previewT - 0.88) / 0.12).clamp(0.0, 1.0);
+    for (final (lag, alpha) in [(0.14, 0.13), (0.07, 0.25)]) {
+      final trailT = (flightT - lag).clamp(0.0, 1.0);
+      if (trailT > 0) {
+        _paintBall(
+          canvas,
+          _previewPoint(goal.spot, control, target, trailT),
+          0.9 - trailT * 0.12,
+          alpha: alpha * fade,
+        );
+      }
+    }
+    _paintBall(
+      canvas,
+      _previewPoint(goal.spot, control, target, flightT),
+      1 - flightT * 0.16,
+      alpha: fade,
+    );
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final goal = _GoalGeom(size);
+    final shooting = role == ShootoutTurnRole.shooting;
+    final direction = selected ?? PenaltyDirection.center;
+    if (shooting && selected != null) {
+      final third = goal.width / 3;
+      final index = PenaltyDirection.values.indexOf(direction);
+      canvas.drawRect(
+        Rect.fromLTRB(
+          goal.left + third * index,
+          goal.crossbarY,
+          goal.left + third * (index + 1),
+          goal.groundY,
+        ),
+        Paint()..color = Cyber.cyan.withValues(alpha: 0.14),
+      );
+    }
+
+    _paintGoalFrame(canvas, goal);
+    final pose = !shooting && selected != null
+        ? (direction == PenaltyDirection.center
+              ? KeeperPose.smother
+              : KeeperPose.anticipate)
+        : KeeperPose.ready;
+    paintPenaltyKeeper(
+      canvas,
+      anchor: Offset(goal.left + goal.width / 2, goal.groundY),
+      height: goal.mouthH * 0.78,
+      visual: KeeperVisualSpec.fromCard(keeper, userSide: !shooting),
+      pose: pose,
+      direction: shooting ? PenaltyDirection.center : direction,
+      progress: shooting ? 0 : selectionT,
+      // The opposing keeper must stay completely still while the user aims.
+      idlePhase: shooting ? 0 : idleT,
+    );
+    if (shooting && selected != null) {
+      _paintShotPreview(canvas, goal, direction);
+    } else {
+      _paintBall(canvas, goal.spot, 1);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _InteractionArenaPainter old) =>
+      old.role != role ||
+      old.keeper != keeper ||
+      old.selected != selected ||
+      old.selectionT != selectionT ||
+      old.idleT != idleT ||
+      old.previewT != previewT;
+}
+
 /// Self-animating penalty resolution: the ball arcs to the shot zone while the
-/// keeper dives, then either the net ripples (goal) or the keeper smothers it
-/// (save), and the verdict stamps in. Owns its impact sound + haptic so the
-/// payoff lands exactly when the ball does.
+/// keeper dives, then either the net ripples (goal) or the keeper smothers it.
+/// Owns its impact sound and haptic so the payoff lands with the ball.
 class PenaltyGoalScene extends StatefulWidget {
   const PenaltyGoalScene({required this.kick, super.key});
 
@@ -468,7 +963,7 @@ class _PenaltyGoalSceneState extends State<PenaltyGoalScene>
     with SingleTickerProviderStateMixin {
   late final AnimationController _c = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 1500),
+    duration: const Duration(milliseconds: 1300),
   );
   bool _started = false;
   bool _impactFired = false;
@@ -496,8 +991,9 @@ class _PenaltyGoalSceneState extends State<PenaltyGoalScene>
 
   void _fireImpact() {
     final goal = widget.kick.scored;
+    final positiveForUser = widget.kick.byPlayer ? goal : !goal;
     playSound(goal ? SoundEffect.goal : SoundEffect.save);
-    if (goal) {
+    if (positiveForUser) {
       HapticFeedback.heavyImpact();
     } else {
       HapticFeedback.mediumImpact();
@@ -521,66 +1017,81 @@ class _PenaltyGoalSceneState extends State<PenaltyGoalScene>
   Widget build(BuildContext context) {
     final kick = widget.kick;
     final goal = kick.scored;
-    final verdictColor = goal ? Cyber.lime : Cyber.red;
+    final positiveForUser = kick.byPlayer ? goal : !goal;
+    final verdictColor = positiveForUser ? Cyber.lime : Cyber.red;
+    final verdict = switch ((kick.byPlayer, goal)) {
+      (true, true) => 'GOAL',
+      (true, false) =>
+        'SAVED BY ${(kick.keeper?.shortName ?? 'KEEPER').toUpperCase()}',
+      (false, true) => 'GOAL CONCEDED',
+      (false, false) => 'YOU SAVED IT',
+    };
 
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (context, _) {
-        final flashT = _seg(_kSceneImpact, 0.75);
-        final flash = 0.30 * sin(flashT * pi);
-        final shakeT = _seg(_kSceneImpact, 0.9);
-        final shakeX = goal ? 0.0 : sin(shakeT * pi * 5) * 6 * (1 - shakeT);
-        final stampT = _seg(0.62, 0.92, Curves.easeOutBack);
+    return Semantics(
+      liveRegion: true,
+      label: verdict,
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (context, _) {
+          final flashT = _seg(_kSceneImpact, 0.75);
+          final flash = 0.30 * sin(flashT * pi);
+          final shakeT = _seg(_kSceneImpact, 0.9);
+          final shakeX = goal ? 0.0 : sin(shakeT * pi * 5) * 6 * (1 - shakeT);
+          final stampT = _seg(0.62, 0.92, Curves.easeOutBack);
 
-        return Transform.translate(
-          offset: Offset(shakeX, 0),
-          child: SizedBox(
-            height: 232,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: CustomPaint(
-                    painter: _PenaltyScenePainter(t: _c.value, kick: kick),
-                  ),
-                ),
-                if (flash > 0.01)
+          return Transform.translate(
+            offset: Offset(shakeX, 0),
+            child: SizedBox(
+              height: 232,
+              child: Stack(
+                children: [
                   Positioned.fill(
-                    child: IgnorePointer(
-                      child: ColoredBox(
-                        color: verdictColor.withValues(alpha: flash),
-                      ),
+                    child: CustomPaint(
+                      painter: _PenaltyScenePainter(t: _c.value, kick: kick),
                     ),
                   ),
-                if (stampT > 0)
-                  Center(
-                    child: Opacity(
-                      opacity: stampT.clamp(0.0, 1.0),
-                      child: Transform.scale(
-                        scale: 0.6 + 0.4 * stampT,
-                        child: Text(
-                          goal ? 'GOAL' : 'SAVED',
-                          style:
-                              Cyber.display(
-                                34,
-                                color: verdictColor,
-                                letterSpacing: 3,
-                              ).copyWith(
-                                shadows: [
-                                  Shadow(
-                                    color: verdictColor.withValues(alpha: 0.75),
-                                    blurRadius: 22,
-                                  ),
-                                ],
-                              ),
+                  if (flash > 0.01)
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: ColoredBox(
+                          color: verdictColor.withValues(alpha: flash),
                         ),
                       ),
                     ),
-                  ),
-              ],
+                  if (stampT > 0)
+                    Center(
+                      child: Opacity(
+                        opacity: stampT.clamp(0.0, 1.0),
+                        child: Transform.scale(
+                          scale: 0.6 + 0.4 * stampT,
+                          child: Text(
+                            verdict,
+                            textAlign: TextAlign.center,
+                            style:
+                                Cyber.display(
+                                  verdict.length > 13 ? 22 : 34,
+                                  color: verdictColor,
+                                  letterSpacing: verdict.length > 13 ? 1.4 : 3,
+                                ).copyWith(
+                                  shadows: [
+                                    Shadow(
+                                      color: verdictColor.withValues(
+                                        alpha: 0.75,
+                                      ),
+                                      blurRadius: 22,
+                                    ),
+                                  ],
+                                ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
@@ -616,18 +1127,23 @@ class _PenaltyScenePainter extends CustomPainter {
       rippleCenter: goal ? target : null,
     );
 
-    // Keeper: the shooter's opponent. Cyan when YOU are keeping, amber when
-    // the CPU keeps. Dive begins just after the ball leaves the spot.
-    final keeperColor = kick.byPlayer
-        ? Cyber.amber.withValues(alpha: 0.95)
-        : Cyber.cyan.withValues(alpha: 0.95);
+    // Keeper: the shooter's opponent. The procedural rig reaches the actual
+    // ball target on a save and lands beyond it when beaten.
     final diveT = _seg(0.16, 0.58, Curves.easeOutCubic);
-    _paintKeeper(
+    final keeperPose = goal
+        ? KeeperPose.beaten
+        : (kick.diveDirection == PenaltyDirection.center
+              ? KeeperPose.smother
+              : KeeperPose.catching);
+    paintPenaltyKeeper(
       canvas,
-      g,
-      color: keeperColor,
-      diveT: diveT,
-      dir: kick.diveDirection,
+      anchor: Offset(g.left + g.width / 2, g.groundY),
+      height: g.mouthH * 0.78,
+      visual: KeeperVisualSpec.fromCard(kick.keeper, userSide: !kick.byPlayer),
+      pose: keeperPose,
+      direction: kick.diveDirection,
+      progress: diveT,
+      intercept: goal ? null : target,
     );
 
     // Ball flight: spot → target along a floaty arc, with a short trail.

@@ -21,6 +21,8 @@ import '../models/streak.dart';
 import '../models/tennis.dart';
 import '../models/xp_ledger.dart';
 import '../models/guess_player.dart';
+import '../models/guess_driver.dart';
+import '../models/guess_winner.dart';
 import '../models/super_over.dart';
 import '../models/super_over_stats.dart';
 import '../data/rival_roster.dart' show randomPlayerTag;
@@ -153,6 +155,8 @@ class SecureGameStorage {
   static const _footballBingoArchiveKey = 'pd_football_bingo_archive_v1';
   String _guessPlayerArchiveKey(Sport sport) =>
       'pd_guess_player_archive_${sport.name}_v1';
+  static const _guessDriverArchiveKey = 'pd_guess_driver_archive_v1';
+  static const _tennisGuessWinnerArchiveKey = 'pd_tennis_guess_winner_archive_v1';
   static const _footballChessStatsKey = 'pd_football_chess_stats_v1';
   static const _grandPrixStatsKey = 'pd_grand_prix_stats_v1';
   // Keep the v1 key for one-time migration. All new writes use the versioned
@@ -384,6 +388,48 @@ class SecureGameStorage {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       _footballBingoArchiveKey,
+      jsonEncode(archive.toJson()),
+    );
+  }
+
+  Future<GuessDriverArchive?> loadGuessDriverArchive() async {
+    final prefs = await SharedPreferences.getInstance();
+    try {
+      final raw = prefs.getString(_guessDriverArchiveKey);
+      if (raw == null) return null;
+      return GuessDriverArchive.fromJson(
+        jsonDecode(raw) as Map<String, dynamic>,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveGuessDriverArchive(GuessDriverArchive archive) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _guessDriverArchiveKey,
+      jsonEncode(archive.toJson()),
+    );
+  }
+
+  Future<GuessWinnerArchive?> loadTennisGuessWinnerArchive() async {
+    final prefs = await SharedPreferences.getInstance();
+    try {
+      final raw = prefs.getString(_tennisGuessWinnerArchiveKey);
+      if (raw == null) return null;
+      return GuessWinnerArchive.fromJson(
+        jsonDecode(raw) as Map<String, dynamic>,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveTennisGuessWinnerArchive(GuessWinnerArchive archive) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _tennisGuessWinnerArchiveKey,
       jsonEncode(archive.toJson()),
     );
   }

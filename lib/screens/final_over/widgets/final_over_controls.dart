@@ -1,4 +1,5 @@
 import 'package:final_over/final_over.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -30,7 +31,7 @@ class FinalOverControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+      padding: const EdgeInsets.fromLTRB(14, 6, 14, 10),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.bottomCenter,
@@ -47,16 +48,21 @@ class FinalOverControls extends StatelessWidget {
         builder: (context, _) {
           final running =
               _isRunningPhase(game.phase.value) || game.canRun.value;
-          return AnimatedSwitcher(
+          return AnimatedSize(
             duration: const Duration(milliseconds: 180),
-            child: running
-                ? _RunningDeck(key: const ValueKey('run'), game: game)
-                : _BattingDeck(
-                    key: const ValueKey('bat'),
-                    game: game,
-                    showHints: showHints,
-                    rookieAssist: rookieAssist,
-                  ),
+            curve: Curves.easeOutCubic,
+            alignment: Alignment.bottomCenter,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              child: running
+                  ? _RunningDeck(key: const ValueKey('run'), game: game)
+                  : _BattingDeck(
+                      key: const ValueKey('bat'),
+                      game: game,
+                      showHints: showHints,
+                      rookieAssist: rookieAssist,
+                    ),
+            ),
           );
         },
       ),
@@ -93,7 +99,6 @@ class _BattingDeck extends StatelessWidget {
         game.canSwing,
         game.elevation,
         game.selectedDirection,
-        game.powerSegments,
         game.powerArmed,
         game.successfulContact,
       ]),
@@ -108,111 +113,62 @@ class _BattingDeck extends StatelessWidget {
         final suggestedElevation = rookieAssist && delivery != null
             ? _elevationForLength(delivery.length)
             : null;
-        final overdriveReady =
-            game.powerSegments.value >= game.overdriveRequirement;
-
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (configuring && delivery != null)
-              _DeliveryBrief(
-                seconds: game.preparationSeconds.value,
-                delivery: delivery,
-              )
-            else if (phase == MatchPhase.bowlerRunUp)
-              _Hint(
-                'LOCKED · ${_elevationLabel(game.elevation.value)} · '
-                '${_directionLabel(game.selectedDirection.value)}',
-              )
-            else if (live && (showHints || !game.successfulContact.value))
-              const _Hint('HOLD HIT · RELEASE AT BAT'),
-            Row(
-              children: [
-                Expanded(
-                  child: _Plate(
-                    label: 'GROUND',
-                    icon: Icons.trending_flat_rounded,
-                    accent: Cyber.cyan,
-                    selected: game.elevation.value == Elevation.ground,
-                    suggested: suggestedElevation == Elevation.ground,
-                    enabled: configuring,
-                    onTap: () {
-                      game.selectElevation(Elevation.ground);
-                      HapticFeedback.selectionClick();
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _Plate(
-                    label: 'LOFT',
-                    icon: Icons.trending_up_rounded,
-                    accent: Cyber.violet,
-                    selected: game.elevation.value == Elevation.loft,
-                    suggested: suggestedElevation == Elevation.loft,
-                    enabled: configuring,
-                    onTap: () {
-                      game.selectElevation(Elevation.loft);
-                      HapticFeedback.selectionClick();
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _Plate(
-                  label: game.powerArmed.value ? 'ARMED' : 'OVERDRIVE',
-                  icon: Icons.bolt_rounded,
-                  accent: Cyber.gold,
-                  selected: game.powerArmed.value,
-                  enabled: configuring && overdriveReady,
-                  width: 92,
-                  onTap: () {
-                    game.activatePowerShot();
-                    HapticFeedback.mediumImpact();
-                  },
-                ),
-              ],
+        final setup = configuring && delivery != null;
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 180),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          transitionBuilder: (child, animation) => FadeTransition(
+            opacity: animation,
+            child: SizeTransition(
+              sizeFactor: animation,
+              alignment: Alignment.topCenter,
+              child: child,
             ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                for (final entry in const [
-                  (ShotDirection.offSide, 'OFF'),
-                  (ShotDirection.straight, 'STRAIGHT'),
-                  (ShotDirection.legSide, 'LEG'),
-                ]) ...[
-                  Expanded(
-                    child: _Plate(
-                      label: entry.$2,
-                      accent: Cyber.cyan,
-                      selected: game.selectedDirection.value == entry.$1,
-                      suggested: suggestedDirection == entry.$1,
-                      enabled: configuring,
-                      onTap: () {
-                        game.selectDirection(entry.$1);
+          ),
+          child: setup
+              ? Column(
+                  key: const ValueKey('shot-setup'),
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _SetupHeader(
+                      seconds: game.preparationSeconds.value,
+                      delivery: delivery,
+                      elevation: game.elevation.value,
+                      suggestedElevation: suggestedElevation,
+                      onGround: () {
+                        game.selectElevation(Elevation.ground);
+                        HapticFeedback.selectionClick();
+                      },
+                      onLoft: () {
+                        game.selectElevation(Elevation.loft);
                         HapticFeedback.selectionClick();
                       },
                     ),
-                  ),
-                  if (entry.$1 != ShotDirection.legSide)
-                    const SizedBox(width: 8),
-                ],
-              ],
-            ),
-            const SizedBox(height: 8),
-            HudHoldCtaButton(
-              label: live ? 'HIT' : 'WAIT',
-              icon: Icons.sports_cricket_rounded,
-              height: 58,
-              glow: live,
-              enabled: live,
-              onPressStart: game.beginSwing,
-              onPressEnd: () {
-                game.releaseSwing();
-                HapticFeedback.lightImpact();
-              },
-              onPressCancel: game.cancelSwing,
-            ),
-          ],
+                    const SizedBox(height: 6),
+                    _ShotAimFan(
+                      selected: game.selectedDirection.value,
+                      suggested: suggestedDirection,
+                      showHint: showHints,
+                      onSelected: game.selectDirection,
+                    ),
+                  ],
+                )
+              : _LockedBattingDeck(
+                  key: const ValueKey('shot-locked'),
+                  phase: phase,
+                  live: live,
+                  shotCommitted: game.state.swingIntent != null,
+                  elevation: game.elevation.value,
+                  direction: game.selectedDirection.value,
+                  overdriveArmed: game.powerArmed.value,
+                  onPressStart: game.beginSwing,
+                  onPressEnd: () {
+                    game.releaseSwing();
+                    HapticFeedback.lightImpact();
+                  },
+                  onPressCancel: game.cancelSwing,
+                ),
         );
       },
     );
@@ -232,42 +188,690 @@ class _BattingDeck extends StatelessWidget {
       };
 }
 
-class _DeliveryBrief extends StatelessWidget {
-  const _DeliveryBrief({required this.seconds, required this.delivery});
+class _SetupHeader extends StatelessWidget {
+  const _SetupHeader({
+    required this.seconds,
+    required this.delivery,
+    required this.elevation,
+    required this.suggestedElevation,
+    required this.onGround,
+    required this.onLoft,
+  });
 
   final int seconds;
   final DeliverySpec delivery;
+  final Elevation elevation;
+  final Elevation? suggestedElevation;
+  final VoidCallback onGround;
+  final VoidCallback onLoft;
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 8),
+  Widget build(BuildContext context) => SizedBox(
+    height: 40,
     child: Row(
       children: [
         Container(
-          width: 34,
-          height: 34,
+          width: 32,
+          height: 38,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: Cyber.gold.withValues(alpha: 0.16),
             border: Border.all(color: Cyber.gold.withValues(alpha: 0.75)),
           ),
-          child: Text('$seconds', style: Cyber.display(18, color: Cyber.gold)),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
           child: Text(
-            '${_lineLabel(delivery.line)} · '
-            '${_lengthLabel(delivery.length)}',
-            style: Cyber.display(13, color: Colors.white),
+            '$seconds',
+            style: Cyber.display(
+              16,
+              color: Cyber.gold,
+            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
         ),
-        Text(
-          'SELECT SHOT',
-          style: Cyber.label(8, color: Cyber.cyan, letterSpacing: 1.2),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 100,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '${_lineLabel(delivery.line)} · '
+                  '${_lengthLabel(delivery.length)}',
+                  maxLines: 1,
+                  style: Cyber.display(9.5, color: Colors.white),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'SHOT TYPE',
+                style: Cyber.label(7, color: Cyber.cyan, letterSpacing: 1.1),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: _Plate(
+            key: const ValueKey('shot-type-ground'),
+            label: 'GROUND',
+            icon: Icons.trending_flat_rounded,
+            accent: Cyber.cyan,
+            selected: elevation == Elevation.ground,
+            suggested: suggestedElevation == Elevation.ground,
+            height: 38,
+            onTap: onGround,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: _Plate(
+            key: const ValueKey('shot-type-loft'),
+            label: 'LOFT',
+            icon: Icons.trending_up_rounded,
+            accent: Cyber.violet,
+            selected: elevation == Elevation.loft,
+            suggested: suggestedElevation == Elevation.loft,
+            height: 38,
+            onTap: onLoft,
+          ),
         ),
       ],
     ),
   );
+}
+
+class _LockedBattingDeck extends StatelessWidget {
+  const _LockedBattingDeck({
+    required this.phase,
+    required this.live,
+    required this.shotCommitted,
+    required this.elevation,
+    required this.direction,
+    required this.overdriveArmed,
+    required this.onPressStart,
+    required this.onPressEnd,
+    required this.onPressCancel,
+    super.key,
+  });
+
+  final MatchPhase phase;
+  final bool live;
+  final bool shotCommitted;
+  final Elevation elevation;
+  final ShotDirection direction;
+  final bool overdriveArmed;
+  final VoidCallback onPressStart;
+  final VoidCallback onPressEnd;
+  final VoidCallback onPressCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _LockedShotStrip(
+          elevation: elevation,
+          direction: direction,
+          overdriveArmed: overdriveArmed,
+        ),
+        const SizedBox(height: 6),
+        SizedBox(
+          height: 58,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 120),
+            child: live
+                ? HudHoldCtaButton(
+                    key: const ValueKey('swing-live'),
+                    label: 'HOLD TO SWING',
+                    pressedLabel: 'RELEASE TO SWING',
+                    helper: 'RELEASE AT THE BAT',
+                    pressedHelper: 'TIME THE RELEASE',
+                    icon: Icons.sports_cricket_rounded,
+                    height: 58,
+                    glow: true,
+                    enabled: true,
+                    onPressStart: onPressStart,
+                    onPressEnd: onPressEnd,
+                    onPressCancel: onPressCancel,
+                  )
+                : _ReadyStatus(
+                    key: ValueKey<String>(_statusLabel),
+                    label: _statusLabel,
+                    helper: _statusHelper,
+                    icon: _statusIcon,
+                    accent: shotCommitted ? Cyber.success : Cyber.cyan,
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String get _statusLabel {
+    if (shotCommitted) return 'SHOT PLAYED';
+    return switch (phase) {
+      MatchPhase.bowlerRunUp => 'WATCH THE RELEASE',
+      MatchPhase.incomingBall => 'SWING WINDOW CLOSED',
+      MatchPhase.contact ||
+      MatchPhase.cameraTransition ||
+      MatchPhase.fieldPlay => 'TRACK THE BALL',
+      _ => 'SETTING THE FIELD',
+    };
+  }
+
+  String get _statusHelper {
+    if (shotCommitted) return 'TRACK THE BALL';
+    return switch (phase) {
+      MatchPhase.bowlerRunUp => 'HOLD WHEN THE BALL LEAVES THE HAND',
+      MatchPhase.incomingBall => 'THE BALL HAS PASSED THE BAT',
+      MatchPhase.contact ||
+      MatchPhase.cameraTransition ||
+      MatchPhase.fieldPlay => 'RUN WHEN THE CALL APPEARS',
+      _ => 'NEXT BALL INCOMING',
+    };
+  }
+
+  IconData get _statusIcon {
+    if (shotCommitted) return Icons.check_rounded;
+    return switch (phase) {
+      MatchPhase.bowlerRunUp => Icons.visibility_rounded,
+      MatchPhase.incomingBall => Icons.timer_off_rounded,
+      MatchPhase.contact ||
+      MatchPhase.cameraTransition ||
+      MatchPhase.fieldPlay => Icons.radar_rounded,
+      _ => Icons.sports_cricket_rounded,
+    };
+  }
+}
+
+class _LockedShotStrip extends StatelessWidget {
+  const _LockedShotStrip({
+    required this.elevation,
+    required this.direction,
+    required this.overdriveArmed,
+  });
+
+  final Elevation elevation;
+  final ShotDirection direction;
+  final bool overdriveArmed;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    height: 30,
+    child: ChamferedActionSurface(
+      clipper: const HudChamferClipper(bigCut: 8, smallCut: 3),
+      borderColor: Cyber.cyan.withValues(alpha: 0.42),
+      child: ColoredBox(
+        color: Cyber.panel.withValues(alpha: 0.88),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Row(
+            children: [
+              Text(
+                'SHOT LOCKED',
+                style: Cyber.label(7, color: Cyber.cyan, letterSpacing: 1.2),
+              ),
+              const SizedBox(width: 8),
+              Container(width: 1, height: 12, color: Cyber.line),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '${_elevationLabel(elevation)}  •  '
+                  '${_directionLabel(direction)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Cyber.display(9.5, color: Colors.white),
+                ),
+              ),
+              if (overdriveArmed) ...[
+                const Icon(Icons.bolt_rounded, size: 14, color: Cyber.gold),
+                const SizedBox(width: 2),
+                Text('OD', style: Cyber.label(7, color: Cyber.gold)),
+              ],
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _ReadyStatus extends StatelessWidget {
+  const _ReadyStatus({
+    required this.label,
+    required this.helper,
+    required this.icon,
+    required this.accent,
+    super.key,
+  });
+
+  final String label;
+  final String helper;
+  final IconData icon;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    liveRegion: true,
+    label: '$label. $helper',
+    child: ChamferedActionSurface(
+      clipper: const HudChamferClipper(bigCut: 12, smallCut: 4),
+      borderColor: Cyber.line,
+      child: ColoredBox(
+        color: Cyber.panel.withValues(alpha: 0.88),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Row(
+            children: [
+              Icon(icon, color: accent, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Cyber.display(11, color: Colors.white),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      helper,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Cyber.label(
+                        7,
+                        color: Cyber.muted,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _ShotAimFan extends StatefulWidget {
+  const _ShotAimFan({
+    required this.selected,
+    required this.suggested,
+    required this.showHint,
+    required this.onSelected,
+  });
+
+  static const keyValue = ValueKey<String>('final-over-shot-aim');
+
+  final ShotDirection selected;
+  final ShotDirection? suggested;
+  final bool showHint;
+  final ValueChanged<ShotDirection> onSelected;
+
+  @override
+  State<_ShotAimFan> createState() => _ShotAimFanState();
+}
+
+class _ShotAimFanState extends State<_ShotAimFan>
+    with SingleTickerProviderStateMixin {
+  static const _minimumDrag = 12.0;
+
+  late final AnimationController _hintController;
+  Offset? _dragOrigin;
+  ShotDirection? _dragSelection;
+  ShotDirection? _preview;
+  bool _qualifiedDrag = false;
+  bool _pointerCancelled = false;
+  bool _interacted = false;
+
+  ShotDirection get _effectiveDirection => _preview ?? widget.selected;
+
+  @override
+  void initState() {
+    super.initState();
+    _hintController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1300),
+    );
+    if (widget.showHint) _hintController.repeat();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ShotAimFan oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_dragOrigin == null && oldWidget.selected != widget.selected) {
+      _preview = null;
+    }
+    if (oldWidget.showHint != widget.showHint && !_interacted) {
+      if (widget.showHint) {
+        _hintController.repeat();
+      } else {
+        _hintController.stop();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _hintController.dispose();
+    super.dispose();
+  }
+
+  void _onPanStart(DragStartDetails details) {
+    setState(() {
+      _dragOrigin = details.localPosition;
+      _dragSelection = widget.selected;
+      _preview = widget.selected;
+      _qualifiedDrag = false;
+      _pointerCancelled = false;
+    });
+  }
+
+  void _onPanUpdate(DragUpdateDetails details) {
+    final origin = _dragOrigin;
+    if (origin == null) return;
+    final delta = details.localPosition - origin;
+    final distance = delta.distance;
+    if (distance < _minimumDrag || delta.dy > 8) return;
+
+    final next = delta.dx < -distance * .34
+        ? ShotDirection.offSide
+        : delta.dx > distance * .34
+        ? ShotDirection.legSide
+        : ShotDirection.straight;
+    if (_preview == next && _qualifiedDrag) return;
+    HapticFeedback.selectionClick();
+    setState(() {
+      _preview = next;
+      _qualifiedDrag = true;
+    });
+  }
+
+  void _onPanEnd(DragEndDetails _) {
+    if (_pointerCancelled) {
+      _cancelDrag();
+      return;
+    }
+    final selected = _preview;
+    if (_qualifiedDrag && selected != null) {
+      _commit(selected, haptic: false);
+    } else {
+      setState(() => _preview = null);
+    }
+    _dragOrigin = null;
+    _dragSelection = null;
+    _qualifiedDrag = false;
+  }
+
+  void _onPanCancel() => _cancelDrag();
+
+  void _cancelDrag() {
+    final selection = _dragSelection;
+    setState(() {
+      _dragOrigin = null;
+      _dragSelection = null;
+      _preview = null;
+      _qualifiedDrag = false;
+      _pointerCancelled = false;
+    });
+    if (selection != null) widget.onSelected(selection);
+  }
+
+  void _commit(ShotDirection direction, {bool haptic = true}) {
+    if (haptic) HapticFeedback.selectionClick();
+    _hintController.stop();
+    setState(() {
+      _interacted = true;
+      _preview = direction;
+    });
+    widget.onSelected(direction);
+  }
+
+  void _cycle(int delta) {
+    const directions = ShotDirection.values;
+    final current = directions.indexOf(_effectiveDirection);
+    final next = (current + delta).clamp(0, directions.length - 1);
+    _commit(directions[next]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final direction = _effectiveDirection;
+    final showGhost = widget.showHint && !_interacted;
+    return Semantics(
+      key: _ShotAimFan.keyValue,
+      container: true,
+      explicitChildNodes: true,
+      label: 'Shot direction',
+      value: _directionLabel(direction),
+      hint: 'Swipe up-left for off, up for straight, or up-right for leg',
+      increasedValue: direction == ShotDirection.legSide
+          ? null
+          : _directionLabel(ShotDirection.values[direction.index + 1]),
+      decreasedValue: direction == ShotDirection.offSide
+          ? null
+          : _directionLabel(ShotDirection.values[direction.index - 1]),
+      onIncrease: direction == ShotDirection.legSide ? null : () => _cycle(1),
+      onDecrease: direction == ShotDirection.offSide ? null : () => _cycle(-1),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        dragStartBehavior: DragStartBehavior.down,
+        onPanStart: _onPanStart,
+        onPanUpdate: _onPanUpdate,
+        onPanEnd: _onPanEnd,
+        onPanCancel: _onPanCancel,
+        child: Listener(
+          onPointerCancel: (_) => _pointerCancelled = true,
+          child: ChamferedActionSurface(
+            clipper: const HudChamferClipper(bigCut: 10, smallCut: 3),
+            borderColor: Cyber.cyan.withValues(alpha: 0.48),
+            child: ColoredBox(
+              color: Cyber.panel.withValues(alpha: 0.88),
+              child: SizedBox(
+                height: 64,
+                child: AnimatedBuilder(
+                  animation: _hintController,
+                  builder: (context, _) => Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      CustomPaint(
+                        painter: _ShotAimFanPainter(
+                          selected: direction,
+                          suggested: widget.suggested,
+                          showHint:
+                              showGhost &&
+                              !MediaQuery.disableAnimationsOf(context),
+                          hintProgress: _hintController.value,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          for (final entry in const [
+                            (ShotDirection.offSide, 'OFF'),
+                            (ShotDirection.straight, 'STRAIGHT'),
+                            (ShotDirection.legSide, 'LEG'),
+                          ])
+                            Expanded(
+                              child: Semantics(
+                                button: true,
+                                selected: direction == entry.$1,
+                                label: 'Aim ${entry.$2.toLowerCase()}',
+                                child: InkWell(
+                                  onTap: () => _commit(entry.$1),
+                                  child: Align(
+                                    alignment: Alignment.topCenter,
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(top: 5),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            entry.$2,
+                                            style: Cyber.display(
+                                              9,
+                                              color: direction == entry.$1
+                                                  ? Colors.white
+                                                  : widget.suggested == entry.$1
+                                                  ? Cyber.cyan
+                                                  : Cyber.muted,
+                                            ),
+                                          ),
+                                          if (widget.suggested == entry.$1)
+                                            Text(
+                                              'REC',
+                                              style: Cyber.label(
+                                                6,
+                                                color: Cyber.cyan,
+                                                letterSpacing: .8,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 3,
+                        child: IgnorePointer(
+                          child: Text(
+                            showGhost
+                                ? 'SWIPE TOWARD YOUR SHOT'
+                                : 'DRAG TO AIM',
+                            textAlign: TextAlign.center,
+                            style: Cyber.label(
+                              7,
+                              color: Cyber.muted,
+                              letterSpacing: 1.1,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ShotAimFanPainter extends CustomPainter {
+  const _ShotAimFanPainter({
+    required this.selected,
+    required this.suggested,
+    required this.showHint,
+    required this.hintProgress,
+  });
+
+  final ShotDirection selected;
+  final ShotDirection? suggested;
+  final bool showHint;
+  final double hintProgress;
+
+  Offset _target(ShotDirection direction, Size size) => switch (direction) {
+    ShotDirection.offSide => Offset(size.width * .19, 27),
+    ShotDirection.straight => Offset(size.width * .5, 23),
+    ShotDirection.legSide => Offset(size.width * .81, 27),
+  };
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final origin = Offset(size.width * .5, size.height - 13);
+    for (final direction in ShotDirection.values) {
+      final target = _target(direction, size);
+      final isSelected = direction == selected;
+      final isSuggested = direction == suggested;
+      canvas.drawLine(
+        origin,
+        target,
+        Paint()
+          ..color = isSelected
+              ? Cyber.cyan.withValues(alpha: .92)
+              : isSuggested
+              ? Cyber.cyan.withValues(alpha: .42)
+              : Cyber.line.withValues(alpha: .55)
+          ..strokeWidth = isSelected ? 2 : (isSuggested ? 1.4 : 1)
+          ..strokeCap = StrokeCap.round,
+      );
+      canvas.drawCircle(
+        target,
+        isSelected ? 3.4 : 2,
+        Paint()
+          ..color = isSelected
+              ? Cyber.cyan
+              : isSuggested
+              ? Cyber.cyan.withValues(alpha: .62)
+              : Cyber.muted.withValues(alpha: .42),
+      );
+      if (isSelected) _drawArrowHead(canvas, origin, target);
+    }
+
+    canvas.drawCircle(origin, 4, Paint()..color = Cyber.gold);
+    canvas.drawCircle(
+      origin,
+      7,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..color = Cyber.gold.withValues(alpha: .45),
+    );
+
+    if (showHint) {
+      final t = Curves.easeInOutCubic.transform(hintProgress);
+      final point = Offset.lerp(origin, _target(selected, size), t)!;
+      final alpha = .28 + .62 * (1 - (t * 2 - 1).abs());
+      canvas.drawCircle(
+        point,
+        3.2,
+        Paint()..color = Cyber.gold.withValues(alpha: alpha),
+      );
+    }
+  }
+
+  void _drawArrowHead(Canvas canvas, Offset origin, Offset target) {
+    final delta = target - origin;
+    final length = delta.distance;
+    if (length == 0) return;
+    final unit = delta / length;
+    final perpendicular = Offset(-unit.dy, unit.dx);
+    final base = target - unit * 7;
+    final path = Path()
+      ..moveTo(target.dx, target.dy)
+      ..lineTo((base + perpendicular * 3).dx, (base + perpendicular * 3).dy)
+      ..moveTo(target.dx, target.dy)
+      ..lineTo((base - perpendicular * 3).dx, (base - perpendicular * 3).dy);
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = Cyber.cyan
+        ..strokeWidth = 1.6
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _ShotAimFanPainter oldDelegate) =>
+      oldDelegate.selected != selected ||
+      oldDelegate.suggested != suggested ||
+      oldDelegate.showHint != showHint ||
+      oldDelegate.hintProgress != hintProgress;
 }
 
 String _lineLabel(DeliveryLine line) => switch (line) {
@@ -281,7 +885,7 @@ String _lineLabel(DeliveryLine line) => switch (line) {
 String _lengthLabel(DeliveryLength length) => switch (length) {
   DeliveryLength.yorker => 'YORKER',
   DeliveryLength.full => 'FULL',
-  DeliveryLength.good => 'GOOD LENGTH',
+  DeliveryLength.good => 'GOOD',
   DeliveryLength.short => 'SHORT',
 };
 
@@ -438,11 +1042,10 @@ class _Plate extends StatefulWidget {
     this.icon,
     this.selected = false,
     this.suggested = false,
-    this.enabled = true,
     this.height = 46,
-    this.width,
     this.big = false,
     this.glow = false,
+    super.key,
   });
 
   final String label;
@@ -454,9 +1057,7 @@ class _Plate extends StatefulWidget {
   final VoidCallback onTap;
   final bool selected;
   final bool suggested;
-  final bool enabled;
   final double height;
-  final double? width;
   final bool big;
   final bool glow;
 
@@ -475,84 +1076,56 @@ class _PlateState extends State<_Plate> {
   @override
   Widget build(BuildContext context) {
     final on = widget.selected || _down;
-    final accent = widget.enabled ? widget.accent : Cyber.muted;
+    final accent = widget.accent;
 
     return Listener(
-      onPointerDown: widget.enabled
-          ? (_) {
-              setState(() => _down = true);
-              widget.onTap();
-            }
-          : null,
+      onPointerDown: (_) {
+        setState(() => _down = true);
+        widget.onTap();
+      },
       onPointerUp: (_) => _release(),
       onPointerCancel: (_) => _release(),
-      child: Opacity(
-        opacity: widget.enabled ? 1 : 0.4,
-        child: ChamferedActionSurface(
-          clipper: const HudChamferClipper(bigCut: 10, smallCut: 3),
-          borderColor: widget.suggested && !on
-              ? widget.accent.withValues(alpha: 0.72)
-              : accent.withValues(alpha: on ? 0.9 : 0.4),
-          borderWidth: on || widget.suggested ? 1.6 : 1,
-          glowColor: accent,
-          glow: widget.glow ? 1 : 0,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 90),
-            width: widget.width,
-            height: widget.height,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: on
-                  ? accent.withValues(alpha: 0.26)
-                  : widget.suggested
-                  ? widget.accent.withValues(alpha: 0.10)
-                  : Cyber.panel.withValues(alpha: 0.85),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (widget.icon != null) ...[
-                  Icon(widget.icon, size: widget.big ? 17 : 14, color: accent),
-                  const SizedBox(width: 6),
-                ],
-                Flexible(
-                  child: Text(
-                    widget.label,
-                    overflow: TextOverflow.ellipsis,
-                    style: Cyber.display(
-                      widget.big ? 13 : 10.5,
-                      color: on ? Colors.white : accent,
-                      letterSpacing: 1.2,
-                    ),
+      child: ChamferedActionSurface(
+        clipper: const HudChamferClipper(bigCut: 10, smallCut: 3),
+        borderColor: widget.suggested && !on
+            ? widget.accent.withValues(alpha: 0.72)
+            : accent.withValues(alpha: on ? 0.9 : 0.4),
+        borderWidth: on || widget.suggested ? 1.6 : 1,
+        glowColor: accent,
+        glow: widget.glow ? 1 : 0,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 90),
+          height: widget.height,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: on
+                ? accent.withValues(alpha: 0.26)
+                : widget.suggested
+                ? widget.accent.withValues(alpha: 0.10)
+                : Cyber.panel.withValues(alpha: 0.85),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.icon != null) ...[
+                Icon(widget.icon, size: widget.big ? 17 : 14, color: accent),
+                const SizedBox(width: 6),
+              ],
+              Flexible(
+                child: Text(
+                  widget.label,
+                  overflow: TextOverflow.ellipsis,
+                  style: Cyber.display(
+                    widget.big ? 13 : 10.5,
+                    color: on ? Colors.white : accent,
+                    letterSpacing: 1.2,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
-}
-
-class _Hint extends StatelessWidget {
-  const _Hint(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 8),
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: Cyber.gold.withValues(alpha: 0.10),
-        border: Border.all(color: Cyber.gold.withValues(alpha: 0.45)),
-      ),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: Cyber.label(8, color: Cyber.gold, letterSpacing: 1.2),
-      ),
-    ),
-  );
 }

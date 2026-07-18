@@ -136,6 +136,12 @@ class AppTheme {
   static const Color gameCtaFill = Color(0xFF0F3E4F);
   static const Color gameCtaBorder = Color(0xFF087B95);
 
+  // Shared animated arena background tokens.
+  static const Color arenaSky = Color(0xFF020812);
+  static const Color arenaHorizon = Color(0xFF071522);
+  static const Color arenaVioletHorizon = Color(0xFF101024);
+  static const Color arenaFloor = Color(0xFF02050B);
+
   static LinearGradient get backgroundGradient {
     return const LinearGradient(
       begin: Alignment.topLeft,
@@ -573,6 +579,10 @@ class Cyber {
   static const textPrimary = AppTheme.textPrimary;
   static const borderMuted = AppTheme.borderMuted;
   static const blue = AppTheme.blueColor;
+  static const arenaSky = AppTheme.arenaSky;
+  static const arenaHorizon = AppTheme.arenaHorizon;
+  static const arenaVioletHorizon = AppTheme.arenaVioletHorizon;
+  static const arenaFloor = AppTheme.arenaFloor;
 
   static const displayFont = 'Orbitron';
   static const bodyFont = 'Onest';

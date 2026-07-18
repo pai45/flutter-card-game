@@ -22,8 +22,8 @@ import 'widgets/final_over_hud.dart';
 import 'widgets/final_over_overlays.dart';
 import 'widgets/final_over_result.dart';
 
-/// The chase: a full-bleed Flame pitch under the score HUD, the swing meter,
-/// sting banners, the two-faced control deck, and the intro / pause / result
+/// The chase: a full-bleed Flame pitch under the score HUD, sting banners, the
+/// two-faced control deck, and the intro / pause / result
 /// overlays.
 ///
 /// Three owners, cleanly separated — the `final_over` package's
@@ -53,6 +53,7 @@ class _FinalOverMatchScreenState extends State<FinalOverMatchScreen>
 
   bool _rewardsDispatched = false;
   bool _paused = false;
+  double _controlStackHeight = 116;
 
   // Tallied from the engine's own ball ledger, never counted here.
   int _sixes = 0;
@@ -321,11 +322,6 @@ class _FinalOverMatchScreenState extends State<FinalOverMatchScreen>
                     child: FinalOverHudBar(game: _game, onExit: _confirmExit),
                   ),
                   FinalOverStingLayer(game: _game),
-                  Positioned(
-                    right: 20,
-                    bottom: 285,
-                    child: FinalOverShotMeter(game: _game),
-                  ),
                   Align(
                     alignment: Alignment.bottomCenter,
                     child: _MeasureSize(
@@ -334,6 +330,10 @@ class _FinalOverMatchScreenState extends State<FinalOverMatchScreen>
                         _game.setBattingControlDeckTop(
                           constraints.maxHeight - deckSize.height,
                         );
+                        if ((_controlStackHeight - deckSize.height).abs() >
+                            .5) {
+                          setState(() => _controlStackHeight = deckSize.height);
+                        }
                       },
                       child: Column(
                         mainAxisSize: MainAxisSize.min,

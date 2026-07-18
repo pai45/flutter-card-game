@@ -14,6 +14,7 @@ import '../home/widgets/starter_pack_onboarding.dart';
 import '../home/home_screen.dart';
 import '../how_to_play/how_to_play_screen.dart';
 import '../leaderboard/leaderboard_screen.dart';
+import 'widgets/duel_board_phase.dart';
 import 'widgets/final_result_phase.dart';
 import 'widgets/match_phases.dart';
 
@@ -92,6 +93,53 @@ class _GameTabContentState extends State<GameTabContent> {
   }
 }
 
+/// The four round-loop phases hosted by the persistent [DuelBoardPhase].
+const _boardPhases = {
+  MatchPhase.roleReveal,
+  MatchPhase.scenario,
+  MatchPhase.play,
+  MatchPhase.roundResult,
+};
+
+/// Only rebuild the match flow for match-relevant state changes — wallet,
+/// ledger, cosmetic and history emissions elsewhere in the app must not
+/// rebuild a live board. copyWith passes list references through untouched,
+/// so identity checks are an exact cheap dirty test.
+bool _matchStateChanged(GameState prev, GameState curr) =>
+    prev.phase != curr.phase ||
+    prev.currentRound != curr.currentRound ||
+    prev.playerScore != curr.playerScore ||
+    prev.opponentScore != curr.opponentScore ||
+    prev.playerAttacking != curr.playerAttacking ||
+    prev.tossChoice != curr.tossChoice ||
+    prev.tossResult != curr.tossResult ||
+    prev.playerWonToss != curr.playerWonToss ||
+    prev.initialAttackingChoice != curr.initialAttackingChoice ||
+    prev.currentScenario != curr.currentScenario ||
+    prev.selectedPlayerCard != curr.selectedPlayerCard ||
+    prev.selectedActionCard != curr.selectedActionCard ||
+    !identical(prev.usedPlayerCards, curr.usedPlayerCards) ||
+    !identical(prev.usedActionCards, curr.usedActionCards) ||
+    !identical(prev.redCardedCards, curr.redCardedCards) ||
+    !identical(prev.roundResults, curr.roundResults) ||
+    !identical(prev.opponentAttackers, curr.opponentAttackers) ||
+    !identical(prev.opponentDefenders, curr.opponentDefenders) ||
+    !identical(prev.opponentActions, curr.opponentActions) ||
+    !identical(prev.opponentRedCarded, curr.opponentRedCarded) ||
+    prev.opponentName != curr.opponentName ||
+    !identical(prev.deckSlots, curr.deckSlots) ||
+    prev.activeDeckId != curr.activeDeckId ||
+    !identical(prev.deckAttackers, curr.deckAttackers) ||
+    !identical(prev.deckDefenders, curr.deckDefenders) ||
+    !identical(prev.deckActions, curr.deckActions) ||
+    prev.deckKeeper != curr.deckKeeper ||
+    !identical(prev.ownedCardIds, curr.ownedCardIds) ||
+    !identical(prev.ownedActionCardIds, curr.ownedActionCardIds) ||
+    prev.progression != curr.progression ||
+    !identical(prev.pendingLevelUps, curr.pendingLevelUps) ||
+    prev.lastMatchXP != curr.lastMatchXP ||
+    prev.coins != curr.coins;
+
 class MatchScreen extends StatefulWidget {
   const MatchScreen({required this.onNavigate, super.key});
 
@@ -126,6 +174,7 @@ class _MatchScreenState extends State<MatchScreen> {
           context.read<GameBloc>().add(ScenarioShown());
         }
       },
+      buildWhen: _matchStateChanged,
       builder: (context, state) {
         final showIntro = state.phase == MatchPhase.toss && !_introShown;
         final deckName = state.deckSlots.isNotEmpty
@@ -148,19 +197,13 @@ class _MatchScreenState extends State<MatchScreen> {
                   state: state,
                   onQuit: () => _quit(context),
                 ),
-                MatchPhase.roleReveal => RoleRevealPhase(
-                  state: state,
-                  onQuit: () => _quit(context),
-                ),
-                MatchPhase.scenario => ScenarioPhase(
-                  state: state,
-                  onQuit: () => _quit(context),
-                ),
-                MatchPhase.play => PlayPhase(
-                  state: state,
-                  onQuit: () => _quit(context),
-                ),
-                MatchPhase.roundResult => RoundResultPhase(
+                // The whole round loop lives on the persistent Duel Board —
+                // role banner, scenario briefing, card placement and the
+                // flip/resolve beat all play out on one two-sided screen.
+                MatchPhase.roleReveal ||
+                MatchPhase.scenario ||
+                MatchPhase.play ||
+                MatchPhase.roundResult => DuelBoardPhase(
                   state: state,
                   onQuit: () => _quit(context),
                 ),
@@ -216,6 +259,10 @@ class _MatchScreenState extends State<MatchScreen> {
                 : (state.phase == MatchPhase.toss ||
                       state.phase == MatchPhase.tossResult)
                 ? const ValueKey('coinToss')
+                // All four round-loop phases share the persistent Duel Board —
+                // the AnimatedSwitcher must never cross-fade between beats.
+                : _boardPhases.contains(state.phase)
+                ? const ValueKey('board')
                 : ValueKey(state.phase),
             child: phaseWidget,
           ),

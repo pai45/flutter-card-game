@@ -1,5 +1,6 @@
 import 'package:final_over/final_over.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../config/theme.dart';
 import '../../../games/final_over/final_over_game.dart';
@@ -276,76 +277,138 @@ class FinalOverOverdriveRail extends StatelessWidget {
   Widget build(BuildContext context) {
     final requirement = game.overdriveRequirement;
     return AnimatedBuilder(
-      animation: Listenable.merge([game.powerSegments, game.powerArmed]),
+      animation: Listenable.merge([
+        game.powerSegments,
+        game.powerArmed,
+        game.canConfigureShot,
+      ]),
       builder: (context, _) {
         final segments = game.powerSegments.value.clamp(0, requirement);
         final armed = game.powerArmed.value;
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Text(
-                armed ? 'OVERDRIVE ARMED' : 'OVERDRIVE',
-                style: Cyber.label(
-                  8,
-                  color: armed ? Cyber.gold : Cyber.muted,
-                  letterSpacing: 1.6,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: CyberProgressBar(
-                  value: segments / requirement,
-                  accent: armed ? Cyber.gold : Cyber.cyan,
-                  height: 5,
-                  animate: false,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '$segments/$requirement',
-                style: Cyber.label(
-                  8,
-                  color: Cyber.muted,
-                  letterSpacing: 1,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-            ],
-          ),
+        final configuring = game.canConfigureShot.value;
+        final ready = segments >= requirement && !armed;
+        final canArm = configuring && ready;
+        final label = armed
+            ? 'OVERDRIVE ARMED'
+            : ready
+            ? 'OVERDRIVE READY • TAP TO ARM'
+            : 'OVERDRIVE';
+        final semanticsLabel = armed
+            ? 'Overdrive armed'
+            : ready
+            ? 'Overdrive ready. Tap to arm'
+            : 'Overdrive $segments of $requirement charged';
+
+        return AnimatedSize(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.bottomCenter,
+          child: configuring
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: Semantics(
+                    button: canArm,
+                    enabled: canArm,
+                    label: semanticsLabel,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: canArm
+                          ? () {
+                              game.activatePowerShot();
+                              HapticFeedback.mediumImpact();
+                            }
+                          : null,
+                      child: SizedBox(
+                        height: 44,
+                        child: ChamferedActionSurface(
+                          clipper: const HudChamferClipper(
+                            bigCut: 9,
+                            smallCut: 3,
+                          ),
+                          borderColor: canArm
+                              ? Cyber.gold.withValues(alpha: .9)
+                              : armed
+                              ? Cyber.gold.withValues(alpha: .7)
+                              : Cyber.line,
+                          borderWidth: canArm || armed ? 1.5 : 1,
+                          glowColor: Cyber.gold,
+                          glow: canArm ? 1 : 0,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 120),
+                            color: canArm || armed
+                                ? Cyber.gold.withValues(alpha: .12)
+                                : Cyber.panel.withValues(alpha: .84),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.bolt_rounded,
+                                  size: 15,
+                                  color: canArm || armed
+                                      ? Cyber.gold
+                                      : Cyber.muted,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        label,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: Cyber.label(
+                                          7.5,
+                                          color: canArm || armed
+                                              ? Cyber.gold
+                                              : Cyber.muted,
+                                          letterSpacing: 1.2,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      CyberProgressBar(
+                                        value: requirement == 0
+                                            ? 0
+                                            : segments / requirement,
+                                        accent: canArm || armed
+                                            ? Cyber.gold
+                                            : Cyber.cyan,
+                                        height: 4,
+                                        animate: false,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '$segments/$requirement',
+                                  style: Cyber.label(
+                                    8,
+                                    color: canArm || armed
+                                        ? Cyber.gold
+                                        : Cyber.muted,
+                                    letterSpacing: 1,
+                                    fontFeatures: const [
+                                      FontFeature.tabularFigures(),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              : const SizedBox.shrink(),
         );
       },
-    );
-  }
-}
-
-/// The shot meter — Hoop Duel's, on a bat. The needle is your backlift: hold a
-/// swing plate and it climbs, into the lime band for a full-blooded shot and on
-/// into the red if you hold too long. The engine owns every number on it, so
-/// what you aim at is exactly what you are judged against.
-class FinalOverShotMeter extends StatelessWidget {
-  const FinalOverShotMeter({required this.game, super.key});
-
-  final FinalOverGame game;
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<ChargeMeterView?>(
-      valueListenable: game.shotMeter,
-      builder: (context, view, _) => AnimatedOpacity(
-        opacity: view == null ? 0 : 1,
-        duration: const Duration(milliseconds: 160),
-        child: CyberChargeMeter(
-          view:
-              view ??
-              const ChargeMeterView(
-                progress: 0,
-                perfectCenter: 0.8,
-                perfectHalf: 0.1,
-                goodHalf: 0.22,
-              ),
-        ),
-      ),
     );
   }
 }
@@ -424,6 +487,5 @@ class FinalOverGameScope extends InheritedWidget {
   bool updateShouldNotify(FinalOverGameScope old) => old.game != game;
 }
 
-FinalOverGame _gameOf(BuildContext context) => context
-    .dependOnInheritedWidgetOfExactType<FinalOverGameScope>()!
-    .game;
+FinalOverGame _gameOf(BuildContext context) =>
+    context.dependOnInheritedWidgetOfExactType<FinalOverGameScope>()!.game;

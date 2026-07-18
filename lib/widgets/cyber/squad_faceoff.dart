@@ -129,7 +129,7 @@ class _FaceoffRow extends StatelessWidget {
               listenable: reveal,
               start: _cardStart(i),
               end: _cardEnd(i),
-              child: _FaceoffCard(card: shooters[i], accent: accent),
+              child: FaceoffCard(card: shooters[i], accent: accent),
             ),
           ),
         ],
@@ -172,9 +172,10 @@ class _FaceoffRow extends StatelessWidget {
 }
 
 /// Compact face-off card — portrait, tier foil, corner-cut chamfer, rating chip,
-/// gold keeper tag — sized to fit five-across.
-class _FaceoffCard extends StatelessWidget {
-  const _FaceoffCard({required this.card, required this.accent});
+/// gold keeper tag — sized to fit five-across. Public so board-style modes
+/// (Duel Board arena slots) can reuse the same compact card DNA.
+class FaceoffCard extends StatelessWidget {
+  const FaceoffCard({required this.card, required this.accent, super.key});
 
   final PlayerCard card;
   final Color accent;
@@ -305,7 +306,7 @@ class _FaceoffCardBorder extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final path = _FaceoffCard._clipper.buildPath(size);
+    final path = FaceoffCard._clipper.buildPath(size);
     canvas.drawPath(
       path,
       Paint()

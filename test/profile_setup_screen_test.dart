@@ -27,7 +27,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.byKey(const ValueKey('onboarding_team_grid')), findsOneWidget);
-    expect(find.text('FOOTBALL'), findsOneWidget);
+    expect(_sportPill(Icons.sports_soccer), findsOneWidget);
     expect(find.text('EPL'), findsOneWidget);
     expect(find.text('LIVERPOOL'), findsOneWidget);
 
@@ -49,7 +49,7 @@ void main() {
     await _pumpProfileSetup(tester, (value) => result = value);
     await _openClubsStep(tester);
 
-    await tester.tap(find.text('FORMULA 1'));
+    await tester.tap(_sportPill(Icons.sports_motorsports));
     await tester.pump(const Duration(milliseconds: 220));
 
     expect(
@@ -69,6 +69,11 @@ void main() {
     expect(result!.favoriteTeams['formula1'], 'fer');
   });
 }
+
+Finder _sportPill(IconData icon) => find.descendant(
+  of: find.byKey(const ValueKey('onboarding_sport_selector')),
+  matching: find.byIcon(icon),
+);
 
 Future<void> _pumpProfileSetup(
   WidgetTester tester,

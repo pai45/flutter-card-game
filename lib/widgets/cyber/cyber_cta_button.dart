@@ -123,6 +123,11 @@ class HudCtaButton extends StatefulWidget {
   /// Optional small sub-line rendered under [label] (e.g. an odds readout).
   final String? helper;
 
+  /// Optional copy used while the pointer is held down. Hold-to-charge actions
+  /// use this to tell the player exactly what releasing will do.
+  final String? pressedLabel;
+  final String? pressedHelper;
+
   /// When true (default) the button carries the pulsing neon halo. Set false
   /// for a calmer, elevated treatment (crisp border + a plain drop shadow, no
   /// neon glow) — e.g. on the profile-setup flow.
@@ -137,6 +142,8 @@ class HudCtaButton extends StatefulWidget {
     this.accent = Cyber.cyan,
     this.tapSound = SoundEffect.playMatch,
     this.helper,
+    this.pressedLabel,
+    this.pressedHelper,
     this.glow = true,
     this.enabled = true,
     this.onPressStart,
@@ -196,10 +203,16 @@ class _HudCtaButtonState extends State<HudCtaButton>
         ? (isCyan ? _fillBottom : accent)
         : Cyber.panel;
     final contentColor = widget.enabled ? _ink : Cyber.muted;
+    final displayLabel = _pressed
+        ? widget.pressedLabel ?? widget.label
+        : widget.label;
+    final displayHelper = _pressed
+        ? widget.pressedHelper ?? widget.helper
+        : widget.helper;
     return Semantics(
       button: true,
       enabled: widget.enabled,
-      label: widget.label,
+      label: displayLabel,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTapDown: widget.enabled
@@ -323,7 +336,7 @@ class _HudCtaButtonState extends State<HudCtaButton>
                                       FittedBox(
                                         fit: BoxFit.scaleDown,
                                         child: Text(
-                                          widget.label,
+                                          displayLabel,
                                           maxLines: 1,
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
@@ -342,10 +355,10 @@ class _HudCtaButtonState extends State<HudCtaButton>
                                           ),
                                         ),
                                       ),
-                                      if (widget.helper != null) ...[
+                                      if (displayHelper != null) ...[
                                         const SizedBox(height: 3),
                                         Text(
-                                          widget.helper!,
+                                          displayHelper,
                                           textAlign: TextAlign.center,
                                           style: TextStyle(
                                             color: contentColor.withValues(
@@ -395,6 +408,9 @@ class HudHoldCtaButton extends StatelessWidget {
     this.height = 64,
     this.accent = Cyber.cyan,
     this.glow = true,
+    this.helper,
+    this.pressedLabel,
+    this.pressedHelper,
     super.key,
   });
 
@@ -407,6 +423,9 @@ class HudHoldCtaButton extends StatelessWidget {
   final double height;
   final Color accent;
   final bool glow;
+  final String? helper;
+  final String? pressedLabel;
+  final String? pressedHelper;
 
   @override
   Widget build(BuildContext context) => HudCtaButton(
@@ -416,6 +435,9 @@ class HudHoldCtaButton extends StatelessWidget {
     accent: accent,
     glow: glow,
     enabled: enabled,
+    helper: helper,
+    pressedLabel: pressedLabel,
+    pressedHelper: pressedHelper,
     onPressStart: onPressStart,
     onPressEnd: onPressEnd,
     onPressCancel: onPressCancel,

@@ -295,6 +295,8 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
           if (_showLevelUp)
             LevelUpCelebration(
               levels: widget.state.pendingLevelUps,
+              progression: widget.state.progression,
+              xpEarned: widget.state.lastMatchXP ?? 0,
               onDismissed: () => setState(() => _showLevelUp = false),
             ),
         ],

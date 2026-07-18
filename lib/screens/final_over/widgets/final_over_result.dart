@@ -265,6 +265,8 @@ class _FinalOverResultOverlayState extends State<FinalOverResultOverlay> {
             if (_showLevelUp)
               LevelUpCelebration(
                 levels: context.read<GameBloc>().state.pendingLevelUps,
+                progression: context.read<GameBloc>().state.progression,
+                xpEarned: context.read<GameBloc>().state.lastMatchXP ?? 0,
                 onDismissed: () => setState(() => _showLevelUp = false),
               ),
           ],
