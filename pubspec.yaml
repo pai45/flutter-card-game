@@ -45,6 +45,10 @@ dependencies:
   # 5v5 Football Chess game loop / renderer.
   flame: ^1.18.0
 
+  # Final Over — offline six-ball cricket chase rules engine (local package).
+  final_over:
+    path: final_over
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

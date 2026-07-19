@@ -287,6 +287,7 @@ class _QuizAnswerScreenState extends State<QuizAnswerScreen>
     setState(() => _submitting = true);
     await context.read<PredictionCubit>().submit(
       _match.id,
+      _quiz.id,
       Map.of(_answers),
       multipliersByQuestion: Map.of(_multipliersByQuestion),
     );
