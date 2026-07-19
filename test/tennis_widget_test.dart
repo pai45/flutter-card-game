@@ -70,6 +70,8 @@ void main() {
             onOpenBasketballGuessPlayer: () {},
             onOpenCricketGuessPlayer: () {},
             onOpenGrandPrix: () {},
+          onOpenF1GuessDriver: () {},
+              onOpenTennisGuessWinner: () {},
             onOpenBasketball: () {},
             onOpenTennisRally: () => opened = true,
           ),

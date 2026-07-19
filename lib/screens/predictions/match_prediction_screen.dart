@@ -12,6 +12,7 @@ import '../../blocs/picks/picks_cubit.dart';
 import '../../blocs/prediction/prediction_cubit.dart';
 import '../../blocs/prediction/prediction_state.dart';
 import '../../config/theme.dart';
+import '../../models/oz_coin_ledger.dart';
 import '../../models/picks.dart';
 import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
@@ -20,6 +21,7 @@ import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/staggered_card_entrance.dart';
 import '../../widgets/team_logo.dart';
+import '../shop/widgets/shop_card.dart' show CoinIcon;
 import 'market_detail_screen.dart';
 import 'widgets/score_prediction_picker.dart';
 import 'widgets/settlement_reveal.dart';
@@ -89,6 +91,9 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
   int _settlementXp = 0;
   int _settlementXpBefore = 0;
   double? _settlementBeatenShare;
+  int _settlementContestRank = 0;
+  int _settlementContestPrizeOz = 0;
+  int _settlementContestField = 0;
   Timer? _ticker;
   DateTime _now = DateTime.now();
   _QuizRevealPhase _revealPhase = _QuizRevealPhase.ready;
@@ -414,6 +419,16 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
           quizId,
         ) ==
         null;
+    // Paid contest (Scoreline Quiz): the entry fee is charged once, when the
+    // player first locks in. Editing answers afterwards never re-charges.
+    final chargesEntry = isFresh && (_quiz?.isContest ?? false);
+    if (chargesEntry) {
+      final game = context.read<GameBloc?>();
+      if (game != null && game.state.coins < kScorelineQuizEntryFee) {
+        _notify('Need $kScorelineQuizEntryFee Oz to enter this contest.');
+        return;
+      }
+    }
     _ensureScoreDefaults();
     playSound(SoundEffect.matchWin);
     // Hold the global achievement reveal so the post-submit cinematic plays
@@ -432,6 +447,16 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
       context.read<GameBloc?>()?.add(
         StreakActivityRecorded(StreakActivity.predict),
       );
+      if (chargesEntry) {
+        context.read<GameBloc?>()?.add(
+          CoinsSpent(
+            kScorelineQuizEntryFee,
+            source: OzCoinTransactionSource.quizEntry,
+            title: 'SCORELINE QUIZ ENTRY',
+            subtitle: '${_match.home.shortName} vs ${_match.away.shortName}',
+          ),
+        );
+      }
     }
     // Snapshot what we just submitted as the saved baseline so the post-submit
     // review list opens with no pending draft — that's what surfaces the
@@ -471,6 +496,19 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
       );
       _savingUpdates = false;
     });
+  }
+
+  /// Lightweight feedback shown when an action is blocked (e.g. not enough Oz
+  /// to enter the contest). No-op if this embedded screen has no messenger.
+  void _notify(String message) {
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    messenger?.showSnackBar(
+      SnackBar(
+        content: Text(message, style: Cyber.body(13)),
+        backgroundColor: Cyber.panel,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   /// The best pick market for this fixture. Fresh quiz submit should hand the
@@ -523,17 +561,29 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
         ? null
         : _leaderboard.where((e) => correctCount >= e.correct).length /
               _leaderboard.length;
-    final earnedXp = await context.read<PredictionCubit>().settle(
+    final settlement = await context.read<PredictionCubit>().settle(
       _match.id,
       prediction.quizId,
     );
     if (!mounted) return;
-    if (earnedXp > 0) {
+    if (settlement.xp > 0) {
       context.read<GameBloc>().add(
         PredictionXpAdded(
-          earnedXp,
+          settlement.xp,
           details:
               '${_match.home.shortName} vs ${_match.away.shortName} ${prediction.quizId}',
+        ),
+      );
+    }
+    // Paid-contest prize: credited once here (settle() only pays a fresh
+    // settlement, so re-opening a settled quiz never re-awards).
+    if (settlement.prizeOz > 0) {
+      context.read<GameBloc>().add(
+        CoinsAdded(
+          settlement.prizeOz,
+          source: OzCoinTransactionSource.quizContestPayout,
+          title: 'SCORELINE QUIZ PRIZE',
+          subtitle: 'Finished #${settlement.rank}',
         ),
       );
     }
@@ -542,6 +592,9 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
       _settlementXp = totalXp;
       _settlementXpBefore = xpBefore;
       _settlementBeatenShare = beatenShare;
+      _settlementContestRank = quiz.isContest ? settlement.rank : 0;
+      _settlementContestPrizeOz = settlement.prizeOz;
+      _settlementContestField = settlement.fieldSize;
     });
   }
 
@@ -566,6 +619,9 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
               totalXp: _settlementXp,
               xpBefore: _settlementXpBefore,
               beatenShare: _settlementBeatenShare,
+              contestRank: _settlementContestRank,
+              contestPrizeOz: _settlementContestPrizeOz,
+              contestField: _settlementContestField,
               onDone: () {
                 if (mounted) setState(() => _settlementResults = null);
               },
@@ -1522,6 +1578,25 @@ class _QuizChamferPanelPainter extends CustomPainter {
 /// Resolved per-state look for a quiz-set hub card. Keeps the visual language
 /// gamified: every state reads as an "objective" with a status tag, a reward
 /// stake, a completion/accuracy meter and a call-to-action.
+/// State of a paid-contest quiz, drives the [_ContestStrip] on its hub card.
+class _ContestMeta {
+  const _ContestMeta({
+    required this.fee,
+    this.paid = false,
+    this.affordable = true,
+    this.rank = 0,
+    this.prizeOz = 0,
+    this.settled = false,
+  });
+
+  final int fee;
+  final bool paid;
+  final bool affordable;
+  final int rank; // finish position once settled (0 = not settled)
+  final int prizeOz; // coins won (0 = none / off podium)
+  final bool settled;
+}
+
 class _QuizHubVisual {
   const _QuizHubVisual({
     required this.accent,
@@ -1535,6 +1610,8 @@ class _QuizHubVisual {
     this.glow = false,
     this.pulse = false,
     this.showChevron = true,
+    this.blocked = false,
+    this.contest,
     this.outcomes,
   });
 
@@ -1553,35 +1630,68 @@ class _QuizHubVisual {
   /// Beckon pulse (drives the reveal moment's breathing glow).
   final bool pulse;
   final bool showChevron;
+
+  /// Entry is barred (can't afford the fee) — tap is intercepted, card muted.
+  final bool blocked;
+
+  /// Paid-contest metadata (null for free/XP-only quizzes).
+  final _ContestMeta? contest;
   final List<QuestionOutcome>? outcomes;
 }
 
 _QuizHubVisual _resolveQuizHubVisual(
   SportMatch match,
   PredictionQuiz quiz,
-  UserPrediction? prediction,
-) {
+  UserPrediction? prediction, {
+  int? coins,
+}) {
   final total = quiz.questions.length;
   final answered = prediction?.answers.length ?? 0;
   final potentialXp = quiz.maxReward;
   final settled = prediction?.status == PredictionStatus.settled;
   final locked = prediction?.status == PredictionStatus.locked;
 
+  // Paid-contest context (Scoreline Quiz). `paid` once a prediction exists.
+  final isContest = quiz.isContest;
+  final entered = prediction != null;
+  final affordable = coins == null || coins >= quiz.entryFee;
+  _ContestMeta? contestFor({
+    bool settled = false,
+    int rank = 0,
+    int prizeOz = 0,
+  }) => isContest
+      ? _ContestMeta(
+          fee: quiz.entryFee,
+          paid: entered,
+          affordable: affordable,
+          rank: rank,
+          prizeOz: prizeOz,
+          settled: settled,
+        )
+      : null;
+
   // Finished + settled → verdict card (calm; the moment already happened).
   if (match.status == MatchStatus.finished && settled) {
     final correct = prediction!.correctCount ?? 0;
     final won = correct > 0;
     final earned = prediction.rewardEarned;
+    final prizeOz = prediction.contestPrizeOz;
+    final wonCoins = prizeOz > 0;
     return _QuizHubVisual(
-      accent: won ? Cyber.gold : Cyber.muted,
-      tag: 'SETTLED',
+      accent: (won || wonCoins) ? Cyber.gold : Cyber.muted,
+      tag: wonCoins ? 'PRIZE WON' : 'SETTLED',
       progress: total == 0 ? 0 : correct / total,
       progressAccent: won ? Cyber.success : Cyber.muted,
-      ctaIcon: won ? Icons.military_tech : Icons.done_all,
+      ctaIcon: (won || wonCoins) ? Icons.military_tech : Icons.done_all,
       ctaText: '$correct / $total CORRECT',
       rewardText: earned > 0 ? '+$earned XP' : 'NO XP',
       rewardColor: earned > 0 ? Cyber.success : Cyber.muted,
       showChevron: false,
+      contest: contestFor(
+        settled: true,
+        rank: prediction.contestRank ?? 0,
+        prizeOz: prizeOz,
+      ),
       outcomes: questionOutcomes(quiz, prediction),
     );
   }
@@ -1589,23 +1699,24 @@ _QuizHubVisual _resolveQuizHubVisual(
   // Finished + rewards waiting → the ONE glowing focal moment on the screen.
   if (match.status == MatchStatus.finished &&
       (prediction != null || quiz.settleable)) {
-    return const _QuizHubVisual(
+    return _QuizHubVisual(
       accent: Cyber.gold,
       tag: 'REWARD READY',
       progress: 1,
       progressAccent: Cyber.gold,
       ctaIcon: Icons.redeem,
-      ctaText: 'TAP TO REVEAL RESULTS',
+      ctaText: isContest ? 'TAP TO REVEAL RESULT · PRIZE' : 'TAP TO REVEAL RESULTS',
       rewardText: 'REVEAL',
       rewardColor: Cyber.gold,
       glow: true,
       pulse: true,
+      contest: contestFor(),
     );
   }
 
   // Finished, no entry → closed/expired.
   if (match.status == MatchStatus.finished) {
-    return const _QuizHubVisual(
+    return _QuizHubVisual(
       accent: Cyber.muted,
       tag: 'CLOSED',
       progress: 0,
@@ -1615,6 +1726,7 @@ _QuizHubVisual _resolveQuizHubVisual(
       rewardText: 'MISSED',
       rewardColor: Cyber.muted,
       showChevron: false,
+      contest: contestFor(),
     );
   }
 
@@ -1630,6 +1742,7 @@ _QuizHubVisual _resolveQuizHubVisual(
       rewardText: prediction != null ? 'IN PLAY' : 'CLOSED',
       rewardColor: Cyber.danger,
       showChevron: false,
+      contest: contestFor(),
     );
   }
 
@@ -1647,6 +1760,24 @@ _QuizHubVisual _resolveQuizHubVisual(
           : 'RESUME · $answered/$total ANSWERED',
       rewardText: '+$potentialXp XP',
       rewardColor: Cyber.gold,
+      contest: contestFor(),
+    );
+  }
+
+  // Upcoming, contest entry unaffordable → barred until they top up.
+  if (isContest && !affordable) {
+    return _QuizHubVisual(
+      accent: Cyber.muted,
+      tag: 'ENTRY LOCKED',
+      progress: 0,
+      progressAccent: Cyber.muted,
+      ctaIcon: Icons.lock_outline,
+      ctaText: 'NEED ${quiz.entryFee} OZ TO ENTER',
+      rewardText: '+$potentialXp XP',
+      rewardColor: Cyber.muted,
+      showChevron: false,
+      blocked: true,
+      contest: contestFor(),
     );
   }
 
@@ -1660,6 +1791,7 @@ _QuizHubVisual _resolveQuizHubVisual(
     ctaText: 'TAP TO PREDICT · $total QUESTIONS',
     rewardText: '+$potentialXp XP',
     rewardColor: Cyber.gold,
+    contest: contestFor(),
   );
 }
 
@@ -1725,7 +1857,18 @@ class _QuizSetHubCardState extends State<_QuizSetHubCard>
 
   @override
   Widget build(BuildContext context) {
-    final v = _resolveQuizHubVisual(widget.match, widget.quiz, widget.prediction);
+    // Reactive coin balance so the entry gate flips the moment the wallet does.
+    // Nullable read: contest gating only matters where a GameBloc exists (the
+    // real app); tests without one treat entry as affordable.
+    final coins = widget.quiz.isContest
+        ? context.select<GameBloc?, int?>((b) => b?.state.coins)
+        : null;
+    final v = _resolveQuizHubVisual(
+      widget.match,
+      widget.quiz,
+      widget.prediction,
+      coins: coins,
+    );
 
     // Only the reward-reveal moment breathes; everything else is still.
     if (v.pulse && !_pulse.isAnimating) {
@@ -1741,7 +1884,22 @@ class _QuizSetHubCardState extends State<_QuizSetHubCard>
       label: 'Open ${widget.quiz.title}',
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: widget.onTap,
+        onTap: v.blocked
+            ? () {
+                playSound(SoundEffect.uiTap);
+                final messenger = ScaffoldMessenger.maybeOf(context);
+                messenger?.showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Need ${widget.quiz.entryFee} Oz to enter this contest.',
+                      style: Cyber.body(13),
+                    ),
+                    backgroundColor: Cyber.panel,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            : widget.onTap,
         child: AnimatedBuilder(
           animation: _pulse,
           builder: (context, child) {
@@ -1861,6 +2019,10 @@ class _QuizSetHubCardState extends State<_QuizSetHubCard>
                                 overflow: TextOverflow.ellipsis,
                                 style: Cyber.body(11.5, color: Cyber.muted),
                               ),
+                            ],
+                            if (v.contest != null) ...[
+                              const SizedBox(height: 9),
+                              _ContestStrip(meta: v.contest!),
                             ],
                             const SizedBox(height: 11),
                             CyberProgressBar(
@@ -1990,6 +2152,124 @@ class _RewardPill extends StatelessWidget {
           letterSpacing: 0.6,
           fontFeatures: const [FontFeature.tabularFigures()],
         ),
+      ),
+    );
+  }
+}
+
+/// Paid-contest ribbon on the Scoreline Quiz hub card: entry state on the left,
+/// prize pool on the right (pre-settle) — or finish + coins won (post-settle).
+/// Flat tinted chips only; the gold coin win is a chip, not a glow (glow rule:
+/// the reveal cinematic owns the "moment", the hub stays calm).
+class _ContestStrip extends StatelessWidget {
+  const _ContestStrip({required this.meta});
+
+  final _ContestMeta meta;
+
+  @override
+  Widget build(BuildContext context) {
+    if (meta.settled) {
+      final won = meta.prizeOz > 0;
+      return Row(
+        children: [
+          _ContestChip(
+            icon: Icons.leaderboard,
+            label: meta.rank > 0 ? 'FINISHED #${meta.rank}' : 'FINISHED',
+            color: won ? Cyber.gold : Cyber.muted,
+          ),
+          const Spacer(),
+          if (won)
+            _ContestChip(
+              coin: true,
+              label: '+${meta.prizeOz}',
+              color: Cyber.gold,
+              filled: true,
+            )
+          else
+            _ContestChip(label: 'NO PRIZE', color: Cyber.muted),
+        ],
+      );
+    }
+
+    // Entry phase — left chip reflects paid / affordable / barred.
+    final Widget entry;
+    if (meta.paid) {
+      entry = _ContestChip(
+        icon: Icons.check_circle,
+        label: 'ENTRY PAID',
+        color: Cyber.lime,
+      );
+    } else if (meta.affordable) {
+      entry = _ContestChip(
+        coin: true,
+        label: '-${meta.fee} OZ ENTRY',
+        color: Cyber.cyan,
+      );
+    } else {
+      entry = _ContestChip(
+        icon: Icons.lock_outline,
+        label: 'NEED ${meta.fee} OZ',
+        color: Cyber.muted,
+      );
+    }
+
+    return Row(
+      children: [
+        entry,
+        const Spacer(),
+        _ContestChip(
+          icon: Icons.emoji_events,
+          label: kScorelineContestPrizes.join(' · '),
+          color: Cyber.gold,
+        ),
+      ],
+    );
+  }
+}
+
+/// One compact chip in the [_ContestStrip]. Either an [icon] or a [coin] glyph
+/// leads the label. `filled` tints the fill up for the coins-won highlight.
+class _ContestChip extends StatelessWidget {
+  const _ContestChip({
+    this.icon,
+    this.coin = false,
+    required this.label,
+    required this.color,
+    this.filled = false,
+  });
+
+  final IconData? icon;
+  final bool coin;
+  final String label;
+  final Color color;
+  final bool filled;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: filled ? 0.18 : 0.10),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (coin)
+            const CoinIcon(size: 12)
+          else if (icon != null)
+            Icon(icon, size: 12, color: color),
+          if (coin || icon != null) const SizedBox(width: 4),
+          Text(
+            label,
+            style: Cyber.label(
+              8.5,
+              color: color,
+              letterSpacing: 0.8,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
       ),
     );
   }

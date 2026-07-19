@@ -750,7 +750,8 @@ class _ClubSportPill extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+          width: 56,
+          alignment: Alignment.center,
           decoration: BoxDecoration(
             color: AppTheme.onboardingPanelFill.withValues(
               alpha: selected ? 1 : 0.78,
@@ -763,20 +764,10 @@ class _ClubSportPill extends StatelessWidget {
                 ? Cyber.glow(Cyber.lime, alpha: 0.14, blur: 12, spread: -3)
                 : null,
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(module.icon, color: color, size: 18),
-              const SizedBox(width: 7),
-              Text(
-                module.label.toUpperCase(),
-                style: Cyber.label(
-                  10,
-                  color: selected ? Colors.white : Cyber.muted,
-                  letterSpacing: 1.0,
-                ),
-              ),
-            ],
+          child: AnimatedScale(
+            duration: const Duration(milliseconds: 150),
+            scale: selected ? 1.1 : 1,
+            child: Icon(module.icon, color: color, size: 22),
           ),
         ),
       ),

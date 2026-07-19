@@ -185,6 +185,8 @@ class _ShootoutResultPhaseState extends State<ShootoutResultPhase>
               if (_showLevelUp)
                 LevelUpCelebration(
                   levels: game.pendingLevelUps,
+                  progression: game.progression,
+                  xpEarned: game.lastMatchXP ?? 0,
                   onDismissed: () => setState(() => _showLevelUp = false),
                 ),
             ],

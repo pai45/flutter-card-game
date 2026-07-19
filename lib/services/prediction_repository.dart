@@ -1288,7 +1288,7 @@ class MockPredictionRepository implements PredictionRepository {
       safetyCarSettled: 0,
       fastLapSettled: 2,
     ),
-    'f1_belgian_gp': _f1Quizzes('f1_belgian_gp'),
+    'f1_belgian_gp': _belgianGpQuizzes(),
     'f1_hungarian_gp': _f1Quizzes('f1_hungarian_gp'),
   };
 
@@ -1568,6 +1568,7 @@ class MockPredictionRepository implements PredictionRepository {
         primary,
         title: 'Scoreline Quiz',
         subtitle: 'Final score and scoring market',
+        entryFee: kScorelineQuizEntryFee,
       ),
       Sport.cricket => _withQuizMeta(
         primary,
@@ -1593,13 +1594,17 @@ class MockPredictionRepository implements PredictionRepository {
     PredictionQuiz quiz, {
     required String title,
     required String subtitle,
+    int entryFee = 0,
   }) => PredictionQuiz(
     id: quiz.id,
     matchId: quiz.matchId,
     title: title,
     subtitle: subtitle,
-    prizeLabel: '${quiz.maxReward} XP available',
+    prizeLabel: entryFee > 0
+        ? '${kScorelineContestPrizes.join(' / ')} Oz prize pool'
+        : '${quiz.maxReward} XP available',
     questions: quiz.questions,
+    entryFee: entryFee,
   );
 
   static PredictionQuiz _tennisQuiz({
@@ -2258,6 +2263,71 @@ class MockPredictionRepository implements PredictionRepository {
           options: const ['Lewis Hamilton', 'Charles Leclerc', 'George Russell'],
           reward: 75,
           settledOptionIndex: fastLapSettled,
+        ),
+      ],
+    ),
+  ];
+
+  // Spa-Francorchamps flavoured predictions for the Belgian GP weekend — the
+  // signature "will it rain?" hook drives the extra question the generic
+  // [_f1Quizzes] template doesn't carry.
+  static List<PredictionQuiz> _belgianGpQuizzes() => [
+    PredictionQuiz(
+      id: 'main',
+      matchId: 'f1_belgian_gp',
+      title: 'Race Predictions',
+      questions: [
+        QuizQuestion(
+          id: 'q1',
+          text: 'Who will win the Belgian Grand Prix?',
+          options: const [
+            'Charles Leclerc',
+            'George Russell',
+            'Lando Norris',
+            'Max Verstappen',
+          ],
+          reward: 100,
+        ),
+        QuizQuestion(
+          id: 'q2',
+          text: 'Will it rain during the race at Spa?',
+          options: const ['Yes', 'No'],
+          reward: 60,
+        ),
+        QuizQuestion(
+          id: 'q3',
+          text: 'Will there be a safety car?',
+          options: const ['Yes', 'No'],
+          reward: 50,
+        ),
+      ],
+    ),
+    PredictionQuiz(
+      id: 'bonus',
+      matchId: 'f1_belgian_gp',
+      title: 'Bonus Predictions',
+      questions: [
+        QuizQuestion(
+          id: 'b1',
+          text: 'Who takes pole position at Spa?',
+          options: const [
+            'Charles Leclerc',
+            'George Russell',
+            'Lando Norris',
+            'Max Verstappen',
+          ],
+          reward: 75,
+        ),
+        QuizQuestion(
+          id: 'b2',
+          text: 'Who sets the fastest lap?',
+          options: const [
+            'Lewis Hamilton',
+            'Charles Leclerc',
+            'George Russell',
+            'Oscar Piastri',
+          ],
+          reward: 75,
         ),
       ],
     ),

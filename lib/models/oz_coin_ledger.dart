@@ -13,6 +13,7 @@ enum OzCoinTransactionSource {
   streakReward,
   referralReward,
   quizEntry,
+  quizContestPayout,
   footballBingoLifeline,
   tennisReward,
   manual,

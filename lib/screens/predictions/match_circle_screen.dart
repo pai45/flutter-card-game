@@ -946,71 +946,83 @@ class _MatchCircleComposer extends StatelessWidget {
                 ),
               ],
               Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: TextField(
-                      key: const ValueKey('match-circle-composer-field'),
-                      controller: controller,
-                      focusNode: focusNode,
-                      enabled: enabled,
-                      minLines: 1,
-                      maxLines: 4,
-                      maxLength: matchCirclePostMaxLength,
-                      maxLengthEnforcement: MaxLengthEnforcement.enforced,
-                      textCapitalization: TextCapitalization.sentences,
-                      keyboardType: TextInputType.multiline,
-                      textInputAction: TextInputAction.newline,
-                      onChanged: onChanged,
-                      style: Cyber.body(13, height: 1.35),
-                      cursorColor: Cyber.cyan,
-                      buildCounter:
-                          (
-                            context, {
-                            required currentLength,
-                            required isFocused,
-                            required maxLength,
-                          }) => Text(
-                            '$currentLength/$maxLength',
-                            style: Cyber.body(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TextField(
+                          key: const ValueKey('match-circle-composer-field'),
+                          controller: controller,
+                          focusNode: focusNode,
+                          enabled: enabled,
+                          minLines: 1,
+                          maxLines: 4,
+                          maxLength: matchCirclePostMaxLength,
+                          maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                          textCapitalization: TextCapitalization.sentences,
+                          keyboardType: TextInputType.multiline,
+                          textInputAction: TextInputAction.newline,
+                          onChanged: onChanged,
+                          style: Cyber.body(13, height: 1.35),
+                          cursorColor: Cyber.cyan,
+                          buildCounter:
+                              (
+                                context, {
+                                required currentLength,
+                                required isFocused,
+                                required maxLength,
+                              }) => const SizedBox.shrink(),
+                          decoration: InputDecoration(
+                            hintText: editingPost != null
+                                ? 'Update your comment'
+                                : replyingTo != null
+                                ? 'Write a reply'
+                                : 'Join the Match Circle',
+                            hintStyle: Cyber.body(13, color: Cyber.muted),
+                            filled: true,
+                            fillColor: Cyber.bg2.withValues(alpha: 0.92),
+                            contentPadding: const EdgeInsets.fromLTRB(
+                              12,
+                              11,
+                              12,
                               9,
-                              color: currentLength >= 450
-                                  ? Cyber.gold
-                                  : Cyber.muted,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.zero,
+                              borderSide: BorderSide(
+                                color: Cyber.border.withValues(alpha: 0.85),
+                              ),
+                            ),
+                            focusedBorder: const OutlineInputBorder(
+                              borderRadius: BorderRadius.zero,
+                              borderSide: BorderSide(color: Cyber.cyan),
+                            ),
+                            disabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.zero,
+                              borderSide: BorderSide(
+                                color: Cyber.border.withValues(alpha: 0.4),
+                              ),
                             ),
                           ),
-                      decoration: InputDecoration(
-                        hintText: editingPost != null
-                            ? 'Update your comment'
-                            : replyingTo != null
-                            ? 'Write a reply'
-                            : 'Join the Match Circle',
-                        hintStyle: Cyber.body(13, color: Cyber.muted),
-                        filled: true,
-                        fillColor: Cyber.bg2.withValues(alpha: 0.92),
-                        contentPadding: const EdgeInsets.fromLTRB(
-                          12,
-                          11,
-                          12,
-                          9,
                         ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.zero,
-                          borderSide: BorderSide(
-                            color: Cyber.border.withValues(alpha: 0.85),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4, right: 4),
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              '${controller.text.length}/$matchCirclePostMaxLength',
+                              style: Cyber.body(
+                                9,
+                                color: controller.text.length >= 450
+                                    ? Cyber.gold
+                                    : Cyber.muted,
+                              ),
+                            ),
                           ),
                         ),
-                        focusedBorder: const OutlineInputBorder(
-                          borderRadius: BorderRadius.zero,
-                          borderSide: BorderSide(color: Cyber.cyan),
-                        ),
-                        disabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.zero,
-                          borderSide: BorderSide(
-                            color: Cyber.border.withValues(alpha: 0.4),
-                          ),
-                        ),
-                      ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 8),

@@ -49,6 +49,8 @@ class PredictionHomeScreen extends StatefulWidget {
     required this.onOpenBasketballGuessPlayer,
     required this.onOpenCricketGuessPlayer,
     required this.onOpenGrandPrix,
+    required this.onOpenF1GuessDriver,
+    required this.onOpenTennisGuessWinner,
     required this.onOpenBasketball,
     this.onOpenFinalOver,
     this.onOpenTennisRally,
@@ -76,6 +78,8 @@ class PredictionHomeScreen extends StatefulWidget {
   final VoidCallback onOpenBasketballGuessPlayer;
   final VoidCallback onOpenCricketGuessPlayer;
   final VoidCallback onOpenGrandPrix;
+  final VoidCallback onOpenF1GuessDriver;
+  final VoidCallback onOpenTennisGuessWinner;
   final VoidCallback onOpenBasketball;
   final VoidCallback? onOpenFinalOver;
   final VoidCallback? onOpenTennisRally;
@@ -168,6 +172,8 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
         onOpenBasketballGuessPlayer: widget.onOpenBasketballGuessPlayer,
         onOpenCricketGuessPlayer: widget.onOpenCricketGuessPlayer,
         onOpenGrandPrix: widget.onOpenGrandPrix,
+        onOpenF1GuessDriver: widget.onOpenF1GuessDriver,
+        onOpenTennisGuessWinner: widget.onOpenTennisGuessWinner,
         onOpenBasketball: widget.onOpenBasketball,
         onOpenTennisRally: widget.onOpenTennisRally ?? () {},
         animateIntro: _shouldAnimateIntro(1),
@@ -1412,6 +1418,8 @@ class _GamesTab extends StatefulWidget {
     required this.onOpenBasketballGuessPlayer,
     required this.onOpenCricketGuessPlayer,
     required this.onOpenGrandPrix,
+    required this.onOpenF1GuessDriver,
+    required this.onOpenTennisGuessWinner,
     required this.onOpenBasketball,
     required this.onOpenTennisRally,
     required this.animateIntro,
@@ -1433,6 +1441,8 @@ class _GamesTab extends StatefulWidget {
   final VoidCallback onOpenBasketballGuessPlayer;
   final VoidCallback onOpenCricketGuessPlayer;
   final VoidCallback onOpenGrandPrix;
+  final VoidCallback onOpenF1GuessDriver;
+  final VoidCallback onOpenTennisGuessWinner;
   final VoidCallback onOpenBasketball;
   final VoidCallback onOpenTennisRally;
   final bool animateIntro;
@@ -1503,26 +1513,38 @@ class _GamesTabState extends State<_GamesTab> {
 
   Widget _buildTennisGames(bool animateIntro) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      key: const ValueKey('tennis-games-tab'),
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 48),
       children: [
         StaggeredCardEntrance(
           index: 0,
           animate: animateIntro,
           child: _TennisRallyGameTile(onTap: widget.onOpenTennisRally),
         ),
-        const SizedBox(height: 12),
-        StaggeredCardEntrance(
-          index: 1,
-          animate: animateIntro,
-          child: _GameTile(
-            title: 'TENNIS TRIVIA',
-            subtitle: 'TEST YOUR GRAND SLAM KNOWLEDGE',
-            icon: Icons.quiz,
-            accent: Cyber.cyan,
-            featured: true,
-            showTrailingIcon: false,
-            onTap: () => widget.onOpenQuiz(Sport.tennis),
-          ),
+        const SizedBox(height: 24),
+        const _QuickPlayHeader(gameCount: 2),
+        const SizedBox(height: 10),
+        _QuickGamesGrid(
+          animateIntro: animateIntro,
+          startIndex: 1,
+          games: [
+            _QuickGameEntry(
+              key: const ValueKey('tennis-quiz-grid-card'),
+              title: 'TENNIS QUIZ',
+              subtitle: 'TRIVIA GAUNTLET',
+              icon: Icons.quiz_rounded,
+              accent: Cyber.violet,
+              onTap: () => widget.onOpenQuiz(Sport.tennis),
+            ),
+            _QuickGameEntry(
+              key: const ValueKey('tennis-guess-winner-grid-card'),
+              title: 'GUESS THE WINNER',
+              subtitle: 'DAILY MYSTERY',
+              icon: Icons.person_search_rounded,
+              accent: Cyber.cyan,
+              onTap: widget.onOpenTennisGuessWinner,
+            ),
+          ],
         ),
       ],
     );
@@ -1547,32 +1569,29 @@ class _GamesTabState extends State<_GamesTab> {
           ),
         ),
         const SizedBox(height: 12),
-        StaggeredCardEntrance(
-          index: 1,
-          animate: animateIntro,
-          child: _GameTile(
-            title: 'GUESS THE PLAYER',
-            subtitle: 'DAILY BASKETBALL MYSTERY',
-            icon: Icons.person_search,
-            accent: Cyber.pink,
-            featured: true,
-            showTrailingIcon: false,
-            onTap: widget.onOpenBasketballGuessPlayer,
-          ),
-        ),
-        const SizedBox(height: 12),
-        StaggeredCardEntrance(
-          index: 2,
-          animate: animateIntro,
-          child: _GameTile(
-            title: 'BASKETBALL QUIZ',
-            subtitle: 'TRIVIA GAUNTLET',
-            icon: Icons.quiz,
-            accent: Cyber.violet,
-            featured: true,
-            showTrailingIcon: false,
-            onTap: () => widget.onOpenQuiz(Sport.basketball),
-          ),
+        const _QuickPlayHeader(gameCount: 2),
+        const SizedBox(height: 10),
+        _QuickGamesGrid(
+          animateIntro: animateIntro,
+          startIndex: 1,
+          games: [
+            _QuickGameEntry(
+              key: const ValueKey('basketball-quiz-grid-card'),
+              title: 'BASKETBALL QUIZ',
+              subtitle: 'TRIVIA GAUNTLET',
+              icon: Icons.quiz_rounded,
+              accent: Cyber.violet,
+              onTap: () => widget.onOpenQuiz(Sport.basketball),
+            ),
+            _QuickGameEntry(
+              key: const ValueKey('basketball-guess-player-grid-card'),
+              title: 'GUESS THE PLAYER',
+              subtitle: 'DAILY BASKETBALL MYSTERY',
+              icon: Icons.person_search_rounded,
+              accent: Cyber.pink,
+              onTap: widget.onOpenBasketballGuessPlayer,
+            ),
+          ],
         ),
       ],
     );
@@ -1599,32 +1618,29 @@ class _GamesTabState extends State<_GamesTab> {
           ),
         ),
         const SizedBox(height: 12),
-        StaggeredCardEntrance(
-          index: 1,
-          animate: animateIntro,
-          child: _GameTile(
-            title: 'GUESS THE PLAYER',
-            subtitle: 'DAILY CRICKET MYSTERY',
-            icon: Icons.person_search,
-            accent: Cyber.pink,
-            featured: true,
-            showTrailingIcon: false,
-            onTap: widget.onOpenCricketGuessPlayer,
-          ),
-        ),
-        const SizedBox(height: 12),
-        StaggeredCardEntrance(
-          index: 2,
-          animate: animateIntro,
-          child: _GameTile(
-            title: 'CRICKET QUIZ',
-            subtitle: 'TRIVIA GAUNTLET',
-            icon: Icons.quiz,
-            accent: Cyber.violet,
-            featured: true,
-            showTrailingIcon: false,
-            onTap: () => widget.onOpenQuiz(Sport.cricket),
-          ),
+        const _QuickPlayHeader(gameCount: 2),
+        const SizedBox(height: 10),
+        _QuickGamesGrid(
+          animateIntro: animateIntro,
+          startIndex: 1,
+          games: [
+            _QuickGameEntry(
+              key: const ValueKey('cricket-quiz-grid-card'),
+              title: 'CRICKET QUIZ',
+              subtitle: 'TRIVIA GAUNTLET',
+              icon: Icons.quiz_rounded,
+              accent: Cyber.violet,
+              onTap: () => widget.onOpenQuiz(Sport.cricket),
+            ),
+            _QuickGameEntry(
+              key: const ValueKey('cricket-guess-player-grid-card'),
+              title: 'GUESS THE PLAYER',
+              subtitle: 'DAILY CRICKET MYSTERY',
+              icon: Icons.person_search_rounded,
+              accent: Cyber.pink,
+              onTap: widget.onOpenCricketGuessPlayer,
+            ),
+          ],
         ),
       ],
     );
@@ -1692,46 +1708,37 @@ class _GamesTabState extends State<_GamesTab> {
           ),
         ),
         const SizedBox(height: 12),
-        StaggeredCardEntrance(
-          index: 3,
-          animate: animateIntro,
-          child: _GameTile(
-            title: 'FOOTBALL QUIZ',
-            subtitle: 'TRIVIA GAUNTLET',
-            icon: Icons.quiz,
-            accent: Cyber.violet,
-            featured: true,
-            showTrailingIcon: false,
-            onTap: () => widget.onOpenQuiz(Sport.football),
-          ),
-        ),
-        const SizedBox(height: 12),
-        StaggeredCardEntrance(
-          index: 4,
-          animate: animateIntro,
-          child: _GameTile(
-            title: 'FOOTBALL BINGO',
-            subtitle: 'COUNTRY x CLUB GRID',
-            icon: Icons.grid_view,
-            accent: Cyber.amber,
-            featured: true,
-            showTrailingIcon: false,
-            onTap: widget.onOpenFootballBingo,
-          ),
-        ),
-        const SizedBox(height: 12),
-        StaggeredCardEntrance(
-          index: 5,
-          animate: animateIntro,
-          child: _GameTile(
-            title: 'GUESS THE PLAYER',
-            subtitle: 'DAILY FOOTBALL MYSTERY',
-            icon: Icons.person_search,
-            accent: Cyber.pink,
-            featured: true,
-            showTrailingIcon: false,
-            onTap: widget.onOpenGuessPlayer,
-          ),
+        const _QuickPlayHeader(gameCount: 3),
+        const SizedBox(height: 10),
+        _QuickGamesGrid(
+          animateIntro: animateIntro,
+          startIndex: 3,
+          games: [
+            _QuickGameEntry(
+              key: const ValueKey('football-quiz-grid-card'),
+              title: 'FOOTBALL QUIZ',
+              subtitle: 'TRIVIA GAUNTLET',
+              icon: Icons.quiz_rounded,
+              accent: Cyber.violet,
+              onTap: () => widget.onOpenQuiz(Sport.football),
+            ),
+            _QuickGameEntry(
+              key: const ValueKey('football-bingo-grid-card'),
+              title: 'FOOTBALL BINGO',
+              subtitle: 'COUNTRY x CLUB GRID',
+              icon: Icons.grid_view_rounded,
+              accent: Cyber.amber,
+              onTap: widget.onOpenFootballBingo,
+            ),
+            _QuickGameEntry(
+              key: const ValueKey('football-guess-player-grid-card'),
+              title: 'GUESS THE PLAYER',
+              subtitle: 'DAILY FOOTBALL MYSTERY',
+              icon: Icons.person_search_rounded,
+              accent: Cyber.pink,
+              onTap: widget.onOpenGuessPlayer,
+            ),
+          ],
         ),
       ],
     );
@@ -1758,18 +1765,29 @@ class _GamesTabState extends State<_GamesTab> {
           ),
         ),
         const SizedBox(height: 12),
-        StaggeredCardEntrance(
-          index: 1,
-          animate: animateIntro,
-          child: _GameTile(
-            title: 'F1 QUIZ',
-            subtitle: 'TRIVIA GAUNTLET',
-            icon: Icons.quiz,
-            accent: Cyber.violet,
-            featured: true,
-            showTrailingIcon: false,
-            onTap: () => widget.onOpenQuiz(Sport.f1),
-          ),
+        const _QuickPlayHeader(gameCount: 2),
+        const SizedBox(height: 10),
+        _QuickGamesGrid(
+          animateIntro: animateIntro,
+          startIndex: 1,
+          games: [
+            _QuickGameEntry(
+              key: const ValueKey('f1-quiz-grid-card'),
+              title: 'F1 QUIZ',
+              subtitle: 'TRIVIA GAUNTLET',
+              icon: Icons.quiz_rounded,
+              accent: Cyber.violet,
+              onTap: () => widget.onOpenQuiz(Sport.f1),
+            ),
+            _QuickGameEntry(
+              key: const ValueKey('f1-guess-driver-grid-card'),
+              title: 'GUESS THE DRIVER',
+              subtitle: 'DAILY F1 MYSTERY',
+              icon: Icons.person_search_rounded,
+              accent: Cyber.pink,
+              onTap: widget.onOpenF1GuessDriver,
+            ),
+          ],
         ),
       ],
     );
@@ -2727,206 +2745,259 @@ class _TennisMiniCourtPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-class _GameTile extends StatelessWidget {
-  const _GameTile({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.accent,
-    this.onTap,
-    this.featured = false,
-    this.showTrailingIcon = true,
-  });
+class _QuickPlayHeader extends StatelessWidget {
+  const _QuickPlayHeader({required this.gameCount});
 
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color accent;
-  final VoidCallback? onTap;
-  final bool featured;
-  final bool showTrailingIcon;
-
-  static const _bigCut = 14.0;
-  static const _smallCut = 4.0;
+  final int gameCount;
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = accent.withValues(alpha: 0.82);
+    final badgeLabel = '$gameCount FREE GAME${gameCount == 1 ? '' : 'S'}';
 
-    return Opacity(
-      opacity: 1,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: CustomPaint(
-          painter: _HudChamferCardPainter(
-            bigCut: _bigCut,
-            smallCut: _smallCut,
-            fillColor: Cyber.panel,
-            borderColor: borderColor,
-            borderGlow: featured,
-          ),
-          child: ClipPath(
-            clipper: const HudChamferClipper(
-              bigCut: _bigCut,
-              smallCut: _smallCut,
-            ),
-            child: featured
-                ? _FeaturedBody(
-                    title: title,
-                    subtitle: subtitle,
-                    icon: icon,
-                    accent: accent,
-                    onTap: onTap,
-                    showTrailingIcon: showTrailingIcon,
-                  )
-                : _CompactBody(
-                    title: title,
-                    subtitle: subtitle,
-                    icon: icon,
-                    accent: accent,
-                    showTrailingIcon: showTrailingIcon,
-                  ),
+    return Row(
+      children: [
+        Text(
+          'QUICK PLAY',
+          style: Cyber.display(11, color: Colors.white, letterSpacing: 1.8),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(
+            height: 1,
+            color: Cyber.cyan.withValues(alpha: 0.28),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _CompactBody extends StatelessWidget {
-  const _CompactBody({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.accent,
-    required this.showTrailingIcon,
-  });
-
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color accent;
-  final bool showTrailingIcon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          _GameIconBox(icon: icon, accent: accent, size: 52, iconSize: 26),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Cyber.display(
-                    17,
-                    letterSpacing: 1,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: Cyber.label(
-                    9,
-                    color: accent.withValues(alpha: 0.65),
-                    letterSpacing: 1.4,
-                  ),
-                ),
-              ],
-            ),
+        const SizedBox(width: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: Cyber.cyan.withValues(alpha: 0.10),
+            border: Border.all(color: Cyber.cyan.withValues(alpha: 0.38)),
           ),
-          if (showTrailingIcon)
-            Icon(Icons.chevron_right, color: accent, size: 22),
-        ],
-      ),
+          child: Text(
+            badgeLabel,
+            style: Cyber.display(7, color: Cyber.cyan, letterSpacing: 1.1),
+          ),
+        ),
+      ],
     );
   }
 }
 
-/// Pitch Duel hero card — corner brackets, crest watermark, and a chamfered
-/// "Free" footer matching the reference layout.
-class _FeaturedBody extends StatelessWidget {
-  const _FeaturedBody({
+class _QuickGameEntry {
+  const _QuickGameEntry({
+    required this.key,
     required this.title,
     required this.subtitle,
     required this.icon,
     required this.accent,
     required this.onTap,
-    required this.showTrailingIcon,
+  });
+
+  final Key key;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color accent;
+  final VoidCallback onTap;
+}
+
+class _QuickGamesGrid extends StatelessWidget {
+  const _QuickGamesGrid({
+    required this.animateIntro,
+    required this.games,
+    required this.startIndex,
+  });
+
+  final bool animateIntro;
+  final List<_QuickGameEntry> games;
+  final int startIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const gap = 12.0;
+        final wideColumnCount = constraints.maxWidth >= 560 ? 3 : 2;
+        final columnCount = games.length < wideColumnCount
+            ? games.length
+            : wideColumnCount;
+        final cardWidth =
+            (constraints.maxWidth - (gap * (columnCount - 1))) / columnCount;
+        final cardHeight = (cardWidth * 0.9).clamp(150.0, 176.0).toDouble();
+
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: [
+            for (var index = 0; index < games.length; index++)
+              SizedBox(
+                width: cardWidth,
+                height: cardHeight,
+                child: StaggeredCardEntrance(
+                  index: startIndex + index,
+                  animate: animateIntro,
+                  child: _QuickGameTile(
+                    key: games[index].key,
+                    title: games[index].title,
+                    subtitle: games[index].subtitle,
+                    icon: games[index].icon,
+                    accent: games[index].accent,
+                    onTap: games[index].onTap,
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _QuickGameTile extends StatelessWidget {
+  const _QuickGameTile({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.accent,
+    required this.onTap,
+    super.key,
   });
 
   final String title;
   final String subtitle;
   final IconData icon;
   final Color accent;
-  final VoidCallback? onTap;
-  final bool showTrailingIcon;
+  final VoidCallback onTap;
+
+  static const _bigCut = 12.0;
+  static const _smallCut = 3.0;
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Positioned(
-          right: -8,
-          top: 8,
-          bottom: 8,
-          child: Icon(icon, size: 112, color: accent.withValues(alpha: 0.07)),
-        ),
-        const Positioned.fill(
-          child: CustomPaint(painter: _GameCornerBracketsPainter()),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  _GameIconBox(
-                    icon: icon,
-                    accent: accent,
-                    size: 52,
-                    iconSize: 28,
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Cyber.display(18, letterSpacing: 1.1),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          subtitle,
-                          style: Cyber.label(
-                            9,
-                            color: Cyber.muted,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (showTrailingIcon)
-                    Icon(Icons.chevron_right, color: accent, size: 22),
-                ],
+    return Semantics(
+      button: true,
+      label: '$title, free to play',
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: CustomPaint(
+            painter: _HudChamferCardPainter(
+              bigCut: _bigCut,
+              smallCut: _smallCut,
+              fillColor: Color.lerp(Cyber.panel, accent, 0.055)!,
+              borderColor: accent.withValues(alpha: 0.84),
+              borderGlow: true,
+            ),
+            child: ClipPath(
+              clipper: const HudChamferClipper(
+                bigCut: _bigCut,
+                smallCut: _smallCut,
               ),
-              const SizedBox(height: 14),
-              _GameFreeButton(onTap: onTap, accent: accent, label: 'Free'),
-            ],
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final compact = constraints.maxWidth < 150;
+                  return Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Positioned(
+                        right: -18,
+                        bottom: -8,
+                        child: Icon(
+                          icon,
+                          size: compact ? 72 : 86,
+                          color: accent.withValues(alpha: 0.065),
+                        ),
+                      ),
+                      Positioned(
+                        top: 0,
+                        left: _bigCut,
+                        right: 34,
+                        child: Container(
+                          height: 2,
+                          color: accent.withValues(alpha: 0.82),
+                        ),
+                      ),
+                      Padding(
+                        padding: EdgeInsets.all(compact ? 11 : 13),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                _GameIconBox(
+                                  icon: icon,
+                                  accent: accent,
+                                  size: compact ? 36 : 40,
+                                  iconSize: compact ? 19 : 22,
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 7,
+                                    vertical: 4,
+                                  ),
+                                  color: accent.withValues(alpha: 0.14),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 5,
+                                        height: 5,
+                                        decoration: BoxDecoration(
+                                          color: accent,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        'FREE',
+                                        style: Cyber.display(
+                                          7,
+                                          color: accent,
+                                          letterSpacing: 0.8,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Spacer(),
+                            Text(
+                              title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Cyber.display(
+                                compact ? 11.5 : 13.5,
+                                color: Colors.white,
+                                letterSpacing: compact ? 0.65 : 0.9,
+                              ).copyWith(height: 1.02),
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              subtitle,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Cyber.label(
+                                compact ? 6.5 : 7.5,
+                                color: accent.withValues(alpha: 0.76),
+                                letterSpacing: compact ? 0.7 : 1,
+                              ).copyWith(height: 1.2),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
           ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -2955,68 +3026,6 @@ class _GameIconBox extends StatelessWidget {
         border: Border.all(color: accent.withValues(alpha: 0.55)),
       ),
       child: Icon(icon, color: accent, size: iconSize),
-    );
-  }
-}
-
-class _GameFreeButton extends StatelessWidget {
-  const _GameFreeButton({
-    required this.onTap,
-    required this.accent,
-    required this.label,
-  });
-
-  final VoidCallback? onTap;
-  final Color accent;
-  final String label;
-
-  static const _bigCut = 10.0;
-  static const _smallCut = 3.0;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: CustomPaint(
-        painter: _HudChamferCardPainter(
-          bigCut: _bigCut,
-          smallCut: _smallCut,
-          fillColor: accent,
-          borderColor: Color.lerp(accent, Colors.white, 0.58)!,
-        ),
-        child: ClipPath(
-          clipper: const HudChamferClipper(
-            bigCut: _bigCut,
-            smallCut: _smallCut,
-          ),
-          child: SizedBox(
-            width: double.infinity,
-            height: 44,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  label == 'PLAY NOW'
-                      ? Icons.play_arrow_rounded
-                      : Icons.toll_rounded,
-                  size: 18,
-                  color: AppTheme.darkInk,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: Cyber.display(
-                    16,
-                    color: AppTheme.darkInk,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -3075,26 +3084,4 @@ class _HudChamferCardPainter extends CustomPainter {
       old.fillColor != fillColor ||
       old.borderColor != borderColor ||
       old.borderGlow != borderGlow;
-}
-
-/// Thin L-brackets in the top corners of the featured Pitch Duel card.
-class _GameCornerBracketsPainter extends CustomPainter {
-  const _GameCornerBracketsPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const len = 14.0;
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.22)
-      ..strokeWidth = 1.2
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.square;
-    canvas.drawLine(const Offset(0, 0), const Offset(len, 0), paint);
-    canvas.drawLine(const Offset(0, 0), const Offset(0, len), paint);
-    canvas.drawLine(Offset(size.width, 0), Offset(size.width - len, 0), paint);
-    canvas.drawLine(Offset(size.width, 0), Offset(size.width, len), paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _GameCornerBracketsPainter old) => false;
 }

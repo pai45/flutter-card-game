@@ -36,6 +36,8 @@ import 'screens/predictions/match_detail_screen.dart';
 import 'screens/predictions/prediction_home_screen.dart';
 import 'screens/quiz/quiz_hub.dart';
 import 'screens/guess_player/guess_player_hub.dart';
+import 'screens/guess_driver/guess_driver_hub.dart';
+import 'screens/guess_winner/guess_winner_hub.dart';
 import 'data/guess_player_data.dart';
 import 'models/cards.dart';
 import 'screens/profile/profile_screen.dart';
@@ -410,14 +412,36 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
-  void _openGuessPlayer() {
+  void _openGuessPlayer() => _openGuessPlayerFor(
+    sport: Sport.football,
+    timelines: footballGuessTimelines,
+    allPlayers: footballPlayerCards,
+  );
+
+  void _openBasketballGuessPlayer() => _openGuessPlayerFor(
+    sport: Sport.basketball,
+    timelines: basketballGuessTimelines,
+    allPlayers: basketballPlayerCards,
+  );
+
+  void _openCricketGuessPlayer() => _openGuessPlayerFor(
+    sport: Sport.cricket,
+    timelines: cricketGuessTimelines,
+    allPlayers: cricketPlayerCards,
+  );
+
+  void _openGuessPlayerFor({
+    required Sport sport,
+    required List<GuessPlayerTimeline> timelines,
+    required List<PlayerCard> allPlayers,
+  }) {
     final navigator = Navigator.of(context);
     navigator.push(
       MaterialPageRoute<void>(
         builder: (_) => GuessPlayerTabContent(
-          sport: Sport.football,
-          timelines: footballGuessTimelines,
-          allPlayers: footballPlayerCards,
+          sport: sport,
+          timelines: timelines,
+          allPlayers: allPlayers,
           onNavigate: (next) {
             navigator.pop();
             _go(next);
@@ -427,14 +451,11 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
-  void _openBasketballGuessPlayer() {
+  void _openF1GuessDriver() {
     final navigator = Navigator.of(context);
     navigator.push(
       MaterialPageRoute<void>(
-        builder: (_) => GuessPlayerTabContent(
-          sport: Sport.basketball,
-          timelines: basketballGuessTimelines,
-          allPlayers: basketballPlayerCards,
+        builder: (_) => GuessDriverTabContent(
           onNavigate: (next) {
             navigator.pop();
             _go(next);
@@ -444,14 +465,11 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
-  void _openCricketGuessPlayer() {
+  void _openTennisGuessWinner() {
     final navigator = Navigator.of(context);
     navigator.push(
       MaterialPageRoute<void>(
-        builder: (_) => GuessPlayerTabContent(
-          sport: Sport.cricket,
-          timelines: cricketGuessTimelines,
-          allPlayers: cricketPlayerCards,
+        builder: (_) => GuessWinnerTabContent(
           onNavigate: (next) {
             navigator.pop();
             _go(next);
@@ -623,6 +641,8 @@ class _AppShellState extends State<AppShell> {
               onOpenBasketballGuessPlayer: _openBasketballGuessPlayer,
               onOpenCricketGuessPlayer: _openCricketGuessPlayer,
               onOpenGrandPrix: _openGrandPrix,
+              onOpenF1GuessDriver: _openF1GuessDriver,
+              onOpenTennisGuessWinner: _openTennisGuessWinner,
               onOpenBasketball: _openBasketball,
               onOpenTennisRally: _openTennisRally,
               onAddCoins: _openShopCoins,

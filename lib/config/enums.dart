@@ -21,6 +21,10 @@ enum CardTier { bronze, silver, gold, platinum }
 
 enum PenaltyDirection { left, center, right }
 
+/// The user's responsibility during a penalty kick. This is derived from the
+/// shootout round and is presentation-only; it is never persisted.
+enum ShootoutTurnRole { shooting, defending }
+
 enum PlayerRole {
   attacker,
   defender,

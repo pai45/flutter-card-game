@@ -7,7 +7,6 @@ import '../../blocs/final_over/final_over_state.dart';
 import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_state.dart';
 import '../../config/theme.dart';
-import '../../data/final_over_kits.dart';
 import '../../models/final_over.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
@@ -16,6 +15,7 @@ import '../../widgets/game_scaffold.dart';
 import '../../widgets/player_level_badge.dart';
 import '../match_history/match_history_pages.dart';
 import 'final_over_match_screen.dart';
+import 'widgets/final_over_kit_picker.dart';
 
 /// The Final Over lobby. Same bones as the Hoop Duel lobby: a status strip, a
 /// hero, a record panel, the two things you pick (how hard, what you wear), and
@@ -31,92 +31,95 @@ class FinalOverHub extends StatelessWidget {
       buildWhen: (p, c) =>
           p.progression != c.progression || p.matchHistory != c.matchHistory,
       builder: (context, gameState) => BlocBuilder<FinalOverCubit, FinalOverState>(
-      builder: (context, state) {
-        if (!state.loaded) {
-          return const Scaffold(
+        builder: (context, state) {
+          if (!state.loaded) {
+            return const Scaffold(
+              backgroundColor: Cyber.bg,
+              body: Center(child: CircularProgressIndicator(color: Cyber.gold)),
+            );
+          }
+          return Scaffold(
             backgroundColor: Cyber.bg,
-            body: Center(child: CircularProgressIndicator(color: Cyber.gold)),
-          );
-        }
-        return Scaffold(
-          backgroundColor: Cyber.bg,
-          appBar: ReactHeaderBar(
-            title: 'FINAL OVER',
-            subtitle: '// SIX-BALL CHASE',
-            showTitle: false,
-            onBack: onExit,
-            rightSlot: PlayerLevelBadge(progression: gameState.progression),
-          ),
-          body: CyberBackground(
-            animated: true,
-            child: SafeArea(
-              top: false,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 440),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const CyberSlideUpFadeIn(child: _PitchStatusBar()),
-                        const SizedBox(height: 14),
-                        CyberSlideUpFadeIn(
-                          delay: const Duration(milliseconds: 80),
-                          child: _HeroRow(tier: state.tier),
-                        ),
-                        const SizedBox(height: 18),
-                        CyberSlideUpFadeIn(
-                          delay: const Duration(milliseconds: 160),
-                          child: _RecordPanel(stats: state.stats),
-                        ),
-                        const SizedBox(height: 20),
-                        const SectionLabel(label: 'CHASE TIER'),
-                        const SizedBox(height: 10),
-                        CyberSlideUpFadeIn(
-                          delay: const Duration(milliseconds: 240),
-                          child: _TierPicker(selected: state.tier),
-                        ),
-                        const SizedBox(height: 20),
-                        const SectionLabel(label: 'TEAM KIT'),
-                        const SizedBox(height: 10),
-                        CyberSlideUpFadeIn(
-                          delay: const Duration(milliseconds: 320),
-                          child: _KitPicker(selectedId: state.kitId),
-                        ),
-                        const SizedBox(height: 22),
-                        CyberSlideUpFadeIn(
-                          delay: const Duration(milliseconds: 400),
-                          child: HudCtaButton(
-                            label: 'TAKE GUARD',
-                            icon: Icons.sports_cricket_rounded,
-                            accent: Cyber.gold,
-                            helper:
-                                '${state.tier.label} // TARGET ${state.tier.range}',
-                            onTap: () => _startMatch(context),
+            appBar: ReactHeaderBar(
+              title: 'FINAL OVER',
+              subtitle: '// SIX-BALL CHASE',
+              showTitle: false,
+              onBack: onExit,
+              rightSlot: PlayerLevelBadge(progression: gameState.progression),
+            ),
+            body: CyberBackground(
+              animated: true,
+              child: SafeArea(
+                top: false,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 440),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const CyberSlideUpFadeIn(child: _PitchStatusBar()),
+                          const SizedBox(height: 14),
+                          CyberSlideUpFadeIn(
+                            delay: const Duration(milliseconds: 80),
+                            child: _HeroRow(tier: state.tier),
                           ),
-                        ),
-                        const SizedBox(height: 14),
-                        CyberDealtCard(
-                          index: 0,
-                          child: CyberCtaButton(
-                            label: 'Match History',
-                            clip: false,
-                            onPressed: () => showMatchHistoryArchive(
-                              context,
-                              gameState.matchHistory,
+                          const SizedBox(height: 18),
+                          CyberSlideUpFadeIn(
+                            delay: const Duration(milliseconds: 160),
+                            child: _RecordPanel(stats: state.stats),
+                          ),
+                          const SizedBox(height: 20),
+                          const SectionLabel(label: 'CHASE TIER'),
+                          const SizedBox(height: 10),
+                          CyberSlideUpFadeIn(
+                            delay: const Duration(milliseconds: 240),
+                            child: _TierPicker(selected: state.tier),
+                          ),
+                          const SizedBox(height: 20),
+                          CyberSlideUpFadeIn(
+                            delay: const Duration(milliseconds: 320),
+                            child: FinalOverKitPicker(
+                              selectedId: state.kitId,
+                              onSelected: context
+                                  .read<FinalOverCubit>()
+                                  .selectKit,
                             ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 22),
+                          CyberSlideUpFadeIn(
+                            delay: const Duration(milliseconds: 400),
+                            child: HudCtaButton(
+                              label: 'TAKE GUARD',
+                              icon: Icons.sports_cricket_rounded,
+                              accent: Cyber.gold,
+                              helper:
+                                  '${state.tier.label} // TARGET ${state.tier.range}',
+                              onTap: () => _startMatch(context),
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          CyberDealtCard(
+                            index: 0,
+                            child: CyberCtaButton(
+                              label: 'Match History',
+                              clip: false,
+                              onPressed: () => showMatchHistoryArchive(
+                                context,
+                                gameState.matchHistory,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
       ),
     );
   }
@@ -157,9 +160,13 @@ class _PitchStatusBar extends StatelessWidget {
         ),
       ),
       const SizedBox(width: 8),
-      Text(
-        'SYS://FINAL_OVER v1.0.0 — PITCH READY',
-        style: Cyber.label(8.5, color: Cyber.muted, letterSpacing: 1.4),
+      Expanded(
+        child: Text(
+          'SYS://FINAL_OVER v1.0.0 — PITCH READY',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Cyber.label(8.5, color: Cyber.muted, letterSpacing: 1.4),
+        ),
       ),
     ],
   );
@@ -329,47 +336,6 @@ class _TierPicker extends StatelessWidget {
           ),
           if (tier != FinalOverTier.values.last) const SizedBox(width: 8),
         ],
-      ],
-    );
-  }
-}
-
-class _KitPicker extends StatelessWidget {
-  const _KitPicker({required this.selectedId});
-  final String selectedId;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: [
-        for (final kit in finalOverKits)
-          GestureDetector(
-            onTap: () {
-              playSound(SoundEffect.cardSelect);
-              HapticFeedback.selectionClick();
-              context.read<FinalOverCubit>().selectKit(kit.id);
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 160),
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: kit.primary,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: kit.id == selectedId ? Cyber.cyan : kit.secondary,
-                  width: kit.id == selectedId ? 2.6 : 1.4,
-                ),
-                boxShadow: kit.id == selectedId
-                    ? Cyber.glow(Cyber.cyan, alpha: 0.4, blur: 12)
-                    : null,
-              ),
-              alignment: Alignment.center,
-              child: Container(width: 12, height: 12, color: kit.accent),
-            ),
-          ),
       ],
     );
   }

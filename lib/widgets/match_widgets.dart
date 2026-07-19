@@ -169,7 +169,7 @@ class MatchPhaseScaffold extends StatelessWidget {
               state != null &&
               state!.currentRound >= 1 &&
               state!.currentRound <= 4
-          ? _RoundProgressMeter(currentRound: state!.currentRound)
+          ? RoundProgressMeter(currentRound: state!.currentRound)
           : null,
       rightSlot: showScore
           ? MatchHeaderScore(
@@ -292,8 +292,8 @@ class _CenteredPhaseBody extends StatelessWidget {
   }
 }
 
-class _RoundProgressMeter extends StatelessWidget {
-  const _RoundProgressMeter({required this.currentRound});
+class RoundProgressMeter extends StatelessWidget {
+  const RoundProgressMeter({required this.currentRound, super.key});
 
   final int currentRound;
 

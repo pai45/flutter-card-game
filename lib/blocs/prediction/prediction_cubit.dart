@@ -8,13 +8,27 @@ import '../../services/prediction_repository.dart';
 import '../../services/secure_storage_service.dart';
 import 'prediction_state.dart';
 
+/// Result of settling one prediction. [xp] is progression XP; [prizeOz] is the
+/// Oz-coin prize won from a paid contest (0 for free quizzes / off the podium),
+/// with [rank] the finishing position in a field of [fieldSize].
+typedef PredictionSettlement = ({int xp, int prizeOz, int rank, int fieldSize});
+
+const PredictionSettlement _noSettlement = (
+  xp: 0,
+  prizeOz: 0,
+  rank: 0,
+  fieldSize: 0,
+);
+
 /// Owns the prediction hub's data: fixtures (from [PredictionRepository]) and
 /// the user's own predictions (persisted via [SecureGameStorage]).
 ///
 /// Reward crediting is intentionally NOT done here — settlement returns the
-/// earned XP and the UI credits progression through `GameBloc`
-/// (`PredictionXpAdded`), so the cubit stays decoupled from the game economy.
-/// Predictions reward XP only; coins are never involved.
+/// earned XP (and any contest prize) and the UI credits it through `GameBloc`
+/// (`PredictionXpAdded` / `CoinsAdded`), so the cubit stays decoupled from the
+/// game economy. Predictions reward XP only, with ONE exception: the Scoreline
+/// Quiz is a paid coin contest ([PredictionQuiz.isContest]) whose top-3
+/// finishers also win coins ([kScorelineContestPrizes]).
 class PredictionCubit extends Cubit<PredictionState> {
   PredictionCubit(this._repository, this._storage)
     : super(const PredictionState());
@@ -226,18 +240,21 @@ class PredictionCubit extends Cubit<PredictionState> {
   }
 
   /// Mock settlement: scores the stored answers against the quiz's
-  /// [QuizQuestion.settledOptionIndex] and returns the XP earned so the
-  /// caller can credit progression. Returns 0 if nothing to settle.
-  Future<int> settle(
+  /// [QuizQuestion.settledOptionIndex] and returns the XP earned — plus, for a
+  /// paid contest ([PredictionQuiz.isContest]), the finishing rank and Oz-coin
+  /// prize — so the caller can credit progression and the wallet. The status
+  /// flip to `settled` guards this from running twice, so the prize is awarded
+  /// exactly once. Returns [_noSettlement] if there is nothing to settle.
+  Future<PredictionSettlement> settle(
     String matchId, [
     String quizId = kDefaultPredictionQuizId,
   ]) async {
     final prediction = state.predictionFor(matchId, quizId);
     if (prediction == null || prediction.status == PredictionStatus.settled) {
-      return 0;
+      return _noSettlement;
     }
     final quiz = await _repository.quizFor(matchId, quizId);
-    if (quiz == null || !quiz.settleable) return 0;
+    if (quiz == null || !quiz.settleable) return _noSettlement;
 
     var correct = 0;
     var reward = 0;
@@ -255,15 +272,49 @@ class PredictionCubit extends Cubit<PredictionState> {
       }
     }
 
+    var rank = 0;
+    var prizeOz = 0;
+    var fieldSize = 0;
+    if (quiz.isContest) {
+      (rank, prizeOz, fieldSize) = await _contestFinish(
+        matchId,
+        quizId,
+        playerCorrect: correct,
+        totalQuestions: quiz.questions.length,
+      );
+    }
+
     final settled = prediction.copyWith(
       status: PredictionStatus.settled,
       correctCount: correct,
       rewardEarned: reward,
+      contestRank: rank == 0 ? null : rank,
+      contestPrizeOz: prizeOz,
     );
     final next = Map<String, UserPrediction>.from(state.predictions)
       ..[settled.key] = settled;
     emit(state.copyWith(predictions: next));
     await _storage.savePredictions(next.values.toList());
-    return reward;
+    return (xp: reward, prizeOz: prizeOz, rank: rank, fieldSize: fieldSize);
+  }
+
+  /// Ranks the player against the seeded contest field for this quiz. Rivals'
+  /// correct counts are clamped to [totalQuestions] so the ranking is fair for
+  /// any question count; the player wins ties (generous, and deterministic).
+  /// Returns (rank, prizeOz, fieldSize).
+  Future<(int, int, int)> _contestFinish(
+    String matchId,
+    String quizId, {
+    required int playerCorrect,
+    required int totalQuestions,
+  }) async {
+    final board = await _repository.matchLeaderboard(matchId, quizId);
+    final rivals = board.where((e) => e.name.toLowerCase() != 'you').toList();
+    if (rivals.isEmpty) return (1, scorelineContestPrizeFor(1), 1);
+    final ahead = rivals
+        .where((r) => r.correct.clamp(0, totalQuestions) > playerCorrect)
+        .length;
+    final rank = ahead + 1;
+    return (rank, scorelineContestPrizeFor(rank), rivals.length + 1);
   }
 }

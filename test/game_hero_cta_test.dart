@@ -1,5 +1,6 @@
 import 'package:card_game/blocs/game/game_bloc.dart';
 import 'package:card_game/blocs/prediction/prediction_cubit.dart';
+import 'package:card_game/models/sport_match.dart';
 import 'package:card_game/screens/predictions/prediction_home_screen.dart';
 import 'package:card_game/services/prediction_repository.dart';
 import 'package:card_game/services/secure_storage_service.dart';
@@ -43,6 +44,15 @@ void main() {
     var pitchDuelOpens = 0;
     var penaltyShootoutOpens = 0;
     var footballChessOpens = 0;
+    var footballQuizOpens = 0;
+    var footballBingoOpens = 0;
+    var footballGuessPlayerOpens = 0;
+    var basketballQuizOpens = 0;
+    var basketballGuessPlayerOpens = 0;
+    var cricketQuizOpens = 0;
+    var cricketGuessPlayerOpens = 0;
+    var f1QuizOpens = 0;
+    var tennisQuizOpens = 0;
 
     Future<void> pumpGamesTab(int sportTab) async {
       await tester.pumpWidget(
@@ -64,15 +74,23 @@ void main() {
               onOpenLeague: (_) {},
               onOpenGame: () => pitchDuelOpens++,
               onOpenShootout: () => penaltyShootoutOpens++,
-              onOpenQuiz: (_) {},
-              onOpenFootballBingo: () {},
+              onOpenQuiz: (sport) {
+                if (sport == Sport.football) footballQuizOpens++;
+                if (sport == Sport.basketball) basketballQuizOpens++;
+                if (sport == Sport.cricket) cricketQuizOpens++;
+                if (sport == Sport.f1) f1QuizOpens++;
+                if (sport == Sport.tennis) tennisQuizOpens++;
+              },
+              onOpenFootballBingo: () => footballBingoOpens++,
               onOpenFootballChess: () => footballChessOpens++,
               onOpenSuperOver: () {},
               onOpenCricketDeck: () {},
-              onOpenGuessPlayer: () {},
-              onOpenBasketballGuessPlayer: () {},
-              onOpenCricketGuessPlayer: () {},
+              onOpenGuessPlayer: () => footballGuessPlayerOpens++,
+              onOpenBasketballGuessPlayer: () => basketballGuessPlayerOpens++,
+              onOpenCricketGuessPlayer: () => cricketGuessPlayerOpens++,
               onOpenGrandPrix: () => grandPrixOpens++,
+              onOpenF1GuessDriver: () {},
+              onOpenTennisGuessWinner: () {},
               onOpenBasketball: () => hoopDuelOpens++,
               onOpenFinalOver: () => finalOverOpens++,
               onOpenTennisRally: () => tennisRallyOpens++,
@@ -122,12 +140,68 @@ void main() {
     );
     expect(footballChessOpens, 1);
 
+    final quizCard = find.byKey(const ValueKey('football-quiz-grid-card'));
+    final bingoCard = find.byKey(const ValueKey('football-bingo-grid-card'));
+    final guessPlayerCard = find.byKey(
+      const ValueKey('football-guess-player-grid-card'),
+    );
+    await tester.scrollUntilVisible(
+      quizCard,
+      180,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+
+    final quizRect = tester.getRect(quizCard);
+    final bingoRect = tester.getRect(bingoCard);
+    final guessPlayerRect = tester.getRect(guessPlayerCard);
+    expect(quizRect.top, moreOrLessEquals(bingoRect.top));
+    expect(quizRect.left, lessThan(bingoRect.left));
+    expect(guessPlayerRect.top, greaterThan(quizRect.top));
+    expect(
+      find.descendant(of: quizCard, matching: find.text('PLAY NOW')),
+      findsNothing,
+    );
+
+    await tester.tap(quizCard);
+    await tester.tap(bingoCard);
+    await tester.ensureVisible(guessPlayerCard);
+    await tester.pumpAndSettle();
+    await tester.tap(guessPlayerCard);
+    expect(footballQuizOpens, 1);
+    expect(footballBingoOpens, 1);
+    expect(footballGuessPlayerOpens, 1);
+
     await pumpGamesTab(2);
     expect(find.text('HOOP DUEL'), findsOneWidget);
     expect(find.text('STREET 1-ON-1 ARCADE HOOPS'), findsOneWidget);
     expect(find.text('HIT THE COURT'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('hoop-duel-hero-card')));
     expect(hoopDuelOpens, 1);
+    final basketballQuizCard = find.byKey(
+      const ValueKey('basketball-quiz-grid-card'),
+    );
+    final basketballGuessCard = find.byKey(
+      const ValueKey('basketball-guess-player-grid-card'),
+    );
+    await tester.scrollUntilVisible(
+      basketballQuizCard,
+      180,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester.getRect(basketballQuizCard).top,
+      moreOrLessEquals(tester.getRect(basketballGuessCard).top),
+    );
+    expect(
+      find.descendant(of: basketballQuizCard, matching: find.text('PLAY NOW')),
+      findsNothing,
+    );
+    await tester.tap(basketballQuizCard);
+    await tester.tap(basketballGuessCard);
+    expect(basketballQuizOpens, 1);
+    expect(basketballGuessPlayerOpens, 1);
 
     await pumpGamesTab(1);
     expect(find.text('FINAL OVER'), findsOneWidget);
@@ -135,6 +209,30 @@ void main() {
     expect(find.text('START THE CHASE'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('final-over-hero-card')));
     expect(finalOverOpens, 1);
+    final cricketQuizCard = find.byKey(
+      const ValueKey('cricket-quiz-grid-card'),
+    );
+    final cricketGuessCard = find.byKey(
+      const ValueKey('cricket-guess-player-grid-card'),
+    );
+    await tester.scrollUntilVisible(
+      cricketQuizCard,
+      180,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester.getRect(cricketQuizCard).top,
+      moreOrLessEquals(tester.getRect(cricketGuessCard).top),
+    );
+    expect(
+      find.descendant(of: cricketQuizCard, matching: find.text('PLAY NOW')),
+      findsNothing,
+    );
+    await tester.tap(cricketQuizCard);
+    await tester.tap(cricketGuessCard);
+    expect(cricketQuizOpens, 1);
+    expect(cricketGuessPlayerOpens, 1);
 
     await pumpGamesTab(4);
     expect(find.text('GRAND PRIX DASH'), findsOneWidget);
@@ -142,6 +240,19 @@ void main() {
     expect(find.text('RACE NOW'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('grand-prix-dash-hero-card')));
     expect(grandPrixOpens, 1);
+    final f1QuizCard = find.byKey(const ValueKey('f1-quiz-grid-card'));
+    await tester.scrollUntilVisible(
+      f1QuizCard,
+      180,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(of: f1QuizCard, matching: find.text('PLAY NOW')),
+      findsNothing,
+    );
+    await tester.tap(f1QuizCard);
+    expect(f1QuizOpens, 1);
 
     await pumpGamesTab(3);
     expect(find.text('TENNIS RALLY'), findsOneWidget);
@@ -149,5 +260,18 @@ void main() {
     expect(find.text('STEP ON COURT'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('tennis-rally-hero-card')));
     expect(tennisRallyOpens, 1);
+    final tennisQuizCard = find.byKey(const ValueKey('tennis-quiz-grid-card'));
+    await tester.scrollUntilVisible(
+      tennisQuizCard,
+      180,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(of: tennisQuizCard, matching: find.text('PLAY NOW')),
+      findsNothing,
+    );
+    await tester.tap(tennisQuizCard);
+    expect(tennisQuizOpens, 1);
   });
 }

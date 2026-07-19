@@ -10,6 +10,7 @@ import '../../../utils/sound_effects.dart';
 import '../../../widgets/card_unpack_animation.dart';
 import '../../../widgets/cyber/cyber_cta_button.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
+import '../../shop/widgets/shop_card.dart' show CoinIcon;
 
 /// One scored quiz question, precomputed by the caller so the reveal stays
 /// presentation-only.
@@ -52,6 +53,9 @@ class SettlementRevealOverlay extends StatefulWidget {
     required this.xpBefore,
     required this.beatenShare,
     required this.onDone,
+    this.contestRank = 0,
+    this.contestPrizeOz = 0,
+    this.contestField = 0,
     super.key,
   });
 
@@ -64,6 +68,14 @@ class SettlementRevealOverlay extends StatefulWidget {
   /// Null hides the crowd comparison line.
   final double? beatenShare;
   final VoidCallback onDone;
+
+  /// Paid-contest result. [contestRank] 0 = not a contest (beat hidden);
+  /// [contestPrizeOz] > 0 means the player finished on the podium.
+  final int contestRank;
+  final int contestPrizeOz;
+  final int contestField;
+
+  bool get isContest => contestRank > 0;
 
   @override
   State<SettlementRevealOverlay> createState() =>
@@ -120,7 +132,13 @@ class _SettlementRevealOverlayState extends State<SettlementRevealOverlay> {
 
   void _enterSummary() {
     _run++;
-    playSound(_perfect ? SoundEffect.rarityPlatinum : SoundEffect.matchWin);
+    playSound(
+      widget.contestPrizeOz > 0
+          ? SoundEffect.rarityGold
+          : _perfect
+          ? SoundEffect.rarityPlatinum
+          : SoundEffect.matchWin,
+    );
     setState(() => _stage = _summaryStage);
   }
 
@@ -263,6 +281,17 @@ class _SettlementRevealOverlayState extends State<SettlementRevealOverlay> {
               ),
               const SizedBox(height: 26),
               _RevealIn(delayFactor: 0.35, child: _XpTotal(xp: widget.totalXp)),
+              if (widget.isContest) ...[
+                const SizedBox(height: 20),
+                _RevealIn(
+                  delayFactor: 0.45,
+                  child: _ContestPrizeBeat(
+                    rank: widget.contestRank,
+                    field: widget.contestField,
+                    prizeOz: widget.contestPrizeOz,
+                  ),
+                ),
+              ],
               if (beaten != null) ...[
                 const SizedBox(height: 18),
                 _RevealIn(
@@ -569,6 +598,100 @@ class _XpTotal extends StatelessWidget {
                 ),
               ],
             ),
+      ),
+    );
+  }
+}
+
+/// Paid-contest payoff beat: finishing place in the field, and the Oz coins
+/// won. On the podium this is a gold "moment" (glow allowed); off it, a calm
+/// muted readout so the glow rule keeps its meaning.
+class _ContestPrizeBeat extends StatelessWidget {
+  const _ContestPrizeBeat({
+    required this.rank,
+    required this.field,
+    required this.prizeOz,
+  });
+
+  final int rank;
+  final int field;
+  final int prizeOz;
+
+  String get _ordinal {
+    if (rank >= 11 && rank <= 13) return '${rank}TH';
+    return switch (rank % 10) {
+      1 => '${rank}ST',
+      2 => '${rank}ND',
+      3 => '${rank}RD',
+      _ => '${rank}TH',
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final won = prizeOz > 0;
+    final accent = won ? Cyber.gold : Cyber.muted;
+    final fieldLabel = field > 0 ? ' OF $field' : '';
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 13, 16, 15),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: won ? 0.10 : 0.06),
+        border: Border.all(color: accent.withValues(alpha: won ? 0.6 : 0.3)),
+        boxShadow: won ? Cyber.glow(Cyber.gold, alpha: 0.22, blur: 16) : null,
+      ),
+      child: Column(
+        children: [
+          Text(
+            won ? 'CONTEST · $_ordinal PLACE$fieldLabel' : 'FINISHED $_ordinal$fieldLabel',
+            textAlign: TextAlign.center,
+            style: Cyber.label(
+              10,
+              color: accent,
+              letterSpacing: 1.6,
+            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+          ),
+          const SizedBox(height: 8),
+          if (won)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CoinIcon(size: 26),
+                const SizedBox(width: 8),
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0, end: prizeOz.toDouble()),
+                  duration: const Duration(milliseconds: 900),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, v, _) => Text(
+                    '+${v.round()}',
+                    style: Cyber.display(30, color: Cyber.gold, letterSpacing: 1)
+                        .copyWith(
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                          shadows: [
+                            Shadow(
+                              color: Cyber.gold.withValues(alpha: 0.5),
+                              blurRadius: 20,
+                            ),
+                          ],
+                        ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    'OZ',
+                    style: Cyber.label(11, color: Cyber.gold, letterSpacing: 1),
+                  ),
+                ),
+              ],
+            )
+          else
+            Text(
+              'TOP 3 WIN COINS · NO PRIZE',
+              textAlign: TextAlign.center,
+              style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1.2),
+            ),
+        ],
       ),
     );
   }

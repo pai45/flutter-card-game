@@ -123,17 +123,7 @@ class BasketballLobbyScreen extends StatelessWidget {
                                       selected: state.difficulty,
                                     ),
                                   ),
-                                  const SizedBox(height: 18),
-                                  CyberSlideUpFadeIn(
-                                    delay: const Duration(milliseconds: 320),
-                                    offset: 14,
-                                    child: Center(
-                                      child: HowToPlayButton(
-                                        mode: HowToPlayMode.hoopDuel,
-                                        accent: Cyber.gold,
-                                      ),
-                                    ),
-                                  ),
+
                                   const SizedBox(height: 20),
                                   const SectionLabel(label: 'TEAM JERSEY'),
                                   const SizedBox(height: 10),
@@ -239,6 +229,27 @@ class BasketballLobbyScreen extends StatelessWidget {
                                         ),
                                       ),
                                     ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  // How to Play link
+                                  CyberSlideUpFadeIn(
+                                    delay: const Duration(milliseconds: 650),
+                                    offset: 14,
+                                    child: Wrap(
+                                      alignment: WrapAlignment.center,
+                                      crossAxisAlignment: WrapCrossAlignment.center,
+                                      spacing: 14,
+                                      runSpacing: 6,
+                                      children: [
+                                        _HudLink(
+                                          label: 'HOW TO PLAY',
+                                          onTap: () => showHowToPlayGuide(
+                                            context,
+                                            HowToPlayMode.hoopDuel,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),
@@ -703,6 +714,34 @@ class _TeamPicker extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _HudLink extends StatelessWidget {
+  const _HudLink({
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Cyber.gold,
+          fontFamily: Cyber.displayFont,
+          fontSize: 11,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1.4,
+        ),
       ),
     );
   }

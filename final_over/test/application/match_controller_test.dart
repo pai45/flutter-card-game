@@ -335,6 +335,54 @@ void main() {
   });
 
   group('running commands', () {
+    test(
+      'a controlled ground shot gives a rookie enough time for one safe run',
+      () {
+        final generator = ScriptedDeliveryGenerator([
+          scripted(line: DeliveryLine.off, length: DeliveryLength.full),
+        ]);
+        final controller = MatchController(
+          tuning: GameplayTuning.rookie,
+          deliveryGenerator: generator,
+        );
+        final events = <GameplayEventType>[];
+        final subscription = controller.eventStream.listen(
+          (event) => events.add(event.type),
+        );
+        addTearDown(subscription.cancel);
+        controller.startMatch(seed: 17, target: 14);
+        controller.dispatch(const GameCommand.start());
+        controller.dispatch(
+          const GameCommand.selectElevation(Elevation.ground),
+        );
+        advanceUntil(
+          controller,
+          () => controller.state.phase == MatchPhase.incomingBall,
+        );
+        final contactAt =
+            controller.state.currentDelivery!.expectedContactMicros;
+        advanceUntil(
+          controller,
+          () => controller.state.simulationMicros >= contactAt - 240000,
+        );
+        controller.dispatch(const GameCommand.swing(ShotDirection.offSide));
+        advanceUntil(controller, () => controller.state.canRun);
+
+        expect(controller.state.runner.risk, isNot(RiskLevel.danger));
+        controller.dispatch(const GameCommand.startRun());
+        advanceUntil(
+          controller,
+          () =>
+              events.contains(GameplayEventType.runCompleted) ||
+              events.contains(GameplayEventType.runOut) ||
+              events.contains(GameplayEventType.boundary),
+        );
+
+        expect(events, contains(GameplayEventType.runCompleted));
+        expect(events, isNot(contains(GameplayEventType.runOut)));
+      },
+    );
+
     test('Turn Back is accepted through 45 percent and scores no run', () {
       final generator = ScriptedDeliveryGenerator([
         scripted(line: DeliveryLine.off, length: DeliveryLength.full),

@@ -69,6 +69,9 @@ class ShootoutState {
 
   bool get playerTaking => round.isEven;
 
+  ShootoutTurnRole get turnRole =>
+      playerTaking ? ShootoutTurnRole.shooting : ShootoutTurnRole.defending;
+
   /// How many kicks the side currently on the spot has already taken.
   /// The `% 5` cycles the lineup again through sudden death.
   int get sideKickIndex => round ~/ 2;

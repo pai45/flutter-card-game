@@ -18,11 +18,9 @@ import 'dart:ui' as ui;
 import 'package:final_over/final_over.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../config/theme.dart';
 import '../../data/final_over_kits.dart';
-import '../../widgets/cyber/cyber_widgets.dart';
 import 'final_over_rig.dart';
 import 'final_over_tuning.dart';
 
@@ -156,9 +154,6 @@ class FinalOverGame extends FlameGame {
   final ValueNotifier<int> completedRuns = ValueNotifier(0);
   final ValueNotifier<bool> canTurnBack = ValueNotifier(false);
 
-  /// The backlift. Null whenever a swing is not on offer; otherwise it carries
-  /// the charge, the bands and — the moment the ball is on the bat — [hot].
-  final ValueNotifier<ChargeMeterView?> shotMeter = ValueNotifier(null);
   final ValueNotifier<List<BallResult>> history = ValueNotifier(const []);
   final ValueNotifier<FinalOverSting?> sting = ValueNotifier(null);
 
@@ -177,11 +172,6 @@ class FinalOverGame extends FlameGame {
   /// The finger is on HIT. A hold is cancelled whenever the live-ball input
   /// window closes, so it can never leak into the next delivery.
   bool _swingHeld = false;
-
-  /// Simulation clock when the bat started loading. Null = bat down, either
-  /// because nothing is pressed or because there is no ball to face yet.
-  int? _swingDownMicros;
-  bool _loadedHaptic = false;
 
   MatchState get state => controller.state;
   GameplayTuning get tuning => controller.tuning;
@@ -228,7 +218,6 @@ class FinalOverGame extends FlameGame {
       runProgress,
       completedRuns,
       canTurnBack,
-      shotMeter,
       history,
       sting,
     ]) {
@@ -250,49 +239,29 @@ class FinalOverGame extends FlameGame {
   void selectDirection(ShotDirection direction) =>
       controller.dispatch(SelectDirectionCommand(direction));
 
-  /// Press: the bat starts loading. Charge is simply how long you hold, so
-  /// pressing at release buys a full backlift by contact, while pressing later
-  /// trades some power for a shorter hold.
+  /// Press: show a brief backlift while the player waits to release.
   void beginSwing() {
-    if (_swingDownMicros != null) return;
+    if (_swingHeld) return;
     final s = controller.state;
     if (!_swingWindowOpen(s)) return;
     _swingHeld = true;
-    _swingDownMicros = s.simulationMicros;
-    _loadedHaptic = false;
   }
 
-  /// Release: the swing itself. The engine grades *when* you let go; the charge
-  /// you had banked decides how hard it left the bat.
+  /// Release: the swing itself. The engine grades when it is released.
   void releaseSwing() {
-    final down = _swingDownMicros;
+    if (!_swingHeld) return;
     _swingHeld = false;
-    _swingDownMicros = null;
-    _loadedHaptic = false;
-    if (down == null) return;
     final s = controller.state;
-    controller.dispatch(
-      SwingCommand(s.selectedDirection, charge: _chargeSince(down, s)),
-    );
+    controller.dispatch(SwingCommand(s.selectedDirection));
   }
 
   /// The finger slid off the plate, or the deck swapped under it. No swing.
   void cancelSwing() {
     _swingHeld = false;
-    _swingDownMicros = null;
-    _loadedHaptic = false;
   }
 
-  /// You may start loading as soon as there is a ball to face — earlier than
-  /// the engine will *accept* a swing. Press in the run-up and hold, and the
-  /// release still lands in the legal window; the bat is simply fully wound up
-  /// by then, which is exactly the trade the meter is showing you.
+  /// The CTA only becomes interactive during the engine's legal swing window.
   bool _swingWindowOpen(MatchState s) => s.canSwing;
-
-  double _chargeSince(int downMicros, MatchState s) {
-    final held = (s.simulationMicros - downMicros) / 1000000;
-    return (held / tuning.chargeSeconds).clamp(0.0, 1.0);
-  }
 
   void activatePowerShot() =>
       controller.dispatch(const ActivatePowerShotCommand());
@@ -363,54 +332,8 @@ class FinalOverGame extends FlameGame {
     canTurnBack.value = s.runner.canTurnBack;
     // Quantised so an unchanged bar never notifies.
     _setDouble(runProgress, (s.runner.progress * 100).round() / 100);
-    _syncShotMeter(s);
+    if (!s.canSwing) _swingHeld = false;
     if (!identical(history.value, s.history)) history.value = s.history;
-  }
-
-  /// The meter is up for the whole swingable window — you need to see the bands
-  /// *before* you decide to press. [ChargeMeterView.hot] lights the track for
-  /// the few milliseconds the ball is genuinely on the bat: release now.
-  void _syncShotMeter(MatchState s) {
-    final delivery = s.currentDelivery;
-    if (!_swingWindowOpen(s) || delivery == null) {
-      // Between balls the bat comes down, but a finger still on the plate keeps
-      // its claim: [_swingHeld] survives so the next delivery loads from zero.
-      if (shotMeter.value != null) shotMeter.value = null;
-      _swingHeld = false;
-      _swingDownMicros = null;
-      _loadedHaptic = false;
-      return;
-    }
-    // A press that arrived before there was a ball starts charging now.
-    if (_swingHeld && _swingDownMicros == null) {
-      _swingDownMicros = s.simulationMicros;
-    }
-    final down = _swingDownMicros;
-    final raw = down == null ? 0.0 : _chargeSince(down, s);
-    final charge = (raw * 100).round() / 100;
-    final errorMicros = (s.simulationMicros - delivery.expectedContactMicros)
-        .abs();
-    final hot = errorMicros <= tuning.perfectWindowMs * 1000;
-
-    // One tick the instant the bat comes fully loaded — you can feel the band
-    // without looking away from the ball.
-    if (down != null &&
-        !_loadedHaptic &&
-        charge >= tuning.chargePerfectCenter) {
-      _loadedHaptic = true;
-      HapticFeedback.selectionClick();
-    }
-
-    final view = shotMeter.value;
-    if (view != null && view.progress == charge && view.hot == hot) return;
-    shotMeter.value = ChargeMeterView(
-      progress: charge,
-      perfectCenter: tuning.chargePerfectCenter,
-      perfectHalf: tuning.chargePerfectHalf,
-      goodHalf: tuning.chargeGoodHalf,
-      overswingFrom: tuning.overswingFrom,
-      hot: hot,
-    );
   }
 
   void _setDouble(ValueNotifier<double> n, double v) {
@@ -1477,10 +1400,9 @@ class FinalOverGame extends FlameGame {
 
     final swing = s.swingIntent;
     if (swing == null) {
-      // The bat loads with the meter: hold the plate and you can watch the
-      // backlift come up. Untouched, it lifts a little anyway as the bowler
-      // comes in — anticipation is free game feel.
-      if (_swingDownMicros != null) return FoBatterPose.backlift;
+      // Holding the swing control makes the batter visibly load up, while an
+      // untouched bat still lifts slightly as the ball approaches.
+      if (_swingHeld) return FoBatterPose.backlift;
       return s.phase == MatchPhase.incomingBall
           ? FoBatterPose.backlift
           : FoBatterPose.stance;
@@ -1503,8 +1425,7 @@ class FinalOverGame extends FlameGame {
     if (s.runner.active) return _bowlerRunPhase;
     final swing = s.swingIntent;
     if (swing == null) {
-      final down = _swingDownMicros;
-      if (down != null) return _chargeSince(down, s);
+      if (_swingHeld) return 0.65;
       return s.phase == MatchPhase.incomingBall
           ? _incomingProgress(s)
           : _visualSeconds;

@@ -23,6 +23,7 @@ import '../../predictions/widgets/settlement_reveal.dart'
 class QuizRevealOverlay extends StatefulWidget {
   const QuizRevealOverlay({
     required this.mode,
+    required this.setNumber,
     required this.results,
     required this.totalXp,
     required this.xpBefore,
@@ -35,6 +36,7 @@ class QuizRevealOverlay extends StatefulWidget {
   });
 
   final QuizMode mode;
+  final int setNumber;
   final List<SettlementQuestionResult> results;
   final int totalXp;
   final int xpBefore;
@@ -56,6 +58,7 @@ class _QuizRevealOverlayState extends State<QuizRevealOverlay> {
   /// 0 = header beat, 1..n = that many verdicts stamped, n+1 = summary.
   int _stage = 0;
   int _run = 0;
+  bool _started = false;
 
   Color get _accent => widget.mode.accent;
   int get _summaryStage => widget.results.length + 1;
@@ -76,10 +79,16 @@ class _QuizRevealOverlayState extends State<QuizRevealOverlay> {
       widget.results.isNotEmpty && _correctCount == widget.results.length;
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
     if (widget.passed) {
-      _play();
+      if (MediaQuery.disableAnimationsOf(context)) {
+        _stage = _summaryStage;
+      } else {
+        _play();
+      }
     } else {
       _stage = _summaryStage;
       playSound(SoundEffect.cardSlam);
@@ -89,7 +98,7 @@ class _QuizRevealOverlayState extends State<QuizRevealOverlay> {
   Future<void> _play() async {
     final run = ++_run;
     playSound(SoundEffect.whoosh);
-    await Future<void>.delayed(const Duration(milliseconds: 1000));
+    await Future<void>.delayed(const Duration(milliseconds: 420));
     for (var i = 0; i < widget.results.length; i++) {
       if (!mounted || run != _run) return;
       playSound(
@@ -98,7 +107,7 @@ class _QuizRevealOverlayState extends State<QuizRevealOverlay> {
             : SoundEffect.cardSlam,
       );
       setState(() => _stage = i + 1);
-      await Future<void>.delayed(const Duration(milliseconds: 780));
+      await Future<void>.delayed(const Duration(milliseconds: 240));
     }
     if (!mounted || run != _run) return;
     _enterSummary();
@@ -117,20 +126,19 @@ class _QuizRevealOverlayState extends State<QuizRevealOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: _skipToSummary,
-      child: ColoredBox(
-        color: Cyber.bg.withValues(alpha: 0.97),
-        child: SafeArea(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 320),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            child: _onSummary
-                ? (widget.passed ? _summary() : _failSummary())
-                : _flips(),
-          ),
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    return ColoredBox(
+      color: Cyber.bg.withValues(alpha: 0.98),
+      child: SafeArea(
+        child: AnimatedSwitcher(
+          duration: reduceMotion
+              ? Duration.zero
+              : const Duration(milliseconds: 260),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          child: _onSummary
+              ? (widget.passed ? _summary() : _failSummary())
+              : _flips(),
         ),
       ),
     );
@@ -194,10 +202,16 @@ class _QuizRevealOverlayState extends State<QuizRevealOverlay> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.only(bottom: 18),
-          child: Text(
-            'TAP TO SKIP',
-            style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.4),
+          padding: const EdgeInsets.only(bottom: 14),
+          child: TextButton.icon(
+            key: const ValueKey('quiz-skip-results'),
+            onPressed: _skipToSummary,
+            icon: const Icon(Icons.fast_forward, size: 16),
+            label: Text(
+              'SKIP RESULTS',
+              style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.4),
+            ),
+            style: TextButton.styleFrom(foregroundColor: Cyber.muted),
           ),
         ),
       ],
@@ -208,84 +222,116 @@ class _QuizRevealOverlayState extends State<QuizRevealOverlay> {
   Widget _summary() {
     final progressBefore = levelProgress(widget.xpBefore);
     final progressAfter = levelProgress(widget.xpBefore + widget.totalXp);
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     return Stack(
       key: const ValueKey('quiz-summary'),
       alignment: Alignment.center,
       children: [
-        if (_perfect)
+        if (_perfect && !reduceMotion)
           const Positioned.fill(
             child: PackRevealBackground(rarity: 'platinum', pulseOpacity: 0.12),
           ),
-        if (_perfect) const Center(child: PackBurst()),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _RevealIn(
-                child: Text(
-                  _perfect ? 'PERFECT QUIZ' : 'QUIZ COMPLETE',
-                  textAlign: TextAlign.center,
-                  style:
-                      Cyber.display(
-                        24,
-                        color: _perfect ? Cyber.gold : Colors.white,
-                        letterSpacing: 2.2,
-                      ).copyWith(
-                        shadows: [
-                          Shadow(
-                            color: (_perfect ? Cyber.gold : _accent).withValues(
-                              alpha: 0.65,
+        if (_perfect && !reduceMotion) const Center(child: PackBurst()),
+        ListView(
+          padding: const EdgeInsets.fromLTRB(20, 28, 20, 28),
+          children: [
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 430),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _RevealIn(
+                      child: Text(
+                        _perfect ? 'PERFECT SET' : 'SET CLEARED',
+                        textAlign: TextAlign.center,
+                        style:
+                            Cyber.display(
+                              25,
+                              color: _perfect ? Cyber.gold : Cyber.success,
+                              letterSpacing: 2.2,
+                            ).copyWith(
+                              shadows: reduceMotion
+                                  ? null
+                                  : [
+                                      Shadow(
+                                        color:
+                                            (_perfect
+                                                    ? Cyber.gold
+                                                    : Cyber.success)
+                                                .withValues(alpha: 0.55),
+                                        blurRadius: 20,
+                                      ),
+                                    ],
                             ),
-                            blurRadius: 22,
-                          ),
-                        ],
                       ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              _RevealIn(
-                delayFactor: 0.2,
-                child: Text(
-                  '$_correctCount / ${widget.results.length} CORRECT',
-                  textAlign: TextAlign.center,
-                  style: Cyber.label(12, color: Cyber.muted, letterSpacing: 1.6)
-                      .copyWith(
-                        fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                    const SizedBox(height: 8),
+                    _RevealIn(
+                      delayFactor: 0.2,
+                      child: Text(
+                        '$_correctCount / ${widget.results.length} CORRECT',
+                        textAlign: TextAlign.center,
+                        style:
+                            Cyber.label(
+                              12,
+                              color: Cyber.muted,
+                              letterSpacing: 1.6,
+                            ).copyWith(
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
                       ),
+                    ),
+                    const SizedBox(height: 24),
+                    _RevealIn(
+                      delayFactor: 0.35,
+                      child: _XpTotal(xp: widget.totalXp),
+                    ),
+                    if (widget.newlyCleared) ...[
+                      const SizedBox(height: 18),
+                      _RevealIn(
+                        delayFactor: 0.5,
+                        child: _ClearBanner(
+                          mode: widget.mode,
+                          setNumber: widget.setNumber,
+                          unlocked: widget.unlocked,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    _RevealIn(
+                      delayFactor: 0.65,
+                      child: _LevelLine(
+                        before: progressBefore,
+                        after: progressAfter,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    _RevealIn(
+                      delayFactor: 0.75,
+                      child: _AnswerReview(
+                        results: widget.results,
+                        accent: _accent,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _RevealIn(
+                      delayFactor: 0.85,
+                      child: HudCtaButton(
+                        label: 'CONTINUE TO SETS',
+                        icon: Icons.arrow_forward,
+                        accent: _accent,
+                        onTap: widget.onDone,
+                        tapSound: SoundEffect.uiTap,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 26),
-              _RevealIn(delayFactor: 0.35, child: _XpTotal(xp: widget.totalXp)),
-              if (widget.newlyCleared) ...[
-                const SizedBox(height: 20),
-                _RevealIn(
-                  delayFactor: 0.5,
-                  child: _ClearBanner(
-                    mode: widget.mode,
-                    unlocked: widget.unlocked,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 30),
-              _RevealIn(
-                delayFactor: 0.7,
-                child: _LevelLine(before: progressBefore, after: progressAfter),
-              ),
-              const SizedBox(height: 34),
-              _RevealIn(
-                delayFactor: 0.85,
-                child: HudCtaButton(
-                  label: 'CONTINUE',
-                  icon: Icons.arrow_forward,
-                  accent: _accent,
-                  onTap: widget.onDone,
-                  tapSound: SoundEffect.uiTap,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ],
     );
@@ -293,83 +339,101 @@ class _QuizRevealOverlayState extends State<QuizRevealOverlay> {
 
   Widget _failSummary() {
     final wrong = widget.results.length - _correctCount;
-    return Stack(
+    return ListView(
       key: const ValueKey('quiz-failed-summary'),
-      alignment: Alignment.center,
+      padding: const EdgeInsets.fromLTRB(20, 32, 20, 28),
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _RevealIn(
-                child: Text(
-                  'REPLAY REQUIRED',
-                  textAlign: TextAlign.center,
-                  style:
-                      Cyber.display(
-                        24,
-                        color: Cyber.danger,
-                        letterSpacing: 2.2,
-                      ).copyWith(
-                        shadows: [
-                          Shadow(
-                            color: Cyber.danger.withValues(alpha: 0.55),
-                            blurRadius: 22,
-                          ),
-                        ],
-                      ),
+        Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 430),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _RevealIn(
+                  child: Text(
+                    'SET NOT CLEARED',
+                    textAlign: TextAlign.center,
+                    style:
+                        Cyber.display(
+                          24,
+                          color: Cyber.danger,
+                          letterSpacing: 2.2,
+                        ).copyWith(
+                          shadows: [
+                            Shadow(
+                              color: Cyber.danger.withValues(alpha: 0.55),
+                              blurRadius: 22,
+                            ),
+                          ],
+                        ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              _RevealIn(
-                delayFactor: 0.2,
-                child: Text(
-                  '$_correctCount / ${widget.results.length} CORRECT · $wrong WRONG',
-                  textAlign: TextAlign.center,
-                  style: Cyber.label(12, color: Cyber.muted, letterSpacing: 1.4)
-                      .copyWith(
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
+                const SizedBox(height: 8),
+                _RevealIn(
+                  delayFactor: 0.2,
+                  child: Text(
+                    '$_correctCount / ${widget.results.length} CORRECT · $wrong WRONG',
+                    textAlign: TextAlign.center,
+                    style:
+                        Cyber.label(
+                          12,
+                          color: Cyber.muted,
+                          letterSpacing: 1.4,
+                        ).copyWith(
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              _RevealIn(
-                delayFactor: 0.35,
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Cyber.danger.withValues(alpha: 0.08),
-                    border: Border.all(
-                      color: Cyber.danger.withValues(alpha: 0.42),
+                const SizedBox(height: 24),
+                _RevealIn(
+                  delayFactor: 0.35,
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Cyber.danger.withValues(alpha: 0.08),
+                      border: Border.all(
+                        color: Cyber.danger.withValues(alpha: 0.42),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        const Icon(
+                          Icons.lock_outline,
+                          color: Cyber.danger,
+                          size: 24,
+                        ),
+                        const SizedBox(height: 9),
+                        Text(
+                          'PASS SCORE · 5 / ${widget.results.length}',
+                          style: Cyber.display(12, color: Cyber.danger),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Correct answers stay hidden until this set is cleared.',
+                          textAlign: TextAlign.center,
+                          style: Cyber.body(13, color: Cyber.muted),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Text(
-                    'More than 5 answers were wrong. Answers stay hidden until you pass this set.',
-                    textAlign: TextAlign.center,
-                    style: Cyber.body(13, color: Cyber.muted),
+                ),
+                const SizedBox(height: 28),
+                _RevealIn(
+                  delayFactor: 0.55,
+                  child: HudCtaButton(
+                    label: 'RETRY · 25 COINS',
+                    icon: Icons.replay,
+                    accent: _accent,
+                    onTap: widget.onRetry,
+                    tapSound: SoundEffect.uiTap,
                   ),
                 ),
-              ),
-              const SizedBox(height: 28),
-              _RevealIn(
-                delayFactor: 0.55,
-                child: HudCtaButton(
-                  label: 'RETRY - 25 COINS',
-                  icon: Icons.replay,
-                  accent: _accent,
-                  onTap: widget.onRetry,
-                  tapSound: SoundEffect.uiTap,
-                ),
-              ),
-              const SizedBox(height: 16),
-              _RevealIn(
-                delayFactor: 0.75,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: widget.onDone,
-                  child: Center(
+                const SizedBox(height: 16),
+                _RevealIn(
+                  delayFactor: 0.75,
+                  child: TextButton(
+                    onPressed: widget.onDone,
+                    style: TextButton.styleFrom(foregroundColor: Cyber.muted),
                     child: Text(
                       'BACK TO SETS',
                       style: Cyber.label(
@@ -380,8 +444,8 @@ class _QuizRevealOverlayState extends State<QuizRevealOverlay> {
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],
@@ -398,9 +462,12 @@ class _RevealIn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
-      duration: Duration(milliseconds: (420 * (1 + delayFactor)).round()),
+      duration: reduceMotion
+          ? Duration.zero
+          : Duration(milliseconds: (420 * (1 + delayFactor)).round()),
       curve: Interval(
         delayFactor / (1 + delayFactor),
         1,
@@ -409,7 +476,7 @@ class _RevealIn extends StatelessWidget {
       builder: (context, t, child) => Opacity(
         opacity: t,
         child: Transform.translate(
-          offset: Offset(0, 14 * (1 - t)),
+          offset: reduceMotion ? Offset.zero : Offset(0, 14 * (1 - t)),
           child: child,
         ),
       ),
@@ -440,7 +507,9 @@ class _XpTicker extends StatelessWidget {
         children: [
           TweenAnimationBuilder<double>(
             tween: Tween(begin: 0, end: value.toDouble()),
-            duration: const Duration(milliseconds: 420),
+            duration: MediaQuery.disableAnimationsOf(context)
+                ? Duration.zero
+                : const Duration(milliseconds: 420),
             curve: Curves.easeOutCubic,
             builder: (context, v, _) => Text(
               '+${v.round()}',
@@ -479,7 +548,9 @@ class _VerdictRow extends StatelessWidget {
     final stampAccent = result.correct ? Cyber.success : Cyber.danger;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 620),
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 420),
       curve: Curves.easeOutCubic,
       builder: (context, t, _) {
         final enter = (t / 0.45).clamp(0.0, 1.0);
@@ -601,6 +672,98 @@ class _XpStamp extends StatelessWidget {
   }
 }
 
+class _AnswerReview extends StatelessWidget {
+  const _AnswerReview({required this.results, required this.accent});
+
+  final List<SettlementQuestionResult> results;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Theme(
+      data: Theme.of(context).copyWith(
+        dividerColor: Colors.transparent,
+        splashColor: accent.withValues(alpha: 0.08),
+      ),
+      child: Material(
+        color: Cyber.panel2.withValues(alpha: 0.92),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.zero,
+          side: BorderSide(color: accent.withValues(alpha: 0.42)),
+        ),
+        child: ExpansionTile(
+          key: const ValueKey('quiz-answer-review'),
+          iconColor: accent,
+          collapsedIconColor: accent,
+          tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+          childrenPadding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+          title: Text(
+            'REVIEW RESULTS',
+            style: Cyber.display(11, color: accent, letterSpacing: 1.1),
+          ),
+          subtitle: Text(
+            'Selected and correct answers',
+            style: Cyber.body(11, color: Cyber.muted),
+          ),
+          children: [
+            for (var i = 0; i < results.length; i++)
+              _AnswerReviewRow(index: i + 1, result: results[i]),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AnswerReviewRow extends StatelessWidget {
+  const _AnswerReviewRow({required this.index, required this.result});
+
+  final int index;
+  final SettlementQuestionResult result;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = result.correct ? Cyber.success : Cyber.danger;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Cyber.borderMuted)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            result.correct ? Icons.check_circle : Icons.cancel,
+            color: color,
+            size: 18,
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Q$index · ${result.text}',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Cyber.body(11.5, weight: FontWeight.w700),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  result.correct
+                      ? 'YOUR ANSWER · ${result.pickedLabel}'
+                      : 'YOUR ANSWER · ${result.pickedLabel}  /  CORRECT · ${result.correctLabel}',
+                  style: Cyber.body(10.5, color: color),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _XpTotal extends StatelessWidget {
   const _XpTotal({required this.xp});
 
@@ -610,7 +773,9 @@ class _XpTotal extends StatelessWidget {
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: xp.toDouble()),
-      duration: const Duration(milliseconds: 900),
+      duration: MediaQuery.disableAnimationsOf(context)
+          ? Duration.zero
+          : const Duration(milliseconds: 700),
       curve: Curves.easeOutCubic,
       builder: (context, v, _) => Text(
         '+${v.round()} XP',
@@ -632,9 +797,14 @@ class _XpTotal extends StatelessWidget {
 
 /// "MODE CLEARED" capstone, naming the tier this run just opened (if any).
 class _ClearBanner extends StatelessWidget {
-  const _ClearBanner({required this.mode, required this.unlocked});
+  const _ClearBanner({
+    required this.mode,
+    required this.setNumber,
+    required this.unlocked,
+  });
 
   final QuizMode mode;
+  final int setNumber;
   final QuizMode? unlocked;
 
   @override
@@ -653,10 +823,18 @@ class _ClearBanner extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.lock_open, color: accent, size: 16),
+              Icon(
+                setNumber < kQuizSetCount
+                    ? Icons.lock_open
+                    : Icons.workspace_premium,
+                color: accent,
+                size: 16,
+              ),
               const SizedBox(width: 8),
               Text(
-                '${mode.label} CLEARED',
+                setNumber < kQuizSetCount
+                    ? 'SET ${setNumber + 1} UNLOCKED'
+                    : '${mode.label} LADDER COMPLETE',
                 style: Cyber.display(13, color: accent, letterSpacing: 1.6),
               ),
             ],
@@ -715,7 +893,9 @@ class _LevelLine extends StatelessWidget {
         const SizedBox(height: 7),
         TweenAnimationBuilder<double>(
           tween: Tween(begin: leveled ? 0 : before.pct, end: after.pct),
-          duration: const Duration(milliseconds: 900),
+          duration: MediaQuery.disableAnimationsOf(context)
+              ? Duration.zero
+              : const Duration(milliseconds: 700),
           curve: Curves.easeOutCubic,
           builder: (context, pct, _) => CyberProgressBar(
             value: pct,

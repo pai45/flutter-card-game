@@ -141,6 +141,8 @@ Future<void> _pumpHome(
           onOpenSuperOver: () {},
           onOpenGuessPlayer: () {},
           onOpenGrandPrix: () {},
+          onOpenF1GuessDriver: () {},
+              onOpenTennisGuessWinner: () {},
           onOpenBasketball: () {},
           onOpenCricketDeck: () {},
           onOpenBasketballGuessPlayer: () {},

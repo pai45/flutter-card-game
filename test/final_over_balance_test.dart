@@ -28,27 +28,27 @@ void main() {
       expect(tuning.maximumWickets, 3);
       expect(tuning.baseCatchChance, 0.58);
       expect(tuning.keeperCatchChance, 0.68);
-      expect(tuning.fielderSpeed, 0.28);
-      expect(tuning.throwSpeed, 0.68);
+      expect(tuning.fielderSpeed, 0.24);
+      expect(tuning.throwSpeed, 0.56);
       expect(tuning.batterReach, 0.100);
       expect(tuning.powerShotSegments, 4);
       expect(tuning.backliftPowerFloor, 0.75);
       expect(tuning.overswingFrom, 0.98);
       expect(tuning.overswingControlPenalty, 0.10);
       expect(tuning.overswingEdgeBonus, 0.04);
-      expect(tuning.groundPowerSpeed, closeTo(0.858, 0.0001));
-      expect(tuning.loftPowerSpeed, closeTo(0.715, 0.0001));
+      expect(tuning.groundPowerSpeed, closeTo(0.704, 0.0001));
+      expect(tuning.loftPowerSpeed, closeTo(0.649, 0.0001));
     });
 
     test(
-      'Pro is softened and Elite preserves the original field challenge',
+      'Pro and Elite keep their challenge while preserving a running window',
       () {
         final pro = FinalOverTier.pro.tuning;
         expect(pro.perfectWindowMs, 65);
         expect(pro.goodWindowMs, 150);
         expect(pro.poorWindowMs, 330);
         expect(pro.baseCatchChance, 0.68);
-        expect(pro.fielderSpeed, 0.32);
+        expect(pro.fielderSpeed, 0.27);
         expect(pro.powerShotSegments, 5);
 
         final elite = FinalOverTier.elite.tuning;
@@ -57,8 +57,8 @@ void main() {
         expect(elite.poorWindowMs, 275);
         expect(elite.baseCatchChance, 0.82);
         expect(elite.keeperCatchChance, 0.88);
-        expect(elite.fielderSpeed, 0.35);
-        expect(elite.throwSpeed, 0.78);
+        expect(elite.fielderSpeed, 0.29);
+        expect(elite.throwSpeed, 0.62);
         expect(elite.powerShotSegments, 8);
       },
     );
