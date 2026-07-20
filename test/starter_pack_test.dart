@@ -137,7 +137,8 @@ void main() {
         hasLength(
           footballPlayerCards.length +
               cricketPlayerCards.length +
-              basketballPlayerCards.length,
+              basketballPlayerCards.length +
+              tennisPlayerCards.length,
         ),
       );
     });

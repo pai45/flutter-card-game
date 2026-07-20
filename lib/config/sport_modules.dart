@@ -43,10 +43,10 @@ const sportModules = <SportModule>[
     availableModules: ['MATCHES', 'PICKS', 'FOLLOWING'],
   ),
   SportModule(
-    sport: Sport.f1,
-    label: 'Formula 1',
-    shortLabel: 'Formula 1',
-    systemCode: 'SPORT://FORMULA-1',
+    sport: Sport.motorsport,
+    label: 'Motorsport',
+    shortLabel: 'Motorsport',
+    systemCode: 'SPORT://MOTORSPORT',
     icon: Icons.sports_motorsports,
     accent: Cyber.f1Red,
     availableModules: ['FOLLOWING', 'COMING SOON'],
@@ -80,6 +80,10 @@ SportModule sportModuleFor(Sport sport) {
 
 Sport sportFromStorage(String? raw) {
   if (raw == null || raw.isEmpty) return Sport.football;
+  // Pre-rename installs persisted the enum name 'f1'; keep resolving it to
+  // the renamed Sport.motorsport so existing installs don't silently reset
+  // to football.
+  if (raw == 'f1') return Sport.motorsport;
   for (final sport in Sport.values) {
     if (sport.name == raw) return sport;
   }

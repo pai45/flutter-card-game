@@ -62,6 +62,7 @@ class QuizQuestion {
     this.settledOptionIndex,
     this.settledHomeScore,
     this.settledAwayScore,
+    this.forcedVoid = false,
   });
 
   final String id;
@@ -82,6 +83,14 @@ class QuizQuestion {
   final int? settledHomeScore;
   final int? settledAwayScore;
 
+  /// Set by the auto-settlement engine when a finished match's real data can't
+  /// support this question (e.g. a cricket scorecard with no six-count
+  /// breakdown). A voided question counts as settled — so the quiz as a whole
+  /// can still be revealed — but is excluded from scoring: no XP either way.
+  /// This is the per-question escape hatch that guarantees a fixture is never
+  /// left permanently unsettleable just because one archetype didn't resolve.
+  final bool forcedVoid;
+
   bool get isScorePrediction => type == QuizQuestionType.exactScore;
 
   int? get settledScoreEncoded {
@@ -89,9 +98,29 @@ class QuizQuestion {
     return ScoreAnswer.encode(settledHomeScore!, settledAwayScore!);
   }
 
-  bool get isSettled => isScorePrediction
-      ? settledScoreEncoded != null
-      : settledOptionIndex != null;
+  bool get isSettled =>
+      forcedVoid ||
+      (isScorePrediction
+          ? settledScoreEncoded != null
+          : settledOptionIndex != null);
+
+  QuizQuestion copyWith({
+    int? settledOptionIndex,
+    int? settledHomeScore,
+    int? settledAwayScore,
+    bool? forcedVoid,
+  }) => QuizQuestion(
+    id: id,
+    text: text,
+    options: options,
+    reward: reward,
+    type: type,
+    backgroundAsset: backgroundAsset,
+    settledOptionIndex: settledOptionIndex ?? this.settledOptionIndex,
+    settledHomeScore: settledHomeScore ?? this.settledHomeScore,
+    settledAwayScore: settledAwayScore ?? this.settledAwayScore,
+    forcedVoid: forcedVoid ?? this.forcedVoid,
+  );
 }
 
 /// The full quiz for one fixture.

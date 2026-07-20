@@ -8,6 +8,7 @@ import '../../blocs/prediction/prediction_cubit.dart';
 import '../../blocs/match_circle/match_circle_cubit.dart';
 import '../../blocs/match_circle/match_circle_state.dart';
 import '../../config/theme.dart';
+import '../../data/team_palettes.dart';
 import '../../models/match_circle.dart';
 import '../../models/picks.dart';
 import '../../models/prediction.dart';
@@ -901,16 +902,20 @@ class _ScoreboardTabState extends State<_ScoreboardTab> {
                         padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
                         children: [
                           _MatchFactPanel(match: widget.match),
-                          if (widget.match.sport == Sport.f1 &&
+                          if (widget.match.sport == Sport.motorsport &&
                               widget.match.f1Sessions != null &&
                               widget.match.f1Sessions!.isNotEmpty) ...[
                             const SizedBox(height: 14),
                             _F1SessionsPanel(match: widget.match),
                           ],
-                          if (widget.match.sport == Sport.f1 &&
+                          if (widget.match.sport == Sport.motorsport &&
                               widget.match.f1DriverStandings != null) ...[
                             const SizedBox(height: 14),
                             _DriverStandingsPanel(match: widget.match),
+                          ],
+                          if (widget.match.teamStats?.isNotEmpty ?? false) ...[
+                            const SizedBox(height: 14),
+                            _TeamStatsPanel(match: widget.match),
                           ],
                           const SizedBox(height: 14),
                           _TimelinePanel(match: widget.match),
@@ -1316,6 +1321,141 @@ class _StatePanel extends StatelessWidget {
                 Text(title, style: Cyber.display(15, letterSpacing: 0.8)),
                 const SizedBox(height: 5),
                 Text(message, style: Cyber.body(12, color: Cyber.muted)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Head-to-head team statistics as labelled split bars — one bar per metric,
+/// filled from each side in its own team colour. This is a static data block,
+/// so per the glow rule nothing here glows; separation comes from the flat
+/// panel fill and the team colours themselves.
+class _TeamStatsPanel extends StatelessWidget {
+  const _TeamStatsPanel({required this.match});
+
+  final SportMatch match;
+
+  @override
+  Widget build(BuildContext context) {
+    final stats = match.teamStats;
+    if (stats == null || stats.isEmpty) return const SizedBox.shrink();
+
+    final homeColor = paletteForTeam(match.home, sport: match.sport).primary;
+    final awayColor = paletteForTeam(match.away, sport: match.sport).primary;
+
+    return _Panel(
+      title: 'TEAM STATS',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              _StatsLegend(color: homeColor, label: match.home.shortName),
+              const Spacer(),
+              _StatsLegend(
+                color: awayColor,
+                label: match.away.shortName,
+                alignEnd: true,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          for (final stat in stats)
+            _TeamStatRow(
+              stat: stat,
+              homeColor: homeColor,
+              awayColor: awayColor,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatsLegend extends StatelessWidget {
+  const _StatsLegend({
+    required this.color,
+    required this.label,
+    this.alignEnd = false,
+  });
+
+  final Color color;
+  final String label;
+  final bool alignEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    final swatch = Container(width: 9, height: 9, color: color);
+    final text = Text(
+      label.toUpperCase(),
+      style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1.2),
+    );
+    return Row(
+      children: alignEnd
+          ? [text, const SizedBox(width: 6), swatch]
+          : [swatch, const SizedBox(width: 6), text],
+    );
+  }
+}
+
+class _TeamStatRow extends StatelessWidget {
+  const _TeamStatRow({
+    required this.stat,
+    required this.homeColor,
+    required this.awayColor,
+  });
+
+  final TeamStatLine stat;
+  final Color homeColor;
+  final Color awayColor;
+
+  @override
+  Widget build(BuildContext context) {
+    // Flex needs whole numbers, and a side that recorded nothing should still
+    // leave a sliver of colour rather than vanishing.
+    final homeFlex = (stat.homeShare * 1000).round().clamp(4, 996);
+    final numberStyle = Cyber.label(
+      13,
+      letterSpacing: 0.6,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Text(stat.homeDisplay, style: numberStyle),
+              Expanded(
+                child: Text(
+                  stat.label.toUpperCase(),
+                  textAlign: TextAlign.center,
+                  style: Cyber.label(
+                    9.5,
+                    color: Cyber.muted,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+              ),
+              Text(stat.awayDisplay, style: numberStyle),
+            ],
+          ),
+          const SizedBox(height: 5),
+          SizedBox(
+            height: 5,
+            child: Row(
+              children: [
+                Expanded(flex: homeFlex, child: ColoredBox(color: homeColor)),
+                const SizedBox(width: 2),
+                Expanded(
+                  flex: 1000 - homeFlex,
+                  child: ColoredBox(color: awayColor),
+                ),
               ],
             ),
           ),

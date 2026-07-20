@@ -34,6 +34,7 @@ enum PlayerRole {
   basketballGuard,
   basketballWing,
   basketballBig,
+  tennisSingles,
 }
 
 enum ActionCategory { attack, defense, special }

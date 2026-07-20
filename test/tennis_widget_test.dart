@@ -1,6 +1,8 @@
 import 'dart:math';
 
 import 'package:card_game/blocs/game/game_bloc.dart';
+import 'package:card_game/blocs/game/game_event.dart';
+import 'package:card_game/config/enums.dart';
 import 'package:card_game/blocs/prediction/prediction_cubit.dart';
 import 'package:card_game/blocs/tennis/tennis_cubit.dart';
 import 'package:card_game/games/tennis/tennis_game.dart';
@@ -70,8 +72,8 @@ void main() {
             onOpenBasketballGuessPlayer: () {},
             onOpenCricketGuessPlayer: () {},
             onOpenGrandPrix: () {},
-          onOpenF1GuessDriver: () {},
-              onOpenTennisGuessWinner: () {},
+            onOpenF1GuessDriver: () {},
+            onOpenTennisGuessWinner: () {},
             onOpenBasketball: () {},
             onOpenTennisRally: () => opened = true,
           ),
@@ -90,73 +92,88 @@ void main() {
     expect(opened, isTrue);
   });
 
-  testWidgets('MVP first entry opens a tennis starter pack then preview', (
-    tester,
-  ) async {
+  testWidgets('hub adopts the tennis card GameBloc granted it', (tester) async {
     tester.view.physicalSize = const Size(393, 852);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
     final storage = SecureGameStorage();
+    final gameBloc = GameBloc(storage);
+    addTearDown(gameBloc.close);
+    gameBloc.add(GameLoaded());
+    await tester.pump(const Duration(milliseconds: 500));
+    gameBloc.add(TennisStarterPackOpened());
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // The pack pipeline owns the grant; the hub is only ever handed the result.
+    expect(gameBloc.state.tennisStarterPackClaimed, isTrue);
+    final granted = gameBloc.state.deckTennisStarter;
+    expect(granted, isNotNull);
+    expect(granted!.tier, CardTier.bronze);
+
     final tennisCubit = TennisCubit(storage, random: Random(4));
     await tennisCubit.load();
     addTearDown(tennisCubit.close);
+    expect(tennisCubit.state.profile.ownedPlayerIds, isEmpty);
 
     await tester.pumpWidget(
-      BlocProvider<TennisCubit>.value(
-        value: tennisCubit,
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<GameBloc>.value(value: gameBloc),
+          BlocProvider<TennisCubit>.value(value: tennisCubit),
+        ],
         child: MaterialApp(home: TennisRallyHub(onExit: () {})),
       ),
     );
     await tester.pump(const Duration(milliseconds: 500));
-
-    expect(find.text('OPEN STARTER PACK'), findsOneWidget);
-    expect(find.text('PLAYER SELECT'), findsNothing);
-    expect(find.text('PLAY MODES'), findsNothing);
-    expect(find.text('TRAINING'), findsNothing);
-    expect(find.text('TOURNAMENT'), findsNothing);
-    expect(find.text('ENDLESS RALLY'), findsNothing);
-    expect(find.text('TARGET PRACTICE'), findsNothing);
-
-    await tester.tap(find.text('OPEN STARTER PACK'));
     await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text('ATHLETE UNLOCKED'), findsOneWidget);
-    expect(tennisCubit.state.profile.ownedPlayerIds, hasLength(1));
 
-    await tester.tap(find.text('ENTER QUICK MATCH'));
-    await tester.pump(const Duration(milliseconds: 500));
-    expect(find.text('MATCH PREVIEW'), findsOneWidget);
-    expect(find.text('PLAYER SELECT'), findsNothing);
+    expect(tennisCubit.state.profile.starterPackClaimed, isTrue);
+    expect(tennisCubit.state.profile.ownedPlayerIds, [granted.id]);
+    expect(tennisCubit.state.profile.selectedPlayerId, granted.id);
+    expect(find.text('TENNIS RALLY'), findsWidgets);
+    expect(find.text('PLAY MATCH'), findsOneWidget);
+    expect(find.text('TACTICAL READ'), findsNothing);
+    expect(find.text('OPEN STARTER PACK'), findsNothing);
   });
 
-  testWidgets('claimed MVP users go straight to match preview', (tester) async {
+  testWidgets('claimed MVP users go straight to the Tennis Rally lobby', (
+    tester,
+  ) async {
     final storage = SecureGameStorage();
     await storage.saveTennisProfile(
       const TennisProfile(
         starterPackClaimed: true,
-        ownedPlayerIds: ['luca-vale'],
-        selectedPlayerId: 'luca-vale',
-        lastOpponentId: 'jett-okafor',
+        ownedPlayerIds: ['casper-ruud'],
+        selectedPlayerId: 'casper-ruud',
+        lastOpponentId: 'taylor-fritz',
       ),
     );
+    final gameBloc = GameBloc(storage);
+    addTearDown(gameBloc.close);
     final tennisCubit = TennisCubit(storage, random: Random(2));
     await tennisCubit.load();
     addTearDown(tennisCubit.close);
 
     await tester.pumpWidget(
-      BlocProvider<TennisCubit>.value(
-        value: tennisCubit,
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<GameBloc>.value(value: gameBloc),
+          BlocProvider<TennisCubit>.value(value: tennisCubit),
+        ],
         child: MaterialApp(home: TennisRallyHub(onExit: () {})),
       ),
     );
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('MATCH PREVIEW'), findsOneWidget);
+    expect(find.text('TENNIS RALLY'), findsWidgets);
+    expect(find.text('PLAY MATCH'), findsOneWidget);
+    expect(find.text('TACTICAL READ'), findsNothing);
     expect(find.text('OPEN STARTER PACK'), findsNothing);
     expect(find.text('PLAYER SELECT'), findsNothing);
-    expect(tennisCubit.state.profile.lastOpponentId, isNot('luca-vale'));
+    expect(tennisCubit.state.profile.lastOpponentId, isNot('casper-ruud'));
   });
 
   testWidgets('hidden V2 hub still exposes all modes and lessons', (
@@ -206,8 +223,8 @@ void main() {
       const config = TennisMatchConfig(
         matchId: 'hud-test',
         mode: TennisMode.quickMatch,
-        playerId: 'nova-reyes',
-        opponentId: 'jett-okafor',
+        playerId: 'frances-tiafoe',
+        opponentId: 'taylor-fritz',
         difficulty: TennisDifficulty.pro,
         seed: 2,
       );

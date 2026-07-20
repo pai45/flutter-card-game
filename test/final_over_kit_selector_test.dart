@@ -9,7 +9,7 @@ void main() {
 
   setUp(() => AudioController.instance.muted.value = true);
 
-  testWidgets('Final Over kit locker shows and equips named batter kits', (
+  testWidgets('Final Over kit selector shows free kit and owned paid kits', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(393, 852);
@@ -26,8 +26,9 @@ void main() {
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: StatefulBuilder(
-              builder: (context, setState) => FinalOverKitPicker(
+              builder: (context, setState) => FinalOverKitSelector(
                 selectedId: selectedId,
+                ownedKitIds: const ['voltage', 'coral'],
                 onSelected: (id) => setState(() => selectedId = id),
               ),
             ),
@@ -37,18 +38,11 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 200));
 
-    for (final id in [
-      'voltage',
-      'ember',
-      'meridian',
-      'sovereign',
-      'monsoon',
-      'saffron',
-      'obsidian',
-      'coral',
-    ]) {
-      expect(find.byKey(ValueKey('final-over-kit-$id')), findsOneWidget);
-    }
+    expect(find.text('FREE KITS'), findsOneWidget);
+    expect(find.text('YOUR KITS'), findsOneWidget);
+    expect(find.byKey(const ValueKey('final-over-kit-voltage')), findsOneWidget);
+    expect(find.byKey(const ValueKey('final-over-kit-coral')), findsOneWidget);
+    expect(find.byKey(const ValueKey('final-over-kit-ember')), findsNothing);
     expect(find.text('VOLTAGE // EQUIPPED'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('final-over-kit-coral')));

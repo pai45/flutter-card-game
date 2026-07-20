@@ -55,22 +55,35 @@ void main() {
     expect(await storage.loadTennisMatchSnapshot(), isNull);
   });
 
-  test('claims exactly one random tennis starter and persists it', () async {
+  test('mirrors the granted deck card into the profile and persists it', () async {
     final storage = SecureGameStorage();
     final cubit = TennisCubit(storage, random: Random(7));
     addTearDown(cubit.close);
     await cubit.load();
 
     expect(cubit.state.profile.starterPackClaimed, isFalse);
-    final starter = await cubit.claimStarterPack();
+    const starterId = 'frances-tiafoe';
+    await cubit.syncFromDeck(const [starterId], starterId);
 
     expect(cubit.state.profile.starterPackClaimed, isTrue);
-    expect(cubit.state.profile.ownedPlayerIds, [starter.id]);
-    expect(cubit.state.profile.selectedPlayerId, starter.id);
-    expect(cubit.state.profile.lastOpponentId, isNot(starter.id));
+    expect(cubit.state.profile.ownedPlayerIds, [starterId]);
+    expect(cubit.state.profile.selectedPlayerId, starterId);
+    expect(cubit.state.profile.lastOpponentId, isNot(starterId));
     final restored = await storage.loadTennisProfile();
     expect(restored.starterPackClaimed, isTrue);
-    expect(restored.ownedPlayerIds, [starter.id]);
+    expect(restored.ownedPlayerIds, [starterId]);
+  });
+
+  test('ignores deck ids that are not on the tennis roster', () async {
+    final storage = SecureGameStorage();
+    final cubit = TennisCubit(storage, random: Random(7));
+    addTearDown(cubit.close);
+    await cubit.load();
+
+    await cubit.syncFromDeck(const ['eng-harry-kane'], 'eng-harry-kane');
+
+    expect(cubit.state.profile.starterPackClaimed, isFalse);
+    expect(cubit.state.profile.ownedPlayerIds, isEmpty);
   });
 
   test('quick-match preview rolls a deterministic rated rival', () async {
@@ -78,7 +91,7 @@ void main() {
     final first = TennisCubit(firstStorage, random: Random(11));
     addTearDown(first.close);
     await first.load();
-    await first.claimStarterPack();
+    await first.syncFromDeck(const ['frances-tiafoe'], 'frances-tiafoe');
     first.prepareQuickMatchPreview();
     final firstProfile = first.state.profile;
 
@@ -87,7 +100,7 @@ void main() {
     final second = TennisCubit(secondStorage, random: Random(11));
     addTearDown(second.close);
     await second.load();
-    await second.claimStarterPack();
+    await second.syncFromDeck(const ['frances-tiafoe'], 'frances-tiafoe');
     second.prepareQuickMatchPreview();
     final secondProfile = second.state.profile;
 
@@ -129,7 +142,7 @@ void main() {
     expect(tournament.results, ['W', 'W', 'W']);
     expect(cubit.state.profile.trophies['rookie'], 1);
     expect(cubit.state.profile.achievements, contains('champion'));
-    expect(cubit.state.profile.isPlayerUnlocked('kaia-brooks'), isTrue);
+    expect(cubit.state.profile.isPlayerUnlocked('frances-tiafoe'), isFalse);
   });
 }
 

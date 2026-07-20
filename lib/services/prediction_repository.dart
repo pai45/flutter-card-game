@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../config/theme.dart';
+import '../data/wc_third_place_2026.dart';
+import '../models/basketball_scorecard.dart';
 import '../models/league.dart';
 import '../models/prediction.dart';
 import '../models/sport_match.dart';
@@ -90,8 +93,713 @@ class MockPredictionRepository implements PredictionRepository {
     shortCode: 'WTA',
     accent: Color(0xff8a2be2),
   );
+  static const _indycar = League(
+    id: 'indycar',
+    name: 'IndyCar',
+    shortCode: 'INDY',
+    accent: Color(0xff001489),
+  );
+  static const _nascarCup = League(
+    id: 'nascar-cup',
+    name: 'NASCAR Cup Series',
+    shortCode: 'NASCAR',
+    accent: Color(0xffffcc00),
+  );
+
+  // ── Soccer leagues (ESPN scoreboard feed, Jul 2026) ───────────────────────
+  static const _mls = League(
+    id: 'mls',
+    name: 'Major League Soccer',
+    shortCode: 'MLS',
+    accent: Cyber.cyan,
+  );
+  static const _uclq = League(
+    id: 'uclq',
+    name: 'UCL Qualifying',
+    shortCode: 'UCLQ',
+    accent: Cyber.violet,
+  );
+  static const _brasileirao = League(
+    id: 'brasileirao',
+    name: 'Brasileirao Serie A',
+    shortCode: 'BRA',
+    accent: Cyber.success,
+  );
+  static const _ligaMx = League(
+    id: 'ligamx',
+    name: 'Liga MX',
+    shortCode: 'LIGA MX',
+    accent: Cyber.magenta,
+  );
+  static const _allsvenskan = League(
+    id: 'allsvenskan',
+    name: 'Allsvenskan',
+    shortCode: 'ALLS',
+    accent: Cyber.amber,
+  );
+  static const _eliteserien = League(
+    id: 'eliteserien',
+    name: 'Eliteserien',
+    shortCode: 'ELITE',
+    accent: Cyber.gold,
+  );
+
+  // ── Cricket competitions (ESPN scorepanel, Jul 2026) ──────────────────────
+  static const _lpl = League(
+    id: 'lpl',
+    name: 'Lanka Premier League',
+    shortCode: 'LPL',
+    accent: Cyber.violet,
+  );
+  static const _pakTourWi = League(
+    id: 'paktourwi',
+    name: 'Pakistan tour of West Indies',
+    shortCode: 'PAK v WI',
+    accent: Cyber.danger,
+  );
+  static const _saWomenU19TourPak = League(
+    id: 'sawu19tourpak',
+    name: 'SA Women U19 tour of Pakistan',
+    shortCode: 'SAW U19',
+    accent: Cyber.magenta,
+  );
 
   // ── Teams ──────────────────────────────────────────────────────────────────
+  // ── WNBA teams (real ESPN feed) — basketball had zero seeded fixtures ─────
+  // before this; NBA is off-season in July, so WNBA is the initial source.
+  static const _dallasWings = SportTeam(
+    id: 'dallaswings',
+    name: 'Dallas Wings',
+    shortName: 'DAL',
+    color: Color(0xff002b5c),
+  );
+  static const _losAngelesSparks = SportTeam(
+    id: 'losangelessparks',
+    name: 'Los Angeles Sparks',
+    shortName: 'LA',
+    color: Color(0xff552583),
+  );
+  static const _atlantaDream = SportTeam(
+    id: 'atlantadream',
+    name: 'Atlanta Dream',
+    shortName: 'ATL',
+    color: Color(0xffe31837),
+  );
+  static const _chicagoSky = SportTeam(
+    id: 'chicagosky',
+    name: 'Chicago Sky',
+    shortName: 'CHI',
+    color: Color(0xff5091cd),
+  );
+  static const _phoenixMercury = SportTeam(
+    id: 'phoenixmercury',
+    name: 'Phoenix Mercury',
+    shortName: 'PHX',
+    color: Color(0xff3c286e),
+  );
+  static const _connecticutSun = SportTeam(
+    id: 'connecticutsun',
+    name: 'Connecticut Sun',
+    shortName: 'CON',
+    color: Color(0xfff05023),
+  );
+  // ── Cricket teams (Lanka Premier League + touring sides, ESPN feed) ───────
+  static const _colomboKaps = SportTeam(
+    id: 'colombokaps',
+    name: 'Colombo Kaps',
+    shortName: 'CLK',
+    color: Color(0xffbe06cb),
+  );
+  static const _dambullaSixers = SportTeam(
+    id: 'dambullasixers',
+    name: 'Dambulla Sixers',
+    shortName: 'DAS',
+    color: Color(0xff077eda),
+  );
+  static const _galleGallants = SportTeam(
+    id: 'gallegallants',
+    name: 'Galle Gallants',
+    shortName: 'GAG',
+    color: Color(0xff0ed879),
+  );
+  static const _jaffnaKings = SportTeam(
+    id: 'jaffnakings',
+    name: 'Jaffna Kings',
+    shortName: 'JK',
+    color: Color(0xffe9ca07),
+  );
+  // ESPN supplies no colour for this side; placeholder chosen to stay
+  // distinct from the other four LPL franchises. Correct via
+  // kTeamPaletteOverrides if wrong.
+  static const _kandyRoyals = SportTeam(
+    id: 'kandyroyals',
+    name: 'Kandy Royals',
+    shortName: 'KAR',
+    color: Color(0xffb3123c),
+  );
+  static const _pakistan = SportTeam(
+    id: 'pakistan',
+    name: 'Pakistan',
+    shortName: 'PAK',
+    color: Color(0xff07df52),
+  );
+  // ESPN supplies no colour for the U19 side; reuses Pakistan's senior green.
+  static const _pakistanWomenU19 = SportTeam(
+    id: 'pakistanwomenu19',
+    name: 'Pakistan Women Under-19s',
+    shortName: 'PAW19',
+    color: Color(0xff07df52),
+  );
+  // ESPN supplies no colour for the U19 side; matches the app's South Africa green.
+  static const _southAfricaWomenU19 = SportTeam(
+    id: 'southafricawomenu19',
+    name: 'South Africa Women Under-19s',
+    shortName: 'SAW19',
+    color: Color(0xff16a34a),
+  );
+  // ── Soccer teams — names/abbreviations/brand colours from the ESPN feed.
+  // Colours too dark to read on the fixture card fall back to the club's
+  // ESPN alternate colour, or are lifted in-hue until legible.
+  static const _agf = SportTeam(
+    id: '7853',
+    name: 'AGF',
+    shortName: 'AGF',
+    color: Color(0xff64748b),  // lifted
+  );
+  static const _araratArmenia = SportTeam(
+    id: '20024',
+    name: 'Ararat-Armenia',
+    shortName: 'ARA',
+    color: Color(0xff64748b),  // lifted
+  );
+  static const _athleticoPr = SportTeam(
+    id: '3458',
+    name: 'Athletico-PR',
+    shortName: 'CAP',
+    color: Color(0xffd80518),
+  );
+  static const _atlantaUnitedFc = SportTeam(
+    id: '18418',
+    name: 'Atlanta United FC',
+    shortName: 'ATL',
+    color: Color(0xff9d2235),
+  );
+  static const _atleticoMg = SportTeam(
+    id: '7632',
+    name: 'Atlético-MG',
+    shortName: 'CAM',
+    color: Color(0xfffafafc),  // alternate
+  );
+  static const _austinFc = SportTeam(
+    id: '20906',
+    name: 'Austin FC',
+    shortName: 'ATX',
+    color: Color(0xff00b140),
+  );
+  static const _bkHacken = SportTeam(
+    id: '7834',
+    name: 'BK Häcken',
+    shortName: 'BKH',
+    color: Color(0xfff7ee09),  // alternate
+  );
+  static const _bahia = SportTeam(
+    id: '9967',
+    name: 'Bahia',
+    shortName: 'BAH',
+    color: Color(0xff0093ec),  // alternate
+  );
+  static const _bodoGlimt = SportTeam(
+    id: '2980',
+    name: 'Bodo/Glimt',
+    shortName: 'BODO',
+    color: Color(0xfffcee33),
+  );
+  static const _botafogo = SportTeam(
+    id: '6086',
+    name: 'Botafogo',
+    shortName: 'BOT',
+    color: Color(0xfffafafc),  // alternate
+  );
+  static const _cfMontreal = SportTeam(
+    id: '9720',
+    name: 'CF Montréal',
+    shortName: 'MTL',
+    color: Color(0xff003da6),
+  );
+  static const _csuCraiova = SportTeam(
+    id: '8089',
+    name: 'CSU Craiova',
+    shortName: 'UCRA',
+    color: Color(0xff64748b),  // lifted
+  );
+  static const _chapecoense = SportTeam(
+    id: '9318',
+    name: 'Chapecoense',
+    shortName: 'CHA',
+    color: Color(0xff417505),
+  );
+  static const _charlotteFc = SportTeam(
+    id: '21300',
+    name: 'Charlotte FC',
+    shortName: 'CLT',
+    color: Color(0xff0085ca),
+  );
+  static const _chicagoFireFc = SportTeam(
+    id: '182',
+    name: 'Chicago Fire FC',
+    shortName: 'CHI',
+    color: Color(0xff7ccdef),
+  );
+  static const _coloradoRapids = SportTeam(
+    id: '184',
+    name: 'Colorado Rapids',
+    shortName: 'COL',
+    color: Color(0xff8a2432),
+  );
+  static const _columbusCrew = SportTeam(
+    id: '183',
+    name: 'Columbus Crew',
+    shortName: 'CLB',
+    color: Color(0xfffedd00),  // alternate
+  );
+  static const _corinthians = SportTeam(
+    id: '874',
+    name: 'Corinthians',
+    shortName: 'COR',
+    color: Color(0xfffafafc),  // alternate
+  );
+  static const _coritiba = SportTeam(
+    id: '3456',
+    name: 'Coritiba',
+    shortName: 'CFC',
+    color: Color(0xff417505),
+  );
+  static const _cruzAzul = SportTeam(
+    id: '218',
+    name: 'Cruz Azul',
+    shortName: 'CAZ',
+    color: Color(0xffffffff),  // alternate
+  );
+  static const _cruzeiro = SportTeam(
+    id: '2022',
+    name: 'Cruzeiro',
+    shortName: 'CRU',
+    color: Color(0xff0093ec),
+  );
+  static const _dCUnited = SportTeam(
+    id: '193',
+    name: 'D.C. United',
+    shortName: 'DC',
+    color: Color(0xffd61018),  // alternate
+  );
+  static const _degerforsIf = SportTeam(
+    id: '20856',
+    name: 'Degerfors IF',
+    shortName: 'DEG',
+    color: Color(0xff64748b),  // lifted
+  );
+  static const _dinamoZagreb = SportTeam(
+    id: '597',
+    name: 'Dinamo Zagreb',
+    shortName: 'DZG',
+    color: Color(0xffccff00),  // alternate
+  );
+  static const _djurgarden = SportTeam(
+    id: '2339',
+    name: 'Djurgården',
+    shortName: 'DJU',
+    color: Color(0xff64a6e1),
+  );
+  static const _egnatia = SportTeam(
+    id: '21943',
+    name: 'Egnatia',
+    shortName: 'EGN',
+    color: Color(0xff64748b),  // lifted
+  );
+  static const _fcCincinnati = SportTeam(
+    id: '18267',
+    name: 'FC Cincinnati',
+    shortName: 'CIN',
+    color: Color(0xfffe5000),  // alternate
+  );
+  static const _fcDallas = SportTeam(
+    id: '185',
+    name: 'FC Dallas',
+    shortName: 'DAL',
+    color: Color(0xffc6093b),
+  );
+  static const _fcThun = SportTeam(
+    id: '3024',
+    name: 'FC Thun',
+    shortName: 'THUN',
+    color: Color(0xffff0900),
+  );
+  static const _fenerbahce = SportTeam(
+    id: '436',
+    name: 'Fenerbahce',
+    shortName: 'FEN',
+    color: Color(0xffffff00),
+  );
+  static const _flamengo = SportTeam(
+    id: '819',
+    name: 'Flamengo',
+    shortName: 'FLA',
+    color: Color(0xffd84f4f),  // lifted
+  );
+  static const _gornikZabrze = SportTeam(
+    id: '8180',
+    name: 'Gornik Zabrze',
+    shortName: 'GOR',
+    color: Color(0xff64748b),  // lifted
+  );
+  static const _halmstadsBk = SportTeam(
+    id: '3017',
+    name: 'Halmstads BK',
+    shortName: 'HBK',
+    color: Color(0xff0058a2),
+  );
+  static const _hamarkameratene = SportTeam(
+    id: '21380',
+    name: 'Hamarkameratene',
+    shortName: 'HAM',
+    color: Color(0xff64748b),  // lifted
+  );
+  static const _hammarbyIf = SportTeam(
+    id: '2495',
+    name: 'Hammarby IF',
+    shortName: 'HAM',
+    color: Color(0xffffcc00),
+  );
+  static const _hapoelBeEr = SportTeam(
+    id: '13083',
+    name: 'Hapoel Be\'er',
+    shortName: 'HBE',
+    color: Color(0xfffd0000),
+  );
+  static const _heartOfMidlothian = SportTeam(
+    id: '262',
+    name: 'Heart of Midlothian',
+    shortName: 'HOM',
+    color: Color(0xffead6b7),  // alternate
+  );
+  static const _houstonDynamoFc = SportTeam(
+    id: '6077',
+    name: 'Houston Dynamo FC',
+    shortName: 'HOU',
+    color: Color(0xffff6b00),
+  );
+  static const _ifElfsborg = SportTeam(
+    id: '529',
+    name: 'IF Elfsborg',
+    shortName: 'ELF',
+    color: Color(0xffffef32),
+  );
+  static const _ikSirius = SportTeam(
+    id: '8547',
+    name: 'IK Sirius',
+    shortName: 'SIR',
+    color: Color(0xffd62612),
+  );
+  static const _iberia1999 = SportTeam(
+    id: '20025',
+    name: 'Iberia 1999',
+    shortName: 'IBE',
+    color: Color(0xff64748b),  // lifted
+  );
+  static const _interMiamiCf = SportTeam(
+    id: '20232',
+    name: 'Inter Miami CF',
+    shortName: 'MIA',
+    color: Color(0xfff7b5cd),  // alternate
+  );
+  static const _internacional = SportTeam(
+    id: '1936',
+    name: 'Internacional',
+    shortName: 'INT',
+    color: Color(0xffd84f4f),  // lifted
+  );
+  static const _kiKlaksvik = SportTeam(
+    id: '2547',
+    name: 'KI Klaksvik',
+    shortName: 'KLA',
+    color: Color(0xff64748b),  // lifted
+  );
+  static const _kairatAlmaty = SportTeam(
+    id: '2528',
+    name: 'Kairat Almaty',
+    shortName: 'KAI',
+    color: Color(0xfffcee33),
+  );
+  static const _kalmarFf = SportTeam(
+    id: '3052',
+    name: 'Kalmar FF',
+    shortName: 'KFF',
+    color: Color(0xffdb1b30),
+  );
+  static const _kaunoZalgiris = SportTeam(
+    id: '20028',
+    name: 'Kauno Zalgiris',
+    shortName: 'ZAL',
+    color: Color(0xff64748b),  // lifted
+  );
+  static const _kupsKuopio = SportTeam(
+    id: '8169',
+    name: 'KuPS Kuopio',
+    shortName: 'KUPS',
+    color: Color(0xff64748b),  // lifted
+  );
+  static const _laGalaxy = SportTeam(
+    id: '187',
+    name: 'LA Galaxy',
+    shortName: 'LA',
+    color: Color(0xffffffff),  // alternate
+  );
+  static const _lafc = SportTeam(
+    id: '18966',
+    name: 'LAFC',
+    shortName: 'LAFC',
+    color: Color(0xffc7a36f),  // alternate
+  );
+  static const _larne = SportTeam(
+    id: '20039',
+    name: 'Larne',
+    shortName: 'LAR',
+    color: Color(0xffffffff),  // alternate
+  );
+  static const _lechPoznan = SportTeam(
+    id: '2990',
+    name: 'Lech Poznan',
+    shortName: 'LECH',
+    color: Color(0xff64748b),  // lifted
+  );
+  static const _levskiSofia = SportTeam(
+    id: '490',
+    name: 'Levski Sofia',
+    shortName: 'LEVS',
+    color: Color(0xff6182cf),
+  );
+  static const _lillestrom = SportTeam(
+    id: '987',
+    name: 'Lillestrom',
+    shortName: 'LIL',
+    color: Color(0xffe8e337),
+  );
+  static const _lincolnRedImps = SportTeam(
+    id: '17856',
+    name: 'Lincoln Red Imps',
+    shortName: 'LRI',
+    color: Color(0xffffffff),  // alternate
+  );
+  static const _malmoFf = SportTeam(
+    id: '2720',
+    name: 'Malmö FF',
+    shortName: 'MAL',
+    color: Color(0xff5699eb),
+  );
+  static const _minnesotaUnitedFc = SportTeam(
+    id: '17362',
+    name: 'Minnesota United FC',
+    shortName: 'MIN',
+    color: Color(0xff9bcde4),  // alternate
+  );
+  static const _mjallbyAif = SportTeam(
+    id: '20301',
+    name: 'Mjällby AIF',
+    shortName: 'MJA',
+    color: Color(0xffffd400),  // alternate
+  );
+  static const _nkCelje = SportTeam(
+    id: '3362',
+    name: 'NK Celje',
+    shortName: 'NKC',
+    color: Color(0xffff6600),  // alternate
+  );
+  static const _nashvilleSc = SportTeam(
+    id: '18986',
+    name: 'Nashville SC',
+    shortName: 'NSH',
+    color: Color(0xffece83a),
+  );
+  static const _newEnglandRevolution = SportTeam(
+    id: '189',
+    name: 'New England Revolution',
+    shortName: 'NE',
+    color: Color(0xffce0e2d),  // alternate
+  );
+  static const _newYorkCityFc = SportTeam(
+    id: '17606',
+    name: 'New York City FC',
+    shortName: 'NYC',
+    color: Color(0xff9fd2ff),
+  );
+  static const _omoniaNicosia = SportTeam(
+    id: '617',
+    name: 'Omonia Nicosia',
+    shortName: 'OMON',
+    color: Color(0xff025719),
+  );
+  static const _orgryteIs = SportTeam(
+    id: '131552',
+    name: 'Örgryte IS',
+    shortName: 'Örg',
+    color: Color(0xff64748b),  // lifted
+  );
+  static const _orlandoCitySc = SportTeam(
+    id: '12011',
+    name: 'Orlando City SC',
+    shortName: 'ORL',
+    color: Color(0xff60269e),
+  );
+  static const _palmeiras = SportTeam(
+    id: '2029',
+    name: 'Palmeiras',
+    shortName: 'PAL',
+    color: Color(0xff417505),
+  );
+  static const _philadelphiaUnion = SportTeam(
+    id: '10739',
+    name: 'Philadelphia Union',
+    shortName: 'PHI',
+    color: Color(0xffe0d0a6),  // alternate
+  );
+  static const _portlandTimbers = SportTeam(
+    id: '9723',
+    name: 'Portland Timbers',
+    shortName: 'POR',
+    color: Color(0xff2c5234),
+  );
+  static const _puebla = SportTeam(
+    id: '231',
+    name: 'Puebla',
+    shortName: 'PUE',
+    color: Color(0xffffffff),
+  );
+  static const _pumasUnam = SportTeam(
+    id: '233',
+    name: 'Pumas UNAM',
+    shortName: 'UNAM',
+    color: Color(0xffffffff),
+  );
+  static const _realSaltLake = SportTeam(
+    id: '4771',
+    name: 'Real Salt Lake',
+    shortName: 'RSL',
+    color: Color(0xffa32035),
+  );
+  static const _redBullNewYork = SportTeam(
+    id: '190',
+    name: 'Red Bull New York',
+    shortName: 'RBNY',
+    color: Color(0xffba0c2f),
+  );
+  static const _redStarBelgrade = SportTeam(
+    id: '2290',
+    name: 'Red Star Belgrade',
+    shortName: 'RSB',
+    color: Color(0xffff0000),
+  );
+  static const _remo = SportTeam(
+    id: '4936',
+    name: 'Remo',
+    shortName: 'REMO',
+    color: Color(0xff265891),
+  );
+  static const _skSturmGraz = SportTeam(
+    id: '3746',
+    name: 'SK Sturm Graz',
+    shortName: 'STG',
+    color: Color(0xffffffff),
+  );
+  static const _sabahFk = SportTeam(
+    id: '21922',
+    name: 'Sabah FK',
+    shortName: 'SAB',
+    color: Color(0xff64748b),  // lifted
+  );
+  static const _sanDiegoFc = SportTeam(
+    id: '22529',
+    name: 'San Diego FC',
+    shortName: 'SD',
+    color: Color(0xff697a7c),
+  );
+  static const _sanJoseEarthquakes = SportTeam(
+    id: '191',
+    name: 'San Jose Earthquakes',
+    shortName: 'SJ',
+    color: Color(0xff003da6),
+  );
+  static const _saoPaulo = SportTeam(
+    id: '2026',
+    name: 'São Paulo',
+    shortName: 'SAO',
+    color: Color(0xffd84f4f),  // lifted
+  );
+  static const _seattleSoundersFc = SportTeam(
+    id: '9726',
+    name: 'Seattle Sounders FC',
+    shortName: 'SEA',
+    color: Color(0xff2dc84d),
+  );
+  static const _shamrockRovers = SportTeam(
+    id: '2564',
+    name: 'Shamrock Rovers',
+    shortName: 'SHR',
+    color: Color(0xff288a00),
+  );
+  static const _slovanBratislava = SportTeam(
+    id: '521',
+    name: 'Slovan Bratislava',
+    shortName: 'SLB',
+    color: Color(0xff81c0ff),
+  );
+  static const _sportingKansasCity = SportTeam(
+    id: '186',
+    name: 'Sporting Kansas City',
+    shortName: 'SKC',
+    color: Color(0xffa7c6ed),
+  );
+  static const _stLouisCitySc = SportTeam(
+    id: '21812',
+    name: 'St. Louis CITY SC',
+    shortName: 'STL',
+    color: Color(0xffec1458),
+  );
+  static const _toluca = SportTeam(
+    id: '223',
+    name: 'Toluca',
+    shortName: 'TOL',
+    color: Color(0xffef0107),
+  );
+  static const _torontoFc = SportTeam(
+    id: '7318',
+    name: 'Toronto FC',
+    shortName: 'TOR',
+    color: Color(0xffaa182c),
+  );
+  static const _vancouverWhitecaps = SportTeam(
+    id: '9727',
+    name: 'Vancouver Whitecaps',
+    shortName: 'VAN',
+    color: Color(0xffffffff),
+  );
+  static const _vikingFk = SportTeam(
+    id: '510',
+    name: 'Viking FK',
+    shortName: 'VIK',
+    color: Color(0xffffffff),  // alternate
+  );
+  static const _vikingurReykjavik = SportTeam(
+    id: '8249',
+    name: 'Vikingur Reykjavik',
+    shortName: 'VIK',
+    color: Color(0xffffffff),  // alternate
+  );
+  static const _vitoria = SportTeam(
+    id: '3457',
+    name: 'Vitória',
+    shortName: 'VIT',
+    color: Color(0xffc6101c),
+  );
   // ── F1 race weekends ────────────────────────────────────────────────────────
   // Each F1 fixture is one race weekend; `home` carries the Grand Prix name so
   // it reads in the weekend-hub header, `away` is the field placeholder.
@@ -548,7 +1256,774 @@ class MockPredictionRepository implements PredictionRepository {
     return MatchStatus.finished;
   }
 
+  /// Synchronous read access to the seeded fixture catalogue, for the picks
+  /// side (MockPickRepository) to auto-generate/auto-settle markets against
+  /// without needing its own duplicate copy of this data.
+  List<SportMatch> get seedFixtures => _fixtures;
+
   late final List<SportMatch> _fixtures = [
+    // ── WNBA, 19 Jul 2026 (real ESPN feed) ───────────────────────────────────
+    // Basketball had zero fixtures before this — NBA is off-season in July,
+    // so WNBA is the only viable initial source.
+    SportMatch(
+      id: '401857080',
+      leagueId: _wnba.id,
+      sport: Sport.basketball,
+      home: _dallasWings,
+      away: _losAngelesSparks,
+      kickoff: DateTime.utc(2026, 7, 19, 17, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
+    SportMatch(
+      id: '401857081',
+      leagueId: _wnba.id,
+      sport: Sport.basketball,
+      home: _atlantaDream,
+      away: _chicagoSky,
+      kickoff: DateTime.utc(2026, 7, 19, 20, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
+    SportMatch(
+      id: '401857082',
+      leagueId: _wnba.id,
+      sport: Sport.basketball,
+      home: _phoenixMercury,
+      away: _connecticutSun,
+      kickoff: DateTime.utc(2026, 7, 19, 23, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
+    // Demo: finished WNBA fixture with NO hand-authored quiz override — its
+    // quiz is built and settled entirely by QuizArchetypes/SettlementWriter
+    // (the new auto-settlement engine) the first time loadSport runs, so a
+    // fresh install proves basketball reaches the gold-reveal state without
+    // anyone hand-transcribing a result.
+    SportMatch(
+      id: 'wnba_demo_dal_phx',
+      leagueId: _wnba.id,
+      sport: Sport.basketball,
+      home: _dallasWings,
+      away: _phoenixMercury,
+      kickoff: _at(-1, 19, 0),
+      status: MatchStatus.finished,
+      homeScore: '82',
+      awayScore: '75',
+      resultLine: 'Dallas Wings won 82-75',
+      basketballScorecard: const BasketballScorecard(
+        homeBoxscore: BasketballTeamBoxscore(
+          teamName: 'Dallas Wings',
+          teamId: 'dallaswings',
+          stats: BasketballTeamStats(
+            fgMadeApt: '30-68',
+            fgPct: 44.1,
+            tpMadeApt: '8-22',
+            tpPct: 36.4,
+            ftMadeApt: '14-18',
+            ftPct: 77.8,
+            rebounds: 34,
+            assists: 19,
+            steals: 7,
+            blocks: 3,
+            turnovers: 12,
+          ),
+          players: [],
+        ),
+        awayBoxscore: BasketballTeamBoxscore(
+          teamName: 'Phoenix Mercury',
+          teamId: 'phoenixmercury',
+          stats: BasketballTeamStats(
+            fgMadeApt: '27-64',
+            fgPct: 42.2,
+            tpMadeApt: '7-24',
+            tpPct: 29.2,
+            ftMadeApt: '14-19',
+            ftPct: 73.7,
+            rebounds: 31,
+            assists: 16,
+            steals: 5,
+            blocks: 2,
+            turnovers: 14,
+          ),
+          players: [],
+        ),
+        linescores: BasketballLinescores(
+          homeScores: [22, 20, 21, 19],
+          awayScores: [18, 19, 20, 18],
+          homeTotal: 82,
+          awayTotal: 75,
+        ),
+      ),
+      rewardXp: 25,
+    ),
+    // ── World Cup 2026 third-place play-off ─────────────────────────────────
+    // England beat France 6-4 at Hard Rock Stadium. Full ESPN detail (team
+    // stats, timeline, lineups, play-by-play) lives in wc_third_place_2026.dart
+    // and drives the STATS tab.
+    SportMatch(
+      id: '760516',
+      leagueId: _fifa.id,
+      sport: Sport.football,
+      home: _france,
+      away: _england,
+      kickoff: DateTime.utc(2026, 7, 18, 21, 0).toLocal(),
+      status: MatchStatus.finished,
+      homeScore: '4',
+      awayScore: '6',
+      resultLine: 'England won 6-4 to take third place',
+      teamStats: kWcThirdPlaceTeamStats,
+      timelineEvents: kWcThirdPlaceTimeline,
+      homeLineup: kWcThirdPlaceFranceLineup,
+      awayLineup: kWcThirdPlaceEnglandLineup,
+      commentary: kWcThirdPlaceCommentary,
+      rewardXp: 60,
+    ),
+    // ── Real ESPN cricket fixtures, 20–26 Jul 2026 ──────────────────────────
+    // ESPN's cricket scoreboards reject date ranges, so these were swept one
+    // day at a time per competition. Kickoffs are the feed's UTC timestamps.
+    // Lanka Premier League · Dambulla Sixers v Kandy Royals · Rangiri Dambulla International Stadium
+    SportMatch(
+      id: '1537336',
+      leagueId: _lpl.id,
+      sport: Sport.cricket,
+      home: _dambullaSixers,
+      away: _kandyRoyals,
+      kickoff: DateTime.utc(2026, 7, 21, 14, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 20,
+    ),
+    // Lanka Premier League · Colombo Kaps v Jaffna Kings · Rangiri Dambulla International Stadium
+    SportMatch(
+      id: '1537337',
+      leagueId: _lpl.id,
+      sport: Sport.cricket,
+      home: _colomboKaps,
+      away: _jaffnaKings,
+      kickoff: DateTime.utc(2026, 7, 22, 9, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 20,
+    ),
+    // Lanka Premier League · Dambulla Sixers v Galle Gallants · Rangiri Dambulla International Stadium
+    SportMatch(
+      id: '1537338',
+      leagueId: _lpl.id,
+      sport: Sport.cricket,
+      home: _dambullaSixers,
+      away: _galleGallants,
+      kickoff: DateTime.utc(2026, 7, 22, 14, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 20,
+    ),
+    // South Africa Women U19 tour of Pakistan · Pakistan Women Under-19s v South Africa Women Under-19s · National Stadium, Karachi
+    SportMatch(
+      id: '1545550',
+      leagueId: _saWomenU19TourPak.id,
+      sport: Sport.cricket,
+      home: _pakistanWomenU19,
+      away: _southAfricaWomenU19,
+      kickoff: DateTime.utc(2026, 7, 22, 14, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 20,
+    ),
+    // Lanka Premier League · Colombo Kaps v Kandy Royals · Rangiri Dambulla International Stadium
+    SportMatch(
+      id: '1537339',
+      leagueId: _lpl.id,
+      sport: Sport.cricket,
+      home: _colomboKaps,
+      away: _kandyRoyals,
+      kickoff: DateTime.utc(2026, 7, 23, 9, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 20,
+    ),
+    // Lanka Premier League · Galle Gallants v Jaffna Kings · Rangiri Dambulla International Stadium
+    SportMatch(
+      id: '1537340',
+      leagueId: _lpl.id,
+      sport: Sport.cricket,
+      home: _galleGallants,
+      away: _jaffnaKings,
+      kickoff: DateTime.utc(2026, 7, 23, 14, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 20,
+    ),
+    // South Africa Women U19 tour of Pakistan · Pakistan Women Under-19s v South Africa Women Under-19s · National Stadium, Karachi
+    SportMatch(
+      id: '1545551',
+      leagueId: _saWomenU19TourPak.id,
+      sport: Sport.cricket,
+      home: _pakistanWomenU19,
+      away: _southAfricaWomenU19,
+      kickoff: DateTime.utc(2026, 7, 24, 14, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 20,
+    ),
+    // Lanka Premier League · Galle Gallants v Kandy Royals · Rangiri Dambulla International Stadium
+    SportMatch(
+      id: '1537341',
+      leagueId: _lpl.id,
+      sport: Sport.cricket,
+      home: _galleGallants,
+      away: _kandyRoyals,
+      kickoff: DateTime.utc(2026, 7, 25, 9, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 20,
+    ),
+    // Lanka Premier League · Dambulla Sixers v Colombo Kaps · Rangiri Dambulla International Stadium
+    SportMatch(
+      id: '1537342',
+      leagueId: _lpl.id,
+      sport: Sport.cricket,
+      home: _dambullaSixers,
+      away: _colomboKaps,
+      kickoff: DateTime.utc(2026, 7, 25, 14, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 20,
+    ),
+    // Pakistan tour of West Indies · West Indies v Pakistan · Brian Lara Stadium, Tarouba, Trinidad
+    SportMatch(
+      id: '1538630',
+      leagueId: _pakTourWi.id,
+      sport: Sport.cricket,
+      home: _westIndies,
+      away: _pakistan,
+      kickoff: DateTime.utc(2026, 7, 25, 14, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 40,
+    ),
+    // Lanka Premier League · Jaffna Kings v Kandy Royals · Rangiri Dambulla International Stadium
+    SportMatch(
+      id: '1537343',
+      leagueId: _lpl.id,
+      sport: Sport.cricket,
+      home: _jaffnaKings,
+      away: _kandyRoyals,
+      kickoff: DateTime.utc(2026, 7, 26, 9, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 20,
+    ),
+    // Lanka Premier League · Dambulla Sixers v Galle Gallants · Rangiri Dambulla International Stadium
+    SportMatch(
+      id: '1537344',
+      leagueId: _lpl.id,
+      sport: Sport.cricket,
+      home: _dambullaSixers,
+      away: _galleGallants,
+      kickoff: DateTime.utc(2026, 7, 26, 14, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 20,
+    ),
+    // ── Real ESPN soccer fixtures, 19–23 Jul 2026 ───────────────────────────
+    // Pulled from site.api.espn.com scoreboard; kickoffs are the feed's UTC
+    // timestamps rendered in local time. XP scales with the stage.
+    // Swedish Allsvenskan · IK Sirius at IF Elfsborg · Boras Arena
+    SportMatch(
+      id: '401842755',
+      leagueId: _allsvenskan.id,
+      sport: Sport.football,
+      home: _ifElfsborg,
+      away: _ikSirius,
+      kickoff: DateTime.utc(2026, 7, 19, 14, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 20,
+    ),
+    // Swedish Allsvenskan · Degerfors IF at Hammarby IF · Tele2 Arena
+    SportMatch(
+      id: '401842760',
+      leagueId: _allsvenskan.id,
+      sport: Sport.football,
+      home: _hammarbyIf,
+      away: _degerforsIf,
+      kickoff: DateTime.utc(2026, 7, 19, 14, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 20,
+    ),
+    // Swedish Allsvenskan · BK Häcken at Halmstads BK · Örjans Vall
+    SportMatch(
+      id: '401842761',
+      leagueId: _allsvenskan.id,
+      sport: Sport.football,
+      home: _halmstadsBk,
+      away: _bkHacken,
+      kickoff: DateTime.utc(2026, 7, 19, 14, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 20,
+    ),
+    // FIFA World Cup · Argentina at Spain · MetLife Stadium
+    SportMatch(
+      id: '760517',
+      leagueId: _fifa.id,
+      sport: Sport.football,
+      home: _spain,
+      away: _argentina,
+      kickoff: DateTime.utc(2026, 7, 19, 19, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      prizeLabel: 'FINAL',
+      rewardXp: 100,
+    ),
+    // Swedish Allsvenskan · Djurgården at Örgryte IS · Gamla Ullevi
+    SportMatch(
+      id: '401842756',
+      leagueId: _allsvenskan.id,
+      sport: Sport.football,
+      home: _orgryteIs,
+      away: _djurgarden,
+      kickoff: DateTime.utc(2026, 7, 20, 17, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 20,
+    ),
+    // Swedish Allsvenskan · Malmö FF at Kalmar FF · Guldfageln Arena
+    SportMatch(
+      id: '401842758',
+      leagueId: _allsvenskan.id,
+      sport: Sport.football,
+      home: _kalmarFf,
+      away: _malmoFf,
+      kickoff: DateTime.utc(2026, 7, 20, 17, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 20,
+    ),
+    // UEFA Champions League Qualifying · Slovan Bratislava at Iberia 1999 · Mikheil Meskhi Stadioni
+    SportMatch(
+      id: '401891563',
+      leagueId: _uclq.id,
+      sport: Sport.football,
+      home: _iberia1999,
+      away: _slovanBratislava,
+      kickoff: DateTime.utc(2026, 7, 21, 16, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 30,
+    ),
+    // UEFA Champions League Qualifying · Lincoln Red Imps at Mjällby AIF · Strandvallen
+    SportMatch(
+      id: '401891564',
+      leagueId: _uclq.id,
+      sport: Sport.football,
+      home: _mjallbyAif,
+      away: _lincolnRedImps,
+      kickoff: DateTime.utc(2026, 7, 21, 16, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 30,
+    ),
+    // UEFA Champions League Qualifying · KuPS Kuopio at Sabah FK · Bank Respublika Stadium
+    SportMatch(
+      id: '401891587',
+      leagueId: _uclq.id,
+      sport: Sport.football,
+      home: _sabahFk,
+      away: _kupsKuopio,
+      kickoff: DateTime.utc(2026, 7, 21, 16, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 30,
+    ),
+    // UEFA Champions League Qualifying · Shamrock Rovers at Ararat-Armenia · Vazgen Sargsyan Republican Stadium
+    SportMatch(
+      id: '401891670',
+      leagueId: _uclq.id,
+      sport: Sport.football,
+      home: _araratArmenia,
+      away: _shamrockRovers,
+      kickoff: DateTime.utc(2026, 7, 21, 16, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 30,
+    ),
+    // UEFA Champions League Qualifying · Lech Poznan at AGF · Cepheus Park Randers
+    SportMatch(
+      id: '401877837',
+      leagueId: _uclq.id,
+      sport: Sport.football,
+      home: _agf,
+      away: _lechPoznan,
+      kickoff: DateTime.utc(2026, 7, 21, 17, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 30,
+    ),
+    // UEFA Champions League Qualifying · Gornik Zabrze at Fenerbahce · Ulker Stadyumu
+    SportMatch(
+      id: '401877768',
+      leagueId: _uclq.id,
+      sport: Sport.football,
+      home: _fenerbahce,
+      away: _gornikZabrze,
+      kickoff: DateTime.utc(2026, 7, 21, 18, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 30,
+    ),
+    // UEFA Champions League Qualifying · Dinamo Zagreb at FC Thun · Stockhorn Arena
+    SportMatch(
+      id: '401877769',
+      leagueId: _uclq.id,
+      sport: Sport.football,
+      home: _fcThun,
+      away: _dinamoZagreb,
+      kickoff: DateTime.utc(2026, 7, 21, 18, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 30,
+    ),
+    // UEFA Champions League Qualifying · Heart of Midlothian at SK Sturm Graz · Merkur Arena
+    SportMatch(
+      id: '401877836',
+      leagueId: _uclq.id,
+      sport: Sport.football,
+      home: _skSturmGraz,
+      away: _heartOfMidlothian,
+      kickoff: DateTime.utc(2026, 7, 21, 18, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 30,
+    ),
+    // UEFA Champions League Qualifying · Kauno Zalgiris at KI Klaksvik · Djúpumyrar
+    SportMatch(
+      id: '401891845',
+      leagueId: _uclq.id,
+      sport: Sport.football,
+      home: _kiKlaksvik,
+      away: _kaunoZalgiris,
+      kickoff: DateTime.utc(2026, 7, 21, 18, 45).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 30,
+    ),
+    // UEFA Champions League Qualifying · Hapoel Be'er at Vikingur Reykjavik · Vikingsvöllur
+    SportMatch(
+      id: '401891588',
+      leagueId: _uclq.id,
+      sport: Sport.football,
+      home: _vikingurReykjavik,
+      away: _hapoelBeEr,
+      kickoff: DateTime.utc(2026, 7, 21, 19, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 30,
+    ),
+    // UEFA Champions League Qualifying · Red Star Belgrade at Larne · Inver Park
+    SportMatch(
+      id: '401891687',
+      leagueId: _uclq.id,
+      sport: Sport.football,
+      home: _larne,
+      away: _redStarBelgrade,
+      kickoff: DateTime.utc(2026, 7, 21, 19, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 30,
+    ),
+    // Brazil Serie A · Bahia at Atlético-MG · Arena MRV
+    SportMatch(
+      id: '401841148',
+      leagueId: _brasileirao.id,
+      sport: Sport.football,
+      home: _atleticoMg,
+      away: _bahia,
+      kickoff: DateTime.utc(2026, 7, 21, 22, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
+    // Liga MX · Puebla at Cruz Azul · Estadio Corregidora
+    SportMatch(
+      id: '401877036',
+      leagueId: _ligaMx.id,
+      sport: Sport.football,
+      home: _cruzAzul,
+      away: _puebla,
+      kickoff: DateTime.utc(2026, 7, 22, 1, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 20,
+    ),
+    // Liga MX · Pumas UNAM at Toluca · Estadio Nemesio Díez Riega
+    SportMatch(
+      id: '401877035',
+      leagueId: _ligaMx.id,
+      sport: Sport.football,
+      home: _toluca,
+      away: _pumasUnam,
+      kickoff: DateTime.utc(2026, 7, 22, 3, 5).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 20,
+    ),
+    // Norwegian Eliteserien · Viking FK at Lillestrom · Arasen Stadion
+    SportMatch(
+      id: '401843362',
+      leagueId: _eliteserien.id,
+      sport: Sport.football,
+      home: _lillestrom,
+      away: _vikingFk,
+      kickoff: DateTime.utc(2026, 7, 22, 17, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 20,
+    ),
+    // Norwegian Eliteserien · Hamarkameratene at Bodo/Glimt · Aspmyra Stadion
+    SportMatch(
+      id: '401873902',
+      leagueId: _eliteserien.id,
+      sport: Sport.football,
+      home: _bodoGlimt,
+      away: _hamarkameratene,
+      kickoff: DateTime.utc(2026, 7, 22, 17, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 20,
+    ),
+    // UEFA Champions League Qualifying · Kairat Almaty at Omonia Nicosia · GSP Stadium
+    SportMatch(
+      id: '401891884',
+      leagueId: _uclq.id,
+      sport: Sport.football,
+      home: _omoniaNicosia,
+      away: _kairatAlmaty,
+      kickoff: DateTime.utc(2026, 7, 22, 17, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 30,
+    ),
+    // UEFA Champions League Qualifying · CSU Craiova at Levski Sofia · Georgi Asparuhov Stadium
+    SportMatch(
+      id: '401891788',
+      leagueId: _uclq.id,
+      sport: Sport.football,
+      home: _levskiSofia,
+      away: _csuCraiova,
+      kickoff: DateTime.utc(2026, 7, 22, 17, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 30,
+    ),
+    // UEFA Champions League Qualifying · NK Celje at Egnatia · Arena Egnatia
+    SportMatch(
+      id: '401891883',
+      leagueId: _uclq.id,
+      sport: Sport.football,
+      home: _egnatia,
+      away: _nkCelje,
+      kickoff: DateTime.utc(2026, 7, 22, 19, 0).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 30,
+    ),
+    // Brazil Serie A · Palmeiras at Coritiba · Couto Pereira
+    SportMatch(
+      id: '401841152',
+      leagueId: _brasileirao.id,
+      sport: Sport.football,
+      home: _coritiba,
+      away: _palmeiras,
+      kickoff: DateTime.utc(2026, 7, 22, 22, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
+    // MLS · Red Bull New York at Philadelphia Union · Subaru Park
+    SportMatch(
+      id: '761665',
+      leagueId: _mls.id,
+      sport: Sport.football,
+      home: _philadelphiaUnion,
+      away: _redBullNewYork,
+      kickoff: DateTime.utc(2026, 7, 22, 23, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
+    // MLS · Toronto FC at New England Revolution · Gillette Stadium
+    SportMatch(
+      id: '761666',
+      leagueId: _mls.id,
+      sport: Sport.football,
+      home: _newEnglandRevolution,
+      away: _torontoFc,
+      kickoff: DateTime.utc(2026, 7, 22, 23, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
+    // MLS · Chicago Fire FC at Inter Miami CF · Nu Stadium
+    SportMatch(
+      id: '761667',
+      leagueId: _mls.id,
+      sport: Sport.football,
+      home: _interMiamiCf,
+      away: _chicagoFireFc,
+      kickoff: DateTime.utc(2026, 7, 22, 23, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
+    // MLS · New York City FC at Columbus Crew · ScottsMiracle-Gro Field
+    SportMatch(
+      id: '761668',
+      leagueId: _mls.id,
+      sport: Sport.football,
+      home: _columbusCrew,
+      away: _newYorkCityFc,
+      kickoff: DateTime.utc(2026, 7, 22, 23, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
+    // MLS · Vancouver Whitecaps at FC Cincinnati · TQL Stadium
+    SportMatch(
+      id: '761669',
+      leagueId: _mls.id,
+      sport: Sport.football,
+      home: _fcCincinnati,
+      away: _vancouverWhitecaps,
+      kickoff: DateTime.utc(2026, 7, 22, 23, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
+    // MLS · Atlanta United FC at Charlotte FC · Bank of America Stadium
+    SportMatch(
+      id: '761670',
+      leagueId: _mls.id,
+      sport: Sport.football,
+      home: _charlotteFc,
+      away: _atlantaUnitedFc,
+      kickoff: DateTime.utc(2026, 7, 23, 0, 15).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
+    // Brazil Serie A · Flamengo at Chapecoense · Arena Condá
+    SportMatch(
+      id: '401841150',
+      leagueId: _brasileirao.id,
+      sport: Sport.football,
+      home: _chapecoense,
+      away: _flamengo,
+      kickoff: DateTime.utc(2026, 7, 23, 0, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
+    // Brazil Serie A · Cruzeiro at Internacional · Estadio Beira-Rio
+    SportMatch(
+      id: '401841154',
+      leagueId: _brasileirao.id,
+      sport: Sport.football,
+      home: _internacional,
+      away: _cruzeiro,
+      kickoff: DateTime.utc(2026, 7, 23, 0, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
+    // Brazil Serie A · Athletico-PR at São Paulo · Estádio Municipal Cicero de Souza Marques
+    SportMatch(
+      id: '401841156',
+      leagueId: _brasileirao.id,
+      sport: Sport.football,
+      home: _saoPaulo,
+      away: _athleticoPr,
+      kickoff: DateTime.utc(2026, 7, 23, 0, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
+    // MLS · D.C. United at Houston Dynamo FC · Shell Energy Stadium
+    SportMatch(
+      id: '761671',
+      leagueId: _mls.id,
+      sport: Sport.football,
+      home: _houstonDynamoFc,
+      away: _dCUnited,
+      kickoff: DateTime.utc(2026, 7, 23, 0, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
+    // MLS · Minnesota United FC at Sporting Kansas City · Children's Mercy Park
+    SportMatch(
+      id: '761672',
+      leagueId: _mls.id,
+      sport: Sport.football,
+      home: _sportingKansasCity,
+      away: _minnesotaUnitedFc,
+      kickoff: DateTime.utc(2026, 7, 23, 0, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
+    // MLS · CF Montréal at Nashville SC · GEODIS Park
+    SportMatch(
+      id: '761673',
+      leagueId: _mls.id,
+      sport: Sport.football,
+      home: _nashvilleSc,
+      away: _cfMontreal,
+      kickoff: DateTime.utc(2026, 7, 23, 0, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
+    // MLS · Seattle Sounders FC at Austin FC · Q2 Stadium
+    SportMatch(
+      id: '761674',
+      leagueId: _mls.id,
+      sport: Sport.football,
+      home: _austinFc,
+      away: _seattleSoundersFc,
+      kickoff: DateTime.utc(2026, 7, 23, 0, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
+    // MLS · San Diego FC at Colorado Rapids · Dick's Sporting Goods Park
+    SportMatch(
+      id: '761675',
+      leagueId: _mls.id,
+      sport: Sport.football,
+      home: _coloradoRapids,
+      away: _sanDiegoFc,
+      kickoff: DateTime.utc(2026, 7, 23, 1, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
+    // MLS · Orlando City SC at San Jose Earthquakes · PayPal Park
+    SportMatch(
+      id: '761676',
+      leagueId: _mls.id,
+      sport: Sport.football,
+      home: _sanJoseEarthquakes,
+      away: _orlandoCitySc,
+      kickoff: DateTime.utc(2026, 7, 23, 2, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
+    // MLS · FC Dallas at Portland Timbers · Providence Park
+    SportMatch(
+      id: '761677',
+      leagueId: _mls.id,
+      sport: Sport.football,
+      home: _portlandTimbers,
+      away: _fcDallas,
+      kickoff: DateTime.utc(2026, 7, 23, 2, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
+    // MLS · St. Louis CITY SC at LA Galaxy · Dignity Health Sports Park
+    SportMatch(
+      id: '761678',
+      leagueId: _mls.id,
+      sport: Sport.football,
+      home: _laGalaxy,
+      away: _stLouisCitySc,
+      kickoff: DateTime.utc(2026, 7, 23, 2, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
+    // MLS · Real Salt Lake at LAFC · BMO Stadium
+    SportMatch(
+      id: '761679',
+      leagueId: _mls.id,
+      sport: Sport.football,
+      home: _lafc,
+      away: _realSaltLake,
+      kickoff: DateTime.utc(2026, 7, 23, 2, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
+    // Brazil Serie A · Remo at Corinthians · Neo Química Arena
+    SportMatch(
+      id: '401841151',
+      leagueId: _brasileirao.id,
+      sport: Sport.football,
+      home: _corinthians,
+      away: _remo,
+      kickoff: DateTime.utc(2026, 7, 23, 22, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
+    // Brazil Serie A · Vitória at Botafogo · Joao Havelange Stadium
+    SportMatch(
+      id: '401879458',
+      leagueId: _brasileirao.id,
+      sport: Sport.football,
+      home: _botafogo,
+      away: _vitoria,
+      kickoff: DateTime.utc(2026, 7, 23, 22, 30).toLocal(),
+      status: MatchStatus.upcoming,
+      rewardXp: 25,
+    ),
     // Wimbledon Men's Final (Mock)
     SportMatch(
       id: 'wimbledon_mens_final_26',
@@ -1179,7 +2654,7 @@ class MockPredictionRepository implements PredictionRepository {
     SportMatch(
       id: 'f1_british_gp',
       leagueId: 'f1',
-      sport: Sport.f1,
+      sport: Sport.motorsport,
       home: _gpBritish,
       away: _f1Field,
       kickoff: DateTime(2026, 7, 3, 12, 30),
@@ -1233,7 +2708,7 @@ class MockPredictionRepository implements PredictionRepository {
     SportMatch(
       id: 'f1_belgian_gp',
       leagueId: 'f1',
-      sport: Sport.f1,
+      sport: Sport.motorsport,
       home: _gpBelgian,
       away: _f1Field,
       kickoff: DateTime(2026, 7, 24, 12, 30),
@@ -1247,7 +2722,7 @@ class MockPredictionRepository implements PredictionRepository {
     SportMatch(
       id: 'f1_hungarian_gp',
       leagueId: 'f1',
-      sport: Sport.f1,
+      sport: Sport.motorsport,
       home: _gpHungarian,
       away: _f1Field,
       kickoff: DateTime(2026, 7, 31, 12, 30),
@@ -1300,6 +2775,51 @@ class MockPredictionRepository implements PredictionRepository {
           fixture.home.name,
           fixture.away.name,
         ),
+    // World Cup third-place play-off — France 4-6 England. Overrides the
+    // generated FIFA quiz above (later keys win) because that builder leaves
+    // every answer unsettled, which makes a quiz unsettleable. Each answer here
+    // is the real outcome, so the quiz plays its full over → reveal → XP flow.
+    '760516': const PredictionQuiz(
+      matchId: '760516',
+      questions: [
+        QuizQuestion(
+          id: 'q1',
+          text: 'Predict the full-time score',
+          type: QuizQuestionType.exactScore,
+          reward: 100,
+          settledHomeScore: 4,
+          settledAwayScore: 6,
+        ),
+        QuizQuestion(
+          id: 'q2',
+          text: 'Who wins the third-place play-off?',
+          options: ['France', 'Draw', 'England'],
+          reward: 50,
+          settledOptionIndex: 2,
+        ),
+        QuizQuestion(
+          id: 'q3',
+          text: 'Both teams to score?',
+          options: ['Yes', 'No'],
+          reward: 40,
+          settledOptionIndex: 0,
+        ),
+        QuizQuestion(
+          id: 'q4',
+          text: 'Total goals over/under 4.5?',
+          options: ['Over 4.5', 'Under 4.5'],
+          reward: 40,
+          settledOptionIndex: 0,
+        ),
+        QuizQuestion(
+          id: 'q5',
+          text: 'Which side scores first?',
+          options: ['France', 'England'],
+          reward: 45,
+          settledOptionIndex: 1,
+        ),
+      ],
+    ),
     'epl_mu_ars': _footballQuiz('epl_mu_ars', 'Man Utd', 'Arsenal'),
     'epl_liv_mc': _footballQuiz('epl_liv_mc', 'Liverpool', 'Man City'),
     'epl_cfc_new': const PredictionQuiz(
@@ -1579,6 +3099,11 @@ class MockPredictionRepository implements PredictionRepository {
         primary,
         title: 'Match Basics Quiz',
         subtitle: 'Winner, sets, and tiebreaks',
+      ),
+      Sport.basketball => _withQuizMeta(
+        primary,
+        title: 'Match Basics Quiz',
+        subtitle: 'Winner, total points, and margins',
       ),
       _ => primary,
     };
@@ -2068,8 +3593,36 @@ class MockPredictionRepository implements PredictionRepository {
     ],
   };
 
+  static const _curatedLeagues = <League>[
+    _fifa,
+    _mls,
+    _uclq,
+    _brasileirao,
+    _ligaMx,
+    _allsvenskan,
+    _eliteserien,
+    _lpl,
+    _pakTourWi,
+    _saWomenU19TourPak,
+    _intl,
+    _f1,
+    _wnba,
+    _nba,
+    _atp,
+    _wta,
+    _indycar,
+    _nascarCup,
+  ];
+
   @override
-  Future<List<League>> leagues() async => const [_fifa, _intl, _f1, _wnba, _nba, _atp, _wta];
+  Future<List<League>> leagues() async {
+    final knownIds = _curatedLeagues.map((l) => l.id).toSet();
+    return [
+      ..._curatedLeagues,
+      for (final league in EspnScoreService.discoveredLeagues.values)
+        if (!knownIds.contains(league.id)) league,
+    ];
+  }
 
   @override
   Future<List<SportMatch>> fixtures({DateTime? day, Sport? sport}) async {

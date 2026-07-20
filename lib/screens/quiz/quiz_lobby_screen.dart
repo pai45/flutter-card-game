@@ -334,68 +334,328 @@ class _KnowledgeArenaHero extends StatelessWidget {
       (sum, mode) => sum + progress.forMode(mode).passedCount,
     );
     final total = QuizMode.values.length * kQuizSetCount;
-    return CyberPanel(
-      accent: Cyber.cyan,
-      glow: true,
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 54,
-                height: 54,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: Cyber.cyan.withValues(alpha: 0.12),
-                  border: Border.all(color: Cyber.cyan.withValues(alpha: 0.48)),
-                ),
-                child: Icon(_sportIcon(sport), color: Cyber.cyan, size: 27),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'KNOWLEDGE ARENA',
-                      style: Cyber.display(17, letterSpacing: 1.4),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      '${sport.name.toUpperCase()} TRIVIA · 4 CATEGORIES',
+    final progressValue = total == 0 ? 0.0 : passed / total;
+    final progressPercent = (progressValue * 100).round();
+
+    return Semantics(
+      container: true,
+      label:
+          'Knowledge Arena. ${sport.name} trivia with four categories. '
+          '$passed of $total sets cleared. Every attempt contains 10 questions.',
+      child: CyberPanel(
+        accent: Cyber.cyan,
+        padding: EdgeInsets.zero,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 13, 16, 0),
+              child: Row(
+                children: [
+                  Container(width: 5, height: 5, color: Cyber.cyan),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: Text(
+                      'QUIZ GRID // ${sport.name.toUpperCase()}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: Cyber.label(
-                        9,
-                        color: Cyber.muted,
-                        letterSpacing: 1.1,
+                        7.5,
+                        color: Cyber.cyan,
+                        letterSpacing: 1.25,
                       ),
                     ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text('$passed', style: Cyber.display(22, color: Cyber.cyan)),
-                  Text('OF $total', style: Cyber.label(8, color: Cyber.muted)),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 18,
+                    height: 1,
+                    color: Cyber.cyan.withValues(alpha: 0.16),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '04 TRACKS',
+                    style: Cyber.label(
+                      7.5,
+                      color: Cyber.muted,
+                      letterSpacing: 1.1,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
                 ],
               ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 62,
+                    height: 72,
+                    child: ChamferedActionSurface(
+                      clipper: const HudChamferClipper(bigCut: 12, smallCut: 4),
+                      borderColor: Cyber.cyan.withValues(alpha: 0.58),
+                      child: ColoredBox(
+                        color: Color.lerp(Cyber.panel2, Cyber.cyan, 0.08)!,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Icon(
+                              _sportIcon(sport),
+                              color: Cyber.cyan,
+                              size: 30,
+                            ),
+                            Positioned(
+                              top: 9,
+                              right: 9,
+                              child: Container(
+                                width: 5,
+                                height: 5,
+                                color: Cyber.cyan,
+                              ),
+                            ),
+                            Positioned(
+                              left: 9,
+                              bottom: 8,
+                              child: Text(
+                                'TRIVIA',
+                                style: Cyber.label(
+                                  6.5,
+                                  color: Cyber.muted,
+                                  letterSpacing: 1.1,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'KNOWLEDGE',
+                            style: Cyber.display(15.5, letterSpacing: 1.35),
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          'ARENA',
+                          style: Cyber.display(
+                            22,
+                            color: Cyber.cyan,
+                            letterSpacing: 2,
+                          ),
+                        ),
+                        const SizedBox(height: 7),
+                        Text(
+                          'CLEAR SETS // CLIMB THE LADDER',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Cyber.label(
+                            7,
+                            color: Cyber.muted,
+                            letterSpacing: 0.65,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Container(width: 1, height: 54, color: Cyber.border),
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    width: 52,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          '$passed',
+                          style:
+                              Cyber.display(
+                                27,
+                                color: Cyber.cyan,
+                                letterSpacing: 0.3,
+                              ).copyWith(
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
+                              ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '/ $total',
+                          style: Cyber.label(
+                            9,
+                            color: Cyber.muted,
+                            letterSpacing: 0.4,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          'SETS CLEARED',
+                          textAlign: TextAlign.right,
+                          style: Cyber.label(
+                            6,
+                            color: Cyber.muted,
+                            letterSpacing: 0.65,
+                            height: 1.15,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'TOTAL MASTERY',
+                        style: Cyber.label(
+                          7.5,
+                          color: Cyber.muted,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        '$progressPercent%',
+                        style: Cyber.label(
+                          8.5,
+                          color: Cyber.cyan,
+                          letterSpacing: 0.5,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 7),
+                  _ArenaProgressTrack(value: progressValue),
+                ],
+              ),
+            ),
+            Container(
+              color: Cyber.panel2.withValues(alpha: 0.72),
+              padding: const EdgeInsets.fromLTRB(13, 10, 13, 12),
+              child: Row(
+                children: [
+                  const Icon(Icons.route_outlined, color: Cyber.cyan, size: 17),
+                  const SizedBox(width: 9),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'MISSION BRIEF',
+                          style: Cyber.label(
+                            7,
+                            color: Cyber.cyan,
+                            letterSpacing: 1.15,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Clear sets to advance each category ladder.',
+                          style: Cyber.body(10.5, color: Cyber.muted),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  ChamferedActionSurface(
+                    clipper: const HudChamferClipper(bigCut: 8, smallCut: 3),
+                    borderColor: Cyber.cyan.withValues(alpha: 0.42),
+                    child: Container(
+                      width: 58,
+                      height: 38,
+                      color: Cyber.bg.withValues(alpha: 0.6),
+                      alignment: Alignment.center,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '10',
+                            style:
+                                Cyber.display(
+                                  14,
+                                  color: Cyber.cyan,
+                                  letterSpacing: 0.3,
+                                ).copyWith(
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
+                                  ],
+                                ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Q / RUN',
+                            style: Cyber.label(
+                              5.8,
+                              color: Cyber.muted,
+                              letterSpacing: 0.65,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ArenaProgressTrack extends StatelessWidget {
+  const _ArenaProgressTrack({required this.value});
+
+  final double value;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SizedBox(
+          height: 8,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: CyberProgressBar(
+                  value: value,
+                  accent: Cyber.cyan,
+                  height: 8,
+                ),
+              ),
+              for (final checkpoint in const [0.25, 0.5, 0.75])
+                Positioned(
+                  left: constraints.maxWidth * checkpoint - 0.5,
+                  top: 1,
+                  bottom: 1,
+                  child: Container(
+                    width: 1,
+                    color: Cyber.bg.withValues(alpha: 0.82),
+                  ),
+                ),
             ],
           ),
-          const SizedBox(height: 16),
-          CyberProgressBar(
-            value: total == 0 ? 0 : passed / total,
-            accent: Cyber.cyan,
-            height: 7,
-          ),
-          const SizedBox(height: 9),
-          Text(
-            'Clear sets to advance each category ladder. Every attempt contains 10 questions.',
-            style: Cyber.body(12, color: Cyber.muted),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -1001,7 +1261,7 @@ class _BriefingStat extends StatelessWidget {
 IconData _sportIcon(Sport sport) => switch (sport) {
   Sport.football => Icons.sports_soccer,
   Sport.cricket => Icons.sports_cricket,
-  Sport.f1 => Icons.sports_motorsports,
+  Sport.motorsport => Icons.sports_motorsports,
   Sport.basketball => Icons.sports_basketball,
   Sport.tennis => Icons.sports_tennis,
 };

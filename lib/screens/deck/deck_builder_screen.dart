@@ -387,6 +387,7 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
     defenders: selectedDefenders.whereType<String>().toList(),
     actions: selectedActions.whereType<String>().toList(),
     batsmen: active.batsmen,
+    finalOverBatsmen: active.finalOverBatsmen,
     keeper: selectedKeeper,
     chessFormation: _selectedFormation,
   );

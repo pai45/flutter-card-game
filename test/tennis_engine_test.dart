@@ -261,16 +261,16 @@ void main() {
     });
 
     test('CPU return misses reflect rival ratings', () {
-      final shakyMisses = _countOpponentMisses('jett-okafor');
+      final shakyMisses = _countOpponentMisses('taylor-fritz');
       final eliteMisses = _countOpponentMisses('riven-cole');
 
       expect(shakyMisses, greaterThan(eliteMisses));
     });
 
     test('CPU miss consumes the incoming flight without instant retry', () {
-      final seed = _firstOpponentMissSeed('jett-okafor');
+      final seed = _firstOpponentMissSeed('taylor-fritz');
       final engine = TennisEngine(
-        _config(seed: seed, opponentId: 'jett-okafor'),
+        _config(seed: seed, opponentId: 'taylor-fritz'),
       );
       _setOpponentReturn(engine);
 
@@ -377,11 +377,11 @@ TennisMatchConfig _config({
   int seed = 1,
   TennisDifficulty difficulty = TennisDifficulty.pro,
   TennisMode mode = TennisMode.quickMatch,
-  String opponentId = 'jett-okafor',
+  String opponentId = 'taylor-fritz',
 }) => TennisMatchConfig(
   matchId: 'test-$seed-${difficulty.name}',
   mode: mode,
-  playerId: 'nova-reyes',
+  playerId: 'frances-tiafoe',
   opponentId: opponentId,
   difficulty: difficulty,
   seed: seed,

@@ -892,6 +892,81 @@ class HudLine extends StatelessWidget {
   }
 }
 
+/// Shared HUD corner-tick frame. It adds structure without turning a calm
+/// surface into another glowing panel.
+class HudCornerFrame extends StatelessWidget {
+  const HudCornerFrame({
+    required this.child,
+    this.accent = Cyber.cyan,
+    this.padding = const EdgeInsets.all(8),
+    this.cornerLength = 16,
+    this.strokeWidth = 1.5,
+    super.key,
+  });
+
+  final Widget child;
+  final Color accent;
+  final EdgeInsetsGeometry padding;
+  final double cornerLength;
+  final double strokeWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _HudCornerFramePainter(
+        color: accent.withValues(alpha: 0.5),
+        cornerLength: cornerLength,
+        strokeWidth: strokeWidth,
+      ),
+      child: Padding(padding: padding, child: child),
+    );
+  }
+}
+
+class _HudCornerFramePainter extends CustomPainter {
+  const _HudCornerFramePainter({
+    required this.color,
+    required this.cornerLength,
+    required this.strokeWidth,
+  });
+
+  final Color color;
+  final double cornerLength;
+  final double strokeWidth;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final length = cornerLength.clamp(0, size.shortestSide / 2).toDouble();
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke;
+    canvas
+      ..drawLine(Offset.zero, Offset(length, 0), paint)
+      ..drawLine(Offset.zero, Offset(0, length), paint)
+      ..drawLine(Offset(size.width, 0), Offset(size.width - length, 0), paint)
+      ..drawLine(Offset(size.width, 0), Offset(size.width, length), paint)
+      ..drawLine(Offset(0, size.height), Offset(length, size.height), paint)
+      ..drawLine(Offset(0, size.height), Offset(0, size.height - length), paint)
+      ..drawLine(
+        Offset(size.width, size.height),
+        Offset(size.width - length, size.height),
+        paint,
+      )
+      ..drawLine(
+        Offset(size.width, size.height),
+        Offset(size.width, size.height - length),
+        paint,
+      );
+  }
+
+  @override
+  bool shouldRepaint(covariant _HudCornerFramePainter oldDelegate) =>
+      oldDelegate.color != color ||
+      oldDelegate.cornerLength != cornerLength ||
+      oldDelegate.strokeWidth != strokeWidth;
+}
+
 /// A polished progress / meter bar shared by every XP, rank and power meter so
 /// the "gradient flow" reads identically across the app. The fill ramps from a
 /// soft translucent accent to full colour over ~70% of its width and finishes
@@ -1238,6 +1313,110 @@ class CyberPanel extends StatelessWidget {
           ),
           child: Padding(padding: padding, child: child),
         ),
+      ),
+    );
+  }
+}
+
+/// Compact live-status telemetry shared by game lobbies.
+///
+/// The status dot is the only persistent element allowed to glow because it
+/// communicates a live system state. The rest of the strip stays deliberately
+/// quiet so it does not compete with the lobby CTA.
+class CyberLobbyStatusBar extends StatelessWidget {
+  const CyberLobbyStatusBar({
+    required this.systemLabel,
+    this.statusLabel = 'ONLINE',
+    this.statusColor = Cyber.success,
+    this.lineColor = Cyber.cyan,
+    super.key,
+  });
+
+  final String systemLabel;
+  final String statusLabel;
+  final Color statusColor;
+  final Color lineColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 7,
+          height: 7,
+          decoration: BoxDecoration(
+            color: statusColor,
+            shape: BoxShape.circle,
+            boxShadow: Cyber.glow(statusColor, alpha: 0.6, blur: 8, spread: 0),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          statusLabel.toUpperCase(),
+          style: Cyber.display(9, color: statusColor, letterSpacing: 2),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(height: 1, color: lineColor.withValues(alpha: 0.16)),
+        ),
+        const SizedBox(width: 10),
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: Text(
+              systemLabel.toUpperCase(),
+              maxLines: 1,
+              style: Cyber.display(8.5, color: Cyber.muted, letterSpacing: 1.2),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Calm telemetry cell for game-lobby progression and performance numbers.
+class CyberHudStat extends StatelessWidget {
+  const CyberHudStat({
+    required this.label,
+    required this.value,
+    this.accent = Cyber.cyan,
+    super.key,
+  });
+
+  final String label;
+  final String value;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Cyber.bg.withValues(alpha: 0.5),
+        border: Border.all(color: accent.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: Cyber.display(
+                16,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            label.toUpperCase(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Cyber.display(7.5, color: Cyber.muted, letterSpacing: 0.8),
+          ),
+        ],
       ),
     );
   }
@@ -1766,6 +1945,7 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
       PlayerRole.basketballGuard => Cyber.gold,
       PlayerRole.basketballWing => Cyber.cyan,
       PlayerRole.basketballBig => Cyber.violet,
+      PlayerRole.tennisSingles => Cyber.lime,
     };
     final small = size == VisualCardSize.sm;
     final large = size == VisualCardSize.lg;

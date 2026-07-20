@@ -9,7 +9,7 @@ void main() {
     expect(sportFromStorage(''), Sport.football);
     expect(sportFromStorage('unknown'), Sport.football);
     expect(sportFromStorage('cricket'), Sport.cricket);
-    expect(sportFromStorage('f1'), Sport.f1);
+    expect(sportFromStorage('f1'), Sport.motorsport);
     expect(sportFromStorage('basketball'), Sport.basketball);
   });
 

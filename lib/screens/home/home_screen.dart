@@ -69,7 +69,11 @@ class HomeScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const CyberSlideUpFadeIn(child: _LobbyStatusBar()),
+                            const CyberSlideUpFadeIn(
+                              child: CyberLobbyStatusBar(
+                                systemLabel: 'SYS://PITCH_DUEL v1.0.0',
+                              ),
+                            ),
                             const SizedBox(height: 18),
                             // Asymmetric HUD hero: logo emblem + identity block.
                             CyberSlideUpFadeIn(
@@ -144,7 +148,7 @@ class HomeScreen extends StatelessWidget {
                                       milliseconds: 180,
                                     ),
                                     flyDistance: 130,
-                                    child: _HudStat(
+                                    child: CyberHudStat(
                                       label: 'LEVEL',
                                       value: '${state.progression.playerLevel}',
                                     ),
@@ -159,7 +163,7 @@ class HomeScreen extends StatelessWidget {
                                       milliseconds: 180,
                                     ),
                                     flyDistance: 130,
-                                    child: _HudStat(
+                                    child: CyberHudStat(
                                       label: 'TOTAL XP',
                                       value: _grp(state.progression.totalXP),
                                     ),
@@ -174,7 +178,7 @@ class HomeScreen extends StatelessWidget {
                                       milliseconds: 180,
                                     ),
                                     flyDistance: 130,
-                                    child: _HudStat(
+                                    child: CyberHudStat(
                                       label: 'WINS',
                                       value: _grp(
                                         _duelWins(state.matchHistory),
@@ -352,64 +356,6 @@ bool _isDuelWin(MatchHistoryEntry entry) {
   return (entry.penaltyPlayerScore ?? 0) > (entry.penaltyOpponentScore ?? 0);
 }
 
-/// Greeble status strip above the hero: a live "ONLINE" indicator and a system
-/// version readout, split by a thin HUD line.
-class _LobbyStatusBar extends StatelessWidget {
-  const _LobbyStatusBar();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 7,
-          height: 7,
-          decoration: BoxDecoration(
-            color: Cyber.success,
-            shape: BoxShape.circle,
-            // Live indicator — glow is intentional here.
-            boxShadow: Cyber.glow(
-              Cyber.success,
-              alpha: 0.6,
-              blur: 8,
-              spread: 0,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          'ONLINE',
-          style: TextStyle(
-            color: Cyber.success,
-            fontFamily: Cyber.displayFont,
-            fontSize: 9,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 2,
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Container(
-            height: 1,
-            color: Cyber.cyan.withValues(alpha: 0.16),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Text(
-          'SYS://PITCH_DUEL v1.0.0',
-          style: TextStyle(
-            color: Cyber.muted,
-            fontFamily: Cyber.displayFont,
-            fontSize: 8.5,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.2,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 /// Animated soccer emblem framed by HUD corner brackets.
 class _HeroEmblem extends StatefulWidget {
   const _HeroEmblem({this.size = 92});
@@ -538,61 +484,6 @@ class _CornerBracketsPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _CornerBracketsPainter old) =>
       old.color != color;
-}
-
-/// A compact telemetry cell (label + value). Secondary data — no glow.
-class _HudStat extends StatelessWidget {
-  const _HudStat({
-    required this.label,
-    required this.value,
-    this.accent = Cyber.cyan,
-  });
-
-  final String label;
-  final String value;
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-      decoration: BoxDecoration(
-        color: Cyber.bg.withValues(alpha: 0.5),
-        border: Border.all(color: accent.withValues(alpha: 0.25)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              value,
-              style: TextStyle(
-                color: Colors.white,
-                fontFamily: Cyber.displayFont,
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: Cyber.muted,
-              fontFamily: Cyber.displayFont,
-              fontSize: 7.5,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 0.8,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 /// A flat HUD text link (no Material ripple). Used for the secondary actions.

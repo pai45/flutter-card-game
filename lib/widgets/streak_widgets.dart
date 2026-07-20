@@ -240,6 +240,7 @@ Color streakActivityColor(StreakActivity activity) =>
       StreakActivity.pick => StreakActivityVisual.pick,
       StreakActivity.pitchDuel => StreakActivityVisual.pitchDuel,
       StreakActivity.penaltyShootout => StreakActivityVisual.penaltyShootout,
+      StreakActivity.guessPlayer => StreakActivityVisual.pitchDuel,
     });
 
 IconData _rewardIcon(StreakRewardType type) => switch (type) {

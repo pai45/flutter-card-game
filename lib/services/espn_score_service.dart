@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../models/cricket_scorecard.dart';
+import '../models/league.dart';
 import '../models/sport_match.dart';
 import '../data/team_colors.dart';
 import '../models/basketball_scorecard.dart';
@@ -9,6 +10,42 @@ import '../models/tennis_scorecard.dart';
 import '../utils/tennis_country_map.dart';
 
 class EspnScoreService {
+  /// Leagues discovered from live ESPN payloads whose real competition isn't
+  /// one of the ~16 hardcoded [League]s — populated by [_registerLeagueFromPayload]
+  /// as football/cricket fixtures are fetched, and merged into
+  /// `MockPredictionRepository.leagues()` so those fixtures aren't silently
+  /// dropped by the prediction home's `validLeagueIds` filter. Static because
+  /// a fresh [EspnScoreService] is constructed per fetch, but discovered
+  /// leagues should persist for the app's lifetime.
+  static final Map<String, League> discoveredLeagues = {};
+
+  /// Registers a league discovered from an ESPN payload's `leagues[0]`
+  /// (present on both the football scoreboard and cricket scorepanel
+  /// responses) so it can be surfaced instead of every football/cricket
+  /// fixture being force-labelled a single hardcoded league regardless of
+  /// its real competition. Returns the real ESPN league id, or null if the
+  /// payload didn't carry one.
+  static String? _registerLeagueFromPayload(List? leagues) {
+    if (leagues == null || leagues.isEmpty) return null;
+    final league = leagues.first as Map?;
+    final id = league?['id']?.toString();
+    if (id == null || id.isEmpty) return null;
+    if (!discoveredLeagues.containsKey(id)) {
+      final name = league?['name']?.toString() ?? id;
+      final abbreviation = league?['abbreviation']?.toString();
+      final shortCode = (abbreviation != null && abbreviation.isNotEmpty)
+          ? abbreviation
+          : (name.length <= 5 ? name.toUpperCase() : id);
+      discoveredLeagues[id] = League(
+        id: id,
+        name: name,
+        shortCode: shortCode,
+        accent: const Color(0xff5cdfff),
+      );
+    }
+    return id;
+  }
+
   String _getAthleteName(dynamic athlete) {
     if (athlete == null) return 'Unknown';
     String shortName = athlete['shortName']?.toString().trim() ?? '';
@@ -22,124 +59,210 @@ class EspnScoreService {
 
 
 
+  static const _fetchTimeout = Duration(seconds: 8);
+
+  /// Fetches every ESPN scoreboard this sport needs, across the whole day
+  /// window, CONCURRENTLY rather than one request at a time. The previous
+  /// version awaited each of up to ~22 requests (11 days × up to 2 leagues)
+  /// sequentially with no timeout — a single slow ESPN response stalled
+  /// every request behind it, which is why a sport tab's first load could
+  /// take many seconds. Firing them all at once and bounding each with a
+  /// timeout turns that into one round-trip's worth of wall-clock time.
   Future<List<SportMatch>> fetchDynamicMatchesForSport(Sport sport) async {
-    final List<SportMatch> dynamicMatches = [];
     final now = DateTime.now();
-    
-    // Fetch F1 Schedule (for British GP and Belgian GP)
-    if (sport == Sport.f1) {
-      try {
-        final f1Res = await http.get(Uri.parse('https://site.api.espn.com/apis/site/v2/sports/racing/f1/scoreboard?dates=2026'));
-        if (f1Res.statusCode == 200) {
-          final data = json.decode(f1Res.body);
-          final events = data['events'] as List? ?? [];
-          for (var event in events) {
-            final name = event['name']?.toString() ?? '';
-            if (name.contains('Belgian Grand Prix') || name.contains('British Grand Prix')) {
-              final match = _parseF1EventToMatch(event);
-              if (match != null && !dynamicMatches.any((m) => m.id == match.id)) {
-                dynamicMatches.add(match);
-              }
-            }
-          }
-        }
-      } catch (_) {}
+    final tasks = <Future<List<SportMatch>>>[];
+
+    if (sport == Sport.motorsport) {
+      tasks.add(_fetchMotorsportSeries('racing/f1', 'f1', 'F1'));
+      // 'INDY' (not the full 'IndyCar') so it fits the single-badge race card
+      // on one line — matches the league's own shortCode.
+      tasks.add(_fetchMotorsportSeries('racing/irl', 'indycar', 'INDY'));
+      tasks.add(
+        _fetchMotorsportSeries('racing/nascar-premier', 'nascar-cup', 'NASCAR'),
+      );
     }
 
-    // Fetch from day - 7 to day + 3 (total 11 days)
+    // Fetch from day - 7 to day + 3 (total 11 days).
     for (int i = -7; i <= 3; i++) {
       final date = now.add(Duration(days: i));
-      final dateStr = '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
-      
-      // 1. Fetch Cricket
-      if (sport == Sport.cricket) {
-        try {
-          final cricketRes = await http.get(Uri.parse(
-              'https://site.api.espn.com/apis/site/v2/sports/cricket/scorepanel?dates=$dateStr'));
-          if (cricketRes.statusCode == 200) {
-            final data = json.decode(cricketRes.body);
-            final scores = data['scores'] as List? ?? [];
-            for (var score in scores) {
-              final events = score['events'] as List? ?? [];
-              for (var event in events) {
-                final match = _parseEventToMatch(event, Sport.cricket, '23810'); // Map to _intl
-                if (match != null && !dynamicMatches.any((m) => m.id == match.id)) {
-                  dynamicMatches.add(match);
-                }
-              }
-            }
-          }
-        } catch (_) {}
-      }
+      final dateStr =
+          '${date.year}${date.month.toString().padLeft(2, '0')}${date.day.toString().padLeft(2, '0')}';
 
-      // 2. Fetch Football (EPL and UEFA Euro)
+      if (sport == Sport.cricket) {
+        tasks.add(_fetchCricketDay(dateStr));
+      }
       if (sport == Sport.football) {
-        final soccerLeagues = ['eng.1', 'uefa.euro'];
-        for (var league in soccerLeagues) {
-          try {
-            final soccerRes = await http.get(Uri.parse(
-                'https://site.api.espn.com/apis/site/v2/sports/soccer/$league/scoreboard?dates=$dateStr'));
-            if (soccerRes.statusCode == 200) {
-              final data = json.decode(soccerRes.body);
-              final events = data['events'] as List? ?? [];
-              for (var event in events) {
-                final match = _parseEventToMatch(event, Sport.football, 'fifa'); // Map to _fifa
-                if (match != null && !dynamicMatches.any((m) => m.id == match.id)) {
-                  dynamicMatches.add(match);
-                }
-              }
-            }
-          } catch (_) {}
+        for (final league in ['eng.1', 'uefa.euro']) {
+          tasks.add(_fetchFootballDay(league, dateStr));
         }
       }
-
-      // 3. Fetch Basketball (WNBA)
       if (sport == Sport.basketball) {
         for (final leagueId in ['wnba', 'nba']) {
-          try {
-            final res = await http.get(Uri.parse(
-                'https://site.api.espn.com/apis/site/v2/sports/basketball/$leagueId/scoreboard?dates=$dateStr'));
-            if (res.statusCode == 200) {
-              final data = json.decode(res.body);
-              final events = data['events'] as List? ?? [];
-              for (var event in events) {
-                final match = _parseEventToMatch(event, Sport.basketball, leagueId);
-                if (match != null && !dynamicMatches.any((m) => m.id == match.id)) {
-                  dynamicMatches.add(match);
-                }
-              }
-            }
-          } catch (_) {}
+          tasks.add(_fetchBasketballDay(leagueId, dateStr));
         }
       }
-
-      // 4. Fetch Tennis (ATP & WTA)
       if (sport == Sport.tennis) {
-        final tennisLeagues = ['atp', 'wta'];
-        for (var league in tennisLeagues) {
-          try {
-            final tennisRes = await http.get(Uri.parse(
-                'https://site.api.espn.com/apis/site/v2/sports/tennis/$league/scoreboard?dates=$dateStr'));
-            if (tennisRes.statusCode == 200) {
-              final data = json.decode(tennisRes.body);
-              final events = data['events'] as List? ?? [];
-              for (var event in events) {
-                final match = _parseTennisEventToMatch(event, league);
-                if (match != null && !dynamicMatches.any((m) => m.id == match.id)) {
-                  dynamicMatches.add(match);
-                }
-              }
-            }
-          } catch (_) {}
+        for (final league in ['atp', 'wta']) {
+          tasks.add(_fetchTennisDay(league, dateStr));
+        }
+      }
+    }
+
+    final results = await Future.wait(tasks);
+    final dynamicMatches = <SportMatch>[];
+    for (final matches in results) {
+      for (final match in matches) {
+        if (!dynamicMatches.any((m) => m.id == match.id)) {
+          dynamicMatches.add(match);
         }
       }
     }
     return dynamicMatches;
   }
 
-  SportMatch? _parseF1EventToMatch(dynamic event) {
+  /// Fetches one motorsport series' full-season schedule and keeps only the
+  /// race weekends inside the rolling window (same -7..+3 day range every
+  /// other sport uses), rather than the old hardcoded 2-GP-name filter.
+  Future<List<SportMatch>> _fetchMotorsportSeries(
+    String espnSlug,
+    String leagueId,
+    String seriesLabel,
+  ) async {
     try {
-      final name = event['name']?.toString() ?? 'F1 Race';
+      final res = await http
+          .get(Uri.parse('https://site.api.espn.com/apis/site/v2/sports/$espnSlug/scoreboard?dates=2026'))
+          .timeout(_fetchTimeout);
+      if (res.statusCode != 200) return const [];
+      final data = json.decode(res.body);
+      final events = data['events'] as List? ?? [];
+      final now = DateTime.now();
+      final windowStart = DateTime(now.year, now.month, now.day)
+          .subtract(const Duration(days: 7));
+      final windowEnd = DateTime(now.year, now.month, now.day)
+          .add(const Duration(days: 3));
+      final matches = <SportMatch>[];
+      for (var event in events) {
+        final eventDate = DateTime.tryParse(event['date']?.toString() ?? '');
+        if (eventDate == null) continue;
+        if (eventDate.isBefore(windowStart) || eventDate.isAfter(windowEnd)) {
+          continue;
+        }
+        final match = _parseMotorsportEventToMatch(
+          event,
+          leagueId,
+          seriesLabel,
+        );
+        if (match != null) matches.add(match);
+      }
+      return matches;
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<List<SportMatch>> _fetchCricketDay(String dateStr) async {
+    try {
+      final res = await http
+          .get(Uri.parse('https://site.api.espn.com/apis/site/v2/sports/cricket/scorepanel?dates=$dateStr'))
+          .timeout(_fetchTimeout);
+      if (res.statusCode != 200) return const [];
+      final data = json.decode(res.body);
+      final scores = data['scores'] as List? ?? [];
+      final matches = <SportMatch>[];
+      for (var score in scores) {
+        final leagueId =
+            _registerLeagueFromPayload(score['leagues'] as List?) ?? '23810';
+        final events = score['events'] as List? ?? [];
+        for (var event in events) {
+          final match = _parseEventToMatch(event, Sport.cricket, leagueId);
+          if (match != null) matches.add(match);
+        }
+      }
+      return matches;
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<List<SportMatch>> _fetchFootballDay(String league, String dateStr) async {
+    try {
+      final res = await http
+          .get(Uri.parse('https://site.api.espn.com/apis/site/v2/sports/soccer/$league/scoreboard?dates=$dateStr'))
+          .timeout(_fetchTimeout);
+      if (res.statusCode != 200) return const [];
+      final data = json.decode(res.body);
+      final leagueId =
+          _registerLeagueFromPayload(data['leagues'] as List?) ?? 'fifa';
+      final events = data['events'] as List? ?? [];
+      final matches = <SportMatch>[];
+      for (var event in events) {
+        final match = _parseEventToMatch(event, Sport.football, leagueId);
+        if (match != null) matches.add(match);
+      }
+      return matches;
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<List<SportMatch>> _fetchBasketballDay(String leagueId, String dateStr) async {
+    try {
+      final res = await http
+          .get(Uri.parse('https://site.api.espn.com/apis/site/v2/sports/basketball/$leagueId/scoreboard?dates=$dateStr'))
+          .timeout(_fetchTimeout);
+      if (res.statusCode != 200) return const [];
+      final data = json.decode(res.body);
+      final events = data['events'] as List? ?? [];
+      final matches = <SportMatch>[];
+      for (var event in events) {
+        final match = _parseEventToMatch(event, Sport.basketball, leagueId);
+        if (match != null) matches.add(match);
+      }
+      return matches;
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// ESPN's tennis scoreboard returns whole tournaments here — each event's
+  /// own `competitions` is empty; the real, individually-dated matches are
+  /// nested under `groupings[] (Men's/Women's Singles, Doubles) ->
+  /// competitions[]`. Scoped to Singles for now (Doubles has no per-player
+  /// identity model yet in this app).
+  Future<List<SportMatch>> _fetchTennisDay(String league, String dateStr) async {
+    try {
+      final res = await http
+          .get(Uri.parse('https://site.api.espn.com/apis/site/v2/sports/tennis/$league/scoreboard?dates=$dateStr'))
+          .timeout(_fetchTimeout);
+      if (res.statusCode != 200) return const [];
+      final data = json.decode(res.body);
+      final events = data['events'] as List? ?? [];
+      final matches = <SportMatch>[];
+      for (var event in events) {
+        final groupings = event['groupings'] as List? ?? [];
+        for (var grouping in groupings) {
+          final groupingName = grouping['grouping']?['displayName']?.toString() ?? '';
+          if (!groupingName.contains('Singles')) continue;
+          final competitions = grouping['competitions'] as List? ?? [];
+          for (var competition in competitions) {
+            final match = _parseTennisCompetitionToMatch(competition, league);
+            if (match != null) matches.add(match);
+          }
+        }
+      }
+      return matches;
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  SportMatch? _parseMotorsportEventToMatch(
+    dynamic event,
+    String leagueId,
+    String seriesLabel,
+  ) {
+    try {
+      final name = event['name']?.toString() ?? '$seriesLabel Race';
       final eventDate = DateTime.parse(event['date']);
       
       List<F1SessionResult> sessions = [];
@@ -170,12 +293,27 @@ class EspnScoreService {
       if (stateStr == 'in') status = MatchStatus.live;
       if (stateStr == 'post') status = MatchStatus.finished;
 
+      final brandColor = switch (leagueId) {
+        'indycar' => const Color(0xFF001489),
+        'nascar-cup' => const Color(0xFFFFCC00),
+        _ => const Color(0xFFE10600),
+      };
       return SportMatch(
         id: event['id']?.toString() ?? '',
-        leagueId: 'f1',
-        sport: Sport.f1,
-        home: SportTeam(id: 'f1_home', name: name, shortName: 'F1', color: const Color(0xFFE10600)),
-        away: SportTeam(id: 'f1_away', name: 'Formula 1', shortName: 'F1', color: const Color(0xFF000000)),
+        leagueId: leagueId,
+        sport: Sport.motorsport,
+        home: SportTeam(
+          id: '${leagueId}_home',
+          name: name,
+          shortName: seriesLabel,
+          color: brandColor,
+        ),
+        away: SportTeam(
+          id: '${leagueId}_away',
+          name: seriesLabel,
+          shortName: seriesLabel,
+          color: const Color(0xFF000000),
+        ),
         kickoff: eventDate,
         status: status,
         f1Sessions: sessions,
@@ -253,13 +391,11 @@ class EspnScoreService {
     }
   }
 
-  SportMatch? _parseTennisEventToMatch(dynamic event, String leagueId) {
+  /// Parses one real match — a single entry from a tournament event's
+  /// `groupings[].competitions[]` (NOT the tournament event itself, whose
+  /// own top-level `competitions` is always empty for tennis scoreboards).
+  SportMatch? _parseTennisCompetitionToMatch(dynamic comp, String leagueId) {
     try {
-      final comp = event['competitions'] != null && event['competitions'].isNotEmpty
-          ? event['competitions'][0]
-          : null;
-      if (comp == null) return null;
-
       final competitors = comp['competitors'] as List;
       if (competitors.length < 2) return null;
 
@@ -283,6 +419,7 @@ class EspnScoreService {
         name: homeName,
         shortName: homeShort,
         color: homeCountryCode != null ? TennisCountryMap.colorFor(homeCountryCode) : const Color(0xffffffff),
+        flagUrl: homeAthlete?['flag']?['href']?.toString(),
       );
 
       final awayName = awayAthlete?['displayName']?.toString() ?? 'Unknown';
@@ -293,9 +430,10 @@ class EspnScoreService {
         name: awayName,
         shortName: awayShort,
         color: awayCountryCode != null ? TennisCountryMap.colorFor(awayCountryCode) : const Color(0xffffffff),
+        flagUrl: awayAthlete?['flag']?['href']?.toString(),
       );
 
-      final String? stateStr = event['status']?['type']?['state'];
+      final String? stateStr = comp['status']?['type']?['state'];
       MatchStatus status = MatchStatus.upcoming;
       if (stateStr == 'in') status = MatchStatus.live;
       if (stateStr == 'post') status = MatchStatus.finished;
@@ -329,12 +467,12 @@ class EspnScoreService {
       }
 
       return SportMatch(
-        id: event['id']?.toString() ?? '',
+        id: comp['id']?.toString() ?? '',
         leagueId: leagueId,
         sport: Sport.tennis,
         home: homeTeam,
         away: awayTeam,
-        kickoff: DateTime.parse(event['date']),
+        kickoff: DateTime.parse(comp['date']),
         status: status,
         homeScore: hScore?.toString(),
         awayScore: aScore?.toString(),
@@ -351,8 +489,9 @@ class EspnScoreService {
         
         if (sport == Sport.football) {
           final soccerRes = await http.get(Uri.parse(
-              'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260719'));
-          
+              'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260719'))
+              .timeout(_fetchTimeout);
+
           if (soccerRes.statusCode == 200) {
             final data = json.decode(soccerRes.body);
             allEvents.addAll(data['events'] as List? ?? []);
@@ -361,8 +500,9 @@ class EspnScoreService {
 
         if (sport == Sport.cricket) {
           final cricketRes = await http.get(Uri.parse(
-              'https://site.api.espn.com/apis/site/v2/sports/cricket/scorepanel'));
-          
+              'https://site.api.espn.com/apis/site/v2/sports/cricket/scorepanel'))
+              .timeout(_fetchTimeout);
+
           if (cricketRes.statusCode == 200) {
             final data = json.decode(cricketRes.body);
             final scores = data['scores'] as List? ?? [];
@@ -373,10 +513,14 @@ class EspnScoreService {
         }
 
         if (sport == Sport.basketball) {
-          for (final leagueId in ['wnba', 'nba']) {
-            final res = await http.get(Uri.parse(
-                'https://site.api.espn.com/apis/site/v2/sports/basketball/$leagueId/scoreboard'));
-            
+          final responses = await Future.wait([
+            for (final leagueId in ['wnba', 'nba'])
+              http
+                  .get(Uri.parse('https://site.api.espn.com/apis/site/v2/sports/basketball/$leagueId/scoreboard'))
+                  .timeout(_fetchTimeout)
+                  .catchError((_) => http.Response('', 500)),
+          ]);
+          for (final res in responses) {
             if (res.statusCode == 200) {
               final data = json.decode(res.body);
               allEvents.addAll(data['events'] as List? ?? []);
@@ -385,10 +529,14 @@ class EspnScoreService {
         }
 
         if (sport == Sport.tennis) {
-          for (final leagueId in ['atp', 'wta']) {
-            final res = await http.get(Uri.parse(
-                'https://site.api.espn.com/apis/site/v2/sports/tennis/$leagueId/scoreboard'));
-            
+          final responses = await Future.wait([
+            for (final leagueId in ['atp', 'wta'])
+              http
+                  .get(Uri.parse('https://site.api.espn.com/apis/site/v2/sports/tennis/$leagueId/scoreboard'))
+                  .timeout(_fetchTimeout)
+                  .catchError((_) => http.Response('', 500)),
+          ]);
+          for (final res in responses) {
             if (res.statusCode == 200) {
               final data = json.decode(res.body);
               allEvents.addAll(data['events'] as List? ?? []);
@@ -411,7 +559,7 @@ class EspnScoreService {
                   ? 'https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard?dates=20240714'
                   : 'https://site.api.espn.com/apis/site/v2/sports/tennis/wta/scoreboard?dates=20240713';
               
-              final wRes2 = await http.get(Uri.parse(url));
+              final wRes2 = await http.get(Uri.parse(url)).timeout(_fetchTimeout);
               if (wRes2.statusCode == 200) {
                 final wData = json.decode(wRes2.body);
                 final wEvents = wData['events'] as List?;
@@ -437,7 +585,7 @@ class EspnScoreService {
                           : 'cricket/${fixture.leagueId}';
               final summaryRes = await http.get(Uri.parse(
                 'https://site.api.espn.com/apis/site/v2/sports/$sportStr/summary?event=${fixture.id}'
-              ));
+              )).timeout(_fetchTimeout);
               if (summaryRes.statusCode == 200) {
                 final summaryData = json.decode(summaryRes.body);
                 final header = summaryData['header'];
@@ -587,7 +735,7 @@ class EspnScoreService {
                   ? 'https://site.api.espn.com/apis/site/v2/sports/tennis/${fixture.leagueId}/summary?event=${event['id']}'
                   : 'https://site.api.espn.com/apis/site/v2/sports/cricket/${fixture.leagueId}/summary?event=${event['id']}';
             
-      final summaryRes = await http.get(Uri.parse(summaryUrl));
+      final summaryRes = await http.get(Uri.parse(summaryUrl)).timeout(_fetchTimeout);
       if (summaryRes.statusCode == 200) {
         final summaryData = json.decode(summaryRes.body);
         final rosters = summaryData['rosters'] as List?;
@@ -608,7 +756,7 @@ class EspnScoreService {
           parsedScorecard = _parseCricketScorecard(summaryData);
           
           final pbpUrl = 'https://site.api.espn.com/apis/site/v2/sports/cricket/${fixture.leagueId}/playbyplay?event=${event['id']}&limit=1000';
-          final pbpRes = await http.get(Uri.parse(pbpUrl));
+          final pbpRes = await http.get(Uri.parse(pbpUrl)).timeout(_fetchTimeout);
           if (pbpRes.statusCode == 200) {
             final pbpData = json.decode(pbpRes.body);
             final commObj = pbpData['commentary'] as Map?;
@@ -638,7 +786,7 @@ class EspnScoreService {
           parsedBasketballScorecard = _parseBasketballScorecard(summaryData);
 
           final pbpUrl = 'https://site.api.espn.com/apis/site/v2/sports/basketball/${fixture.leagueId}/playbyplay?event=${event['id']}&limit=1000';
-          final pbpRes = await http.get(Uri.parse(pbpUrl));
+          final pbpRes = await http.get(Uri.parse(pbpUrl)).timeout(_fetchTimeout);
           if (pbpRes.statusCode == 200) {
             final pbpData = json.decode(pbpRes.body);
             final items = pbpData['plays'] as List?;

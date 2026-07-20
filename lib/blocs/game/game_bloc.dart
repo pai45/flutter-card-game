@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../config/enums.dart';
 import '../../config/tutorial_steps.dart';
 import '../../data/random_opponent_names.dart';
+import '../../data/final_over_kits.dart';
 import '../../models/avatar_frame_option.dart';
 import '../../models/cards.dart';
 import '../../models/deck.dart';
@@ -66,6 +67,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<CoinsAdded>(_onCoinsAdded);
     on<CoinsSpent>(_onCoinsSpent);
     on<PredictionXpAdded>(_onPredictionXpAdded);
+    on<DailyGuessPlayerSettled>(_onDailyGuessPlayerSettled);
     on<CardPurchased>(_onCardPurchased);
     on<DirectCardPurchased>(_onDirectCardPurchased);
     on<PackOpened>(_onPackOpened);
@@ -73,6 +75,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<StarterPackOpened>(_onStarterPackOpened);
     on<CricketStarterPackOpened>(_onCricketStarterPackOpened);
     on<BasketballStarterPackOpened>(_onBasketballStarterPackOpened);
+    on<TennisStarterPackOpened>(_onTennisStarterPackOpened);
     on<DailyDropClaimed>(_onDailyDropClaimed);
     on<ShopPackPurchased>(_onShopPackPurchased);
     on<CardBackPurchased>(_onCardBackPurchased);
@@ -81,6 +84,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<AvatarFrameEquipped>(_onAvatarFrameEquipped);
     on<ShopAvatarPurchased>(_onShopAvatarPurchased);
     on<ShopBannerPurchased>(_onShopBannerPurchased);
+    on<ShopFinalOverKitPurchased>(_onShopFinalOverKitPurchased);
     on<PackRevealSeen>(
       (_, emit) => emit(state.copyWith(pendingPackReveal: null)),
     );
@@ -123,6 +127,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
 
   final SecureGameStorage _storage;
   final Random _random = Random();
+  final Set<String> _guessPlayerSettlementsSeen = <String>{};
 
   Future<void> _onLoaded(GameLoaded event, Emitter<GameState> emit) async {
     try {
@@ -179,6 +184,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       final basketballStarterPackClaimed = await _storage
           .loadBasketballStarterPackClaimed()
           .timeout(const Duration(seconds: 2), onTimeout: () => false);
+      final tennisStarterPackClaimed = await _storage
+          .loadTennisStarterPackClaimed()
+          .timeout(const Duration(seconds: 2), onTimeout: () => false);
       developer.log(
         'GameLoaded: Loaded starter pack status: $starterPackClaimed',
       );
@@ -216,6 +224,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           ...slot.attackers,
           ...slot.defenders,
           ...slot.batsmen,
+          ...slot.finalOverBatsmen,
           ...slot.basketballPlayers,
           if (slot.keeper != null) slot.keeper!,
         });
@@ -226,6 +235,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       var migratedStarterClaimed = starterPackClaimed;
       var migratedCricketStarterClaimed = cricketStarterPackClaimed;
       var migratedBasketballStarterClaimed = basketballStarterPackClaimed;
+      var migratedTennisStarterClaimed = tennisStarterPackClaimed;
       var coins = wallet.coins;
       if (coinLedger.isEmpty && coins > 0) {
         coinLedger = [_openingBalanceEntry(coins)];
@@ -280,6 +290,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           equippedAvatarFrameId: wallet.equippedAvatarFrameId,
           ownedAvatarIds: wallet.ownedAvatarIds,
           ownedBannerIds: wallet.ownedBannerIds,
+          ownedFinalOverKitIds: wallet.ownedFinalOverKitIds,
           dailyDropLastClaimedAtMillis: wallet.dailyDropLastClaimedAtMillis,
         ),
       );
@@ -295,11 +306,17 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           deckActions: actionCardsByIds(active.actions),
           deckKeeper: _keeperOf(active),
           deckBatsmen: cardsByIds(batsmen, active.batsmen),
+          deckFinalOverBatsmen: cardsByIds(batsmen, active.finalOverBatsmen),
           deckBasketballPlayers: cardsByIds(
             basketballPlayerCards,
             active.basketballPlayers,
           ),
           deckBasketballStarter: _basketballStarterOf(active),
+          deckTennisPlayers: cardsByIds(
+            tennisPlayerCards,
+            active.tennisPlayers,
+          ),
+          deckTennisStarter: _tennisStarterOf(active),
           coins: coins,
           coinLedger: coinLedger,
           xpLedger: xpLedger,
@@ -313,12 +330,14 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           equippedAvatarFrameId: wallet.equippedAvatarFrameId,
           ownedAvatarIds: wallet.ownedAvatarIds,
           ownedBannerIds: wallet.ownedBannerIds,
+          ownedFinalOverKitIds: wallet.ownedFinalOverKitIds,
           matchHistory: history,
           tutorialSeen: seen,
           pendingPackReveal: null,
           starterPackClaimed: migratedStarterClaimed,
           cricketStarterPackClaimed: migratedCricketStarterClaimed,
           basketballStarterPackClaimed: migratedBasketballStarterClaimed,
+          tennisStarterPackClaimed: migratedTennisStarterClaimed,
           dailyDropLastClaimedAt: dailyDropLastClaimedAt,
           progression: migratedProgression,
           streak: streak,
@@ -516,6 +535,46 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _storage.saveXpLedger(xp.ledger);
   }
 
+  Future<void> _onDailyGuessPlayerSettled(
+    DailyGuessPlayerSettled event,
+    Emitter<GameState> emit,
+  ) async {
+    if (!_guessPlayerSettlementsSeen.add(event.settlementId)) return;
+    try {
+      final settled = await _storage.loadGuessPlayerSettlementIds();
+      if (settled.contains(event.settlementId)) return;
+
+      final xp = _nextXpSnapshot(
+        delta: event.won ? event.xp : 0,
+        source: XpTransactionSource.guessPlayer,
+        title: '${event.sport.name.toUpperCase()} DAILY MYSTERY',
+        details: event.won ? '${event.score} SCORE' : 'MYSTERY COMPLETED',
+      );
+      final streak = state.streak.record(
+        StreakActivity.guessPlayer,
+        event.completedAt,
+      );
+      emit(
+        state.copyWith(
+          progression: xp.progression,
+          previousProgression: state.progression,
+          xpLedger: xp.ledger,
+          streak: streak,
+        ),
+      );
+      settled.add(event.settlementId);
+      await Future.wait([
+        _storage.saveProgression(xp.progression),
+        _storage.saveXpLedger(xp.ledger),
+        _storage.saveStreak(streak),
+        _storage.saveGuessPlayerSettlementIds(settled),
+      ]);
+    } catch (_) {
+      _guessPlayerSettlementsSeen.remove(event.settlementId);
+      rethrow;
+    }
+  }
+
   Future<void> _onCoinsSpent(CoinsSpent event, Emitter<GameState> emit) async {
     await _applyCoinDelta(
       delta: -event.amount,
@@ -674,6 +733,31 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       ),
     );
     await _storage.saveBasketballStarterPackClaimed();
+  }
+
+  Future<void> _onTennisStarterPackOpened(
+    TennisStarterPackOpened event,
+    Emitter<GameState> emit,
+  ) async {
+    if (state.tennisStarterPackClaimed) return;
+    final result = buildTennisStarterPack(tennisPlayerCards, random: _random);
+    final slot = _tennisStarterDeckSlot(
+      result,
+      id: state.activeDeckId,
+      name: state.deckSlots.firstOrNull?.name ?? 'Starter Squad',
+    );
+    await _unlockPack(
+      result: result,
+      emit: emit,
+      xpSource: XpTransactionSource.pack,
+      xpTitle: 'TENNIS STARTER PACK',
+      xpDetails: 'Tennis Rally player unlocked',
+      tennisStarterClaimed: true,
+      equippedSlot: slot,
+      revealBuilder: (levels) =>
+          PackRevealData.tennisStarter(result: result, levelsGained: levels),
+    );
+    await _storage.saveTennisStarterPackClaimed();
   }
 
   Future<void> _onDailyDropClaimed(
@@ -846,6 +930,28 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _saveWallet(ownedBannerIds: owned);
   }
 
+  Future<void> _onShopFinalOverKitPurchased(
+    ShopFinalOverKitPurchased event,
+    Emitter<GameState> emit,
+  ) async {
+    if (state.ownedFinalOverKitIds.contains(event.kitId)) return;
+    if (state.coins < event.price) return;
+    await _applyCoinDelta(
+      delta: -event.price,
+      emit: emit,
+      source: OzCoinTransactionSource.directCardPurchase,
+      type: OzCoinTransactionType.spend,
+      title: 'KIT PURCHASE',
+      subtitle: event.name,
+    );
+    final owned = normalizeOwnedFinalOverKitIds([
+      ...state.ownedFinalOverKitIds,
+      event.kitId,
+    ]);
+    emit(state.copyWith(ownedFinalOverKitIds: owned));
+    await _saveWallet(ownedFinalOverKitIds: owned);
+  }
+
   Future<void> _onDeckSaved(DeckSaved event, Emitter<GameState> emit) async {
     final cleaned = _hydratedSlot(event.slot);
     final slots = [
@@ -862,6 +968,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         deckActions: actionCardsByIds(cleaned.actions),
         deckKeeper: _keeperOf(cleaned),
         deckBatsmen: cardsByIds(batsmen, cleaned.batsmen),
+        deckFinalOverBatsmen: cardsByIds(batsmen, cleaned.finalOverBatsmen),
         deckBasketballPlayers: cardsByIds(
           basketballPlayerCards,
           cleaned.basketballPlayers,
@@ -884,6 +991,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         deckActions: actionCardsByIds(slot.actions),
         deckKeeper: _keeperOf(slot),
         deckBatsmen: cardsByIds(batsmen, slot.batsmen),
+        deckFinalOverBatsmen: cardsByIds(batsmen, slot.finalOverBatsmen),
         deckBasketballPlayers: cardsByIds(
           basketballPlayerCards,
           slot.basketballPlayers,
@@ -915,6 +1023,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         deckActions: const [],
         deckKeeper: null,
         deckBatsmen: const [],
+        deckFinalOverBatsmen: const [],
         deckBasketballPlayers: const [],
         deckBasketballStarter: null,
       ),
@@ -1723,13 +1832,16 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     bool? starterClaimed,
     bool? cricketStarterClaimed,
     bool? basketballStarterClaimed,
+    bool? tennisStarterClaimed,
     StoredDeckSlot? equippedSlot,
   }) async {
     final ownedPlayerIds = _validPlayerIds({
       ...state.ownedCardIds,
       ...result.playerCards.map((card) => card.id),
       ...?equippedSlot?.batsmen,
+      ...?equippedSlot?.finalOverBatsmen,
       ...?equippedSlot?.basketballPlayers,
+      ...?equippedSlot?.tennisPlayers,
     });
     final ownedActionIds = _validActionIds({
       ...state.ownedActionCardIds,
@@ -1782,12 +1894,21 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         deckBatsmen: activeSlot == null
             ? state.deckBatsmen
             : cardsByIds(batsmen, activeSlot.batsmen),
+        deckFinalOverBatsmen: activeSlot == null
+            ? state.deckFinalOverBatsmen
+            : cardsByIds(batsmen, activeSlot.finalOverBatsmen),
         deckBasketballPlayers: activeSlot == null
             ? state.deckBasketballPlayers
             : cardsByIds(basketballPlayerCards, activeSlot.basketballPlayers),
         deckBasketballStarter: activeSlot == null
             ? state.deckBasketballStarter
             : _basketballStarterOf(activeSlot),
+        deckTennisPlayers: activeSlot == null
+            ? state.deckTennisPlayers
+            : cardsByIds(tennisPlayerCards, activeSlot.tennisPlayers),
+        deckTennisStarter: activeSlot == null
+            ? state.deckTennisStarter
+            : _tennisStarterOf(activeSlot),
         coins: coins,
         coinLedger: coinLedger,
         ownedCardIds: ownedPlayerIds,
@@ -1798,6 +1919,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
             cricketStarterClaimed ?? state.cricketStarterPackClaimed,
         basketballStarterPackClaimed:
             basketballStarterClaimed ?? state.basketballStarterPackClaimed,
+        tennisStarterPackClaimed:
+            tennisStarterClaimed ?? state.tennisStarterPackClaimed,
         dailyDropLastClaimedAt:
             dailyDropLastClaimedAt ?? state.dailyDropLastClaimedAt,
         progression: xp.progression,
@@ -1830,8 +1953,11 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     deckActions: old.deckActions,
     deckKeeper: old.deckKeeper,
     deckBatsmen: old.deckBatsmen,
+    deckFinalOverBatsmen: old.deckFinalOverBatsmen,
     deckBasketballPlayers: old.deckBasketballPlayers,
     deckBasketballStarter: old.deckBasketballStarter,
+    deckTennisPlayers: old.deckTennisPlayers,
+    deckTennisStarter: old.deckTennisStarter,
     coins: old.coins,
     coinLedger: old.coinLedger,
     xpLedger: old.xpLedger,
@@ -1843,6 +1969,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     equippedAvatarFrameId: old.equippedAvatarFrameId,
     ownedAvatarIds: old.ownedAvatarIds,
     ownedBannerIds: old.ownedBannerIds,
+    ownedFinalOverKitIds: old.ownedFinalOverKitIds,
     streak: old.streak,
     matchHistory: old.matchHistory,
     tutorialSeen: old.tutorialSeen,
@@ -1850,6 +1977,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     starterPackClaimed: old.starterPackClaimed,
     cricketStarterPackClaimed: old.cricketStarterPackClaimed,
     basketballStarterPackClaimed: old.basketballStarterPackClaimed,
+    tennisStarterPackClaimed: old.tennisStarterPackClaimed,
     dailyDropLastClaimedAt: old.dailyDropLastClaimedAt,
     progression: old.progression,
   );
@@ -1864,6 +1992,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     String? equippedAvatarFrameId,
     List<String>? ownedAvatarIds,
     List<String>? ownedBannerIds,
+    List<String>? ownedFinalOverKitIds,
     DateTime? dailyDropLastClaimedAt,
   }) => _storage.saveWallet(
     WalletSnapshot(
@@ -1877,6 +2006,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           equippedAvatarFrameId ?? state.equippedAvatarFrameId,
       ownedAvatarIds: ownedAvatarIds ?? state.ownedAvatarIds,
       ownedBannerIds: ownedBannerIds ?? state.ownedBannerIds,
+      ownedFinalOverKitIds:
+          ownedFinalOverKitIds ?? state.ownedFinalOverKitIds,
       dailyDropLastClaimedAtMillis:
           (dailyDropLastClaimedAt ?? state.dailyDropLastClaimedAt)
               ?.millisecondsSinceEpoch,
@@ -1913,6 +2044,13 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         roster.first;
   }
 
+  PlayerCard? _tennisStarterOf(StoredDeckSlot slot) {
+    final roster = cardsByIds(tennisPlayerCards, slot.tennisPlayers);
+    if (roster.isEmpty) return null;
+    return roster.where((card) => card.id == slot.tennisStarter).firstOrNull ??
+        roster.first;
+  }
+
   StoredDeckSlot _starterDeckSlot(
     PackResult result, {
     required String id,
@@ -1936,6 +2074,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         .map((card) => card.id)
         .firstOrNull,
     batsmen: _activeSlot()?.batsmen ?? const [],
+    finalOverBatsmen: _activeSlot()?.finalOverBatsmen ?? const [],
     basketballPlayers: _activeSlot()?.basketballPlayers ?? const [],
     basketballStarter: _activeSlot()?.basketballStarter,
   );
@@ -1946,6 +2085,11 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     required String name,
   }) {
     final active = _activeSlot();
+    final starterBatsmen = result.playerCards
+        .where((card) => card.role == PlayerRole.batsman)
+        .map((card) => card.id)
+        .take(cricketStarterCardCount)
+        .toList();
     return StoredDeckSlot(
       id: id,
       name: name,
@@ -1953,11 +2097,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       defenders: active?.defenders ?? const [],
       actions: active?.actions ?? const [],
       keeper: active?.keeper,
-      batsmen: result.playerCards
-          .where((card) => card.role == PlayerRole.batsman)
-          .map((card) => card.id)
-          .take(cricketStarterCardCount)
-          .toList(),
+      batsmen: starterBatsmen,
+      finalOverBatsmen: starterBatsmen,
       basketballPlayers: active?.basketballPlayers ?? const [],
       basketballStarter: active?.basketballStarter,
       chessFormation: active?.chessFormation,
@@ -1980,11 +2121,39 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       actions: active?.actions ?? const [],
       keeper: active?.keeper,
       batsmen: active?.batsmen ?? const [],
+      finalOverBatsmen: active?.finalOverBatsmen ?? const [],
       basketballPlayers: result.playerCards
           .map((card) => card.id)
           .take(basketballStarterCardCount)
           .toList(),
       basketballStarter: cards.firstOrNull?.id,
+      chessFormation: active?.chessFormation,
+    );
+  }
+
+  StoredDeckSlot _tennisStarterDeckSlot(
+    PackResult result, {
+    required String id,
+    required String name,
+  }) {
+    final active = _activeSlot();
+    final ids = result.playerCards
+        .map((card) => card.id)
+        .take(tennisStarterCardCount)
+        .toList();
+    return StoredDeckSlot(
+      id: id,
+      name: name,
+      attackers: active?.attackers ?? const [],
+      defenders: active?.defenders ?? const [],
+      actions: active?.actions ?? const [],
+      keeper: active?.keeper,
+      batsmen: active?.batsmen ?? const [],
+      finalOverBatsmen: active?.finalOverBatsmen ?? const [],
+      basketballPlayers: active?.basketballPlayers ?? const [],
+      basketballStarter: active?.basketballStarter,
+      tennisPlayers: ids,
+      tennisStarter: ids.firstOrNull,
       chessFormation: active?.chessFormation,
     );
   }
@@ -2028,6 +2197,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           .where((id) => actionCards.any((card) => card.id == id))
           .toList(),
       batsmen: slot.batsmen
+          .where((id) => batsmen.any((card) => card.id == id))
+          .toList(),
+      finalOverBatsmen: slot.finalOverBatsmen
           .where((id) => batsmen.any((card) => card.id == id))
           .toList(),
       basketballPlayers: basketballPlayers,
@@ -2101,6 +2273,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       OzCoinTransactionSource.quizEntry => 'FOOTBALL QUIZ ENTRY',
       OzCoinTransactionSource.quizContestPayout => 'SCORELINE QUIZ PRIZE',
       OzCoinTransactionSource.footballBingoLifeline => 'BINGO LIFELINE',
+      OzCoinTransactionSource.guessPlayerHint => 'CAREER INTEL HINT',
+      OzCoinTransactionSource.guessPlayerExtraAttempt =>
+        'GUESS PLAYER EXTRA ATTEMPT',
       OzCoinTransactionSource.openingBalance => 'OPENING BALANCE',
       OzCoinTransactionSource.manual =>
         positive ? 'COINS ADDED' : 'COINS SPENT',

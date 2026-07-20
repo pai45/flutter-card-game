@@ -1,6 +1,12 @@
 import '../config/enums.dart';
 
-enum StreakActivity { predict, pick, pitchDuel, penaltyShootout }
+enum StreakActivity {
+  predict,
+  pick,
+  pitchDuel,
+  penaltyShootout,
+  guessPlayer,
+}
 
 enum StreakCategory {
   overall,
@@ -277,6 +283,7 @@ class StreakSnapshot {
         StreakActivity.pick => StreakCategory.pick,
         StreakActivity.pitchDuel => StreakCategory.pitchDuel,
         StreakActivity.penaltyShootout => StreakCategory.penaltyShootout,
+        StreakActivity.guessPlayer => StreakCategory.games,
       },
       if (activity == StreakActivity.pitchDuel ||
           activity == StreakActivity.penaltyShootout)
@@ -387,6 +394,7 @@ String streakActivityLabel(StreakActivity activity) => switch (activity) {
   StreakActivity.pick => 'Pick confirmed',
   StreakActivity.pitchDuel => 'Pitch Duel completed',
   StreakActivity.penaltyShootout => 'Penalty Shootout completed',
+  StreakActivity.guessPlayer => 'Daily mystery completed',
 };
 
 String streakCategoryLabel(StreakCategory category) => switch (category) {

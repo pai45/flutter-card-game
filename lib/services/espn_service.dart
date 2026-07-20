@@ -12,7 +12,7 @@ class EspnService {
     try {
       // Use fifa.world for FIFA World Cup data
       final url = Uri.parse('https://site.web.api.espn.com/apis/v2/sports/soccer/fifa.world/standings');
-      final response = await http.get(url);
+      final response = await http.get(url).timeout(const Duration(seconds: 8));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);

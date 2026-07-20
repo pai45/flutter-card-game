@@ -9,8 +9,11 @@ class StoredDeckSlot {
     required this.actions,
     this.keeper,
     this.batsmen = const [],
+    this.finalOverBatsmen = const [],
     this.basketballPlayers = const [],
     this.basketballStarter,
+    this.tennisPlayers = const [],
+    this.tennisStarter,
     this.chessFormation,
   });
 
@@ -20,8 +23,11 @@ class StoredDeckSlot {
   final List<String> defenders;
   final List<String> actions;
   final List<String> batsmen;
+  final List<String> finalOverBatsmen;
   final List<String> basketballPlayers;
   final String? basketballStarter;
+  final List<String> tennisPlayers;
+  final String? tennisStarter;
 
   /// Card id of the deck's goalkeeper, or null if none is assigned yet.
   final String? keeper;
@@ -37,8 +43,11 @@ class StoredDeckSlot {
     'defenders': defenders,
     'actions': actions,
     'batsmen': batsmen,
+    'finalOverBatsmen': finalOverBatsmen,
     'basketballPlayers': basketballPlayers,
     'basketballStarter': basketballStarter,
+    'tennisPlayers': tennisPlayers,
+    'tennisStarter': tennisStarter,
     'keeper': keeper,
     if (chessFormation != null) 'chessFormation': chessFormation!.name,
   };
@@ -52,10 +61,17 @@ class StoredDeckSlot {
     batsmen: json['batsmen'] != null
         ? List<String>.from(json['batsmen'] as List)
         : [],
+    finalOverBatsmen: json['finalOverBatsmen'] != null
+        ? List<String>.from(json['finalOverBatsmen'] as List)
+        : [],
     basketballPlayers: json['basketballPlayers'] != null
         ? List<String>.from(json['basketballPlayers'] as List)
         : [],
     basketballStarter: json['basketballStarter'] as String?,
+    tennisPlayers: json['tennisPlayers'] != null
+        ? List<String>.from(json['tennisPlayers'] as List)
+        : [],
+    tennisStarter: json['tennisStarter'] as String?,
     // Older saved decks predate the keeper slot, so it may be absent.
     keeper: json['keeper'] as String?,
     chessFormation: _parseFormation(json['chessFormation'] as String?),
@@ -86,5 +102,10 @@ const defaultDeckSlots = [
     ],
     keeper: 'bra-alisson-becker',
     batsmen: ['ind-virat-kohli', 'eng-joe-root', 'afg-rahmanullah-gurbaz'],
+    finalOverBatsmen: [
+      'ind-virat-kohli',
+      'eng-joe-root',
+      'afg-rahmanullah-gurbaz',
+    ],
   ),
 ];

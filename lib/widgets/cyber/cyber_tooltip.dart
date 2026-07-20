@@ -8,34 +8,47 @@ class CyberTooltip extends StatelessWidget {
     required this.message,
     required this.child,
     this.accentColor = Cyber.cyan,
+    this.triggerMode = TooltipTriggerMode.tap,
+    this.preferBelow = false,
     super.key,
   });
 
   final String message;
   final Widget child;
   final Color accentColor;
+  final TooltipTriggerMode triggerMode;
+  final bool preferBelow;
 
   @override
   Widget build(BuildContext context) {
     return Tooltip(
       message: message,
-      triggerMode: TooltipTriggerMode.tap,
-      decoration: BoxDecoration(
-        color: const Color(0xff0B1220), // Dark background matching panels
-        border: Border.all(color: accentColor),
-        borderRadius: BorderRadius.zero, // Sharp edges per theme requirement
-        boxShadow: Cyber.glow(accentColor, alpha: 0.15),
+      triggerMode: triggerMode,
+      waitDuration: Duration.zero,
+      showDuration: const Duration(milliseconds: 2400),
+      exitDuration: const Duration(milliseconds: 120),
+      constraints: const BoxConstraints(minHeight: 40, maxWidth: 280),
+      decoration: ShapeDecoration(
+        color: Cyber.panel2,
+        shape: BeveledRectangleBorder(
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(8),
+            bottomRight: Radius.circular(8),
+          ),
+          side: BorderSide(
+            color: accentColor.withValues(alpha: 0.72),
+            width: 1,
+          ),
+        ),
       ),
-      textStyle: TextStyle(
-        color: accentColor,
-        fontFamily: Cyber.displayFont,
-        fontSize: 12,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 1.0,
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      verticalOffset: 32, // Distance from the child
-      preferBelow: false,
+      textStyle: Cyber.label(
+        9.5,
+        color: AppTheme.textPrimary,
+      ).copyWith(height: 1.3, letterSpacing: 1.2),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      verticalOffset: 12,
+      preferBelow: preferBelow,
       child: child,
     );
   }

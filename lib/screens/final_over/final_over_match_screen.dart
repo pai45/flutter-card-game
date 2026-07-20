@@ -79,6 +79,7 @@ class _FinalOverMatchScreenState extends State<FinalOverMatchScreen>
       controller: _controller,
       kit: finalOverKitById(widget.config.kitId),
       opponentKit: finalOverOpponentKit(widget.config.kitId),
+      batsmanIds: widget.config.batsmanIds,
       onEvents: _onEvent,
       reducedMotion: reducedMotion,
     );
@@ -290,7 +291,7 @@ class _FinalOverMatchScreenState extends State<FinalOverMatchScreen>
   }
 
   void _rematch() {
-    final config = _cubit.buildMatch();
+    final config = _cubit.buildMatch(batsmanIds: widget.config.batsmanIds);
     Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(
         builder: (_) => BlocProvider.value(

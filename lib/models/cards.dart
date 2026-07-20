@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../config/enums.dart';
 import '../data/basketball_athletes.dart';
+import '../data/tennis_athletes.dart';
+import '../utils/tennis_country_map.dart';
 import 'basketball.dart';
+import 'starter_pack.dart';
+import 'tennis.dart';
 
 class PlayerCard {
   const PlayerCard({
@@ -5147,10 +5151,38 @@ CardTier _basketballTier(int ovr) => switch (ovr) {
   _ => CardTier.bronze,
 };
 
+/// Collectible view of the tennis roster. Ids match [tennisTop100] 1:1 so a card
+/// granted through the pack pipeline resolves back to a [TennisPlayer] — and its
+/// ratings — via [tennisPlayerById].
+final List<PlayerCard> tennisPlayerCards = [
+  for (final athlete in tennisTop100) _tennisPlayerCard(athlete),
+];
+
+PlayerCard _tennisPlayerCard(TennisPlayer athlete) => PlayerCard(
+  id: athlete.id,
+  name: athlete.name,
+  shortName: _tennisShortName(athlete.name),
+  country: TennisCountryMap.countryCodeFor(athlete.name) ?? 'INT',
+  countryCode: TennisCountryMap.countryCodeFor(athlete.name) ?? 'INT',
+  position: athlete.archetype.label,
+  role: PlayerRole.tennisSingles,
+  rating: athlete.overallRating,
+  trait: athlete.signature,
+  tier: packRarityForRating(athlete.overallRating),
+  icon: Icons.sports_tennis,
+);
+
+String _tennisShortName(String name) {
+  final parts = name.split(' ').where((part) => part.isNotEmpty).toList();
+  if (parts.length == 1) return parts.first.toUpperCase();
+  return '${parts.first[0].toUpperCase()} ${parts.last.toUpperCase()}';
+}
+
 final List<PlayerCard> allPlayerCards = [
   ...footballPlayerCards,
   ...cricketPlayerCards,
   ...basketballPlayerCards,
+  ...tennisPlayerCards,
 ];
 
 /// A base action archetype. Each blueprint is expanded into four collectible

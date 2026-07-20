@@ -118,12 +118,14 @@ class FinalOverGame extends FlameGame {
     required this.kit,
     required this.opponentKit,
     required this.onEvents,
+    this.batsmanIds = const [],
     this.reducedMotion = false,
   });
 
   final MatchController controller;
   final FinalOverKit kit;
   final FinalOverKit opponentKit;
+  final List<String> batsmanIds;
   final bool reducedMotion;
 
   /// Coarse beats out to the screen (sound, haptics, cubit phase changes).
@@ -999,6 +1001,7 @@ class FinalOverGame extends FlameGame {
       ),
     );
 
+    final strikerId = _strikerActorId;
     final batterPx = size.height * 0.25 * 0.85 / kFoReferenceHeightM;
     final frame = foBatterFrame(_batterPose(s), _batterProgress(s));
     _paintActor(
@@ -1010,10 +1013,10 @@ class FinalOverGame extends FlameGame {
         c,
         frame,
         kit: kit,
-        look: finalOverLookFor('fo-striker'),
+        look: finalOverLookFor(strikerId),
         px: batterPx,
         heightM: kFoReferenceHeightM,
-        number: finalOverNumberFor('fo-striker'),
+        number: finalOverNumberFor(strikerId),
         facing: f,
       ),
     );
@@ -1357,7 +1360,7 @@ class FinalOverGame extends FlameGame {
       at(FieldVector(-0.025, strikerY)),
       r,
       kit: kit,
-      number: finalOverNumberFor('fo-striker'),
+      number: finalOverNumberFor(_strikerActorId),
       striker: true,
       danger: runner.risk == RiskLevel.danger,
     );
@@ -1366,10 +1369,19 @@ class FinalOverGame extends FlameGame {
       at(FieldVector(0.025, nonStrikerY)),
       r,
       kit: kit,
-      number: finalOverNumberFor('fo-partner'),
+      number: finalOverNumberFor(_partnerActorId),
       striker: false,
     );
   }
+
+  String get _strikerActorId =>
+      batsmanIds.isNotEmpty ? batsmanIds.first : 'fo-striker';
+
+  String get _partnerActorId => batsmanIds.length > 1
+      ? batsmanIds[1]
+      : batsmanIds.isNotEmpty
+      ? batsmanIds.first
+      : 'fo-partner';
 
   // ── Pose selection (a projection of state, nothing more) ───────────────────
   (FoBowlerPose, double) _bowlerPose(MatchState s) {

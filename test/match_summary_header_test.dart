@@ -46,7 +46,7 @@ void main() {
     tester,
   ) async {
     final match = _match(
-      sport: Sport.f1,
+      sport: Sport.motorsport,
       status: MatchStatus.upcoming,
       home: const SportTeam(
         id: 'british-gp',

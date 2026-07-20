@@ -8,6 +8,7 @@ import '../../blocs/game/game_event.dart';
 import '../../blocs/game/game_state.dart';
 import '../../config/enums.dart';
 import '../../config/sport_modules.dart';
+import '../../data/final_over_kits.dart';
 import '../../models/avatar_frame_option.dart';
 import '../../models/cards.dart';
 import '../../models/oz_coin_ledger.dart';
@@ -22,6 +23,7 @@ import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/staggered_card_entrance.dart';
 import '../../widgets/stat_oz_top_bar.dart';
+import '../final_over/widgets/final_over_kit_picker.dart';
 import 'widgets/shop_acquire_overlay.dart';
 import 'widgets/shop_card.dart';
 
@@ -64,7 +66,7 @@ Color _tierAccent(String id) => switch (id) {
   _ => _cyan,
 };
 
-const int _shopTabCount = 6;
+const int _shopTabCount = 7;
 
 // Sport order mirrors the Matches/Games hub. Some sports have empty shop
 // sections until their drops are seeded.
@@ -73,7 +75,7 @@ const _shopSports = <Sport>[
   Sport.cricket,
   Sport.basketball,
   Sport.tennis,
-  Sport.f1,
+  Sport.motorsport,
 ];
 
 final _shopSportLabels = _shopSports
@@ -89,7 +91,7 @@ String _shopSportCode(Sport sport) => switch (sport) {
   Sport.cricket => 'CRICKET',
   Sport.basketball => 'BASKETBALL',
   Sport.tennis => 'TENNIS',
-  Sport.f1 => 'F1',
+  Sport.motorsport => 'F1',
 };
 
 // shortName → countryCode, built once from the card catalogue, so the AVATAR
@@ -271,7 +273,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                     StatOzTopBar(
                       title: 'Shop',
                       accent: _cyan,
-                      onAddCoins: () => _setTab(3),
+                      onAddCoins: () => _setTab(4),
                     ),
                     _ShopSportsTabs(
                       activeIndex: _activeSportTab,
@@ -283,6 +285,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                         'AVATAR',
                         'FRAME',
                         'BANNER',
+                        'KITS',
                         'COINS',
                         'PACKS',
                         'CARDS',
@@ -339,9 +342,10 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
       0 => AvatarsTab(sport: _selectedSport, onAcquired: _showAcquired),
       1 => FramesTab(sport: _selectedSport, onAcquired: _showAcquired),
       2 => BannersTab(sport: _selectedSport, onAcquired: _showAcquired),
-      3 => CoinsTab(onPurchased: _showCelebration),
+      3 => KitsTab(sport: _selectedSport, onAcquired: _showAcquired),
+      4 => CoinsTab(onPurchased: _showCelebration),
       // Packs keep their own richer 5-card reveal as the acquire moment.
-      4 => const PacksTab(),
+      5 => const PacksTab(),
       _ => CardsTab(sport: _selectedSport, onAcquired: _showAcquired),
     };
   }
@@ -515,6 +519,205 @@ class _BannersTabState extends State<BannersTab> {
                 ),
         ),
       ],
+    );
+  }
+}
+
+class KitsTab extends StatelessWidget {
+  const KitsTab({required this.sport, required this.onAcquired, super.key});
+
+  final Sport sport;
+  final OnAcquired onAcquired;
+
+  @override
+  Widget build(BuildContext context) {
+    if (sport != Sport.cricket) {
+      return _ShopEmptyFilter(sport: _shopSportCode(sport));
+    }
+    return BlocBuilder<GameBloc, GameState>(
+      builder: (context, state) {
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+          itemCount: finalOverKits.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final kit = finalOverKits[index];
+            final owned = isFinalOverKitOwned(kit.id, state.ownedFinalOverKitIds);
+            final price = finalOverKitPrice(kit);
+            return StaggeredCardEntrance(
+              index: index,
+              animate: true,
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: SizedBox(
+                    height: 148,
+                    child: _FinalOverKitShopTile(
+                      kit: kit,
+                      index: index,
+                      owned: owned,
+                      price: price,
+                      onAcquired: onAcquired,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _FinalOverKitShopTile extends StatelessWidget {
+  const _FinalOverKitShopTile({
+    required this.kit,
+    required this.index,
+    required this.owned,
+    required this.price,
+    required this.onAcquired,
+  });
+
+  final FinalOverKit kit;
+  final int index;
+  final bool owned;
+  final int price;
+  final OnAcquired onAcquired;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = kit.accent;
+    return ShopCardFrame(
+      accent: accent,
+      stamp: owned ? const ShopStateStamp(kind: ShopStampKind.owned) : null,
+      child: Column(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 88,
+                    height: double.infinity,
+                    child: CustomPaint(
+                      painter: FinalOverKitPreviewPainter(kit),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          kit.name,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontFamily: 'Orbitron',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'FINAL OVER KIT',
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontFamily: 'Orbitron',
+                            fontSize: 8,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              color: kit.primary,
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              width: 10,
+                              height: 10,
+                              color: kit.secondary,
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              width: 10,
+                              height: 10,
+                              color: kit.accent,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          _footer(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _footer(BuildContext context) {
+    if (owned) {
+      return Container(
+        height: 36,
+        color: Colors.black.withValues(alpha: 0.88),
+        alignment: Alignment.center,
+        child: Text(
+          isFinalOverKitFree(kit) ? 'FREE // OWNED' : 'OWNED',
+          style: TextStyle(
+            color: kit.accent,
+            fontFamily: 'Orbitron',
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.4,
+          ),
+        ),
+      );
+    }
+    return ShopPressable(
+      onTap: () => _buy(context),
+      child: Container(
+        height: 36,
+        color: Colors.black.withValues(alpha: 0.88),
+        alignment: Alignment.center,
+        child: ShopPricePill(coins: price, size: 11),
+      ),
+    );
+  }
+
+  void _buy(BuildContext context) {
+    final bloc = context.read<GameBloc>();
+    if (bloc.state.coins < price) {
+      _showSnack(context, 'Not enough coins — top up in the Coins tab.', false);
+      return;
+    }
+    bloc.add(
+      ShopFinalOverKitPurchased(
+        kitId: kit.id,
+        price: price,
+        name: kit.name,
+      ),
+    );
+    onAcquired(
+      preview: SizedBox(
+        width: 120,
+        height: 120,
+        child: CustomPaint(painter: FinalOverKitPreviewPainter(kit)),
+      ),
+      name: kit.name,
+      accent: kit.accent,
+      coinsSpent: price,
     );
   }
 }
@@ -2869,5 +3072,5 @@ List<String> _filtersForSport(Sport sport) => switch (sport) {
   Sport.cricket => ['All', 'Batters', 'Bowlers', ..._filters.skip(1)],
   Sport.basketball => ['All', 'Guards', 'Wings', 'Bigs', ..._filters.skip(1)],
   Sport.tennis => ['All', 'ATP', 'WTA', ..._filters.skip(1)],
-  Sport.f1 => _filters,
+  Sport.motorsport => _filters,
 };

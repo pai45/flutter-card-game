@@ -50,12 +50,13 @@ import 'services/match_circle_repository.dart';
 import 'services/espn_service.dart';
 import 'services/pick_repository.dart';
 import 'services/prediction_repository.dart';
+import 'services/rolling_window_service.dart';
 import 'services/secure_storage_service.dart';
 import 'widgets/achievement_celebration_host.dart';
 import 'widgets/reward_settlement_popup.dart';
 import 'widgets/streak_celebration_host.dart';
 
-enum _PendingGameLaunchKind { football, cricket, basketball }
+enum _PendingGameLaunchKind { football, cricket, basketball, tennis }
 
 class PitchDuelApp extends StatelessWidget {
   const PitchDuelApp({super.key});
@@ -154,7 +155,7 @@ class AppShell extends StatefulWidget {
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   // Default landing is Matches; its first internal tab is Predict.
   AppSection section = AppSection.predictions;
   int _predictionTab = 0;
@@ -165,6 +166,9 @@ class _AppShellState extends State<AppShell> {
   VoidCallback? _pendingGameLaunch;
   _PendingGameLaunchKind? _pendingGameLaunchKind;
   final SecureGameStorage _storage = SecureGameStorage();
+  late final RollingWindowService _rollingWindow = RollingWindowService(
+    _storage,
+  );
   bool _onboardingLoading = true;
   bool _onboardingComplete = false;
   bool _demoRewardSettlementSeen = true;
@@ -173,7 +177,31 @@ class _AppShellState extends State<AppShell> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadOnboardingState();
+    _runRollingWindowIfDue();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _runRollingWindowIfDue();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// The frontend "cronjob": settles yesterday's finished fixtures and pulls
+  /// in the day newly entering the rolling window, once per calendar day.
+  Future<void> _runRollingWindowIfDue() async {
+    await _rollingWindow.runIfDue(
+      predictionCubit: context.read<PredictionCubit>(),
+      picksCubit: context.read<PicksCubit>(),
+    );
   }
 
   Future<void> _loadOnboardingState() async {
@@ -324,6 +352,17 @@ class _AppShellState extends State<AppShell> {
       _pendingGameLaunch = push;
       _pendingGameLaunchKind = _PendingGameLaunchKind.basketball;
       bloc.add(BasketballStarterPackOpened());
+      return;
+    }
+    push();
+  }
+
+  void _enterTennisGameFlow(VoidCallback push) {
+    final bloc = context.read<GameBloc>();
+    if (!bloc.state.tennisStarterPackClaimed) {
+      _pendingGameLaunch = push;
+      _pendingGameLaunchKind = _PendingGameLaunchKind.tennis;
+      bloc.add(TennisStarterPackOpened());
       return;
     }
     push();
@@ -509,7 +548,11 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
-  void _openTennisRally() {
+  /// Enter Tennis Rally from the GAMES tab's Tennis section.
+  void _openTennisRally() => _enterTennisGameFlow(_pushTennisRally);
+
+  /// Push Tennis Rally once its starter pack gate is satisfied.
+  void _pushTennisRally() {
     final navigator = Navigator.of(context);
     navigator.push(
       MaterialPageRoute<void>(
@@ -559,6 +602,7 @@ class _AppShellState extends State<AppShell> {
             _PendingGameLaunchKind.cricket => state.cricketStarterPackClaimed,
             _PendingGameLaunchKind.basketball =>
               state.basketballStarterPackClaimed,
+            _PendingGameLaunchKind.tennis => state.tennisStarterPackClaimed,
             _PendingGameLaunchKind.football => state.starterPackClaimed,
             null => false,
           };

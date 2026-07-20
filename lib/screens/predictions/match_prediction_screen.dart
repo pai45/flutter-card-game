@@ -1697,8 +1697,10 @@ _QuizHubVisual _resolveQuizHubVisual(
   }
 
   // Finished + rewards waiting → the ONE glowing focal moment on the screen.
-  if (match.status == MatchStatus.finished &&
-      (prediction != null || quiz.settleable)) {
+  // Gated on actual engagement (prediction != null), not just a settleable
+  // quiz — the quiz is looked up by matchId regardless of whether the user
+  // ever played it, so `quiz.settleable` alone isn't a sufficient signal.
+  if (match.status == MatchStatus.finished && prediction != null) {
     return _QuizHubVisual(
       accent: Cyber.gold,
       tag: 'REWARD READY',

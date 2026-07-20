@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 
 import '../../../config/theme.dart';
 import '../../../data/final_over_kits.dart';
+import '../../../models/cards.dart';
 import '../../../models/final_over.dart';
+import '../../../utils/card_helpers.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_cta_button.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
@@ -79,6 +81,7 @@ class _FinalOverIntroOverlayState extends State<FinalOverIntroOverlay>
     final config = widget.config;
     final kit = finalOverKitById(config.kitId);
     final rival = finalOverOpponentKit(config.kitId);
+    final squad = cardsByIds(batsmen, config.batsmanIds);
 
     return GestureDetector(
       onTap: _finish,
@@ -158,6 +161,28 @@ class _FinalOverIntroOverlayState extends State<FinalOverIntroOverlay>
                   ],
                 ),
               ),
+
+              if (squad.isNotEmpty) ...[
+                const SizedBox(height: 18),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 26),
+                  child: Row(
+                    children: [
+                      for (var i = 0; i < squad.length; i++) ...[
+                        if (i > 0) const SizedBox(width: 8),
+                        Expanded(
+                          child: CyberPlayerCardTile(
+                            card: squad[i],
+                            selected: false,
+                            size: VisualCardSize.sm,
+                            onTap: () {},
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
 
               const SizedBox(height: 26),
               SizedBox(

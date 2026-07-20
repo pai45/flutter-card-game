@@ -18,6 +18,7 @@ enum XpTransactionSource {
   basketball,
   tennis,
   finalOver,
+  guessPlayer,
 }
 
 class XpLedgerEntry {

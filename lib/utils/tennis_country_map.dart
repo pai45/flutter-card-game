@@ -8,17 +8,33 @@ class TennisCountryMap {
   TennisCountryMap._();
 
   /// Returns the 3-letter country code for a tennis player, or null if unknown.
+  ///
+  /// Keys are matched longest-first: several surnames contain a shorter key as
+  /// a substring (e.g. "Paula Badosa" contains "paul"), and the more specific
+  /// key is always the correct one.
   static String? countryCodeFor(String playerName) {
     final lower = playerName.toLowerCase();
+    String? best;
+    var bestLength = 0;
     for (final entry in _playerCountries.entries) {
-      if (lower.contains(entry.key)) return entry.value;
+      if (entry.key.length > bestLength && lower.contains(entry.key)) {
+        best = entry.value;
+        bestLength = entry.key.length;
+      }
     }
-    return null;
+    return best;
   }
 
   /// Returns the country's primary flag colour for the given 3-letter code.
   static Color colorFor(String countryCode) =>
       _countryColors[countryCode.toUpperCase()] ?? const Color(0xff888888);
+
+  /// Returns a flag emoji for the given 3-letter code, or null if unknown.
+  /// Used as the badge glyph when the source feed doesn't carry a real flag
+  /// image (see [SportTeam.flagUrl]) — a genuine flag rather than a coloured
+  /// text badge, with no image asset pipeline required.
+  static String? flagEmojiFor(String countryCode) =>
+      _flagEmoji[countryCode.toUpperCase()];
 
   // ── Player → country code ───────────────────────────────────────────────
   // Keys are lower-cased substrings that uniquely identify a player.
@@ -87,6 +103,75 @@ class TennisCountryMap {
     'osaka': 'JPN',
     'andreescu': 'CAN',
     'williams': 'USA',
+
+    // Remainder of the Top 100 roster (lib/data/tennis_athletes.dart). Keep in
+    // sync when that list changes — an unmapped athlete falls back to "INT" on
+    // its collectible card.
+    'cobolli': 'ITA',
+    'lehecka': 'CZE',
+    'lehečka': 'CZE',
+    'tien': 'USA',
+    'darderi': 'ITA',
+    'mensik': 'CZE',
+    'menšík': 'CZE',
+    'davidovich fokina': 'ESP',
+    'vacherot': 'MON',
+    'fils': 'FRA',
+    'jodar': 'ESP',
+    'fonseca': 'BRA',
+    'rinderknech': 'FRA',
+    'etcheverry': 'ARG',
+    'tabilo': 'CHI',
+    'buse': 'PER',
+    'bergs': 'BEL',
+    'fery': 'GBR',
+    'blockx': 'BEL',
+    'norrie': 'GBR',
+    'shapovalov': 'CAN',
+    'moutet': 'FRA',
+    'struff': 'GER',
+    'collignon': 'BEL',
+    'munar': 'ESP',
+    'michelsen': 'USA',
+    'quinn': 'USA',
+    'mannarino': 'FRA',
+    'atmane': 'FRA',
+    'andreeva': 'RUS',
+    'noskova': 'CZE',
+    'anisimova': 'USA',
+    'svitolina': 'UKR',
+    'mboko': 'CAN',
+    'jovic': 'USA',
+    'cirstea': 'ROU',
+    'shnaider': 'RUS',
+    'kalinskaya': 'RUS',
+    'bouzkova': 'CZE',
+    'chwalinska': 'POL',
+    'tauson': 'DEN',
+    'ann li': 'USA',
+    'baptiste': 'USA',
+    'siniakova': 'CZE',
+    'vekic': 'CRO',
+    'cristian': 'ROU',
+    'sakkari': 'GRE',
+    'raducanu': 'GBR',
+    'tjen': 'INA',
+    'wang xinyu': 'CHN',
+    'bucsa': 'ESP',
+    'bejlek': 'CZE',
+    'bartunkova': 'CZE',
+    'frech': 'POL',
+    'marcinko': 'CRO',
+    'kessler': 'USA',
+    'golubic': 'SUI',
+    'sonmez': 'TUR',
+    'valentova': 'CZE',
+    'ruzic': 'CRO',
+    'mcnally': 'USA',
+    'gibson': 'AUS',
+    'kalinina': 'UKR',
+    'stearns': 'USA',
+    'badosa': 'ESP',
   };
 
   // ── Country code → primary flag colour ──────────────────────────────────
@@ -118,5 +203,50 @@ class TennisCountryMap {
     'LAT': Color(0xff9E3039), // Latvia — maroon
     'BRA': Color(0xff009C3B), // Brazil — green
     'UKR': Color(0xff005BBB), // Ukraine — blue
+    'MON': Color(0xffCE1126), // Monaco — red
+    'PER': Color(0xffD91023), // Peru — red
+    'BEL': Color(0xffFDDA24), // Belgium — yellow
+    'ROU': Color(0xff002B7F), // Romania — blue
+    'CRO': Color(0xff171796), // Croatia — blue
+    'INA': Color(0xffCE1126), // Indonesia — red
+    'TUR': Color(0xffE30A17), // Turkey — red
+  };
+
+  // ── Country code → flag emoji ────────────────────────────────────────────
+  static const _flagEmoji = <String, String>{
+    'ESP': '🇪🇸',
+    'SRB': '🇷🇸',
+    'ITA': '🇮🇹',
+    'RUS': '🇷🇺',
+    'GER': '🇩🇪',
+    'NOR': '🇳🇴',
+    'USA': '🇺🇸',
+    'AUS': '🇦🇺',
+    'POL': '🇵🇱',
+    'GRE': '🇬🇷',
+    'DEN': '🇩🇰',
+    'BUL': '🇧🇬',
+    'GBR': '🇬🇧',
+    'CAN': '🇨🇦',
+    'FRA': '🇫🇷',
+    'CHI': '🇨🇱',
+    'ARG': '🇦🇷',
+    'CZE': '🇨🇿',
+    'KAZ': '🇰🇿',
+    'JPN': '🇯🇵',
+    'SUI': '🇨🇭',
+    'BLR': '🇧🇾',
+    'CHN': '🇨🇳',
+    'TUN': '🇹🇳',
+    'LAT': '🇱🇻',
+    'BRA': '🇧🇷',
+    'UKR': '🇺🇦',
+    'MON': '🇲🇨',
+    'PER': '🇵🇪',
+    'BEL': '🇧🇪',
+    'ROU': '🇷🇴',
+    'CRO': '🇭🇷',
+    'INA': '🇮🇩',
+    'TUR': '🇹🇷',
   };
 }

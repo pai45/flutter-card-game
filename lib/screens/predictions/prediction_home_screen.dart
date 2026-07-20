@@ -15,8 +15,8 @@ import '../../models/streak.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_underline_tabs.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/cyber/sport_signal_painters.dart';
 import '../../widgets/landing_bottom_navigation.dart';
-import '../../widgets/match_summary_header.dart';
 import '../../widgets/staggered_card_entrance.dart';
 import '../../widgets/stat_oz_top_bar.dart';
 import '../../widgets/streak_widgets.dart';
@@ -24,7 +24,6 @@ import '../profile/widgets/profile_card.dart';
 import 'streak_calendar_screen.dart';
 import 'widgets/history_hud.dart';
 import 'widgets/match_prediction_card.dart';
-import 'match_detail_screen.dart' show MatchTabsView;
 
 /// A compact sports prediction hub with StatOz styling.
 class PredictionHomeScreen extends StatefulWidget {
@@ -194,7 +193,7 @@ const _predictionSports = <Sport>[
   Sport.cricket,
   Sport.basketball,
   Sport.tennis,
-  Sport.f1,
+  Sport.motorsport,
 ];
 
 final _predictionSportLabels = _predictionSports
@@ -409,19 +408,18 @@ class _MatchesTabState extends State<_MatchesTab> {
                 );
               }
               final validLeagueIds = state.leagues.map((l) => l.id).toSet();
-              final sportFixtures = state.fixtures
+              final allSportFixtures = state.fixtures
                   .where(
                     (fixture) =>
                         fixture.sport == widget.selectedSport &&
                         validLeagueIds.contains(fixture.leagueId),
                   )
                   .toList();
-              // F1 is weekend-based: one race weekend = one "match". Surface the
-              // whole PREDICT/PICKS/TOPS/STATS hub inline (no tap-through) and
-              // step the navigator weekend-to-weekend instead of day-to-day.
-              if (widget.selectedSport == Sport.f1) {
-                return _F1WeekendHub(fixtures: sportFixtures);
-              }
+              // Motorsport (F1, IndyCar, NASCAR) browses day-to-day like every
+              // other sport — races from different series on the same day
+              // group under separate league headers via _groupByLeague below,
+              // the same way concurrent football competitions already do.
+              final sportFixtures = allSportFixtures;
               final days = _calendarDays(sportFixtures);
               final today = _startOfDay(DateTime.now());
 
@@ -1223,183 +1221,6 @@ String _monthDayLabel(DateTime day) {
   return '${months[day.month - 1]} ${day.day}';
 }
 
-String _f1WeekendLabel(List<SportMatch> f1Fixtures, DateTime day) {
-  if (f1Fixtures.isEmpty) return _dayHeading(day);
-  final match = f1Fixtures.first;
-  final start = match.kickoff;
-  final end = match.f1WeekendEndDate ?? start;
-
-  String monthName(int m) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return months[m - 1];
-  }
-
-  final startStr = '${start.day} ${monthName(start.month)}';
-  final endStr = '${end.day} ${monthName(end.month)}';
-  if (startStr == endStr) return startStr.toUpperCase();
-  return '$startStr - $endStr'.toUpperCase();
-}
-
-/// F1 weekend hub — the inline match-home surface for Formula 1.
-///
-/// Each F1 fixture is one race weekend, so instead of a day-grouped card list
-/// this shows a single weekend at a time: a weekend navigator (steps GP-to-GP,
-/// always resolving to the current/next race), the GP scorecard header, and the
-/// shared [MatchTabsView] (PREDICT / PICKS / TOPS / STATS) inline — no
-/// tap-through required.
-class _F1WeekendHub extends StatefulWidget {
-  const _F1WeekendHub({required this.fixtures});
-
-  final List<SportMatch> fixtures;
-
-  @override
-  State<_F1WeekendHub> createState() => _F1WeekendHubState();
-}
-
-class _F1WeekendHubState extends State<_F1WeekendHub> {
-  late int _index = _resolveIndex(_sorted(widget.fixtures));
-
-  @override
-  void didUpdateWidget(covariant _F1WeekendHub oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (_ids(oldWidget.fixtures) != _ids(widget.fixtures)) {
-      _index = _resolveIndex(_sorted(widget.fixtures));
-    }
-  }
-
-  List<SportMatch> _sorted(List<SportMatch> fixtures) =>
-      [...fixtures]..sort((a, b) => a.kickoff.compareTo(b.kickoff));
-
-  String _ids(List<SportMatch> fixtures) =>
-      _sorted(fixtures).map((m) => m.id).join(',');
-
-  /// Prefer the weekend containing today, else the next upcoming, else the last.
-  int _resolveIndex(List<SportMatch> sorted) {
-    if (sorted.isEmpty) return 0;
-    final today = _startOfDay(DateTime.now());
-    for (var i = 0; i < sorted.length; i++) {
-      final start = _startOfDay(sorted[i].kickoff);
-      final end = _startOfDay(sorted[i].f1WeekendEndDate ?? sorted[i].kickoff);
-      if (!today.isBefore(start) && !today.isAfter(end)) return i;
-    }
-    for (var i = 0; i < sorted.length; i++) {
-      if (!_startOfDay(sorted[i].kickoff).isBefore(today)) return i;
-    }
-    return sorted.length - 1;
-  }
-
-  void _move(int delta, int count) {
-    final next = _index + delta;
-    if (next < 0 || next >= count) return;
-    playSound(SoundEffect.uiTap);
-    setState(() => _index = next);
-  }
-
-  Future<void> _openWeekendPicker(List<SportMatch> sorted) async {
-    playSound(SoundEffect.uiTap);
-    final picked = await showModalBottomSheet<int>(
-      context: context,
-      backgroundColor: Cyber.bg2,
-      showDragHandle: true,
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-                child: Text(
-                  'SELECT RACE WEEKEND',
-                  style: Cyber.label(
-                    11,
-                    color: Cyber.muted,
-                    letterSpacing: 1.6,
-                  ),
-                ),
-              ),
-              for (var i = 0; i < sorted.length; i++)
-                ListTile(
-                  onTap: () => Navigator.of(context).pop(i),
-                  selected: i == _index,
-                  selectedTileColor: Cyber.cyan.withValues(alpha: 0.08),
-                  leading: Icon(
-                    Icons.sports_motorsports,
-                    color: i == _index ? Cyber.cyan : Cyber.muted,
-                    size: 20,
-                  ),
-                  title: Text(
-                    sorted[i].home.name.toUpperCase(),
-                    style: Cyber.display(
-                      14,
-                      color: i == _index ? Cyber.cyan : Colors.white,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  subtitle: Text(
-                    _f1WeekendLabel([sorted[i]], sorted[i].kickoff),
-                    style: Cyber.body(12, color: Cyber.muted),
-                  ),
-                ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
-      },
-    );
-    if (picked == null || !mounted) return;
-    setState(() => _index = picked);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final sorted = _sorted(widget.fixtures);
-    if (sorted.isEmpty) {
-      return _EmptyMatchDay(day: _startOfDay(DateTime.now()));
-    }
-    final index = _index.clamp(0, sorted.length - 1);
-    final match = sorted[index];
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-          child: _MatchDayNavigator(
-            dayLabel: _f1WeekendLabel([match], match.kickoff),
-            matchCount: null,
-            canGoPrevious: index > 0,
-            canGoNext: index < sorted.length - 1,
-            onPrevious: () => _move(-1, sorted.length),
-            onNext: () => _move(1, sorted.length),
-            onCalendar: () => _openWeekendPicker(sorted),
-          ),
-        ),
-        Expanded(
-          child: MatchTabsView(
-            key: ValueKey('f1-weekend-${match.id}'),
-            match: match,
-            headerBuilder: (m) => MatchSummaryHeader(match: m),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// GP scorecard header for the F1 weekend hub — status line, Grand Prix name,
-/// and the cyan→red accent divider, framed by HUD corner brackets.
 // Sport-specific games hub content.
 class _GamesTab extends StatefulWidget {
   const _GamesTab({
@@ -1504,7 +1325,7 @@ class _GamesTabState extends State<_GamesTab> {
   Widget _buildSportTab(bool animateIntro, ({int pitch, int penalty}) streaks) {
     return switch (widget.selectedSport) {
       Sport.football => _buildFootballGames(animateIntro, streaks),
-      Sport.f1 => _buildF1Games(animateIntro),
+      Sport.motorsport => _buildF1Games(animateIntro),
       Sport.basketball => _buildBasketballGames(animateIntro),
       Sport.cricket => _buildCricketGames(animateIntro),
       Sport.tennis => _buildTennisGames(animateIntro),
@@ -1759,7 +1580,7 @@ class _GamesTabState extends State<_GamesTab> {
             ctaLabel: 'RACE NOW',
             accent: Cyber.f1Red,
             background: const CustomPaint(
-              painter: _GrandPrixMiniCircuitPainter(),
+              painter: F1MysterySignalPainter(),
             ),
             onTap: widget.onOpenGrandPrix,
           ),
@@ -1777,7 +1598,7 @@ class _GamesTabState extends State<_GamesTab> {
               subtitle: 'TRIVIA GAUNTLET',
               icon: Icons.quiz_rounded,
               accent: Cyber.violet,
-              onTap: () => widget.onOpenQuiz(Sport.f1),
+              onTap: () => widget.onOpenQuiz(Sport.motorsport),
             ),
             _QuickGameEntry(
               key: const ValueKey('f1-guess-driver-grid-card'),
@@ -2003,7 +1824,7 @@ class _TennisRallyGameTile extends StatelessWidget {
       badgeLabel: 'FEATURED // NEW',
       ctaLabel: 'STEP ON COURT',
       accent: Cyber.lime,
-      background: const CustomPaint(painter: _TennisMiniCourtPainter()),
+      background: const CustomPaint(painter: TennisMysterySignalPainter()),
       onTap: onTap,
     );
   }
@@ -2174,116 +1995,6 @@ class _HeroTitle extends StatelessWidget {
       },
     );
   }
-}
-
-class _GrandPrixMiniCircuitPainter extends CustomPainter {
-  const _GrandPrixMiniCircuitPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-          colors: [Color(0x00101825), Color(0xd126111d)],
-          stops: [0.36, 1],
-        ).createShader(Offset.zero & size),
-    );
-
-    final track = Path()
-      ..moveTo(size.width * 0.70, -12)
-      ..cubicTo(
-        size.width * 1.01,
-        size.height * 0.10,
-        size.width * 0.68,
-        size.height * 0.43,
-        size.width * 0.84,
-        size.height * 0.61,
-      )
-      ..cubicTo(
-        size.width * 0.98,
-        size.height * 0.78,
-        size.width * 0.72,
-        size.height * 0.87,
-        size.width * 0.96,
-        size.height * 1.08,
-      );
-    canvas.drawPath(
-      track,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 42
-        ..strokeCap = StrokeCap.round
-        ..color = const Color(0xff303646),
-    );
-    canvas.drawPath(
-      track,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 46
-        ..strokeCap = StrokeCap.round
-        ..color = Cyber.f1Red.withValues(alpha: 0.22),
-    );
-    canvas.drawPath(
-      track,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.3
-        ..color = Colors.white.withValues(alpha: 0.34),
-    );
-
-    final carCenter = Offset(size.width * 0.82, size.height * 0.60);
-    final carBody = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: carCenter, width: 48, height: 18),
-      const Radius.circular(5),
-    );
-    canvas.save();
-    canvas.translate(carCenter.dx, carCenter.dy);
-    canvas.rotate(-0.22);
-    canvas.translate(-carCenter.dx, -carCenter.dy);
-    canvas.drawRRect(carBody, Paint()..color = Cyber.f1Red);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromCenter(
-          center: carCenter.translate(2, 0),
-          width: 17,
-          height: 12,
-        ),
-        const Radius.circular(5),
-      ),
-      Paint()..color = const Color(0xff111827),
-    );
-    for (final dy in [-10.0, 10.0]) {
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromCenter(
-            center: carCenter.translate(-12, dy),
-            width: 13,
-            height: 5,
-          ),
-          const Radius.circular(2),
-        ),
-        Paint()..color = const Color(0xff080b12),
-      );
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromCenter(
-            center: carCenter.translate(14, dy),
-            width: 13,
-            height: 5,
-          ),
-          const Radius.circular(2),
-        ),
-        Paint()..color = const Color(0xff080b12),
-      );
-    }
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _HoopDuelMiniCourtPainter extends CustomPainter {
@@ -2681,63 +2392,6 @@ class _FootballChessMiniBoardPainter extends CustomPainter {
       Paint()
         ..strokeWidth = 2
         ..color = Cyber.gold.withValues(alpha: 0.58),
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _TennisMiniCourtPainter extends CustomPainter {
-  const _TennisMiniCourtPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final shade = Paint()
-      ..shader = const LinearGradient(
-        begin: Alignment.centerLeft,
-        end: Alignment.centerRight,
-        colors: [Color(0x00101825), Color(0xcc0a2530)],
-        stops: [0.36, 1],
-      ).createShader(Offset.zero & size);
-    canvas.drawRect(Offset.zero & size, shade);
-    final court = Path()
-      ..moveTo(size.width * 0.67, size.height * 0.12)
-      ..lineTo(size.width * 0.94, size.height * 0.12)
-      ..lineTo(size.width * 1.08, size.height * 1.03)
-      ..lineTo(size.width * 0.48, size.height * 1.03)
-      ..close();
-    canvas.drawPath(court, Paint()..color = const Color(0xff155461));
-    final line = Paint()
-      ..color = Colors.white.withValues(alpha: 0.52)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-    canvas.drawPath(court, line);
-    canvas.drawLine(
-      Offset(size.width * 0.57, size.height * 0.57),
-      Offset(size.width, size.height * 0.57),
-      line,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.75, size.height * 0.12),
-      Offset(size.width * 0.67, size.height),
-      line,
-    );
-    canvas.drawCircle(
-      Offset(size.width * 0.83, size.height * 0.39),
-      6,
-      Paint()..color = Cyber.lime,
-    );
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(size.width * 0.83, size.height * 0.78),
-        width: 27,
-        height: 9,
-      ),
-      Paint()
-        ..color = Cyber.lime.withValues(alpha: 0.36)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5,
     );
   }
 

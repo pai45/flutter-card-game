@@ -74,7 +74,9 @@ class MatchPredictionCard extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _TeamsRow(match: match, dimNames: _finished),
+            match.sport == Sport.motorsport
+                ? _RaceIdentityRow(match: match, dim: _finished)
+                : _TeamsRow(match: match, dimNames: _finished),
             if (match.resultLine != null) ...[
               const SizedBox(height: 12),
               Text(
@@ -210,6 +212,40 @@ class _TagContent extends StatelessWidget {
   }
 }
 
+// ── Race identity (motorsport) ──────────────────────────────────────────────
+/// Races aren't a 1v1 matchup, so unlike [_TeamsRow] this is a single centred
+/// column: the series badge (reusing the same [TeamLogo] octagon, coloured
+/// with the series brand colour already carried on [SportMatch.home]) and the
+/// race name beneath it. No second badge, no centre dash — there's no "away"
+/// side to punctuate against.
+class _RaceIdentityRow extends StatelessWidget {
+  const _RaceIdentityRow({required this.match, required this.dim});
+  final SportMatch match;
+  final bool dim;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TeamLogo(team: match.home, width: 46, height: 46, sport: match.sport),
+        const SizedBox(height: _namePad),
+        Text(
+          match.home.name,
+          maxLines: 2,
+          textAlign: TextAlign.center,
+          overflow: TextOverflow.ellipsis,
+          style: Cyber.body(
+            14.5,
+            color: dim ? _dimName : Colors.white,
+            weight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 // ── Teams + score row ─────────────────────────────────────────────────────────
 class _TeamsRow extends StatelessWidget {
   const _TeamsRow({required this.match, required this.dimNames});
@@ -218,11 +254,10 @@ class _TeamsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Cricket shows each side's innings, F1 shows each constructor's finishing
-    // grid position, under the team name; football keeps the score centred.
-    final perTeamScores =
-        (match.sport == Sport.cricket || match.sport == Sport.f1) &&
-        match.hasScore;
+    // Cricket shows each side's innings under the team name; football/
+    // basketball/tennis keep the score centred. Motorsport never reaches this
+    // widget (see _RaceIdentityRow).
+    final perTeamScores = match.sport == Sport.cricket && match.hasScore;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -366,15 +401,8 @@ class _ScoreCentre extends StatelessWidget {
         ),
       );
     }
-    if (match.sport == Sport.f1 && match.status == MatchStatus.finished) {
-      // Grid position lives under each team name; the centre carries the
-      // chequered-flag cue instead of a football-style score dash.
-      return const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 12),
-        child: Icon(Icons.sports_motorsports, color: Cyber.muted, size: 20),
-      );
-    }
-    // Upcoming, or cricket/F1 (line lives under each name) → centre dash.
+    // Upcoming, or cricket (line lives under each name) → centre dash.
+    // Motorsport never reaches this widget (see _RaceIdentityRow).
     return const Padding(
       padding: EdgeInsets.symmetric(horizontal: 12),
       child: Text(
@@ -469,8 +497,10 @@ class _StatusStrip extends StatelessWidget {
       // Finished — reward-pending (focal gold) → revealed → no-engagement.
       case MatchStatus.finished:
         final isSettled = prediction?.status == PredictionStatus.settled;
-        final rewardPending =
-            !isSettled && (prediction != null || (quiz?.settleable ?? false));
+        // Reward-pending requires the user to have actually engaged (predicted
+        // or answered the quiz) — a settleable quiz alone isn't enough, since
+        // it's looked up by matchId regardless of whether the user played it.
+        final rewardPending = !isSettled && prediction != null;
 
         if (rewardPending) return const _RewardReadyStrip();
 

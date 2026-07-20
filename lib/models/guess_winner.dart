@@ -1,3 +1,5 @@
+import 'daily_mystery.dart';
+
 class GrandSlamCard {
   const GrandSlamCard({
     required this.year,
@@ -18,6 +20,24 @@ class GuessWinnerArchive {
   const GuessWinnerArchive({this.resultsByDay = const {}});
 
   final Map<String, GuessWinnerDailyResult> resultsByDay;
+
+  int get wonCount => resultsByDay.values.where((result) => result.won).length;
+
+  int get playedCount => resultsByDay.length;
+
+  double get winRate => playedCount == 0 ? 0 : wonCount / playedCount;
+
+  int get bestHeartsRemaining => resultsByDay.values
+      .where((result) => result.won)
+      .fold<int>(0, (best, result) {
+        return result.heartsRemaining > best ? result.heartsRemaining : best;
+      });
+
+  int winStreak(String currentDayKey) => dailyMysteryWinStreak(
+    resultsByDay,
+    currentDayKey,
+    (result) => result.won,
+  );
 
   factory GuessWinnerArchive.fromJson(Map<String, dynamic> json) {
     final results = <String, GuessWinnerDailyResult>{};

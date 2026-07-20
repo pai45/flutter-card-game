@@ -11,6 +11,7 @@ import 'starter_pack.dart';
 const starterDeckActionCount = 6;
 const cricketStarterCardCount = 3;
 const basketballStarterCardCount = 3;
+const tennisStarterCardCount = 1;
 
 class CardPack {
   const CardPack({
@@ -194,6 +195,23 @@ PackResult buildBasketballStarterPack(
     if (card != null) players.add(card);
   }
   return _finalize(players, const []);
+}
+
+/// Tennis Rally hands out a single card, and it is always bronze — the ladder
+/// above bronze is meant to be earned in-game, so this deliberately skips the
+/// weighted [_rollFrom] roll the other sports use.
+PackResult buildTennisStarterPack(
+  List<PlayerCard> tennisPool, {
+  Random? random,
+}) {
+  final rng = random ?? Random();
+  final bronze = tennisPool
+      .where((card) => card.tier == CardTier.bronze)
+      .toList();
+  if (bronze.isEmpty) {
+    throw StateError('Tennis starter pack draw failed: no bronze players.');
+  }
+  return _finalize([bronze[rng.nextInt(bronze.length)]], const []);
 }
 
 PackResult rollPack(

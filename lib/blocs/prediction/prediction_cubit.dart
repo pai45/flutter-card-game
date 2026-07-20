@@ -5,7 +5,9 @@ import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
 import '../../models/team_standing.dart';
 import '../../services/prediction_repository.dart';
+import '../../services/quiz_archetypes.dart';
 import '../../services/secure_storage_service.dart';
+import '../../services/settlement_writer.dart';
 import 'prediction_state.dart';
 
 /// Result of settling one prediction. [xp] is progression XP; [prizeOz] is the
@@ -105,6 +107,33 @@ class PredictionCubit extends Cubit<PredictionState> {
         submittedAt: now.subtract(const Duration(hours: 20)),
         status: PredictionStatus.locked,
       ),
+      // WNBA demo (Dallas Wings 82-75 Phoenix Mercury). Locked, not yet
+      // settled — proves the new auto-settlement engine (QuizArchetypes +
+      // MatchOutcomeResolver, no hand-authored quiz override here) reaches
+      // the gold "RESULTS ARE OUT" reveal for basketball too. Scores 3/4:
+      // total-points misses (picked Over 159.5, actual total is 157, Under).
+      UserPrediction(
+        matchId: 'wnba_demo_dal_phx',
+        answers: const {
+          'winner': 0,
+          'total_points_ou': 0,
+          'biggest_quarter': 0,
+          'winning_margin_bracket': 1,
+        },
+        submittedAt: now.subtract(const Duration(hours: 18)),
+        status: PredictionStatus.locked,
+      ),
+      // World Cup third-place play-off (France 4-6 England). Locked, not yet
+      // settled, so the quiz reads as over — answers locked in and reviewable
+      // against the real result — and the card offers the gold "RESULTS ARE
+      // OUT" reveal. Scores 4/5: q1 misses (2-1 predicted, 4-6 actual), the
+      // other four land, crediting 175 XP through the reveal cinematic.
+      UserPrediction(
+        matchId: '760516',
+        answers: const {'q1': 201, 'q2': 2, 'q3': 0, 'q4': 0, 'q5': 1},
+        submittedAt: now.subtract(const Duration(days: 1, hours: 6)),
+        status: PredictionStatus.locked,
+      ),
       // Demo: finished FIFA fixture settled as a win → the card shows the
       // revealed "+XP" (paired with a won Oz pick for the coins figure).
       UserPrediction(
@@ -159,9 +188,27 @@ class PredictionCubit extends Cubit<PredictionState> {
     if (state.loadedSports.contains(sport) || state.loadingSports.contains(sport)) {
       return;
     }
-    
+    await _loadSportUnchecked(sport);
+  }
+
+  /// Forces a fresh fetch/re-settlement for [sport] even if it was already
+  /// loaded this session — used by [RollingWindowService] on a day-boundary
+  /// resume, when yesterday's fixtures need re-settling and today's newly
+  /// in-window fixtures need fetching, neither of which `loadSport`'s
+  /// load-once guard would otherwise allow.
+  Future<void> refreshSport(Sport sport) async {
+    if (state.loadingSports.contains(sport)) return;
+    emit(
+      state.copyWith(
+        loadedSports: state.loadedSports.where((s) => s != sport).toSet(),
+      ),
+    );
+    await _loadSportUnchecked(sport);
+  }
+
+  Future<void> _loadSportUnchecked(Sport sport) async {
     emit(state.copyWith(loadingSports: {...state.loadingSports, sport}));
-    
+
     try {
       final localFixtures = await _repository.fixtures(sport: sport);
       final enrichedFixtures = await _repository.enrichFixturesForSport(localFixtures, sport);
@@ -169,9 +216,31 @@ class PredictionCubit extends Cubit<PredictionState> {
       final quizzes = <String, PredictionQuiz>{...state.quizzes};
       for (final fixture in enrichedFixtures) {
         if (fixture.sport == sport) {
-          final matchQuizzes = await _repository.quizzesFor(fixture.id);
+          var matchQuizzes = await _repository.quizzesFor(fixture.id);
+          // No hand-authored/generated quiz exists yet for this fixture —
+          // synthesize the small, always-resolvable archetype set instead of
+          // leaving it with none (the gap every non-FIFA football league and
+          // every cricket fixture hit before this).
+          if (matchQuizzes.isEmpty) {
+            final questions = QuizArchetypes.buildFor(fixture);
+            if (questions.isNotEmpty) {
+              matchQuizzes = [
+                PredictionQuiz(matchId: fixture.id, questions: questions),
+              ];
+            }
+          }
           for (final quiz in matchQuizzes) {
-            quizzes[predictionStorageKey(fixture.id, quiz.id)] = quiz;
+            // A finished fixture whose quiz isn't settled yet gets resolved
+            // now, from the same enriched data just fetched above — this is
+            // the fix for the "stuck forever" gold-reveal bug: quizzes reach
+            // the UI already settled instead of relying on a hand-typed
+            // override. Already-settled quizzes (hand-authored overrides
+            // like '760516') are left untouched.
+            final resolved =
+                (fixture.status == MatchStatus.finished && !quiz.settleable)
+                ? SettlementWriter.computeQuizSettlement(fixture, quiz)
+                : quiz;
+            quizzes[predictionStorageKey(fixture.id, resolved.id)] = resolved;
           }
         }
       }
@@ -259,6 +328,9 @@ class PredictionCubit extends Cubit<PredictionState> {
     var correct = 0;
     var reward = 0;
     for (final q in quiz.questions) {
+      // A voided question (data couldn't support it) is neutral: no credit,
+      // no penalty, and it doesn't require an answer to have been given.
+      if (q.forcedVoid) continue;
       final picked = prediction.answers[q.id];
       if (picked == null) continue;
       final correctAnswer = q.isScorePrediction

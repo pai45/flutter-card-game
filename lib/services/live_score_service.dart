@@ -22,7 +22,9 @@ class LiveScoreService {
     if (feed == null) return fallback;
 
     try {
-      final response = await _client.get(_fixturesUri(feed));
+      final response = await _client
+          .get(_fixturesUri(feed))
+          .timeout(const Duration(seconds: 8));
       if (response.statusCode != 200) {
         return fallback.copyWith(
           liveStatusNote: 'Live score unavailable (${response.statusCode}).',

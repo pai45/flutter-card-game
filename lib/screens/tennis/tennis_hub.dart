@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../blocs/game/game_bloc.dart';
 import '../../blocs/tennis/tennis_cubit.dart';
 import '../../blocs/tennis/tennis_state.dart';
 import '../../config/theme.dart';
@@ -27,9 +28,26 @@ class TennisRallyHub extends StatefulWidget {
 
 class _TennisRallyHubState extends State<TennisRallyHub> {
   bool _preparingPreview = false;
-  TennisPlayer? _revealedStarter;
 
   TennisCubit get _cubit => context.read<TennisCubit>();
+
+  @override
+  void initState() {
+    super.initState();
+    // The starter pack is granted by GameBloc before this hub is ever pushed
+    // (see _enterTennisGameFlow in app.dart), so the deck is the source of
+    // truth for which athletes the player owns.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final deck = context.read<GameBloc>().state;
+      unawaited(
+        _cubit.syncFromDeck(
+          deck.deckTennisPlayers.map((card) => card.id).toList(),
+          deck.deckTennisStarter?.id,
+        ),
+      );
+    });
+  }
 
   void _preparePreviewOnce(TennisState state) {
     if (_preparingPreview ||
@@ -46,18 +64,6 @@ class _TennisRallyHubState extends State<TennisRallyHub> {
       _cubit.prepareQuickMatchPreview();
       _preparingPreview = false;
     });
-  }
-
-  Future<void> _openStarterPack() async {
-    playSound(SoundEffect.packOpen);
-    final starter = await _cubit.claimStarterPack();
-    if (!mounted) return;
-    setState(() => _revealedStarter = starter);
-  }
-
-  void _finishStarterReveal() {
-    setState(() => _revealedStarter = null);
-    _cubit.prepareQuickMatchPreview();
   }
 
   void _launch() {
@@ -107,17 +113,13 @@ class _TennisRallyHubState extends State<TennisRallyHub> {
             body: Center(child: CircularProgressIndicator(color: Cyber.cyan)),
           );
         }
-        if (_revealedStarter != null) {
-          return _TennisStarterReveal(
-            player: _revealedStarter!,
-            onContinue: _finishStarterReveal,
-          );
-        }
         if (!state.profile.starterPackClaimed ||
             state.profile.ownedPlayerIds.isEmpty) {
-          return _TennisStarterPackScreen(
-            onExit: widget.onExit,
-            onOpen: () => unawaited(_openStarterPack()),
+          // syncFromDeck lands on the frame after mount; hold the loader
+          // rather than flashing an empty preview.
+          return const Scaffold(
+            backgroundColor: Cyber.bg,
+            body: Center(child: CircularProgressIndicator(color: Cyber.cyan)),
           );
         }
         _preparePreviewOnce(state);
@@ -279,253 +281,6 @@ class _TennisRallyV2HubState extends State<TennisRallyV2Hub> {
       },
     );
   }
-}
-
-class _TennisStarterPackScreen extends StatelessWidget {
-  const _TennisStarterPackScreen({required this.onExit, required this.onOpen});
-
-  final VoidCallback onExit;
-  final VoidCallback onOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Cyber.bg,
-      appBar: ReactHeaderBar(
-        title: 'Tennis Rally',
-        subtitle: '// STARTER PACK',
-        onBack: onExit,
-      ),
-      body: CyberBackground(
-        child: SafeArea(
-          top: false,
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(18),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 430),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    CustomPaint(
-                      painter: const _StarterPackPainter(),
-                      child: SizedBox(
-                        height: 270,
-                        child: Padding(
-                          padding: const EdgeInsets.all(22),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'TENNIS',
-                                style: Cyber.display(
-                                  34,
-                                  color: Colors.white,
-                                  letterSpacing: 0.4,
-                                ),
-                              ),
-                              Text(
-                                'STARTER',
-                                style: Cyber.display(
-                                  36,
-                                  color: Cyber.lime,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                              const Spacer(),
-                              Text(
-                                'ONE ATHLETE // QUICK MATCH ACCESS',
-                                style: Cyber.display(9, color: Cyber.muted),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    CyberPanel(
-                      accent: Cyber.lime,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'CLAIM YOUR FIRST ATHLETE',
-                            style: Cyber.display(13, color: Cyber.lime),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Your MVP quick matches use this player. Rivals are scouted randomly before each match.',
-                            style: Cyber.body(12, color: Cyber.muted),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    HudCtaButton(
-                      label: 'OPEN STARTER PACK',
-                      icon: Icons.inventory_2_outlined,
-                      accent: Cyber.lime,
-                      helper: 'RANDOM TENNIS PLAYER',
-                      onTap: onOpen,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TennisStarterReveal extends StatelessWidget {
-  const _TennisStarterReveal({required this.player, required this.onContinue});
-
-  final TennisPlayer player;
-  final VoidCallback onContinue;
-
-  @override
-  Widget build(BuildContext context) {
-    final ratings = player.ratings;
-    final accent = _playerAccent(player.id);
-    return Scaffold(
-      backgroundColor: Cyber.bg,
-      body: CyberBackground(
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 430),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      'ATHLETE UNLOCKED',
-                      textAlign: TextAlign.center,
-                      style: Cyber.display(14, color: Cyber.lime),
-                    ),
-                    const SizedBox(height: 18),
-                    CyberPanel(
-                      accent: accent,
-                      glow: true,
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        children: [
-                          _PlayerMonogram(player: player, size: 86),
-                          const SizedBox(height: 14),
-                          Text(
-                            player.name.toUpperCase(),
-                            textAlign: TextAlign.center,
-                            style: Cyber.display(20, color: Colors.white),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            player.archetype.label,
-                            textAlign: TextAlign.center,
-                            style: Cyber.display(9, color: accent),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            player.signature,
-                            textAlign: TextAlign.center,
-                            style: Cyber.body(12, color: Cyber.muted),
-                          ),
-                          const SizedBox(height: 16),
-                          Wrap(
-                            alignment: WrapAlignment.center,
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              _RatingChip('SPD', ratings.speed),
-                              _RatingChip('PWR', ratings.power),
-                              _RatingChip('CTL', ratings.control),
-                              _RatingChip('SRV', ratings.serve),
-                              _RatingChip('STA', ratings.stamina),
-                              _RatingChip('VOL', ratings.volley),
-                              _RatingChip('SPN', ratings.spin),
-                              _RatingChip('RCH', ratings.reach),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    HudCtaButton(
-                      label: 'ENTER QUICK MATCH',
-                      icon: Icons.sports_tennis,
-                      accent: Cyber.lime,
-                      helper: 'SCOUT RANDOM RIVAL',
-                      onTap: onContinue,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StarterPackPainter extends CustomPainter {
-  const _StarterPackPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    canvas.drawRect(
-      rect,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xff26364d), Color(0xff08111d)],
-        ).createShader(rect),
-    );
-    final pack = RRect.fromRectAndRadius(
-      Rect.fromCenter(
-        center: Offset(size.width * 0.62, size.height * 0.52),
-        width: size.width * 0.42,
-        height: size.height * 0.68,
-      ),
-      const Radius.circular(6),
-    );
-    canvas.drawRRect(pack, Paint()..color = const Color(0xff101a2a));
-    canvas.drawRRect(
-      pack,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.4
-        ..color = Cyber.lime,
-    );
-    final line = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.1
-      ..color = Colors.white.withValues(alpha: 0.42);
-    final court = Path()
-      ..moveTo(size.width * 0.52, size.height * 0.30)
-      ..lineTo(size.width * 0.83, size.height * 0.30)
-      ..lineTo(size.width * 0.88, size.height * 0.76)
-      ..lineTo(size.width * 0.47, size.height * 0.76)
-      ..close();
-    canvas.drawPath(court, line);
-    canvas.drawLine(
-      Offset(size.width * 0.50, size.height * 0.53),
-      Offset(size.width * 0.86, size.height * 0.53),
-      line,
-    );
-    canvas.drawCircle(
-      Offset(size.width * 0.72, size.height * 0.44),
-      10,
-      Paint()..color = Cyber.lime,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _LandingScreen extends StatelessWidget {
@@ -1435,55 +1190,286 @@ class _PreviewScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final player = state.selectedPlayer;
     final opponent = state.selectedOpponent;
+    final profile = state.profile;
     return Scaffold(
       backgroundColor: Cyber.bg,
       appBar: ReactHeaderBar(
-        title: 'MATCH PREVIEW',
-        subtitle: '// SCOUT REPORT',
+        title: 'Tennis Rally',
+        subtitle: '// MATCH LOBBY',
         onBack: onBack,
       ),
       body: CyberBackground(
-        child: SafeArea(
-          top: false,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(18),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 540),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _VersusPanel(
-                      player: player,
-                      opponent: opponent,
-                      difficulty: state.profile.difficulty,
+        animated: !profile.settings.reducedMotion,
+        child: Stack(
+          children: [
+            const Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(painter: _TennisLobbyCourtPainter()),
+              ),
+            ),
+            SafeArea(
+              top: false,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 22, 24, 32),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 380),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const CyberSlideUpFadeIn(
+                          child: CyberLobbyStatusBar(
+                            systemLabel: 'SYS://TENNIS_RALLY v1.0.0',
+                            lineColor: Cyber.lime,
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        CyberSlideUpFadeIn(
+                          delay: const Duration(milliseconds: 80),
+                          offset: 24,
+                          child: Row(
+                            children: [
+                              const _TennisLobbyEmblem(size: 92),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      alignment: Alignment.centerLeft,
+                                      child: Text(
+                                        'TENNIS RALLY',
+                                        style: Cyber.display(
+                                          24,
+                                          letterSpacing: 1.4,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      'FAST COURT SHOWDOWN',
+                                      style: Cyber.display(
+                                        9,
+                                        color: Cyber.muted,
+                                        letterSpacing: 2.2,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 10),
+                                    CyberChip(
+                                      label: state.canResume
+                                          ? 'MATCH SAVED'
+                                          : 'ATHLETE READY',
+                                      color: state.canResume
+                                          ? Cyber.amber
+                                          : Cyber.lime,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CyberDealtCard(
+                                key: const ValueKey(
+                                  'tennis-lobby-stat-mastery',
+                                ),
+                                index: 0,
+                                initialDelay: const Duration(milliseconds: 180),
+                                flyDistance: 130,
+                                child: CyberHudStat(
+                                  label: 'MASTERY',
+                                  value:
+                                      'LV ${profile.masteryLevel(player.id)}',
+                                  accent: Cyber.lime,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: CyberDealtCard(
+                                key: const ValueKey('tennis-lobby-stat-wins'),
+                                index: 1,
+                                initialDelay: const Duration(milliseconds: 180),
+                                flyDistance: 130,
+                                child: CyberHudStat(
+                                  label: 'SET WINS',
+                                  value: '${profile.setsWon}',
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: CyberDealtCard(
+                                key: const ValueKey('tennis-lobby-stat-streak'),
+                                index: 2,
+                                initialDelay: const Duration(milliseconds: 180),
+                                flyDistance: 130,
+                                child: CyberHudStat(
+                                  label: 'STREAK',
+                                  value: '${profile.currentWinStreak}',
+                                  accent: profile.currentWinStreak > 0
+                                      ? Cyber.success
+                                      : Cyber.cyan,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        CyberSlideUpFadeIn(
+                          delay: const Duration(milliseconds: 390),
+                          offset: 22,
+                          child: HudCtaButton(
+                            label: state.canResume
+                                ? 'RESUME MATCH'
+                                : 'PLAY MATCH',
+                            icon: Icons.sports_tennis,
+                            accent: Cyber.lime,
+                            helper:
+                                '${profile.difficulty.label} // SEEDED FAIR PLAY',
+                            onTap: () {
+                              HapticFeedback.mediumImpact();
+                              onStart();
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        const SectionLabel(label: 'NEXT MATCH'),
+                        const SizedBox(height: 10),
+                        CyberSlideUpFadeIn(
+                          delay: const Duration(milliseconds: 500),
+                          offset: 18,
+                          child: _VersusPanel(
+                            player: player,
+                            opponent: opponent,
+                            difficulty: profile.difficulty,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        CyberSlideUpFadeIn(
+                          delay: const Duration(milliseconds: 590),
+                          offset: 14,
+                          child: _ControlBrief(mode: state.selectedMode),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 14),
-                    _ScoutPanel(player: player, opponent: opponent),
-                    const SizedBox(height: 14),
-                    _ControlBrief(mode: state.selectedMode),
-                    const SizedBox(height: 20),
-                    HudCtaButton(
-                      label: state.canResume
-                          ? 'RESUME MATCH'
-                          : state.selectedMode == TennisMode.quickMatch
-                          ? 'START SET'
-                          : 'START SESSION',
-                      icon: Icons.sports_tennis,
-                      accent: Cyber.lime,
-                      helper:
-                          '${state.profile.difficulty.label} // SEEDED FAIR PLAY',
-                      onTap: onStart,
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
   }
+}
+
+class _TennisLobbyEmblem extends StatelessWidget {
+  const _TennisLobbyEmblem({required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return CyberPulse(
+      period: const Duration(milliseconds: 2600),
+      builder: (context, pulse) {
+        return SizedBox(
+          width: size,
+          height: size,
+          child: ChamferedActionSurface(
+            clipper: const HudChamferClipper(bigCut: 16, smallCut: 5),
+            borderColor: Cyber.lime.withValues(alpha: 0.32 + pulse * 0.12),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Cyber.bg.withValues(alpha: 0.66),
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Icon(
+                    Icons.sports_tennis,
+                    size: size * 0.58,
+                    color: Cyber.lime,
+                  ),
+                  Positioned(
+                    top: 13,
+                    right: 13,
+                    child: Container(
+                      width: 5,
+                      height: 5,
+                      color: Cyber.cyan.withValues(alpha: 0.72),
+                    ),
+                  ),
+                  Positioned(
+                    left: 11,
+                    bottom: 11,
+                    child: Text(
+                      'TR//01',
+                      style: Cyber.display(
+                        6.5,
+                        color: Cyber.muted,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _TennisLobbyCourtPainter extends CustomPainter {
+  const _TennisLobbyCourtPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+
+    final court = Path()
+      ..moveTo(size.width * 0.25, size.height * 0.34)
+      ..lineTo(size.width * 0.75, size.height * 0.34)
+      ..lineTo(size.width * 1.08, size.height)
+      ..lineTo(size.width * -0.08, size.height)
+      ..close();
+    canvas.drawPath(
+      court,
+      Paint()..color = Cyber.lime.withValues(alpha: 0.025),
+    );
+
+    final line = Paint()
+      ..color = Cyber.lime.withValues(alpha: 0.09)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    canvas.drawPath(court, line);
+    canvas.drawLine(
+      Offset(size.width * 0.5, size.height * 0.34),
+      Offset(size.width * 0.5, size.height),
+      line,
+    );
+    canvas.drawLine(
+      Offset(size.width * 0.11, size.height * 0.72),
+      Offset(size.width * 0.89, size.height * 0.72),
+      line,
+    );
+    canvas.drawLine(
+      Offset(size.width * 0.2, size.height * 0.53),
+      Offset(size.width * 0.8, size.height * 0.53),
+      line,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _VersusPanel extends StatelessWidget {
@@ -1500,12 +1486,22 @@ class _VersusPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CyberPanel(
-      accent: Cyber.lime,
-      glow: true,
+      accent: Cyber.cyan,
       child: Column(
         children: [
-          Text(difficulty.label, style: Cyber.display(9, color: Cyber.gold)),
-          const SizedBox(height: 17),
+          Row(
+            children: [
+              Text(
+                'SEEDED MATCH',
+                style: Cyber.display(8, color: Cyber.muted, letterSpacing: 1.6),
+              ),
+              const Spacer(),
+              CyberChip(label: difficulty.label, color: Cyber.gold),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const HudLine(),
+          const SizedBox(height: 14),
           Row(
             children: [
               Expanded(
@@ -1540,132 +1536,17 @@ class _PreviewAthlete extends StatelessWidget {
         const SizedBox(height: 9),
         Text(
           player.name.toUpperCase(),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
           style: Cyber.display(10),
         ),
         const SizedBox(height: 4),
-        Text(side, style: Cyber.display(7, color: Cyber.muted)),
+        Text(
+          '$side // OVR ${player.ratings.overall}',
+          style: Cyber.display(7, color: Cyber.muted),
+        ),
       ],
-    );
-  }
-}
-
-class _ScoutPanel extends StatelessWidget {
-  const _ScoutPanel({required this.player, required this.opponent});
-
-  final TennisPlayer player;
-  final TennisPlayer opponent;
-
-  @override
-  Widget build(BuildContext context) {
-    return CyberPanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('TACTICAL READ', style: Cyber.display(11, color: Cyber.cyan)),
-          const SizedBox(height: 10),
-          Text(
-            '${opponent.name} plays as a ${opponent.archetype.label.toLowerCase()}. '
-            '${_tacticalTip(opponent.archetype)}',
-            style: Cyber.body(12, color: Cyber.muted),
-          ),
-          const SizedBox(height: 12),
-          _CompareBar(
-            label: 'SPEED',
-            left: player.ratings.speed,
-            right: opponent.ratings.speed,
-          ),
-          _CompareBar(
-            label: 'POWER',
-            left: player.ratings.power,
-            right: opponent.ratings.power,
-          ),
-          _CompareBar(
-            label: 'CONTROL',
-            left: player.ratings.control,
-            right: opponent.ratings.control,
-          ),
-          _CompareBar(
-            label: 'SERVE',
-            left: player.ratings.serve,
-            right: opponent.ratings.serve,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-String _tacticalTip(TennisArchetype archetype) => switch (archetype) {
-  TennisArchetype.powerBaseliner =>
-    'Use height and width before attacking the open court.',
-  TennisArchetype.speedDefender =>
-    'Build the point patiently and finish near the net.',
-  TennisArchetype.serveAndVolley =>
-    'Keep returns low or lift a lob over the first volley.',
-  TennisArchetype.spinSpecialist =>
-    'Meet the ball early before the bounce pulls you wide.',
-  TennisArchetype.allCourtRival =>
-    'Vary direction and protect stamina through long games.',
-  TennisArchetype.allRounder =>
-    'Change pace often and avoid predictable cross-court patterns.',
-};
-
-class _CompareBar extends StatelessWidget {
-  const _CompareBar({
-    required this.label,
-    required this.left,
-    required this.right,
-  });
-
-  final String label;
-  final int left;
-  final int right;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 28,
-            child: Text('$left', style: Cyber.display(9, color: Cyber.cyan)),
-          ),
-          Expanded(
-            child: LinearProgressIndicator(
-              value: left / 100,
-              minHeight: 4,
-              backgroundColor: Cyber.border,
-              valueColor: const AlwaysStoppedAnimation(Cyber.cyan),
-            ),
-          ),
-          SizedBox(
-            width: 76,
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              style: Cyber.display(7, color: Cyber.muted),
-            ),
-          ),
-          Expanded(
-            child: LinearProgressIndicator(
-              value: right / 100,
-              minHeight: 4,
-              backgroundColor: Cyber.border,
-              valueColor: const AlwaysStoppedAnimation(Cyber.amber),
-            ),
-          ),
-          SizedBox(
-            width: 28,
-            child: Text(
-              '$right',
-              textAlign: TextAlign.right,
-              style: Cyber.display(9, color: Cyber.amber),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

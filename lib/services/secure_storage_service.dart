@@ -25,6 +25,7 @@ import '../models/guess_driver.dart';
 import '../models/guess_winner.dart';
 import '../models/super_over.dart';
 import '../models/super_over_stats.dart';
+import '../data/final_over_kits.dart';
 import '../data/rival_roster.dart' show randomPlayerTag;
 
 /// Maps a legacy `border_*` avatar-frame id to the renamed `frame_*` form so a
@@ -43,19 +44,21 @@ class WalletSnapshot {
     required this.equippedAvatarFrameId,
     required this.ownedAvatarIds,
     required this.ownedBannerIds,
+    required this.ownedFinalOverKitIds,
     required this.dailyDropLastClaimedAtMillis,
   });
 
-  factory WalletSnapshot.initial() => const WalletSnapshot(
+  factory WalletSnapshot.initial() => WalletSnapshot(
     coins: 0,
-    ownedCardIds: [],
-    ownedActionCardIds: [],
-    ownedCardBackIds: ['default'],
+    ownedCardIds: const [],
+    ownedActionCardIds: const [],
+    ownedCardBackIds: const ['default'],
     equippedCardBackId: 'default',
-    ownedAvatarFrameIds: [],
+    ownedAvatarFrameIds: const [],
     equippedAvatarFrameId: '',
-    ownedAvatarIds: [],
-    ownedBannerIds: [],
+    ownedAvatarIds: const [],
+    ownedBannerIds: const [],
+    ownedFinalOverKitIds: defaultOwnedFinalOverKitIds(),
     dailyDropLastClaimedAtMillis: null,
   );
 
@@ -87,6 +90,9 @@ class WalletSnapshot {
     ownedBannerIds: List<String>.from(
       json['ownedBannerIds'] as List? ?? const [],
     ),
+    ownedFinalOverKitIds: normalizeOwnedFinalOverKitIds(
+      List<String>.from(json['ownedFinalOverKitIds'] as List? ?? const []),
+    ),
     dailyDropLastClaimedAtMillis: json['dailyDropLastClaimedAtMillis'] as int?,
   );
 
@@ -99,6 +105,7 @@ class WalletSnapshot {
   final String equippedAvatarFrameId;
   final List<String> ownedAvatarIds;
   final List<String> ownedBannerIds;
+  final List<String> ownedFinalOverKitIds;
   final int? dailyDropLastClaimedAtMillis;
 
   Map<String, dynamic> toJson() => {
@@ -111,6 +118,7 @@ class WalletSnapshot {
     'equippedAvatarFrameId': equippedAvatarFrameId,
     'ownedAvatarIds': ownedAvatarIds,
     'ownedBannerIds': ownedBannerIds,
+    'ownedFinalOverKitIds': ownedFinalOverKitIds,
     'dailyDropLastClaimedAtMillis': dailyDropLastClaimedAtMillis,
   };
 }
@@ -128,6 +136,8 @@ class SecureGameStorage {
       'pd_cricket_starter_pack_claimed_v1';
   static const _basketballStarterPackClaimedKey =
       'pd_basketball_starter_pack_claimed_v1';
+  static const _tennisStarterPackClaimedKey =
+      'pd_tennis_starter_pack_claimed_v1';
   static const _progressionKey = 'pd_progression_v1';
   static const _walletKey = 'pitch_duel_wallet';
   static const _coinLedgerKey = 'pd_oz_coin_ledger_v1';
@@ -148,6 +158,7 @@ class SecureGameStorage {
   static const _friendsKey = 'pd_friends_v1';
   static const _playerTagKey = 'pd_player_tag_v1';
   static const _referralEntriesKey = 'pd_referral_entries_v1';
+  static const _rolloverLastDayKey = 'pd_rollover_last_day_v1';
   String _quizProgressKey(Sport sport) => sport == Sport.football
       ? 'pd_quiz_progress_v1'
       : 'pd_quiz_progress_${sport.name}_v1';
@@ -155,8 +166,13 @@ class SecureGameStorage {
   static const _footballBingoArchiveKey = 'pd_football_bingo_archive_v1';
   String _guessPlayerArchiveKey(Sport sport) =>
       'pd_guess_player_archive_${sport.name}_v1';
+  String _guessPlayerArchiveV2Key(Sport sport) =>
+      'pd_guess_player_archive_${sport.name}_v2';
+  static const _guessPlayerSettlementKey =
+      'pd_guess_player_reward_settlements_v1';
   static const _guessDriverArchiveKey = 'pd_guess_driver_archive_v1';
-  static const _tennisGuessWinnerArchiveKey = 'pd_tennis_guess_winner_archive_v1';
+  static const _tennisGuessWinnerArchiveKey =
+      'pd_tennis_guess_winner_archive_v1';
   static const _footballChessStatsKey = 'pd_football_chess_stats_v1';
   static const _grandPrixStatsKey = 'pd_grand_prix_stats_v1';
   // Keep the v1 key for one-time migration. All new writes use the versioned
@@ -258,6 +274,19 @@ class SecureGameStorage {
 
   Future<void> saveBasketballStarterPackClaimed() async {
     await _storage.write(key: _basketballStarterPackClaimedKey, value: 'true');
+  }
+
+  Future<bool> loadTennisStarterPackClaimed() async {
+    try {
+      final raw = await _storage.read(key: _tennisStarterPackClaimedKey);
+      return raw == 'true';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> saveTennisStarterPackClaimed() async {
+    await _storage.write(key: _tennisStarterPackClaimedKey, value: 'true');
   }
 
   Future<List<MatchHistoryEntry>> loadMatchHistory() async {
@@ -407,10 +436,7 @@ class SecureGameStorage {
 
   Future<void> saveGuessDriverArchive(GuessDriverArchive archive) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _guessDriverArchiveKey,
-      jsonEncode(archive.toJson()),
-    );
+    await prefs.setString(_guessDriverArchiveKey, jsonEncode(archive.toJson()));
   }
 
   Future<GuessWinnerArchive?> loadTennisGuessWinnerArchive() async {
@@ -437,7 +463,9 @@ class SecureGameStorage {
   Future<GuessPlayerArchive?> loadGuessPlayerArchive(Sport sport) async {
     final prefs = await SharedPreferences.getInstance();
     try {
-      final raw = prefs.getString(_guessPlayerArchiveKey(sport));
+      final raw =
+          prefs.getString(_guessPlayerArchiveV2Key(sport)) ??
+          prefs.getString(_guessPlayerArchiveKey(sport));
       if (raw == null) return null;
       return GuessPlayerArchive.fromJson(
         jsonDecode(raw) as Map<String, dynamic>,
@@ -452,10 +480,35 @@ class SecureGameStorage {
     GuessPlayerArchive archive,
   ) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _guessPlayerArchiveKey(sport),
+    final saved = await prefs.setString(
+      _guessPlayerArchiveV2Key(sport),
       jsonEncode(archive.toJson()),
     );
+    if (!saved) {
+      throw StateError('Could not persist Guess Player archive.');
+    }
+  }
+
+  Future<Set<String>> loadGuessPlayerSettlementIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    try {
+      final raw = prefs.getString(_guessPlayerSettlementKey);
+      if (raw == null || raw.isEmpty) return <String>{};
+      return Set<String>.from(jsonDecode(raw) as List);
+    } catch (_) {
+      return <String>{};
+    }
+  }
+
+  Future<void> saveGuessPlayerSettlementIds(Set<String> ids) async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = await prefs.setString(
+      _guessPlayerSettlementKey,
+      jsonEncode(ids.toList()..sort()),
+    );
+    if (!saved) {
+      throw StateError('Could not persist Guess Player settlement.');
+    }
   }
 
   Future<FootballChessStats> loadFootballChessStats() async {
@@ -534,6 +587,19 @@ class SecureGameStorage {
       key: _pickPositionsKey,
       value: jsonEncode(positions.map((p) => p.toJson()).toList()),
     );
+  }
+
+  Future<String?> loadRolloverLastDayKey() async {
+    try {
+      final raw = await _storage.read(key: _rolloverLastDayKey);
+      return raw == null || raw.isEmpty ? null : raw;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveRolloverLastDayKey(String dayKey) async {
+    await _storage.write(key: _rolloverLastDayKey, value: dayKey);
   }
 
   Future<String?> loadSelectedAvatarId() async {

@@ -13,6 +13,7 @@ String playerRoleLabel(PlayerCard card) => switch (card.role) {
   PlayerRole.basketballGuard => 'G',
   PlayerRole.basketballWing => 'W',
   PlayerRole.basketballBig => 'BIG',
+  PlayerRole.tennisSingles => 'SGL',
 };
 
 Color tierColor(CardTier tier) => switch (tier) {

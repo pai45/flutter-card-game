@@ -15,7 +15,7 @@ class MatchSummaryHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (match.sport == Sport.f1) {
+    if (match.sport == Sport.motorsport) {
       return _GrandPrixSummaryHeader(match: match);
     }
     return _TeamMatchSummaryHeader(match: match);

@@ -64,7 +64,7 @@ void main() {
     await _finishSetup(tester);
 
     expect(result, isNotNull);
-    expect(result!.primarySport, Sport.f1);
+    expect(result!.primarySport, Sport.motorsport);
     expect(result!.followedLeagueIds, contains('formula1'));
     expect(result!.favoriteTeams['formula1'], 'fer');
   });

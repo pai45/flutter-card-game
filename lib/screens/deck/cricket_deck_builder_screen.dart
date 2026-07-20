@@ -135,6 +135,7 @@ class _CricketDeckBuilderScreenState extends State<CricketDeckBuilderScreen> {
           defenders: active.defenders,
           actions: active.actions,
           batsmen: nextBatsmen,
+          finalOverBatsmen: active.finalOverBatsmen,
           keeper: active.keeper,
           chessFormation: active.chessFormation,
         ),

@@ -207,6 +207,7 @@ class _SuperOverBattingUnitEditorState
           actions: active.actions,
           keeper: active.keeper,
           batsmen: nextIds,
+          finalOverBatsmen: active.finalOverBatsmen,
           basketballPlayers: active.basketballPlayers,
           basketballStarter: active.basketballStarter,
           chessFormation: active.chessFormation,

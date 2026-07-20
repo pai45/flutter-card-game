@@ -237,7 +237,7 @@ void main() {
     expect(find.text('MONACO GRAND PRIX'), findsOneWidget);
     expect(find.text('Who takes pole at Monaco Grand Prix?'), findsOneWidget);
     final thread = harness.circle.threadFor(_f1)!;
-    expect(thread.sport, Sport.f1);
+    expect(thread.sport, Sport.motorsport);
     expect(thread.matchId, _f1.id);
   });
 }
@@ -356,7 +356,7 @@ final _football = SportMatch(
 final _f1 = SportMatch(
   id: 'f1-monaco-2026',
   leagueId: 'formula-one',
-  sport: Sport.f1,
+  sport: Sport.motorsport,
   home: SportTeam(
     id: 'monaco-gp',
     name: 'Monaco Grand Prix',
