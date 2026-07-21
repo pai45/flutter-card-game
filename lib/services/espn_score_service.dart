@@ -438,19 +438,16 @@ class EspnScoreService {
       if (stateStr == 'in') status = MatchStatus.live;
       if (stateStr == 'post') status = MatchStatus.finished;
 
-      String? hScore = homeTeamData['score']?.toString();
-      String? aScore = awayTeamData['score']?.toString();
-      
       // Parse TennisScorecard
       List<TennisSet> sets = [];
       final hLinescores = homeTeamData['linescores'] as List? ?? [];
       final aLinescores = awayTeamData['linescores'] as List? ?? [];
       final maxSets = hLinescores.length > aLinescores.length ? hLinescores.length : aLinescores.length;
-      
+
       for (int i = 0; i < maxSets; i++) {
         final hl = i < hLinescores.length ? hLinescores[i] : null;
         final al = i < aLinescores.length ? aLinescores[i] : null;
-        
+
         sets.add(TennisSet(
           homeScore: (hl?['value'] as num?)?.toInt() ?? 0,
           awayScore: (al?['value'] as num?)?.toInt() ?? 0,
@@ -460,10 +457,22 @@ class EspnScoreService {
           isAwayWinner: al?['winner'] == true,
         ));
       }
-      
+
       TennisScorecard? scorecard;
       if (sets.isNotEmpty) {
         scorecard = TennisScorecard(sets: sets);
+      }
+
+      // The ESPN tennis scoreboard never carries a top-level `score` on
+      // competitors (unlike football/basketball) — only per-set `linescores`.
+      // Derive the headline "sets won" score (e.g. "2"-"0") from the sets
+      // themselves so it isn't left null (which would hide the whole score
+      // row, set chips included, once the match has actually started).
+      String? hScore = homeTeamData['score']?.toString();
+      String? aScore = awayTeamData['score']?.toString();
+      if ((hScore == null || aScore == null) && sets.isNotEmpty) {
+        hScore = sets.where((s) => s.isHomeWinner).length.toString();
+        aScore = sets.where((s) => s.isAwayWinner).length.toString();
       }
 
       return SportMatch(
@@ -670,8 +679,21 @@ class EspnScoreService {
       newStatus = MatchStatus.finished;
     }
 
-    final homeScore = isPreMatch ? null : homeTeamData['score']?.toString();
-    final awayScore = isPreMatch ? null : awayTeamData['score']?.toString();
+    String? homeScore = isPreMatch ? null : homeTeamData['score']?.toString();
+    String? awayScore = isPreMatch ? null : awayTeamData['score']?.toString();
+    // Tennis competitors never carry a top-level `score` (unlike football/
+    // basketball) — only per-set `linescores`. Derive the headline "sets won"
+    // score (e.g. "2"-"0") from the sets themselves so it isn't left null.
+    if (!isPreMatch &&
+        fixture.sport == Sport.tennis &&
+        (homeScore == null || awayScore == null)) {
+      final hLinescores = homeTeamData['linescores'] as List? ?? [];
+      final aLinescores = awayTeamData['linescores'] as List? ?? [];
+      if (hLinescores.isNotEmpty || aLinescores.isNotEmpty) {
+        homeScore = hLinescores.where((s) => s['winner'] == true).length.toString();
+        awayScore = aLinescores.where((s) => s['winner'] == true).length.toString();
+      }
+    }
 
     final statusText = event['status']?['type']?['description'] ?? 'Finished';
     final clock = event['status']?['displayClock']?.toString();

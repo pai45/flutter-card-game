@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../config/enums.dart';
 import '../data/basketball_athletes.dart';
+import '../data/racing_drivers.dart';
+import '../data/racing_portraits.dart';
 import '../data/tennis_athletes.dart';
 import '../utils/tennis_country_map.dart';
 import 'basketball.dart';
+import 'racing.dart';
 import 'starter_pack.dart';
 import 'tennis.dart';
 
@@ -5178,11 +5181,51 @@ String _tennisShortName(String name) {
   return '${parts.first[0].toUpperCase()} ${parts.last.toUpperCase()}';
 }
 
+/// Collectible view of the real F1/F2/NASCAR/IndyCar rosters. Ids match
+/// [allRacingDrivers] 1:1 so a card resolves back to its [RacingDriver] (and
+/// sub-ratings) via [racingDriverById].
+final List<PlayerCard> racingPlayerCards = [
+  for (final driver in allRacingDrivers) _racingPlayerCard(driver),
+];
+
+/// F1 grid only — used by Grand Prix Dash starter pack and roster UI.
+final List<PlayerCard> f1PlayerCards = [
+  for (final card in racingPlayerCards)
+    if (card.role == PlayerRole.f1Driver) card,
+];
+
+PlayerCard _racingPlayerCard(RacingDriver driver) => PlayerCard(
+  id: driver.id,
+  name: driver.name,
+  shortName: _racingShortName(driver.name),
+  country: driver.country,
+  countryCode: driver.countryCode,
+  position: driver.team,
+  role: driver.series.playerRole,
+  rating: driver.overallRating,
+  trait: driver.signature,
+  tier: packRarityForRating(driver.overallRating),
+  icon: Icons.sports_motorsports,
+  portraitAsset: racingPortraitAsset(driver.id),
+);
+
+String _racingShortName(String name) {
+  final parts = name.split(' ').where((part) => part.isNotEmpty).toList();
+  if (parts.length == 1) return parts.first.toUpperCase();
+  return '${parts.first[0].toUpperCase()} ${parts.last.toUpperCase()}';
+}
+
+RacingDriver racingDriverById(String id) => allRacingDrivers.firstWhere(
+  (driver) => driver.id == id,
+  orElse: () => allRacingDrivers.first,
+);
+
 final List<PlayerCard> allPlayerCards = [
   ...footballPlayerCards,
   ...cricketPlayerCards,
   ...basketballPlayerCards,
   ...tennisPlayerCards,
+  ...racingPlayerCards,
 ];
 
 /// A base action archetype. Each blueprint is expanded into four collectible

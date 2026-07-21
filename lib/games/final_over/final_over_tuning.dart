@@ -37,3 +37,9 @@ const double kFoRunUpCycle = 26.0;
 const int kFoCrowdDots = 96;
 const double kFoCrowdIdleHype = 0.22;
 const double kFoCrowdHypeSeconds = 2.2;
+
+/// How long a held swing takes to visually wind up to the fully-cocked
+/// backlift, in microseconds of engine simulation time (same units as
+/// `simulationMicros`/`swing.inputMicros`). Purely a render-facing ramp —
+/// the grading engine only ever sees the real release timestamp.
+const int kFoBackliftLoadMicros = 300000; // 300ms

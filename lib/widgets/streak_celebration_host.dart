@@ -150,7 +150,7 @@ class _StreakCelebrationOverlayState extends State<_StreakCelebrationOverlay>
       _numberCtrl.value = 1;
       _contentCtrl.value = 1;
     } else {
-      playSound(SoundEffect.whoosh);
+      playSound(SoundEffect.streak);
       HapticFeedback.mediumImpact();
       _panelCtrl.forward();
       Future<void>.delayed(const Duration(milliseconds: 80), () {

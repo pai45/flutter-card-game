@@ -68,7 +68,7 @@ void main() {
         loading: false,
         deckSlots: [footballOnlySlot],
         activeDeckId: footballOnlySlot.id,
-        deckBatsmen: const [],
+        deckFinalOverBatsmen: const [],
         ownedCardIds: [
           ...base.deckAttackers.map((card) => card.id),
           ...base.deckDefenders.map((card) => card.id),
@@ -79,7 +79,7 @@ void main() {
     );
 
     expect(bloc.state.deckReady, isTrue);
-    expect(bloc.state.superOverDeckReady, isFalse);
+    expect(bloc.state.finalOverDeckReady, isFalse);
 
     bloc.add(MatchStarted());
     await Future<void>.delayed(Duration.zero);
@@ -110,7 +110,7 @@ void main() {
           defenders: footballSlot.defenders,
           actions: footballSlot.actions,
           keeper: footballSlot.keeper,
-          batsmen: cricketIds,
+          finalOverBatsmen: cricketIds,
           chessFormation: footballSlot.chessFormation,
         ),
       ),
@@ -126,12 +126,12 @@ void main() {
       footballSlot.defenders,
     );
     expect(bloc.state.deckActions.map((card) => card.id), footballSlot.actions);
-    expect(bloc.state.deckBatsmen.map((card) => card.id), cricketIds);
+    expect(bloc.state.deckFinalOverBatsmen.map((card) => card.id), cricketIds);
     expect(bloc.state.deckReady, isTrue);
-    expect(bloc.state.superOverDeckReady, isTrue);
+    expect(bloc.state.finalOverDeckReady, isTrue);
   });
 
-  test('cricket starter unlocks Super Over deck only', () async {
+  test('cricket starter unlocks Final Over deck only', () async {
     final base = _playableState();
     final footballSlot = defaultDeckSlots.first;
     final bloc = GameBloc(SecureGameStorage());
@@ -140,7 +140,7 @@ void main() {
       base.copyWith(
         deckSlots: [footballSlot],
         activeDeckId: footballSlot.id,
-        deckBatsmen: const [],
+        deckFinalOverBatsmen: const [],
         starterPackClaimed: false,
         cricketStarterPackClaimed: false,
       ),
@@ -151,12 +151,12 @@ void main() {
 
     expect(bloc.state.cricketStarterPackClaimed, isTrue);
     expect(bloc.state.starterPackClaimed, isFalse);
-    expect(bloc.state.deckBatsmen, hasLength(cricketStarterCardCount));
+    expect(bloc.state.deckFinalOverBatsmen, hasLength(cricketStarterCardCount));
     expect(
-      bloc.state.deckBatsmen.every((card) => card.role == PlayerRole.batsman),
+      bloc.state.deckFinalOverBatsmen.every((card) => card.role == PlayerRole.batsman),
       isTrue,
     );
-    expect(bloc.state.superOverDeckReady, isTrue);
+    expect(bloc.state.finalOverDeckReady, isTrue);
     expect(
       bloc.state.deckAttackers.map((card) => card.id),
       footballSlot.attackers,

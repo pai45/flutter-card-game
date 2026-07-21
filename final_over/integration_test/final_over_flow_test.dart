@@ -139,7 +139,7 @@ final class _FakeAudioBackend implements AudioBackend {
   Future<void> dispose() async {}
 
   @override
-  Future<void> playEffect(String assetPath) async {
+  Future<void> playEffect(String assetPath, {required double volume}) async {
     effectPaths.add(assetPath);
   }
 

@@ -12,6 +12,7 @@ import '../../../config/enums.dart';
 import '../../../config/theme.dart';
 import '../../../models/cards.dart';
 import '../../../models/match.dart';
+import '../../../utils/game_audio_mappings.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../../widgets/match_widgets.dart';
@@ -81,11 +82,7 @@ class _ShootoutPhaseState extends State<ShootoutPhase> {
 
   void _confirmKick(BuildContext context, ShootoutState state) {
     HapticFeedback.mediumImpact();
-    playSound(
-      state.turnRole == ShootoutTurnRole.shooting
-          ? SoundEffect.attack
-          : SoundEffect.defense,
-    );
+    playSound(shootoutCommitSound(state.turnRole));
     context.read<ShootoutBloc>().add(ShootoutKickConfirmed());
   }
 
@@ -694,10 +691,7 @@ class _NextKickActionState extends State<_NextKickAction> {
 }
 
 class _PenaltyHistoryRow extends StatelessWidget {
-  const _PenaltyHistoryRow({
-    required this.kicks,
-    required this.opponentName,
-  });
+  const _PenaltyHistoryRow({required this.kicks, required this.opponentName});
   final List<PenaltyKick> kicks;
   final String opponentName;
 
@@ -705,13 +699,7 @@ class _PenaltyHistoryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final playerKicks = kicks.where((kick) => kick.byPlayer).toList();
     final opponentKicks = kicks.where((kick) => !kick.byPlayer).toList();
-    final slotCount = max(
-      5,
-      max(
-        playerKicks.length,
-        opponentKicks.length,
-      ),
-    );
+    final slotCount = max(5, max(playerKicks.length, opponentKicks.length));
     final firstName = opponentName.split(RegExp(r'\s+')).first.toUpperCase();
     final opponentLabel = firstName.length <= 6 ? firstName : 'OPP';
 

@@ -3,28 +3,30 @@ import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 
 enum AudioCue {
-  uiTap('ui_tap.wav'),
-  footstep('footstep.wav'),
-  release('release.wav'),
-  bounce('bounce.wav'),
-  cleanHit('clean_hit.wav'),
-  edge('edge.wav'),
-  roll('roll.wav'),
-  catchBall('catch.wav'),
-  stumps('stumps.wav'),
-  throwWhoosh('throw.wav'),
-  fourCrowd('four_crowd.wav'),
-  sixCrowd('six_crowd.wav'),
-  wicket('wicket.wav'),
-  victory('victory.wav'),
-  defeat('defeat.wav');
+  uiTap('ui_tap.wav', .5, 35),
+  footstep('footstep.wav', .52, 55),
+  release('release.wav', .65, 45),
+  bounce('bounce.wav', .58, 55),
+  cleanHit('clean_hit.wav', .84, 70),
+  edge('edge.wav', .74, 70),
+  roll('roll.wav', .46, 100),
+  catchBall('catch.wav', .72, 90),
+  stumps('stumps.wav', .92, 120),
+  throwWhoosh('throw.wav', .62, 80),
+  fourCrowd('four_crowd.wav', .82, 350),
+  sixCrowd('six_crowd.wav', .9, 350),
+  wicket('wicket.wav', .9, 250),
+  victory('victory.wav', .95, 500),
+  defeat('defeat.wav', .9, 500);
 
-  const AudioCue(this.fileName);
+  const AudioCue(this.fileName, this.volume, this.cooldownMs);
   final String fileName;
+  final double volume;
+  final int cooldownMs;
 }
 
 abstract interface class AudioBackend {
-  Future<void> playEffect(String assetPath);
+  Future<void> playEffect(String assetPath, {required double volume});
   Future<void> startLoop(String assetPath);
   Future<void> stopAll();
   Future<void> dispose();
@@ -44,28 +46,35 @@ class AudioplayersBackend
     implements AudioBackend, DuckableAudioBackend, PreloadableAudioBackend {
   AudioplayersBackend({this.assetPackage})
     : _cache = AudioCache(prefix: assetPackage == null ? 'assets/' : '') {
-    _effects.audioCache = _cache;
+    for (final effect in _effects) {
+      effect.audioCache = _cache;
+      unawaited(effect.setPlayerMode(PlayerMode.lowLatency));
+    }
     _ambience.audioCache = _cache;
   }
 
   final String? assetPackage;
   final AudioCache _cache;
-  final AudioPlayer _effects = AudioPlayer();
+  final List<AudioPlayer> _effects = List.generate(4, (_) => AudioPlayer());
   final AudioPlayer _ambience = AudioPlayer();
+  int _nextEffect = 0;
 
   String _resolve(String assetPath) => assetPackage == null
       ? assetPath
       : 'packages/$assetPackage/assets/$assetPath';
 
   @override
-  Future<void> playEffect(String assetPath) async {
-    await _effects.play(AssetSource(_resolve(assetPath)));
+  Future<void> playEffect(String assetPath, {required double volume}) async {
+    final effect = _effects[_nextEffect];
+    _nextEffect = (_nextEffect + 1) % _effects.length;
+    await effect.stop();
+    await effect.play(AssetSource(_resolve(assetPath)), volume: volume);
   }
 
   @override
   Future<void> startLoop(String assetPath) async {
     await _ambience.setReleaseMode(ReleaseMode.loop);
-    await _ambience.setVolume(0.22);
+    await _ambience.setVolume(0.18);
     await _ambience.play(AssetSource(_resolve(assetPath)));
   }
 
@@ -80,12 +89,18 @@ class AudioplayersBackend
 
   @override
   Future<void> stopAll() async {
-    await Future.wait([_effects.stop(), _ambience.stop()]);
+    await Future.wait([
+      for (final effect in _effects) effect.stop(),
+      _ambience.stop(),
+    ]);
   }
 
   @override
   Future<void> dispose() async {
-    await Future.wait([_effects.dispose(), _ambience.dispose()]);
+    await Future.wait([
+      for (final effect in _effects) effect.dispose(),
+      _ambience.dispose(),
+    ]);
   }
 }
 
@@ -97,6 +112,7 @@ class AudioService {
   }) : _backend = backend ?? AudioplayersBackend(assetPackage: assetPackage);
 
   final AudioBackend _backend;
+  final Map<AudioCue, DateTime> _lastPlayed = {};
   Timer? _duckTimer;
   bool enabled;
 
@@ -107,7 +123,16 @@ class AudioService {
 
   Future<void> play(AudioCue cue) async {
     if (!enabled) return;
-    await _safe(() => _backend.playEffect('audio/${cue.fileName}'));
+    final now = DateTime.now();
+    final previous = _lastPlayed[cue];
+    if (previous != null &&
+        now.difference(previous).inMilliseconds < cue.cooldownMs) {
+      return;
+    }
+    _lastPlayed[cue] = now;
+    await _safe(
+      () => _backend.playEffect('audio/${cue.fileName}', volume: cue.volume),
+    );
   }
 
   Future<void> startAmbience() async {
@@ -136,7 +161,7 @@ class AudioService {
     final duckable = _backend as DuckableAudioBackend;
     await _safe(() => duckable.setAmbienceVolume(.08));
     _duckTimer = Timer(duration, () {
-      if (enabled) unawaited(_safe(() => duckable.setAmbienceVolume(.22)));
+      if (enabled) unawaited(_safe(() => duckable.setAmbienceVolume(.18)));
     });
   }
 

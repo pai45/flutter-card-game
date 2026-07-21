@@ -7,6 +7,7 @@ import '../../../config/enums.dart';
 import '../../../config/theme.dart';
 import '../../../models/cards.dart';
 import '../../../models/match.dart';
+import '../../../utils/game_audio_mappings.dart';
 import '../../../utils/sound_effects.dart';
 import 'penalty_keeper_rig.dart';
 
@@ -334,7 +335,7 @@ class PenaltyGoalMouth extends StatelessWidget {
                         behavior: HitTestBehavior.opaque,
                         onTap: () {
                           HapticFeedback.selectionClick();
-                          playSound(SoundEffect.uiTap);
+                          playSound(SoundEffect.penaltyTarget);
                           onSelect(dir);
                         },
                         child: const SizedBox.expand(),
@@ -545,7 +546,7 @@ class _PenaltyInteractionArenaState extends State<PenaltyInteractionArena>
 
   void _select(PenaltyDirection direction) {
     HapticFeedback.selectionClick();
-    playSound(SoundEffect.uiTap);
+    playSound(SoundEffect.penaltyTarget);
     widget.onSelect(direction);
   }
 
@@ -992,7 +993,7 @@ class _PenaltyGoalSceneState extends State<PenaltyGoalScene>
   void _fireImpact() {
     final goal = widget.kick.scored;
     final positiveForUser = widget.kick.byPlayer ? goal : !goal;
-    playSound(goal ? SoundEffect.goal : SoundEffect.save);
+    playSound(shootoutImpactSound(goal: goal));
     if (positiveForUser) {
       HapticFeedback.heavyImpact();
     } else {

@@ -13,6 +13,7 @@ import '../../config/theme.dart';
 import '../../games/tennis/tennis_engine.dart';
 import '../../games/tennis/tennis_game.dart';
 import '../../models/tennis.dart';
+import '../../utils/game_audio_mappings.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
@@ -74,6 +75,10 @@ class _TennisMatchScreenState extends State<TennisMatchScreen>
       resume: resume,
       onEvents: _onEvents,
     );
+    AudioController.instance.enterScene(
+      AudioScene.tennis,
+      musicEnabled: _settings.music,
+    );
     if (!kIsWeb) {
       unawaited(
         SystemChrome.setPreferredOrientations(const [
@@ -96,6 +101,7 @@ class _TennisMatchScreenState extends State<TennisMatchScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    AudioController.instance.leaveScene(AudioScene.tennis);
     if (!_settled && !_deliberateExit) {
       unawaited(_cubit.saveSnapshot(_game.snapshot()));
     }
@@ -108,27 +114,7 @@ class _TennisMatchScreenState extends State<TennisMatchScreen>
   void _onEvents(List<TennisEvent> events) {
     for (final event in events) {
       if (_settings.sound) {
-        switch (event.type) {
-          case TennisEventType.contact:
-            playSound(SoundEffect.tennisContact);
-            break;
-          case TennisEventType.bounce:
-            playSound(SoundEffect.tennisBounce);
-            break;
-          case TennisEventType.net:
-            playSound(SoundEffect.tennisNet);
-            break;
-          case TennisEventType.ace:
-          case TennisEventType.winner:
-            playSound(SoundEffect.goal);
-            break;
-          case TennisEventType.fault:
-          case TennisEventType.doubleFault:
-            playSound(SoundEffect.redCard);
-            break;
-          default:
-            break;
-        }
+        playSound(tennisSoundForEvent(event.type));
       }
       if (_settings.haptics && event.team == 0) {
         if (event.type == TennisEventType.perfectContact) {
@@ -179,7 +165,9 @@ class _TennisMatchScreenState extends State<TennisMatchScreen>
       ),
     );
     if (_settings.sound) {
-      playSound(summary.won ? SoundEffect.matchWin : SoundEffect.matchLose);
+      playSound(
+        summary.won ? SoundEffect.tennisVictory : SoundEffect.tennisDefeat,
+      );
     }
     if (_settings.haptics) HapticFeedback.heavyImpact();
     setState(() {
@@ -204,6 +192,7 @@ class _TennisMatchScreenState extends State<TennisMatchScreen>
   void _pause({bool auto = false}) {
     if (_settled || _game.engine.complete) return;
     _game.setPaused(true);
+    AudioController.instance.setSceneMusicEnabled(false);
     unawaited(_cubit.saveSnapshot(_game.snapshot()));
     if (mounted) {
       setState(() {
@@ -215,6 +204,7 @@ class _TennisMatchScreenState extends State<TennisMatchScreen>
 
   void _resume() {
     _game.setPaused(false);
+    AudioController.instance.setSceneMusicEnabled(_settings.music);
     setState(() {
       _paused = false;
       _showSettings = false;
@@ -254,6 +244,7 @@ class _TennisMatchScreenState extends State<TennisMatchScreen>
   void _updateSettings(TennisSettings settings) {
     _game.applySettings(settings);
     setState(() => _settings = settings);
+    AudioController.instance.setSceneMusicEnabled(settings.music);
     _cubit.updateSettings(settings);
   }
 

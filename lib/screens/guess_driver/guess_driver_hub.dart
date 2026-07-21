@@ -7,6 +7,7 @@ import '../../config/theme.dart';
 import '../../data/f1_guess_data.dart';
 import '../../models/daily_mystery.dart';
 import '../../services/secure_storage_service.dart';
+import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/daily_mystery_widgets.dart';
 import 'guess_driver_home_screen.dart';
 import 'guess_driver_logs_screen.dart';
@@ -86,6 +87,7 @@ class _GuessDriverTabContentState extends State<GuessDriverTabContent>
               heartsRemaining: state.remainingHearts,
               icon: Icons.sports_motorsports_rounded,
               accent: Cyber.pink,
+              audioProfile: DailyMysteryAudioProfile.driver,
               onHome: _cubit.showHome,
               onLogs: _cubit.showLogs,
               onConsumeReveal: _cubit.consumeResultReveal,

@@ -7,6 +7,7 @@ import '../../config/theme.dart';
 import '../../data/tennis_guess_data.dart';
 import '../../models/daily_mystery.dart';
 import '../../services/secure_storage_service.dart';
+import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/daily_mystery_widgets.dart';
 import 'guess_winner_home_screen.dart';
 import 'guess_winner_logs_screen.dart';
@@ -86,6 +87,7 @@ class _GuessWinnerTabContentState extends State<GuessWinnerTabContent>
               heartsRemaining: state.remainingHearts,
               icon: Icons.sports_tennis_rounded,
               accent: Cyber.lime,
+              audioProfile: DailyMysteryAudioProfile.tennis,
               onHome: _cubit.showHome,
               onLogs: _cubit.showLogs,
               onConsumeReveal: _cubit.consumeResultReveal,

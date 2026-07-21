@@ -1240,6 +1240,21 @@ class MockPredictionRepository implements PredictionRepository {
     shortName: 'B. Krejcikova',
     color: Color(0xffffffff),
   );
+  // ESPN athlete ids 3308 (FRA) / 9992 (ARG); flags from athlete.flag.href.
+  static const _muller = SportTeam(
+    id: 'alexandre_muller',
+    name: 'Alexandre Muller',
+    shortName: 'A. Muller',
+    color: Color(0xff002395),
+    flagUrl: 'https://a.espncdn.com/i/teamlogos/countries/500/fra.png',
+  );
+  static const _navone = SportTeam(
+    id: 'mariano_navone',
+    name: 'Mariano Navone',
+    shortName: 'M. Navone',
+    color: Color(0xff75AADB),
+    flagUrl: 'https://a.espncdn.com/i/teamlogos/countries/500/arg.png',
+  );
 
   // Fixtures are built relative to "now" so statuses stay believable on launch.
   late final DateTime _now = DateTime.now();
@@ -2060,6 +2075,29 @@ class MockPredictionRepository implements PredictionRepository {
         TennisSet(homeScore: 6, awayScore: 4, isHomeWinner: true),
       ]),
     ),
+    // ATP 250 Kitzbühel · Round 1 · Müller vs Navone (real result via ESPN).
+    // Source: site.api.espn.com/.../tennis/atp/scoreboard?dates=20260720,
+    // competition id 178881 — "Mariano Navone (ARG) bt Alexandre Muller (FRA)
+    // 6-4 6-0". Keyed by the real ESPN competition id (not a custom slug) so
+    // it dedupes cleanly with the same match if/when it's also live-fetched
+    // dynamically (enrichFixturesForSport keys by id, dynamic wins ties).
+    // Backs the settled '178881' quiz below.
+    SportMatch(
+      id: '178881',
+      leagueId: _atp.id,
+      sport: Sport.tennis,
+      home: _muller,
+      away: _navone,
+      kickoff: DateTime.utc(2026, 7, 20, 9, 5).toLocal(),
+      status: MatchStatus.finished,
+      homeScore: '0',
+      awayScore: '2',
+      resultLine: 'Navone won 6-4, 6-0',
+      tennisScorecard: const TennisScorecard(sets: [
+        TennisSet(homeScore: 4, awayScore: 6, isAwayWinner: true),
+        TennisSet(homeScore: 0, awayScore: 6, isAwayWinner: true),
+      ]),
+    ),
     // FIFA World Cup 26 knockout stage only: Round of 32 through Final.
     SportMatch(
       id: 'fifa_r32_mex_rsa',
@@ -2875,6 +2913,49 @@ class MockPredictionRepository implements PredictionRepository {
       home: 'B. Krejcikova',
       away: 'J. Paolini',
       isMens: false,
+    ),
+    // Settled from the real ESPN result (competition 178881): Navone beat
+    // Müller 6-4, 6-0 — straight sets, no tiebreak, a 6-0 "bagel" 2nd set,
+    // 12 games won by the winner. Every answer below is the real outcome.
+    '178881': const PredictionQuiz(
+      matchId: '178881',
+      questions: [
+        QuizQuestion(
+          id: 'q1',
+          text: 'Who will win the match?',
+          options: ['A. Muller', 'M. Navone'],
+          reward: 100,
+          settledOptionIndex: 1,
+        ),
+        QuizQuestion(
+          id: 'q2',
+          text: 'How many sets will the match last?',
+          options: ['2 sets', '3 sets'],
+          reward: 60,
+          settledOptionIndex: 0,
+        ),
+        QuizQuestion(
+          id: 'q3',
+          text: 'Will any set be decided by a tiebreak?',
+          options: ['Yes', 'No'],
+          reward: 50,
+          settledOptionIndex: 1,
+        ),
+        QuizQuestion(
+          id: 'q4',
+          text: 'Will either player win a set 6-0 ("bagel")?',
+          options: ['Yes', 'No'],
+          reward: 80,
+          settledOptionIndex: 0,
+        ),
+        QuizQuestion(
+          id: 'q5',
+          text: "How many games will the match winner take overall?",
+          options: ['Under 10 games', '10-12 games', '13+ games'],
+          reward: 70,
+          settledOptionIndex: 1,
+        ),
+      ],
     ),
     // Settled quiz so history / finished demos can show mixed ✓/✕ rows.
     'epl_mu_whu': const PredictionQuiz(

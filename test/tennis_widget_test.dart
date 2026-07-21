@@ -66,8 +66,6 @@ void main() {
             onOpenQuiz: (_) {},
             onOpenFootballBingo: () {},
             onOpenFootballChess: () {},
-            onOpenSuperOver: () {},
-            onOpenCricketDeck: () {},
             onOpenGuessPlayer: () {},
             onOpenBasketballGuessPlayer: () {},
             onOpenCricketGuessPlayer: () {},

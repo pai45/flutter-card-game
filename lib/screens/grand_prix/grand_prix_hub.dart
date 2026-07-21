@@ -8,18 +8,27 @@ import 'grand_prix_lobby_screen.dart';
 
 /// Standalone Grand Prix Dash shell — the F1 tab's first game. Owns the mode's
 /// cubit; the lobby is the only hub section (races are pushed routes), and
-/// app-level navigation is delegated up via [onNavigate]. No deck, no starter
-/// pack: the car is cosmetic (mirrors the quiz/bingo deck-free modes).
+/// app-level navigation is delegated up via [onNavigate]. The player's signed
+/// F1 driver comes from the shared starter pack (see `_enterGrandPrixGameFlow`
+/// in app.dart).
 class GrandPrixTabContent extends StatelessWidget {
-  const GrandPrixTabContent({required this.onNavigate, super.key});
+  const GrandPrixTabContent({
+    required this.onNavigate,
+    this.onBrowseShop,
+    super.key,
+  });
 
   final ValueChanged<AppSection> onNavigate;
+  final VoidCallback? onBrowseShop;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => GrandPrixCubit(SecureGameStorage())..load(),
-      child: GrandPrixLobbyScreen(onNavigate: onNavigate),
+      child: GrandPrixLobbyScreen(
+        onNavigate: onNavigate,
+        onBrowseShop: onBrowseShop,
+      ),
     );
   }
 }

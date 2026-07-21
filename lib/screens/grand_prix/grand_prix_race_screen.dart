@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +14,7 @@ import '../../data/grand_prix_circuits.dart';
 import '../../games/grand_prix/grand_prix_engine.dart';
 import '../../games/grand_prix/grand_prix_game.dart';
 import '../../models/grand_prix.dart';
+import '../../utils/game_audio_mappings.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import 'widgets/grand_prix_controls.dart';
@@ -42,6 +45,10 @@ class _GrandPrixRaceScreenState extends State<GrandPrixRaceScreen> {
   RaceSetup? _setup;
   bool _rewardsDispatched = false;
   bool _lightsScheduled = false;
+  bool _lightsOutSounded = false;
+  bool _engineStarted = false;
+  int _lastLightsOn = 0;
+  Timer? _engineTimer;
 
   @override
   void initState() {
@@ -57,9 +64,11 @@ class _GrandPrixRaceScreenState extends State<GrandPrixRaceScreen> {
       setup: _setup!,
       onPositionChanged: _cubit.onPlayerPositionChanged,
       onOvertake: _onOvertake,
-      onPlayerFinished: _cubit.onRaceFinished,
+      onPlayerFinished: _onPlayerFinished,
+      onAudioEvent: _onRaceAudioEvent,
       reducedMotion: reducedMotion,
     );
+    AudioController.instance.enterScene(AudioScene.grandPrix);
     // The phase is already `grid` when this screen mounts, so the
     // BlocListener never fires for it — kick off the lights beat here.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -78,12 +87,16 @@ class _GrandPrixRaceScreenState extends State<GrandPrixRaceScreen> {
 
   @override
   void dispose() {
+    _engineTimer?.cancel();
+    AudioController.instance.stopDynamicLoop();
+    AudioController.instance.leaveScene(AudioScene.grandPrix);
     _game.stopRace();
     // Leaving mid-race discards the attempt (no stats, no reward). A RACE
     // AGAIN relaunch has already replaced the setup by the time this route
     // is disposed — the identity check keeps us from resetting the new race.
     final phase = _cubit.state.phase;
-    final midRace = phase == GrandPrixPhase.grid ||
+    final midRace =
+        phase == GrandPrixPhase.grid ||
         phase == GrandPrixPhase.lights ||
         phase == GrandPrixPhase.racing;
     if (midRace && identical(_cubit.state.setup, _setup)) {
@@ -94,11 +107,30 @@ class _GrandPrixRaceScreenState extends State<GrandPrixRaceScreen> {
 
   void _onOvertake(OvertakeEvent event) {
     _cubit.onOvertake(event);
-    playSound(SoundEffect.whoosh);
+    playSound(SoundEffect.gpOvertake);
     HapticFeedback.selectionClick();
   }
 
+  void _onPlayerFinished(PlayerRaceOutcome outcome) {
+    if (!outcome.dnf) playSound(SoundEffect.gpFinish);
+    _cubit.onRaceFinished(outcome);
+  }
+
+  void _onRaceAudioEvent(GrandPrixAudioEvent event) {
+    playSound(grandPrixEventSound(event));
+  }
+
   void _drive(BuildContext context, GrandPrixState state) {
+    if (state.lightsOn > _lastLightsOn) {
+      playSound(SoundEffect.gpLightOn);
+    }
+    if (state.lightsOut &&
+        !_lightsOutSounded &&
+        state.launchGrade != LaunchGrade.jump) {
+      _lightsOutSounded = true;
+      playSound(SoundEffect.gpLightsOut);
+    }
+    _lastLightsOn = state.lightsOn;
     switch (state.phase) {
       case GrandPrixPhase.grid:
         _scheduleLights(context);
@@ -106,7 +138,10 @@ class _GrandPrixRaceScreenState extends State<GrandPrixRaceScreen> {
         final grade = state.launchGrade;
         if (grade != null) {
           _game.startRace(grade);
-          playSound(SoundEffect.bannerSlam);
+          if (grade == LaunchGrade.jump) {
+            playSound(SoundEffect.gpJumpStart);
+          }
+          _startEngineAudio();
           if (grade == LaunchGrade.jump) {
             HapticFeedback.heavyImpact();
           } else {
@@ -122,18 +157,32 @@ class _GrandPrixRaceScreenState extends State<GrandPrixRaceScreen> {
     }
   }
 
+  void _startEngineAudio() {
+    if (_engineStarted) return;
+    _engineStarted = true;
+    AudioController.instance.startDynamicLoop();
+    _engineTimer = Timer.periodic(const Duration(milliseconds: 120), (_) {
+      AudioController.instance.updateDynamicLoop(
+        (_game.speedKph.value / 320).clamp(0.0, 1.0),
+      );
+    });
+  }
+
   void _onFinished(GrandPrixState state) {
     final result = state.result;
     if (_rewardsDispatched || result == null) return;
     _rewardsDispatched = true;
     _game.stopRace();
-    playSound(
-      result.retired
-          ? SoundEffect.bannerSlam
-          : result.position <= 3
-              ? SoundEffect.matchWin
-              : SoundEffect.bannerSlam,
-    );
+    _engineTimer?.cancel();
+    AudioController.instance.stopDynamicLoop();
+    final resultCue = result.retired
+        ? SoundEffect.gpDnf
+        : result.position <= 3
+        ? SoundEffect.gpPodium
+        : result.verdict == GrandPrixVerdict.points
+        ? SoundEffect.gpPoints
+        : null;
+    if (resultCue != null) playSound(resultCue);
     HapticFeedback.heavyImpact();
     final verdictLabel = result.retired
         ? 'Retired'
@@ -169,7 +218,10 @@ class _GrandPrixRaceScreenState extends State<GrandPrixRaceScreen> {
       backgroundColor: Cyber.bg,
       body: BlocListener<GrandPrixCubit, GrandPrixState>(
         listenWhen: (p, c) =>
-            p.phase != c.phase || p.launchGrade != c.launchGrade,
+            p.phase != c.phase ||
+            p.launchGrade != c.launchGrade ||
+            p.lightsOn != c.lightsOn ||
+            p.lightsOut != c.lightsOut,
         listener: _drive,
         child: SafeArea(
           child: Stack(
@@ -192,8 +244,7 @@ class _GrandPrixRaceScreenState extends State<GrandPrixRaceScreen> {
                   onBrake: (down) => _game.setInputs(brake: down),
                   onThrottle: (down) {
                     _game.setInputs(throttle: down);
-                    if (down &&
-                        _cubit.state.phase == GrandPrixPhase.lights) {
+                    if (down && _cubit.state.phase == GrandPrixPhase.lights) {
                       _cubit.registerThrottleTap();
                     }
                   },
@@ -350,7 +401,8 @@ class _LightsRig extends StatelessWidget {
           p.lightsOn != c.lightsOn ||
           p.lightsOut != c.lightsOut,
       builder: (context, state) {
-        final visible = state.phase == GrandPrixPhase.grid ||
+        final visible =
+            state.phase == GrandPrixPhase.grid ||
             state.phase == GrandPrixPhase.lights;
         if (!visible) return const SizedBox.shrink();
         final waiting = state.phase == GrandPrixPhase.grid;
@@ -378,8 +430,8 @@ class _LightsRig extends StatelessWidget {
               waiting
                   ? 'ON THE GRID'
                   : state.lightsOut
-                      ? 'GO GO GO!'
-                      : 'WAIT FOR LIGHTS OUT…',
+                  ? 'GO GO GO!'
+                  : 'WAIT FOR LIGHTS OUT…',
               style: Cyber.label(
                 10,
                 color: state.lightsOut ? Cyber.success : Cyber.muted,
@@ -407,10 +459,7 @@ class _Lamp extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: on ? Cyber.danger : Cyber.panel,
-        border: Border.all(
-          color: on ? Cyber.danger : Cyber.border,
-          width: 1.4,
-        ),
+        border: Border.all(color: on ? Cyber.danger : Cyber.border, width: 1.4),
         boxShadow: on ? Cyber.glow(Cyber.danger, alpha: 0.6, blur: 14) : null,
       ),
     );
@@ -509,9 +558,7 @@ class _LapFlashState extends State<_LapFlash> {
     // Only fires forwards: a fresh race mounts a fresh screen, so no resets.
     if (lap <= 1 || lap == _shownLap) return;
     setState(() => _shownLap = lap);
-    playSound(
-      lap == widget.game.laps ? SoundEffect.bannerSlam : SoundEffect.whoosh,
-    );
+    playSound(SoundEffect.gpLap);
     HapticFeedback.mediumImpact();
   }
 
@@ -549,9 +596,11 @@ class _LapFlashState extends State<_LapFlash> {
           ),
           child: Text(
             finalLap ? 'FINAL LAP' : 'LAP $_shownLap / ${widget.game.laps}',
-            style: Cyber.display(15, color: color, letterSpacing: 2).copyWith(
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
+            style: Cyber.display(
+              15,
+              color: color,
+              letterSpacing: 2,
+            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
         ),
       ),
@@ -589,21 +638,27 @@ class _StuckWarning extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.warning_amber_rounded,
-                    color: Cyber.danger, size: 26),
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Cyber.danger,
+                  size: 26,
+                ),
                 const SizedBox(height: 6),
                 Text(
                   'GET BACK ON TRACK',
-                  style:
-                      Cyber.display(16, color: Cyber.danger, letterSpacing: 2),
+                  style: Cyber.display(
+                    16,
+                    color: Cyber.danger,
+                    letterSpacing: 2,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'RETIRING IN ${remaining.ceil()}s',
                   style: Cyber.label(11, color: Cyber.danger, letterSpacing: 2)
                       .copyWith(
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
                 ),
               ],
             ),

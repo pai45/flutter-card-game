@@ -2,7 +2,6 @@ import '../../models/cards.dart';
 import '../../models/deck.dart';
 import '../../models/oz_coin_ledger.dart';
 import '../../models/streak.dart';
-import '../../models/super_over.dart';
 import '../../models/sport_match.dart';
 import '../../models/xp_ledger.dart';
 
@@ -144,6 +143,8 @@ class BasketballStarterPackOpened extends GameEvent {}
 
 class TennisStarterPackOpened extends GameEvent {}
 
+class GrandPrixStarterPackOpened extends GameEvent {}
+
 class DailyDropClaimed extends GameEvent {}
 
 class ShopPackPurchased extends GameEvent {
@@ -208,6 +209,19 @@ class ShopFinalOverKitPurchased extends GameEvent {
   });
 
   final String kitId;
+  final int price;
+  final String name;
+}
+
+/// Buy a Grand Prix livery with coins — BUY → OWNED, equip in pit deck.
+class ShopGrandPrixLiveryPurchased extends GameEvent {
+  ShopGrandPrixLiveryPurchased({
+    required this.liveryId,
+    required this.price,
+    required this.name,
+  });
+
+  final String liveryId;
   final int price;
   final String name;
 }
@@ -403,12 +417,4 @@ class TennisFinished extends GameEvent {
   final int opponentGames;
   final int xp;
   final int coins;
-}
-
-/// Fired once by Super Over mode when an over finishes to award XP
-/// and record history.
-class SuperOverFinished extends GameEvent {
-  SuperOverFinished({required this.summary});
-
-  final SuperOverMatchSummary summary;
 }

@@ -83,8 +83,6 @@ void main() {
               },
               onOpenFootballBingo: () => footballBingoOpens++,
               onOpenFootballChess: () => footballChessOpens++,
-              onOpenSuperOver: () {},
-              onOpenCricketDeck: () {},
               onOpenGuessPlayer: () => footballGuessPlayerOpens++,
               onOpenBasketballGuessPlayer: () => basketballGuessPlayerOpens++,
               onOpenCricketGuessPlayer: () => cricketGuessPlayerOpens++,

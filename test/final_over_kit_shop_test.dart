@@ -17,19 +17,14 @@ void main() {
     expect(normalizeOwnedFinalOverKitIds(const ['ember']), contains('voltage'));
   });
 
-  test('finalOverBatsmen persists separately from Super Over batsmen', () {
-    final slot = StoredDeckSlot(
+  test('finalOverBatsmen persists in deck slot json', () {
+    const slot = StoredDeckSlot(
       id: 'slot-test',
       name: 'Test',
-      attackers: const [],
-      defenders: const [],
-      actions: const [],
-      batsmen: const [
-        'ind-virat-kohli',
-        'eng-joe-root',
-        'afg-rahmanullah-gurbaz',
-      ],
-      finalOverBatsmen: const [
+      attackers: [],
+      defenders: [],
+      actions: [],
+      finalOverBatsmen: [
         'ind-virat-kohli',
         'eng-joe-root',
         'pak-babar-azam',
@@ -38,8 +33,22 @@ void main() {
 
     final restored = StoredDeckSlot.fromJson(slot.toJson());
 
-    expect(restored.batsmen, slot.batsmen);
     expect(restored.finalOverBatsmen, slot.finalOverBatsmen);
-    expect(restored.finalOverBatsmen, isNot(equals(restored.batsmen)));
+  });
+
+  test('legacy batsmen json migrates into finalOverBatsmen', () {
+    final restored = StoredDeckSlot.fromJson({
+      'id': 'slot-legacy',
+      'name': 'Legacy',
+      'attackers': <String>[],
+      'defenders': <String>[],
+      'actions': <String>[],
+      'batsmen': ['ind-virat-kohli', 'eng-joe-root', 'afg-rahmanullah-gurbaz'],
+    });
+
+    expect(
+      restored.finalOverBatsmen,
+      ['ind-virat-kohli', 'eng-joe-root', 'afg-rahmanullah-gurbaz'],
+    );
   });
 }

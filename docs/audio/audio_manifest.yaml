@@ -1,0 +1,2019 @@
+version: 1
+project: StatOz / Pitch Duel
+policy: cc0-plus-original-synthesis
+sample_rate_hz: 44100
+channels: 1
+encoding: PCM_16
+assets:
+  - path: assets/audio/achievement.wav
+    use: achievement unlocked
+    category: reward
+    duration_seconds: 0.920
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: dd210bb87c92b597bb0c9c5c8da2191ab04d3017d0bc8224c109b269cb9e1299
+  - path: assets/audio/attack.wav
+    use: attack role
+    category: gameplay
+    duration_seconds: 0.280
+    loop: false
+    provenance: Kenney CC0 `impactPunch_medium_001.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e71d23abcc3f10d9d6bc9615b2a431fff70b12333a5fcdd9964457564ace4349
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: bd5280879446881cc27df3bb055ce4f85032f40c78ea2f525c7c35d4f24961a6
+  - path: assets/audio/banner_slam.wav
+    use: result banner
+    category: reward
+    duration_seconds: 0.440
+    loop: false
+    provenance: Kenney CC0 `impactPunch_heavy_004.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: f4c0c3eb8ab6517583b8218ed03f28923d1b687379aab4c1d5a6d4c10cf8e500
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 5b47c1d80b7dfd19bac9a5b1b29759cff1a25990a0655998d15ee528bfc9dc59
+  - path: assets/audio/basketball_arena.wav
+    use: basketball arena
+    category: ambient
+    duration_seconds: 6.000
+    loop: true
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 3786233c599a595e9e3727af09801b9e086ae95cdd0e79b49125d399fc7e0734
+  - path: assets/audio/basketball_dossier_wrong.wav
+    use: basketball mystery miss
+    category: gameplay
+    duration_seconds: 0.400
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: c479ac6bbd781273d385b0285beb35fd98b0a371740dc9d01c8f70122eff2a6d
+  - path: assets/audio/bb_backboard.wav
+    use: backboard
+    category: gameplay
+    duration_seconds: 0.320
+    loop: false
+    provenance: Kenney CC0 `impactGlass_medium_001.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: d3d806cb3012c9ddd87010b30295ccb74d6d8b690077d19e67afd09a9d8feb03
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 9f90640ddac816d49c11ab2332e75682af8fd925829e4c582aa051af007b6ca9
+  - path: assets/audio/bb_block.wav
+    use: block
+    category: gameplay
+    duration_seconds: 0.360
+    loop: false
+    provenance: Kenney CC0 `impactGeneric_light_001.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: c3cd1c073d186ae8fa35788ba94de581f1826e7427a7bb26490b2695fac18efa
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 10930649ee0ce64a00346c5f6edf0fc48d7b749d376fafecf1ee0dd485b4479c
+  - path: assets/audio/bb_buzzer.wav
+    use: period horn
+    category: reward
+    duration_seconds: 0.920
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 45892b32e538b2d3152237cb86b371f2ba78ee26caadc60b13f5dd3ccb8d372b
+  - path: assets/audio/bb_crowd_roar.wav
+    use: arena roar
+    category: reward
+    duration_seconds: 1.450
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 8cb8249885e7b79e1bc0616f86e1ba0985f39ffe6e6cdffb6c52acd2eb437a46
+  - path: assets/audio/bb_defeat.wav
+    use: basketball defeat
+    category: reward
+    duration_seconds: 1.050
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 1ed28bedb7c19284b57c0bea62691fcca797737848b3400d0decf0eedd797c4e
+  - path: assets/audio/bb_dribble.wav
+    use: dribble
+    category: gameplay
+    duration_seconds: 0.160
+    loop: false
+    provenance: Kenney CC0 `impactSoft_heavy_000.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 49e7ca88743fca974bb8676ea138b751cfd8f9033b5e7af8736c2a215d6edbc1
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 6a2892b477d3673e0b28ca30bb0458c1f204f548ff7146fe38f8f4145048c7ca
+  - path: assets/audio/bb_dunk_slam.wav
+    use: dunk
+    category: reward
+    duration_seconds: 0.820
+    loop: false
+    provenance: Kenney CC0 `impactPunch_heavy_001.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: f92f5cb6ba4ff2766497292ffd90865654317eeca976f5652e0708dbdcdc0dd9
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 96dbe147a62569267b98a3dfa7e53c984a661a60f384b25e5e48d1cee650e18b
+  - path: assets/audio/bb_heat_end.wav
+    use: heat ended
+    category: gameplay
+    duration_seconds: 0.520
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: fcab0a20c76e43e9ec3ca19ef9e04f940012f58f93c635b0439bc27d6c151acd
+  - path: assets/audio/bb_perfect_release.wav
+    use: perfect release
+    category: gameplay
+    duration_seconds: 0.320
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: f06ada9d6bbeedaf18c981bfebf57cd737c5a2084c9071476c709b6b6769e68a
+  - path: assets/audio/bb_poster.wav
+    use: poster play
+    category: reward
+    duration_seconds: 0.900
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: d5b76ce273390e5b1c0ad68ee34c8b11092cfbe90782c388f6351c3755711985
+  - path: assets/audio/bb_rebound.wav
+    use: rebound
+    category: gameplay
+    duration_seconds: 0.300
+    loop: false
+    provenance: Kenney CC0 `impactSoft_heavy_004.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e008f0b6b14f62339c8fe9f9b45cbd6317ba4f66604c4899053b8017020a36f0
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: f48ec64b3cda1374d51c67e8eed471b07ebf23fd89af04561327bdcb1733749b
+  - path: assets/audio/bb_release.wav
+    use: shot release
+    category: gameplay
+    duration_seconds: 0.200
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 4087c2d1bbbe9f8fbeb9b661b1f2db571f24935bb46f4e9576d16306803f8ffd
+  - path: assets/audio/bb_rim_rattle.wav
+    use: rim miss
+    category: gameplay
+    duration_seconds: 0.550
+    loop: false
+    provenance: Kenney CC0 `impactMetal_medium_004.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 03e10f800199c7166208e41c11cf4acfac6cc265467f02357da71972bc967295
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: a9821052ff9d77ebacfad11af2728a1622aa6fc4894d72d9620498d4b112a6c4
+  - path: assets/audio/bb_shot_clock.wav
+    use: shot-clock violation
+    category: gameplay
+    duration_seconds: 0.580
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 2bf7695088db2f53d114f32b7a9697cd02445a6d5078c6c2ec4d8688bca549c3
+  - path: assets/audio/bb_sneaker_squeak.wav
+    use: hard court cut
+    category: gameplay
+    duration_seconds: 0.130
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 1fbcd10e50dd6230ea8d0f6bfdc536e55ce0033e7075576aace23308b559c084
+  - path: assets/audio/bb_steal.wav
+    use: steal
+    category: gameplay
+    duration_seconds: 0.300
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 61d3f506c1602721aca8860e1ba3e348fa3ac8373176d7590c5ad6873654c1f9
+  - path: assets/audio/bb_substitution.wav
+    use: substitution
+    category: ui
+    duration_seconds: 0.340
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: f02e137892082fb04edc48c78caf0148cbaa7caabc647c44cdda70c65efdce5f
+  - path: assets/audio/bb_swish.wav
+    use: clean basket
+    category: gameplay
+    duration_seconds: 0.380
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: ce2bc2bb385bd7c807c8c25c6469af4b4ccc4cf086d08917c320b1b9ef94419c
+  - path: assets/audio/bb_victory.wav
+    use: basketball victory
+    category: reward
+    duration_seconds: 1.280
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: e1d39e81b7282f8ae4abff6c33d145b999246dc163661b9dd9a31bdd54e1915c
+  - path: assets/audio/bingo_complete.wav
+    use: completed grid
+    category: reward
+    duration_seconds: 1.180
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 7cde713c3422a368bd7fb0bcf9c0ac5d937d5bdb1ae83c9458341972f0071899
+  - path: assets/audio/bingo_correct.wav
+    use: correct placement
+    category: gameplay
+    duration_seconds: 0.360
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: b41a1cc52164dfbc73b405b659ea29260fd4c886ec8f79cc713f990a3da2942b
+  - path: assets/audio/bingo_line.wav
+    use: completed line
+    category: reward
+    duration_seconds: 0.720
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 95e4ede4868342885a247e40d7a676ad54f2f7bf21e851ae2d8bb9941bea68a5
+  - path: assets/audio/bingo_wrong.wav
+    use: wrong cell
+    category: gameplay
+    duration_seconds: 0.340
+    loop: false
+    provenance: Kenney CC0 `error_003.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/interface-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 885b28175c7b511118bcffab95675b48bbac9005cf6514656ebdad979276b3ab
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 9ee7598607a66663ad9ac29c1749c6c51cb676d3d9c5ed16097ab5581bfde3bc
+  - path: assets/audio/block.wav
+    use: blocked play
+    category: gameplay
+    duration_seconds: 0.340
+    loop: false
+    provenance: Kenney CC0 `impactGeneric_light_004.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: f906fa3a37acc4372787b496efcedefa2856045d5ec9456a3bd6c303c0eabb41
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: caa1460969b2806fc82d2329f6d009c85728cd7e96c65cab2a7440e735885a67
+  - path: assets/audio/card_reveal.wav
+    use: card or verdict flip
+    category: gameplay
+    duration_seconds: 0.380
+    loop: false
+    provenance: Kenney CC0 `open_003.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/interface-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: bcdca6b5c9c33aa15ca3fb18a1fa8d98a01b528b85be08c5a610e57c75fc022d
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 6c7ce8eb0a67cdfb00852759fbb5247d575f88fbb57c855a420ef92678863a09
+  - path: assets/audio/card_select.wav
+    use: card or answer selection
+    category: ui
+    duration_seconds: 0.120
+    loop: false
+    provenance: Kenney CC0 `select_006.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/interface-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: b44550fa8d3276c072ce7c3c1315d949f7a28a95bc22b3618ad4eea62eac8abe
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: cb3d3e7dc7b527f9d4a78a21f546a39b2a6e9760fa0f90d77ac618dc02d9eec6
+  - path: assets/audio/card_slam.wav
+    use: card/result landing
+    category: gameplay
+    duration_seconds: 0.300
+    loop: false
+    provenance: Kenney CC0 `impactSoft_heavy_002.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: d130ae541951243d3f6ed963d0057450a445ffe117fbf9a084d34eb1635cb563
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 77b0c2d5571991ad8d765fabd4c3cfc197f9f8a8fbe61f874e835fdbaae74182
+  - path: assets/audio/cheering.wav
+    use: generic crowd payoff
+    category: reward
+    duration_seconds: 1.600
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 44332e7475fb64c1aeba6a2b75055ccf75177040238cf9bc2b0878ebff30776f
+  - path: assets/audio/chess_advanced.wav
+    use: advanced play
+    category: gameplay
+    duration_seconds: 0.300
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 95d5d36e2af18f59103ad2facba50219c3e62085e0fd0eed5491e04aee3cc7d9
+  - path: assets/audio/chess_dribble.wav
+    use: board dribble
+    category: gameplay
+    duration_seconds: 0.280
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 683395b472ade81022f17ff418cb02c8e0d622c80a9257ff4e07a64ed0658c85
+  - path: assets/audio/chess_full_time.wav
+    use: full-time whistle
+    category: reward
+    duration_seconds: 0.720
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 44fef6db1064454263c01c833da82edb463846e7723552ab15566f15f68f437b
+  - path: assets/audio/chess_move.wav
+    use: board move
+    category: ui
+    duration_seconds: 0.200
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 8824fcbcb5022e3e3414ef5d33939f26dad06b0dc456ec857868ed3df5bc7768
+  - path: assets/audio/chess_pass.wav
+    use: board pass
+    category: gameplay
+    duration_seconds: 0.280
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 57e05461e07b6302cc7b59e54607bb5f6f44d7fdda0f4dbfeb14ca2e321b894f
+  - path: assets/audio/chess_press.wav
+    use: press
+    category: gameplay
+    duration_seconds: 0.300
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: e71ae62f1e813dbe0931630da799b23446e64a4313979cf2f3cdb21af26a0aba
+  - path: assets/audio/chess_shoot.wav
+    use: board shot
+    category: gameplay
+    duration_seconds: 0.350
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 3fc288e14ddb7e0ee31c1a75674d7dddcfc987ac02d56bbe5fed005765f964fe
+  - path: assets/audio/chess_slide.wav
+    use: slide tackle
+    category: gameplay
+    duration_seconds: 0.480
+    loop: false
+    provenance: Kenney CC0 `impactSoft_medium_003.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 5c4a1f35fde7e14046931da7bc3d1b23736541b7190ba107e08a379c4ca43cd6
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 58c033bd3787d43c0c954fdb3c1100e324a38e4704b3d16efeb8d3737045c6a1
+  - path: assets/audio/chess_tackle.wav
+    use: tackle
+    category: gameplay
+    duration_seconds: 0.400
+    loop: false
+    provenance: Kenney CC0 `impactPunch_medium_004.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 4a256878a3afb994ec9a4399336687748e68c7c136872c08c9c797d8c4e2464a
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: db3386095c74042c4682a31dea5ef9425796ad12134d58ebaee78a076ab92a76
+  - path: assets/audio/chess_turnover.wav
+    use: turnover
+    category: reward
+    duration_seconds: 0.450
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 10b4d319d414a51877f45758558e6a93e67c2ee0659df521168c2b6d8e99d4d8
+  - path: assets/audio/coin_flip.wav
+    use: coin spinning
+    category: gameplay
+    duration_seconds: 0.550
+    loop: false
+    provenance: Kenney CC0 `impactMetal_light_000.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 33b5e6e37c6e9d54e07bf5a89b12c76e879f40c1ea83cdd82714df1d6f9fec6d
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: db43060b8d9a061056013ac967fb58658c29ac29f6d6a8a9b4d1a37cb058bf4b
+  - path: assets/audio/coin_land.wav
+    use: coin landing
+    category: gameplay
+    duration_seconds: 0.180
+    loop: false
+    provenance: Kenney CC0 `impactMetal_light_004.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 9b1c35820fba507081261f19ab5f461f69a5e2627a7d91acdb73ca3cfc997979
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 9888c4414076fa330f9e84785e6ae7b20d4a046d67568c1474bdbfbcf2553184
+  - path: assets/audio/coin_spend.wav
+    use: currency spent
+    category: ui
+    duration_seconds: 0.380
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: ac00add7624fbb217bc3cd34b9e00d83472840f3c30d94678b2fbc4678d51f9e
+  - path: assets/audio/coins.wav
+    use: currency earned
+    category: reward
+    duration_seconds: 0.620
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 1b08fe23bcc6bea8f6b4a55c0836244e5353de287c767a430b7b3f52cd631834
+  - path: assets/audio/commit.wav
+    use: lock an action
+    category: gameplay
+    duration_seconds: 0.260
+    loop: false
+    provenance: Kenney CC0 `confirmation_004.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/interface-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 568967a3d9f8a8f6af54ea01729c4882284308f2a27d78c07ffd7ee0d6951661
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 9e18a9830105225f21046207cb93b6299029f3d78ce508f0a91523b74046fd06
+  - path: assets/audio/countdown_tick.wav
+    use: countdown tick
+    category: ui
+    duration_seconds: 0.100
+    loop: false
+    provenance: Kenney CC0 `tick_004.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/interface-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 0253d5f7d8d2afbbc370eac2a4539bb844239f0c98343e516d376b137c06d27c
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 92c11dbc6313dfcc79697dd00a49b9427e778007c787f4a46a4f630c9081b8f8
+  - path: assets/audio/cricket_bounce.wav
+    use: pitch bounce
+    category: gameplay
+    duration_seconds: 0.130
+    loop: false
+    provenance: Kenney CC0 `impactSoft_medium_002.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 5069e3571a77d7f7aae9ef71d0364aa245fb7d64a7c8cc9956f221d03088c089
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: af8c70436d8c4cf16ef6535328cfe44843644400513bb211a4c3c8812b365cb5
+  - path: assets/audio/cricket_boundary.wav
+    use: four
+    category: reward
+    duration_seconds: 1.050
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 7359fc51ba4d88e9bb141aff115bb7be2b5f88ae57ac25d003b650d060baccd7
+  - path: assets/audio/cricket_catch.wav
+    use: catch taken
+    category: gameplay
+    duration_seconds: 0.300
+    loop: false
+    provenance: Kenney CC0 `impactSoft_heavy_001.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 4d0096364ba9e46119d2ff6df493fdc101bd2e1efae061da5e5f77a53b3fdcb6
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: cd69090c2f43eeb85d9335cde36165f9f329bfc6eb913300186bde027efae681
+  - path: assets/audio/cricket_crowd_pressure.wav
+    use: final-ball pressure
+    category: gameplay
+    duration_seconds: 2.200
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 3a3e4f181bcfb25490d8ade615e47aeb983273ddbbbde7e048aef758c61877ce
+  - path: assets/audio/cricket_defeat.wav
+    use: failed chase
+    category: reward
+    duration_seconds: 1.150
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 18a5023c393794e5b0a2e6d273f555fbca7d46f7f690a670181fc2a861036b62
+  - path: assets/audio/cricket_dossier_wrong.wav
+    use: cricket mystery miss
+    category: gameplay
+    duration_seconds: 0.380
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 5d221350a58f4ad2e3e986b6a843bd7539ef1c40e205eb84faf11e9092966e3e
+  - path: assets/audio/cricket_drop.wav
+    use: catch dropped
+    category: gameplay
+    duration_seconds: 0.280
+    loop: false
+    provenance: Kenney CC0 `impactSoft_medium_001.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 7642a4fd43e547afe4f7adfadb3dabb681c0ff512f52c1674bae30a726841faf
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 89982662ad91ba70de606c1b517a8c8550e58ff0733845b7b65bbbe645c387f3
+  - path: assets/audio/cricket_edge.wav
+    use: bat edge
+    category: gameplay
+    duration_seconds: 0.200
+    loop: false
+    provenance: Kenney CC0 `impactWood_light_001.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 4b76bf3ccc8e60d19188f3165b778a7817786faa6887c55d9049bcbeef3b425f
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: af9ade0b3690cf818ec4793d4d4145ca90e53837407ada89b0896a3f38baadf7
+  - path: assets/audio/cricket_extra.wav
+    use: wide or no-ball
+    category: gameplay
+    duration_seconds: 0.300
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 3d73baa6e74dc14bb864fb32c7f21486b854f8b1acbb2802950a33b398dc9671
+  - path: assets/audio/cricket_footstep.wav
+    use: bowler run-up
+    category: gameplay
+    duration_seconds: 0.150
+    loop: false
+    provenance: Kenney CC0 `footstep_grass_002.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 73a520139f5be716a403bfe9c80e0e94d1e61d8e9de04a354b336392164b53dc
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 37b5c8c6fbc867285b51f65ce2bebb3e4f06662718cdd755e82b18b1b1ac1625
+  - path: assets/audio/cricket_good.wav
+    use: controlled bat contact
+    category: gameplay
+    duration_seconds: 0.230
+    loop: false
+    provenance: Kenney CC0 `impactWood_light_004.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e10009f67ddaeb3a59a3e1129cfc1615d84ba60ab578eae07e7092ac223f099c
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 166e51faf956e9adcf68f3c71c855f31ecf539d76e4829525731039e4a2cd34f
+  - path: assets/audio/cricket_great.wav
+    use: strong bat contact
+    category: gameplay
+    duration_seconds: 0.270
+    loop: false
+    provenance: Kenney CC0 `impactWood_medium_003.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 635c37cfcd854b187d643d450ff0397798dcc29ae94da32192b814fae6bd854c
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: c6fada575f8077114f9c6216fb7c04777273c1c605c3e0a0f59528efa2570db8
+  - path: assets/audio/cricket_keeper.wav
+    use: keeper collection
+    category: gameplay
+    duration_seconds: 0.250
+    loop: false
+    provenance: Kenney CC0 `impactSoft_medium_004.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: b0a4dea90eed47accf50b768beff1166f2f1486fb139e4d025b2427637624bca
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 9734f172f9770ef2513acf2a8fbabf15e3e67a72c4b5623a21300e9babca7d07
+  - path: assets/audio/cricket_perfect.wav
+    use: perfect bat contact
+    category: gameplay
+    duration_seconds: 0.300
+    loop: false
+    provenance: Kenney CC0 `impactWood_heavy_001.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: f1b07a53ac10c615fff9ba470511fdeb722b5902e1a8520759fc20ad6f546015
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 863dfb794372be13993630fb087bbc99a945f1b93075d4e6d95149bc8699a830
+  - path: assets/audio/cricket_power.wav
+    use: power shot activation
+    category: reward
+    duration_seconds: 0.780
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: ce6500559f2bb96b57195935558f241d5ee93ca45f03e44dd7508de5c66738b9
+  - path: assets/audio/cricket_release.wav
+    use: ball release
+    category: gameplay
+    duration_seconds: 0.190
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: b4128e4eaf203099946c8f8ab56c233f14d427a972019288700b9e9bc5ae9e11
+  - path: assets/audio/cricket_roll.wav
+    use: ball rolling
+    category: gameplay
+    duration_seconds: 0.500
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: e2267578e24d96c579eb2f5b8f2cdb21bfe6da3ef929b5d3ed350b2631651faa
+  - path: assets/audio/cricket_run.wav
+    use: running between wickets
+    category: gameplay
+    duration_seconds: 0.220
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 77407189a177cffb380cd3ab584e19baa0b0127ddad688e6ef62926f426aa22a
+  - path: assets/audio/cricket_run_out.wav
+    use: run-out
+    category: reward
+    duration_seconds: 0.780
+    loop: false
+    provenance: Kenney CC0 `impactWood_heavy_002.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: ce1e06f2a05f2634c645cb72f6a1623e64bc2d92be34917430a61031fb6597d4
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: e5b8b2be3f97f8f939a6d233bddd59e3e96959aa38c4966863786537df39361f
+  - path: assets/audio/cricket_six.wav
+    use: six
+    category: reward
+    duration_seconds: 1.300
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 2913ecc5e0a82d8ec83f86e43e6dc9b037f92d2e84e3cade348ad2cd0a6d2d1d
+  - path: assets/audio/cricket_stadium.wav
+    use: cricket stadium
+    category: ambient
+    duration_seconds: 6.000
+    loop: true
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: c8240f905ef268b32a5a1a79ca4394c732b548132b838fbe58a5c3c82ca68660
+  - path: assets/audio/cricket_stumps.wav
+    use: stumps and bails
+    category: reward
+    duration_seconds: 0.580
+    loop: false
+    provenance: Kenney CC0 `impactWood_heavy_004.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 2c647ae6bd29c72ae2523f7e16e325d8d331b75cc99ab4f637c48a0e11c34677
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 29d3471e9431cb25bff0eb53f7c490cc56b752d3ad09cc5730deb6e3fd888be8
+  - path: assets/audio/cricket_throw.wav
+    use: fielder throw
+    category: gameplay
+    duration_seconds: 0.300
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: d8059d1271fafb6c255824f4456a948205dbea3696f285accca95ae077a4b186
+  - path: assets/audio/cricket_victory.wav
+    use: successful chase
+    category: reward
+    duration_seconds: 1.400
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: dbfe373a7846e37533e548e540c3b491404f54f191e19780fc6afec4950de978
+  - path: assets/audio/defense.wav
+    use: defence role
+    category: gameplay
+    duration_seconds: 0.280
+    loop: false
+    provenance: Kenney CC0 `impactMetal_light_003.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 92d5db6bfc672d9dc1b4f390b2900504f013187fa36335472554fafefa9050b1
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 0ba045e97767893276e6ec0d6010bfc407552ad4249caa4a1e608c572c68fd54
+  - path: assets/audio/driver_static.wav
+    use: pit-wall damage
+    category: gameplay
+    duration_seconds: 0.420
+    loop: false
+    provenance: Kenney CC0 `glitch_004.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/interface-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: d0f4db4d12f88592bc328bd621d356d099eaa2dda37bab37a6cf17891c5026d1
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 8af3061937aa0a1b10b09f7f734422cd065a03658322f7d932e0ee9e8d3e8830
+  - path: assets/audio/football_dossier_wrong.wav
+    use: football mystery miss
+    category: gameplay
+    duration_seconds: 0.380
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 1b83e17397e34e81dd45562d36fccf28524b52ef909d474541a2d7364dd02fa7
+  - path: assets/audio/football_stadium.wav
+    use: football stadium
+    category: ambient
+    duration_seconds: 6.000
+    loop: true
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 0b497f38421565461a3a32e18cf0173c71d3db28ac1d82f52e46c2999a980871
+  - path: assets/audio/foul.wav
+    use: foul or caution
+    category: gameplay
+    duration_seconds: 0.520
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: c166dfbe56a7995258092ffd9351bd3745e8a3ff384eadbb41261e8c44551e0f
+  - path: assets/audio/goal.wav
+    use: football goal
+    category: reward
+    duration_seconds: 1.050
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: ce3ff76e87de9661500c0115dd3ca73069bcdc50c5303a58257945db30790077
+  - path: assets/audio/gp_car_impact.wav
+    use: car contact
+    category: gameplay
+    duration_seconds: 0.460
+    loop: false
+    provenance: Kenney CC0 `impactMetal_medium_001.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e8a9eaba7c4d27422e4eeb3e6c7100d5d7dc0f83e005efc98c960adcc5265337
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 94e3a13e00448e0fa08b84501ff255953e0df6ff72691e3d474441a422febd10
+  - path: assets/audio/gp_dnf.wav
+    use: did not finish
+    category: reward
+    duration_seconds: 1.000
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: fd81dfd2f4f3e5fa68a94406332213d19b22009956932dbe86210f9981b36ede
+  - path: assets/audio/gp_engine.wav
+    use: speed-controlled race engine
+    category: ambient
+    duration_seconds: 3.000
+    loop: true
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: ef7cba7509ce0ad9c06f8695f969a5edb1486c2b666fb6cee0d1680782e99357
+  - path: assets/audio/gp_finish.wav
+    use: finish line
+    category: reward
+    duration_seconds: 0.850
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 669c4cf17bdf4e4f9329b7400dcfba747a3eb6dec52bc396e0f351192fe9b688
+  - path: assets/audio/gp_jump_start.wav
+    use: jump start
+    category: reward
+    duration_seconds: 0.650
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: ed6dd4f1f5a7c1d9c1276d34d96d1f7398adc941c18e46d4f98953ec5adb7e33
+  - path: assets/audio/gp_lap.wav
+    use: lap complete
+    category: reward
+    duration_seconds: 0.550
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 89449679c613058a4ae6b7752050f001747d3b17cbdd8b088812f1f05a4faca8
+  - path: assets/audio/gp_light_on.wav
+    use: start light
+    category: ui
+    duration_seconds: 0.120
+    loop: false
+    provenance: Kenney CC0 `tick_002.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/interface-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 869442f54214be902ec7437f79e400dc91c1bfd90d18a6dd2d5b7e41ffbf457b
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 57daa9dbe409daecbb161cbcdd343c371c35d412cff9b45951de973e3b7518c5
+  - path: assets/audio/gp_lights_out.wav
+    use: lights out
+    category: reward
+    duration_seconds: 0.480
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: e98a5578b63eadb4c0de3e23cf8ed334982f5327f07b353995f6df2060dcae8b
+  - path: assets/audio/gp_overtake.wav
+    use: overtake
+    category: gameplay
+    duration_seconds: 0.520
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 53282bc66349f9dc4e6519945bf3a8b3bd82509aa63788571fd7855e6ef6887b
+  - path: assets/audio/gp_podium.wav
+    use: podium
+    category: reward
+    duration_seconds: 1.300
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 69d02ca8c156fab9dce89732e97e14331e0ee8d61ad56b49d94da772b026cca6
+  - path: assets/audio/gp_points.wav
+    use: points finish
+    category: reward
+    duration_seconds: 0.920
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 904df3381f3a07685dd105172346ec6328fc3fded6c0f181c7fa31d3f8b9522a
+  - path: assets/audio/gp_tire_scrub.wav
+    use: tire scrub
+    category: gameplay
+    duration_seconds: 0.400
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 260ac853e79b7f9787f6c9a38fc4c6fc7a4e645f018658e32e8e29d5a7b7bfe4
+  - path: assets/audio/gp_wall_impact.wav
+    use: wall impact
+    category: gameplay
+    duration_seconds: 0.620
+    loop: false
+    provenance: Kenney CC0 `impactMetal_heavy_003.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: b0f2ba4dabde9a87eb9c188a19d31e0c2300fd321adeba08d3b9b8aa011d7037
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: c2440860ee093696de7ccd3e06e4a48a236e95f4f1dd8fc07b998ed6c7eb464b
+  - path: assets/audio/level_up.wav
+    use: level gained
+    category: reward
+    duration_seconds: 1.180
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: eab6e0148aad6a93e4e6b66aa21e3e21cd8a4c803895d15133c3512db3775e45
+  - path: assets/audio/lifeline.wav
+    use: lifeline restored
+    category: reward
+    duration_seconds: 0.680
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 5f0132ced1345b2a6d321533900f19476af9c018e843492b75adae63678acc6b
+  - path: assets/audio/match_draw.wav
+    use: draw result
+    category: reward
+    duration_seconds: 0.880
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: ea529e4f3e2f77c2573a68a2ead2ac25b68ccb74ba1969db61c7b4811ff60170
+  - path: assets/audio/match_lose.wav
+    use: generic defeat
+    category: reward
+    duration_seconds: 1.000
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 39339fdfd1fc617d474166e3796f7fcbfbf3ed063a8ebb28d6e709882261506a
+  - path: assets/audio/match_win.wav
+    use: generic victory
+    category: reward
+    duration_seconds: 1.250
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 9517a85f4cab218b0692f54760a5ce2d910a193582aa594ed40a6e821dbb45d4
+  - path: assets/audio/miss.wav
+    use: missed chance
+    category: gameplay
+    duration_seconds: 0.440
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: eb4ea9788948d3acb4e15566a2335b55a4ee82a840e72aaa642e81e2b71627b6
+  - path: assets/audio/mystery_correct.wav
+    use: identity confirmed
+    category: reward
+    duration_seconds: 1.080
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 6fc927d2897ba48ca0fc7ad63d4bb347a57758856cd6ee22a4bbd3a0252fa9b3
+  - path: assets/audio/mystery_duplicate.wav
+    use: duplicate guess
+    category: ui
+    duration_seconds: 0.220
+    loop: false
+    provenance: Kenney CC0 `error_001.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/interface-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 46e67425d16339772e8d328fb36a49426c9467418686e11beeb71ff84b0f6433
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 4a5b3ed1b4f79cf9f81ce4b7b69591cdedc973cb7a0319d53fcaeb7eefc5a9ee
+  - path: assets/audio/mystery_hint.wav
+    use: hint decrypted
+    category: reward
+    duration_seconds: 0.700
+    loop: false
+    provenance: Kenney CC0 `glitch_003.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/interface-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: d55e0c64aee9f1ab2ba9523d0e256ca76639c3ec2f230405e2ff25aff36020b3
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 07571fd688e5439502e7b8288a5ae75ccfb15d800d632ad3163284203f5dab39
+  - path: assets/audio/mystery_lock.wav
+    use: mystery guess locked
+    category: gameplay
+    duration_seconds: 0.300
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 4479d950a84efbb3d2d7ed9a9c2f49287d0fa27116504990af52a8d556bd2fe2
+  - path: assets/audio/mystery_lost.wav
+    use: identity declassified
+    category: reward
+    duration_seconds: 0.900
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 6063895adc505272359b6bf470a2b424c3eb83f1c24960889b2a8e3fdc772b14
+  - path: assets/audio/mystery_wrong.wav
+    use: wrong mystery guess
+    category: gameplay
+    duration_seconds: 0.450
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 334cfcb881fbd1307e387237bcbf09f23a7627cf913692318437d4d7cc3537ad
+  - path: assets/audio/pack_open.wav
+    use: pack burst
+    category: reward
+    duration_seconds: 0.720
+    loop: false
+    provenance: Kenney CC0 `open_004.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/interface-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 4e02b8287bc4d9e7bf7a889cb9e48613c8eb22a310dfb0bf29c2bfd0a1e4bea5
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 0836dc8df6d32ef8e6b95035bc91d658dfb0f6c0aeaa4d507fa8d6b152e00b69
+  - path: assets/audio/penalty_dive.wav
+    use: keeper dive
+    category: gameplay
+    duration_seconds: 0.420
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: e70354808443ef2d9191cdf1f0dd0979003d309549239fda62de51581e5fdcbd
+  - path: assets/audio/penalty_goal.wav
+    use: shootout goal
+    category: reward
+    duration_seconds: 1.000
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 772b54d8f62a3324048de86af3b541a816b7822863115c9be08c620de104fe56
+  - path: assets/audio/penalty_kick.wav
+    use: penalty kick
+    category: gameplay
+    duration_seconds: 0.320
+    loop: false
+    provenance: Kenney CC0 `impactSoft_heavy_003.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: d00286a2dc62ee5cb4d42bf56120e7050a855f69e655fc1294410aadd337eba3
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: f6824e7e2ce660242b7e4e0c7ecc7f76d14128a709015f2d9542d5ebeb78a82f
+  - path: assets/audio/penalty_save.wav
+    use: shootout save
+    category: reward
+    duration_seconds: 0.720
+    loop: false
+    provenance: Kenney CC0 `impactSoft_heavy_001.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 4d0096364ba9e46119d2ff6df493fdc101bd2e1efae061da5e5f77a53b3fdcb6
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 3ec0900f8f53be420adea219681f1987a4040e3af2d2a9dfdf941146be6f2aff
+  - path: assets/audio/penalty_sudden_death.wav
+    use: sudden death
+    category: reward
+    duration_seconds: 1.250
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 931e839646e6aef3d962c392a6e2e13559f5fe412f5e1b27ed7e0a225caf0706
+  - path: assets/audio/penalty_target.wav
+    use: penalty target
+    category: ui
+    duration_seconds: 0.160
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 196b47cb0599d1096048e512a0ddc1cfede1802d194d58c5c6bf140d41b73a37
+  - path: assets/audio/play_match.wav
+    use: primary play CTA
+    category: reward
+    duration_seconds: 0.480
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 5bd42d2a922489df3477d1c4f9d84b1b39fa7b95792ef59bcce17b05d0012f3e
+  - path: assets/audio/quiz_correct.wav
+    use: correct answer
+    category: gameplay
+    duration_seconds: 0.300
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 29f1a1d5ee8581f1da85d630e4705e1aad965503f1948b6f10cdcc82121cdb47
+  - path: assets/audio/quiz_fail.wav
+    use: quiz failed
+    category: reward
+    duration_seconds: 0.820
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 16d6670532677151e682773211925247466d05eb241b07a86eca79b03712f955
+  - path: assets/audio/quiz_pass.wav
+    use: quiz passed
+    category: reward
+    duration_seconds: 0.980
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: bc123c4360e207199ad2b9d7a8afd3fc38ff282a96ea4f4934b1210486d7823d
+  - path: assets/audio/quiz_perfect.wav
+    use: perfect quiz
+    category: reward
+    duration_seconds: 1.280
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 340bf27cf401da5c442595053c802b72ee538bd8160424265a9be5bd7dffe29f
+  - path: assets/audio/quiz_submit.wav
+    use: quiz grading
+    category: gameplay
+    duration_seconds: 0.680
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 0b3f23b45d95dbec4aa9dd6e06520838f06c9f2db58d02496f53f09285d6036b
+  - path: assets/audio/quiz_unlock.wav
+    use: mode unlocked
+    category: reward
+    duration_seconds: 0.900
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 9fa2efdfe8dc670ee1edbe897ee31504638d7b40744ab4fe80bd48a3077ed453
+  - path: assets/audio/quiz_wrong.wav
+    use: wrong answer
+    category: gameplay
+    duration_seconds: 0.340
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: db829bd2da22e9a6fee9ecd25e07d5273fc25a198b1c49c0f720b8105209e2cc
+  - path: assets/audio/race_grid.wav
+    use: race grid
+    category: ambient
+    duration_seconds: 6.000
+    loop: true
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 23f87744809cc9781687f79b0c6d1ae78baeccb4a4b12d15738b499ab1f48740
+  - path: assets/audio/rarity_bronze.wav
+    use: bronze reveal
+    category: reward
+    duration_seconds: 0.420
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 2387672a290a3fd32ab3faa73beed4e41ee16d073952c92a94b1f9812b7b6ed1
+  - path: assets/audio/rarity_gold.wav
+    use: gold reveal
+    category: reward
+    duration_seconds: 0.900
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 5dceb0727af1bd03bb20ceb458923194dc9cf971ec9e3e872b5e388478e15eff
+  - path: assets/audio/rarity_platinum.wav
+    use: platinum reveal
+    category: reward
+    duration_seconds: 1.300
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 982069f84e14fc89dd777327528680812644f32f007c658d311651c477c87586
+  - path: assets/audio/rarity_silver.wav
+    use: silver reveal
+    category: reward
+    duration_seconds: 0.620
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: a8a0394cdc538c36b6e7e294ae35ba1cadcc189897a29cf26ecb0e1bbcdee2e2
+  - path: assets/audio/red_card.wav
+    use: red-card event
+    category: reward
+    duration_seconds: 0.680
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: dcb8435c7de5dbbe6424b72d9ec37c7ea03a1a70dc616b0c6cf68280757eb43c
+  - path: assets/audio/riser.wav
+    use: tension rise
+    category: gameplay
+    duration_seconds: 0.750
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 6952fca2f988861a1f29c4f6fb4d131ca90daed07cb980fd3270c196b5207b88
+  - path: assets/audio/save.wav
+    use: keeper save
+    category: gameplay
+    duration_seconds: 0.420
+    loop: false
+    provenance: Kenney CC0 `impactSoft_heavy_003.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: d00286a2dc62ee5cb4d42bf56120e7050a855f69e655fc1294410aadd337eba3
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: a764a2a358a2f3c343c2e6eb89678dae8b7d315b9e5052b7c88ec97484de56ad
+  - path: assets/audio/special.wav
+    use: special action
+    category: gameplay
+    duration_seconds: 0.460
+    loop: false
+    provenance: Kenney CC0 `glitch_002.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/interface-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 1da06a2e63ce131f5e0316ca27c75fc0d672db7a8f9b986c70693f2bd992eabc
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 807675ef5791a3d337b8cafe5073b976c4e3b6b480c4ffa81ce270c0436985f9
+  - path: assets/audio/streak.wav
+    use: streak advanced
+    category: reward
+    duration_seconds: 0.780
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 131809706572a3f65707faaf96ec4d7c9e3e9c6f655c67d24b2efd5a69c5ec43
+  - path: assets/audio/tennis_ace.wav
+    use: ace
+    category: reward
+    duration_seconds: 0.920
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: f5bb6626013993f4bb534b185792d2a0b6473d878e48e9a7afa074232606dccd
+  - path: assets/audio/tennis_bounce.wav
+    use: court bounce
+    category: gameplay
+    duration_seconds: 0.110
+    loop: false
+    provenance: Kenney CC0 `impactSoft_medium_000.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 7d3ba0bb5e60a11b5d3e558c141303dcf494256675fbf753c0d252d2cf0481e3
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: bdb97f093bcbc464e05e8b34e55ab3af166140b8a5e530f650eed6a5def55523
+  - path: assets/audio/tennis_contact.wav
+    use: racket contact
+    category: gameplay
+    duration_seconds: 0.180
+    loop: false
+    provenance: Kenney CC0 `impactGeneric_light_002.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: d0bf60905b59ff630ffe01eb0edeeacd2504eaa8fb6523aeef7d2458b78264d3
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 623ea15350c741805d8947d7c3d1ea390e9c47bbf8686493e69e7bce3065197e
+  - path: assets/audio/tennis_court.wav
+    use: tennis court
+    category: ambient
+    duration_seconds: 6.000
+    loop: true
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: bf57f2134de91f552e5086823870313f22d2e6c6a678561a9b2bf76d4d6e9e3f
+  - path: assets/audio/tennis_defeat.wav
+    use: tennis defeat
+    category: reward
+    duration_seconds: 1.000
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 8bb77f7c580d758b54b5e2ad39aa072fa9f58517112c37d77aeb7e6bc3baf414
+  - path: assets/audio/tennis_dossier_wrong.wav
+    use: tennis mystery miss
+    category: gameplay
+    duration_seconds: 0.380
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 0cf4dbf7546c7c8628e70ced28c642da58d8d4c9b80fba1c12c5c6d6cc1dca48
+  - path: assets/audio/tennis_double_fault.wav
+    use: double fault
+    category: reward
+    duration_seconds: 0.580
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 4dcaf7610506394df162124d5da6c63961e3f900df3fc0952f04a19c7e65f1b3
+  - path: assets/audio/tennis_end_change.wav
+    use: change ends
+    category: ui
+    duration_seconds: 0.420
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 42558a778faefe1830d13dd6cc0137778360172d97a531078c9125f5d5392c87
+  - path: assets/audio/tennis_fault.wav
+    use: fault
+    category: gameplay
+    duration_seconds: 0.380
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: ba8c0d141ebe3278d1fb2107b0ff46b84b7f0c43a4aa874f3d6e67e569e8d394
+  - path: assets/audio/tennis_game.wav
+    use: game won
+    category: reward
+    duration_seconds: 0.480
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 1cae88902368c2d3b2f68be95912d6c6315f0c0ba84ac0501224dbcc9887e0eb
+  - path: assets/audio/tennis_lesson.wav
+    use: lesson complete
+    category: reward
+    duration_seconds: 0.920
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 86edd3409aab5651674e3d33899535b896bde014763026dd59411c0b9acbdf02
+  - path: assets/audio/tennis_let.wav
+    use: let
+    category: gameplay
+    duration_seconds: 0.360
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 311fbf21247ad2f57a0eaf64779aa65e4cc5995f9eea3e4b61ae72e43840577d
+  - path: assets/audio/tennis_net.wav
+    use: net cord
+    category: gameplay
+    duration_seconds: 0.250
+    loop: false
+    provenance: Kenney CC0 `impactMetal_light_002.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/impact-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 25a96f90a9a1f88a531e824e126f0519504625e5635e65a72e4f31611428db29
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 20bca11339f295c7ae1da4e46e2aff2c2eb87117c7c86bde7e25efeae519bd81
+  - path: assets/audio/tennis_out.wav
+    use: ball out
+    category: gameplay
+    duration_seconds: 0.340
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 46803c450b9e02bd17ffd52e48db5c8a7c84ca3e3e68787a097ead1637ec958f
+  - path: assets/audio/tennis_perfect.wav
+    use: perfect contact
+    category: gameplay
+    duration_seconds: 0.300
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: e8cce9491369fd45340ba8b5af1d8d04f245aa6827fe3f47e1328a64f133574b
+  - path: assets/audio/tennis_point.wav
+    use: point awarded
+    category: ui
+    duration_seconds: 0.250
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 220c3446d438449766eeb0b174886958318dd22983166ed903d1cc7e4a4d9627
+  - path: assets/audio/tennis_serve.wav
+    use: serve
+    category: gameplay
+    duration_seconds: 0.300
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 89d9217d14106dcc4959a1481f2ff93d84cfb8a4c880439bfaf9623584c36b45
+  - path: assets/audio/tennis_set.wav
+    use: set won
+    category: reward
+    duration_seconds: 0.950
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 3047e4e87e30d0cac11e371ffe82a6e5187246df56c6b69fdd240353fb78f027
+  - path: assets/audio/tennis_tiebreak.wav
+    use: tiebreak start
+    category: reward
+    duration_seconds: 0.750
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: e6d6c2eb406293d4d63678700a0e09863edb2d0738dced7c6e527247b3d8a233
+  - path: assets/audio/tennis_victory.wav
+    use: tennis victory
+    category: reward
+    duration_seconds: 1.220
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: f6bf2ad117d0c19fc9f681bf087337b1e0e1bf16f94f13185b61a810dce46788
+  - path: assets/audio/tennis_winner.wav
+    use: winner
+    category: reward
+    duration_seconds: 0.820
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 402453772e57c53deed65a0f0b1bdea7f72023d0295761af23bf31332a0bb3fc
+  - path: assets/audio/ui_confirm.wav
+    use: decisive confirmation
+    category: ui
+    duration_seconds: 0.220
+    loop: false
+    provenance: Kenney CC0 `confirmation_003.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/interface-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 3091bf0be0497f825769ee0733ca7bdc3bcd59bd6c6e8f2ba8f93d580ff38022
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: cd0d957345d72ccdb24368cd76588af6246254f8e61308a2e7a7e41a0f005f0e
+  - path: assets/audio/ui_invalid.wav
+    use: invalid or locked action
+    category: ui
+    duration_seconds: 0.240
+    loop: false
+    provenance: Kenney CC0 `error_004.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/interface-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 0b574cea597d96507e782ae9764f88482ce49f46e931e57054bf7150047f2d69
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: f7ad294f5f6fc0e7427b95a6cbdab9abec8ff99e39a7c7fddf3eda8086b1fe91
+  - path: assets/audio/ui_tap.wav
+    use: navigation tap
+    category: ui
+    duration_seconds: 0.075
+    loop: false
+    provenance: Kenney CC0 `click_003.ogg` + original deterministic synthesis
+    creator: StatOz audio pipeline + Kenney
+    license: project-owned-original + CC0-1.0
+    source_url: https://kenney.nl/assets/interface-sounds
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: 2fa929138bc3a0f432696588f66eac94b8f6d463905ec8808c6461ce4b054292
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 276cac1194f3f7e8912af4750ded8aaaf746783a92776f850b11adc1e3fb3797
+  - path: assets/audio/whoosh.wav
+    use: phase transition
+    category: gameplay
+    duration_seconds: 0.420
+    loop: false
+    provenance: original deterministic synthesis
+    creator: StatOz audio pipeline
+    license: project-owned-original
+    source_url: local://tool/audio/build_audio.py
+    generator_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    source_sha256: e077fde6b8d4fa6013f52d0eb135a68878e8e60189eb24da8fd2f5320896a615
+    edits: mono mix, DC removal, trim/fade, category normalization, peak cap, PCM16 WAV conversion
+    output_sha256: 801ee1d9c30514154afc716785e0748a266f0d4d0befc2c4cbe609c8d6f5e0ff
+sources:
+  - name: Kenney Interface Sounds 1.0
+    url: https://kenney.nl/assets/interface-sounds
+    license: CC0-1.0
+  - name: Kenney Impact Sounds 1.0
+    url: https://kenney.nl/assets/impact-sounds
+    license: CC0-1.0
+constraints:
+  - no speech, commentary, team chants, licensed music, or trademarks
+  - source masters under tool/audio are excluded from Flutter assets

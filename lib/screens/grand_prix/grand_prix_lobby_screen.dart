@@ -13,29 +13,51 @@ import '../../config/theme.dart';
 import '../../data/grand_prix_circuits.dart';
 import '../../data/grand_prix_liveries.dart';
 import '../../games/grand_prix/grand_prix_car_painter.dart';
+import '../../models/cards.dart';
 import '../../models/grand_prix.dart';
 import '../../models/progression.dart' show grandPrixXpMultiplier;
+import '../../utils/label_helpers.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
 import '../../widgets/player_level_badge.dart';
+import 'grand_prix_pit_deck_screen.dart';
 import 'grand_prix_race_screen.dart';
 
-/// Grand Prix Dash lobby: lifetime racing record, circuit picker, race
-/// distance picker (1/3/5 laps), livery picker, and the START RACE CTA (the
-/// screen's one glow). Circuit + distance + livery default to last used
-/// (persisted on [GrandPrixStats]).
+/// Grand Prix Dash lobby: lifetime record, circuit/distance pickers, pit crew
+/// summary, and START RACE. Livery and driver equip live in Pit Deck / Shop.
 class GrandPrixLobbyScreen extends StatefulWidget {
-  const GrandPrixLobbyScreen({required this.onNavigate, super.key});
+  const GrandPrixLobbyScreen({
+    required this.onNavigate,
+    this.onBrowseShop,
+    super.key,
+  });
 
   final ValueChanged<AppSection> onNavigate;
+  final VoidCallback? onBrowseShop;
 
   @override
   State<GrandPrixLobbyScreen> createState() => _GrandPrixLobbyScreenState();
 }
 
 class _GrandPrixLobbyScreenState extends State<GrandPrixLobbyScreen> {
+  void _openPitDeck() {
+    final navigator = Navigator.of(context);
+    final cubit = context.read<GrandPrixCubit>();
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => BlocProvider.value(
+          value: cubit,
+          child: GrandPrixPitDeckScreen(
+            onBack: navigator.pop,
+            onBrowseShop: widget.onBrowseShop,
+          ),
+        ),
+      ),
+    );
+  }
+
   void _startRace() {
     final cubit = context.read<GrandPrixCubit>();
     final level = context.read<GameBloc>().state.progression.playerLevel;
@@ -60,10 +82,19 @@ class _GrandPrixLobbyScreenState extends State<GrandPrixLobbyScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<GameBloc, GameState>(
-      buildWhen: (p, c) => p.progression != c.progression,
+      buildWhen: (p, c) =>
+          p.progression != c.progression ||
+          p.deckRacingStarter != c.deckRacingStarter ||
+          p.ownedGrandPrixLiveryIds != c.ownedGrandPrixLiveryIds,
       builder: (context, gameState) {
+        context.read<GrandPrixCubit>().ensureEquippedLiveryOwned(
+          gameState.ownedGrandPrixLiveryIds,
+        );
+        final signedDriver = gameState.deckRacingStarter;
         return BlocBuilder<GrandPrixCubit, GrandPrixState>(
           builder: (context, state) {
+            final ready = gameState.grandPrixPitDeckReady(state.livery);
+            final liverySpec = grandPrixLiverySpec(state.livery);
             return Scaffold(
               backgroundColor: Cyber.bg,
               appBar: ReactHeaderBar(
@@ -98,6 +129,18 @@ class _GrandPrixLobbyScreenState extends State<GrandPrixLobbyScreen> {
                                     offset: 24,
                                     child: _HeroRow(stats: state.stats),
                                   ),
+                                  if (signedDriver != null) ...[
+                                    const SizedBox(height: 14),
+                                    CyberSlideUpFadeIn(
+                                      delay: const Duration(milliseconds: 120),
+                                      offset: 18,
+                                      child: _PitCrewPanel(
+                                        driver: signedDriver,
+                                        liverySpec: liverySpec,
+                                        onEdit: _openPitDeck,
+                                      ),
+                                    ),
+                                  ],
                                   const SizedBox(height: 18),
                                   CyberSlideUpFadeIn(
                                     delay: const Duration(milliseconds: 160),
@@ -140,37 +183,34 @@ class _GrandPrixLobbyScreenState extends State<GrandPrixLobbyScreen> {
                                       },
                                     ),
                                   ),
-                                  const SizedBox(height: 20),
-                                  const SectionLabel(label: 'TEAM LIVERY'),
-                                  const SizedBox(height: 10),
-                                  CyberSlideUpFadeIn(
-                                    delay: const Duration(milliseconds: 360),
-                                    offset: 16,
-                                    child: _LiveryPicker(
-                                      selected: state.livery,
-                                      onSelect: (livery) {
-                                        HapticFeedback.selectionClick();
-                                        playSound(SoundEffect.uiTap);
-                                        context
-                                            .read<GrandPrixCubit>()
-                                            .selectLivery(livery);
-                                      },
-                                    ),
-                                  ),
                                   const SizedBox(height: 22),
                                   CyberSlideUpFadeIn(
-                                    delay: const Duration(milliseconds: 420),
+                                    delay: const Duration(milliseconds: 360),
                                     offset: 22,
                                     child: HudCtaButton(
-                                      label: 'START RACE',
+                                      label: ready ? 'START RACE' : 'PIT DECK',
                                       icon: Icons.sports_motorsports,
                                       accent: Cyber.magenta,
                                       tapSound: SoundEffect.playMatch,
-                                      helper:
-                                          '${grandPrixCircuit(state.circuitId).name} · '
-                                          '${state.laps == 1 ? '1 LAP' : '${state.laps} LAPS'} · '
-                                          '${grandPrixLiverySpec(state.livery).name}',
-                                      onTap: _startRace,
+                                      helper: ready
+                                          ? '${grandPrixCircuit(state.circuitId).name} · '
+                                              '${state.laps == 1 ? '1 LAP' : '${state.laps} LAPS'} · '
+                                              '${liverySpec.name}'
+                                          : 'EQUIP YOUR DRIVER AND LIVERY',
+                                      onTap: ready ? _startRace : _openPitDeck,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 14),
+                                  CyberSlideUpFadeIn(
+                                    delay: const Duration(milliseconds: 420),
+                                    offset: 18,
+                                    child: CyberDealtCard(
+                                      index: 0,
+                                      child: CyberCtaButton(
+                                        label: 'Pit Deck',
+                                        clip: false,
+                                        onPressed: _openPitDeck,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -292,6 +332,82 @@ class _HeroRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _PitCrewPanel extends StatelessWidget {
+  const _PitCrewPanel({
+    required this.driver,
+    required this.liverySpec,
+    required this.onEdit,
+  });
+
+  final PlayerCard driver;
+  final GrandPrixLiverySpec liverySpec;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = tierColor(driver.tier);
+    return CyberPanel(
+      accent: Cyber.magenta,
+      child: Row(
+        children: [
+          SizedBox(
+            width: 72,
+            height: 52,
+            child: CustomPaint(
+              painter: GrandPrixCarPreviewPainter(liverySpec),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'PIT CREW',
+                  style: TextStyle(
+                    color: Cyber.muted,
+                    fontFamily: Cyber.displayFont,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 2,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  driver.name.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Cyber.display(13, letterSpacing: 0.6),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${liverySpec.name} · ${driver.position}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Cyber.muted,
+                    fontFamily: Cyber.bodyFont,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          CyberChip(label: driver.tier.name.toUpperCase(), color: accent),
+          const SizedBox(width: 8),
+          IconButton(
+            onPressed: onEdit,
+            icon: Icon(Icons.tune, color: Cyber.magenta.withValues(alpha: 0.9)),
+            tooltip: 'Edit pit deck',
+          ),
+        ],
+      ),
     );
   }
 }
@@ -696,73 +812,6 @@ class _LapOption extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// Livery picker — each tile is the actual top-down F1 car you'll race
-/// (shared [GrandPrixCarPreviewPainter]), not a flat colour swatch.
-class _LiveryPicker extends StatelessWidget {
-  const _LiveryPicker({required this.selected, required this.onSelect});
-
-  final GrandPrixLivery selected;
-  final ValueChanged<GrandPrixLivery> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        for (final spec in grandPrixLiveries) ...[
-          Expanded(
-            child: GestureDetector(
-              onTap: () => onSelect(spec.livery),
-              child: Column(
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    height: 68,
-                    padding: const EdgeInsets.symmetric(vertical: 5),
-                    decoration: BoxDecoration(
-                      color: spec.livery == selected
-                          ? Color.alphaBlend(
-                              spec.primary.withValues(alpha: 0.12),
-                              Cyber.panel,
-                            )
-                          : Cyber.panel,
-                      border: Border.all(
-                        color: spec.livery == selected
-                            ? Colors.white
-                            : Cyber.border.withValues(alpha: 0.5),
-                        width: spec.livery == selected ? 2 : 1,
-                      ),
-                    ),
-                    child: CustomPaint(
-                      painter: GrandPrixCarPreviewPainter(spec),
-                      child: const SizedBox.expand(),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    spec.name.split(' ').first,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: spec.livery == selected
-                          ? Colors.white
-                          : Cyber.muted,
-                      fontFamily: Cyber.displayFont,
-                      fontSize: 6.5,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.6,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (spec != grandPrixLiveries.last) const SizedBox(width: 8),
-        ],
-      ],
     );
   }
 }

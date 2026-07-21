@@ -12,6 +12,7 @@ const starterDeckActionCount = 6;
 const cricketStarterCardCount = 3;
 const basketballStarterCardCount = 3;
 const tennisStarterCardCount = 1;
+const grandPrixStarterCardCount = 1;
 
 class CardPack {
   const CardPack({
@@ -117,8 +118,56 @@ const kDailyDropOdds = {
   CardTier.platinum: 4,
 };
 
+const kRacingPackIds = {'racing-grid', 'racing-podium', 'racing-pole'};
+
+const kRacingPacks = [
+  CardPack(
+    id: 'racing-grid',
+    name: 'Grid Pack',
+    description: '1 driver card — mostly bronze grid talent.',
+    price: 150,
+    playerCount: 1,
+    actionCount: 0,
+    odds: {
+      CardTier.bronze: 65,
+      CardTier.silver: 28,
+      CardTier.gold: 6,
+      CardTier.platinum: 1,
+    },
+  ),
+  CardPack(
+    id: 'racing-podium',
+    name: 'Podium Pack',
+    description: '2 driver cards with a silver or gold shot.',
+    price: 400,
+    playerCount: 2,
+    actionCount: 0,
+    odds: {
+      CardTier.bronze: 35,
+      CardTier.silver: 45,
+      CardTier.gold: 16,
+      CardTier.platinum: 4,
+    },
+  ),
+  CardPack(
+    id: 'racing-pole',
+    name: 'Pole Pack',
+    description: '3 high-end drivers — best platinum odds.',
+    price: 900,
+    playerCount: 3,
+    actionCount: 0,
+    odds: {
+      CardTier.bronze: 10,
+      CardTier.silver: 40,
+      CardTier.gold: 35,
+      CardTier.platinum: 15,
+    },
+  ),
+];
+
 CardPack? getProgressionPack(String id) =>
-    kProgressionPacks.where((pack) => pack.id == id).firstOrNull;
+    kProgressionPacks.where((pack) => pack.id == id).firstOrNull ??
+    kRacingPacks.where((pack) => pack.id == id).firstOrNull;
 
 /// Builds a new user's starter pack: a random, rarity-weighted roll of
 /// 2 strikers, 2 defenders, 1 keeper and [starterDeckActionCount] action cards.
@@ -145,23 +194,24 @@ PackResult buildStarterPack(
   return _finalize(pack.players, pack.actions);
 }
 
+/// Final Over hands out 3 bronze batsmen — always bronze, mirroring Tennis
+/// Rally's [buildTennisStarterPack] rule (the ladder above bronze is meant
+/// to be earned in-game), since this is the batsman roster's only starter
+/// pack now that Super Over has been retired.
 PackResult buildCricketStarterPack(
   List<PlayerCard> battingPool, {
   Random? random,
 }) {
   final rng = random ?? Random();
-  final available = [...battingPool];
+  final available = battingPool
+      .where((card) => card.tier == CardTier.bronze)
+      .toList();
+  if (available.isEmpty) {
+    throw StateError('Cricket starter pack draw failed: no bronze batsmen.');
+  }
   final players = <PlayerCard>[];
   for (var i = 0; i < cricketStarterCardCount && available.isNotEmpty; i++) {
-    final card = _rollFrom<PlayerCard>(
-      available,
-      (card) => card.tier,
-      kProgressionPacks.first.odds,
-      rng,
-    );
-    if (card == null) break;
-    players.add(card);
-    available.removeWhere((item) => item.id == card.id);
+    players.add(available.removeAt(rng.nextInt(available.length)));
   }
   return _finalize(players, const []);
 }
@@ -210,6 +260,25 @@ PackResult buildTennisStarterPack(
       .toList();
   if (bronze.isEmpty) {
     throw StateError('Tennis starter pack draw failed: no bronze players.');
+  }
+  return _finalize([bronze[rng.nextInt(bronze.length)]], const []);
+}
+
+/// Grand Prix Dash hands out one driver, always bronze — same earn-the-ladder
+/// rule as [buildTennisStarterPack]. Pool is the full motorsport roster (F1,
+/// F2, NASCAR, IndyCar).
+PackResult buildGrandPrixStarterPack(
+  List<PlayerCard> racingPool, {
+  Random? random,
+}) {
+  final rng = random ?? Random();
+  final bronze = racingPool
+      .where((card) => card.tier == CardTier.bronze)
+      .toList();
+  if (bronze.isEmpty) {
+    throw StateError(
+      'Grand Prix starter pack draw failed: no bronze drivers.',
+    );
   }
   return _finalize([bronze[rng.nextInt(bronze.length)]], const []);
 }

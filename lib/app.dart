@@ -19,7 +19,6 @@ import 'config/enums.dart';
 import 'config/theme.dart';
 import 'models/league.dart';
 import 'models/sport_match.dart';
-import 'screens/deck/cricket_deck_builder_screen.dart';
 import 'screens/final_over/final_over_hub.dart';
 import 'screens/football_bingo/football_bingo_hub.dart';
 import 'screens/football_chess/football_chess_hub.dart';
@@ -27,7 +26,6 @@ import 'screens/basketball/basketball_hub.dart';
 import 'screens/grand_prix/grand_prix_hub.dart';
 import 'screens/game/game_screen.dart';
 import 'screens/shootout/shootout_hub.dart';
-import 'screens/super_over/super_over_hub.dart';
 import 'screens/tennis/tennis_hub.dart';
 import 'screens/home/widgets/starter_pack_onboarding.dart';
 import 'screens/onboarding/profile_setup_screen.dart';
@@ -56,7 +54,7 @@ import 'widgets/achievement_celebration_host.dart';
 import 'widgets/reward_settlement_popup.dart';
 import 'widgets/streak_celebration_host.dart';
 
-enum _PendingGameLaunchKind { football, cricket, basketball, tennis }
+enum _PendingGameLaunchKind { football, cricket, basketball, tennis, grandPrix }
 
 class PitchDuelApp extends StatelessWidget {
   const PitchDuelApp({super.key});
@@ -302,12 +300,11 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   /// so it shares the starter-pack gate with the other deck-based games.
   void _openFootballChess() => _enterFootballGameFlow(_pushFootballChess);
 
-  /// Enter Super Over from the GAMES tab's Cricket section.
-  void _openSuperOver() => _enterCricketGameFlow(_pushSuperOver);
-
   /// Enter Final Over from Cricket GAMES. The rules engine lives in the
   /// `final_over` package; the lobby, pitch and HUD are ours.
-  void _openFinalOver() {
+  void _openFinalOver() => _enterCricketGameFlow(_pushFinalOver);
+
+  void _pushFinalOver() {
     final navigator = Navigator.of(context);
     navigator.push(
       MaterialPageRoute<void>(
@@ -315,9 +312,6 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
       ),
     );
   }
-
-  /// Open the cricket-only deck editor from the GAMES tab's Cricket section.
-  void _openCricketDeck() => _enterCricketGameFlow(_pushCricketDeck);
 
   /// Enter Hoop Duel from the GAMES tab's Basketball section.
   void _openBasketball() => _enterBasketballGameFlow(_pushBasketball);
@@ -368,6 +362,17 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     push();
   }
 
+  void _enterGrandPrixGameFlow(VoidCallback push) {
+    final bloc = context.read<GameBloc>();
+    if (!bloc.state.grandPrixStarterPackClaimed) {
+      _pendingGameLaunch = push;
+      _pendingGameLaunchKind = _PendingGameLaunchKind.grandPrix;
+      bloc.add(GrandPrixStarterPackOpened());
+      return;
+    }
+    push();
+  }
+
   void _pushGame() {
     final navigator = Navigator.of(context);
     navigator.push(
@@ -404,30 +409,6 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
           onNavigate: (next) {
             navigator.pop();
             _go(next);
-          },
-        ),
-      ),
-    );
-  }
-
-  void _pushSuperOver() {
-    final navigator = Navigator.of(context);
-    navigator.push(
-      MaterialPageRoute<void>(
-        builder: (_) => SuperOverHub(onExit: navigator.pop),
-      ),
-    );
-  }
-
-  void _pushCricketDeck() {
-    final navigator = Navigator.of(context);
-    navigator.push(
-      MaterialPageRoute<void>(
-        builder: (_) => CricketDeckBuilderScreen(
-          onBack: () => navigator.pop(),
-          onPlaySuperOver: () {
-            navigator.pop();
-            _pushSuperOver();
           },
         ),
       ),
@@ -532,9 +513,18 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     );
   }
 
-  /// Open Grand Prix Dash from the GAMES tab's F1 section. The car is purely
-  /// cosmetic — no deck, so no starter-pack gate (like the quiz and bingo).
-  void _openGrandPrix() {
+  /// Open Grand Prix Dash from the GAMES tab's F1 section. First visit grants
+  /// a random bronze motorsport driver via the shared pack-reveal flow.
+  void _openGrandPrix() => _enterGrandPrixGameFlow(_pushGrandPrix);
+
+  void _openGrandPrixShop() {
+    final navigator = Navigator.of(context);
+    navigator.pop();
+    setState(() => _shopInitialTab = 3);
+    _go(AppSection.shop);
+  }
+
+  void _pushGrandPrix() {
     final navigator = Navigator.of(context);
     navigator.push(
       MaterialPageRoute<void>(
@@ -543,6 +533,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
             navigator.pop();
             _go(next);
           },
+          onBrowseShop: _openGrandPrixShop,
         ),
       ),
     );
@@ -603,6 +594,8 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
             _PendingGameLaunchKind.basketball =>
               state.basketballStarterPackClaimed,
             _PendingGameLaunchKind.tennis => state.tennisStarterPackClaimed,
+            _PendingGameLaunchKind.grandPrix =>
+              state.grandPrixStarterPackClaimed,
             _PendingGameLaunchKind.football => state.starterPackClaimed,
             null => false,
           };
@@ -678,9 +671,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
               onOpenQuiz: _openQuiz,
               onOpenFootballBingo: _openFootballBingo,
               onOpenFootballChess: _openFootballChess,
-              onOpenSuperOver: _openSuperOver,
               onOpenFinalOver: _openFinalOver,
-              onOpenCricketDeck: _openCricketDeck,
               onOpenGuessPlayer: _openGuessPlayer,
               onOpenBasketballGuessPlayer: _openBasketballGuessPlayer,
               onOpenCricketGuessPlayer: _openCricketGuessPlayer,

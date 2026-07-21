@@ -7,8 +7,6 @@ import '../../blocs/final_over/final_over_state.dart';
 import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_state.dart';
 import '../../config/theme.dart';
-import '../../data/final_over_kits.dart';
-import '../../models/cards.dart';
 import '../../models/final_over.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
@@ -19,7 +17,7 @@ import '../match_history/match_history_pages.dart';
 import 'final_over_deck_builder_screen.dart';
 import 'final_over_match_screen.dart';
 
-/// The Final Over lobby. Tier selection, squad preview, and one glowing CTA.
+/// The Final Over lobby. Tier selection, primary CTA, and secondary links.
 class FinalOverHub extends StatelessWidget {
   const FinalOverHub({required this.onExit, super.key});
 
@@ -32,7 +30,6 @@ class FinalOverHub extends StatelessWidget {
           p.progression != c.progression ||
           p.matchHistory != c.matchHistory ||
           p.finalOverDeckReady != c.finalOverDeckReady ||
-          p.deckFinalOverBatsmen != c.deckFinalOverBatsmen ||
           p.ownedFinalOverKitIds != c.ownedFinalOverKitIds,
       builder: (context, gameState) {
         context.read<FinalOverCubit>().ensureEquippedKitOwned(
@@ -88,19 +85,9 @@ class FinalOverHub extends StatelessWidget {
                               delay: const Duration(milliseconds: 240),
                               child: _TierPicker(selected: state.tier),
                             ),
-                            const SizedBox(height: 20),
-                            CyberSlideUpFadeIn(
-                              delay: const Duration(milliseconds: 320),
-                              child: _SquadPanel(
-                                batsmen: gameState.deckFinalOverBatsmen,
-                                kitName: finalOverKitById(state.kitId).name,
-                                ready: ready,
-                                onEdit: () => _openDeckBuilder(context),
-                              ),
-                            ),
                             const SizedBox(height: 22),
                             CyberSlideUpFadeIn(
-                              delay: const Duration(milliseconds: 400),
+                              delay: const Duration(milliseconds: 320),
                               child: HudCtaButton(
                                 label: ready ? 'TAKE GUARD' : 'BUILD SQUAD',
                                 icon: Icons.sports_cricket_rounded,
@@ -113,28 +100,35 @@ class FinalOverHub extends StatelessWidget {
                                     : _openDeckBuilder(context),
                               ),
                             ),
-                            if (ready) ...[
-                              const SizedBox(height: 10),
-                              CyberDealtCard(
-                                index: 1,
-                                child: CyberCtaButton(
-                                  label: 'Edit Squad',
-                                  clip: false,
-                                  onPressed: () => _openDeckBuilder(context),
-                                ),
-                              ),
-                            ],
                             const SizedBox(height: 14),
-                            CyberDealtCard(
-                              index: 0,
-                              child: CyberCtaButton(
-                                label: 'Match History',
-                                clip: false,
-                                onPressed: () => showMatchHistoryArchive(
-                                  context,
-                                  gameState.matchHistory,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: CyberDealtCard(
+                                    index: 0,
+                                    child: CyberCtaButton(
+                                      label: 'Cricket Deck',
+                                      clip: false,
+                                      onPressed: () =>
+                                          _openDeckBuilder(context),
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: CyberDealtCard(
+                                    index: 1,
+                                    child: CyberCtaButton(
+                                      label: 'Match History',
+                                      clip: false,
+                                      onPressed: () => showMatchHistoryArchive(
+                                        context,
+                                        gameState.matchHistory,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -175,109 +169,6 @@ class FinalOverHub extends StatelessWidget {
             },
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _SquadPanel extends StatelessWidget {
-  const _SquadPanel({
-    required this.batsmen,
-    required this.kitName,
-    required this.ready,
-    required this.onEdit,
-  });
-
-  final List<PlayerCard> batsmen;
-  final String kitName;
-  final bool ready;
-  final VoidCallback onEdit;
-
-  @override
-  Widget build(BuildContext context) {
-    return CyberPanel(
-      accent: Cyber.lime,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              const SectionLabel(label: 'CHASE SQUAD'),
-              const Spacer(),
-              TextButton(
-                onPressed: onEdit,
-                child: Text('EDIT', style: Cyber.display(8, color: Cyber.lime)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'KIT // $kitName',
-            style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.2),
-          ),
-          const SizedBox(height: 10),
-          if (!ready)
-            Text(
-              'ADD THREE BATTERS TO TAKE GUARD',
-              style: Cyber.label(9, color: Cyber.amber),
-            )
-          else
-            Row(
-              children: [
-                for (var i = 0; i < 3; i++) ...[
-                  if (i > 0) const SizedBox(width: 8),
-                  Expanded(
-                    child: _SquadSlot(
-                      index: i,
-                      card: batsmen.elementAtOrNull(i),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SquadSlot extends StatelessWidget {
-  const _SquadSlot({required this.index, required this.card});
-
-  final int index;
-  final PlayerCard? card;
-
-  @override
-  Widget build(BuildContext context) {
-    final card = this.card;
-    return Container(
-      padding: const EdgeInsets.all(6),
-      decoration: BoxDecoration(
-        color: Cyber.bg.withValues(alpha: 0.42),
-        border: Border.all(color: Cyber.line),
-      ),
-      child: Column(
-        children: [
-          Text(
-            'BAT ${index + 1}',
-            style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1),
-          ),
-          const SizedBox(height: 6),
-          if (card == null)
-            const SizedBox(
-              height: 96,
-              child: Center(
-                child: Icon(Icons.add, color: Cyber.muted, size: 20),
-              ),
-            )
-          else
-            CyberPlayerCardTile(
-              card: card,
-              selected: false,
-              size: VisualCardSize.sm,
-              onTap: () {},
-            ),
-        ],
       ),
     );
   }

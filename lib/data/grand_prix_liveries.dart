@@ -24,6 +24,12 @@ class GrandPrixLiverySpec {
 
 const List<GrandPrixLiverySpec> grandPrixLiveries = [
   GrandPrixLiverySpec(
+    livery: GrandPrixLivery.gridLine,
+    name: 'GRID LINE',
+    primary: Color(0xFF0A0E14),
+    accent: Color(0xFF35E7FF),
+  ),
+  GrandPrixLiverySpec(
     livery: GrandPrixLivery.scarlet,
     name: 'SCARLET',
     primary: Color(0xFFD8232A),
@@ -61,5 +67,36 @@ const List<GrandPrixLiverySpec> grandPrixLiveries = [
   ),
 ];
 
+/// The one livery every player starts with — no coin cost.
+const grandPrixFreeLivery = GrandPrixLivery.gridLine;
+
+/// Coin price for every non-free livery in the Shop.
+const grandPrixLiveryCoinPrice = 100;
+
 GrandPrixLiverySpec grandPrixLiverySpec(GrandPrixLivery livery) =>
     grandPrixLiveries.firstWhere((spec) => spec.livery == livery);
+
+bool isGrandPrixLiveryFree(GrandPrixLivery livery) =>
+    livery == grandPrixFreeLivery;
+
+int grandPrixLiveryPrice(GrandPrixLivery livery) =>
+    isGrandPrixLiveryFree(livery) ? 0 : grandPrixLiveryCoinPrice;
+
+List<String> defaultOwnedGrandPrixLiveryIds() => [grandPrixFreeLivery.name];
+
+List<String> normalizeOwnedGrandPrixLiveryIds(Iterable<String> ids) {
+  final owned = ids.toSet()..add(grandPrixFreeLivery.name);
+  return owned.toList();
+}
+
+bool isGrandPrixLiveryOwned(String liveryId, Iterable<String> ownedLiveryIds) =>
+    isGrandPrixLiveryFree(grandPrixLiveryFromName(liveryId)) ||
+    ownedLiveryIds.contains(liveryId);
+
+GrandPrixLivery ensureEquippedLiveryOwned(
+  Iterable<String> ownedLiveryIds,
+  GrandPrixLivery equipped,
+) {
+  if (isGrandPrixLiveryOwned(equipped.name, ownedLiveryIds)) return equipped;
+  return grandPrixFreeLivery;
+}

@@ -155,7 +155,7 @@ void main() {
       expect(kohli.hasPortrait, isTrue);
     });
 
-    test('cricket starter contains 3 unique batting cards', () {
+    test('cricket starter contains 3 unique bronze batting cards', () {
       final result = buildCricketStarterPack(
         cricketBattingCards,
         random: Random(8),
@@ -167,6 +167,10 @@ void main() {
       expect(ids.toSet(), hasLength(ids.length));
       expect(
         result.playerCards.every((card) => card.role == PlayerRole.batsman),
+        isTrue,
+      );
+      expect(
+        result.playerCards.every((card) => card.tier == CardTier.bronze),
         isTrue,
       );
     });

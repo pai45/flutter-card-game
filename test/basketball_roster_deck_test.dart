@@ -31,7 +31,7 @@ void main() {
         defenders: ['ned-virgil-van-dijk'],
         actions: ['act1-gold'],
         keeper: 'bra-alisson-becker',
-        batsmen: ['ind-virat-kohli'],
+        finalOverBatsmen: ['ind-virat-kohli'],
         basketballPlayers: [
           'okc-shai-gilgeous-alexander',
           'hou-kevin-durant',
@@ -44,7 +44,7 @@ void main() {
 
       expect(revived.basketballPlayers, slot.basketballPlayers);
       expect(revived.basketballStarter, slot.basketballStarter);
-      expect(revived.batsmen, slot.batsmen);
+      expect(revived.finalOverBatsmen, slot.finalOverBatsmen);
       expect(revived.keeper, slot.keeper);
     });
   });
@@ -59,7 +59,8 @@ void main() {
       await bloc.stream.firstWhere((state) => !state.loading);
 
       final footballBefore = bloc.state.deckAttackers.map((c) => c.id).toList();
-      final cricketBefore = bloc.state.deckBatsmen.map((c) => c.id).toList();
+      final cricketBefore =
+          bloc.state.deckFinalOverBatsmen.map((c) => c.id).toList();
 
       bloc.add(BasketballStarterPackOpened());
       final opened = await bloc.stream.firstWhere(
@@ -69,7 +70,7 @@ void main() {
       expect(opened.starterPackClaimed, isFalse);
       expect(opened.cricketStarterPackClaimed, isFalse);
       expect(opened.deckAttackers.map((c) => c.id), footballBefore);
-      expect(opened.deckBatsmen.map((c) => c.id), cricketBefore);
+      expect(opened.deckFinalOverBatsmen.map((c) => c.id), cricketBefore);
       expect(opened.deckBasketballPlayers, hasLength(3));
       expect(opened.hoopDuelDeckReady, isTrue);
       expect(opened.pendingPackReveal?.headline, 'HOOP\nSTARTER');

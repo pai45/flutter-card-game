@@ -13,6 +13,7 @@ import '../../config/theme.dart';
 import '../../games/basketball/basketball_engine.dart';
 import '../../games/basketball/basketball_game.dart';
 import '../../models/basketball.dart';
+import '../../utils/game_audio_mappings.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import 'widgets/basketball_controls.dart';
@@ -60,13 +61,12 @@ class _BasketballMatchScreenState extends State<BasketballMatchScreen> {
       onEvents: _onGameEvents,
       reducedMotion: reducedMotion,
     );
-    // Crowd bed (no-ops silently until the ambient asset exists — chess spec).
-    AudioController.instance.playLoop(MusicTrack.matchAmbient);
+    AudioController.instance.enterScene(AudioScene.basketball);
   }
 
   @override
   void dispose() {
-    AudioController.instance.stopLoop();
+    AudioController.instance.leaveScene(AudioScene.basketball);
     // Leaving mid-match discards the attempt (no stats, no reward). A REMATCH
     // relaunch has already replaced the config by the time this route is
     // disposed — the identity check keeps us from resetting the new match.
@@ -88,58 +88,68 @@ class _BasketballMatchScreenState extends State<BasketballMatchScreen> {
     for (final event in events) {
       switch (event.type) {
         case BasketballEventType.basketMade:
-          playSound(SoundEffect.bbSwish);
+          playSound(basketballSoundForEvent(event.type)!);
           if (event.team == 0) HapticFeedback.mediumImpact();
         case BasketballEventType.shotMissed:
-          playSound(SoundEffect.bbRimRattle);
+          playSound(basketballSoundForEvent(event.type)!);
         case BasketballEventType.dunk:
-          playSound(SoundEffect.bbDunkSlam);
+          playSound(basketballSoundForEvent(event.type)!);
           HapticFeedback.heavyImpact();
         case BasketballEventType.poster:
-          playSound(SoundEffect.bannerSlam);
+          playSound(basketballSoundForEvent(event.type)!);
         case BasketballEventType.block:
-          playSound(SoundEffect.bbBackboard);
+          playSound(basketballSoundForEvent(event.type)!);
           HapticFeedback.heavyImpact();
         case BasketballEventType.steal:
-          playSound(SoundEffect.bbSneakerSqueak);
+          playSound(basketballSoundForEvent(event.type)!);
           HapticFeedback.mediumImpact();
+        case BasketballEventType.rebound:
+          playSound(basketballSoundForEvent(event.type)!);
         case BasketballEventType.ankleBreaker:
-          playSound(SoundEffect.bbSneakerSqueak);
+          playSound(basketballSoundForEvent(event.type)!);
           HapticFeedback.mediumImpact();
         case BasketballEventType.spinMove:
-          playSound(SoundEffect.bbSneakerSqueak);
+          playSound(basketballSoundForEvent(event.type)!);
           if (event.team == 0) HapticFeedback.selectionClick();
         case BasketballEventType.crossover:
-          if (event.team == 0) playSound(SoundEffect.bbSneakerSqueak);
+          if (event.team == 0) {
+            playSound(basketballSoundForEvent(event.type)!);
+          }
         case BasketballEventType.perfectRelease:
           if (event.team == 0) {
-            playSound(SoundEffect.commit);
+            playSound(basketballSoundForEvent(event.type)!);
             HapticFeedback.selectionClick();
           }
         case BasketballEventType.shotReleased:
-          if (event.team == 0) playSound(SoundEffect.whoosh);
+          if (event.team == 0) {
+            playSound(basketballSoundForEvent(event.type)!);
+          }
         case BasketballEventType.heatStarted:
-          playSound(SoundEffect.riser);
-          playSound(SoundEffect.bbCrowdRoar);
+          playSound(basketballSoundForEvent(event.type)!);
           if (event.team == 0) HapticFeedback.mediumImpact();
+        case BasketballEventType.heatEnded:
+          playSound(basketballSoundForEvent(event.type)!);
         case BasketballEventType.shotClockViolation:
-          playSound(SoundEffect.redCard);
+          playSound(basketballSoundForEvent(event.type)!);
         case BasketballEventType.buzzerBeater:
-          playSound(SoundEffect.bbBuzzer);
-          playSound(SoundEffect.bannerSlam);
+          playSound(basketballSoundForEvent(event.type)!);
           HapticFeedback.heavyImpact();
         case BasketballEventType.halfEnded:
-          playSound(SoundEffect.bbBuzzer);
+          playSound(basketballSoundForEvent(event.type)!);
           HapticFeedback.heavyImpact();
           if (event.halfIndex == 0) _cubit.markHintsSeen();
           _cubit.onHalfEnded(
             halfIndex: event.halfIndex,
             needsOvertime: event.needsOvertime,
           );
+        case BasketballEventType.overtimeStarted:
+          playSound(basketballSoundForEvent(event.type)!);
+        case BasketballEventType.substitution:
+          playSound(basketballSoundForEvent(event.type)!);
+        case BasketballEventType.stagger:
+          playSound(basketballSoundForEvent(event.type)!);
         case BasketballEventType.matchEnded:
           _onMatchEnded();
-        default:
-          break;
       }
     }
   }
@@ -161,7 +171,7 @@ class _BasketballMatchScreenState extends State<BasketballMatchScreen> {
         xp: xp,
       ),
     );
-    playSound(summary.won ? SoundEffect.matchWin : SoundEffect.matchLose);
+    playSound(summary.won ? SoundEffect.bbVictory : SoundEffect.bbDefeat);
     HapticFeedback.heavyImpact();
     Future.delayed(const Duration(milliseconds: 900), () {
       if (mounted) _cubit.showResult();
@@ -179,7 +189,7 @@ class _BasketballMatchScreenState extends State<BasketballMatchScreen> {
     _game.halftimeRest();
     if (rosterIndex != _game.engine.teams[0].activeIndex) {
       _game.substitutePlayer(rosterIndex);
-      playSound(SoundEffect.cardSelect);
+      playSound(SoundEffect.bbSubstitution);
     }
     _game.cpuAutoSubstitute();
     _cubit.resumeSecondHalf();
@@ -193,12 +203,12 @@ class _BasketballMatchScreenState extends State<BasketballMatchScreen> {
 
   Future<void> _confirmExit() async {
     final phase = _cubit.state.phase;
-    if (phase == BasketballPhase.result ||
-        phase == BasketballPhase.finished) {
+    if (phase == BasketballPhase.result || phase == BasketballPhase.finished) {
       widget.onExit();
       return;
     }
     _game.setPaused(true);
+    AudioController.instance.setSceneMusicEnabled(false);
     final leave = await showCyberConfirmDialog(
       context,
       title: 'LEAVE THE COURT?',
@@ -211,6 +221,7 @@ class _BasketballMatchScreenState extends State<BasketballMatchScreen> {
       widget.onExit();
     } else {
       _game.setPaused(false);
+      AudioController.instance.setSceneMusicEnabled(true);
     }
   }
 

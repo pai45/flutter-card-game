@@ -48,13 +48,13 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
     curve: const Interval(0.12, 0.35, curve: Curves.easeOutBack),
   );
 
-  late final Animation<Offset> _xpPanelSlide = Tween<Offset>(
-    begin: const Offset(0, 0.5),
-    end: Offset.zero,
-  ).animate(CurvedAnimation(
-    parent: _seq,
-    curve: const Interval(0.28, 0.50, curve: Curves.easeOutCubic),
-  ));
+  late final Animation<Offset> _xpPanelSlide =
+      Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+        CurvedAnimation(
+          parent: _seq,
+          curve: const Interval(0.28, 0.50, curve: Curves.easeOutCubic),
+        ),
+      );
 
   late final Animation<double> _xpPanelOpacity = CurvedAnimation(
     parent: _seq,
@@ -93,7 +93,10 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
   void initState() {
     super.initState();
     final prev = widget.state.previousProgression;
-    assert(prev != null, 'previousProgression must be set at finalResult phase');
+    assert(
+      prev != null,
+      'previousProgression must be set at finalResult phase',
+    );
     _oldXpIntoLevel = prev!.xpIntoLevel;
     _oldXpToNextLevel = prev.xpToNextLevel;
 
@@ -113,7 +116,7 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
       won
           ? SoundEffect.matchWin
           : drawn
-          ? SoundEffect.bannerSlam
+          ? SoundEffect.matchDraw
           : SoundEffect.matchLose,
     );
     HapticFeedback.heavyImpact();
@@ -184,7 +187,8 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
               final displayedXP = (state.lastMatchXP!.abs() * tickerT).round();
               final oldRatio = _oldXpIntoLevel / _oldXpToNextLevel;
               final newRatio =
-                  state.progression.xpIntoLevel / state.progression.xpToNextLevel;
+                  state.progression.xpIntoLevel /
+                  state.progression.xpToNextLevel;
               final barFill =
                   (oldRatio + (newRatio - oldRatio) * _xpBarProgress.value)
                       .clamp(0.0, 1.0);
@@ -303,7 +307,6 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
       ),
     );
   }
-
 }
 
 // ── Outcome banner ────────────────────────────────────────────────────────────
@@ -369,18 +372,12 @@ class _GiantScoreline extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(
-          '$playerScore',
-          style: Cyber.display(72, color: Cyber.cyan),
-        ),
+        Text('$playerScore', style: Cyber.display(72, color: Cyber.cyan)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text('-', style: Cyber.display(48, color: Cyber.muted)),
         ),
-        Text(
-          '$opponentScore',
-          style: Cyber.display(72, color: Cyber.danger),
-        ),
+        Text('$opponentScore', style: Cyber.display(72, color: Cyber.danger)),
       ],
     );
   }
@@ -389,10 +386,7 @@ class _GiantScoreline extends StatelessWidget {
 // ── Fixed footer dock (PLAY AGAIN | HOME) ─────────────────────────────────────
 
 class _ResultFooterDock extends StatelessWidget {
-  const _ResultFooterDock({
-    required this.onPlayAgain,
-    required this.onHome,
-  });
+  const _ResultFooterDock({required this.onPlayAgain, required this.onHome});
 
   final VoidCallback onPlayAgain;
   final VoidCallback onHome;
@@ -522,8 +516,7 @@ class _ResultDockBtnPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _ResultDockBtnPainter old) =>
-      old.focal != focal;
+  bool shouldRepaint(covariant _ResultDockBtnPainter old) => old.focal != focal;
 }
 
 // ── XP panel ──────────────────────────────────────────────────────────────────
@@ -554,7 +547,10 @@ class _XpProgressPanel extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Cyber.panel.withValues(alpha: 0.85),
-        border: Border.all(color: accentColor.withValues(alpha: 0.35), width: 1),
+        border: Border.all(
+          color: accentColor.withValues(alpha: 0.35),
+          width: 1,
+        ),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Column(
@@ -711,23 +707,24 @@ class _FinalRoundLogItem extends StatelessWidget {
       curve: Curves.easeOutCubic,
       builder: (context, value, child) {
         return SlideTransition(
-          position: Tween<Offset>(
-            begin: const Offset(0.28, 0),
-            end: Offset.zero,
-          ).animate(
-            CurvedAnimation(
-              parent: AlwaysStoppedAnimation(value),
-              curve: Curves.linear,
-            ),
-          ),
+          position:
+              Tween<Offset>(
+                begin: const Offset(0.28, 0),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(
+                  parent: AlwaysStoppedAnimation(value),
+                  curve: Curves.linear,
+                ),
+              ),
           child: Opacity(opacity: value, child: child),
         );
       },
       child: Container(
         color: isGoal
             ? (round.playerAttacking
-                ? Cyber.cyan.withValues(alpha: 0.08)
-                : Colors.orange.withValues(alpha: 0.08))
+                  ? Cyber.cyan.withValues(alpha: 0.08)
+                  : Colors.orange.withValues(alpha: 0.08))
             : Colors.transparent,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         child: Row(

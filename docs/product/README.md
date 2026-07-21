@@ -3,7 +3,7 @@
 StatOz is a sports prediction and game app built around four connected product loops:
 
 - users predict real-world-style matches, submit answers, and claim rewards when results settle
-- users collect cards, build squads, and play game modes such as Pitch Duel, Penalty Shootout, Super Over, Grand Prix Dash, Football Quiz, Football Bingo, Guess the Player, and Football Chess
+- users collect cards, build squads, and play game modes such as Pitch Duel, Penalty Shootout, Final Over, Grand Prix Dash, Football Quiz, Football Bingo, Guess the Player, and Football Chess
 - users compare progress through leaderboard surfaces across match day, tournaments, coins, and games
 - users set up a profile identity with avatar, banner, followed leagues, and favorite teams
 
@@ -15,7 +15,7 @@ On first launch, the app opens into Profile Setup until onboarding is complete. 
 
 - **Matches**: fixture cards grouped by league, with prediction quizzes for individual matches.
 - **Pick**: a market-style picks surface where users choose outcomes and confirm an Oz Coin amount.
-- **Games**: entry point for Pitch Duel, Penalty Shootout, Super Over, Grand Prix Dash, Football Quiz, Football Bingo, Guess the Player, and 5v5 Football Chess.
+- **Games**: entry point for Pitch Duel, Penalty Shootout, Final Over, Grand Prix Dash, Football Quiz, Football Bingo, Guess the Player, and 5v5 Football Chess.
 - **Leaderboard**: ranking surfaces for match day, tournaments, coins, and games.
 - **Shop and Profile**: supporting areas for identity setup, avatar and banner display, followed leagues, favorite teams, wallet, collection, card backs, and cosmetic browsing.
 
@@ -28,7 +28,6 @@ The main navigation keeps Predictions, Pick, Leaderboard, Shop, and Profile as a
 - [Picks](picks.md)
 - [Pitch Duel Card Game](pitch-duel-card-game.md)
 - [Penalty Shootout](penalty-shootout.md)
-- [Super Over](super-over.md)
 - [Grand Prix Dash](grand-prix-dash.md)
 - [Football Quiz](football-quiz.md)
 - [Football Bingo](football-bingo.md)
@@ -70,14 +69,14 @@ The main navigation keeps Predictions, Pick, Leaderboard, Shop, and Profile as a
 5. Result awards smaller XP/coin rewards than a full Pitch Duel match.
 6. Match history, XP/coin ledgers, and the penalty shootout streak are updated. See [Penalty Shootout](penalty-shootout.md) for full rules.
 
-**Super Over loop**
+**Final Over loop**
 
-1. User enters Games and chooses Super Over from the Cricket section.
-2. User makes sure the cricket batting deck is ready.
-3. User starts a six-ball chase against a CPU target scaled by player level.
-4. Each ball asks the user to read the OFF/V/LEG field, choose a sector, and time the delivery.
-5. Shot outcome updates score, wickets, momentum, combo, and the chase state.
-6. The completed over awards XP and updates lifetime Super Over stats. See [Super Over](super-over.md) for full rules.
+1. User enters Games and chooses Final Over from the Cricket section.
+2. First-time cricket players claim a cricket starter pack and equip a three-batsman deck.
+3. User chooses a tier and starts a six-ball chase against a CPU target.
+4. Each ball asks the user to time contact and manage overdrive.
+5. Shot outcome updates score, wickets, and the chase state.
+6. The completed over awards shared XP and updates Final Over stats.
 
 **Grand Prix Dash loop**
 
@@ -147,7 +146,7 @@ The main navigation keeps Predictions, Pick, Leaderboard, Shop, and Profile as a
 - Football Quiz persists category/set progress, spends coins on entry, and credits shared XP only for passed sets.
 - Football Bingo persists a daily archive and spends coins only for optional lifeline purchases; completion currently does not credit XP or coins.
 - Guess the Player persists daily results and logs; its result overlay shows a win XP value, but shared XP crediting is not yet wired.
-- Super Over currently persists its own chase record and credits shared XP, but it does not pay coins and does not persist in-progress overs.
+- Final Over persists its own chase record and credits shared XP, but it does not pay coins.
 - Grand Prix Dash currently persists its own race record, circuit personal bests, and shared XP, but it does not pay coins and abandons in-progress races on exit.
 - Football Chess currently persists its own win/loss/draw/streak record and shared XP ledger entries, but it does not yet write match-history or coin-ledger entries.
 - Profile setup and identity preferences are persistent local product state: avatar, banner, followed leagues, favorite teams, and onboarding completion.

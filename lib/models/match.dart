@@ -1,6 +1,5 @@
 import '../config/enums.dart';
 import 'cards.dart';
-import 'super_over.dart';
 
 class MatchHistoryRound {
   const MatchHistoryRound({
@@ -46,7 +45,6 @@ class MatchHistoryEntry {
     this.penaltyPlayerScore,
     this.penaltyOpponentScore,
     this.xpEarned,
-    this.superOverSummary,
   });
 
   final String id;
@@ -60,13 +58,11 @@ class MatchHistoryEntry {
   final int? penaltyOpponentScore;
   final List<MatchHistoryRound> rounds;
   final int? xpEarned;
-  final SuperOverMatchSummary? superOverSummary;
 
   bool get isShootout => mode == 'shootout';
   bool get isGrandPrix => mode == 'grandprix';
   bool get isBasketball => mode == 'basketball';
   bool get isTennis => mode == 'tennis';
-  bool get isSuperOver => mode == 'super_over';
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -80,7 +76,6 @@ class MatchHistoryEntry {
     'penaltyOpponentScore': penaltyOpponentScore,
     'rounds': rounds.map((round) => round.toJson()).toList(),
     'xpEarned': xpEarned,
-    'superOverSummary': superOverSummary?.toJson(),
   };
 
   static MatchHistoryEntry fromJson(Map<String, dynamic> json) =>
@@ -101,11 +96,6 @@ class MatchHistoryEntry {
             )
             .toList(),
         xpEarned: json['xpEarned'] as int?,
-        superOverSummary: json['superOverSummary'] is Map
-            ? SuperOverMatchSummary.fromJson(
-                Map<String, dynamic>.from(json['superOverSummary'] as Map),
-              )
-            : null,
       );
 }
 

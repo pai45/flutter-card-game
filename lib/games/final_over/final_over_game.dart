@@ -175,6 +175,12 @@ class FinalOverGame extends FlameGame {
   /// window closes, so it can never leak into the next delivery.
   bool _swingHeld = false;
 
+  /// Engine time (matches `s.simulationMicros`) the current hold began. Null
+  /// whenever `_swingHeld` is false. Drives the backlift hold-to-load ramp in
+  /// `_batterProgress`; purely a render concern — the grading engine only
+  /// ever sees the real release timestamp.
+  int? _swingHeldAtMicros;
+
   MatchState get state => controller.state;
   GameplayTuning get tuning => controller.tuning;
 
@@ -247,12 +253,14 @@ class FinalOverGame extends FlameGame {
     final s = controller.state;
     if (!_swingWindowOpen(s)) return;
     _swingHeld = true;
+    _swingHeldAtMicros = s.simulationMicros;
   }
 
   /// Release: the swing itself. The engine grades when it is released.
   void releaseSwing() {
     if (!_swingHeld) return;
     _swingHeld = false;
+    _swingHeldAtMicros = null;
     final s = controller.state;
     controller.dispatch(SwingCommand(s.selectedDirection));
   }
@@ -260,6 +268,7 @@ class FinalOverGame extends FlameGame {
   /// The finger slid off the plate, or the deck swapped under it. No swing.
   void cancelSwing() {
     _swingHeld = false;
+    _swingHeldAtMicros = null;
   }
 
   /// The CTA only becomes interactive during the engine's legal swing window.
@@ -334,7 +343,10 @@ class FinalOverGame extends FlameGame {
     canTurnBack.value = s.runner.canTurnBack;
     // Quantised so an unchanged bar never notifies.
     _setDouble(runProgress, (s.runner.progress * 100).round() / 100);
-    if (!s.canSwing) _swingHeld = false;
+    if (!s.canSwing) {
+      _swingHeld = false;
+      _swingHeldAtMicros = null;
+    }
     if (!identical(history.value, s.history)) history.value = s.history;
   }
 
@@ -1003,7 +1015,10 @@ class FinalOverGame extends FlameGame {
 
     final strikerId = _strikerActorId;
     final batterPx = size.height * 0.25 * 0.85 / kFoReferenceHeightM;
-    final frame = foBatterFrame(_batterPose(s), _batterProgress(s));
+    final batterKind = _batterPose(s);
+    final batterT = _batterProgress(s);
+    final frame = foBatterFrame(batterKind, batterT);
+    final trailAngles = _batterTrailAngles(batterKind, batterT);
     _paintActor(
       canvas,
       projection.pointAt(depth: 0.84, lateral: 0.115),
@@ -1018,6 +1033,7 @@ class FinalOverGame extends FlameGame {
         heightM: kFoReferenceHeightM,
         number: finalOverNumberFor(strikerId),
         facing: f,
+        trailBatAngles: trailAngles,
       ),
     );
 
@@ -1437,12 +1453,44 @@ class FinalOverGame extends FlameGame {
     if (s.runner.active) return _bowlerRunPhase;
     final swing = s.swingIntent;
     if (swing == null) {
-      if (_swingHeld) return 0.65;
+      if (_swingHeld) {
+        final heldAt = _swingHeldAtMicros;
+        // Defensive only — beginSwing() always sets both fields together.
+        if (heldAt == null) return 1.0;
+        // Deliberately NOT clamped to 1.0: `backlift` clamps the 0→1 windup
+        // itself but reads the raw overflow to drive an idle coil for as
+        // long as the hold continues past full cock.
+        return ((s.simulationMicros - heldAt) / kFoBackliftLoadMicros)
+            .clamp(0.0, double.infinity);
+      }
       return s.phase == MatchPhase.incomingBall
           ? _incomingProgress(s)
           : _visualSeconds;
     }
     return ((s.simulationMicros - swing.inputMicros) / 520000).clamp(0.0, 1.0);
+  }
+
+  static const _trailPoses = {
+    FoBatterPose.groundOff,
+    FoBatterPose.groundStraight,
+    FoBatterPose.groundLeg,
+    FoBatterPose.loftOff,
+    FoBatterPose.loftStraight,
+    FoBatterPose.loftLeg,
+    FoBatterPose.miss, // still a full-speed swing through the zone
+  };
+
+  /// Two recent past bat angles for a fading motion trail, oldest first.
+  /// Only during the fast-motion middle of a committed swing (not the slow
+  /// easeInOutCubic start/end), and never during stance/backlift/running/
+  /// celebrate/bowled.
+  List<double> _batterTrailAngles(FoBatterPose kind, double t) {
+    if (!_trailPoses.contains(kind)) return const [];
+    if (t < 0.15 || t > 0.85) return const [];
+    return [
+      foBatterFrame(kind, (t - 0.16).clamp(0.0, 1.0)).batAngle,
+      foBatterFrame(kind, (t - 0.08).clamp(0.0, 1.0)).batAngle,
+    ];
   }
 
   double _incomingProgress(MatchState s) {

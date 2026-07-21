@@ -66,33 +66,42 @@ double _swing(double a, double b, double t) =>
 FoBatterFrame foBatterFrame(FoBatterPose kind, double t, {double runPhase = 0}) {
   switch (kind) {
     case FoBatterPose.stance:
-      // Side-on, weight loaded, bat tapped down behind the back foot.
+      // Front-foot-forward guard: crouched, weight forward, hands low and
+      // together near the front pad, bat toe down-and-forward rather than
+      // tucked behind the back foot. This is also the k=0 baseline
+      // `backlift` animates FROM, so pressing HIT never jumps silhouettes.
       final breathe = sin(t * 2.4) * 0.015;
       return FoBatterFrame(
         RigPose(
-          hip: 0.86 + breathe,
-          lean: 0.24,
-          footNear: const Offset(0.20, 0),
-          footFar: const Offset(-0.22, 0),
-          handNear: const Offset(0.24, -0.34),
-          handFar: const Offset(0.20, -0.42),
+          hip: 0.80 + breathe,
+          lean: 0.30,
+          footNear: const Offset(0.28, 0),
+          footFar: const Offset(-0.20, 0),
+          handNear: const Offset(0.10, 0.22),
+          handFar: const Offset(0.05, 0.26),
           headBob: breathe,
         ),
-        2.0, // down and back
+        1.25, // toe down and forward, near the front pad
       );
 
     case FoBatterPose.backlift:
-      final k = (t).clamp(0.0, 1.0);
+      final k = t.clamp(0.0, 1.0);
+      // `t` grows past 1.0 for as long as the hold continues — `overflow` is
+      // real elapsed hold-time past full cock, used only for the idle coil
+      // below so a long hold reads as tense, not frozen.
+      final overflow = (t - 1.0).clamp(0.0, 1000.0);
+      final coil = sin(overflow * 5.0) * 0.014;
       return FoBatterFrame(
         RigPose(
-          hip: 0.87,
-          lean: 0.18 - k * 0.10,
-          footNear: const Offset(0.18, 0),
-          footFar: const Offset(-0.24, 0),
-          handNear: Offset(0.10 - k * 0.06, -0.52 - k * 0.14),
-          handFar: Offset(0.06 - k * 0.06, -0.58 - k * 0.14),
+          hip: 0.80 + coil, // == stance
+          lean: 0.30 - k * 0.10 + coil * 0.6, // == stance @ k=0
+          footNear: const Offset(0.28, 0), // == stance
+          footFar: const Offset(-0.20, 0), // == stance
+          handNear: Offset(0.10 - k * 0.06, 0.22 - k * 0.88),
+          handFar: Offset(0.05 - k * 0.05, 0.26 - k * 0.98),
+          headBob: coil * 0.7,
         ),
-        _swing(2.0, -2.35, k), // cocked up behind the shoulder
+        _swing(1.25, -2.35, k), // starts at stance's angle, cocks up behind
       );
 
     case FoBatterPose.groundOff:
@@ -340,6 +349,11 @@ RigPose foUmpirePose(FoUmpireSignal signal, double t) {
 enum FoHeadGear { helmet, cap, hat }
 
 /// Draws a batter: the rig, then the bat over the top of the near arm.
+///
+/// [trailBatAngles] are recent past bat angles (oldest first) drawn as
+/// fading ghosts behind the live bat — a cheap motion trail for the fast
+/// part of a committed swing. Empty by default (stance/backlift/preview
+/// renders never pass any).
 void drawFoBatter(
   Canvas canvas,
   FoBatterFrame frame, {
@@ -349,6 +363,7 @@ void drawFoBatter(
   required double heightM,
   required int number,
   int facing = 1,
+  List<double> trailBatAngles = const [],
 }) {
   drawFoRig(
     canvas,
@@ -369,6 +384,10 @@ void drawFoBatter(
   final shoulderY = frame.pose.hip * scaleM + 0.50 * scaleM;
   final shoulder = Offset(sin(frame.pose.lean) * 0.3 * px, -shoulderY * px);
   final grip = shoulder + frame.pose.handNear * (scaleM * px);
+  for (var i = 0; i < trailBatAngles.length; i++) {
+    final fade = 0.12 + 0.16 * i; // oldest faintest, newest brightest
+    _drawBat(canvas, grip, trailBatAngles[i], px, scaleM, kit, alpha: fade);
+  }
   _drawBat(canvas, grip, frame.batAngle, px, scaleM, kit);
 }
 
@@ -736,8 +755,9 @@ void _drawBat(
   double angle,
   double px,
   double scaleM,
-  FinalOverKit kit,
-) {
+  FinalOverKit kit, {
+  double alpha = 1.0,
+}) {
   final len = 0.62 * scaleM * px;
   final width = 0.115 * scaleM * px;
 
@@ -750,7 +770,7 @@ void _drawBat(
     Offset(-len * 0.16, 0),
     Offset(len * 0.30, 0),
     Paint()
-      ..color = const Color(0xFF23282F)
+      ..color = const Color(0xFF23282F).withValues(alpha: alpha)
       ..strokeWidth = width * 0.38
       ..strokeCap = StrokeCap.round,
   );
@@ -759,7 +779,7 @@ void _drawBat(
     Offset(-len * 0.10, 0),
     Offset(len * 0.14, 0),
     Paint()
-      ..color = kit.accent
+      ..color = kit.accent.withValues(alpha: alpha)
       ..strokeWidth = width * 0.46
       ..strokeCap = StrokeCap.round,
   );
@@ -772,22 +792,28 @@ void _drawBat(
   );
   canvas.drawRRect(
     blade.shift(Offset(0, width * 0.18)),
-    Paint()..color = const Color(0xFF6B4A22), // dark edge behind, for volume
+    Paint()
+      ..color = const Color(
+        0xFF6B4A22,
+      ).withValues(alpha: alpha), // dark edge behind, for volume
   );
-  canvas.drawRRect(blade, Paint()..color = const Color(0xFFF3E6C8));
+  canvas.drawRRect(
+    blade,
+    Paint()..color = const Color(0xFFF3E6C8).withValues(alpha: alpha),
+  );
   // Spine + the dark outline that keeps the bat off the batter's arms.
   canvas.drawLine(
     Offset(len * 0.34, -width * 0.06),
     Offset(len * 0.94, -width * 0.06),
     Paint()
-      ..color = const Color(0xFFFFF9EA)
+      ..color = const Color(0xFFFFF9EA).withValues(alpha: alpha)
       ..strokeWidth = width * 0.18
       ..strokeCap = StrokeCap.round,
   );
   canvas.drawRRect(
     blade,
     Paint()
-      ..color = const Color(0xFF5A3E1C)
+      ..color = const Color(0xFF5A3E1C).withValues(alpha: alpha)
       ..style = PaintingStyle.stroke
       ..strokeWidth = width * 0.10,
   );

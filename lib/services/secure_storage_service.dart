@@ -23,9 +23,8 @@ import '../models/xp_ledger.dart';
 import '../models/guess_player.dart';
 import '../models/guess_driver.dart';
 import '../models/guess_winner.dart';
-import '../models/super_over.dart';
-import '../models/super_over_stats.dart';
 import '../data/final_over_kits.dart';
+import '../data/grand_prix_liveries.dart';
 import '../data/rival_roster.dart' show randomPlayerTag;
 
 /// Maps a legacy `border_*` avatar-frame id to the renamed `frame_*` form so a
@@ -45,6 +44,7 @@ class WalletSnapshot {
     required this.ownedAvatarIds,
     required this.ownedBannerIds,
     required this.ownedFinalOverKitIds,
+    required this.ownedGrandPrixLiveryIds,
     required this.dailyDropLastClaimedAtMillis,
   });
 
@@ -59,6 +59,7 @@ class WalletSnapshot {
     ownedAvatarIds: const [],
     ownedBannerIds: const [],
     ownedFinalOverKitIds: defaultOwnedFinalOverKitIds(),
+    ownedGrandPrixLiveryIds: defaultOwnedGrandPrixLiveryIds(),
     dailyDropLastClaimedAtMillis: null,
   );
 
@@ -93,6 +94,9 @@ class WalletSnapshot {
     ownedFinalOverKitIds: normalizeOwnedFinalOverKitIds(
       List<String>.from(json['ownedFinalOverKitIds'] as List? ?? const []),
     ),
+    ownedGrandPrixLiveryIds: normalizeOwnedGrandPrixLiveryIds(
+      List<String>.from(json['ownedGrandPrixLiveryIds'] as List? ?? const []),
+    ),
     dailyDropLastClaimedAtMillis: json['dailyDropLastClaimedAtMillis'] as int?,
   );
 
@@ -106,6 +110,7 @@ class WalletSnapshot {
   final List<String> ownedAvatarIds;
   final List<String> ownedBannerIds;
   final List<String> ownedFinalOverKitIds;
+  final List<String> ownedGrandPrixLiveryIds;
   final int? dailyDropLastClaimedAtMillis;
 
   Map<String, dynamic> toJson() => {
@@ -119,6 +124,7 @@ class WalletSnapshot {
     'ownedAvatarIds': ownedAvatarIds,
     'ownedBannerIds': ownedBannerIds,
     'ownedFinalOverKitIds': ownedFinalOverKitIds,
+    'ownedGrandPrixLiveryIds': ownedGrandPrixLiveryIds,
     'dailyDropLastClaimedAtMillis': dailyDropLastClaimedAtMillis,
   };
 }
@@ -138,6 +144,8 @@ class SecureGameStorage {
       'pd_basketball_starter_pack_claimed_v1';
   static const _tennisStarterPackClaimedKey =
       'pd_tennis_starter_pack_claimed_v1';
+  static const _grandPrixStarterPackClaimedKey =
+      'pd_grand_prix_starter_pack_claimed_v1';
   static const _progressionKey = 'pd_progression_v1';
   static const _walletKey = 'pitch_duel_wallet';
   static const _coinLedgerKey = 'pd_oz_coin_ledger_v1';
@@ -175,12 +183,6 @@ class SecureGameStorage {
       'pd_tennis_guess_winner_archive_v1';
   static const _footballChessStatsKey = 'pd_football_chess_stats_v1';
   static const _grandPrixStatsKey = 'pd_grand_prix_stats_v1';
-  // Keep the v1 key for one-time migration. All new writes use the versioned
-  // profile key so a failed/partial migration never destroys legacy progress.
-  static const _superOverStatsKey = 'pd_super_over_stats_v1';
-  static const _superOverProfileKey = 'pd_super_over_profile_v2';
-  static const _superOverSettlementKey = 'pd_super_over_settlements_v1';
-  static const _superOverSnapshotKey = 'pd_super_over_snapshot_v1';
   static const _basketballStatsKey = 'pd_basketball_stats_v1';
   static const _finalOverStatsKey = 'pd_final_over_stats_v1';
   static const _tennisProfileKey = 'pd_tennis_profile_v1';
@@ -287,6 +289,19 @@ class SecureGameStorage {
 
   Future<void> saveTennisStarterPackClaimed() async {
     await _storage.write(key: _tennisStarterPackClaimedKey, value: 'true');
+  }
+
+  Future<bool> loadGrandPrixStarterPackClaimed() async {
+    try {
+      final raw = await _storage.read(key: _grandPrixStarterPackClaimedKey);
+      return raw == 'true';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> saveGrandPrixStarterPackClaimed() async {
+    await _storage.write(key: _grandPrixStarterPackClaimedKey, value: 'true');
   }
 
   Future<List<MatchHistoryEntry>> loadMatchHistory() async {
@@ -871,109 +886,6 @@ class SecureGameStorage {
     );
   }
 
-  Future<SuperOverStats> loadSuperOverStats() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final profileRaw = prefs.getString(_superOverProfileKey);
-      if (profileRaw != null && profileRaw.isNotEmpty) {
-        try {
-          return SuperOverStats.fromJson(
-            Map<String, dynamic>.from(jsonDecode(profileRaw) as Map),
-          );
-        } catch (_) {
-          // A damaged v2 value must not hide an intact legacy profile.
-        }
-      }
-
-      final legacyRaw = prefs.getString(_superOverStatsKey);
-      if (legacyRaw == null || legacyRaw.isEmpty) {
-        return const SuperOverStats();
-      }
-      final migrated = SuperOverStats.fromJson(
-        Map<String, dynamic>.from(jsonDecode(legacyRaw) as Map),
-      );
-      await prefs.setString(
-        _superOverProfileKey,
-        jsonEncode(migrated.toJson()),
-      );
-      return migrated;
-    } catch (_) {
-      return const SuperOverStats();
-    }
-  }
-
-  Future<void> saveSuperOverStats(SuperOverStats stats) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_superOverProfileKey, jsonEncode(stats.toJson()));
-  }
-
-  Future<SuperOverProfile> loadSuperOverProfile() => loadSuperOverStats();
-
-  Future<void> saveSuperOverProfile(SuperOverProfile profile) =>
-      saveSuperOverStats(profile);
-
-  Future<Set<String>> loadSuperOverSettlementIds() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      return (prefs.getStringList(_superOverSettlementKey) ?? const <String>[])
-          .where((id) => id.isNotEmpty)
-          .toSet();
-    } catch (_) {
-      return <String>{};
-    }
-  }
-
-  Future<void> saveSuperOverSettlementIds(Set<String> ids) async {
-    final prefs = await SharedPreferences.getInstance();
-    final ordered = ids.where((id) => id.isNotEmpty).toList(growable: false);
-    final bounded = ordered.length <= superOverSettlementIdLimit
-        ? ordered
-        : ordered.sublist(ordered.length - superOverSettlementIdLimit);
-    await prefs.setStringList(_superOverSettlementKey, bounded);
-  }
-
-  Future<SuperOverMatchSnapshot?> loadSuperOverMatchSnapshot() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(_superOverSnapshotKey);
-      if (raw == null || raw.isEmpty) return null;
-      final snapshot = SuperOverMatchSnapshot.fromJson(
-        Map<String, dynamic>.from(jsonDecode(raw) as Map),
-      );
-      if (!_isRestorableSuperOverSnapshot(snapshot)) {
-        await prefs.remove(_superOverSnapshotKey);
-        return null;
-      }
-      // Never resume halfway through contact/outcome. Re-run the unresolved
-      // committed ball from its field reveal without consuming a legal ball.
-      return snapshot.copyWith(playPhase: SuperOverPlayPhase.fieldReveal);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<void> saveSuperOverMatchSnapshot(
-    SuperOverMatchSnapshot snapshot,
-  ) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!_isRestorableSuperOverSnapshot(snapshot)) {
-      await prefs.remove(_superOverSnapshotKey);
-      return;
-    }
-    final safeBoundary = snapshot.copyWith(
-      playPhase: SuperOverPlayPhase.fieldReveal,
-    );
-    await prefs.setString(
-      _superOverSnapshotKey,
-      jsonEncode(safeBoundary.toJson()),
-    );
-  }
-
-  Future<void> clearSuperOverMatchSnapshot() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_superOverSnapshotKey);
-  }
-
   Future<BasketballStats> loadBasketballStats() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -1069,15 +981,4 @@ class SecureGameStorage {
       bounded.length <= 256 ? bounded : bounded.sublist(bounded.length - 256),
     );
   }
-}
-
-bool _isRestorableSuperOverSnapshot(SuperOverMatchSnapshot snapshot) {
-  if (snapshot.config.matchId.isEmpty ||
-      snapshot.ballRecords.length >= 6 ||
-      snapshot.wickets >= 2) {
-    return false;
-  }
-  return snapshot.config.mode != SuperOverMode.chase ||
-      snapshot.target == null ||
-      snapshot.score <= snapshot.target!;
 }

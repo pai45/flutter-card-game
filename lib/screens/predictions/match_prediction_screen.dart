@@ -430,7 +430,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
       }
     }
     _ensureScoreDefaults();
-    playSound(SoundEffect.matchWin);
+    playSound(SoundEffect.commit);
     // Hold the global achievement reveal so the post-submit cinematic plays
     // first; the cinematic releases it on completion (see the overlay onDone).
     _heldCelebrations = context.read<AchievementCelebrationController>()
@@ -448,6 +448,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
         StreakActivityRecorded(StreakActivity.predict),
       );
       if (chargesEntry) {
+        playSound(SoundEffect.coinSpend);
         context.read<GameBloc?>()?.add(
           CoinsSpent(
             kScorelineQuizEntryFee,
@@ -922,9 +923,9 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
             children: [
               for (var i = 0; i < _quizzes.length; i++)
                 Padding(
-	                  padding: EdgeInsets.only(
-	                    bottom: i == _quizzes.length - 1 ? 0 : 26,
-	                  ),
+                  padding: EdgeInsets.only(
+                    bottom: i == _quizzes.length - 1 ? 0 : 26,
+                  ),
                   child: _QuizSetHubCard(
                     match: _match,
                     quiz: _quizzes[i],
@@ -1282,7 +1283,11 @@ class _QuizHeader extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  _HeaderBadge(team: match.home, cutBottomRight: true, sport: match.sport),
+                  _HeaderBadge(
+                    team: match.home,
+                    cutBottomRight: true,
+                    sport: match.sport,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -1303,7 +1308,11 @@ class _QuizHeader extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  _HeaderBadge(team: match.away, cutBottomRight: false, sport: match.sport),
+                  _HeaderBadge(
+                    team: match.away,
+                    cutBottomRight: false,
+                    sport: match.sport,
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -1330,7 +1339,11 @@ class _QuizHeader extends StatelessWidget {
 }
 
 class _HeaderBadge extends StatelessWidget {
-  const _HeaderBadge({required this.team, required this.cutBottomRight, this.sport});
+  const _HeaderBadge({
+    required this.team,
+    required this.cutBottomRight,
+    this.sport,
+  });
   final SportTeam team;
   final bool cutBottomRight;
   final Sport? sport;
@@ -1707,7 +1720,9 @@ _QuizHubVisual _resolveQuizHubVisual(
       progress: 1,
       progressAccent: Cyber.gold,
       ctaIcon: Icons.redeem,
-      ctaText: isContest ? 'TAP TO REVEAL RESULT · PRIZE' : 'TAP TO REVEAL RESULTS',
+      ctaText: isContest
+          ? 'TAP TO REVEAL RESULT · PRIZE'
+          : 'TAP TO REVEAL RESULTS',
       rewardText: 'REVEAL',
       rewardColor: Cyber.gold,
       glow: true,
@@ -1808,9 +1823,10 @@ class _QuizHubHardShadowPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
-    final path = const HudChamferClipper(bigCut: 12, smallCut: 3)
-        .buildPath(size)
-        .shift(const Offset(0, 5));
+    final path = const HudChamferClipper(
+      bigCut: 12,
+      smallCut: 3,
+    ).buildPath(size).shift(const Offset(0, 5));
     canvas.drawPath(path, Paint()..color = color);
   }
 
@@ -1982,7 +1998,8 @@ class _QuizSetHubCardState extends State<_QuizSetHubCard>
                               children: [
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         v.tag,
@@ -2032,8 +2049,9 @@ class _QuizSetHubCardState extends State<_QuizSetHubCard>
                               accent: v.progressAccent,
                               height: 6,
                               trackColor: Colors.black.withValues(alpha: 0.35),
-                              trackBorderColor:
-                                  v.accent.withValues(alpha: 0.22),
+                              trackBorderColor: v.accent.withValues(
+                                alpha: 0.22,
+                              ),
                             ),
                             const SizedBox(height: 10),
                             _HubDivider(accent: v.accent),
@@ -2047,25 +2065,26 @@ class _QuizSetHubCardState extends State<_QuizSetHubCard>
                                     v.ctaText,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: Cyber.label(
-                                      9,
-                                      color: v.accent,
-                                      letterSpacing: 1,
-                                      fontFeatures: const [
-                                        FontFeature.tabularFigures(),
-                                      ],
-                                    ).copyWith(
-                                      shadows: v.pulse
-                                          ? [
-                                              Shadow(
-                                                color: v.accent.withValues(
-                                                  alpha: 0.5,
-                                                ),
-                                                blurRadius: 10,
-                                              ),
-                                            ]
-                                          : null,
-                                    ),
+                                    style:
+                                        Cyber.label(
+                                          9,
+                                          color: v.accent,
+                                          letterSpacing: 1,
+                                          fontFeatures: const [
+                                            FontFeature.tabularFigures(),
+                                          ],
+                                        ).copyWith(
+                                          shadows: v.pulse
+                                              ? [
+                                                  Shadow(
+                                                    color: v.accent.withValues(
+                                                      alpha: 0.5,
+                                                    ),
+                                                    blurRadius: 10,
+                                                  ),
+                                                ]
+                                              : null,
+                                        ),
                                   ),
                                 ),
                                 const SizedBox(width: 8),

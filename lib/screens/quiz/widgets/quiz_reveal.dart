@@ -91,7 +91,7 @@ class _QuizRevealOverlayState extends State<QuizRevealOverlay> {
       }
     } else {
       _stage = _summaryStage;
-      playSound(SoundEffect.cardSlam);
+      playSound(SoundEffect.quizFail);
     }
   }
 
@@ -103,8 +103,8 @@ class _QuizRevealOverlayState extends State<QuizRevealOverlay> {
       if (!mounted || run != _run) return;
       playSound(
         widget.results[i].correct
-            ? SoundEffect.cardReveal
-            : SoundEffect.cardSlam,
+            ? SoundEffect.quizCorrect
+            : SoundEffect.quizWrong,
       );
       setState(() => _stage = i + 1);
       await Future<void>.delayed(const Duration(milliseconds: 240));
@@ -115,7 +115,8 @@ class _QuizRevealOverlayState extends State<QuizRevealOverlay> {
 
   void _enterSummary() {
     _run++;
-    playSound(_perfect ? SoundEffect.rarityPlatinum : SoundEffect.matchWin);
+    playSound(_perfect ? SoundEffect.quizPerfect : SoundEffect.quizPass);
+    if (widget.unlocked != null) playSound(SoundEffect.quizUnlock);
     setState(() => _stage = _summaryStage);
   }
 

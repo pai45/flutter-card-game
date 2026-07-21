@@ -152,6 +152,7 @@ class _QuizSetScreenState extends State<QuizSetScreen> {
       return;
     }
 
+    playSound(SoundEffect.coinSpend);
     playSound(SoundEffect.playMatch);
     game.add(
       CoinsSpent(

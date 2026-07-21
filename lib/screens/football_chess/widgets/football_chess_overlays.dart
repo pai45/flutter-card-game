@@ -6,6 +6,7 @@ import '../../../blocs/football_chess/football_chess_cubit.dart';
 import '../../../blocs/football_chess/football_chess_state.dart';
 import '../../../config/theme.dart';
 import '../../../models/football_chess.dart';
+import '../../../utils/game_audio_mappings.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../how_to_play/how_to_play_hub_screen.dart';
@@ -65,11 +66,18 @@ class ChessHud extends StatelessWidget {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.help_outline, color: Cyber.muted, size: 20),
+                icon: const Icon(
+                  Icons.help_outline,
+                  color: Cyber.muted,
+                  size: 20,
+                ),
                 onPressed: () async {
                   playSound(SoundEffect.uiTap);
                   context.read<FootballChessCubit>().setPaused(true);
-                  await showHowToPlayGuide(context, HowToPlayMode.footballChess);
+                  await showHowToPlayGuide(
+                    context,
+                    HowToPlayMode.footballChess,
+                  );
                   if (context.mounted) {
                     context.read<FootballChessCubit>().setPaused(false);
                   }
@@ -288,13 +296,7 @@ class ActionBar extends StatelessWidget {
     );
   }
 
-  SoundEffect _sfxFor(BoardActionType v) => switch (v) {
-    BoardActionType.shoot => SoundEffect.attack,
-    BoardActionType.tackle ||
-    BoardActionType.slide ||
-    BoardActionType.press => SoundEffect.defense,
-    _ => SoundEffect.uiTap,
-  };
+  SoundEffect _sfxFor(BoardActionType v) => chessActionSound(v);
 }
 
 class _ActionChip extends StatelessWidget {

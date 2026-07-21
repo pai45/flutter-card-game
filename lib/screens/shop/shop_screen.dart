@@ -9,6 +9,8 @@ import '../../blocs/game/game_state.dart';
 import '../../config/enums.dart';
 import '../../config/sport_modules.dart';
 import '../../data/final_over_kits.dart';
+import '../../data/grand_prix_liveries.dart';
+import '../../games/grand_prix/grand_prix_car_painter.dart';
 import '../../models/avatar_frame_option.dart';
 import '../../models/cards.dart';
 import '../../models/oz_coin_ledger.dart';
@@ -24,6 +26,7 @@ import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/staggered_card_entrance.dart';
 import '../../widgets/stat_oz_top_bar.dart';
 import '../final_over/widgets/final_over_kit_picker.dart';
+import '../../widgets/racing/racing_driver_portrait.dart';
 import 'widgets/shop_acquire_overlay.dart';
 import 'widgets/shop_card.dart';
 
@@ -79,7 +82,11 @@ const _shopSports = <Sport>[
 ];
 
 final _shopSportLabels = _shopSports
-    .map((sport) => sportModuleFor(sport).label.toUpperCase())
+    .map(
+      (sport) => sport == Sport.motorsport
+          ? 'RACING'
+          : sportModuleFor(sport).label.toUpperCase(),
+    )
     .toList(growable: false);
 
 final _shopSportIcons = _shopSports
@@ -91,7 +98,7 @@ String _shopSportCode(Sport sport) => switch (sport) {
   Sport.cricket => 'CRICKET',
   Sport.basketball => 'BASKETBALL',
   Sport.tennis => 'TENNIS',
-  Sport.motorsport => 'F1',
+  Sport.motorsport => 'RACING',
 };
 
 // shortName → countryCode, built once from the card catalogue, so the AVATAR
@@ -106,6 +113,9 @@ Sport _cardSport(PlayerCard card) {
   if (card.icon == Icons.sports_tennis) {
     return Sport.tennis;
   }
+  if (card.icon == Icons.sports_motorsports) {
+    return Sport.motorsport;
+  }
   return Sport.football;
 }
 
@@ -118,9 +128,33 @@ final Map<String, Sport> _avatarSportByShortName = {
 };
 
 final List<({String shortName, String imagePath, int price})>
-_playerAvatarItems = playerPortraitAssets.entries
-    .map((e) => (shortName: e.key, imagePath: e.value, price: 25))
-    .toList();
+_playerAvatarItems = [
+  ...playerPortraitAssets.entries
+      .map((e) => (shortName: e.key, imagePath: e.value, price: 25)),
+  for (final card in racingPlayerCards)
+    (
+      shortName: card.shortName,
+      imagePath: card.portraitAsset!,
+      price: 25,
+    ),
+];
+
+final Map<String, PlayerCard> _racingAvatarCardByShortName = {
+  for (final card in racingPlayerCards) card.shortName: card,
+};
+
+const _avatarSeriesFilters = ['ALL', 'F1', 'F2', 'NASCAR', 'INDYCAR'];
+
+final Map<String, String> _avatarSeriesByShortName = {
+  for (final card in racingPlayerCards)
+    card.shortName: switch (card.role) {
+      PlayerRole.f1Driver => 'F1',
+      PlayerRole.f2Driver => 'F2',
+      PlayerRole.nascarDriver => 'NASCAR',
+      PlayerRole.indycarDriver => 'INDYCAR',
+      _ => 'RACING',
+    },
+};
 
 const List<
   ({
@@ -132,6 +166,7 @@ const List<
     Color accent,
     IconData icon,
     String sport,
+    String? assetPath,
   })
 >
 _bannerPlaceholders = [
@@ -144,6 +179,7 @@ _bannerPlaceholders = [
     accent: Color(0xff5cdfff),
     icon: Icons.waves,
     sport: 'FOOTBALL',
+    assetPath: null,
   ),
   (
     id: 'sunburst',
@@ -153,7 +189,129 @@ _bannerPlaceholders = [
     end: Color(0xffff5a00),
     accent: Color(0xffffd700),
     icon: Icons.flash_on,
-    sport: 'F1',
+    sport: 'RACING',
+    assetPath: null,
+  ),
+  (
+    id: 'mercedes',
+    label: 'MERCEDES',
+    price: 25,
+    start: Color(0xff00d2be),
+    end: Color(0xff050b0a),
+    accent: Color(0xff00d2be),
+    icon: Icons.sports_motorsports,
+    sport: 'RACING',
+    assetPath: 'assets/backgrounds/shop_banner_mercedes.webp',
+  ),
+  (
+    id: 'ferrari',
+    label: 'FERRARI',
+    price: 25,
+    start: Color(0xffdc0000),
+    end: Color(0xff1b0207),
+    accent: Color(0xffdc0000),
+    icon: Icons.sports_motorsports,
+    sport: 'RACING',
+    assetPath: 'assets/backgrounds/shop_banner_ferrari.webp',
+  ),
+  (
+    id: 'mclaren',
+    label: 'MCLAREN',
+    price: 25,
+    start: Color(0xffff8700),
+    end: Color(0xff1a0a00),
+    accent: Color(0xffff8700),
+    icon: Icons.sports_motorsports,
+    sport: 'RACING',
+    assetPath: 'assets/backgrounds/shop_banner_mclaren.webp',
+  ),
+  (
+    id: 'red_bull_racing',
+    label: 'RED BULL RACING',
+    price: 25,
+    start: Color(0xff263bff),
+    end: Color(0xff0a0618),
+    accent: Color(0xffffcc00),
+    icon: Icons.sports_motorsports,
+    sport: 'RACING',
+    assetPath: 'assets/backgrounds/shop_banner_red_bull_racing.webp',
+  ),
+  (
+    id: 'alpine',
+    label: 'ALPINE',
+    price: 25,
+    start: Color(0xff0090ff),
+    end: Color(0xff0a0614),
+    accent: Color(0xffff87c0),
+    icon: Icons.sports_motorsports,
+    sport: 'RACING',
+    assetPath: 'assets/backgrounds/shop_banner_alpine.webp',
+  ),
+  (
+    id: 'racing_bulls',
+    label: 'RACING BULLS',
+    price: 25,
+    start: Color(0xff1e41ff),
+    end: Color(0xff050814),
+    accent: Color(0xffff1e2d),
+    icon: Icons.sports_motorsports,
+    sport: 'RACING',
+    assetPath: 'assets/backgrounds/shop_banner_racing_bulls.webp',
+  ),
+  (
+    id: 'haas_f1_team',
+    label: 'HAAS F1 TEAM',
+    price: 25,
+    start: Color(0xffe10600),
+    end: Color(0xff0a0a0a),
+    accent: Color(0xffffffff),
+    icon: Icons.sports_motorsports,
+    sport: 'RACING',
+    assetPath: 'assets/backgrounds/shop_banner_haas_f1_team.webp',
+  ),
+  (
+    id: 'williams',
+    label: 'WILLIAMS',
+    price: 25,
+    start: Color(0xff00a3e0),
+    end: Color(0xff041018),
+    accent: Color(0xff00a3e0),
+    icon: Icons.sports_motorsports,
+    sport: 'RACING',
+    assetPath: 'assets/backgrounds/shop_banner_williams.webp',
+  ),
+  (
+    id: 'audi',
+    label: 'AUDI',
+    price: 25,
+    start: Color(0xfff50537),
+    end: Color(0xff0a0a0a),
+    accent: Color(0xfff50537),
+    icon: Icons.sports_motorsports,
+    sport: 'RACING',
+    assetPath: 'assets/backgrounds/shop_banner_audi.webp',
+  ),
+  (
+    id: 'aston_martin',
+    label: 'ASTON MARTIN',
+    price: 25,
+    start: Color(0xff006f62),
+    end: Color(0xff031210),
+    accent: Color(0xff37ff6b),
+    icon: Icons.sports_motorsports,
+    sport: 'RACING',
+    assetPath: 'assets/backgrounds/shop_banner_aston_martin.webp',
+  ),
+  (
+    id: 'cadillac_f1_team',
+    label: 'CADILLAC F1 TEAM',
+    price: 25,
+    start: Color(0xffc4a962),
+    end: Color(0xff0a0a0a),
+    accent: Color(0xffc4a962),
+    icon: Icons.sports_motorsports,
+    sport: 'RACING',
+    assetPath: 'assets/backgrounds/shop_banner_cadillac_f1_team.webp',
   ),
   (
     id: 'night',
@@ -164,6 +322,7 @@ _bannerPlaceholders = [
     accent: Color(0xffff3df7),
     icon: Icons.nightlight_round,
     sport: 'FOOTBALL',
+    assetPath: null,
   ),
   (
     id: 'inferno',
@@ -174,6 +333,7 @@ _bannerPlaceholders = [
     accent: Color(0xffffd166),
     icon: Icons.local_fire_department,
     sport: 'CRICKET',
+    assetPath: null,
   ),
   (
     id: 'flare',
@@ -184,6 +344,7 @@ _bannerPlaceholders = [
     accent: Color(0xffffffff),
     icon: Icons.wb_sunny,
     sport: 'BASKETBALL',
+    assetPath: null,
   ),
 ];
 
@@ -292,6 +453,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                       ],
                       activeIndex: _activeTab,
                       onTap: _setTab,
+                      minTabWidth: 80,
                     ),
                     Expanded(
                       child: AnimatedSwitcher(
@@ -345,7 +507,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
       3 => KitsTab(sport: _selectedSport, onAcquired: _showAcquired),
       4 => CoinsTab(onPurchased: _showCelebration),
       // Packs keep their own richer 5-card reveal as the acquire moment.
-      5 => const PacksTab(),
+      5 => PacksTab(sport: _selectedSport),
       _ => CardsTab(sport: _selectedSport, onAcquired: _showAcquired),
     };
   }
@@ -370,6 +532,7 @@ class _ShopSportsTabs extends StatelessWidget {
       activeIndex: activeIndex,
       accent: sportModuleFor(selectedSport).accent,
       onTap: onTap,
+      minTabWidth: 80,
     );
   }
 }
@@ -397,25 +560,45 @@ class AvatarsTab extends StatefulWidget {
 
 class _AvatarsTabState extends State<AvatarsTab> {
   String _nation = 'ALL';
+  String _series = 'ALL';
 
   @override
   Widget build(BuildContext context) {
+    final isMotorsport = widget.sport == Sport.motorsport;
     final sportItems = _playerAvatarItems
         .where((e) => _avatarSportByShortName[e.shortName] == widget.sport)
         .toList();
-    final items = _nation == 'ALL'
-        ? sportItems
-        : sportItems
-              .where((e) => _avatarNationByShortName[e.shortName] == _nation)
-              .toList();
+    final items = isMotorsport
+        ? (_series == 'ALL'
+              ? sportItems
+              : sportItems
+                    .where(
+                      (e) => _avatarSeriesByShortName[e.shortName] == _series,
+                    )
+                    .toList())
+        : (_nation == 'ALL'
+              ? sportItems
+              : sportItems
+                    .where(
+                      (e) => _avatarNationByShortName[e.shortName] == _nation,
+                    )
+                    .toList());
     return Column(
       children: [
-        CyberFilterChips(
-          labels: _avatarNationFilters,
-          selected: _nation,
-          accent: _cyan,
-          onSelect: (value) => setState(() => _nation = value),
-        ),
+        if (isMotorsport)
+          CyberFilterChips(
+            labels: _avatarSeriesFilters,
+            selected: _series,
+            accent: _cyan,
+            onSelect: (value) => setState(() => _series = value),
+          )
+        else
+          CyberFilterChips(
+            labels: _avatarNationFilters,
+            selected: _nation,
+            accent: _cyan,
+            onSelect: (value) => setState(() => _nation = value),
+          ),
         Expanded(
           child: items.isEmpty
               ? _ShopEmptyFilter(sport: _shopSportCode(widget.sport))
@@ -531,9 +714,23 @@ class KitsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (sport != Sport.cricket) {
-      return _ShopEmptyFilter(sport: _shopSportCode(sport));
+    if (sport == Sport.cricket) {
+      return _CricketKitsTab(onAcquired: onAcquired);
     }
+    if (sport == Sport.motorsport) {
+      return _GrandPrixLiveriesTab(onAcquired: onAcquired);
+    }
+    return _ShopEmptyFilter(sport: _shopSportCode(sport));
+  }
+}
+
+class _CricketKitsTab extends StatelessWidget {
+  const _CricketKitsTab({required this.onAcquired});
+
+  final OnAcquired onAcquired;
+
+  @override
+  Widget build(BuildContext context) {
     return BlocBuilder<GameBloc, GameState>(
       builder: (context, state) {
         return ListView.separated(
@@ -542,7 +739,10 @@ class KitsTab extends StatelessWidget {
           separatorBuilder: (_, _) => const SizedBox(height: 12),
           itemBuilder: (context, index) {
             final kit = finalOverKits[index];
-            final owned = isFinalOverKitOwned(kit.id, state.ownedFinalOverKitIds);
+            final owned = isFinalOverKitOwned(
+              kit.id,
+              state.ownedFinalOverKitIds,
+            );
             final price = finalOverKitPrice(kit);
             return StaggeredCardEntrance(
               index: index,
@@ -554,6 +754,52 @@ class KitsTab extends StatelessWidget {
                     height: 148,
                     child: _FinalOverKitShopTile(
                       kit: kit,
+                      index: index,
+                      owned: owned,
+                      price: price,
+                      onAcquired: onAcquired,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _GrandPrixLiveriesTab extends StatelessWidget {
+  const _GrandPrixLiveriesTab({required this.onAcquired});
+
+  final OnAcquired onAcquired;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<GameBloc, GameState>(
+      builder: (context, state) {
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+          itemCount: grandPrixLiveries.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final spec = grandPrixLiveries[index];
+            final owned = isGrandPrixLiveryOwned(
+              spec.livery.name,
+              state.ownedGrandPrixLiveryIds,
+            );
+            final price = grandPrixLiveryPrice(spec.livery);
+            return StaggeredCardEntrance(
+              index: index,
+              animate: true,
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: SizedBox(
+                    height: 148,
+                    child: _GrandPrixLiveryShopTile(
+                      spec: spec,
                       index: index,
                       owned: owned,
                       price: price,
@@ -647,11 +893,7 @@ class _FinalOverKitShopTile extends StatelessWidget {
                               color: kit.secondary,
                             ),
                             const SizedBox(width: 6),
-                            Container(
-                              width: 10,
-                              height: 10,
-                              color: kit.accent,
-                            ),
+                            Container(width: 10, height: 10, color: kit.accent),
                           ],
                         ),
                       ],
@@ -703,11 +945,7 @@ class _FinalOverKitShopTile extends StatelessWidget {
       return;
     }
     bloc.add(
-      ShopFinalOverKitPurchased(
-        kitId: kit.id,
-        price: price,
-        name: kit.name,
-      ),
+      ShopFinalOverKitPurchased(kitId: kit.id, price: price, name: kit.name),
     );
     onAcquired(
       preview: SizedBox(
@@ -717,6 +955,152 @@ class _FinalOverKitShopTile extends StatelessWidget {
       ),
       name: kit.name,
       accent: kit.accent,
+      coinsSpent: price,
+    );
+  }
+}
+
+class _GrandPrixLiveryShopTile extends StatelessWidget {
+  const _GrandPrixLiveryShopTile({
+    required this.spec,
+    required this.index,
+    required this.owned,
+    required this.price,
+    required this.onAcquired,
+  });
+
+  final GrandPrixLiverySpec spec;
+  final int index;
+  final bool owned;
+  final int price;
+  final OnAcquired onAcquired;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = spec.accent;
+    return ShopCardFrame(
+      accent: accent,
+      stamp: owned ? const ShopStateStamp(kind: ShopStampKind.owned) : null,
+      child: Column(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 88,
+                    height: double.infinity,
+                    child: CustomPaint(
+                      painter: GrandPrixCarPreviewPainter(spec),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          spec.name,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontFamily: 'Orbitron',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'GRAND PRIX LIVERY',
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontFamily: 'Orbitron',
+                            fontSize: 8,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              color: spec.primary,
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              width: 10,
+                              height: 10,
+                              color: spec.accent,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          _footer(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _footer(BuildContext context) {
+    if (owned) {
+      return Container(
+        height: 36,
+        color: Colors.black.withValues(alpha: 0.88),
+        alignment: Alignment.center,
+        child: Text(
+          isGrandPrixLiveryFree(spec.livery) ? 'FREE // OWNED' : 'OWNED',
+          style: TextStyle(
+            color: spec.accent,
+            fontFamily: 'Orbitron',
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.4,
+          ),
+        ),
+      );
+    }
+    return ShopPressable(
+      onTap: () => _buy(context),
+      child: Container(
+        height: 36,
+        color: Colors.black.withValues(alpha: 0.88),
+        alignment: Alignment.center,
+        child: ShopPricePill(coins: price, size: 11),
+      ),
+    );
+  }
+
+  void _buy(BuildContext context) {
+    final bloc = context.read<GameBloc>();
+    if (bloc.state.coins < price) {
+      _showSnack(context, 'Not enough coins — top up in the Coins tab.', false);
+      return;
+    }
+    bloc.add(
+      ShopGrandPrixLiveryPurchased(
+        liveryId: spec.livery.name,
+        price: price,
+        name: spec.name,
+      ),
+    );
+    onAcquired(
+      preview: SizedBox(
+        width: 120,
+        height: 120,
+        child: CustomPaint(painter: GrandPrixCarPreviewPainter(spec)),
+      ),
+      name: spec.name,
+      accent: spec.accent,
       coinsSpent: price,
     );
   }
@@ -887,7 +1271,7 @@ class _FrameShopTile extends StatelessWidget {
     if (owned) {
       return ShopPressable(
         onTap: () {
-          playSound(SoundEffect.uiTap);
+          playSound(SoundEffect.uiConfirm);
           context.read<GameBloc>().add(AvatarFrameEquipped(frame.id));
         },
         child: Container(
@@ -918,7 +1302,7 @@ class _FrameShopTile extends StatelessWidget {
           );
           return;
         }
-        playSound(SoundEffect.uiTap);
+        playSound(SoundEffect.coinSpend);
         bloc.add(AvatarFramePurchased(frame.id));
         onAcquired(
           preview: _ring(glow: true),
@@ -967,15 +1351,21 @@ class _AvatarShopTile extends StatelessWidget {
   final bool owned;
   final OnAcquired onAcquired;
 
-  Widget _portrait() => Image.asset(
-    item.imagePath,
-    fit: BoxFit.cover,
-    alignment: Alignment.topCenter,
-    errorBuilder: (_, _, _) => Container(
-      color: _surface,
-      child: Icon(Icons.person, color: _cyan.withValues(alpha: 0.3), size: 32),
-    ),
-  );
+  Widget _portrait() {
+    final racingCard = _racingAvatarCardByShortName[item.shortName];
+    if (racingCard != null) {
+      return RacingDriverPortrait(card: racingCard);
+    }
+    return Image.asset(
+      item.imagePath,
+      fit: BoxFit.cover,
+      alignment: Alignment.topCenter,
+      errorBuilder: (_, _, _) => Container(
+        color: _surface,
+        child: Icon(Icons.person, color: _cyan.withValues(alpha: 0.3), size: 32),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1094,30 +1484,43 @@ class _BannerShopTile extends StatelessWidget {
     Color accent,
     IconData icon,
     String sport,
+    String? assetPath,
   })
   item;
   final bool owned;
   final OnAcquired onAcquired;
 
-  // The banner's own gradient art + crest — this is what it denotes. The shared
-  // frame supplies the chamfer + border, so the banner drops its bespoke notch.
-  Widget _art() => CustomPaint(
-    painter: _BannerPlaceholderPainter(
-      start: item.start,
-      end: item.end,
-      accent: item.accent,
-    ),
-    child: Stack(
-      children: [
-        Positioned(
-          right: 22,
-          top: 18,
-          bottom: 18,
-          child: _BannerCrest(icon: item.icon, color: item.accent),
-        ),
-      ],
-    ),
-  );
+  // Team banners use their PNG art; others keep the gradient + crest placeholder.
+  // The shared frame supplies the chamfer + border.
+  Widget _art() {
+    final assetPath = item.assetPath;
+    if (assetPath != null) {
+      return Image.asset(
+        assetPath,
+        fit: BoxFit.cover,
+        alignment: Alignment.center,
+        width: double.infinity,
+        height: double.infinity,
+      );
+    }
+    return CustomPaint(
+      painter: _BannerPlaceholderPainter(
+        start: item.start,
+        end: item.end,
+        accent: item.accent,
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: 22,
+            top: 18,
+            bottom: 18,
+            child: _BannerCrest(icon: item.icon, color: item.accent),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1495,13 +1898,19 @@ class _CoinTierTile extends StatelessWidget {
 }
 
 class PacksTab extends StatelessWidget {
-  const PacksTab({super.key});
+  const PacksTab({required this.sport, super.key});
+
+  final Sport sport;
+
+  List<ShopPack> get _packs =>
+      sport == Sport.motorsport ? racingShopPacks : shopPacks;
 
   @override
   Widget build(BuildContext context) {
+    final packs = _packs;
     return GridView.builder(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-      itemCount: shopPacks.length,
+      itemCount: packs.length,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         mainAxisSpacing: 12,
@@ -1513,7 +1922,7 @@ class PacksTab extends StatelessWidget {
         return StaggeredCardEntrance(
           index: index,
           animate: true,
-          child: _PackTile(pack: shopPacks[index]),
+          child: _PackTile(pack: packs[index]),
         );
       },
     );
@@ -1984,6 +2393,7 @@ class _PackTile extends StatelessWidget {
       _showSnack(context, 'Not enough coins — top up in the Coins tab.', false);
       return;
     }
+    playSound(SoundEffect.coinSpend);
     playSound(SoundEffect.packOpen);
     bloc.add(ShopPackPurchased(pack.id));
   }
@@ -2133,6 +2543,24 @@ class _PackDesignWidgetState extends State<PackDesignWidget>
     bands: 2,
     speed: 1.15,
   ),
+  'racing-grid' => (
+    colors: [_cyan, Colors.white, _violet],
+    intensity: 0.38,
+    bands: 1,
+    speed: 1.05,
+  ),
+  'racing-podium' => (
+    colors: [_magenta, _violet, _cyan, _magenta],
+    intensity: 0.44,
+    bands: 2,
+    speed: 1.2,
+  ),
+  'racing-pole' => (
+    colors: [_gold, _magenta, _cyan, _gold],
+    intensity: 0.52,
+    bands: 2,
+    speed: 1.35,
+  ),
   _ => (
     colors: [_magenta, _violet, _cyan, _gold, _magenta],
     intensity: 0.50,
@@ -2235,6 +2663,9 @@ class _PackDesignPainter extends CustomPainter {
       'bronze' => _bronzeBg,
       'starter' => _silverBg,
       'gold' => _goldBg,
+      'racing-grid' => [const Color(0xff050b1e), const Color(0xff0a3040)],
+      'racing-podium' => [const Color(0xff120018), const Color(0xff3d0070)],
+      'racing-pole' => _goldBg,
       _ => _iconBg,
     };
     final bgPaint = Paint()
@@ -2252,7 +2683,12 @@ class _PackDesignPainter extends CustomPainter {
       case 'starter':
         _paintSilver(canvas, size);
       case 'gold':
+      case 'racing-pole':
         _paintGold(canvas, size);
+      case 'racing-grid':
+        _paintSilver(canvas, size);
+      case 'racing-podium':
+        _paintIcon(canvas, size);
       default:
         _paintIcon(canvas, size);
     }
@@ -2502,9 +2938,8 @@ class _CardsTabState extends State<CardsTab> with TickerProviderStateMixin {
   List<PlayerCard> _filteredCards() {
     final List<PlayerCard> source = allPlayerCards
         .where((card) => _cardSport(card) == widget.sport)
-        .take(48)
         .toList();
-    return source.where((PlayerCard card) {
+    final filtered = source.where((PlayerCard card) {
       return switch (_filter) {
         'Attackers' => card.role == PlayerRole.attacker,
         'Defenders' => card.role == PlayerRole.defender,
@@ -2514,6 +2949,10 @@ class _CardsTabState extends State<CardsTab> with TickerProviderStateMixin {
         'Guards' => card.role == PlayerRole.basketballGuard,
         'Wings' => card.role == PlayerRole.basketballWing,
         'Bigs' => card.role == PlayerRole.basketballBig,
+        'F1' => card.role == PlayerRole.f1Driver,
+        'F2' => card.role == PlayerRole.f2Driver,
+        'NASCAR' => card.role == PlayerRole.nascarDriver,
+        'INDYCAR' => card.role == PlayerRole.indycarDriver,
         'Bronze' => card.tier == CardTier.bronze,
         'Silver' => card.tier == CardTier.silver,
         'Gold' => card.tier == CardTier.gold,
@@ -2521,6 +2960,8 @@ class _CardsTabState extends State<CardsTab> with TickerProviderStateMixin {
         _ => true,
       };
     }).toList();
+    if (widget.sport == Sport.motorsport) return filtered;
+    return filtered.take(48).toList();
   }
 
   void _shake(String cardId) {
@@ -2671,7 +3112,7 @@ class _PurchasableCardTile extends StatelessWidget {
       _showSnack(context, 'Not enough coins — top up in the Coins tab.', false);
       return;
     }
-    playSound(SoundEffect.coins);
+    playSound(SoundEffect.coinSpend);
     bloc.add(DirectCardPurchased(cardId: card.id, price: price));
     onPurchased();
     onAcquired(
@@ -2694,7 +3135,7 @@ class _PurchasableCardTile extends StatelessWidget {
       ),
     );
     if (!context.mounted || !confirmed) return;
-    playSound(SoundEffect.coins);
+    playSound(SoundEffect.uiConfirm);
     context.read<GameBloc>().add(
       DirectCardPurchased(cardId: card.id, price: 0, spendCoins: false),
     );
@@ -3072,5 +3513,12 @@ List<String> _filtersForSport(Sport sport) => switch (sport) {
   Sport.cricket => ['All', 'Batters', 'Bowlers', ..._filters.skip(1)],
   Sport.basketball => ['All', 'Guards', 'Wings', 'Bigs', ..._filters.skip(1)],
   Sport.tennis => ['All', 'ATP', 'WTA', ..._filters.skip(1)],
-  Sport.motorsport => _filters,
+  Sport.motorsport => [
+    'All',
+    'F1',
+    'F2',
+    'NASCAR',
+    'INDYCAR',
+    ..._filters.skip(1),
+  ],
 };

@@ -12,6 +12,7 @@ import '../../config/theme.dart';
 import '../../models/cards.dart';
 import '../../utils/label_helpers.dart';
 import '../../utils/sound_effects.dart';
+import '../racing/racing_driver_portrait.dart';
 
 class CyberConfirmDialog extends StatelessWidget {
   const CyberConfirmDialog({
@@ -1946,6 +1947,10 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
       PlayerRole.basketballWing => Cyber.cyan,
       PlayerRole.basketballBig => Cyber.violet,
       PlayerRole.tennisSingles => Cyber.lime,
+      PlayerRole.f1Driver ||
+      PlayerRole.f2Driver ||
+      PlayerRole.nascarDriver ||
+      PlayerRole.indycarDriver => Cyber.f1Red,
     };
     final small = size == VisualCardSize.sm;
     final large = size == VisualCardSize.lg;
@@ -2009,18 +2014,20 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
                   top: 4,
                   bottom: height * 0.24,
                   child: card.hasPortrait
-                      ? Image.asset(
-                          card.resolvedPortraitAsset!,
-                          fit: BoxFit.cover,
-                          alignment: Alignment.topCenter,
-                          // ignore: prefer_void_to_null
-                          errorBuilder: (_, _, _) => _CardIconFallback(
-                            card: card,
-                            tier: tier,
-                            small: small,
-                            large: large,
-                          ),
-                        )
+                      ? (isRacingPlayerCard(card)
+                            ? RacingDriverPortrait(card: card)
+                            : Image.asset(
+                                card.resolvedPortraitAsset!,
+                                fit: BoxFit.cover,
+                                alignment: Alignment.topCenter,
+                                // ignore: prefer_void_to_null
+                                errorBuilder: (_, _, _) => _CardIconFallback(
+                                  card: card,
+                                  tier: tier,
+                                  small: small,
+                                  large: large,
+                                ),
+                              ))
                       : _CardIconFallback(
                           card: card,
                           tier: tier,

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../config/theme.dart';
@@ -12,6 +14,9 @@ import '../../utils/sound_effects.dart';
 /// Compared with [CyberSegmentedTabs] (the raised glowing trapezoid), this is
 /// the lower-key tab variant — reach for it on dense catalogue screens that
 /// already carry their own focal element.
+///
+/// Pass [minTabWidth] to keep each tab at least that wide; when the row would
+/// overflow, the bar scrolls horizontally instead of crushing labels.
 class CyberUnderlineTabs extends StatelessWidget {
   const CyberUnderlineTabs({
     required this.labels,
@@ -20,6 +25,7 @@ class CyberUnderlineTabs extends StatelessWidget {
     this.accent = Cyber.cyan,
     this.height = 50,
     this.icons,
+    this.minTabWidth,
     super.key,
   }) : assert(icons == null || icons.length == labels.length);
 
@@ -29,6 +35,9 @@ class CyberUnderlineTabs extends StatelessWidget {
   final Color accent;
   final double height;
   final List<IconData>? icons;
+
+  /// When set, each tab is at least this wide. Overflow scrolls horizontally.
+  final double? minTabWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -42,48 +51,68 @@ class CyberUnderlineTabs extends StatelessWidget {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final tabWidth = constraints.maxWidth / labels.length;
-          return Stack(
-            children: [
-              Row(
-                children: [
-                  for (var i = 0; i < labels.length; i++)
-                    Expanded(
-                      child: _UnderlineTab(
-                        label: labels[i],
-                        icon: icons?[i],
-                        active: activeIndex == i,
-                        accent: accent,
-                        onTap: () {
-                          if (i == activeIndex) return;
-                          playSound(SoundEffect.uiTap);
-                          onTap(i);
-                        },
+          final count = labels.length;
+          final equalWidth = constraints.maxWidth / count;
+          final tabWidth = minTabWidth == null
+              ? equalWidth
+              : math.max(equalWidth, minTabWidth!);
+          final contentWidth = tabWidth * count;
+          final needsScroll = contentWidth > constraints.maxWidth + 0.5;
+
+          final row = SizedBox(
+            width: contentWidth,
+            height: height,
+            child: Stack(
+              children: [
+                Row(
+                  children: [
+                    for (var i = 0; i < count; i++)
+                      SizedBox(
+                        width: tabWidth,
+                        child: _UnderlineTab(
+                          label: labels[i],
+                          icon: icons?[i],
+                          active: activeIndex == i,
+                          accent: accent,
+                          onTap: () {
+                            if (i == activeIndex) return;
+                            playSound(SoundEffect.uiTap);
+                            onTap(i);
+                          },
+                        ),
                       ),
+                  ],
+                ),
+                // The bar's one glow: the active indicator slides between tabs.
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  left: tabWidth * activeIndex + tabWidth * 0.18,
+                  bottom: 0,
+                  width: tabWidth * 0.64,
+                  height: 3,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: accent,
+                      boxShadow: [
+                        BoxShadow(
+                          color: accent.withValues(alpha: 0.7),
+                          blurRadius: 10,
+                        ),
+                      ],
                     ),
-                ],
-              ),
-              // The bar's one glow: the active indicator slides between tabs.
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOutCubic,
-                left: tabWidth * activeIndex + tabWidth * 0.18,
-                bottom: 0,
-                width: tabWidth * 0.64,
-                height: 3,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: accent,
-                    boxShadow: [
-                      BoxShadow(
-                        color: accent.withValues(alpha: 0.7),
-                        blurRadius: 10,
-                      ),
-                    ],
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
+          );
+
+          if (!needsScroll) return row;
+
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            child: row,
           );
         },
       ),

@@ -11,6 +11,7 @@ import '../../../config/enums.dart';
 import '../../../config/theme.dart';
 import '../../../models/cards.dart';
 import '../../../models/match.dart';
+import '../../../utils/game_audio_mappings.dart';
 import '../../../utils/label_helpers.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
@@ -225,20 +226,14 @@ class _DuelBoardPhaseState extends State<DuelBoardPhase>
   void _fireVerdictSounds() {
     final outcome = _lastResult?.outcome;
     if (outcome == null) return;
-    playSound(switch (outcome) {
-      RoundOutcome.redCard => SoundEffect.redCard,
-      RoundOutcome.goal => SoundEffect.goal,
-      RoundOutcome.saved || RoundOutcome.blocked => SoundEffect.save,
-      _ => SoundEffect.cardSlam,
-    });
+    playSound(pitchDuelSoundForOutcome(outcome));
     if (outcome == RoundOutcome.goal || outcome == RoundOutcome.redCard) {
       HapticFeedback.heavyImpact();
     }
   }
 
-  RoundResult? get _lastResult => widget.state.roundResults.isEmpty
-      ? null
-      : widget.state.roundResults.last;
+  RoundResult? get _lastResult =>
+      widget.state.roundResults.isEmpty ? null : widget.state.roundResults.last;
 
   StingerKind? get _stingerKind => switch (_lastResult?.outcome) {
     RoundOutcome.goal => StingerKind.goal,
@@ -365,8 +360,11 @@ class _DuelBoardPhaseState extends State<DuelBoardPhase>
                           16,
                           (bottomAction == null ? 16 : 128) + bottomInset,
                         ),
-                        children:
-                            _buildLowerChildren(context, state, resolveBeat),
+                        children: _buildLowerChildren(
+                          context,
+                          state,
+                          resolveBeat,
+                        ),
                       ),
               ),
             ],
@@ -513,7 +511,11 @@ class _DuelBoardPhaseState extends State<DuelBoardPhase>
         AnimatedBuilder(
           animation: _revealCtrl,
           builder: (context, _) {
-            final meterT = _timelineT(_kFlipEnd, _kMeterEnd, Curves.easeOutCubic);
+            final meterT = _timelineT(
+              _kFlipEnd,
+              _kMeterEnd,
+              Curves.easeOutCubic,
+            );
             final deflated = result.outcome == RoundOutcome.missed;
             final verdictT = _timelineT(
               _kVerdictStart,
@@ -782,12 +784,7 @@ class _OpponentBoardStrip extends StatelessWidget {
               ],
             ),
           ),
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: HudLine(),
-          ),
+          const Positioned(left: 0, right: 0, bottom: 0, child: HudLine()),
         ],
       ),
     );
@@ -825,16 +822,24 @@ class _DuelArena extends StatelessWidget {
     final playerAccent = roleAccent(attackingRound);
     final oppAccent = roleAccent(!attackingRound);
     final playerCard = resolving
-        ? (result!.playerAttacking ? result!.attackerCard : result!.defenderCard)
+        ? (result!.playerAttacking
+              ? result!.attackerCard
+              : result!.defenderCard)
         : state.selectedPlayerCard;
     final oppCard = resolving
-        ? (result!.playerAttacking ? result!.defenderCard : result!.attackerCard)
+        ? (result!.playerAttacking
+              ? result!.defenderCard
+              : result!.attackerCard)
         : null;
     final playerAction = resolving
-        ? (result!.playerAttacking ? result!.attackAction : result!.defenseAction)
+        ? (result!.playerAttacking
+              ? result!.attackAction
+              : result!.defenseAction)
         : state.selectedActionCard;
     final oppAction = resolving
-        ? (result!.playerAttacking ? result!.defenseAction : result!.attackAction)
+        ? (result!.playerAttacking
+              ? result!.defenseAction
+              : result!.attackAction)
         : null;
 
     final scenario = state.currentScenario;
@@ -1306,8 +1311,7 @@ class _BoardActionRail extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, box) {
           final fitsAsRow =
-              cards.length * _tileW + (cards.length - 1) * _gap <=
-              box.maxWidth;
+              cards.length * _tileW + (cards.length - 1) * _gap <= box.maxWidth;
           if (fitsAsRow) {
             return Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -1437,13 +1441,10 @@ class _RoleBanner extends StatelessWidget {
                 children: [
                   Text(
                     'ROUND $round // $context2',
-                    style: Cyber.label(
-                      10,
-                      color: Cyber.muted,
-                      letterSpacing: 2,
-                    ).copyWith(
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
+                    style: Cyber.label(10, color: Cyber.muted, letterSpacing: 2)
+                        .copyWith(
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
                   ),
                   const SizedBox(height: 10),
                   Transform.scale(

@@ -597,6 +597,7 @@ class DailyMysteryPlayLayout extends StatelessWidget {
     required this.onSelected,
     required this.onCleared,
     required this.onSubmit,
+    this.audioProfile = const DailyMysteryAudioProfile(),
     super.key,
   });
 
@@ -623,6 +624,7 @@ class DailyMysteryPlayLayout extends StatelessWidget {
   final ValueChanged<String> onSelected;
   final VoidCallback onCleared;
   final VoidCallback onSubmit;
+  final DailyMysteryAudioProfile audioProfile;
 
   @override
   Widget build(BuildContext context) {
@@ -712,6 +714,7 @@ class DailyMysteryPlayLayout extends StatelessWidget {
                 compact: compact,
                 accent: accent,
                 lockLabel: lockLabel,
+                audioProfile: audioProfile,
                 onSubmit: onSubmit,
               ),
             ],
@@ -1116,6 +1119,7 @@ class DailyMysteryActionDock extends StatelessWidget {
     required this.compact,
     required this.accent,
     required this.lockLabel,
+    required this.audioProfile,
     required this.onSubmit,
     super.key,
   });
@@ -1126,6 +1130,7 @@ class DailyMysteryActionDock extends StatelessWidget {
   final bool compact;
   final Color accent;
   final String lockLabel;
+  final DailyMysteryAudioProfile audioProfile;
   final VoidCallback onSubmit;
 
   @override
@@ -1152,7 +1157,7 @@ class DailyMysteryActionDock extends StatelessWidget {
                 icon: selected ? Icons.lock_rounded : Icons.flag_rounded,
                 height: compact ? 52 : 62,
                 accent: selected ? accent : Cyber.danger,
-                tapSound: SoundEffect.commit,
+                tapSound: audioProfile.lock,
                 onTap: () {
                   HapticFeedback.mediumImpact();
                   onSubmit();
@@ -1539,6 +1544,7 @@ class DailyMysteryDebrief extends StatefulWidget {
     required this.onHome,
     required this.onLogs,
     required this.onConsumeReveal,
+    this.audioProfile = const DailyMysteryAudioProfile(),
     super.key,
   });
 
@@ -1555,6 +1561,7 @@ class DailyMysteryDebrief extends StatefulWidget {
   final VoidCallback onHome;
   final VoidCallback onLogs;
   final VoidCallback onConsumeReveal;
+  final DailyMysteryAudioProfile audioProfile;
 
   @override
   State<DailyMysteryDebrief> createState() => _DailyMysteryDebriefState();
@@ -1568,7 +1575,9 @@ class _DailyMysteryDebriefState extends State<DailyMysteryDebrief> {
     super.initState();
     if (_fresh) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        playSound(widget.won ? SoundEffect.matchWin : SoundEffect.matchLose);
+        playSound(
+          widget.won ? widget.audioProfile.win : widget.audioProfile.loss,
+        );
         if (widget.won) {
           HapticFeedback.mediumImpact();
         } else {

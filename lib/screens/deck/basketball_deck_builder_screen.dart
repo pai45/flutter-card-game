@@ -169,7 +169,6 @@ class _BasketballDeckBuilderScreenState
           attackers: active.attackers,
           defenders: active.defenders,
           actions: active.actions,
-          batsmen: active.batsmen,
           finalOverBatsmen: active.finalOverBatsmen,
           basketballPlayers: nextPlayers,
           basketballStarter: starterId,

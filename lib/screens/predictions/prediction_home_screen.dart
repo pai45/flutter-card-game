@@ -42,8 +42,6 @@ class PredictionHomeScreen extends StatefulWidget {
     required this.onOpenQuiz,
     required this.onOpenFootballBingo,
     required this.onOpenFootballChess,
-    required this.onOpenSuperOver,
-    required this.onOpenCricketDeck,
     required this.onOpenGuessPlayer,
     required this.onOpenBasketballGuessPlayer,
     required this.onOpenCricketGuessPlayer,
@@ -71,8 +69,6 @@ class PredictionHomeScreen extends StatefulWidget {
   final ValueChanged<Sport> onOpenQuiz;
   final VoidCallback onOpenFootballBingo;
   final VoidCallback onOpenFootballChess;
-  final VoidCallback onOpenSuperOver;
-  final VoidCallback onOpenCricketDeck;
   final VoidCallback onOpenGuessPlayer;
   final VoidCallback onOpenBasketballGuessPlayer;
   final VoidCallback onOpenCricketGuessPlayer;
@@ -164,9 +160,7 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
         onOpenQuiz: widget.onOpenQuiz,
         onOpenFootballBingo: widget.onOpenFootballBingo,
         onOpenFootballChess: widget.onOpenFootballChess,
-        onOpenSuperOver: widget.onOpenSuperOver,
         onOpenFinalOver: widget.onOpenFinalOver ?? () {},
-        onOpenCricketDeck: widget.onOpenCricketDeck,
         onOpenGuessPlayer: widget.onOpenGuessPlayer,
         onOpenBasketballGuessPlayer: widget.onOpenBasketballGuessPlayer,
         onOpenCricketGuessPlayer: widget.onOpenCricketGuessPlayer,
@@ -1232,9 +1226,7 @@ class _GamesTab extends StatefulWidget {
     required this.onOpenQuiz,
     required this.onOpenFootballBingo,
     required this.onOpenFootballChess,
-    required this.onOpenSuperOver,
     required this.onOpenFinalOver,
-    required this.onOpenCricketDeck,
     required this.onOpenGuessPlayer,
     required this.onOpenBasketballGuessPlayer,
     required this.onOpenCricketGuessPlayer,
@@ -1255,9 +1247,7 @@ class _GamesTab extends StatefulWidget {
   final ValueChanged<Sport> onOpenQuiz;
   final VoidCallback onOpenFootballBingo;
   final VoidCallback onOpenFootballChess;
-  final VoidCallback onOpenSuperOver;
   final VoidCallback onOpenFinalOver;
-  final VoidCallback onOpenCricketDeck;
   final VoidCallback onOpenGuessPlayer;
   final VoidCallback onOpenBasketballGuessPlayer;
   final VoidCallback onOpenCricketGuessPlayer;
@@ -1613,201 +1603,6 @@ class _GamesTabState extends State<_GamesTab> {
       ],
     );
   }
-}
-
-/// HUD game card — flat dark fill, [HudChamferClipper] silhouette and a painted
-/// stroke that follows every cut edge (no gradient wash).
-// ignore: unused_element
-class _SuperOverGameTile extends StatelessWidget {
-  const _SuperOverGameTile({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: 'Play Super Over Final Stand',
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: CustomPaint(
-          painter: _HudChamferCardPainter(
-            bigCut: 14,
-            smallCut: 4,
-            fillColor: Cyber.panel,
-            borderColor: Cyber.cyan.withValues(alpha: .86),
-            borderGlow: true,
-          ),
-          child: ClipPath(
-            clipper: const HudChamferClipper(bigCut: 14, smallCut: 4),
-            child: SizedBox(
-              height: 184,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  const CustomPaint(painter: _SuperOverMiniArenaPainter()),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(17, 15, 17, 14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 4,
-                          ),
-                          color: Cyber.cyan.withValues(alpha: .14),
-                          child: Text(
-                            'FINAL STAND // NIGHT ARENA',
-                            style: Cyber.display(7, color: Cyber.cyan),
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          'SUPER OVER',
-                          style: Cyber.display(
-                            21,
-                            color: Colors.white,
-                            letterSpacing: 1.1,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'CHASE OR SCORE ATTACK // 6 BALLS',
-                          style: Cyber.display(8, color: Cyber.gold),
-                        ),
-                        const SizedBox(height: 11),
-                        Row(
-                          children: [
-                            for (var i = 1; i <= 3; i++) ...[
-                              Container(
-                                width: 23,
-                                height: 23,
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  color: Cyber.bg.withValues(alpha: .82),
-                                  border: Border.all(color: Cyber.cyan),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Text(
-                                  '$i',
-                                  style: Cyber.display(8, color: Cyber.cyan),
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                            ],
-                            const SizedBox(width: 5),
-                            Text(
-                              'PLAY NOW',
-                              style: Cyber.display(9, color: Cyber.cyan),
-                            ),
-                            const SizedBox(width: 3),
-                            const Icon(
-                              Icons.arrow_forward,
-                              size: 14,
-                              color: Cyber.cyan,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SuperOverMiniArenaPainter extends CustomPainter {
-  const _SuperOverMiniArenaPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xff06111f), Color(0xff10362f)],
-        ).createShader(Offset.zero & size),
-    );
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(size.width * .77, size.height * .42),
-        width: size.width * .72,
-        height: size.height * .36,
-      ),
-      Paint()..color = Cyber.violet.withValues(alpha: .16),
-    );
-    final pitch = Path()
-      ..moveTo(size.width * .69, size.height * .24)
-      ..lineTo(size.width * .82, size.height * .24)
-      ..lineTo(size.width * .96, size.height * 1.04)
-      ..lineTo(size.width * .56, size.height * 1.04)
-      ..close();
-    canvas.drawPath(pitch, Paint()..color = const Color(0xff826b31));
-    canvas.drawPath(
-      pitch,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.3
-        ..color = Cyber.gold.withValues(alpha: .66),
-    );
-    canvas.drawLine(
-      Offset(size.width * .61, size.height * .82),
-      Offset(size.width * .91, size.height * .82),
-      Paint()
-        ..color = Colors.white.withValues(alpha: .7)
-        ..strokeWidth = 1,
-    );
-    final striker = Offset(size.width * .76, size.height * .76);
-    canvas.drawCircle(
-      striker.translate(0, -18),
-      5,
-      Paint()..color = const Color(0xffd4a373),
-    );
-    canvas.drawLine(
-      striker.translate(0, -13),
-      striker,
-      Paint()
-        ..color = Cyber.cyan
-        ..strokeWidth = 7
-        ..strokeCap = StrokeCap.round,
-    );
-    canvas.drawLine(
-      striker.translate(4, -11),
-      striker.translate(19, -31),
-      Paint()
-        ..color = Cyber.gold
-        ..strokeWidth = 4
-        ..strokeCap = StrokeCap.round,
-    );
-    final ball = Offset(size.width * .76, size.height * .50);
-    canvas.drawCircle(ball, 4, Paint()..color = Cyber.danger);
-    canvas.drawCircle(
-      ball,
-      11,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..color = Cyber.cyan.withValues(alpha: .42),
-    );
-    for (final x in [.62, .76, .90]) {
-      canvas.drawCircle(
-        Offset(size.width * x, size.height * .36),
-        2.5,
-        Paint()..color = Cyber.cyan,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _TennisRallyGameTile extends StatelessWidget {

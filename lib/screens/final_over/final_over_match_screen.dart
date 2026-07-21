@@ -15,6 +15,7 @@ import '../../config/theme.dart';
 import '../../data/final_over_kits.dart';
 import '../../games/final_over/final_over_game.dart';
 import '../../models/final_over.dart';
+import '../../utils/game_audio_mappings.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import 'widgets/final_over_controls.dart';
@@ -88,7 +89,7 @@ class _FinalOverMatchScreenState extends State<FinalOverMatchScreen>
       target: widget.config.target,
     );
 
-    AudioController.instance.playLoop(MusicTrack.matchAmbient);
+    AudioController.instance.enterScene(AudioScene.finalOver);
   }
 
   /// CHASE AGAIN builds the next match on the shared cubit and *then* replaces
@@ -102,7 +103,7 @@ class _FinalOverMatchScreenState extends State<FinalOverMatchScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     if (!_replacedByNextChase) {
-      AudioController.instance.stopLoop();
+      AudioController.instance.leaveScene(AudioScene.finalOver);
       // Walking out mid-chase discards it — no stats, no XP.
       final phase = _cubit.state.phase;
       if (phase == FinalOverPhase.intro || phase == FinalOverPhase.playing) {
@@ -125,62 +126,84 @@ class _FinalOverMatchScreenState extends State<FinalOverMatchScreen>
   void _onEvent(GameplayEvent event) {
     final s = _controller.state;
     switch (event.type) {
+      case GameplayEventType.deliveryPrepared:
+        playSound(finalOverSoundForEvent(event.type)!);
       case GameplayEventType.ballReleased:
-        playSound(SoundEffect.cricketRelease);
+        playSound(finalOverSoundForEvent(event.type)!);
       case GameplayEventType.contactResolved:
         final outcome = s.contactOutcome;
         if (outcome == null) break;
         switch (outcome.timing) {
           case TimingGrade.perfect:
-            playSound(SoundEffect.cricketPerfect);
+            playSound(
+              finalOverSoundForEvent(event.type, timing: outcome.timing)!,
+            );
             HapticFeedback.mediumImpact();
           case TimingGrade.good:
-            playSound(SoundEffect.cricketGreat);
+            playSound(
+              finalOverSoundForEvent(event.type, timing: outcome.timing)!,
+            );
             HapticFeedback.selectionClick();
           case TimingGrade.early:
           case TimingGrade.late:
-            playSound(SoundEffect.cricketGood);
+            playSound(
+              finalOverSoundForEvent(event.type, timing: outcome.timing)!,
+            );
           case TimingGrade.poor:
-            playSound(SoundEffect.cricketEdge);
+            playSound(
+              finalOverSoundForEvent(event.type, timing: outcome.timing)!,
+            );
           case TimingGrade.miss:
-            playSound(SoundEffect.cricketKeeper);
+            playSound(
+              finalOverSoundForEvent(event.type, timing: outcome.timing)!,
+            );
         }
       case GameplayEventType.boundary:
         final six = s.lastResult?.boundary == 6 || s.ledger.boundary == 6;
-        playSound(six ? SoundEffect.cricketSix : SoundEffect.cricketBoundary);
-        playSound(SoundEffect.bannerSlam);
+        playSound(finalOverSoundForEvent(event.type, six: six)!);
         HapticFeedback.heavyImpact();
       case GameplayEventType.wicket:
-        playSound(SoundEffect.cricketStumps);
+        playSound(finalOverSoundForEvent(event.type)!);
         HapticFeedback.heavyImpact();
       case GameplayEventType.runOut:
-        playSound(SoundEffect.cricketStumps);
-        playSound(SoundEffect.redCard);
+        playSound(finalOverSoundForEvent(event.type)!);
         HapticFeedback.heavyImpact();
       case GameplayEventType.catchTaken:
-        playSound(SoundEffect.cricketKeeper);
+        playSound(finalOverSoundForEvent(event.type)!);
         HapticFeedback.heavyImpact();
       case GameplayEventType.catchDropped:
-        playSound(SoundEffect.cricketBounce);
+        playSound(finalOverSoundForEvent(event.type)!);
       case GameplayEventType.powerShotActivated:
-        playSound(SoundEffect.riser);
+        playSound(finalOverSoundForEvent(event.type)!);
         HapticFeedback.mediumImpact();
       case GameplayEventType.runStarted:
       case GameplayEventType.runnerTurnedBack:
-        playSound(SoundEffect.whoosh);
+        playSound(finalOverSoundForEvent(event.type)!);
       case GameplayEventType.runCompleted:
-        playSound(SoundEffect.cricketGood);
+        playSound(finalOverSoundForEvent(event.type)!);
         HapticFeedback.selectionClick();
+      case GameplayEventType.ballPickedUp:
+        playSound(finalOverSoundForEvent(event.type)!);
+      case GameplayEventType.throwStarted:
+        playSound(finalOverSoundForEvent(event.type)!);
+      case GameplayEventType.cameraTransitionStarted:
+        playSound(finalOverSoundForEvent(event.type)!);
       case GameplayEventType.extraAwarded:
-        playSound(SoundEffect.cricketBounce);
+        playSound(finalOverSoundForEvent(event.type)!);
       case GameplayEventType.deliveryCompleted:
         _tallyBall(s.lastResult);
         // Last ball of the over: let the crowd tell them.
         if (s.ballsRemaining == 1 && !s.isTerminal) {
-          playSound(SoundEffect.cricketCrowdPressure);
+          playSound(
+            finalOverSoundForEvent(event.type, finalBallPressure: true)!,
+          );
         }
       case GameplayEventType.matchEnded:
         _onMatchEnded();
+      case GameplayEventType.paused:
+        AudioController.instance.setSceneMusicEnabled(false);
+      case GameplayEventType.resumed:
+        AudioController.instance.setSceneMusicEnabled(true);
       default:
         break;
     }
@@ -258,12 +281,14 @@ class _FinalOverMatchScreenState extends State<FinalOverMatchScreen>
   void _pause() {
     if (_paused) return;
     _game.pause();
+    AudioController.instance.setSceneMusicEnabled(false);
     setState(() => _paused = true);
   }
 
   void _resume() {
     if (!_paused) return;
     _game.resume();
+    AudioController.instance.setSceneMusicEnabled(true);
     setState(() => _paused = false);
   }
 

@@ -34,11 +34,26 @@ class _GuessPlayerScreenState extends State<GuessPlayerScreen> {
   final FocusNode _searchFocus = FocusNode();
   PlayerCard? _selectedPlayer;
   int? _xpBefore;
+  late final DailyMysteryAudioProfile _audioProfile;
 
   static const int _extraAttemptCost = 25;
 
   @override
+  void initState() {
+    super.initState();
+    _audioProfile = switch (context.read<GuessPlayerCubit>().sport) {
+      Sport.football => DailyMysteryAudioProfile.football,
+      Sport.cricket => DailyMysteryAudioProfile.cricket,
+      Sport.basketball => DailyMysteryAudioProfile.basketball,
+      Sport.motorsport => DailyMysteryAudioProfile.driver,
+      Sport.tennis => DailyMysteryAudioProfile.tennis,
+    };
+    AudioController.instance.enterScene(AudioScene.mystery);
+  }
+
+  @override
   void dispose() {
+    AudioController.instance.leaveScene(AudioScene.mystery);
     _searchController.dispose();
     _searchFocus.dispose();
     super.dispose();
@@ -47,6 +62,7 @@ class _GuessPlayerScreenState extends State<GuessPlayerScreen> {
   Future<void> _submit() async {
     final selected = _selectedPlayer;
     if (selected == null) return;
+    playSound(_audioProfile.lock);
     _xpBefore ??= context.read<GameBloc>().state.progression.totalXP;
     await context.read<GuessPlayerCubit>().submitGuess(selected);
     if (!mounted) return;
@@ -70,6 +86,7 @@ class _GuessPlayerScreenState extends State<GuessPlayerScreen> {
     if (confirmed && mounted) {
       _xpBefore ??= context.read<GameBloc>().state.progression.totalXP;
       await context.read<GuessPlayerCubit>().giveUp();
+      playSound(_audioProfile.loss);
     }
   }
 
@@ -116,7 +133,8 @@ class _GuessPlayerScreenState extends State<GuessPlayerScreen> {
           subtitle: label,
         ),
       );
-      playSound(SoundEffect.cardReveal);
+      playSound(SoundEffect.coinSpend);
+      playSound(_audioProfile.hint);
       HapticFeedback.selectionClick();
     }
   }
@@ -145,7 +163,8 @@ class _GuessPlayerScreenState extends State<GuessPlayerScreen> {
         subtitle: '+1 GUESS',
       ),
     );
-    playSound(SoundEffect.coins);
+    playSound(SoundEffect.coinSpend);
+    playSound(SoundEffect.lifeline);
     HapticFeedback.mediumImpact();
   }
 
@@ -154,14 +173,15 @@ class _GuessPlayerScreenState extends State<GuessPlayerScreen> {
       case GuessPlayerSubmissionFeedback.wrong:
         playSound(
           state.activeRecord?.status == GuessPlayerResultStatus.lost
-              ? SoundEffect.matchLose
-              : SoundEffect.cardReveal,
+              ? _audioProfile.loss
+              : _audioProfile.wrong,
         );
         HapticFeedback.lightImpact();
       case GuessPlayerSubmissionFeedback.correct:
-        playSound(SoundEffect.matchWin);
+        playSound(_audioProfile.win);
         HapticFeedback.mediumImpact();
       case GuessPlayerSubmissionFeedback.duplicate:
+        playSound(_audioProfile.duplicate);
         HapticFeedback.selectionClick();
       case GuessPlayerSubmissionFeedback.none:
         break;
@@ -211,7 +231,7 @@ class _GuessPlayerScreenState extends State<GuessPlayerScreen> {
                     searchController: _searchController,
                     searchFocus: _searchFocus,
                     onSelected: (player) {
-                      playSound(SoundEffect.cardSelect);
+                      playSound(_audioProfile.select);
                       HapticFeedback.selectionClick();
                       setState(() => _selectedPlayer = player);
                     },

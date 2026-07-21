@@ -17,13 +17,21 @@ class GuessWinnerScreen extends StatefulWidget {
 }
 
 class _GuessWinnerScreenState extends State<GuessWinnerScreen> {
+  static const _audioProfile = DailyMysteryAudioProfile.tennis;
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   String? _selected;
   int _damageSerial = 0;
 
   @override
+  void initState() {
+    super.initState();
+    AudioController.instance.enterScene(AudioScene.mystery);
+  }
+
+  @override
   void dispose() {
+    AudioController.instance.leaveScene(AudioScene.mystery);
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
@@ -52,7 +60,7 @@ class _GuessWinnerScreenState extends State<GuessWinnerScreen> {
           previous.remainingHearts != current.remainingHearts &&
           current.remainingHearts > 0,
       listener: (_, _) {
-        playSound(SoundEffect.tennisNet);
+        playSound(_audioProfile.wrong);
         HapticFeedback.lightImpact();
         if (mounted) setState(() => _damageSerial++);
       },
@@ -84,9 +92,10 @@ class _GuessWinnerScreenState extends State<GuessWinnerScreen> {
           maxHearts: GuessWinnerCubit.maxHearts,
           damageSerial: _damageSerial,
           lockLabel: 'LOCK WINNER',
+          audioProfile: _audioProfile,
           onBack: widget.onBack,
           onSelected: (value) {
-            playSound(SoundEffect.cardSelect);
+            playSound(_audioProfile.select);
             HapticFeedback.selectionClick();
             setState(() => _selected = value);
           },
