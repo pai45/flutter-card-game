@@ -23,6 +23,7 @@ import '../models/xp_ledger.dart';
 import '../models/guess_player.dart';
 import '../models/guess_driver.dart';
 import '../models/guess_winner.dart';
+import '../data/basketball_teams.dart';
 import '../data/final_over_kits.dart';
 import '../data/grand_prix_liveries.dart';
 import '../data/rival_roster.dart' show randomPlayerTag;
@@ -45,6 +46,7 @@ class WalletSnapshot {
     required this.ownedBannerIds,
     required this.ownedFinalOverKitIds,
     required this.ownedGrandPrixLiveryIds,
+    required this.ownedBasketballTeamIds,
     required this.dailyDropLastClaimedAtMillis,
   });
 
@@ -60,6 +62,7 @@ class WalletSnapshot {
     ownedBannerIds: const [],
     ownedFinalOverKitIds: defaultOwnedFinalOverKitIds(),
     ownedGrandPrixLiveryIds: defaultOwnedGrandPrixLiveryIds(),
+    ownedBasketballTeamIds: defaultOwnedBasketballTeamIds(),
     dailyDropLastClaimedAtMillis: null,
   );
 
@@ -97,6 +100,9 @@ class WalletSnapshot {
     ownedGrandPrixLiveryIds: normalizeOwnedGrandPrixLiveryIds(
       List<String>.from(json['ownedGrandPrixLiveryIds'] as List? ?? const []),
     ),
+    ownedBasketballTeamIds: normalizeOwnedBasketballTeamIds(
+      List<String>.from(json['ownedBasketballTeamIds'] as List? ?? const []),
+    ),
     dailyDropLastClaimedAtMillis: json['dailyDropLastClaimedAtMillis'] as int?,
   );
 
@@ -111,6 +117,7 @@ class WalletSnapshot {
   final List<String> ownedBannerIds;
   final List<String> ownedFinalOverKitIds;
   final List<String> ownedGrandPrixLiveryIds;
+  final List<String> ownedBasketballTeamIds;
   final int? dailyDropLastClaimedAtMillis;
 
   Map<String, dynamic> toJson() => {
@@ -125,6 +132,7 @@ class WalletSnapshot {
     'ownedBannerIds': ownedBannerIds,
     'ownedFinalOverKitIds': ownedFinalOverKitIds,
     'ownedGrandPrixLiveryIds': ownedGrandPrixLiveryIds,
+    'ownedBasketballTeamIds': ownedBasketballTeamIds,
     'dailyDropLastClaimedAtMillis': dailyDropLastClaimedAtMillis,
   };
 }
@@ -134,6 +142,7 @@ class SecureGameStorage {
     : _storage = storage ?? const FlutterSecureStorage();
 
   static const _deckKey = 'pd_deck_slots_v1';
+  static const _activeDeckKey = 'pd_active_deck_id_v1';
   static const _tutorialKey = 'pd_tutorial_seen_v1';
   static const _ownedCardsKey = 'pd_owned_cards_v1';
   static const _historyKey = 'pd_match_history_v1';
@@ -151,6 +160,9 @@ class SecureGameStorage {
   static const _coinLedgerKey = 'pd_oz_coin_ledger_v1';
   static const _xpLedgerKey = 'pd_xp_ledger_v1';
   static const _predictionsKey = 'pd_predictions_v1';
+  static const _predictionQuizzesKey = 'pd_prediction_quizzes_v1';
+  static const _predictionSettlementValidationKey =
+      'pd_prediction_settlement_validation_v1';
   static const _pickPositionsKey = 'pd_pick_positions_v1';
   static const _selectedAvatarKey = 'pd_selected_avatar_v1';
   static const _selectedProfileBannerKey = 'pd_selected_profile_banner_v1';
@@ -207,6 +219,19 @@ class SecureGameStorage {
       key: _deckKey,
       value: jsonEncode(decks.map((deck) => deck.toJson()).toList()),
     );
+  }
+
+  Future<String?> loadActiveDeckId() async {
+    try {
+      final id = await _storage.read(key: _activeDeckKey);
+      return id == null || id.isEmpty ? null : id;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveActiveDeckId(String deckId) async {
+    await _storage.write(key: _activeDeckKey, value: deckId);
   }
 
   Future<Set<String>> loadTutorialSeen() async {
@@ -581,6 +606,58 @@ class SecureGameStorage {
     await _storage.write(
       key: _predictionsKey,
       value: jsonEncode(predictions.map((p) => p.toJson()).toList()),
+    );
+  }
+
+  Future<List<PredictionQuiz>> loadPredictionQuizzes() async {
+    try {
+      final raw = await _storage.read(key: _predictionQuizzesKey);
+      if (raw == null || raw.isEmpty) return const [];
+      final data = jsonDecode(raw) as List;
+      return data
+          .map(
+            (item) =>
+                PredictionQuiz.fromJson(Map<String, dynamic>.from(item as Map)),
+          )
+          .toList(growable: false);
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<void> savePredictionQuizzes(List<PredictionQuiz> quizzes) async {
+    await _storage.write(
+      key: _predictionQuizzesKey,
+      value: jsonEncode(quizzes.map((quiz) => quiz.toJson()).toList()),
+    );
+  }
+
+  Future<List<SettlementValidationCheckpoint>>
+  loadPredictionSettlementCheckpoints() async {
+    try {
+      final raw = await _storage.read(key: _predictionSettlementValidationKey);
+      if (raw == null || raw.isEmpty) return const [];
+      final data = jsonDecode(raw) as List;
+      return data
+          .map(
+            (item) => SettlementValidationCheckpoint.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList(growable: false);
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<void> savePredictionSettlementCheckpoints(
+    List<SettlementValidationCheckpoint> checkpoints,
+  ) async {
+    await _storage.write(
+      key: _predictionSettlementValidationKey,
+      value: jsonEncode(
+        checkpoints.map((checkpoint) => checkpoint.toJson()).toList(),
+      ),
     );
   }
 

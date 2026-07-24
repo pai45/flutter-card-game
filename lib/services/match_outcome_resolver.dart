@@ -15,12 +15,22 @@ abstract final class MatchOutcomeResolver {
     }
     return switch (match.sport) {
       Sport.football => _resolveFootball(match),
-      Sport.cricket => _resolveCricket(match),
-      Sport.tennis => _resolveTennis(match),
+      Sport.cricket => _resolveCricket(match, allowPartial: false),
+      Sport.tennis => _resolveTennis(match, allowPartial: false),
       Sport.basketball => _resolveBasketball(match),
-      Sport.motorsport => _resolveMotorsport(match),
+      Sport.motorsport => _resolveMotorsport(match, allowPartial: false),
     };
   }
+
+  /// Best-known in-play facts. Unlike [resolve], this accepts a live fixture
+  /// and deliberately keeps partial sport data for question-status signals.
+  static MatchOutcome resolveCurrent(SportMatch match) => switch (match.sport) {
+    Sport.football => _resolveFootball(match),
+    Sport.cricket => _resolveCricket(match, allowPartial: true),
+    Sport.tennis => _resolveTennis(match, allowPartial: true),
+    Sport.basketball => _resolveBasketball(match),
+    Sport.motorsport => _resolveMotorsport(match, allowPartial: true),
+  };
 
   static MatchOutcome _resolveFootball(SportMatch match) {
     final home = _parseInt(match.homeScore);
@@ -34,7 +44,9 @@ abstract final class MatchOutcomeResolver {
             .toList()
           ?..sort((a, b) => a.minute.compareTo(b.minute));
     if (goals != null && goals.isNotEmpty) {
-      firstScorer = goals.first.isHomeTeam ? OutcomeSide.home : OutcomeSide.away;
+      firstScorer = goals.first.isHomeTeam
+          ? OutcomeSide.home
+          : OutcomeSide.away;
     }
 
     return MatchOutcome(
@@ -49,16 +61,19 @@ abstract final class MatchOutcomeResolver {
     );
   }
 
-  static MatchOutcome _resolveCricket(SportMatch match) {
+  static MatchOutcome _resolveCricket(
+    SportMatch match, {
+    required bool allowPartial,
+  }) {
     final scorecard = match.cricketScorecard;
     final resultLine = match.resultLine?.toLowerCase() ?? '';
-
-    if (resultLine.contains('no result') || resultLine.contains('abandon')) {
-      return MatchOutcome.unresolved(match.id);
-    }
+    final noResult =
+        resultLine.contains('no result') || resultLine.contains('abandon');
 
     OutcomeSide? winner;
-    if (resultLine.contains('tied') || resultLine.contains(' tie ')) {
+    if (noResult ||
+        resultLine.contains('tied') ||
+        resultLine.contains(' tie ')) {
       winner = OutcomeSide.draw;
     } else if (resultLine.isNotEmpty) {
       final homeMentioned = resultLine.contains(match.home.name.toLowerCase());
@@ -74,6 +89,7 @@ abstract final class MatchOutcomeResolver {
     int? homeRuns;
     int? awayRuns;
     var totalSixes = 0;
+    var totalWickets = 0;
     var topScore = 0;
     int? firstInningsRuns;
     if (scorecard != null && scorecard.innings.isNotEmpty) {
@@ -82,6 +98,11 @@ abstract final class MatchOutcomeResolver {
           totalSixes += batter.sixes;
           if (batter.runs > topScore) topScore = batter.runs;
         }
+        totalWickets +=
+            _wicketsFromScore(innings.scoreText) ??
+            innings.batters
+                .where((batter) => batter.dismissalText != null)
+                .length;
         final runs = _leadingInt(innings.scoreText);
         if (runs == null) continue;
         final isHomeInnings = innings.teamName.toLowerCase().contains(
@@ -103,11 +124,14 @@ abstract final class MatchOutcomeResolver {
     }
 
     final resolved = winner != null || (homeRuns != null && awayRuns != null);
-    if (!resolved) return MatchOutcome.unresolved(match.id);
+    if (!resolved && !allowPartial) return MatchOutcome.unresolved(match.id);
+    if (!resolved && scorecard == null) {
+      return MatchOutcome.unresolved(match.id);
+    }
 
     return MatchOutcome(
       matchId: match.id,
-      isFullyResolved: true,
+      isFullyResolved: resolved && match.status == MatchStatus.finished,
       winner: winner,
       homeScore: homeRuns,
       awayScore: awayRuns,
@@ -115,25 +139,40 @@ abstract final class MatchOutcomeResolver {
           ? homeRuns + awayRuns
           : null,
       sportSpecific: {
-        'totalSixes': totalSixes,
+        'totalSixes': scorecard != null && scorecard.innings.isNotEmpty
+            ? totalSixes
+            : null,
         'firstInningsRuns': firstInningsRuns,
+        'firstInningsComplete':
+            match.status == MatchStatus.finished ||
+            (scorecard?.innings.length ?? 0) > 1,
         'topScore': scorecard != null && scorecard.innings.isNotEmpty
             ? topScore
+            : null,
+        'totalWickets': scorecard != null && scorecard.innings.isNotEmpty
+            ? totalWickets
             : null,
       },
     );
   }
 
-  static MatchOutcome _resolveTennis(SportMatch match) {
+  static MatchOutcome _resolveTennis(
+    SportMatch match, {
+    required bool allowPartial,
+  }) {
     final scorecard = match.tennisScorecard;
     if (scorecard == null || scorecard.sets.isEmpty) {
       return MatchOutcome.unresolved(match.id);
     }
     final homeSets = scorecard.sets.where((s) => s.isHomeWinner).length;
     final awaySets = scorecard.sets.where((s) => s.isAwayWinner).length;
-    if (homeSets == awaySets) return MatchOutcome.unresolved(match.id);
+    if (homeSets == awaySets && !allowPartial) {
+      return MatchOutcome.unresolved(match.id);
+    }
 
-    final winner = homeSets > awaySets ? OutcomeSide.home : OutcomeSide.away;
+    final winner = homeSets == awaySets
+        ? null
+        : (homeSets > awaySets ? OutcomeSide.home : OutcomeSide.away);
     final winnerSets = homeSets > awaySets ? homeSets : awaySets;
     final straightSets = winnerSets == scorecard.sets.length;
     final firstSet = scorecard.sets.first;
@@ -143,10 +182,15 @@ abstract final class MatchOutcomeResolver {
 
     return MatchOutcome(
       matchId: match.id,
-      isFullyResolved: true,
+      isFullyResolved:
+          match.status == MatchStatus.finished && homeSets != awaySets,
       winner: winner,
       sportSpecific: {
         'totalSets': scorecard.sets.length,
+        'totalGames': scorecard.sets.fold<int>(
+          0,
+          (total, set) => total + set.homeScore + set.awayScore,
+        ),
         'straightSets': straightSets,
         'set1Winner': set1Winner,
       },
@@ -172,6 +216,15 @@ abstract final class MatchOutcomeResolver {
             : OutcomeSide.away;
       }
     }
+    final halftimeHome = homeQ
+        .take(2)
+        .fold<int>(0, (sum, value) => sum + value);
+    final halftimeAway = awayQ
+        .take(2)
+        .fold<int>(0, (sum, value) => sum + value);
+    final halftimeLeader = homeQ.length < 2 || awayQ.length < 2
+        ? null
+        : _sideFor(halftimeHome, halftimeAway);
 
     return MatchOutcome(
       matchId: match.id,
@@ -183,36 +236,62 @@ abstract final class MatchOutcomeResolver {
       sportSpecific: {
         'biggestQuarterSide': biggestQuarterSide,
         'winningMargin': (home - away).abs(),
+        'halftimeLeader': halftimeLeader,
+        'halftimeComplete':
+            match.status == MatchStatus.finished ||
+            (homeQ.length >= 3 &&
+                awayQ.length >= 3 &&
+                (homeQ[2] > 0 || awayQ[2] > 0)),
       },
     );
   }
 
-  static MatchOutcome _resolveMotorsport(SportMatch match) {
+  static MatchOutcome _resolveMotorsport(
+    SportMatch match, {
+    required bool allowPartial,
+  }) {
     final sessions = match.f1Sessions;
     if (sessions == null || sessions.isEmpty) {
       return MatchOutcome.unresolved(match.id);
     }
     final race = _sessionNamed(sessions, 'race');
-    if (race == null || race.results.isEmpty) {
+    if ((race == null || race.results.isEmpty) && !allowPartial) {
       return MatchOutcome.unresolved(match.id);
     }
-    final podium = race.results.take(3).map(_stripPosition).toList();
-    final winnerName = podium.first;
+    final podium = race?.results.take(3).map(_driverName).toList() ?? const [];
+    final winnerName = podium.isEmpty ? null : podium.first;
+    final winningConstructor = race == null || race.results.isEmpty
+        ? null
+        : _constructorName(race.results.first);
 
     String? poleSitter;
     final qualifying = _sessionNamed(sessions, 'qualifying');
     if (qualifying != null && qualifying.results.isNotEmpty) {
-      poleSitter = _stripPosition(qualifying.results.first);
+      poleSitter = _driverName(qualifying.results.first);
     }
+    final qualifyingOrder =
+        qualifying?.results.map(_driverName).toList() ?? const <String>[];
+    final winnerGridIndex = winnerName == null
+        ? -1
+        : qualifyingOrder.indexWhere(
+            (driver) => driver.toLowerCase() == winnerName.toLowerCase(),
+          );
 
     return MatchOutcome(
       matchId: match.id,
-      isFullyResolved: true,
+      isFullyResolved:
+          match.status == MatchStatus.finished && winnerName != null,
       sportSpecific: {
         'winnerName': winnerName,
         'podiumNames': podium,
         'poleSitter': poleSitter,
-        'poleToWin': poleSitter != null && poleSitter == winnerName,
+        'winningConstructor': winningConstructor,
+        'poleToWin': poleSitter == null || winnerName == null
+            ? null
+            : poleSitter == winnerName,
+        'winnerStartedTopThree': winnerGridIndex < 0
+            ? null
+            : winnerGridIndex < 3,
         // Fastest lap isn't modelled in F1SessionResult today — any archetype
         // asking for it must void until that data is captured.
         'fastestLapName': null,
@@ -234,8 +313,18 @@ abstract final class MatchOutcomeResolver {
   static String _stripPosition(String entry) =>
       entry.replaceFirst(RegExp(r'^\s*\d+[.)]\s*'), '').trim();
 
-  static OutcomeSide _sideFor(int home, int away) =>
-      home == away ? OutcomeSide.draw : (home > away ? OutcomeSide.home : OutcomeSide.away);
+  static String _driverName(String entry) =>
+      _stripPosition(entry).split(' · ').first.split(' (').first.trim();
+
+  static String? _constructorName(String entry) {
+    final parts = _stripPosition(entry).split(' · ');
+    if (parts.length < 2) return null;
+    return parts[1].split(' (').first.trim();
+  }
+
+  static OutcomeSide _sideFor(int home, int away) => home == away
+      ? OutcomeSide.draw
+      : (home > away ? OutcomeSide.home : OutcomeSide.away);
 
   static int? _parseInt(String? raw) {
     if (raw == null) return null;
@@ -246,6 +335,12 @@ abstract final class MatchOutcomeResolver {
   /// "171 (20 ov)" or "202-10 (20 ov)" — the number before any space/dash.
   static int? _leadingInt(String text) {
     final match = RegExp(r'^\s*(\d+)').firstMatch(text);
+    if (match == null) return null;
+    return int.tryParse(match.group(1)!);
+  }
+
+  static int? _wicketsFromScore(String text) {
+    final match = RegExp(r'^\s*\d+\s*-\s*(\d+)').firstMatch(text);
     if (match == null) return null;
     return int.tryParse(match.group(1)!);
   }

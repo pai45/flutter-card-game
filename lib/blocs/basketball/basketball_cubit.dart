@@ -93,7 +93,15 @@ class BasketballCubit extends Cubit<BasketballState> {
     _persistSelections();
   }
 
-  void setTeamId(String teamId) {
+  /// Clamps an equipped jersey the player no longer owns back to the free one.
+  void ensureEquippedTeamOwned(Iterable<String> ownedTeamIds) {
+    if (isBasketballTeamOwned(state.teamId, ownedTeamIds)) return;
+    setTeamId(basketballFreeTeamId, ownedTeamIds: ownedTeamIds);
+  }
+
+  void setTeamId(String teamId, {required Iterable<String> ownedTeamIds}) {
+    if (!isBasketballTeamOwned(teamId, ownedTeamIds)) return;
+    if (teamId == state.teamId) return;
     emit(state.copyWith(teamId: teamId));
     _persistSelections();
   }

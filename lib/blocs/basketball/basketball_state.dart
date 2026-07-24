@@ -37,7 +37,7 @@ class BasketballState {
     this.config,
     this.summary,
     this.xp = 0,
-    this.teamId = 'lakers',
+    this.teamId = 'statoz',
   });
 
   final bool loading;

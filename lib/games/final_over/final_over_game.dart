@@ -257,12 +257,19 @@ class FinalOverGame extends FlameGame {
   }
 
   /// Release: the swing itself. The engine grades when it is released.
-  void releaseSwing() {
+  ///
+  /// [direction]/[elevation] let a whole-screen tap/swipe choose the shot's
+  /// placement and loft at the instant of the hit (tap = grounded straight,
+  /// swipe = aimed, upward flick = loft). When omitted the pre-selected shot
+  /// stands, so existing callers keep working.
+  void releaseSwing({ShotDirection? direction, Elevation? elevation}) {
     if (!_swingHeld) return;
     _swingHeld = false;
     _swingHeldAtMicros = null;
     final s = controller.state;
-    controller.dispatch(SwingCommand(s.selectedDirection));
+    controller.dispatch(
+      SwingCommand(direction ?? s.selectedDirection, elevation: elevation),
+    );
   }
 
   /// The finger slid off the plate, or the deck swapped under it. No swing.

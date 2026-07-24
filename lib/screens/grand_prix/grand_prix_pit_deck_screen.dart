@@ -8,8 +8,9 @@ import '../../blocs/grand_prix/grand_prix_cubit.dart';
 import '../../config/theme.dart';
 import '../../models/cards.dart';
 import '../../models/deck.dart';
-import '../../utils/label_helpers.dart';
+import '../../models/racing.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/cyber/sport_signal_painters.dart';
 import '../../widgets/game_scaffold.dart';
 import '../../widgets/match_widgets.dart';
 import 'widgets/grand_prix_livery_selector.dart';
@@ -17,11 +18,13 @@ import 'widgets/grand_prix_livery_selector.dart';
 class GrandPrixPitDeckScreen extends StatefulWidget {
   const GrandPrixPitDeckScreen({
     required this.onBack,
+    this.onSaved,
     this.onBrowseShop,
     super.key,
   });
 
   final VoidCallback onBack;
+  final VoidCallback? onSaved;
   final VoidCallback? onBrowseShop;
 
   @override
@@ -65,10 +68,10 @@ class _GrandPrixPitDeckScreenState extends State<GrandPrixPitDeckScreen> {
               ..sort((a, b) => b.rating.compareTo(a.rating));
 
         return GameScaffold(
-          title: 'Pit Deck',
+          title: 'Racing Pit Deck',
           subtitle: '// DRIVER + LIVERY',
           leading: IconButton(
-            onPressed: widget.onBack,
+            onPressed: () => _attemptBack(active),
             icon: const Icon(Icons.arrow_back_ios_new, size: 18),
           ),
           child: Column(
@@ -105,11 +108,11 @@ class _GrandPrixPitDeckScreenState extends State<GrandPrixPitDeckScreen> {
                 ),
               ),
               BottomActionBar(
-                primaryLabel: 'SAVE PIT CREW',
+                primaryLabel: 'SAVE LOADOUT',
                 primaryEnabled: valid,
                 primaryOnTap: () async => _save(active),
                 secondaryLabel: 'BACK',
-                secondaryOnTap: widget.onBack,
+                secondaryOnTap: () => _attemptBack(active),
               ),
             ],
           ),
@@ -132,27 +135,21 @@ class _GrandPrixPitDeckScreenState extends State<GrandPrixPitDeckScreen> {
   Future<void> _save(StoredDeckSlot active) async {
     final driverId = selectedDriverId;
     if (driverId == null) return;
+    if (active.racingStarter == driverId &&
+        active.racingPlayers.length == 1 &&
+        active.racingPlayers.first == driverId) {
+      (widget.onSaved ?? widget.onBack).call();
+      return;
+    }
     final bloc = context.read<GameBloc>();
     final saved = bloc.stream.firstWhere(
       (state) => state.deckRacingStarter?.id == driverId,
     );
     bloc.add(
       DeckSaved(
-        StoredDeckSlot(
-          id: active.id,
-          name: active.name,
-          attackers: active.attackers,
-          defenders: active.defenders,
-          actions: active.actions,
-          finalOverBatsmen: active.finalOverBatsmen,
-          keeper: active.keeper,
-          basketballPlayers: active.basketballPlayers,
-          basketballStarter: active.basketballStarter,
-          tennisPlayers: active.tennisPlayers,
-          tennisStarter: active.tennisStarter,
+        active.copyWith(
           racingPlayers: [driverId],
           racingStarter: driverId,
-          chessFormation: active.chessFormation,
         ),
       ),
     );
@@ -160,7 +157,27 @@ class _GrandPrixPitDeckScreenState extends State<GrandPrixPitDeckScreen> {
       const Duration(seconds: 2),
       onTimeout: () => bloc.state,
     );
-    if (mounted) widget.onBack();
+    if (!mounted) return;
+    (widget.onSaved ?? widget.onBack).call();
+  }
+
+  Future<void> _attemptBack(StoredDeckSlot active) async {
+    final driverId = selectedDriverId;
+    if (active.racingStarter != driverId ||
+        (driverId != null &&
+            (active.racingPlayers.length != 1 ||
+                active.racingPlayers.first != driverId))) {
+      final discard = await showCyberConfirmDialog(
+        context,
+        title: 'DISCARD CHANGES?',
+        message: 'Your racing driver selection has not been saved.',
+        confirmLabel: 'Discard',
+        cancelLabel: 'Keep editing',
+        destructive: true,
+      );
+      if (!mounted || !discard) return;
+    }
+    widget.onBack();
   }
 }
 
@@ -178,7 +195,7 @@ class _DriverPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CyberPanel(
-      accent: Cyber.magenta,
+      accent: Cyber.f1Red,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -189,85 +206,51 @@ class _DriverPanel extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'PIT CREW',
-                      style: TextStyle(
-                        color: Cyber.magenta.withValues(alpha: 0.75),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 2,
+                      'PIT LANE LOADOUT',
+                      style: Cyber.label(
+                        9,
+                        color: Cyber.f1Red,
+                        letterSpacing: 1.8,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       deckName.toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontFamily: Cyber.displayFont,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
-                      ),
+                      style: Cyber.display(15, letterSpacing: 1.1),
                     ),
                   ],
                 ),
               ),
               CyberChip(
                 label: valid ? 'Ready' : 'Build',
-                color: valid ? Cyber.magenta : Cyber.amber,
+                color: valid ? Cyber.f1Red : Cyber.amber,
               ),
             ],
           ),
           const SizedBox(height: 12),
-          if (driver == null)
-            Text(
-              'SELECT YOUR RACE DRIVER',
-              style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.4),
-            )
-          else
-            Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: Cyber.panel2,
-                    border: Border.all(
-                      color: tierColor(driver!.tier).withValues(alpha: 0.55),
-                    ),
-                  ),
-                  child: Icon(
-                    driver!.icon,
-                    color: tierColor(driver!.tier),
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        driver!.name.toUpperCase(),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Cyber.display(13, letterSpacing: 0.6),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${driver!.position} · OVR ${driver!.rating}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: Cyber.muted,
-                          fontFamily: Cyber.bodyFont,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
+          ClipRect(
+            child: CustomPaint(
+              painter: const F1MysterySignalPainter(),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
+                child: driver == null
+                    ? SizedBox(
+                        height: 174,
+                        child: Center(
+                          child: Text(
+                            'SELECT YOUR RACE DRIVER',
+                            style: Cyber.label(
+                              9,
+                              color: Cyber.muted,
+                              letterSpacing: 1.4,
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                      )
+                    : _EquippedDriverTelemetry(card: driver!),
+              ),
             ),
+          ),
         ],
       ),
     );
@@ -304,9 +287,11 @@ class _DriverPickerPanel extends StatelessWidget {
               runSpacing: 8,
               children: [
                 for (final card in cards)
-                  _DriverPickTile(
+                  CyberPlayerCardTile(
                     card: card,
                     selected: selectedDriver?.id == card.id,
+                    selectedAccent: Cyber.f1Red,
+                    size: VisualCardSize.sm,
                     onTap: () => onSelect(card),
                   ),
               ],
@@ -317,69 +302,75 @@ class _DriverPickerPanel extends StatelessWidget {
   }
 }
 
-class _DriverPickTile extends StatelessWidget {
-  const _DriverPickTile({
-    required this.card,
-    required this.selected,
-    required this.onTap,
-  });
+class _EquippedDriverTelemetry extends StatelessWidget {
+  const _EquippedDriverTelemetry({required this.card});
 
   final PlayerCard card;
-  final bool selected;
-  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final accent = tierColor(card.tier);
-    return PressableScale(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        width: 148,
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: selected
-              ? Color.alphaBlend(accent.withValues(alpha: 0.12), Cyber.panel)
-              : Cyber.panel,
-          border: Border.all(
-            color: selected ? accent : Cyber.border.withValues(alpha: 0.5),
-            width: selected ? 1.6 : 1,
+    final driver = racingDriverById(card.id);
+    final stats = [
+      ('PACE', driver.ratings.pace),
+      ('RACE', driver.ratings.racecraft),
+      ('TYRES', driver.ratings.tyreManagement),
+      ('WET', driver.ratings.wetWeather),
+    ];
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        CyberPlayerCardTile(
+          card: card,
+          selected: false,
+          selectedAccent: Cyber.f1Red,
+          size: VisualCardSize.md,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(10, 10, 10, 9),
+            decoration: BoxDecoration(
+              color: Cyber.bg.withValues(alpha: 0.68),
+              border: Border.all(color: Cyber.f1Red.withValues(alpha: 0.30)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CyberChip(label: driver.series.label, color: Cyber.f1Red),
+                const SizedBox(height: 8),
+                Text(
+                  driver.archetype.label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Cyber.label(
+                    8,
+                    color: Cyber.f1Red,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                for (var i = 0; i < stats.length; i++) ...[
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          stats[i].$1,
+                          style: Cyber.label(7, color: Cyber.muted),
+                        ),
+                      ),
+                      Text(
+                        '${stats[i].$2}',
+                        style: Cyber.display(11, color: Cyber.f1Red),
+                      ),
+                    ],
+                  ),
+                  if (i != stats.length - 1) const SizedBox(height: 6),
+                ],
+              ],
+            ),
           ),
-          boxShadow: selected ? Cyber.glow(accent, alpha: 0.35, blur: 12) : null,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              card.shortName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Cyber.display(11, letterSpacing: 0.4),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              card.position,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Cyber.muted,
-                fontFamily: Cyber.bodyFont,
-                fontSize: 9,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'OVR ${card.rating}',
-              style: Cyber.label(
-                8,
-                color: accent,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ],
-        ),
-      ),
+      ],
     );
   }
 }

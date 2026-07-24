@@ -59,81 +59,91 @@ class FinalOverHub extends StatelessWidget {
                 animated: true,
                 child: SafeArea(
                   top: false,
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 440),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const CyberSlideUpFadeIn(child: _PitchStatusBar()),
-                            const SizedBox(height: 14),
-                            CyberSlideUpFadeIn(
-                              delay: const Duration(milliseconds: 80),
-                              child: _HeroRow(tier: state.tier),
-                            ),
-                            const SizedBox(height: 18),
-                            CyberSlideUpFadeIn(
-                              delay: const Duration(milliseconds: 160),
-                              child: _RecordPanel(stats: state.stats),
-                            ),
-                            const SizedBox(height: 20),
-                            const SectionLabel(label: 'CHASE TIER'),
-                            const SizedBox(height: 10),
-                            CyberSlideUpFadeIn(
-                              delay: const Duration(milliseconds: 240),
-                              child: _TierPicker(selected: state.tier),
-                            ),
-                            const SizedBox(height: 22),
-                            CyberSlideUpFadeIn(
-                              delay: const Duration(milliseconds: 320),
-                              child: HudCtaButton(
-                                label: ready ? 'TAKE GUARD' : 'BUILD SQUAD',
-                                icon: Icons.sports_cricket_rounded,
-                                accent: Cyber.gold,
-                                helper: ready
-                                    ? '${state.tier.label} // TARGET ${state.tier.range}'
-                                    : 'PICK 3 OWNED BATTERS TO CHASE',
-                                onTap: () => ready
-                                    ? _startMatch(context, gameState)
-                                    : _openDeckBuilder(context),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
+                          ),
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 440),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  const CyberSlideUpFadeIn(child: _PitchStatusBar()),
+                                  const SizedBox(height: 14),
+                                  CyberSlideUpFadeIn(
+                                    delay: const Duration(milliseconds: 80),
+                                    child: _HeroRow(tier: state.tier),
+                                  ),
+                                  const SizedBox(height: 18),
+                                  CyberSlideUpFadeIn(
+                                    delay: const Duration(milliseconds: 160),
+                                    child: _RecordPanel(stats: state.stats),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  const SectionLabel(label: 'CHASE TIER'),
+                                  const SizedBox(height: 10),
+                                  CyberSlideUpFadeIn(
+                                    delay: const Duration(milliseconds: 240),
+                                    child: _TierPicker(selected: state.tier),
+                                  ),
+                                  const SizedBox(height: 22),
+                                  CyberSlideUpFadeIn(
+                                    delay: const Duration(milliseconds: 320),
+                                    child: HudCtaButton(
+                                      label: ready ? 'TAKE GUARD' : 'BUILD SQUAD',
+                                      icon: Icons.sports_cricket_rounded,
+                                      accent: Cyber.gold,
+                                      helper: ready
+                                          ? '${state.tier.label} // TARGET ${state.tier.range}'
+                                          : 'PICK 3 OWNED BATTERS TO CHASE',
+                                      onTap: () => ready
+                                          ? _startMatch(context, gameState)
+                                          : _openDeckBuilder(context),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 14),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: CyberDealtCard(
+                                          index: 0,
+                                          child: CyberCtaButton(
+                                            label: 'Cricket Deck',
+                                            clip: false,
+                                            onPressed: () =>
+                                                _openDeckBuilder(context),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: CyberDealtCard(
+                                          index: 1,
+                                          child: CyberCtaButton(
+                                            label: 'Match History',
+                                            clip: false,
+                                            onPressed: () => showMatchHistoryArchive(
+                                              context,
+                                              gameState.matchHistory,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 14),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: CyberDealtCard(
-                                    index: 0,
-                                    child: CyberCtaButton(
-                                      label: 'Cricket Deck',
-                                      clip: false,
-                                      onPressed: () =>
-                                          _openDeckBuilder(context),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: CyberDealtCard(
-                                    index: 1,
-                                    child: CyberCtaButton(
-                                      label: 'Match History',
-                                      clip: false,
-                                      onPressed: () => showMatchHistoryArchive(
-                                        context,
-                                        gameState.matchHistory,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
                 ),
               ),

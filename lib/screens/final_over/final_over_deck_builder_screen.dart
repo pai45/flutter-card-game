@@ -8,8 +8,8 @@ import '../../blocs/game/game_state.dart';
 import '../../config/theme.dart';
 import '../../models/cards.dart';
 import '../../models/deck.dart';
-import '../../utils/card_helpers.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/cyber/sport_signal_painters.dart';
 import '../../widgets/game_scaffold.dart';
 import '../../widgets/match_widgets.dart';
 import 'widgets/final_over_kit_picker.dart';
@@ -17,11 +17,13 @@ import 'widgets/final_over_kit_picker.dart';
 class FinalOverDeckBuilderScreen extends StatefulWidget {
   const FinalOverDeckBuilderScreen({
     required this.onBack,
+    this.onSaved,
     this.onBrowseShop,
     super.key,
   });
 
   final VoidCallback onBack;
+  final VoidCallback? onSaved;
   final VoidCallback? onBrowseShop;
 
   @override
@@ -55,10 +57,12 @@ class _FinalOverDeckBuilderScreenState extends State<FinalOverDeckBuilderScreen>
           (slot) => slot.id == state.activeDeckId,
           orElse: () => state.deckSlots.first,
         );
-        final selectedCards = cardsByIds(
-          batsmen,
-          selectedBatsmen.whereType<String>().toList(),
-        );
+        final selectedCards = <PlayerCard?>[
+          for (final id in selectedBatsmen)
+            id == null
+                ? null
+                : batsmen.where((card) => card.id == id).firstOrNull,
+        ];
         final ownedBatsmen =
             batsmen
                 .where((card) => state.ownedCardIds.contains(card.id))
@@ -69,7 +73,7 @@ class _FinalOverDeckBuilderScreenState extends State<FinalOverDeckBuilderScreen>
           title: 'Final Over Squad',
           subtitle: '// 3-BAT CHASE UNIT',
           leading: IconButton(
-            onPressed: widget.onBack,
+            onPressed: () => _attemptBack(active),
             icon: const Icon(Icons.arrow_back_ios_new, size: 18),
           ),
           child: Column(
@@ -116,10 +120,10 @@ class _FinalOverDeckBuilderScreenState extends State<FinalOverDeckBuilderScreen>
               ),
               BottomActionBar(
                 primaryLabel: 'SAVE SQUAD',
-                primaryEnabled: true,
+                primaryEnabled: valid,
                 primaryOnTap: () async => _save(active),
                 secondaryLabel: 'BACK',
-                secondaryOnTap: widget.onBack,
+                secondaryOnTap: () => _attemptBack(active),
               ),
             ],
           ),
@@ -144,8 +148,12 @@ class _FinalOverDeckBuilderScreenState extends State<FinalOverDeckBuilderScreen>
   }
 
   Future<void> _save(StoredDeckSlot active) async {
-    final bloc = context.read<GameBloc>();
     final nextBatsmen = selectedBatsmen.whereType<String>().toList();
+    if (_sameIds(active.finalOverBatsmen, nextBatsmen)) {
+      (widget.onSaved ?? widget.onBack).call();
+      return;
+    }
+    final bloc = context.read<GameBloc>();
     final saved = bloc.stream.firstWhere(
       (state) => _sameIds(
         state.deckFinalOverBatsmen.map((card) => card.id).toList(),
@@ -154,21 +162,8 @@ class _FinalOverDeckBuilderScreenState extends State<FinalOverDeckBuilderScreen>
     );
     bloc.add(
       DeckSaved(
-        StoredDeckSlot(
-          id: active.id,
-          name: active.name,
-          attackers: active.attackers,
-          defenders: active.defenders,
-          actions: active.actions,
+        active.copyWith(
           finalOverBatsmen: nextBatsmen,
-          keeper: active.keeper,
-          basketballPlayers: active.basketballPlayers,
-          basketballStarter: active.basketballStarter,
-          tennisPlayers: active.tennisPlayers,
-          tennisStarter: active.tennisStarter,
-          racingPlayers: active.racingPlayers,
-          racingStarter: active.racingStarter,
-          chessFormation: active.chessFormation,
         ),
       ),
     );
@@ -176,7 +171,24 @@ class _FinalOverDeckBuilderScreenState extends State<FinalOverDeckBuilderScreen>
       const Duration(seconds: 2),
       onTimeout: () => bloc.state,
     );
-    if (mounted) widget.onBack();
+    if (!mounted) return;
+    (widget.onSaved ?? widget.onBack).call();
+  }
+
+  Future<void> _attemptBack(StoredDeckSlot active) async {
+    final next = selectedBatsmen.whereType<String>().toList();
+    if (!_sameIds(active.finalOverBatsmen, next)) {
+      final discard = await showCyberConfirmDialog(
+        context,
+        title: 'DISCARD CHANGES?',
+        message: 'Your cricket batting order has not been saved.',
+        confirmLabel: 'Discard',
+        cancelLabel: 'Keep editing',
+        destructive: true,
+      );
+      if (!mounted || !discard) return;
+    }
+    widget.onBack();
   }
 
   bool _sameIds(List<String> a, List<String> b) {
@@ -223,7 +235,7 @@ class _BattingOrderPanel extends StatelessWidget {
 
   final String deckName;
   final bool valid;
-  final List<PlayerCard> batsmen;
+  final List<PlayerCard?> batsmen;
   final int focusedIndex;
   final ValueChanged<int> onSlotTap;
 
@@ -269,23 +281,99 @@ class _BattingOrderPanel extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              for (var i = 0; i < 3; i++) ...[
-                if (i > 0) const SizedBox(width: 8),
-                Expanded(
-                  child: _BatsmanSlot(
-                    index: i,
-                    card: batsmen.elementAtOrNull(i),
-                    selected: focusedIndex == i,
-                    onTap: () => onSlotTap(i),
-                  ),
+          ClipRect(
+            child: CustomPaint(
+              painter: const CricketCreaseSignalPainter(),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(5, 14, 5, 12),
+                child: Row(
+                  children: [
+                    for (var i = 0; i < 3; i++) ...[
+                      if (i > 0) const SizedBox(width: 8),
+                      Expanded(
+                        child: _BatsmanSlot(
+                          index: i,
+                          card: batsmen.elementAtOrNull(i),
+                          selected: focusedIndex == i,
+                          onTap: () => onSlotTap(i),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ],
-            ],
+              ),
+            ),
+          ),
+          _CricketTelemetry(
+            card: batsmen.elementAtOrNull(focusedIndex),
+            slotIndex: focusedIndex,
           ),
         ],
       ),
+    );
+  }
+}
+
+class _CricketTelemetry extends StatelessWidget {
+  const _CricketTelemetry({required this.card, required this.slotIndex});
+
+  final PlayerCard? card;
+  final int slotIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    final card = this.card;
+    final stats = card == null
+        ? const <(String, int)>[]
+        : <(String, int)>[
+            ('OVR', card.rating),
+            ('TIMING', (card.rating + 4).clamp(0, 99)),
+            ('BOUNDARY', (card.rating + 7).clamp(0, 99)),
+            ('NERVE', (card.rating - 2).clamp(0, 99)),
+          ];
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 9),
+      decoration: BoxDecoration(
+        color: Cyber.bg.withValues(alpha: 0.50),
+        border: Border.all(color: Cyber.lime.withValues(alpha: 0.25)),
+      ),
+      child: card == null
+          ? Text(
+              'BAT ${slotIndex + 1} // ASSIGN A FINISHER',
+              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.1),
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${card.trait.toUpperCase()} // CREASE TELEMETRY',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Cyber.label(8, color: Cyber.lime, letterSpacing: 1),
+                ),
+                const SizedBox(height: 7),
+                Row(
+                  children: [
+                    for (final stat in stats)
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Text(
+                              '${stat.$2}',
+                              style: Cyber.display(13, color: Cyber.lime),
+                            ),
+                            Text(
+                              stat.$1,
+                              style: Cyber.label(6, color: Cyber.muted),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
     );
   }
 }

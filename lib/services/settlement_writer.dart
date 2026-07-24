@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../models/picks.dart';
 import '../models/prediction.dart';
 import '../models/sport_match.dart';
@@ -25,8 +27,33 @@ abstract final class SettlementWriter {
       subtitle: quiz.subtitle,
       prizeLabel: quiz.prizeLabel,
       entryFee: quiz.entryFee,
+      schemaVersion: quiz.schemaVersion,
+      generated: quiz.generated,
       questions: QuizArchetypes.settle(match.sport, quiz.questions, outcome),
     );
+  }
+
+  /// Stable fingerprint of every result consumed by this quiz. Null means the
+  /// ESPN payload still lacks the match's core final result and must be retried
+  /// rather than converted into a void settlement.
+  static String? quizResultFingerprint(SportMatch match, PredictionQuiz quiz) {
+    final outcome = MatchOutcomeResolver.resolve(match);
+    if (!outcome.isFullyResolved) return null;
+    final settled = computeQuizSettlement(match, quiz);
+    return jsonEncode({
+      'matchId': match.id,
+      'sport': match.sport.name,
+      'questions': [
+        for (final question in settled.questions)
+          {
+            'id': question.id,
+            'void': question.forcedVoid,
+            'option': question.settledOptionIndex,
+            'home': question.settledHomeScore,
+            'away': question.settledAwayScore,
+          },
+      ],
+    });
   }
 
   static PickMarket computeMarketSettlement(

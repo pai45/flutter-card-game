@@ -1450,7 +1450,10 @@ class _TeamStatRow extends StatelessWidget {
             height: 5,
             child: Row(
               children: [
-                Expanded(flex: homeFlex, child: ColoredBox(color: homeColor)),
+                Expanded(
+                  flex: homeFlex,
+                  child: ColoredBox(color: homeColor),
+                ),
                 const SizedBox(width: 2),
                 Expanded(
                   flex: 1000 - homeFlex,
@@ -1537,11 +1540,13 @@ String _leaderboardModeLabel(
         ? 'FINAL RANKS READY'
         : 'MATCH CLOSED';
   }
-  if (match.status == MatchStatus.live ||
-      prediction?.status == PredictionStatus.locked) {
+  if (match.status == MatchStatus.live) {
     return 'LOCKED PICKS';
   }
-  if (prediction != null) return 'LIVE STANDINGS PREVIEW';
+  if (prediction?.status == PredictionStatus.locked) {
+    return 'LOCKED IN · CROWD VOTES';
+  }
+  if (prediction != null) return 'DRAFT ACTIVE · REVIEW & LOCK';
   return 'JOIN BEFORE LOCK';
 }
 

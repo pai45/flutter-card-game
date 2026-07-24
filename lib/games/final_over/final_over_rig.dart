@@ -66,9 +66,10 @@ double _swing(double a, double b, double t) =>
 FoBatterFrame foBatterFrame(FoBatterPose kind, double t, {double runPhase = 0}) {
   switch (kind) {
     case FoBatterPose.stance:
-      // Front-foot-forward guard: crouched, weight forward, hands low and
-      // together near the front pad, bat toe down-and-forward rather than
-      // tucked behind the back foot. This is also the k=0 baseline
+      // Front-foot-forward guard: crouched, weight forward, BOTH hands gripping
+      // the handle together out in front of the thigh with the bat hanging
+      // straight down toward the front pad — a batsman actually holding the bat
+      // ready, not arms folded across the chest. This is also the k=0 baseline
       // `backlift` animates FROM, so pressing HIT never jumps silhouettes.
       final breathe = sin(t * 2.4) * 0.015;
       return FoBatterFrame(
@@ -77,11 +78,11 @@ FoBatterFrame foBatterFrame(FoBatterPose kind, double t, {double runPhase = 0}) 
           lean: 0.30,
           footNear: const Offset(0.28, 0),
           footFar: const Offset(-0.20, 0),
-          handNear: const Offset(0.10, 0.22),
-          handFar: const Offset(0.05, 0.26),
+          handNear: const Offset(0.20, 0.60), // low grip so the bat toe...
+          handFar: const Offset(0.16, 0.64), // ...rests down at the foot line
           headBob: breathe,
         ),
-        1.25, // toe down and forward, near the front pad
+        1.45, // bat stands down in front, toe resting by the front foot
       );
 
     case FoBatterPose.backlift:
@@ -97,11 +98,11 @@ FoBatterFrame foBatterFrame(FoBatterPose kind, double t, {double runPhase = 0}) 
           lean: 0.30 - k * 0.10 + coil * 0.6, // == stance @ k=0
           footNear: const Offset(0.28, 0), // == stance
           footFar: const Offset(-0.20, 0), // == stance
-          handNear: Offset(0.10 - k * 0.06, 0.22 - k * 0.88),
-          handFar: Offset(0.05 - k * 0.05, 0.26 - k * 0.98),
+          handNear: Offset(0.20 - k * 0.16, 0.60 - k * 1.26),
+          handFar: Offset(0.16 - k * 0.16, 0.64 - k * 1.36),
           headBob: coil * 0.7,
         ),
-        _swing(1.25, -2.35, k), // starts at stance's angle, cocks up behind
+        _swing(1.45, -2.35, k), // starts at stance's angle, cocks up behind
       );
 
     case FoBatterPose.groundOff:

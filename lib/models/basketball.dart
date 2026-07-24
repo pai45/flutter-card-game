@@ -142,7 +142,7 @@ class BasketballMatchConfig {
     required this.difficulty,
     required this.seed,
     this.showHints = false,
-    this.teamId = 'lakers',
+    this.teamId = 'statoz',
     this.cpuTeamId = 'bulls',
   });
 
@@ -268,7 +268,7 @@ class BasketballStats {
     this.lastStarterId,
     this.lastDifficulty = BasketballDifficulty.pro,
     this.hintsSeen = false,
-    this.lastTeamId = 'lakers',
+    this.lastTeamId = 'statoz',
   });
 
   factory BasketballStats.fromJson(Map<String, dynamic> json) {
@@ -293,7 +293,7 @@ class BasketballStats {
         json['lastDifficulty'] as String?,
       ),
       hintsSeen: json['hintsSeen'] as bool? ?? false,
-      lastTeamId: json['lastTeamId'] as String? ?? 'lakers',
+      lastTeamId: json['lastTeamId'] as String? ?? 'statoz',
     );
   }
 

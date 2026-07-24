@@ -118,6 +118,8 @@ bool _matchStateChanged(GameState prev, GameState curr) =>
     prev.currentScenario != curr.currentScenario ||
     prev.selectedPlayerCard != curr.selectedPlayerCard ||
     prev.selectedActionCard != curr.selectedActionCard ||
+    prev.opponentSelectedPlayerCard != curr.opponentSelectedPlayerCard ||
+    prev.opponentSelectedActionCard != curr.opponentSelectedActionCard ||
     !identical(prev.usedPlayerCards, curr.usedPlayerCards) ||
     !identical(prev.usedActionCards, curr.usedActionCards) ||
     !identical(prev.redCardedCards, curr.redCardedCards) ||

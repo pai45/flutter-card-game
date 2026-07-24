@@ -1209,157 +1209,178 @@ class _PreviewScreen extends StatelessWidget {
             ),
             SafeArea(
               top: false,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 22, 24, 32),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 380),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const CyberSlideUpFadeIn(
-                          child: CyberLobbyStatusBar(
-                            systemLabel: 'SYS://TENNIS_RALLY v1.0.0',
-                            lineColor: Cyber.lime,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        CyberSlideUpFadeIn(
-                          delay: const Duration(milliseconds: 80),
-                          offset: 24,
-                          child: Row(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 22, 24, 32),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 380),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              const _TennisLobbyEmblem(size: 92),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                              const CyberSlideUpFadeIn(
+                                child: CyberLobbyStatusBar(
+                                  systemLabel: 'SYS://TENNIS_RALLY v1.0.0',
+                                  lineColor: Cyber.lime,
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+                              CyberSlideUpFadeIn(
+                                delay: const Duration(milliseconds: 80),
+                                offset: 24,
+                                child: Row(
                                   children: [
-                                    FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      alignment: Alignment.centerLeft,
-                                      child: Text(
-                                        'TENNIS RALLY',
-                                        style: Cyber.display(
-                                          24,
-                                          letterSpacing: 1.4,
-                                        ),
+                                    const _TennisLobbyEmblem(size: 92),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            alignment: Alignment.centerLeft,
+                                            child: Text(
+                                              'TENNIS RALLY',
+                                              style: Cyber.display(
+                                                24,
+                                                letterSpacing: 1.4,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            'FAST COURT SHOWDOWN',
+                                            style: Cyber.display(
+                                              9,
+                                              color: Cyber.muted,
+                                              letterSpacing: 2.2,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 10),
+                                          CyberChip(
+                                            label: state.canResume
+                                                ? 'MATCH SAVED'
+                                                : 'ATHLETE READY',
+                                            color: state.canResume
+                                                ? Cyber.amber
+                                                : Cyber.lime,
+                                          ),
+                                        ],
                                       ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      'FAST COURT SHOWDOWN',
-                                      style: Cyber.display(
-                                        9,
-                                        color: Cyber.muted,
-                                        letterSpacing: 2.2,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    CyberChip(
-                                      label: state.canResume
-                                          ? 'MATCH SAVED'
-                                          : 'ATHLETE READY',
-                                      color: state.canResume
-                                          ? Cyber.amber
-                                          : Cyber.lime,
                                     ),
                                   ],
                                 ),
                               ),
+                              const SizedBox(height: 20),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: CyberDealtCard(
+                                      key: const ValueKey(
+                                        'tennis-lobby-stat-mastery',
+                                      ),
+                                      index: 0,
+                                      initialDelay: const Duration(
+                                        milliseconds: 180,
+                                      ),
+                                      flyDistance: 130,
+                                      child: CyberHudStat(
+                                        label: 'MASTERY',
+                                        value:
+                                            'LV ${profile.masteryLevel(player.id)}',
+                                        accent: Cyber.lime,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: CyberDealtCard(
+                                      key: const ValueKey(
+                                        'tennis-lobby-stat-wins',
+                                      ),
+                                      index: 1,
+                                      initialDelay: const Duration(
+                                        milliseconds: 180,
+                                      ),
+                                      flyDistance: 130,
+                                      child: CyberHudStat(
+                                        label: 'SET WINS',
+                                        value: '${profile.setsWon}',
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: CyberDealtCard(
+                                      key: const ValueKey(
+                                        'tennis-lobby-stat-streak',
+                                      ),
+                                      index: 2,
+                                      initialDelay: const Duration(
+                                        milliseconds: 180,
+                                      ),
+                                      flyDistance: 130,
+                                      child: CyberHudStat(
+                                        label: 'STREAK',
+                                        value: '${profile.currentWinStreak}',
+                                        accent: profile.currentWinStreak > 0
+                                            ? Cyber.success
+                                            : Cyber.cyan,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 24),
+                              CyberSlideUpFadeIn(
+                                delay: const Duration(milliseconds: 390),
+                                offset: 22,
+                                child: HudCtaButton(
+                                  label: state.canResume
+                                      ? 'RESUME MATCH'
+                                      : 'PLAY MATCH',
+                                  icon: Icons.sports_tennis,
+                                  accent: Cyber.lime,
+                                  helper:
+                                      '${profile.difficulty.label} // SEEDED FAIR PLAY',
+                                  onTap: () {
+                                    HapticFeedback.mediumImpact();
+                                    onStart();
+                                  },
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              const SectionLabel(label: 'NEXT MATCH'),
+                              const SizedBox(height: 10),
+                              CyberSlideUpFadeIn(
+                                delay: const Duration(milliseconds: 500),
+                                offset: 18,
+                                child: _VersusPanel(
+                                  player: player,
+                                  opponent: opponent,
+                                  difficulty: profile.difficulty,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              CyberSlideUpFadeIn(
+                                delay: const Duration(milliseconds: 590),
+                                offset: 14,
+                                child: _ControlBrief(mode: state.selectedMode),
+                              ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: CyberDealtCard(
-                                key: const ValueKey(
-                                  'tennis-lobby-stat-mastery',
-                                ),
-                                index: 0,
-                                initialDelay: const Duration(milliseconds: 180),
-                                flyDistance: 130,
-                                child: CyberHudStat(
-                                  label: 'MASTERY',
-                                  value:
-                                      'LV ${profile.masteryLevel(player.id)}',
-                                  accent: Cyber.lime,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: CyberDealtCard(
-                                key: const ValueKey('tennis-lobby-stat-wins'),
-                                index: 1,
-                                initialDelay: const Duration(milliseconds: 180),
-                                flyDistance: 130,
-                                child: CyberHudStat(
-                                  label: 'SET WINS',
-                                  value: '${profile.setsWon}',
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: CyberDealtCard(
-                                key: const ValueKey('tennis-lobby-stat-streak'),
-                                index: 2,
-                                initialDelay: const Duration(milliseconds: 180),
-                                flyDistance: 130,
-                                child: CyberHudStat(
-                                  label: 'STREAK',
-                                  value: '${profile.currentWinStreak}',
-                                  accent: profile.currentWinStreak > 0
-                                      ? Cyber.success
-                                      : Cyber.cyan,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        CyberSlideUpFadeIn(
-                          delay: const Duration(milliseconds: 390),
-                          offset: 22,
-                          child: HudCtaButton(
-                            label: state.canResume
-                                ? 'RESUME MATCH'
-                                : 'PLAY MATCH',
-                            icon: Icons.sports_tennis,
-                            accent: Cyber.lime,
-                            helper:
-                                '${profile.difficulty.label} // SEEDED FAIR PLAY',
-                            onTap: () {
-                              HapticFeedback.mediumImpact();
-                              onStart();
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        const SectionLabel(label: 'NEXT MATCH'),
-                        const SizedBox(height: 10),
-                        CyberSlideUpFadeIn(
-                          delay: const Duration(milliseconds: 500),
-                          offset: 18,
-                          child: _VersusPanel(
-                            player: player,
-                            opponent: opponent,
-                            difficulty: profile.difficulty,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                        CyberSlideUpFadeIn(
-                          delay: const Duration(milliseconds: 590),
-                          offset: 14,
-                          child: _ControlBrief(mode: state.selectedMode),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
             ),
           ],

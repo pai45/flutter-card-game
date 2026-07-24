@@ -18,6 +18,13 @@ class BasketballTeamLivery {
 
 const List<BasketballTeamLivery> basketballTeams = [
   BasketballTeamLivery(
+    id: 'statoz',
+    name: 'STATOZ',
+    primary: Color(0xFF0B4F5C), // Deep teal body
+    secondary: Color(0xFF061018), // Near-black trim
+    accent: Color(0xFF35E0FF), // Cyan number/stripe
+  ),
+  BasketballTeamLivery(
     id: 'lakers',
     name: 'Los Angeles',
     primary: Color(0xFFFDB927), // Gold
@@ -103,6 +110,34 @@ const List<BasketballTeamLivery> basketballTeams = [
   ),
 ];
 
+/// The one jersey every player starts with — no coin cost.
+const basketballFreeTeamId = 'statoz';
+
+/// Coin price for every non-free jersey in the Shop.
+const basketballTeamCoinPrice = 100;
+
+bool isBasketballTeamFree(BasketballTeamLivery team) =>
+    team.id == basketballFreeTeamId;
+
+int basketballTeamPrice(BasketballTeamLivery team) =>
+    isBasketballTeamFree(team) ? 0 : basketballTeamCoinPrice;
+
+/// Default owned jersey ids for a fresh wallet.
+List<String> defaultOwnedBasketballTeamIds() => [basketballFreeTeamId];
+
+/// Ensures the free jersey is always present and dedupes ids.
+List<String> normalizeOwnedBasketballTeamIds(Iterable<String> ids) {
+  final owned = ids.toSet()..add(basketballFreeTeamId);
+  return owned.toList();
+}
+
+bool isBasketballTeamOwned(String teamId, Iterable<String> ownedTeamIds) =>
+    isBasketballTeamFree(basketballTeamById(teamId)) ||
+    ownedTeamIds.contains(teamId);
+
 BasketballTeamLivery basketballTeamById(String id) {
-  return basketballTeams.firstWhere((team) => team.id == id, orElse: () => basketballTeams.first);
+  return basketballTeams.firstWhere(
+    (team) => team.id == id,
+    orElse: () => basketballTeams.first,
+  );
 }

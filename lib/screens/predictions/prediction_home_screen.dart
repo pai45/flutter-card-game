@@ -1569,9 +1569,7 @@ class _GamesTabState extends State<_GamesTab> {
             badgeLabel: 'FEATURED // RACE',
             ctaLabel: 'RACE NOW',
             accent: Cyber.f1Red,
-            background: const CustomPaint(
-              painter: F1MysterySignalPainter(),
-            ),
+            background: const CustomPaint(painter: F1MysterySignalPainter()),
             onTap: widget.onOpenGrandPrix,
           ),
         ),
@@ -1738,20 +1736,20 @@ class _HeroTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     final lines = titleLines;
     if (lines == null || lines.isEmpty) {
-      return Row(
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Flexible(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: _style,
-            ),
-          ),
           if (streak > 0) ...[
-            const SizedBox(width: StreakTheme.space8),
-            StreakBadge(value: streak),
+            StreakBadge(value: streak, scale: 1.25),
+            const SizedBox(height: StreakTheme.space4),
           ],
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: _style,
+          ),
         ],
       );
     }
@@ -1760,32 +1758,31 @@ class _HeroTitle extends StatelessWidget {
       builder: (context, constraints) {
         final titleWidth = (constraints.maxWidth * 0.56).clamp(168.0, 214.0);
 
-        return ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: titleWidth.toDouble()),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (var i = 0; i < lines.length; i++)
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        lines[i],
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: _style,
-                      ),
-                    ),
-                    if (streak > 0 && i == lines.length - 1) ...[
-                      const SizedBox(width: StreakTheme.space8),
-                      StreakBadge(value: streak),
-                    ],
-                  ],
-                ),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (streak > 0) ...[
+              StreakBadge(value: streak, scale: 1.25),
+              const SizedBox(height: StreakTheme.space4),
             ],
-          ),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: titleWidth.toDouble()),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final line in lines)
+                    Text(
+                      line,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: _style,
+                    ),
+                ],
+              ),
+            ),
+          ],
         );
       },
     );

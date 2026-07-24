@@ -19,9 +19,22 @@ import '../../widgets/pitch_background.dart';
 import '../../widgets/tutorial.dart';
 
 class DeckBuilderScreen extends StatefulWidget {
-  const DeckBuilderScreen({required this.onNavigate, super.key});
+  const DeckBuilderScreen({required this.onNavigate, super.key})
+    : onBack = null,
+      onSaved = null,
+      management = false;
 
-  final ValueChanged<AppSection> onNavigate;
+  const DeckBuilderScreen.management({
+    required this.onBack,
+    this.onSaved,
+    super.key,
+  }) : onNavigate = null,
+       management = true;
+
+  final ValueChanged<AppSection>? onNavigate;
+  final VoidCallback? onBack;
+  final VoidCallback? onSaved;
+  final bool management;
 
   @override
   State<DeckBuilderScreen> createState() => _DeckBuilderScreenState();
@@ -45,6 +58,7 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
     super.initState();
     final state = context.read<GameBloc>().state;
     _loadDeckIntoEditor(state);
+    if (widget.management) editing = true;
   }
 
   @override
@@ -123,11 +137,17 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
 
         return Scaffold(
           appBar: ReactHeaderBar(
-            title: 'Deck Builder',
-            subtitle: editing ? 'Editing' : active.name,
-            onBack: () => widget.onNavigate(AppSection.home),
+            title: widget.management ? 'Football Deck' : 'Deck Builder',
+            subtitle: widget.management
+                ? '// 5-A-SIDE TACTICS'
+                : (editing ? 'Editing' : active.name),
+            onBack: () => widget.management
+                ? _attemptManagementBack(active)
+                : widget.onNavigate!(AppSection.home),
             showShop: false,
-            rightSlot: TextButton(
+            rightSlot: widget.management
+                ? null
+                : TextButton(
               onPressed: editing
                   ? null
                   : () {
@@ -172,7 +192,7 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
                                       final slot = state.deckSlots[index];
                                       final activeSlot =
                                           slot.id == state.activeDeckId;
-                                      return DeckPill(
+                                      return CyberDeckPill(
                                         label: slot.name,
                                         meta:
                                             'P ${slot.attackers.length + slot.defenders.length}/4 · GK ${slot.keeper != null ? 1 : 0}/1 · ACT ${slot.actions.length}/6',
@@ -311,35 +331,44 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
                         ],
                       ),
                     ),
-                    BottomActionBar(
-                      primaryLabel: 'PLAY',
-                      primaryEnabled: valid,
-                      primaryOnTap: () {
-                        final slot = _buildStoredSlot(active);
-                        context.read<GameBloc>().add(DeckSaved(slot));
-                        context.read<GameBloc>().add(MatchStarted());
-                        widget.onNavigate(AppSection.match);
-                      },
-                      secondaryLabel: editing ? 'SAVE' : 'EDIT',
-                      secondaryOnTap: () {
-                        if (editing) {
-                          context.read<GameBloc>().add(
-                            DeckSaved(_buildStoredSlot(active)),
-                          );
-                        }
-                        setState(() {
-                          editing = !editing;
+                    if (widget.management)
+                      BottomActionBar(
+                        primaryLabel: 'SAVE LOADOUT',
+                        primaryEnabled: valid,
+                        primaryOnTap: () => _saveManagement(active),
+                        secondaryLabel: 'BACK',
+                        secondaryOnTap: () => _attemptManagementBack(active),
+                      )
+                    else
+                      BottomActionBar(
+                        primaryLabel: 'PLAY',
+                        primaryEnabled: valid,
+                        primaryOnTap: () {
+                          final slot = _buildStoredSlot(active);
+                          context.read<GameBloc>().add(DeckSaved(slot));
+                          context.read<GameBloc>().add(MatchStarted());
+                          widget.onNavigate!(AppSection.match);
+                        },
+                        secondaryLabel: editing ? 'SAVE' : 'EDIT',
+                        secondaryOnTap: () {
                           if (editing) {
-                            activeLane = DeckPickerLane.attacker;
-                            activeSlotIndex = 0;
-                            actionFilter = null;
+                            context.read<GameBloc>().add(
+                              DeckSaved(_buildStoredSlot(active)),
+                            );
                           }
-                        });
-                      },
-                      tertiaryLabel: 'All Cards',
-                      tertiaryOnTap: () =>
-                          widget.onNavigate(AppSection.allCards),
-                    ),
+                          setState(() {
+                            editing = !editing;
+                            if (editing) {
+                              activeLane = DeckPickerLane.attacker;
+                              activeSlotIndex = 0;
+                              actionFilter = null;
+                            }
+                          });
+                        },
+                        tertiaryLabel: 'All Cards',
+                        tertiaryOnTap: () =>
+                            widget.onNavigate!(AppSection.allCards),
+                      ),
                   ],
                 ),
                 const TutorialTip(
@@ -380,16 +409,69 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
     _selectedFormation = activeSlot.chessFormation ?? ChessFormation.box;
   }
 
-  StoredDeckSlot _buildStoredSlot(StoredDeckSlot active) => StoredDeckSlot(
-    id: active.id,
-    name: active.name,
+  StoredDeckSlot _buildStoredSlot(StoredDeckSlot active) => active.copyWith(
     attackers: selectedAttackers.whereType<String>().toList(),
     defenders: selectedDefenders.whereType<String>().toList(),
     actions: selectedActions.whereType<String>().toList(),
-    finalOverBatsmen: active.finalOverBatsmen,
     keeper: selectedKeeper,
     chessFormation: _selectedFormation,
   );
+
+  bool _isDirty(StoredDeckSlot active) {
+    final next = _buildStoredSlot(active);
+    return !_sameIds(active.attackers, next.attackers) ||
+        !_sameIds(active.defenders, next.defenders) ||
+        !_sameIds(active.actions, next.actions) ||
+        active.keeper != next.keeper ||
+        active.chessFormation != next.chessFormation;
+  }
+
+  bool _sameIds(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  Future<void> _attemptManagementBack(StoredDeckSlot active) async {
+    if (_isDirty(active)) {
+      final discard = await showCyberConfirmDialog(
+        context,
+        title: 'DISCARD CHANGES?',
+        message: 'Your football loadout edits have not been saved.',
+        confirmLabel: 'Discard',
+        cancelLabel: 'Keep editing',
+        destructive: true,
+      );
+      if (!mounted || !discard) return;
+    }
+    widget.onBack?.call();
+  }
+
+  Future<void> _saveManagement(StoredDeckSlot active) async {
+    if (!_isDirty(active)) {
+      widget.onSaved?.call();
+      return;
+    }
+    final bloc = context.read<GameBloc>();
+    final next = _buildStoredSlot(active);
+    final saved = bloc.stream.firstWhere(
+      (state) => state.deckSlots.any(
+        (slot) =>
+            slot.id == next.id &&
+            _sameIds(slot.attackers, next.attackers) &&
+            _sameIds(slot.defenders, next.defenders) &&
+            _sameIds(slot.actions, next.actions) &&
+            slot.keeper == next.keeper &&
+            slot.chessFormation == next.chessFormation,
+      ),
+    );
+    bloc.add(DeckSaved(next));
+    await saved.timeout(const Duration(seconds: 2), onTimeout: () => bloc.state);
+    if (!mounted) return;
+    widget.onSaved?.call();
+  }
 
   void _focusSlot(DeckPickerLane lane, int index) {
     if (!editing) return;
@@ -658,17 +740,17 @@ class DeckFocusedSelectionPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Lane switcher tabs + clear button
-          Row(
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              for (final l in DeckPickerLane.values) ...[
-                if (l.index > 0) const SizedBox(width: 6),
+              for (final l in DeckPickerLane.values)
                 _LaneTab(
                   lane: l,
                   selected: lane == l,
                   onTap: () => onLaneTap(l),
                 ),
-              ],
-              const Spacer(),
               TextButton.icon(
                 onPressed: selectedPlayer != null || selectedAction != null
                     ? onClear
@@ -884,71 +966,6 @@ class _SlotChip extends StatelessWidget {
   }
 }
 
-class DeckPill extends StatelessWidget {
-  const DeckPill({
-    required this.label,
-    required this.meta,
-    required this.selected,
-    required this.onTap,
-    super.key,
-  });
-
-  final String label;
-  final String meta;
-  final bool selected;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          gradient: selected
-              ? const LinearGradient(colors: [Cyber.lime, Cyber.cyan])
-              : const LinearGradient(colors: [Cyber.panel2, Cyber.panel]),
-          border: Border.all(color: selected ? Cyber.lime : Cyber.line),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (selected) ...[
-              const Icon(Icons.check, size: 13, color: Cyber.bg),
-              const SizedBox(width: 5),
-            ],
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  label.toUpperCase(),
-                  style: TextStyle(
-                    color: selected ? Cyber.bg : Colors.white,
-                    fontSize: 11,
-                    fontFamily: 'Orbitron',
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                Text(
-                  meta,
-                  style: TextStyle(
-                    color: selected
-                        ? Cyber.bg.withValues(alpha: 0.65)
-                        : Cyber.muted,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class DeckActionWarningPanel extends StatelessWidget {
   const DeckActionWarningPanel({super.key});
 
@@ -1096,7 +1113,7 @@ class FiveSideDeckPanel extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         SizedBox(
-          height: 88,
+          height: 136,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: 6,

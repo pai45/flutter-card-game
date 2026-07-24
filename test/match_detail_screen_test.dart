@@ -17,6 +17,7 @@ import 'package:card_game/services/prediction_repository.dart';
 import 'package:card_game/services/secure_storage_service.dart';
 import 'package:card_game/utils/sound_effects.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,6 +27,16 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('xyz.luan/audioplayers.global'),
+          (_) async => null,
+        );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('xyz.luan/audioplayers'),
+          (_) async => null,
+        );
     AudioController.instance.muted.value = true;
     FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({});
@@ -74,8 +85,8 @@ void main() {
             onOpenFootballChess: () {},
             onOpenGuessPlayer: () {},
             onOpenGrandPrix: () {},
-          onOpenF1GuessDriver: () {},
-              onOpenTennisGuessWinner: () {},
+            onOpenF1GuessDriver: () {},
+            onOpenTennisGuessWinner: () {},
             onOpenBasketball: () {},
             onOpenBasketballGuessPlayer: () {},
             onOpenCricketGuessPlayer: () {},
@@ -140,8 +151,8 @@ void main() {
             onOpenFootballChess: () {},
             onOpenGuessPlayer: () {},
             onOpenGrandPrix: () {},
-          onOpenF1GuessDriver: () {},
-              onOpenTennisGuessWinner: () {},
+            onOpenF1GuessDriver: () {},
+            onOpenTennisGuessWinner: () {},
             onOpenBasketball: () {},
             onOpenBasketballGuessPlayer: () {},
             onOpenCricketGuessPlayer: () {},
@@ -170,7 +181,8 @@ void main() {
       ),
     );
 
-    expect(find.text('Make prediction and Win 5000 coins'), findsOneWidget);
+    expect(find.text('OPEN'), findsOneWidget);
+    expect(find.text('VOL 0 OZ'), findsOneWidget);
   });
 
   testWidgets('picks tab only shows markets for the selected match', (
@@ -300,8 +312,8 @@ void main() {
     await tester.pump();
     await _pumpFrames(tester, const Duration(seconds: 5));
 
-    expect(find.text('OPEN PICKS'), findsOneWidget);
-    await _tapButton(tester, 'OPEN PICKS');
+    expect(find.text('OPEN SAME-MATCH PICKS'), findsOneWidget);
+    await _tapButton(tester, 'OPEN SAME-MATCH PICKS');
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('match-picks-list')), findsOneWidget);
@@ -479,10 +491,15 @@ class _PredictionRepo implements PredictionRepository {
   Future<List<League>> leagues() async => const [_league];
 
   @override
-  Future<List<SportMatch>> fixtures({DateTime? day, Sport? sport}) async => [_match];
+  Future<List<SportMatch>> fixtures({DateTime? day, Sport? sport}) async => [
+    _match,
+  ];
 
   @override
-  Future<List<SportMatch>> enrichFixturesForSport(List<SportMatch> fixtures, Sport sport) async => fixtures;
+  Future<List<SportMatch>> enrichFixturesForSport(
+    List<SportMatch> fixtures,
+    Sport sport,
+  ) async => fixtures;
 
   @override
   Future<List<PredictionQuiz>> quizzesFor(String matchId) async {

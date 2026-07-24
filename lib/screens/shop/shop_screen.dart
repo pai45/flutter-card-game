@@ -8,6 +8,7 @@ import '../../blocs/game/game_event.dart';
 import '../../blocs/game/game_state.dart';
 import '../../config/enums.dart';
 import '../../config/sport_modules.dart';
+import '../../data/basketball_teams.dart';
 import '../../data/final_over_kits.dart';
 import '../../data/grand_prix_liveries.dart';
 import '../../games/grand_prix/grand_prix_car_painter.dart';
@@ -25,6 +26,7 @@ import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/staggered_card_entrance.dart';
 import '../../widgets/stat_oz_top_bar.dart';
+import '../basketball/widgets/basketball_jersey_selector.dart';
 import '../final_over/widgets/final_over_kit_picker.dart';
 import '../../widgets/racing/racing_driver_portrait.dart';
 import 'widgets/shop_acquire_overlay.dart';
@@ -720,6 +722,9 @@ class KitsTab extends StatelessWidget {
     if (sport == Sport.motorsport) {
       return _GrandPrixLiveriesTab(onAcquired: onAcquired);
     }
+    if (sport == Sport.basketball) {
+      return _BasketballKitsTab(onAcquired: onAcquired);
+    }
     return _ShopEmptyFilter(sport: _shopSportCode(sport));
   }
 }
@@ -1101,6 +1106,204 @@ class _GrandPrixLiveryShopTile extends StatelessWidget {
       ),
       name: spec.name,
       accent: spec.accent,
+      coinsSpent: price,
+    );
+  }
+}
+
+class _BasketballKitsTab extends StatelessWidget {
+  const _BasketballKitsTab({required this.onAcquired});
+
+  final OnAcquired onAcquired;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<GameBloc, GameState>(
+      builder: (context, state) {
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+          itemCount: basketballTeams.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            final team = basketballTeams[index];
+            final owned = isBasketballTeamOwned(
+              team.id,
+              state.ownedBasketballTeamIds,
+            );
+            final price = basketballTeamPrice(team);
+            return StaggeredCardEntrance(
+              index: index,
+              animate: true,
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: SizedBox(
+                    height: 148,
+                    child: _BasketballTeamShopTile(
+                      team: team,
+                      index: index,
+                      owned: owned,
+                      price: price,
+                      onAcquired: onAcquired,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+class _BasketballTeamShopTile extends StatelessWidget {
+  const _BasketballTeamShopTile({
+    required this.team,
+    required this.index,
+    required this.owned,
+    required this.price,
+    required this.onAcquired,
+  });
+
+  final BasketballTeamLivery team;
+  final int index;
+  final bool owned;
+  final int price;
+  final OnAcquired onAcquired;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = team.accent;
+    return ShopCardFrame(
+      accent: accent,
+      stamp: owned ? const ShopStateStamp(kind: ShopStampKind.owned) : null,
+      child: Column(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 88,
+                    height: double.infinity,
+                    child: CustomPaint(
+                      painter: BasketballJerseyPreviewPainter(team),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          team.name.toUpperCase(),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontFamily: 'Orbitron',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'HOOP DUEL JERSEY',
+                          style: TextStyle(
+                            color: Colors.white54,
+                            fontFamily: 'Orbitron',
+                            fontSize: 8,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Container(
+                              width: 10,
+                              height: 10,
+                              color: team.primary,
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              width: 10,
+                              height: 10,
+                              color: team.secondary,
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              width: 10,
+                              height: 10,
+                              color: team.accent,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          _footer(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _footer(BuildContext context) {
+    if (owned) {
+      return Container(
+        height: 36,
+        color: Colors.black.withValues(alpha: 0.88),
+        alignment: Alignment.center,
+        child: Text(
+          isBasketballTeamFree(team) ? 'FREE // OWNED' : 'OWNED',
+          style: TextStyle(
+            color: team.accent,
+            fontFamily: 'Orbitron',
+            fontSize: 10,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.4,
+          ),
+        ),
+      );
+    }
+    return ShopPressable(
+      onTap: () => _buy(context),
+      child: Container(
+        height: 36,
+        color: Colors.black.withValues(alpha: 0.88),
+        alignment: Alignment.center,
+        child: ShopPricePill(coins: price, size: 11),
+      ),
+    );
+  }
+
+  void _buy(BuildContext context) {
+    final bloc = context.read<GameBloc>();
+    if (bloc.state.coins < price) {
+      _showSnack(context, 'Not enough coins — top up in the Coins tab.', false);
+      return;
+    }
+    bloc.add(
+      ShopBasketballTeamPurchased(
+        teamId: team.id,
+        price: price,
+        name: team.name,
+      ),
+    );
+    onAcquired(
+      preview: SizedBox(
+        width: 120,
+        height: 120,
+        child: CustomPaint(painter: BasketballJerseyPreviewPainter(team)),
+      ),
+      name: team.name.toUpperCase(),
+      accent: team.accent,
       coinsSpent: price,
     );
   }

@@ -1,6 +1,219 @@
 import 'package:flutter/material.dart';
 
+import '../../config/enums.dart';
 import '../../config/theme.dart';
+
+/// Batting-order telemetry shared by cricket deck surfaces.
+class CricketCreaseSignalPainter extends CustomPainter {
+  const CricketCreaseSignalPainter({this.accent = Cyber.lime});
+
+  final Color accent;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final line = Paint()
+      ..color = AppTheme.textPrimary.withValues(alpha: 0.24)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final pitch = RRect.fromRectAndRadius(
+      Rect.fromLTWH(
+        size.width * 0.08,
+        size.height * 0.10,
+        size.width * 0.84,
+        size.height * 0.80,
+      ),
+      const Radius.circular(4),
+    );
+    canvas.drawRRect(
+      pitch,
+      Paint()..color = accent.withValues(alpha: 0.045),
+    );
+    canvas.drawRRect(pitch, line);
+
+    for (final y in [0.24, 0.76]) {
+      canvas.drawLine(
+        Offset(size.width * 0.04, size.height * y),
+        Offset(size.width * 0.96, size.height * y),
+        line,
+      );
+    }
+    for (final x in [0.46, 0.50, 0.54]) {
+      canvas.drawLine(
+        Offset(size.width * x, size.height * 0.13),
+        Offset(size.width * x, size.height * 0.23),
+        Paint()
+          ..color = accent.withValues(alpha: 0.55)
+          ..strokeWidth = 1.4,
+      );
+      canvas.drawLine(
+        Offset(size.width * x, size.height * 0.77),
+        Offset(size.width * x, size.height * 0.87),
+        Paint()
+          ..color = accent.withValues(alpha: 0.55)
+          ..strokeWidth = 1.4,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CricketCreaseSignalPainter oldDelegate) =>
+      oldDelegate.accent != accent;
+}
+
+/// Half-court linework shared by basketball roster surfaces.
+class BasketballHalfCourtSignalPainter extends CustomPainter {
+  const BasketballHalfCourtSignalPainter({this.accent = Cyber.gold});
+
+  final Color accent;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final line = Paint()
+      ..color = AppTheme.textPrimary.withValues(alpha: 0.22)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final bounds = Rect.fromLTWH(
+      size.width * 0.04,
+      size.height * 0.03,
+      size.width * 0.92,
+      size.height * 0.94,
+    );
+    canvas.drawRect(bounds, Paint()..color = accent.withValues(alpha: 0.035));
+    canvas.drawRect(bounds, line);
+    final center = Offset(size.width / 2, size.height * 0.03);
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: size.width * 0.18),
+      0,
+      3.14159,
+      false,
+      line,
+    );
+    final key = Rect.fromCenter(
+      center: Offset(size.width / 2, size.height * 0.22),
+      width: size.width * 0.30,
+      height: size.height * 0.38,
+    );
+    canvas.drawRect(key, line);
+    canvas.drawArc(
+      Rect.fromCircle(
+        center: Offset(size.width / 2, size.height * 0.39),
+        radius: size.width * 0.15,
+      ),
+      0,
+      6.28318,
+      false,
+      line,
+    );
+    canvas.drawLine(
+      Offset(size.width * 0.43, size.height * 0.08),
+      Offset(size.width * 0.57, size.height * 0.08),
+      Paint()
+        ..color = accent.withValues(alpha: 0.58)
+        ..strokeWidth = 2,
+    );
+    canvas.drawCircle(
+      Offset(size.width / 2, size.height * 0.10),
+      5,
+      line,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant BasketballHalfCourtSignalPainter oldDelegate) =>
+      oldDelegate.accent != accent;
+}
+
+/// Compact sport markings laid over collectible art. This keeps the shared
+/// rarity frame intact while making non-football cards read at a glance.
+class SportCardSignalPainter extends CustomPainter {
+  const SportCardSignalPainter({required this.role, required this.accent});
+
+  final PlayerRole role;
+  final Color accent;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final line = Paint()
+      ..color = accent.withValues(alpha: 0.22)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.9;
+    switch (role) {
+      case PlayerRole.batsman:
+      case PlayerRole.bowler:
+        canvas.drawLine(
+          Offset(0, size.height * 0.74),
+          Offset(size.width, size.height * 0.74),
+          line,
+        );
+        for (final x in [0.44, 0.50, 0.56]) {
+          canvas.drawLine(
+            Offset(size.width * x, size.height * 0.61),
+            Offset(size.width * x, size.height * 0.74),
+            line,
+          );
+        }
+      case PlayerRole.basketballGuard:
+      case PlayerRole.basketballWing:
+      case PlayerRole.basketballBig:
+        canvas.drawArc(
+          Rect.fromCircle(
+            center: Offset(size.width / 2, size.height * 0.18),
+            radius: size.width * 0.36,
+          ),
+          0,
+          3.14159,
+          false,
+          line,
+        );
+        canvas.drawRect(
+          Rect.fromCenter(
+            center: Offset(size.width / 2, size.height * 0.16),
+            width: size.width * 0.30,
+            height: size.height * 0.30,
+          ),
+          line,
+        );
+      case PlayerRole.tennisSingles:
+        canvas.drawRect(
+          Rect.fromLTWH(
+            size.width * 0.10,
+            size.height * 0.10,
+            size.width * 0.80,
+            size.height * 0.70,
+          ),
+          line,
+        );
+        canvas.drawLine(
+          Offset(size.width * 0.10, size.height * 0.45),
+          Offset(size.width * 0.90, size.height * 0.45),
+          line,
+        );
+      case PlayerRole.f1Driver:
+      case PlayerRole.f2Driver:
+      case PlayerRole.nascarDriver:
+      case PlayerRole.indycarDriver:
+        final track = Path()
+          ..moveTo(size.width * 0.22, 0)
+          ..cubicTo(
+            size.width * 0.85,
+            size.height * 0.20,
+            size.width * 0.18,
+            size.height * 0.58,
+            size.width * 0.82,
+            size.height,
+          );
+        canvas.drawPath(track, line..strokeWidth = 3);
+      case PlayerRole.attacker:
+      case PlayerRole.defender:
+      case PlayerRole.goalkeeper:
+        break;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant SportCardSignalPainter oldDelegate) =>
+      oldDelegate.role != role || oldDelegate.accent != accent;
+}
 
 /// Shared court telemetry promoted from the Games hub tennis card.
 class TennisMysterySignalPainter extends CustomPainter {

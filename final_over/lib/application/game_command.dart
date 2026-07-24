@@ -8,8 +8,11 @@ sealed class GameCommand {
       SelectElevationCommand;
   const factory GameCommand.selectDirection(ShotDirection direction) =
       SelectDirectionCommand;
-  const factory GameCommand.swing(ShotDirection direction, {double? charge}) =
-      SwingCommand;
+  const factory GameCommand.swing(
+    ShotDirection direction, {
+    double? charge,
+    Elevation? elevation,
+  }) = SwingCommand;
   const factory GameCommand.activatePowerShot() = ActivatePowerShotCommand;
   const factory GameCommand.startRun() = StartRunCommand;
   const factory GameCommand.holdBall() = HoldBallCommand;
@@ -36,11 +39,16 @@ final class SelectDirectionCommand extends GameCommand {
 }
 
 final class SwingCommand extends GameCommand {
-  const SwingCommand(this.direction, {this.charge});
+  const SwingCommand(this.direction, {this.charge, this.elevation});
   final ShotDirection direction;
 
   /// Backlift at the moment of release, 0..1. See [SwingIntent.charge].
   final double? charge;
+
+  /// Shot elevation chosen at the moment of the swing (tap = ground, upward
+  /// flick = loft). When null the pre-selected [MatchState.selectedElevation]
+  /// stands. See [MatchController].
+  final Elevation? elevation;
 }
 
 final class ActivatePowerShotCommand extends GameCommand {

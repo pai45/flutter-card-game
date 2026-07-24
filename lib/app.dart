@@ -196,6 +196,12 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   /// The frontend "cronjob": settles yesterday's finished fixtures and pulls
   /// in the day newly entering the rolling window, once per calendar day.
   Future<void> _runRollingWindowIfDue() async {
+    final rollingWindowDue = await _rollingWindow.isDue();
+    if (!mounted) return;
+    if (!rollingWindowDue) {
+      await context.read<PredictionCubit>().refreshLiveAndPendingMatches();
+      return;
+    }
     await _rollingWindow.runIfDue(
       predictionCubit: context.read<PredictionCubit>(),
       picksCubit: context.read<PicksCubit>(),
@@ -524,6 +530,13 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     _go(AppSection.shop);
   }
 
+  void _openBasketballShop() {
+    final navigator = Navigator.of(context);
+    navigator.pop();
+    setState(() => _shopInitialTab = 3);
+    _go(AppSection.shop);
+  }
+
   void _pushGrandPrix() {
     final navigator = Navigator.of(context);
     navigator.push(
@@ -562,6 +575,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
             navigator.pop();
             _go(next);
           },
+          onBrowseShop: _openBasketballShop,
         ),
       ),
     );

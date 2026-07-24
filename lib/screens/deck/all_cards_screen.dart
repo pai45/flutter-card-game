@@ -4,11 +4,34 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_state.dart';
 import '../../config/enums.dart';
+import '../../config/sport_modules.dart';
 import '../../config/theme.dart';
 import '../../models/cards.dart';
+import '../../models/sport_match.dart';
 import '../../services/card_share_service.dart';
+import '../../widgets/cyber/cyber_underline_tabs.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
+
+const _collectionSports = <Sport>[
+  Sport.football,
+  Sport.cricket,
+  Sport.basketball,
+  Sport.tennis,
+  Sport.motorsport,
+];
+
+final _collectionSportLabels = _collectionSports
+    .map(
+      (sport) => sport == Sport.motorsport
+          ? 'MOTORSPORT'
+          : sportModuleFor(sport).label.toUpperCase(),
+    )
+    .toList(growable: false);
+
+final _collectionSportIcons = _collectionSports
+    .map((sport) => sportModuleFor(sport).icon)
+    .toList(growable: false);
 
 class AllCardsScreen extends StatefulWidget {
   const AllCardsScreen({
@@ -24,52 +47,17 @@ class AllCardsScreen extends StatefulWidget {
   State<AllCardsScreen> createState() => _AllCardsScreenState();
 }
 
-class _AllCardsScreenState extends State<AllCardsScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tab;
-  PlayerRole? _footballRoleFilter;
-  PlayerRole? _cricketRoleFilter;
-  ActionCategory? _actionFilter;
+class _AllCardsScreenState extends State<AllCardsScreen> {
+  int _activeSportTab = 0;
+  String _filter = 'ALL';
 
-  @override
-  void initState() {
-    super.initState();
-    _tab = TabController(length: 3, vsync: this);
-    _tab.addListener(() => setState(() {}));
-  }
+  Sport get _selectedSport => _collectionSports[_activeSportTab];
 
-  @override
-  void dispose() {
-    _tab.dispose();
-    super.dispose();
-  }
-
-  List<PlayerCard> _footballPlayers(GameState state) {
-    final all =
-        footballPlayerCards
-            .where((card) => state.ownedCardIds.contains(card.id))
-            .toList()
-          ..sort((a, b) => b.rating.compareTo(a.rating));
-    if (_footballRoleFilter == null) return all;
-    return all.where((c) => c.role == _footballRoleFilter).toList();
-  }
-
-  List<PlayerCard> _cricketPlayers(GameState state) {
-    final all =
-        cricketPlayerCards
-            .where((card) => state.ownedCardIds.contains(card.id))
-            .toList()
-          ..sort((a, b) => b.rating.compareTo(a.rating));
-    if (_cricketRoleFilter == null) return all;
-    return all.where((c) => c.role == _cricketRoleFilter).toList();
-  }
-
-  List<ActionCard> _actions(GameState state) {
-    final owned = actionCards
-        .where((card) => state.ownedActionCardIds.contains(card.id))
-        .toList();
-    if (_actionFilter == null) return owned;
-    return owned.where((c) => c.category == _actionFilter).toList();
+  void _onSportTabChanged(int index) {
+    setState(() {
+      _activeSportTab = index;
+      _filter = 'ALL';
+    });
   }
 
   @override
@@ -85,32 +73,24 @@ class _AllCardsScreenState extends State<AllCardsScreen>
           ),
           child: Column(
             children: [
-              _TabBar(controller: _tab),
+              _AllCardsSportsTabs(
+                activeIndex: _activeSportTab,
+                selectedSport: _selectedSport,
+                onTap: _onSportTabChanged,
+              ),
               Expanded(
-                child: TabBarView(
-                  controller: _tab,
-                  children: [
-                    _PlayersTab(
-                      cards: _footballPlayers(state),
-                      filter: _footballRoleFilter,
-                      onFilter: (r) => setState(() => _footballRoleFilter = r),
-                      cricket: false,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 240),
+                  child: KeyedSubtree(
+                    key: ValueKey<Sport>(_selectedSport),
+                    child: _SportCollectionTab(
+                      sport: _selectedSport,
+                      state: state,
+                      filter: _filter,
+                      onFilter: (value) => setState(() => _filter = value),
                       shareController: widget.shareController,
                     ),
-                    _PlayersTab(
-                      cards: _cricketPlayers(state),
-                      filter: _cricketRoleFilter,
-                      onFilter: (r) => setState(() => _cricketRoleFilter = r),
-                      cricket: true,
-                      shareController: widget.shareController,
-                    ),
-                    _ActionsTab(
-                      cards: _actions(state),
-                      filter: _actionFilter,
-                      onFilter: (c) => setState(() => _actionFilter = c),
-                      shareController: widget.shareController,
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ],
@@ -121,186 +101,173 @@ class _AllCardsScreenState extends State<AllCardsScreen>
   }
 }
 
-// ── Tab bar ──────────────────────────────────────────────────────────────────
+// ── Sport tabs (match-page style) ─────────────────────────────────────────────
 
-class _TabBar extends StatelessWidget {
-  const _TabBar({required this.controller});
-
-  final TabController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xff0b1120),
-      child: TabBar(
-        controller: controller,
-        indicatorColor: Cyber.cyan,
-        indicatorWeight: 2,
-        labelColor: Cyber.cyan,
-        unselectedLabelColor: Cyber.muted,
-        labelStyle: const TextStyle(
-          fontFamily: 'Orbitron',
-          fontSize: 11,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 1.5,
-        ),
-        tabs: const [
-          Tab(text: 'FOOTBALL'),
-          Tab(text: 'CRICKET'),
-          Tab(text: 'ACTIONS'),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Players tab ──────────────────────────────────────────────────────────────
-
-class _PlayersTab extends StatelessWidget {
-  const _PlayersTab({
-    required this.cards,
-    required this.filter,
-    required this.onFilter,
-    required this.cricket,
-    required this.shareController,
+class _AllCardsSportsTabs extends StatelessWidget {
+  const _AllCardsSportsTabs({
+    required this.activeIndex,
+    required this.selectedSport,
+    required this.onTap,
   });
 
-  final List<PlayerCard> cards;
-  final PlayerRole? filter;
-  final ValueChanged<PlayerRole?> onFilter;
-  final bool cricket;
-  final CardShareController shareController;
+  final int activeIndex;
+  final Sport selectedSport;
+  final ValueChanged<int> onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _FilterRow(
-          chips: [
-            _FilterChip(
-              label: 'ALL',
-              color: Cyber.cyan,
-              selected: filter == null,
-              onTap: () => onFilter(null),
-            ),
-            if (cricket) ...[
-              _FilterChip(
-                label: 'BAT',
-                color: Cyber.lime,
-                selected: filter == PlayerRole.batsman,
-                onTap: () => onFilter(PlayerRole.batsman),
-              ),
-              _FilterChip(
-                label: 'BOWL',
-                color: Cyber.violet,
-                selected: filter == PlayerRole.bowler,
-                onTap: () => onFilter(PlayerRole.bowler),
-              ),
-            ] else ...[
-              _FilterChip(
-                label: 'ATK',
-                color: Cyber.lime,
-                selected: filter == PlayerRole.attacker,
-                onTap: () => onFilter(PlayerRole.attacker),
-              ),
-              _FilterChip(
-                label: 'DEF',
-                color: Cyber.violet,
-                selected: filter == PlayerRole.defender,
-                onTap: () => onFilter(PlayerRole.defender),
-              ),
-              _FilterChip(
-                label: 'GK',
-                color: Cyber.gold,
-                selected: filter == PlayerRole.goalkeeper,
-                onTap: () => onFilter(PlayerRole.goalkeeper),
-              ),
-            ],
-          ],
-          count: cards.length,
-        ),
-        Expanded(
-          child: _CardGrid(
-            itemCount: cards.length,
-            itemBuilder: (context, index) {
-              final card = cards[index];
-              return CyberPlayerCardTile(
-                card: card,
-                selected: false,
-                size: VisualCardSize.md,
-                onTap: () =>
-                    _showPlayerCardDetail(context, card, shareController),
-              );
-            },
-          ),
-        ),
-      ],
+    return CyberUnderlineTabs(
+      labels: _collectionSportLabels,
+      icons: _collectionSportIcons,
+      activeIndex: activeIndex,
+      accent: sportModuleFor(selectedSport).accent,
+      onTap: onTap,
+      minTabWidth: 72,
     );
   }
 }
 
-// ── Actions tab ───────────────────────────────────────────────────────────────
+// ── Per-sport collection ──────────────────────────────────────────────────────
 
-class _ActionsTab extends StatelessWidget {
-  const _ActionsTab({
-    required this.cards,
+List<String> _filtersForSport(Sport sport) => switch (sport) {
+  Sport.football => const ['ALL', 'ATK', 'DEF', 'GK', 'ACT'],
+  Sport.cricket => const ['ALL', 'BAT', 'BOWL'],
+  Sport.basketball => const ['ALL', 'G', 'W', 'BIG'],
+  Sport.tennis => const ['ALL'],
+  Sport.motorsport => const ['ALL', 'F1', 'F2', 'NASCAR', 'INDY'],
+};
+
+List<PlayerCard> _playerPoolFor(Sport sport) => switch (sport) {
+  Sport.football => footballPlayerCards,
+  Sport.cricket => cricketPlayerCards,
+  Sport.basketball => basketballPlayerCards,
+  Sport.tennis => tennisPlayerCards,
+  Sport.motorsport => racingPlayerCards,
+};
+
+Color _filterChipColor(String label) => switch (label) {
+  'ALL' => Cyber.cyan,
+  'ATK' => Cyber.lime,
+  'DEF' => Cyber.violet,
+  'GK' => Cyber.gold,
+  'ACT' => Cyber.magenta,
+  'BAT' => Cyber.lime,
+  'BOWL' => Cyber.violet,
+  'G' => Cyber.gold,
+  'W' => Cyber.cyan,
+  'BIG' => Cyber.violet,
+  'F1' || 'F2' || 'NASCAR' || 'INDY' => Cyber.f1Red,
+  _ => Cyber.cyan,
+};
+
+bool _playerMatchesFilter(PlayerCard card, String filter) {
+  return switch (filter) {
+    'ATK' => card.role == PlayerRole.attacker,
+    'DEF' => card.role == PlayerRole.defender,
+    'GK' => card.role == PlayerRole.goalkeeper,
+    'BAT' => card.role == PlayerRole.batsman,
+    'BOWL' => card.role == PlayerRole.bowler,
+    'G' => card.role == PlayerRole.basketballGuard,
+    'W' => card.role == PlayerRole.basketballWing,
+    'BIG' => card.role == PlayerRole.basketballBig,
+    'F1' => card.role == PlayerRole.f1Driver,
+    'F2' => card.role == PlayerRole.f2Driver,
+    'NASCAR' => card.role == PlayerRole.nascarDriver,
+    'INDY' => card.role == PlayerRole.indycarDriver,
+    _ => true,
+  };
+}
+
+class _SportCollectionTab extends StatelessWidget {
+  const _SportCollectionTab({
+    required this.sport,
+    required this.state,
     required this.filter,
     required this.onFilter,
     required this.shareController,
   });
 
-  final List<ActionCard> cards;
-  final ActionCategory? filter;
-  final ValueChanged<ActionCategory?> onFilter;
+  final Sport sport;
+  final GameState state;
+  final String filter;
+  final ValueChanged<String> onFilter;
   final CardShareController shareController;
+
+  List<PlayerCard> get _players {
+    final owned = _playerPoolFor(sport)
+        .where((card) => state.ownedCardIds.contains(card.id))
+        .where((card) => filter == 'ACT' ? false : _playerMatchesFilter(card, filter))
+        .toList()
+      ..sort((a, b) => b.rating.compareTo(a.rating));
+    return owned;
+  }
+
+  List<ActionCard> get _actions {
+    if (sport != Sport.football) return const [];
+    if (filter != 'ALL' && filter != 'ACT') return const [];
+    return actionCards
+        .where((card) => state.ownedActionCardIds.contains(card.id))
+        .toList();
+  }
+
+  int get _totalCount => _players.length + _actions.length;
 
   @override
   Widget build(BuildContext context) {
+    final filters = _filtersForSport(sport);
+    final activeFilter = filters.contains(filter) ? filter : 'ALL';
+
     return Column(
       children: [
         _FilterRow(
           chips: [
-            _FilterChip(
-              label: 'ALL',
-              color: Cyber.cyan,
-              selected: filter == null,
-              onTap: () => onFilter(null),
-            ),
-            _FilterChip(
-              label: 'ATK',
-              color: Cyber.danger,
-              selected: filter == ActionCategory.attack,
-              onTap: () => onFilter(ActionCategory.attack),
-            ),
-            _FilterChip(
-              label: 'DEF',
-              color: Cyber.violet,
-              selected: filter == ActionCategory.defense,
-              onTap: () => onFilter(ActionCategory.defense),
-            ),
-            _FilterChip(
-              label: 'SPC',
-              color: Cyber.gold,
-              selected: filter == ActionCategory.special,
-              onTap: () => onFilter(ActionCategory.special),
-            ),
+            for (final label in filters)
+              _FilterChip(
+                label: label,
+                color: _filterChipColor(label),
+                selected: activeFilter == label,
+                onTap: () => onFilter(label),
+              ),
           ],
-          count: cards.length,
+          count: _totalCount,
         ),
         Expanded(
-          child: _CardGrid(
-            itemCount: cards.length,
-            itemBuilder: (context, index) {
-              final card = cards[index];
-              return CyberActionCardTile(
-                card: card,
-                selected: false,
-                size: VisualCardSize.md,
-                onTap: () =>
-                    _showActionCardDetail(context, card, shareController),
-              );
-            },
-          ),
+          child: _totalCount == 0
+              ? Center(
+                  child: Text(
+                    'NO ${sportModuleFor(sport).label.toUpperCase()} CARDS YET',
+                    style: Cyber.label(10, color: Cyber.muted),
+                  ),
+                )
+              : _CardGrid(
+                  itemCount: _totalCount,
+                  itemBuilder: (context, index) {
+                    if (index < _players.length) {
+                      final card = _players[index];
+                      return CyberPlayerCardTile(
+                        card: card,
+                        selected: false,
+                        size: VisualCardSize.md,
+                        onTap: () => _showPlayerCardDetail(
+                          context,
+                          card,
+                          shareController,
+                        ),
+                      );
+                    }
+                    final card = _actions[index - _players.length];
+                    return CyberActionCardTile(
+                      card: card,
+                      selected: false,
+                      size: VisualCardSize.md,
+                      onTap: () => _showActionCardDetail(
+                        context,
+                        card,
+                        shareController,
+                      ),
+                    );
+                  },
+                ),
         ),
       ],
     );
@@ -317,10 +284,12 @@ class _FilterRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Same wire as `_CardGrid` so the filter strip is the top rail of the net.
+    final line = Cyber.border.withValues(alpha: 0.55);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xff1e2538))),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: line)),
       ),
       child: Row(
         children: [
@@ -388,22 +357,50 @@ class _CardGrid extends StatelessWidget {
   final int itemCount;
   final Widget Function(BuildContext context, int index) itemBuilder;
 
+  /// Inset between a card and its cell's net lines — keeps the wireframe
+  /// readable without crowding the tile.
+  static const _cellPad = EdgeInsets.symmetric(horizontal: 14, vertical: 14);
+
+  /// Fixed md tile height used to size each net cell snugly.
+  static const _cardH = 192.0;
+
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final crossAxisCount = width >= 720 ? 3 : 2;
+    final cellW = width / crossAxisCount;
+    final cellH = _cardH + _cellPad.vertical;
+    // Subtle HUD wire — calm divider, never a glow (cyber-ui glow rule).
+    final line = Cyber.border.withValues(alpha: 0.55);
 
     return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(0, 12, 0, 16),
+      padding: EdgeInsets.zero,
       itemCount: itemCount,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
-        mainAxisSpacing: 14,
-        crossAxisSpacing: 14,
-        childAspectRatio: 128 / 192,
+        mainAxisSpacing: 0,
+        crossAxisSpacing: 0,
+        childAspectRatio: cellW / cellH,
       ),
       itemBuilder: (context, index) {
-        return Center(child: itemBuilder(context, index));
+        final col = index % crossAxisCount;
+        final isLastInRow = col == crossAxisCount - 1;
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border(
+              // Vertical net lines between columns (not on outer edges).
+              right: isLastInRow
+                  ? BorderSide.none
+                  : BorderSide(color: line),
+              // Horizontal net lines under every row.
+              bottom: BorderSide(color: line),
+            ),
+          ),
+          child: Padding(
+            padding: _cellPad,
+            child: Center(child: itemBuilder(context, index)),
+          ),
+        );
       },
     );
   }

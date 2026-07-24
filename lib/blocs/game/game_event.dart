@@ -226,6 +226,19 @@ class ShopGrandPrixLiveryPurchased extends GameEvent {
   final String name;
 }
 
+/// Buy a Hoop Duel jersey with coins — BUY → OWNED, equip in roster deck.
+class ShopBasketballTeamPurchased extends GameEvent {
+  ShopBasketballTeamPurchased({
+    required this.teamId,
+    required this.price,
+    required this.name,
+  });
+
+  final String teamId;
+  final int price;
+  final String name;
+}
+
 class PackRevealSeen extends GameEvent {}
 
 class StreakActivityRecorded extends GameEvent {

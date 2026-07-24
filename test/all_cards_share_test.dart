@@ -66,7 +66,7 @@ void main() {
 
     await tester.pumpWidget(_AllCardsHarness(bloc: bloc, share: share));
 
-    await tester.tap(find.text('ACTIONS'));
+    await tester.tap(find.text('ACT'));
     await tester.pumpAndSettle();
     await tester.tap(find.byType(CyberActionCardTile).first);
     await tester.pump(const Duration(milliseconds: 500));
@@ -92,7 +92,7 @@ void main() {
     addTearDown(bloc.close);
 
     await tester.pumpWidget(_AllCardsHarness(bloc: bloc, share: share));
-    await tester.tap(find.text('CRICKET'));
+    await tester.tap(find.byIcon(Icons.sports_cricket));
     await tester.pumpAndSettle();
 
     expect(find.byType(CyberPlayerCardTile), findsOneWidget);

@@ -18,6 +18,7 @@ import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
 import '../../models/streak.dart';
 import '../../utils/sound_effects.dart';
+import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/staggered_card_entrance.dart';
 import '../../widgets/team_logo.dart';
@@ -33,7 +34,7 @@ import '../../utils/prediction_helpers.dart';
 ///   • a "QUIZ LOCKS IN hh:mm:ss" countdown to kickoff;
 ///   • ONE question at a time — a numbered panel, an XP pill and A/B/C options;
 ///   • a progress-dot row + a chamfered NEXT button (SUBMIT on the last one);
-///   • a full-screen SUBMITTED celebration when the quiz is sent.
+///   • an editable draft summary followed by an irreversible hold-to-lock beat.
 ///
 /// Editable until kickoff; once live/finished the same paginated UI becomes a
 /// read-only review (settled answers show correct/wrong). Finished settleable
@@ -63,20 +64,24 @@ class MatchPredictionScreen extends StatefulWidget {
 
 enum _QuizRevealPhase { numberIntro, questionReveal, optionsReveal, ready }
 
+enum _DraftSaveStatus { saved, saving, failed }
+
 class _MatchPredictionScreenState extends State<MatchPredictionScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   List<PredictionQuiz> _quizzes = const [];
   PredictionQuiz? _quiz;
   bool _loading = true;
   bool _submitting = false;
-  bool _savingUpdates = false;
+  bool _locking = false;
+  bool _showLockOverlay = false;
+  bool _autoLockOverlay = false;
+  bool _deadlineLockStarted = false;
   bool _showQuizHub = true;
-  // True for the session right after a fresh submit: we stay on the review list
-  // (the "quiz submitted" screen) instead of popping, the cards cascade in, and
-  // the dock shows an OPEN PICKS CTA until the user edits an answer.
+  // True for the session right after a fresh submit so the draft summary cards
+  // cascade in and the autosave telemetry gets a brief confirmation pulse.
   bool _justSubmitted = false;
-  // Held while the post-submit cinematic plays so a freshly-unlocked achievement
-  // (e.g. Analyst on the 10th quiz) reveals *after* it, not on top of it.
+  // Held while the post-submit transition lands so a freshly-unlocked
+  // achievement reveals after the draft summary, not over the question flow.
   AchievementCelebrationController? _heldCelebrations;
   int _index = 0;
   final Map<String, int> _answers = {};
@@ -90,11 +95,17 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
   List<SettlementQuestionResult>? _settlementResults;
   int _settlementXp = 0;
   int _settlementXpBefore = 0;
-  double? _settlementBeatenShare;
+  PredictionSettlementAnalytics? _settlementAnalytics;
   int _settlementContestRank = 0;
   int _settlementContestPrizeOz = 0;
   int _settlementContestField = 0;
   Timer? _ticker;
+  Timer? _liveRefreshTimer;
+  bool _liveRefreshInFlight = false;
+  Timer? _autoSaveTimer;
+  Future<void> _draftWriteTail = Future<void>.value();
+  _DraftSaveStatus _draftSaveStatus = _DraftSaveStatus.saved;
+  int _draftRevision = 0;
   DateTime _now = DateTime.now();
   _QuizRevealPhase _revealPhase = _QuizRevealPhase.ready;
   int _revealRun = 0;
@@ -102,14 +113,38 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
   late final AnimationController _numberIntro;
   late final AnimationController _questionReveal;
   late final AnimationController _optionsReveal;
+  late final PredictionCubit _predictionCubit;
 
-  SportMatch get _match => widget.match;
-  bool get _editable => _match.predictable;
+  SportMatch get _match {
+    for (final fixture in _predictionCubit.state.fixtures) {
+      if (fixture.id == widget.match.id) return fixture;
+    }
+    return widget.match;
+  }
+
   String? get _quizId => _quiz?.id;
+  UserPrediction? get _currentPrediction {
+    final quizId = _quizId;
+    return quizId == null
+        ? null
+        : _predictionCubit.state.predictionFor(_match.id, quizId);
+  }
+
+  bool get _beforeDeadline =>
+      _match.status == MatchStatus.upcoming && _match.kickoff.isAfter(_now);
+
+  bool get _editable {
+    final status = _currentPrediction?.status;
+    return _beforeDeadline &&
+        status != PredictionStatus.locked &&
+        status != PredictionStatus.settled;
+  }
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _predictionCubit = context.read<PredictionCubit>();
     _numberIntro = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),
@@ -124,13 +159,41 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     );
     _load();
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() => _now = DateTime.now());
+      if (!mounted) return;
+      final nextNow = DateTime.now();
+      setState(() => _now = nextNow);
+      if (!_match.kickoff.isAfter(nextNow)) {
+        unawaited(_autoLockAtDeadline());
+      }
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _syncLiveRefresh();
     });
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _syncLiveRefresh(force: true);
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      _liveRefreshTimer?.cancel();
+      _liveRefreshTimer = null;
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _ticker?.cancel();
+    _liveRefreshTimer?.cancel();
+    _autoSaveTimer?.cancel();
+    if (_hasDraftChanges &&
+        _currentPrediction?.status == PredictionStatus.open) {
+      unawaited(_enqueueDraftWrite());
+    }
     // Never leak a hold if the screen is torn down mid-cinematic.
     _heldCelebrations?.release();
     _numberIntro.dispose();
@@ -211,9 +274,11 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
         ..addAll(nextMultipliers);
       _expandedQuestions.clear();
       _settlementResults = null;
+      _settlementAnalytics = null;
       _justSubmitted = false;
       _submitting = false;
-      _savingUpdates = false;
+      _locking = false;
+      _draftSaveStatus = _DraftSaveStatus.saved;
       _index = 0;
       _revealPhase = _QuizRevealPhase.ready;
       _votesByQuestion = votes;
@@ -223,16 +288,86 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
       _savedMultipliersByQuestion = Map<String, PredictionMultiplier>.from(
         _multipliersByQuestion,
       );
-      if (existing != null && !_match.predictable) {
+      if (existing != null &&
+          (existing.status != PredictionStatus.open || !_beforeDeadline)) {
         _expandedQuestions
           ..clear()
           ..addAll(quiz.questions.map((q) => q.id));
       }
     });
-    if (_questions.isNotEmpty && existing == null) {
+    if (_questions.isNotEmpty && existing == null && _beforeDeadline) {
       _runForwardReveal();
+    } else if (existing != null &&
+        existing.status == PredictionStatus.open &&
+        !_beforeDeadline) {
+      unawaited(_autoLockAtDeadline());
     } else if (existing != null && _canSettle(existing)) {
       _startSettlementReveal(existing);
+    }
+    _syncLiveRefresh();
+  }
+
+  bool get _shouldRefreshLiveIntel {
+    final prediction = _currentPrediction;
+    if (prediction == null || prediction.status != PredictionStatus.locked) {
+      return false;
+    }
+    if (_match.status == MatchStatus.live) return true;
+    return _match.status == MatchStatus.finished &&
+        !(_quiz?.settleable ?? false);
+  }
+
+  void _syncLiveRefresh({bool force = false}) {
+    if (!_shouldRefreshLiveIntel) {
+      _liveRefreshTimer?.cancel();
+      _liveRefreshTimer = null;
+      return;
+    }
+    if (force || _liveRefreshTimer == null) {
+      unawaited(_refreshLiveIntel());
+    }
+    _liveRefreshTimer ??= Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => unawaited(_refreshLiveIntel()),
+    );
+  }
+
+  Future<void> _refreshLiveIntel() async {
+    if (_liveRefreshInFlight || !mounted) return;
+    _liveRefreshInFlight = true;
+    try {
+      await _predictionCubit.refreshMatch(widget.match.id);
+      final quizId = _quizId;
+      if (!mounted || quizId == null) return;
+      final refreshedQuiz = await _predictionCubit.quizFor(
+        widget.match.id,
+        quizId,
+      );
+      if (refreshedQuiz == null) return;
+      final votes = <String, PredictionVoteBreakdown>{};
+      for (final question in refreshedQuiz.questions) {
+        final vote = await _predictionCubit.votesFor(
+          widget.match.id,
+          quizId,
+          question.id,
+        );
+        if (vote != null) votes[question.id] = vote;
+      }
+      if (!mounted) return;
+      setState(() {
+        _quiz = refreshedQuiz;
+        _votesByQuestion = votes;
+      });
+      final prediction = _currentPrediction;
+      if (prediction != null && _canSettle(prediction)) {
+        _liveRefreshTimer?.cancel();
+        _liveRefreshTimer = null;
+        unawaited(_startSettlementReveal(prediction));
+      } else {
+        _syncLiveRefresh();
+      }
+    } finally {
+      _liveRefreshInFlight = false;
     }
   }
 
@@ -325,6 +460,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     if (!_editable || _revealing) return;
     playSound(SoundEffect.cardSelect);
     setState(() => _answers[questionId] = optionIndex);
+    _scheduleAutoSave();
   }
 
   void _setScore(String questionId, {int? home, int? away}) {
@@ -338,6 +474,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
         away ?? currentAway,
       );
     });
+    _scheduleAutoSave();
   }
 
   void _toggleMultiplier(String questionId, PredictionMultiplier multiplier) {
@@ -353,13 +490,14 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     setState(() {
       if (active) {
         _multipliersByQuestion.remove(questionId);
-        return;
+      } else {
+        _multipliersByQuestion.removeWhere(
+          (key, value) => key == questionId || value == multiplier,
+        );
+        _multipliersByQuestion[questionId] = multiplier;
       }
-      _multipliersByQuestion.removeWhere(
-        (key, value) => key == questionId || value == multiplier,
-      );
-      _multipliersByQuestion[questionId] = multiplier;
     });
+    _scheduleAutoSave();
   }
 
   void _previous() {
@@ -413,12 +551,12 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
   Future<void> _submit() async {
     final quizId = _quizId;
     if (quizId == null || !_allAnswered || _submitting) return;
+    if (!_beforeDeadline) {
+      _notify('Kickoff has passed. New predictions are closed.');
+      return;
+    }
     final isFresh =
-        context.read<PredictionCubit>().state.predictionFor(
-          _match.id,
-          quizId,
-        ) ==
-        null;
+        _predictionCubit.state.predictionFor(_match.id, quizId) == null;
     // Paid contest (Scoreline Quiz): the entry fee is charged once, when the
     // player first locks in. Editing answers afterwards never re-charges.
     final chargesEntry = isFresh && (_quiz?.isContest ?? false);
@@ -435,14 +573,27 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     // first; the cinematic releases it on completion (see the overlay onDone).
     _heldCelebrations = context.read<AchievementCelebrationController>()
       ..hold();
-    setState(() => _submitting = true);
-    await context.read<PredictionCubit>().submit(
+    setState(() {
+      _submitting = true;
+      _draftSaveStatus = _DraftSaveStatus.saving;
+    });
+    final saved = await _predictionCubit.saveDraft(
       _match.id,
       quizId,
       Map.of(_answers),
       multipliersByQuestion: Map.of(_multipliersByQuestion),
     );
     if (!mounted) return;
+    if (!saved) {
+      _heldCelebrations?.release();
+      _heldCelebrations = null;
+      setState(() {
+        _submitting = false;
+        _draftSaveStatus = _DraftSaveStatus.failed;
+      });
+      _notify('Draft could not be saved. Try again.');
+      return;
+    }
     if (isFresh) {
       context.read<GameBloc?>()?.add(
         StreakActivityRecorded(StreakActivity.predict),
@@ -459,44 +610,175 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
         );
       }
     }
-    // Snapshot what we just submitted as the saved baseline so the post-submit
-    // review list opens with no pending draft — that's what surfaces the
-    // OPEN PICKS dock. Editing an answer afterwards flips _hasDraftChanges
-    // back on and swaps the dock to SAVE UPDATES.
-    _savedAnswers = Map<String, int>.from(_answers);
-    _savedMultipliersByQuestion = Map<String, PredictionMultiplier>.from(
-      _multipliersByQuestion,
-    );
-    // The overlay drives the celebration; on completion its onDone lands us on
-    // the review list (no longer pops the screen).
-  }
-
-  Future<void> _saveUpdates() async {
-    final quizId = _quizId;
-    if (quizId == null ||
-        !_editable ||
-        _savingUpdates ||
-        !_hasDraftChanges ||
-        !_allAnswered) {
-      return;
-    }
-    _ensureScoreDefaults();
-    playSound(SoundEffect.uiTap);
-    setState(() => _savingUpdates = true);
-    await context.read<PredictionCubit>().submit(
-      _match.id,
-      quizId,
-      Map.of(_answers),
-      multipliersByQuestion: Map.of(_multipliersByQuestion),
-    );
-    if (!mounted) return;
+    // Snapshot the submitted draft as the saved baseline. Further review edits
+    // are debounced into ordered auto-saves until the player seals the entry.
+    HapticFeedback.mediumImpact();
     setState(() {
       _savedAnswers = Map<String, int>.from(_answers);
       _savedMultipliersByQuestion = Map<String, PredictionMultiplier>.from(
         _multipliersByQuestion,
       );
-      _savingUpdates = false;
+      _submitting = false;
+      _justSubmitted = true;
+      _draftSaveStatus = _DraftSaveStatus.saved;
     });
+    _heldCelebrations?.release();
+    _heldCelebrations = null;
+  }
+
+  void _scheduleAutoSave() {
+    final prediction = _currentPrediction;
+    if (prediction == null ||
+        prediction.status != PredictionStatus.open ||
+        !_beforeDeadline) {
+      return;
+    }
+    final revision = ++_draftRevision;
+    _autoSaveTimer?.cancel();
+    if (mounted) {
+      setState(() => _draftSaveStatus = _DraftSaveStatus.saving);
+    }
+    _autoSaveTimer = Timer(const Duration(milliseconds: 300), () {
+      unawaited(_enqueueDraftWrite(revision: revision));
+    });
+  }
+
+  Future<bool> _enqueueDraftWrite({int? revision}) {
+    final quizId = _quizId;
+    if (quizId == null || !_allAnswered) {
+      return Future<bool>.value(false);
+    }
+    final snapshotAnswers = Map<String, int>.from(_answers);
+    final snapshotMultipliers = Map<String, PredictionMultiplier>.from(
+      _multipliersByQuestion,
+    );
+    final completer = Completer<bool>();
+    _draftWriteTail = _draftWriteTail.then((_) async {
+      final saved = await _predictionCubit.saveDraft(
+        _match.id,
+        quizId,
+        snapshotAnswers,
+        multipliersByQuestion: snapshotMultipliers,
+      );
+      if (saved) {
+        _savedAnswers = snapshotAnswers;
+        _savedMultipliersByQuestion = snapshotMultipliers;
+      }
+      if (mounted && (revision == null || revision == _draftRevision)) {
+        setState(
+          () => _draftSaveStatus = saved
+              ? _DraftSaveStatus.saved
+              : _DraftSaveStatus.failed,
+        );
+      }
+      completer.complete(saved);
+    });
+    return completer.future;
+  }
+
+  Future<bool> _flushAutoSave() async {
+    _autoSaveTimer?.cancel();
+    _autoSaveTimer = null;
+    if (_currentPrediction?.status == PredictionStatus.open &&
+        _hasDraftChanges) {
+      return _enqueueDraftWrite(revision: _draftRevision);
+    }
+    await _draftWriteTail;
+    return _draftSaveStatus != _DraftSaveStatus.failed;
+  }
+
+  Future<void> _retryAutoSave() async {
+    if (!_editable) return;
+    if (mounted) {
+      setState(() => _draftSaveStatus = _DraftSaveStatus.saving);
+    }
+    await _enqueueDraftWrite(revision: _draftRevision);
+  }
+
+  Future<void> _lockPrediction({bool automatic = false}) async {
+    final quizId = _quizId;
+    final prediction = _currentPrediction;
+    if (quizId == null ||
+        prediction == null ||
+        prediction.status != PredictionStatus.open ||
+        _locking) {
+      return;
+    }
+
+    _autoSaveTimer?.cancel();
+    _autoSaveTimer = null;
+    setState(() => _locking = true);
+    await _draftWriteTail;
+    final locked = await _predictionCubit.lockPrediction(
+      _match.id,
+      quizId,
+      answers: Map<String, int>.from(_answers),
+      multipliersByQuestion: Map<String, PredictionMultiplier>.from(
+        _multipliersByQuestion,
+      ),
+    );
+    if (!mounted) return;
+    if (!locked) {
+      setState(() {
+        _locking = false;
+        _deadlineLockStarted = false;
+        _draftSaveStatus = _DraftSaveStatus.failed;
+      });
+      _notify('Prediction could not be locked. Your draft is still editable.');
+      return;
+    }
+
+    await _refreshVotes();
+    if (!mounted) return;
+    playSound(SoundEffect.commit);
+    HapticFeedback.heavyImpact();
+    setState(() {
+      _savedAnswers = Map<String, int>.from(_answers);
+      _savedMultipliersByQuestion = Map<String, PredictionMultiplier>.from(
+        _multipliersByQuestion,
+      );
+      _expandedQuestions
+        ..clear()
+        ..addAll(_questions.map((question) => question.id));
+      _locking = false;
+      _justSubmitted = false;
+      _draftSaveStatus = _DraftSaveStatus.saved;
+      _autoLockOverlay = automatic;
+      _showLockOverlay = true;
+    });
+    _syncLiveRefresh(force: automatic);
+  }
+
+  Future<void> _refreshVotes() async {
+    final quiz = _quiz;
+    if (quiz == null) return;
+    final votes = <String, PredictionVoteBreakdown>{};
+    for (final question in quiz.questions) {
+      final vote = await _predictionCubit.votesFor(
+        _match.id,
+        quiz.id,
+        question.id,
+      );
+      if (vote != null) votes[question.id] = vote;
+    }
+    if (mounted) setState(() => _votesByQuestion = votes);
+  }
+
+  Future<void> _autoLockAtDeadline() async {
+    final prediction = _currentPrediction;
+    if (_deadlineLockStarted ||
+        prediction == null ||
+        prediction.status != PredictionStatus.open) {
+      return;
+    }
+    _deadlineLockStarted = true;
+    await _lockPrediction(automatic: true);
+  }
+
+  Future<void> _exitPrediction() async {
+    await _flushAutoSave();
+    if (!mounted) return;
+    Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
   /// Lightweight feedback shown when an action is blocked (e.g. not enough Oz
@@ -558,10 +840,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
       );
     }
     final xpBefore = context.read<GameBloc>().state.progression.totalXP;
-    final beatenShare = _leaderboard.isEmpty
-        ? null
-        : _leaderboard.where((e) => correctCount >= e.correct).length /
-              _leaderboard.length;
+    final analytics = _buildSettlementAnalytics(quiz, correctCount);
     final settlement = await context.read<PredictionCubit>().settle(
       _match.id,
       prediction.quizId,
@@ -592,11 +871,89 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
       _settlementResults = results;
       _settlementXp = totalXp;
       _settlementXpBefore = xpBefore;
-      _settlementBeatenShare = beatenShare;
+      _settlementAnalytics = analytics;
       _settlementContestRank = quiz.isContest ? settlement.rank : 0;
       _settlementContestPrizeOz = settlement.prizeOz;
       _settlementContestField = settlement.fieldSize;
     });
+  }
+
+  PredictionSettlementAnalytics _buildSettlementAnalytics(
+    PredictionQuiz quiz,
+    int playerCorrect,
+  ) {
+    final scorable = quiz.questions
+        .where(
+          (question) =>
+              !question.forcedVoid && _correctAnswer(question) != null,
+        )
+        .toList(growable: false);
+    final totalQuestions = scorable.length;
+    final rivals = _leaderboard
+        .where((entry) => entry.name.trim().toLowerCase() != 'you')
+        .toList(growable: false);
+    final clampedPlayer = playerCorrect.clamp(0, totalQuestions).toInt();
+    final scoreDistribution = <int, int>{
+      for (var score = 0; score <= totalQuestions; score++) score: 0,
+    };
+    for (final rival in rivals) {
+      final score = rival.correct.clamp(0, totalQuestions).toInt();
+      scoreDistribution[score] = (scoreDistribution[score] ?? 0) + 1;
+    }
+    scoreDistribution[clampedPlayer] =
+        (scoreDistribution[clampedPlayer] ?? 0) + 1;
+    final playerRank =
+        rivals
+            .where(
+              (entry) => entry.correct.clamp(0, totalQuestions) > clampedPlayer,
+            )
+            .length +
+        1;
+    final beatenShare = rivals.isEmpty
+        ? null
+        : rivals
+                  .where(
+                    (entry) =>
+                        clampedPlayer >= entry.correct.clamp(0, totalQuestions),
+                  )
+                  .length /
+              rivals.length;
+
+    var crowdCorrectVotes = 0;
+    var crowdTotalVotes = 0;
+    final questionAnalytics = <PredictionQuestionAnalytics>[];
+    for (var index = 0; index < quiz.questions.length; index++) {
+      final question = quiz.questions[index];
+      if (question.forcedVoid) continue;
+      final actual = _correctAnswer(question);
+      if (actual == null) continue;
+      final votes = _votesByQuestion[question.id];
+      final totalVotes = votes?.totalVotes ?? 0;
+      final correctVotes = votes?.votesFor(actual) ?? 0;
+      crowdCorrectVotes += correctVotes;
+      crowdTotalVotes += totalVotes;
+      questionAnalytics.add(
+        PredictionQuestionAnalytics(
+          index: index + 1,
+          question: question.text,
+          actualAnswer: _answerLabel(question, actual),
+          correctVotes: correctVotes,
+          totalVotes: totalVotes,
+        ),
+      );
+    }
+
+    return PredictionSettlementAnalytics(
+      playerCorrect: clampedPlayer,
+      totalQuestions: totalQuestions,
+      playerRank: playerRank,
+      rivalCount: rivals.length,
+      beatenShare: beatenShare,
+      scoreDistribution: scoreDistribution,
+      crowdCorrectVotes: crowdCorrectVotes,
+      crowdTotalVotes: crowdTotalVotes,
+      questions: questionAnalytics,
+    );
   }
 
   @override
@@ -612,40 +969,44 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
               ? _buildPredictionBody()
               : SafeArea(child: _buildPredictionBody()),
         ),
-        if (_settlementResults != null)
+        if (_settlementResults != null && _settlementAnalytics != null)
           Positioned.fill(
             child: SettlementRevealOverlay(
               match: _match,
               results: _settlementResults!,
               totalXp: _settlementXp,
               xpBefore: _settlementXpBefore,
-              beatenShare: _settlementBeatenShare,
+              analytics: _settlementAnalytics!,
               contestRank: _settlementContestRank,
               contestPrizeOz: _settlementContestPrizeOz,
               contestField: _settlementContestField,
               onDone: () {
-                if (mounted) setState(() => _settlementResults = null);
+                if (mounted) {
+                  setState(() {
+                    _settlementResults = null;
+                    _settlementAnalytics = null;
+                  });
+                }
               },
             ),
           ),
-        if (_submitting)
+        if (_showLockOverlay)
           Positioned.fill(
-            child: _SubmittedOverlay(
+            child: _PredictionLockedOverlay(
               potentialXp: _potentialXp,
               count: _questions.length,
+              automatic: _autoLockOverlay,
               onDone: () {
                 if (!mounted) return;
-                // Release the hold so any queued achievement reveal plays over
-                // the quiz-submitted list we land on (no longer pop home).
-                _heldCelebrations?.release();
-                _heldCelebrations = null;
-                // The prediction now exists in state, so the rebuild routes
-                // to _reviewContent — the all-questions list. _justSubmitted
-                // makes the cards cascade in and shows the OPEN PICKS dock.
-                setState(() {
-                  _submitting = false;
-                  _justSubmitted = true;
-                });
+                // The prediction now exists as an immutable lock, so the
+                // rebuild routes to the expanded crowd-vote review.
+                setState(() => _showLockOverlay = false);
+                final prediction = _currentPrediction;
+                if (_autoLockOverlay &&
+                    prediction != null &&
+                    _canSettle(prediction)) {
+                  unawaited(_startSettlementReveal(prediction));
+                }
               },
             ),
           ),
@@ -689,10 +1050,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
       }
       return Column(
         children: [
-          if (widget.showTopBar)
-            _QuizTopBar(
-              onBack: () => Navigator.of(context).popUntil((r) => r.isFirst),
-            ),
+          if (widget.showTopBar) _QuizTopBar(onBack: _exitPrediction),
           if (widget.showMatchHeader) ...[
             const SizedBox(height: 20),
             _QuizHeader(match: _match),
@@ -714,10 +1072,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     if (_questions.isEmpty) {
       return Column(
         children: [
-          if (widget.showTopBar)
-            _QuizTopBar(
-              onBack: () => Navigator.of(context).popUntil((r) => r.isFirst),
-            ),
+          if (widget.showTopBar) _QuizTopBar(onBack: _exitPrediction),
           Expanded(
             child: CyberNoDataState(
               icon: Icons.quiz_outlined,
@@ -738,6 +1093,20 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
 
     if (widget.embedded && _quizzes.length > 1 && _showQuizHub) {
       return _quizSetHubContent();
+    }
+
+    // A completed fixture stays useful even for players who did not enter:
+    // let them study the verified answers and how the crowd performed, but
+    // never surface an answer control, draft, or reward path.
+    if (_match.status == MatchStatus.finished) {
+      return _communityResultsContent();
+    }
+
+    // No entry exists for this quiz and the fixture has crossed its deadline.
+    // Keep existing locked/settled entries reviewable above, but never render a
+    // fresh answer flow that could be mistaken for an available contest.
+    if (!_beforeDeadline) {
+      return _closedNewEntryContent();
     }
 
     final settled = prediction?.status == PredictionStatus.settled;
@@ -767,11 +1136,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
               edge: _QuizChromeEdge.top,
               child: Column(
                 children: [
-                  if (widget.showTopBar)
-                    _QuizTopBar(
-                      onBack: () =>
-                          Navigator.of(context).popUntil((r) => r.isFirst),
-                    ),
+                  if (widget.showTopBar) _QuizTopBar(onBack: _exitPrediction),
                   if (widget.showMatchHeader) ...[
                     const SizedBox(height: 20),
                     _QuizHeader(match: _match),
@@ -895,7 +1260,128 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
   bool _canSettle(UserPrediction prediction) =>
       _match.status == MatchStatus.finished &&
       (_quiz?.settleable ?? false) &&
-      prediction.status != PredictionStatus.settled;
+      prediction.status == PredictionStatus.locked;
+
+  Widget _closedNewEntryContent() {
+    final finished = _match.status == MatchStatus.finished;
+    return Column(
+      children: [
+        if (widget.showTopBar) _QuizTopBar(onBack: _exitPrediction),
+        if (widget.showMatchHeader) ...[
+          const SizedBox(height: 20),
+          _QuizHeader(match: _match),
+        ],
+        Expanded(
+          child: CyberNoDataState(
+            icon: finished ? Icons.flag_outlined : Icons.lock_clock_outlined,
+            title: 'PREDICTIONS CLOSED',
+            message: finished
+                ? 'This match is complete. You can view results for entries you locked before kickoff.'
+                : 'Kickoff has passed. New quiz entries are no longer available.',
+            accent: finished ? Cyber.muted : Cyber.danger,
+            spark: finished ? Icons.emoji_events_outlined : Icons.lock_outline,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _communityResultsContent() {
+    final quiz = _quiz;
+    if (quiz == null) return const SizedBox.shrink();
+    final crowd = _communityAccuracy(quiz);
+    final fieldSize = _leaderboard
+        .where((entry) => entry.name.trim().toLowerCase() != 'you')
+        .length;
+
+    return Column(
+      children: [
+        if (widget.showTopBar) _QuizTopBar(onBack: _exitPrediction),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(0, 0, 0, 18),
+            itemCount: _questions.length + 1,
+            itemBuilder: (context, i) {
+              if (i == 0) {
+                return Column(
+                  children: [
+                    if (widget.showMatchHeader) ...[
+                      const SizedBox(height: 20),
+                      _QuizHeader(match: _match),
+                    ],
+                    if (widget.embedded && _quizzes.length > 1)
+                      _AllQuizzesButton(onTap: _returnToQuizHub),
+                    _LockLine(match: _match, untilLock: _untilLock),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+                      child: _ReviewNotice(
+                        text:
+                            'You did not enter this quiz. Study the final answers and the crowd signal.',
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                      child: _CommunityResultsTelemetry(
+                        crowdCorrectVotes: crowd.correctVotes,
+                        crowdTotalVotes: crowd.totalVotes,
+                        fieldSize: fieldSize,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                );
+              }
+
+              final questionIndex = i - 1;
+              final question = _questions[questionIndex];
+              return Padding(
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  0,
+                  20,
+                  questionIndex == _questions.length - 1 ? 0 : 10,
+                ),
+                child: _ReviewQuestionCard(
+                  index: questionIndex + 1,
+                  question: question,
+                  match: _match,
+                  selected: null,
+                  multiplier: null,
+                  multiplierOwners: const {},
+                  votes: _votesByQuestion[question.id],
+                  intel: null,
+                  expanded: true,
+                  expandable: false,
+                  communityOnly: true,
+                  editable: false,
+                  readOnly: true,
+                  finished: true,
+                  onToggle: () {},
+                  onSelect: (_) {},
+                  onScoreChanged: (_, _) {},
+                  onMultiplierTap: (_) {},
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  ({int correctVotes, int totalVotes}) _communityAccuracy(PredictionQuiz quiz) {
+    var correctVotes = 0;
+    var totalVotes = 0;
+    for (final question in quiz.questions) {
+      if (question.forcedVoid) continue;
+      final actual = _correctAnswer(question);
+      if (actual == null) continue;
+      final votes = _votesByQuestion[question.id];
+      correctVotes += votes?.votesFor(actual) ?? 0;
+      totalVotes += votes?.totalVotes ?? 0;
+    }
+    return (correctVotes: correctVotes, totalVotes: totalVotes);
+  }
 
   Widget _quizSetHubContent() {
     return Column(
@@ -904,11 +1390,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
           edge: _QuizChromeEdge.top,
           child: Column(
             children: [
-              if (widget.showTopBar)
-                _QuizTopBar(
-                  onBack: () =>
-                      Navigator.of(context).popUntil((r) => r.isFirst),
-                ),
+              if (widget.showTopBar) _QuizTopBar(onBack: _exitPrediction),
               if (widget.showMatchHeader) ...[
                 const SizedBox(height: 20),
                 _QuizHeader(match: _match),
@@ -945,6 +1427,13 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
   }
 
   void _openQuizSet(PredictionQuiz quiz) {
+    final existing = _predictionCubit.state.predictionFor(_match.id, quiz.id);
+    final communityResults =
+        existing == null && _match.status == MatchStatus.finished;
+    if (existing == null && !_beforeDeadline && !communityResults) {
+      _notify('Kickoff has passed. New predictions are closed.');
+      return;
+    }
     playSound(SoundEffect.uiTap);
     if (widget.embedded) {
       Navigator.of(context).push(
@@ -969,20 +1458,19 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
       _savedMultipliersByQuestion = {};
       _expandedQuestions.clear();
       _settlementResults = null;
+      _settlementAnalytics = null;
       _justSubmitted = false;
       _index = 0;
     });
   }
 
   Widget _reviewContent(UserPrediction prediction) {
-    final editable = _editable;
+    final editable = prediction.status == PredictionStatus.open && _editable;
     final readOnly = !editable;
+    final linkedMarket = editable ? _sameMatchPickMarket() : null;
     return Column(
       children: [
-        if (widget.showTopBar)
-          _QuizTopBar(
-            onBack: () => Navigator.of(context).popUntil((r) => r.isFirst),
-          ),
+        if (widget.showTopBar) _QuizTopBar(onBack: _exitPrediction),
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.fromLTRB(0, 0, 0, 18),
@@ -1002,6 +1490,14 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
                       padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
                       child: _ReviewNotice(text: _reviewNotice(prediction)),
                     ),
+                    if (linkedMarket != null || widget.onOpenPicks != null)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                        child: _OpenPicksInlineAction(
+                          market: linkedMarket,
+                          onOpenPicks: widget.onOpenPicks,
+                        ),
+                      ),
                     const SizedBox(height: 20),
                   ],
                 );
@@ -1029,6 +1525,11 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
                     multiplier: _multipliersByQuestion[question.id],
                     multiplierOwners: _multiplierOwners,
                     votes: _votesByQuestion[question.id],
+                    intel: _predictionCubit.questionIntelFor(
+                      _match.id,
+                      _quiz!.id,
+                      question.id,
+                    ),
                     expanded: _expandedQuestions.contains(question.id),
                     editable: editable,
                     readOnly: readOnly,
@@ -1045,6 +1546,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
                       if (!editable) return;
                       playSound(SoundEffect.cardSelect);
                       setState(() => _answers[question.id] = answer);
+                      _scheduleAutoSave();
                     },
                     onScoreChanged: (home, away) {
                       if (!editable) return;
@@ -1052,6 +1554,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
                       setState(() {
                         _answers[question.id] = ScoreAnswer.encode(home, away);
                       });
+                      _scheduleAutoSave();
                     },
                     onMultiplierTap: (multiplier) =>
                         _toggleMultiplier(question.id, multiplier),
@@ -1061,18 +1564,12 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
             },
           ),
         ),
-        if (editable && _justSubmitted && !_hasDraftChanges)
-          // Fresh submit, no edits yet: hand the player into the same match's
-          // picks market when one exists.
-          _OpenPicksDock(
-            market: _sameMatchPickMarket(),
-            onOpenPicks: widget.onOpenPicks,
-          )
-        else if (editable)
-          _ReviewSaveDock(
-            enabled: _hasDraftChanges && _allAnswered && !_savingUpdates,
-            saving: _savingUpdates,
-            onSave: _saveUpdates,
+        if (editable)
+          _PredictionLockDock(
+            saveStatus: _draftSaveStatus,
+            locking: _locking,
+            onLock: () => _lockPrediction(),
+            onRetry: _retryAutoSave,
           )
         else if (_canSettle(prediction))
           _SettleDock(
@@ -1086,8 +1583,10 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
   }
 
   String _reviewNotice(UserPrediction prediction) {
-    if (_editable) {
-      return 'You can update answers until match starts.';
+    if (prediction.status == PredictionStatus.open && _editable) {
+      return _justSubmitted
+          ? 'Draft auto-saved. Fine-tune any pick, then hold to lock.'
+          : 'Changes auto-save. Hold to lock before kickoff.';
     }
     if (_canSettle(prediction)) {
       return 'Results are in. Reveal your verdicts to claim XP.';
@@ -1096,7 +1595,10 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
         prediction.status == PredictionStatus.settled) {
       return 'Final answers are in. Review results and crowd votes.';
     }
-    return 'Predictions are locked. Review crowd votes as the match unfolds.';
+    if (_match.status == MatchStatus.upcoming) {
+      return 'Prediction locked. Crowd signal unlocked.';
+    }
+    return 'Locked picks are in play. Track the crowd as the match unfolds.';
   }
 
   /// The forward CTA's state for the current page. NEXT pages forward; the
@@ -1624,6 +2126,7 @@ class _QuizHubVisual {
     this.pulse = false,
     this.showChevron = true,
     this.blocked = false,
+    this.blockedMessage,
     this.contest,
     this.outcomes,
   });
@@ -1646,6 +2149,7 @@ class _QuizHubVisual {
 
   /// Entry is barred (can't afford the fee) — tap is intercepted, card muted.
   final bool blocked;
+  final String? blockedMessage;
 
   /// Paid-contest metadata (null for free/XP-only quizzes).
   final _ContestMeta? contest;
@@ -1734,46 +2238,83 @@ _QuizHubVisual _resolveQuizHubVisual(
   // Finished, no entry → closed/expired.
   if (match.status == MatchStatus.finished) {
     return _QuizHubVisual(
+      accent: quiz.settleable ? Cyber.cyan : Cyber.amber,
+      tag: quiz.settleable ? 'FINAL RESULTS' : 'RESULT VERIFYING',
+      progress: 0,
+      progressAccent: quiz.settleable ? Cyber.cyan : Cyber.amber,
+      ctaIcon: Icons.query_stats,
+      ctaText: quiz.settleable ? 'VIEW COMMUNITY RESULTS' : 'VIEW CROWD SIGNAL',
+      rewardText: 'VIEW',
+      rewardColor: quiz.settleable ? Cyber.cyan : Cyber.amber,
+    );
+  }
+
+  // Live → all saved entries are frozen while the match runs.
+  if (match.status == MatchStatus.live) {
+    return _QuizHubVisual(
+      accent: Cyber.danger,
+      tag: 'LIVE',
+      progress: total == 0 ? 0 : answered / total,
+      progressAccent: Cyber.danger,
+      ctaIcon: Icons.lock_outline,
+      ctaText: 'LOCKED PICKS · MATCH IN PROGRESS',
+      rewardText: prediction != null ? 'IN PLAY' : 'CLOSED',
+      rewardColor: Cyber.danger,
+      showChevron: false,
+      blocked: prediction == null,
+      blockedMessage: prediction == null
+          ? 'Kickoff has passed. New predictions are closed.'
+          : null,
+      contest: contestFor(),
+    );
+  }
+
+  // Score providers can briefly leave a just-started fixture marked upcoming.
+  // The local kickoff clock closes only fresh entry; existing drafts still
+  // open so the deadline-lock path can seal their last saved answers.
+  if (!match.kickoff.isAfter(DateTime.now()) && prediction == null) {
+    return _QuizHubVisual(
       accent: Cyber.muted,
       tag: 'CLOSED',
       progress: 0,
       progressAccent: Cyber.muted,
-      ctaIcon: Icons.flag_outlined,
-      ctaText: 'RESULT RECORDED · NO ENTRY',
+      ctaIcon: Icons.lock_clock_outlined,
+      ctaText: 'KICKOFF PASSED · NO ENTRY',
       rewardText: 'MISSED',
       rewardColor: Cyber.muted,
       showChevron: false,
+      blocked: true,
+      blockedMessage: 'Kickoff has passed. New predictions are closed.',
       contest: contestFor(),
     );
   }
 
-  // Live / locked → predictions closed while the match runs.
-  if (match.status == MatchStatus.live || locked) {
+  // Manually locked before kickoff → crowd signal is already unlocked.
+  if (locked) {
     return _QuizHubVisual(
-      accent: Cyber.danger,
-      tag: match.status == MatchStatus.live ? 'LIVE' : 'LOCKED',
+      accent: Cyber.success,
+      tag: 'LOCKED IN',
       progress: total == 0 ? 0 : answered / total,
-      progressAccent: Cyber.danger,
-      ctaIcon: Icons.lock_outline,
-      ctaText: 'LOCKED · MATCH IN PROGRESS',
-      rewardText: prediction != null ? 'IN PLAY' : 'CLOSED',
-      rewardColor: Cyber.danger,
-      showChevron: false,
+      progressAccent: Cyber.success,
+      ctaIcon: Icons.how_to_vote_outlined,
+      ctaText: 'VIEW CROWD VOTES',
+      rewardText: '+$potentialXp XP',
+      rewardColor: Cyber.gold,
       contest: contestFor(),
     );
   }
 
-  // Upcoming + already predicted → locked-in / resume.
+  // Upcoming + submitted → editable, auto-saved draft.
   if (prediction != null) {
     final complete = answered >= total;
     return _QuizHubVisual(
-      accent: Cyber.lime,
-      tag: complete ? 'LOCKED IN' : 'IN PROGRESS',
+      accent: Cyber.cyan,
+      tag: complete ? 'DRAFT ACTIVE' : 'IN PROGRESS',
       progress: total == 0 ? 0 : answered / total,
-      progressAccent: Cyber.lime,
-      ctaIcon: complete ? Icons.verified : Icons.edit,
+      progressAccent: Cyber.cyan,
+      ctaIcon: Icons.edit,
       ctaText: complete
-          ? 'PREDICTION SET · TAP TO EDIT'
+          ? 'REVIEW & LOCK'
           : 'RESUME · $answered/$total ANSWERED',
       rewardText: '+$potentialXp XP',
       rewardColor: Cyber.gold,
@@ -1794,6 +2335,7 @@ _QuizHubVisual _resolveQuizHubVisual(
       rewardColor: Cyber.muted,
       showChevron: false,
       blocked: true,
+      blockedMessage: 'Need ${quiz.entryFee} Oz to enter this contest.',
       contest: contestFor(),
     );
   }
@@ -1909,7 +2451,8 @@ class _QuizSetHubCardState extends State<_QuizSetHubCard>
                 messenger?.showSnackBar(
                   SnackBar(
                     content: Text(
-                      'Need ${widget.quiz.entryFee} Oz to enter this contest.',
+                      v.blockedMessage ??
+                          'This quiz is not available right now.',
                       style: Cyber.body(13),
                     ),
                     backgroundColor: Cyber.panel,
@@ -2373,6 +2916,84 @@ class _ReviewNotice extends StatelessWidget {
   }
 }
 
+/// Compact final telemetry for players who arrived after the entry window.
+/// It explains the read-only state, then the expanded review cards below show
+/// each actual answer alongside its crowd-vote distribution.
+class _CommunityResultsTelemetry extends StatelessWidget {
+  const _CommunityResultsTelemetry({
+    required this.crowdCorrectVotes,
+    required this.crowdTotalVotes,
+    required this.fieldSize,
+  });
+
+  final int crowdCorrectVotes;
+  final int crowdTotalVotes;
+  final int fieldSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasVotes = crowdTotalVotes > 0;
+    final accuracy = hasVotes
+        ? ((crowdCorrectVotes / crowdTotalVotes) * 100).round()
+        : 0;
+    return CyberPanel(
+      accent: hasVotes ? Cyber.cyan : Cyber.muted,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 11),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.query_stats,
+                size: 15,
+                color: hasVotes ? Cyber.cyan : Cyber.muted,
+              ),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  'COMMUNITY // FINAL',
+                  style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.2),
+                ),
+              ),
+              Text(
+                fieldSize > 0 ? '$fieldSize FIELD ENTRIES' : 'FIELD PENDING',
+                style: Cyber.label(
+                  8,
+                  color: Cyber.muted,
+                  letterSpacing: 0.9,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 9),
+          Text(
+            hasVotes ? '$accuracy% CROWD ACCURACY' : 'NO CROWD VOTES',
+            style: Cyber.display(
+              15,
+              color: hasVotes ? Cyber.cyan : Cyber.muted,
+              letterSpacing: 0.4,
+            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            hasVotes
+                ? '$crowdCorrectVotes / $crowdTotalVotes votes matched the final answers.'
+                : 'Vote data will appear when the community feed is available.',
+            style: Cyber.body(11.5, color: Cyber.muted),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'ACTUAL ANSWERS ARE MARKED IN GREEN BELOW',
+            style: Cyber.label(8, color: Cyber.success, letterSpacing: 0.9),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ReviewQuestionCard extends StatelessWidget {
   const _ReviewQuestionCard({
     required this.index,
@@ -2382,7 +3003,10 @@ class _ReviewQuestionCard extends StatelessWidget {
     required this.multiplier,
     required this.multiplierOwners,
     required this.votes,
+    required this.intel,
     required this.expanded,
+    this.expandable = true,
+    this.communityOnly = false,
     required this.editable,
     required this.readOnly,
     required this.finished,
@@ -2399,7 +3023,10 @@ class _ReviewQuestionCard extends StatelessWidget {
   final PredictionMultiplier? multiplier;
   final Map<PredictionMultiplier, String> multiplierOwners;
   final PredictionVoteBreakdown? votes;
+  final LiveQuestionIntel? intel;
   final bool expanded;
+  final bool expandable;
+  final bool communityOnly;
   final bool editable;
   final bool readOnly;
   final bool finished;
@@ -2410,9 +3037,16 @@ class _ReviewQuestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selectedLabel = _answerLabel(question, selected);
     final correct = _correctAnswer(question);
-    final selectedCorrect = selected != null && selected == correct;
+    final shownAnswer = communityOnly ? correct : selected;
+    final shownLabel = shownAnswer == null
+        ? communityOnly
+              ? 'RESULT UNAVAILABLE'
+              : _answerLabel(question, selected)
+        : _answerLabel(question, shownAnswer);
+    final selectedCorrect = communityOnly
+        ? correct != null
+        : selected != null && selected == correct;
 
     return Container(
       decoration: BoxDecoration(
@@ -2428,7 +3062,7 @@ class _ReviewQuestionCard extends StatelessWidget {
         children: [
           GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: onToggle,
+            onTap: expandable ? onToggle : null,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 11),
               child: Column(
@@ -2462,10 +3096,12 @@ class _ReviewQuestionCard extends StatelessWidget {
                         ),
                       ),
                       Icon(
-                        expanded
-                            ? Icons.keyboard_arrow_up
-                            : Icons.keyboard_arrow_down,
-                        color: Cyber.muted,
+                        expandable
+                            ? expanded
+                                  ? Icons.keyboard_arrow_up
+                                  : Icons.keyboard_arrow_down
+                            : Icons.verified_outlined,
+                        color: expandable ? Cyber.muted : Cyber.success,
                       ),
                     ],
                   ),
@@ -2473,7 +3109,7 @@ class _ReviewQuestionCard extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        'YOUR PICK',
+                        communityOnly ? 'ACTUAL RESULT' : 'YOUR PICK',
                         style: Cyber.label(
                           9,
                           color: Cyber.muted,
@@ -2483,12 +3119,12 @@ class _ReviewQuestionCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          selectedLabel,
+                          shownLabel,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: Cyber.body(
                             13,
-                            color: selected == null
+                            color: shownAnswer == null
                                 ? Cyber.muted
                                 : selectedCorrect && finished
                                 ? Cyber.success
@@ -2501,7 +3137,7 @@ class _ReviewQuestionCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         _MultiplierBadge(multiplier: multiplier!),
                       ],
-                      if (finished && correct != null)
+                      if (!communityOnly && finished && correct != null)
                         Icon(
                           selectedCorrect ? Icons.check_circle : Icons.cancel,
                           color: selectedCorrect ? Cyber.success : Cyber.danger,
@@ -2509,6 +3145,10 @@ class _ReviewQuestionCard extends StatelessWidget {
                         ),
                     ],
                   ),
+                  if (intel != null) ...[
+                    const SizedBox(height: 10),
+                    _LiveQuestionStatusStrip(intel: intel!),
+                  ],
                 ],
               ),
             ),
@@ -2527,7 +3167,10 @@ class _ReviewQuestionCard extends StatelessWidget {
                   const Divider(color: Color(0xff27334c), height: 1),
                   const SizedBox(height: 12),
                   if (editable) _editableBody() else _pollBody(),
-                  if (readOnly && finished && correct != null) ...[
+                  if (!communityOnly &&
+                      readOnly &&
+                      finished &&
+                      correct != null) ...[
                     const SizedBox(height: 10),
                     Text(
                       'CORRECT ANSWER: ${_answerLabel(question, correct)}',
@@ -2607,9 +3250,9 @@ class _ReviewQuestionCard extends StatelessWidget {
 
   Widget _pollBody() {
     final answers = _pollAnswers(question, votes, selected);
-    if (answers.isEmpty) {
+    if (answers.isEmpty || votes == null || votes!.totalVotes == 0) {
       return Text(
-        'No crowd votes yet.',
+        'NO CROWD VOTES YET',
         style: Cyber.body(12, color: Cyber.muted),
       );
     }
@@ -2628,11 +3271,11 @@ class _ReviewQuestionCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'CROWD VOTES',
+              'CROWD PICK %',
               style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.1),
             ),
             Text(
-              '${votes?.totalVotes ?? 0} votes',
+              '${votes?.totalVotes ?? 0} TOTAL VOTES',
               style: Cyber.body(11, color: Cyber.muted),
             ),
           ],
@@ -2653,6 +3296,105 @@ class _ReviewQuestionCard extends StatelessWidget {
     );
   }
 }
+
+class _LiveQuestionStatusStrip extends StatelessWidget {
+  const _LiveQuestionStatusStrip({required this.intel});
+
+  final LiveQuestionIntel intel;
+
+  @override
+  Widget build(BuildContext context) {
+    final questionAccent = switch (intel.questionState) {
+      PredictionQuestionState.live => Cyber.cyan,
+      PredictionQuestionState.decided => Cyber.amber,
+      PredictionQuestionState.finalResult => Cyber.success,
+      PredictionQuestionState.voided ||
+      PredictionQuestionState.dataUnavailable => Cyber.muted,
+    };
+    final pickAccent = switch (intel.pickState) {
+      PredictionPickState.leading => Cyber.cyan,
+      PredictionPickState.trailing => Cyber.magenta,
+      PredictionPickState.correct => Cyber.success,
+      PredictionPickState.incorrect => Cyber.danger,
+      PredictionPickState.stillOpen ||
+      PredictionPickState.unavailable => Cyber.muted,
+    };
+    final updated = intel.updatedAt.toLocal();
+    final timestamp =
+        '${updated.hour.toString().padLeft(2, '0')}:'
+        '${updated.minute.toString().padLeft(2, '0')}';
+
+    return CyberPanel(
+      accent: questionAccent,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      child: Row(
+        children: [
+          Icon(
+            intel.questionState == PredictionQuestionState.live
+                ? Icons.sensors
+                : Icons.query_stats,
+            size: 14,
+            color: questionAccent,
+          ),
+          const SizedBox(width: 7),
+          Text(
+            _questionStateLabel(intel.questionState),
+            style: Cyber.label(8.5, color: questionAccent, letterSpacing: 1),
+          ),
+          const SizedBox(width: 8),
+          Container(width: 1, height: 14, color: Cyber.borderSubtle),
+          const SizedBox(width: 8),
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 240),
+              switchInCurve: Curves.easeOutBack,
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(
+                  scale: Tween<double>(begin: 0.96, end: 1).animate(animation),
+                  child: child,
+                ),
+              ),
+              child: Text(
+                'YOUR PICK · ${_pickStateLabel(intel.pickState)}',
+                key: ValueKey(intel.pickState),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Cyber.label(8.5, color: pickAccent, letterSpacing: 0.8),
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            timestamp,
+            style: Cyber.label(
+              7.5,
+              color: Cyber.muted,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _questionStateLabel(PredictionQuestionState state) => switch (state) {
+  PredictionQuestionState.live => 'LIVE',
+  PredictionQuestionState.decided => 'DECIDED',
+  PredictionQuestionState.finalResult => 'FINAL',
+  PredictionQuestionState.voided => 'VOID',
+  PredictionQuestionState.dataUnavailable => 'DATA UNAVAILABLE',
+};
+
+String _pickStateLabel(PredictionPickState state) => switch (state) {
+  PredictionPickState.leading => 'LEADING',
+  PredictionPickState.trailing => 'TRAILING',
+  PredictionPickState.stillOpen => 'STILL OPEN',
+  PredictionPickState.correct => 'CORRECT',
+  PredictionPickState.incorrect => 'INCORRECT',
+  PredictionPickState.unavailable => 'UNAVAILABLE',
+};
 
 class _MultiplierBadge extends StatelessWidget {
   const _MultiplierBadge({required this.multiplier});
@@ -2815,7 +3557,7 @@ class _PollResultRow extends StatelessWidget {
                 ),
               ),
             Text(
-              '$votes',
+              '${(share * 100).round()}% · $votes VOTES',
               style: Cyber.body(
                 12,
                 color: accent,
@@ -2825,97 +3567,303 @@ class _PollResultRow extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 5),
-        LinearProgressIndicator(
-          value: share.clamp(0.0, 1.0),
-          minHeight: 7,
-          backgroundColor: const Color(0xff101827),
-          valueColor: AlwaysStoppedAnimation<Color>(accent),
+        TweenAnimationBuilder<double>(
+          tween: Tween<double>(begin: 0, end: share.clamp(0.0, 1.0)),
+          duration: const Duration(milliseconds: 720),
+          curve: Curves.easeOutCubic,
+          builder: (context, value, _) => CyberProgressBar(
+            value: value,
+            accent: accent,
+            height: 7,
+            animate: false,
+          ),
         ),
       ],
     );
   }
 }
 
-class _ReviewSaveDock extends StatelessWidget {
-  const _ReviewSaveDock({
-    required this.enabled,
-    required this.saving,
-    required this.onSave,
+class _PredictionLockDock extends StatefulWidget {
+  const _PredictionLockDock({
+    required this.saveStatus,
+    required this.locking,
+    required this.onLock,
+    required this.onRetry,
   });
 
-  final bool enabled;
-  final bool saving;
-  final VoidCallback onSave;
+  final _DraftSaveStatus saveStatus;
+  final bool locking;
+  final VoidCallback onLock;
+  final VoidCallback onRetry;
+
+  @override
+  State<_PredictionLockDock> createState() => _PredictionLockDockState();
+}
+
+class _PredictionLockDockState extends State<_PredictionLockDock>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _charge;
+  bool _armed = false;
+  bool _midpointHaptic = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _charge =
+        AnimationController(
+            vsync: this,
+            duration: const Duration(milliseconds: 1200),
+          )
+          ..addListener(() {
+            if (!_midpointHaptic && _charge.value >= 0.5) {
+              _midpointHaptic = true;
+              HapticFeedback.selectionClick();
+            }
+          })
+          ..addStatusListener((status) {
+            if (status != AnimationStatus.completed || _armed) return;
+            _armed = true;
+            widget.onLock();
+          });
+  }
+
+  @override
+  void didUpdateWidget(covariant _PredictionLockDock oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.locking && !widget.locking) {
+      _armed = false;
+      _midpointHaptic = false;
+      _charge.reset();
+    }
+  }
+
+  @override
+  void dispose() {
+    _charge.dispose();
+    super.dispose();
+  }
+
+  void _startCharge() {
+    if (widget.locking) return;
+    _armed = false;
+    _midpointHaptic = false;
+    HapticFeedback.lightImpact();
+    _charge.forward(from: 0);
+  }
+
+  void _cancelCharge() {
+    if (_armed || widget.locking) return;
+    _charge.animateBack(
+      0,
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 22),
-        child: HudPagerButton(
-          label: saving ? 'SAVING...' : 'SAVE UPDATES',
-          focal: enabled,
-          enabled: enabled,
-          onTap: onSave,
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+        child: CyberPanel(
+          accent: Cyber.cyan,
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  _DraftSaveTelemetry(
+                    status: widget.saveStatus,
+                    onRetry: widget.onRetry,
+                  ),
+                  const Spacer(),
+                  Text(
+                    'LOCK PROTOCOL // 01',
+                    style: Cyber.label(
+                      8,
+                      color: Cyber.muted,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              AnimatedBuilder(
+                animation: _charge,
+                builder: (context, _) => Row(
+                  children: [
+                    Expanded(
+                      child: CyberProgressBar(
+                        value: _charge.value,
+                        accent: Cyber.cyan,
+                        height: 4,
+                        animate: false,
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: Icon(
+                        Icons.lock_outline,
+                        size: 14,
+                        color: Cyber.cyan,
+                      ),
+                    ),
+                    Expanded(
+                      child: CyberProgressBar(
+                        value: _charge.value,
+                        accent: Cyber.cyan,
+                        height: 4,
+                        animate: false,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              AnimatedBuilder(
+                animation: _charge,
+                builder: (context, _) {
+                  final charging =
+                      _charge.value > 0 && !_armed && !widget.locking;
+                  return Semantics(
+                    button: true,
+                    enabled: !widget.locking,
+                    label: 'Hold to lock prediction',
+                    hint: 'Press and hold for 1.2 seconds',
+                    child: Listener(
+                      behavior: HitTestBehavior.opaque,
+                      onPointerDown: widget.locking
+                          ? null
+                          : (_) => _startCharge(),
+                      onPointerUp: widget.locking
+                          ? null
+                          : (_) => _cancelCharge(),
+                      onPointerCancel: widget.locking
+                          ? null
+                          : (_) => _cancelCharge(),
+                      child: IgnorePointer(
+                        child: HudCtaButton(
+                          label: widget.locking
+                              ? 'LOCKING...'
+                              : charging
+                              ? 'SEALING PREDICTION'
+                              : 'HOLD TO LOCK',
+                          helper: charging
+                              ? 'KEEP HOLDING'
+                              : 'FINAL • CANNOT BE EDITED',
+                          icon: widget.locking
+                              ? Icons.lock
+                              : Icons.lock_outline,
+                          enabled: !widget.locking,
+                          onTap: null,
+                          tapSound: SoundEffect.uiTap,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// Focal dock shown right after a fresh submit: moves the player straight into
-/// the same match's pick market. If no market is linked yet, it drops them back
-/// to the matches list.
-class _OpenPicksDock extends StatelessWidget {
-  const _OpenPicksDock({required this.market, this.onOpenPicks});
+class _DraftSaveTelemetry extends StatelessWidget {
+  const _DraftSaveTelemetry({required this.status, required this.onRetry});
+
+  final _DraftSaveStatus status;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, icon, color) = switch (status) {
+      _DraftSaveStatus.saving => ('SAVING...', Icons.sync, Cyber.cyan),
+      _DraftSaveStatus.failed => (
+        'SAVE FAILED • RETRY',
+        Icons.refresh,
+        Cyber.danger,
+      ),
+      _DraftSaveStatus.saved => (
+        'ALL CHANGES SAVED',
+        Icons.cloud_done_outlined,
+        Cyber.success,
+      ),
+    };
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: status == _DraftSaveStatus.failed ? onRetry : null,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: Cyber.label(8.5, color: color, letterSpacing: 0.8),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OpenPicksInlineAction extends StatelessWidget {
+  const _OpenPicksInlineAction({required this.market, this.onOpenPicks});
 
   final PickMarket? market;
   final VoidCallback? onOpenPicks;
 
   @override
   Widget build(BuildContext context) {
-    final market = this.market;
-    final label = market == null ? 'BACK TO MATCHES' : 'OPEN PICKS';
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 20, 16, 22),
-        child: HudPagerButton(
-          label: label,
-          focal: true,
-          enabled: true,
-          trailingIcon: Icons.keyboard_double_arrow_right,
-          onTap: () {
-            playSound(SoundEffect.playMatch);
-            if (onOpenPicks != null) {
-              onOpenPicks!();
-              return;
-            }
-            if (market == null) {
-              Navigator.of(context).popUntil((r) => r.isFirst);
-            } else {
-              PredictionCubit? prediction;
-              try {
-                prediction = context.read<PredictionCubit>();
-              } on ProviderNotFoundException {
-                prediction = null;
-              }
-              // Replace so quiz→picks→quiz does not grow the back stack.
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute<void>(
-                  builder: (_) {
-                    final screen = MarketDetailScreen(marketId: market.id);
-                    if (prediction == null) return screen;
-                    return BlocProvider<PredictionCubit>.value(
-                      value: prediction,
-                      child: screen,
-                    );
-                  },
-                ),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        playSound(SoundEffect.uiTap);
+        if (onOpenPicks != null) {
+          onOpenPicks!();
+          return;
+        }
+        final market = this.market;
+        if (market == null) return;
+        PredictionCubit? prediction;
+        try {
+          prediction = context.read<PredictionCubit>();
+        } on ProviderNotFoundException {
+          prediction = null;
+        }
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute<void>(
+            builder: (_) {
+              final screen = MarketDetailScreen(marketId: market.id);
+              if (prediction == null) return screen;
+              return BlocProvider<PredictionCubit>.value(
+                value: prediction,
+                child: screen,
               );
-            }
-          },
+            },
+          ),
+        );
+      },
+      child: CyberPanel(
+        accent: Cyber.line,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        child: Row(
+          children: [
+            const Icon(Icons.query_stats, size: 16, color: Cyber.cyan),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'OPEN SAME-MATCH PICKS',
+                style: Cyber.label(9.5, color: Cyber.cyan, letterSpacing: 1),
+              ),
+            ),
+            const Icon(Icons.arrow_forward, size: 16, color: Cyber.muted),
+          ],
         ),
       ),
     );
@@ -3811,23 +4759,26 @@ class _BottomDock extends StatelessWidget {
   }
 }
 
-// ── SUBMITTED celebration overlay ─────────────────────────────────────────────
-class _SubmittedOverlay extends StatefulWidget {
-  const _SubmittedOverlay({
+// ── LOCKED celebration overlay ────────────────────────────────────────────────
+class _PredictionLockedOverlay extends StatefulWidget {
+  const _PredictionLockedOverlay({
     required this.potentialXp,
     required this.count,
+    required this.automatic,
     required this.onDone,
   });
 
   final int potentialXp;
   final int count;
+  final bool automatic;
   final VoidCallback onDone;
 
   @override
-  State<_SubmittedOverlay> createState() => _SubmittedOverlayState();
+  State<_PredictionLockedOverlay> createState() =>
+      _PredictionLockedOverlayState();
 }
 
-class _SubmittedOverlayState extends State<_SubmittedOverlay>
+class _PredictionLockedOverlayState extends State<_PredictionLockedOverlay>
     with SingleTickerProviderStateMixin {
   late final AnimationController _c;
   bool _slammed = false;
@@ -3975,16 +4926,26 @@ class _SubmittedOverlayState extends State<_SubmittedOverlay>
                   children: [
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: _SubmittedHeadline(
-                        text: 'PREDICTION SUBMITTED',
-                        progress: headlineT,
+                      child: Semantics(
+                        liveRegion: true,
+                        label: widget.automatic
+                            ? 'KICKOFF LOCK ACTIVATED'
+                            : 'PREDICTION LOCKED',
+                        child: ExcludeSemantics(
+                          child: _SubmittedHeadline(
+                            text: widget.automatic
+                                ? 'KICKOFF LOCK ACTIVATED'
+                                : 'PREDICTION LOCKED',
+                            progress: headlineT,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 14),
                     Opacity(
                       opacity: textIn,
                       child: Text(
-                        '${widget.count} ANSWERS LOCKED IN',
+                        '${widget.count} ANSWERS SEALED',
                         style: Cyber.label(
                           11,
                           color: Cyber.muted,
@@ -4278,11 +5239,25 @@ List<int> _pollAnswers(
   if (selected != null) answers.add(selected);
   final correct = question.settledScoreEncoded;
   if (correct != null) answers.add(correct);
+  final required = <int>{?selected, ?correct};
   final sorted = answers.toList()
-    ..sort(
-      (a, b) => (votes?.votesFor(b) ?? 0).compareTo(votes?.votesFor(a) ?? 0),
+    ..sort((a, b) {
+      final byVotes = (votes?.votesFor(b) ?? 0).compareTo(
+        votes?.votesFor(a) ?? 0,
+      );
+      return byVotes != 0 ? byVotes : a.compareTo(b);
+    });
+  final visible = <int>{...required};
+  for (final answer in sorted) {
+    if (visible.length >= 5) break;
+    visible.add(answer);
+  }
+  return visible.toList()..sort((a, b) {
+    final byVotes = (votes?.votesFor(b) ?? 0).compareTo(
+      votes?.votesFor(a) ?? 0,
     );
-  return sorted.take(5).toList();
+    return byVotes != 0 ? byVotes : a.compareTo(b);
+  });
 }
 
 bool _sameAnswers(Map<String, int> a, Map<String, int> b) {

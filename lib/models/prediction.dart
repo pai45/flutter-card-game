@@ -1,10 +1,11 @@
 /// Where a user's prediction sits in its lifecycle.
-/// open    → submitted, match not started, still editable.
-/// locked  → match kicked off, answers frozen, awaiting result.
+/// open    → submitted draft, auto-saved and still editable.
+/// locked  → manually sealed or auto-locked at kickoff; answers are immutable.
 /// settled → result known, [correctCount]/[rewardEarned] populated.
 enum PredictionStatus { open, locked, settled }
 
 const kDefaultPredictionQuizId = 'main';
+const kGeneratedPredictionQuizSchemaVersion = 2;
 
 /// Oz-coin entry fee to lock in a Scoreline Quiz (paid-contest) prediction.
 const int kScorelineQuizEntryFee = 25;
@@ -20,6 +21,23 @@ int scorelineContestPrizeFor(int rank) =>
     : 0;
 
 enum QuizQuestionType { multipleChoice, exactScore }
+
+enum PredictionQuestionState {
+  live,
+  decided,
+  finalResult,
+  voided,
+  dataUnavailable,
+}
+
+enum PredictionPickState {
+  leading,
+  trailing,
+  stillOpen,
+  correct,
+  incorrect,
+  unavailable,
+}
 
 enum PredictionMultiplier {
   x2('x2', '2x', 2.0),
@@ -63,6 +81,8 @@ class QuizQuestion {
     this.settledHomeScore,
     this.settledAwayScore,
     this.forcedVoid = false,
+    this.archetypeKey,
+    this.settlementRule = const {},
   });
 
   final String id;
@@ -90,6 +110,16 @@ class QuizQuestion {
   /// This is the per-question escape hatch that guarantees a fixture is never
   /// left permanently unsettleable just because one archetype didn't resolve.
   final bool forcedVoid;
+
+  /// Stable semantic identifier used by live intelligence and settlement.
+  ///
+  /// Legacy authored quizzes can omit this; [QuizArchetypes] maps their
+  /// existing ids without changing persisted answer keys.
+  final String? archetypeKey;
+
+  /// Immutable primitive parameters captured with a generated quiz snapshot,
+  /// such as an over/under threshold.
+  final Map<String, Object?> settlementRule;
 
   bool get isScorePrediction => type == QuizQuestionType.exactScore;
 
@@ -120,6 +150,44 @@ class QuizQuestion {
     settledHomeScore: settledHomeScore ?? this.settledHomeScore,
     settledAwayScore: settledAwayScore ?? this.settledAwayScore,
     forcedVoid: forcedVoid ?? this.forcedVoid,
+    archetypeKey: archetypeKey,
+    settlementRule: settlementRule,
+  );
+
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'text': text,
+    'options': options,
+    'reward': reward,
+    'type': type.name,
+    'backgroundAsset': backgroundAsset,
+    'settledOptionIndex': settledOptionIndex,
+    'settledHomeScore': settledHomeScore,
+    'settledAwayScore': settledAwayScore,
+    'forcedVoid': forcedVoid,
+    'archetypeKey': archetypeKey,
+    'settlementRule': settlementRule,
+  };
+
+  factory QuizQuestion.fromJson(Map<String, dynamic> json) => QuizQuestion(
+    id: json['id'] as String,
+    text: json['text'] as String,
+    options: (json['options'] as List? ?? const [])
+        .map((option) => option.toString())
+        .toList(growable: false),
+    reward: json['reward'] as int? ?? 0,
+    type: QuizQuestionType.values.byName(
+      json['type'] as String? ?? QuizQuestionType.multipleChoice.name,
+    ),
+    backgroundAsset: json['backgroundAsset'] as String?,
+    settledOptionIndex: json['settledOptionIndex'] as int?,
+    settledHomeScore: json['settledHomeScore'] as int?,
+    settledAwayScore: json['settledAwayScore'] as int?,
+    forcedVoid: json['forcedVoid'] as bool? ?? false,
+    archetypeKey: json['archetypeKey'] as String?,
+    settlementRule: Map<String, Object?>.from(
+      json['settlementRule'] as Map? ?? const {},
+    ),
   );
 }
 
@@ -133,6 +201,8 @@ class PredictionQuiz {
     this.subtitle,
     this.prizeLabel,
     this.entryFee = 0,
+    this.schemaVersion = 1,
+    this.generated = false,
   });
 
   final String id;
@@ -144,12 +214,110 @@ class PredictionQuiz {
 
   /// Oz-coin cost to enter this quiz as a paid contest. 0 = free/XP-only.
   final int entryFee;
+  final int schemaVersion;
+  final bool generated;
 
   int get maxReward => questions.fold(0, (sum, q) => sum + q.reward);
   bool get settleable => questions.every((q) => q.isSettled);
 
   /// A paid coin contest (top-3 finishers win [kScorelineContestPrizes]).
   bool get isContest => entryFee > 0;
+
+  PredictionQuiz copyWith({List<QuizQuestion>? questions}) => PredictionQuiz(
+    id: id,
+    matchId: matchId,
+    title: title,
+    subtitle: subtitle,
+    prizeLabel: prizeLabel,
+    entryFee: entryFee,
+    schemaVersion: schemaVersion,
+    generated: generated,
+    questions: questions ?? this.questions,
+  );
+
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'matchId': matchId,
+    'title': title,
+    'subtitle': subtitle,
+    'prizeLabel': prizeLabel,
+    'entryFee': entryFee,
+    'schemaVersion': schemaVersion,
+    'generated': generated,
+    'questions': questions.map((question) => question.toJson()).toList(),
+  };
+
+  factory PredictionQuiz.fromJson(Map<String, dynamic> json) => PredictionQuiz(
+    id: json['id'] as String? ?? kDefaultPredictionQuizId,
+    matchId: json['matchId'] as String,
+    title: json['title'] as String? ?? 'Prediction Quiz',
+    subtitle: json['subtitle'] as String?,
+    prizeLabel: json['prizeLabel'] as String?,
+    entryFee: json['entryFee'] as int? ?? 0,
+    schemaVersion: json['schemaVersion'] as int? ?? 1,
+    generated: json['generated'] as bool? ?? false,
+    questions: (json['questions'] as List? ?? const [])
+        .map(
+          (question) =>
+              QuizQuestion.fromJson(Map<String, dynamic>.from(question as Map)),
+        )
+        .toList(growable: false),
+  );
+}
+
+class LiveQuestionIntel {
+  const LiveQuestionIntel({
+    required this.questionId,
+    required this.questionState,
+    required this.pickState,
+    required this.updatedAt,
+  });
+
+  final String questionId;
+  final PredictionQuestionState questionState;
+  final PredictionPickState pickState;
+  final DateTime updatedAt;
+}
+
+/// Persisted first-final observation used to avoid settling provisional ESPN
+/// results. A second matching fingerprint at least five minutes later commits.
+class SettlementValidationCheckpoint {
+  const SettlementValidationCheckpoint({
+    required this.matchId,
+    required this.quizId,
+    required this.fingerprint,
+    required this.firstSeenAt,
+    this.sourceUpdatedAt,
+  });
+
+  final String matchId;
+  final String quizId;
+  final String fingerprint;
+  final DateTime firstSeenAt;
+  final DateTime? sourceUpdatedAt;
+
+  Map<String, Object?> toJson() => {
+    'matchId': matchId,
+    'quizId': quizId,
+    'fingerprint': fingerprint,
+    'firstSeenAt': firstSeenAt.millisecondsSinceEpoch,
+    'sourceUpdatedAt': sourceUpdatedAt?.millisecondsSinceEpoch,
+  };
+
+  factory SettlementValidationCheckpoint.fromJson(Map<String, dynamic> json) =>
+      SettlementValidationCheckpoint(
+        matchId: json['matchId'] as String,
+        quizId: json['quizId'] as String? ?? kDefaultPredictionQuizId,
+        fingerprint: json['fingerprint'] as String,
+        firstSeenAt: DateTime.fromMillisecondsSinceEpoch(
+          json['firstSeenAt'] as int,
+        ),
+        sourceUpdatedAt: json['sourceUpdatedAt'] is int
+            ? DateTime.fromMillisecondsSinceEpoch(
+                json['sourceUpdatedAt'] as int,
+              )
+            : null,
+      );
 }
 
 /// Aggregate crowd answers for one prediction question. For multiple-choice

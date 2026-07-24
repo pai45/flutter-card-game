@@ -22,6 +22,7 @@ import 'widgets/final_over_controls.dart';
 import 'widgets/final_over_hud.dart';
 import 'widgets/final_over_overlays.dart';
 import 'widgets/final_over_result.dart';
+import 'widgets/final_over_swing_surface.dart';
 
 /// The chase: a full-bleed Flame pitch under the score HUD, sting banners, the
 /// two-faced control deck, and the intro / pause / result
@@ -343,6 +344,10 @@ class _FinalOverMatchScreenState extends State<FinalOverMatchScreen>
               builder: (context, constraints) => Stack(
                 children: [
                   Positioned.fill(child: GameWidget(game: _game)),
+                  // The whole pitch is the bat: tap/swipe anywhere to hit. Sits
+                  // above the pitch but below the HUD, deck and overlays so
+                  // those keep their own taps.
+                  Positioned.fill(child: FinalOverSwingSurface(game: _game)),
                   Align(
                     alignment: Alignment.topCenter,
                     child: FinalOverHudBar(game: _game, onExit: _confirmExit),

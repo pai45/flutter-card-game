@@ -1,4 +1,5 @@
 import '../../config/enums.dart';
+import '../../data/basketball_teams.dart';
 import '../../data/grand_prix_liveries.dart';
 import '../../models/cards.dart';
 import '../../models/deck.dart';
@@ -247,6 +248,7 @@ class GameState {
     required this.ownedBannerIds,
     required this.ownedFinalOverKitIds,
     required this.ownedGrandPrixLiveryIds,
+    required this.ownedBasketballTeamIds,
     required this.matchHistory,
     required this.tutorialSeen,
     required this.pendingPackReveal,
@@ -268,6 +270,8 @@ class GameState {
     required this.currentScenario,
     required this.selectedPlayerCard,
     required this.selectedActionCard,
+    required this.opponentSelectedPlayerCard,
+    required this.opponentSelectedActionCard,
     required this.usedPlayerCards,
     required this.usedActionCards,
     required this.redCardedCards,
@@ -336,6 +340,7 @@ class GameState {
     ownedBannerIds: const [],
     ownedFinalOverKitIds: const ['voltage'],
     ownedGrandPrixLiveryIds: defaultOwnedGrandPrixLiveryIds(),
+    ownedBasketballTeamIds: defaultOwnedBasketballTeamIds(),
     matchHistory: const [],
     tutorialSeen: const {},
     pendingPackReveal: null,
@@ -357,6 +362,8 @@ class GameState {
     currentScenario: null,
     selectedPlayerCard: null,
     selectedActionCard: null,
+    opponentSelectedPlayerCard: null,
+    opponentSelectedActionCard: null,
     usedPlayerCards: const [],
     usedActionCards: const [],
     redCardedCards: const [],
@@ -401,6 +408,7 @@ class GameState {
   final List<String> ownedBannerIds;
   final List<String> ownedFinalOverKitIds;
   final List<String> ownedGrandPrixLiveryIds;
+  final List<String> ownedBasketballTeamIds;
   final List<MatchHistoryEntry> matchHistory;
   final Set<String> tutorialSeen;
   final PackRevealData? pendingPackReveal;
@@ -422,6 +430,12 @@ class GameState {
   final ScenarioCard? currentScenario;
   final PlayerCard? selectedPlayerCard;
   final ActionCard? selectedActionCard;
+
+  /// The CPU's committed pick for this round, decided when the play beat
+  /// starts (so the board can lift their face-down card) and consumed by
+  /// [MovePlayed] at resolve. Cleared after every round.
+  final PlayerCard? opponentSelectedPlayerCard;
+  final ActionCard? opponentSelectedActionCard;
   final List<String> usedPlayerCards;
   final List<String> usedActionCards;
   final List<String> redCardedCards;
@@ -475,9 +489,28 @@ class GameState {
       ) &&
       deckBasketballPlayers.every((card) => ownedCardIds.contains(card.id));
 
-  bool grandPrixPitDeckReady(GrandPrixLivery equippedLivery) =>
+  bool get tennisDeckReady =>
+      deckTennisPlayers.isNotEmpty &&
+      deckTennisStarter != null &&
+      deckTennisPlayers.any((card) => card.id == deckTennisStarter!.id) &&
+      ownedCardIds.contains(deckTennisStarter!.id);
+
+  bool get racingDriverDeckReady =>
+      deckRacingPlayers.isNotEmpty &&
       deckRacingStarter != null &&
-      ownedCardIds.contains(deckRacingStarter!.id) &&
+      deckRacingPlayers.any((card) => card.id == deckRacingStarter!.id) &&
+      ownedCardIds.contains(deckRacingStarter!.id);
+
+  int get sportDeckReadyCount => [
+    pitchDuelDeckReady,
+    finalOverDeckReady,
+    hoopDuelDeckReady,
+    tennisDeckReady,
+    racingDriverDeckReady,
+  ].where((ready) => ready).length;
+
+  bool grandPrixPitDeckReady(GrandPrixLivery equippedLivery) =>
+      racingDriverDeckReady &&
       isGrandPrixLiveryOwned(equippedLivery.name, ownedGrandPrixLiveryIds);
 
   GameState copyWith({
@@ -508,6 +541,7 @@ class GameState {
     List<String>? ownedBannerIds,
     List<String>? ownedFinalOverKitIds,
     List<String>? ownedGrandPrixLiveryIds,
+    List<String>? ownedBasketballTeamIds,
     List<MatchHistoryEntry>? matchHistory,
     Set<String>? tutorialSeen,
     Object? pendingPackReveal = _sentinel,
@@ -529,6 +563,8 @@ class GameState {
     Object? currentScenario = _sentinel,
     Object? selectedPlayerCard = _sentinel,
     Object? selectedActionCard = _sentinel,
+    Object? opponentSelectedPlayerCard = _sentinel,
+    Object? opponentSelectedActionCard = _sentinel,
     List<String>? usedPlayerCards,
     List<String>? usedActionCards,
     List<String>? redCardedCards,
@@ -580,6 +616,8 @@ class GameState {
     ownedFinalOverKitIds: ownedFinalOverKitIds ?? this.ownedFinalOverKitIds,
     ownedGrandPrixLiveryIds:
         ownedGrandPrixLiveryIds ?? this.ownedGrandPrixLiveryIds,
+    ownedBasketballTeamIds:
+        ownedBasketballTeamIds ?? this.ownedBasketballTeamIds,
     matchHistory: matchHistory ?? this.matchHistory,
     tutorialSeen: tutorialSeen ?? this.tutorialSeen,
     pendingPackReveal: pendingPackReveal == _sentinel
@@ -623,6 +661,12 @@ class GameState {
     selectedActionCard: selectedActionCard == _sentinel
         ? this.selectedActionCard
         : selectedActionCard as ActionCard?,
+    opponentSelectedPlayerCard: opponentSelectedPlayerCard == _sentinel
+        ? this.opponentSelectedPlayerCard
+        : opponentSelectedPlayerCard as PlayerCard?,
+    opponentSelectedActionCard: opponentSelectedActionCard == _sentinel
+        ? this.opponentSelectedActionCard
+        : opponentSelectedActionCard as ActionCard?,
     usedPlayerCards: usedPlayerCards ?? this.usedPlayerCards,
     usedActionCards: usedActionCards ?? this.usedActionCards,
     redCardedCards: redCardedCards ?? this.redCardedCards,

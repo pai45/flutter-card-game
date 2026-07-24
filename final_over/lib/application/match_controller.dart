@@ -111,8 +111,8 @@ final class MatchController {
         if (_state.canConfigureShot) {
           _setState(_state.copyWith(selectedDirection: direction));
         }
-      case SwingCommand(:final direction, :final charge):
-        _acceptSwing(direction, charge);
+      case SwingCommand(:final direction, :final charge, :final elevation):
+        _acceptSwing(direction, elevation, charge);
       case ActivatePowerShotCommand():
         _activatePowerShot();
       case StartRunCommand():
@@ -292,7 +292,11 @@ final class MatchController {
     if (_state.score >= _state.target) _finalizeDelivery();
   }
 
-  void _acceptSwing(ShotDirection direction, [double? charge]) {
+  void _acceptSwing(
+    ShotDirection direction, [
+    Elevation? elevation,
+    double? charge,
+  ]) {
     if (!_state.canSwing) {
       return;
     }
@@ -302,9 +306,14 @@ final class MatchController {
       powerShot: _state.powerShotArmed,
       charge: charge?.clamp(0.0, 1.0),
     );
+    // The swing itself is the commit point: a swipe/tap chooses direction (via
+    // the intent) and elevation (here) at release, bypassing the setup-phase
+    // gate. _resolveContact reads _state.selectedElevation, so writing it now
+    // covers both the immediate and deferred resolution paths.
     _setState(
       _state.copyWith(
         swingIntent: intent,
+        selectedElevation: elevation ?? _state.selectedElevation,
         powerShotArmed: intent.powerShot ? false : _state.powerShotArmed,
         powerSegments: intent.powerShot ? 0 : _state.powerSegments,
       ),

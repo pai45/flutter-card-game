@@ -112,17 +112,28 @@ class _GrandPrixLobbyScreenState extends State<GrandPrixLobbyScreen> {
                       ? const Center(
                           child: CircularProgressIndicator(color: Cyber.cyan),
                         )
-                      : SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                          child: Center(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 420),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  const CyberSlideUpFadeIn(
-                                    child: _PitLaneStatusBar(),
-                                  ),
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            return SingleChildScrollView(
+                              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minHeight: constraints.maxHeight,
+                                ),
+                                child: Center(
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 420,
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        const CyberSlideUpFadeIn(
+                                          child: _PitLaneStatusBar(),
+                                        ),
                                   const SizedBox(height: 16),
                                   CyberSlideUpFadeIn(
                                     delay: const Duration(milliseconds: 80),
@@ -214,9 +225,12 @@ class _GrandPrixLobbyScreenState extends State<GrandPrixLobbyScreen> {
                                     ),
                                   ),
                                 ],
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
+                            );
+                          },
                         ),
                 ),
               ),

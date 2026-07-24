@@ -54,22 +54,27 @@ void main() {
     final byId = {for (final q in settled.questions) q.id: q};
     expect(byId['winner']!.settledOptionIndex, 0); // Dallas (home) won
     expect(byId['total_points_ou']!.settledOptionIndex, 1); // 157, Under 159.5
+    expect(byId['halftime_leader']!.settledOptionIndex, 0); // Dallas led 42-37
     expect(byId['biggest_quarter']!.settledOptionIndex, 0); // Q1 margin, home
     expect(byId['winning_margin_bracket']!.settledOptionIndex, 1); // margin 7
   });
 
-  test('the seeded demo prediction scores 3/4 for 140 XP', () async {
+  test('the seeded demo prediction scores 4/5 for 185 XP', () async {
     final repository = MockPredictionRepository();
     final fixtures = await repository.fixtures();
     final match = fixtures.singleWhere((m) => m.id == matchId);
 
     final predictions = <String, UserPrediction>{};
     PredictionCubit.applyHistoryDemos(predictions);
-    final demo = predictions[predictionStorageKey(matchId, kDefaultPredictionQuizId)];
+    final demo =
+        predictions[predictionStorageKey(matchId, kDefaultPredictionQuizId)];
     expect(demo, isNotNull);
     expect(demo!.status, PredictionStatus.locked);
 
-    final built = PredictionQuiz(matchId: matchId, questions: QuizArchetypes.buildFor(match));
+    final built = PredictionQuiz(
+      matchId: matchId,
+      questions: QuizArchetypes.buildFor(match),
+    );
     final settled = SettlementWriter.computeQuizSettlement(match, built);
 
     var correct = 0;
@@ -82,7 +87,7 @@ void main() {
         reward += q.reward;
       }
     }
-    expect(correct, 3);
-    expect(reward, 140);
+    expect(correct, 4);
+    expect(reward, 185);
   });
 }

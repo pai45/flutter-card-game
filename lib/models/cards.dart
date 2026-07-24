@@ -3836,6 +3836,7 @@ const cricketBattingCards = [
     trait: 'Wicket-keeper',
     tier: CardTier.silver,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/abishek_porel.webp',
   ),
   PlayerCard(
     id: 'cricket-lsg-abdul-samad',
@@ -3849,6 +3850,7 @@ const cricketBattingCards = [
     trait: 'All-rounder',
     tier: CardTier.silver,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/abdul_samad.webp',
   ),
   PlayerCard(
     id: 'cricket-csk-sarfaraz-khan',
@@ -3862,6 +3864,7 @@ const cricketBattingCards = [
     trait: 'Batsman',
     tier: CardTier.silver,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/sarfaraz_khan.webp',
   ),
   PlayerCard(
     id: 'cricket-kkr-manish-pandey',
@@ -3875,6 +3878,7 @@ const cricketBattingCards = [
     trait: 'Batsman',
     tier: CardTier.silver,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/manish_pandey.webp',
   ),
   PlayerCard(
     id: 'cricket-kkr-tim-seifert',
@@ -3888,6 +3892,7 @@ const cricketBattingCards = [
     trait: 'Wicket-keeper',
     tier: CardTier.silver,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/tim_seifert.webp',
   ),
   PlayerCard(
     id: 'cricket-rr-donovan-ferreira',
@@ -3901,6 +3906,7 @@ const cricketBattingCards = [
     trait: 'All-rounder',
     tier: CardTier.silver,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/donovan_ferreira.webp',
   ),
   PlayerCard(
     id: 'cricket-pbks-musheer-khan',
@@ -3914,6 +3920,7 @@ const cricketBattingCards = [
     trait: 'All-rounder',
     tier: CardTier.silver,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/musheer_khan.webp',
   ),
   PlayerCard(
     id: 'cricket-lsg-matthew-breetzke',
@@ -3927,6 +3934,7 @@ const cricketBattingCards = [
     trait: 'Batsman',
     tier: CardTier.silver,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/matthew_breetzke.webp',
   ),
   PlayerCard(
     id: 'cricket-mi-naman-dhir',
@@ -3940,6 +3948,7 @@ const cricketBattingCards = [
     trait: 'Batsman',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/naman_dhir.webp',
   ),
   PlayerCard(
     id: 'cricket-rcb-jordan-cox',
@@ -3953,6 +3962,7 @@ const cricketBattingCards = [
     trait: 'Wicket-keeper',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/jordan_cox.webp',
   ),
   PlayerCard(
     id: 'cricket-srh-jack-edwards',
@@ -3966,6 +3976,7 @@ const cricketBattingCards = [
     trait: 'All-rounder',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/jack_edwards.webp',
   ),
   PlayerCard(
     id: 'cricket-dc-sameer-rizvi',
@@ -3979,6 +3990,7 @@ const cricketBattingCards = [
     trait: 'All-rounder',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/sameer_rizvi.webp',
   ),
   PlayerCard(
     id: 'cricket-pbks-cooper-connolly',
@@ -3992,6 +4004,7 @@ const cricketBattingCards = [
     trait: 'All-rounder',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/cooper_connolly.webp',
   ),
   PlayerCard(
     id: 'cricket-lsg-arshin-kulkarni',
@@ -4005,6 +4018,7 @@ const cricketBattingCards = [
     trait: 'All-rounder',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/arshin_kulkarni.webp',
   ),
   PlayerCard(
     id: 'cricket-gt-anuj-rawat',
@@ -4018,6 +4032,7 @@ const cricketBattingCards = [
     trait: 'Wicket-keeper',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/anuj_rawat.webp',
   ),
   PlayerCard(
     id: 'cricket-gt-arshad-khan',
@@ -4031,6 +4046,7 @@ const cricketBattingCards = [
     trait: 'All-rounder',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/arshad_khan.webp',
   ),
   PlayerCard(
     id: 'cricket-csk-aman-khan',
@@ -4044,6 +4060,7 @@ const cricketBattingCards = [
     trait: 'All-rounder',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/aman_khan.webp',
   ),
   PlayerCard(
     id: 'cricket-mi-robin-minz',
@@ -4057,6 +4074,7 @@ const cricketBattingCards = [
     trait: 'Wicket-keeper',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/robin_minz.webp',
   ),
   PlayerCard(
     id: 'cricket-mi-corbin-bosch',
@@ -4070,6 +4088,7 @@ const cricketBattingCards = [
     trait: 'All-rounder',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/corbin_bosch.webp',
   ),
   PlayerCard(
     id: 'cricket-rcb-swapnil-singh',
@@ -4083,6 +4102,7 @@ const cricketBattingCards = [
     trait: 'All-rounder',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/swapnil_singh.webp',
   ),
   PlayerCard(
     id: 'cricket-rcb-jacob-bethell',
@@ -4096,6 +4116,7 @@ const cricketBattingCards = [
     trait: 'All-rounder',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/jacob_bethell.webp',
   ),
   PlayerCard(
     id: 'cricket-kkr-anukul-roy',
@@ -4109,6 +4130,7 @@ const cricketBattingCards = [
     trait: 'All-rounder',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/anukul_roy.webp',
   ),
   PlayerCard(
     id: 'cricket-srh-r-smaran',
@@ -4122,6 +4144,7 @@ const cricketBattingCards = [
     trait: 'Batsman',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/r_smaran.webp',
   ),
   PlayerCard(
     id: 'cricket-rr-shubham-dubey',
@@ -4135,6 +4158,7 @@ const cricketBattingCards = [
     trait: 'Batsman',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/shubham_dubey.webp',
   ),
   PlayerCard(
     id: 'cricket-rr-lhuan-dre-pretorius',
@@ -4148,6 +4172,7 @@ const cricketBattingCards = [
     trait: 'Wicket-keeper',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/lhuan_dre_pretorius.webp',
   ),
   PlayerCard(
     id: 'cricket-pbks-vishnu-vinod',
@@ -4161,6 +4186,7 @@ const cricketBattingCards = [
     trait: 'Wicket-keeper',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/vishnu_vinod.webp',
   ),
   PlayerCard(
     id: 'cricket-csk-kartik-sharma',
@@ -4174,6 +4200,7 @@ const cricketBattingCards = [
     trait: 'Batsman',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/kartik_sharma.webp',
   ),
   PlayerCard(
     id: 'cricket-mi-raj-angad-bawa',
@@ -4187,6 +4214,7 @@ const cricketBattingCards = [
     trait: 'All-rounder',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/raj_angad_bawa.webp',
   ),
   PlayerCard(
     id: 'cricket-srh-harsh-dubey',
@@ -4200,6 +4228,7 @@ const cricketBattingCards = [
     trait: 'All-rounder',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/harsh_dubey.webp',
   ),
   PlayerCard(
     id: 'cricket-dc-auqib-nabi-dar',
@@ -4213,6 +4242,7 @@ const cricketBattingCards = [
     trait: 'All-rounder',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/auqib_nabi_dar.webp',
   ),
   PlayerCard(
     id: 'cricket-lsg-arjun-tendulkar',
@@ -4226,6 +4256,7 @@ const cricketBattingCards = [
     trait: 'All-rounder',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/arjun_tendulkar.webp',
   ),
   PlayerCard(
     id: 'cricket-srh-aniket-verma',
@@ -4239,6 +4270,7 @@ const cricketBattingCards = [
     trait: 'Batsman',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/aniket_verma.webp',
   ),
 ];
 
@@ -4889,6 +4921,7 @@ const cricketBowlingCards = [
     trait: 'Bowler',
     tier: CardTier.silver,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/kwena_maphaka.webp',
   ),
   PlayerCard(
     id: 'cricket-dc-kyle-jamieson',
@@ -4902,6 +4935,7 @@ const cricketBowlingCards = [
     trait: 'Bowler',
     tier: CardTier.silver,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/kyle_jamieson.webp',
   ),
   PlayerCard(
     id: 'cricket-pbks-ben-dwarshuis',
@@ -4915,6 +4949,7 @@ const cricketBowlingCards = [
     trait: 'Bowler',
     tier: CardTier.silver,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/ben_dwarshuis.webp',
   ),
   PlayerCard(
     id: 'cricket-gt-luke-wood',
@@ -4928,6 +4963,7 @@ const cricketBowlingCards = [
     trait: 'Bowler',
     tier: CardTier.silver,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/luke_wood.webp',
   ),
   PlayerCard(
     id: 'cricket-csk-mukesh-choudhary',
@@ -4941,6 +4977,7 @@ const cricketBowlingCards = [
     trait: 'Bowler',
     tier: CardTier.silver,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/mukesh_choudhary.webp',
   ),
   PlayerCard(
     id: 'cricket-csk-shreyas-gopal',
@@ -4954,6 +4991,7 @@ const cricketBowlingCards = [
     trait: 'Bowler',
     tier: CardTier.silver,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/shreyas_gopal.webp',
   ),
   PlayerCard(
     id: 'cricket-mi-mayank-markande',
@@ -4967,6 +5005,7 @@ const cricketBowlingCards = [
     trait: 'Bowler',
     tier: CardTier.silver,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/mayank_markande.webp',
   ),
   PlayerCard(
     id: 'cricket-rcb-rasikh-salam',
@@ -4980,6 +5019,7 @@ const cricketBowlingCards = [
     trait: 'Bowler',
     tier: CardTier.silver,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/rasikh_salam.webp',
   ),
   PlayerCard(
     id: 'cricket-kkr-kartik-tyagi',
@@ -4993,6 +5033,7 @@ const cricketBowlingCards = [
     trait: 'Bowler',
     tier: CardTier.silver,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/kartik_tyagi.webp',
   ),
   PlayerCard(
     id: 'cricket-srh-jaydev-unadkat',
@@ -5006,6 +5047,7 @@ const cricketBowlingCards = [
     trait: 'Bowler',
     tier: CardTier.silver,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/jaydev_unadkat.webp',
   ),
   PlayerCard(
     id: 'cricket-pbks-vyshak-vijaykumar',
@@ -5019,6 +5061,7 @@ const cricketBowlingCards = [
     trait: 'Bowler',
     tier: CardTier.silver,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/vyshak_vijaykumar.webp',
   ),
   PlayerCard(
     id: 'cricket-gt-jayant-yadav',
@@ -5032,6 +5075,7 @@ const cricketBowlingCards = [
     trait: 'Bowler',
     tier: CardTier.silver,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/jayant_yadav.webp',
   ),
   PlayerCard(
     id: 'cricket-csk-anshul-kamboj',
@@ -5045,6 +5089,7 @@ const cricketBowlingCards = [
     trait: 'Bowler',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/anshul_kamboj.webp',
   ),
   PlayerCard(
     id: 'cricket-mi-allah-ghazanfar',
@@ -5058,6 +5103,7 @@ const cricketBowlingCards = [
     trait: 'Bowler',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/allah_ghazanfar.webp',
   ),
   PlayerCard(
     id: 'cricket-rr-yudhvir-singh',
@@ -5071,6 +5117,7 @@ const cricketBowlingCards = [
     trait: 'Bowler',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/yudhvir_singh.webp',
   ),
   PlayerCard(
     id: 'cricket-lsg-manimaran-siddharth',
@@ -5084,6 +5131,7 @@ const cricketBowlingCards = [
     trait: 'Bowler',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/manimaran_siddharth.webp',
   ),
   PlayerCard(
     id: 'cricket-srh-eshan-malinga',
@@ -5097,6 +5145,7 @@ const cricketBowlingCards = [
     trait: 'Bowler',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/eshan_malinga.webp',
   ),
   PlayerCard(
     id: 'cricket-srh-zeeshan-ansari',
@@ -5110,6 +5159,7 @@ const cricketBowlingCards = [
     trait: 'Bowler',
     tier: CardTier.bronze,
     icon: Icons.sports_cricket,
+    portraitAsset: 'assets/cricketer_images/zeeshan_ansari.webp',
   ),
 ];
 

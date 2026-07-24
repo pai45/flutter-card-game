@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../models/league.dart';
@@ -32,11 +33,23 @@ const PredictionSettlement _noSettlement = (
 /// Quiz is a paid coin contest ([PredictionQuiz.isContest]) whose top-3
 /// finishers also win coins ([kScorelineContestPrizes]).
 class PredictionCubit extends Cubit<PredictionState> {
-  PredictionCubit(this._repository, this._storage)
-    : super(const PredictionState());
+  PredictionCubit(
+    this._repository,
+    this._storage, {
+    SportQuizGenerator quizGenerator = const DeterministicSportQuizGenerator(),
+    Duration settlementValidationDelay = const Duration(minutes: 5),
+    DateTime Function()? now,
+  }) : _quizGenerator = quizGenerator,
+       _settlementValidationDelay = settlementValidationDelay,
+       _now = now ?? DateTime.now,
+       super(const PredictionState());
 
   final PredictionRepository _repository;
   final SecureGameStorage _storage;
+  final SportQuizGenerator _quizGenerator;
+  final Duration _settlementValidationDelay;
+  final DateTime Function() _now;
+  final Map<String, SettlementValidationCheckpoint> _settlementCheckpoints = {};
 
   /// Demo predictions seeded so the prediction history screen can show every
   /// lifecycle bucket (pending · live · settleable · settled) on a fresh
@@ -110,13 +123,14 @@ class PredictionCubit extends Cubit<PredictionState> {
       // WNBA demo (Dallas Wings 82-75 Phoenix Mercury). Locked, not yet
       // settled — proves the new auto-settlement engine (QuizArchetypes +
       // MatchOutcomeResolver, no hand-authored quiz override here) reaches
-      // the gold "RESULTS ARE OUT" reveal for basketball too. Scores 3/4:
+      // the gold "RESULTS ARE OUT" reveal for basketball too. Scores 4/5:
       // total-points misses (picked Over 159.5, actual total is 157, Under).
       UserPrediction(
         matchId: 'wnba_demo_dal_phx',
         answers: const {
           'winner': 0,
           'total_points_ou': 0,
+          'halftime_leader': 0,
           'biggest_quarter': 0,
           'winning_margin_bracket': 1,
         },
@@ -152,9 +166,25 @@ class PredictionCubit extends Cubit<PredictionState> {
 
   Future<void> load() async {
     final leagues = await _repository.leagues();
-    
+
     final stored = await _storage.loadPredictions();
+    final storedQuizzes = await _storage.loadPredictionQuizzes();
+    final checkpoints = await _storage.loadPredictionSettlementCheckpoints();
     final predictions = {for (final p in stored) p.key: p};
+    final quizzes = {
+      for (final quiz in storedQuizzes)
+        predictionStorageKey(quiz.matchId, quiz.id): quiz,
+    };
+    _settlementCheckpoints
+      ..clear()
+      ..addEntries(
+        checkpoints.map(
+          (checkpoint) => MapEntry(
+            predictionStorageKey(checkpoint.matchId, checkpoint.quizId),
+            checkpoint,
+          ),
+        ),
+      );
     applyHistoryDemos(predictions);
 
     // Emit fast initial state so UI renders immediately
@@ -163,6 +193,7 @@ class PredictionCubit extends Cubit<PredictionState> {
         loading: false,
         leagues: leagues,
         predictions: predictions,
+        quizzes: quizzes,
         standingsByLeague: const {},
       ),
     );
@@ -176,16 +207,23 @@ class PredictionCubit extends Cubit<PredictionState> {
       try {
         final standing = await _repository.standings(league.id);
         if (!isClosed) {
-          final nextStandings = Map<String, List<TeamStanding>>.from(state.standingsByLeague);
+          final nextStandings = Map<String, List<TeamStanding>>.from(
+            state.standingsByLeague,
+          );
           nextStandings[league.id] = standing;
           emit(state.copyWith(standingsByLeague: nextStandings));
         }
-      } catch (_) {}
+      } catch (e) {
+        debugPrint(
+          'PredictionCubit: failed to load standings for ${league.id}: $e',
+        );
+      }
     }
   }
 
   Future<void> loadSport(Sport sport) async {
-    if (state.loadedSports.contains(sport) || state.loadingSports.contains(sport)) {
+    if (state.loadedSports.contains(sport) ||
+        state.loadingSports.contains(sport)) {
       return;
     }
     await _loadSportUnchecked(sport);
@@ -211,24 +249,44 @@ class PredictionCubit extends Cubit<PredictionState> {
 
     try {
       final localFixtures = await _repository.fixtures(sport: sport);
-      final enrichedFixtures = await _repository.enrichFixturesForSport(localFixtures, sport);
-      
+      final enrichedFixtures = await _repository.enrichFixturesForSport(
+        localFixtures,
+        sport,
+      );
+
       final quizzes = <String, PredictionQuiz>{...state.quizzes};
+      var checkpointsChanged = false;
       for (final fixture in enrichedFixtures) {
         if (fixture.sport == sport) {
-          var matchQuizzes = await _repository.quizzesFor(fixture.id);
+          final authored = await _repository.quizzesFor(fixture.id);
+          final cached = quizzes.values
+              .where((quiz) => quiz.matchId == fixture.id && quiz.generated)
+              .toList(growable: false);
+          final validAuthored = authored
+              .where((quiz) => _validAuthoredQuiz(fixture.sport, quiz))
+              .toList(growable: false);
+          // A curated multi-quiz fixture is an intentional game mode: for
+          // example the paid Scoreline contest alongside the free Match Events
+          // quiz. Those legacy/curated sets can carry their own question count
+          // and settlement metadata, so never replace the whole set with one
+          // generated quiz merely because an individual card is not the new
+          // five-question archetype shape. Single authored quizzes still go
+          // through the resolver validation below; generated quizzes remain
+          // the fallback wherever no curated set exists.
+          final authoredSets = authored.length > 1 ? authored : validAuthored;
+          final matchQuizzes = authoredSets.isNotEmpty
+              ? authoredSets
+              : cached.isNotEmpty
+              ? cached
+              : [_quizGenerator.generate(fixture)];
           // No hand-authored/generated quiz exists yet for this fixture —
           // synthesize the small, always-resolvable archetype set instead of
           // leaving it with none (the gap every non-FIFA football league and
           // every cricket fixture hit before this).
-          if (matchQuizzes.isEmpty) {
-            final questions = QuizArchetypes.buildFor(fixture);
-            if (questions.isNotEmpty) {
-              matchQuizzes = [
-                PredictionQuiz(matchId: fixture.id, questions: questions),
-              ];
-            }
-          }
+          // The source selected above is authoritative for this fixture. This
+          // also clears a previously cached generated card when a curated
+          // multi-quiz fixture becomes available on a later refresh.
+          quizzes.removeWhere((_, quiz) => quiz.matchId == fixture.id);
           for (final quiz in matchQuizzes) {
             // A finished fixture whose quiz isn't settled yet gets resolved
             // now, from the same enriched data just fetched above — this is
@@ -236,15 +294,19 @@ class PredictionCubit extends Cubit<PredictionState> {
             // the UI already settled instead of relying on a hand-typed
             // override. Already-settled quizzes (hand-authored overrides
             // like '760516') are left untouched.
-            final resolved =
-                (fixture.status == MatchStatus.finished && !quiz.settleable)
-                ? SettlementWriter.computeQuizSettlement(fixture, quiz)
+            final checkpointKey = predictionStorageKey(fixture.id, quiz.id);
+            final checkpointBefore = _settlementCheckpoints[checkpointKey];
+            final resolved = fixture.status == MatchStatus.finished
+                ? _validatedSettlement(fixture, quiz)
                 : quiz;
+            checkpointsChanged =
+                checkpointsChanged ||
+                checkpointBefore != _settlementCheckpoints[checkpointKey];
             quizzes[predictionStorageKey(fixture.id, resolved.id)] = resolved;
           }
         }
       }
-      
+
       final allFixturesMap = <String, SportMatch>{};
       for (final f in state.fixtures) {
         allFixturesMap[f.id] = f;
@@ -252,60 +314,466 @@ class PredictionCubit extends Cubit<PredictionState> {
       for (final f in enrichedFixtures) {
         allFixturesMap[f.id] = f;
       }
-      
+
+      // Re-pull leagues so any competition ESPN just discovered for this sport
+      // (EspnScoreService.discoveredLeagues, populated by the fetch above) is
+      // reflected in `validLeagueIds` on the prediction home screen — without
+      // this, a fixture whose real ESPN league isn't one of the curated ones
+      // fetches fine here but is silently filtered out of the UI.
+      final leagues = await _repository.leagues();
+
       if (!isClosed) {
-        emit(state.copyWith(
-          fixtures: allFixturesMap.values.toList(),
-          quizzes: quizzes,
-          loadingSports: state.loadingSports.where((s) => s != sport).toSet(),
-          loadedSports: {...state.loadedSports, sport},
-        ));
+        final nextFixtures = allFixturesMap.values.toList();
+        emit(
+          state.copyWith(
+            fixtures: nextFixtures,
+            quizzes: quizzes,
+            leagues: leagues,
+            questionIntel: _buildQuestionIntel(
+              nextFixtures,
+              quizzes,
+              state.predictions,
+            ),
+            loadingSports: state.loadingSports.where((s) => s != sport).toSet(),
+            loadedSports: {...state.loadedSports, sport},
+          ),
+        );
+        await _persistGeneratedQuizzes(quizzes.values);
+        if (checkpointsChanged) await _persistSettlementCheckpoints();
+        await lockDuePredictions(allFixturesMap.values);
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('PredictionCubit: failed to load $sport: $e');
       if (!isClosed) {
-        emit(state.copyWith(loadingSports: state.loadingSports.where((s) => s != sport).toSet()));
+        emit(
+          state.copyWith(
+            loadingSports: state.loadingSports.where((s) => s != sport).toSet(),
+          ),
+        );
       }
     }
   }
 
-  Future<List<PredictionQuiz>> quizzesFor(String matchId) =>
-      _repository.quizzesFor(matchId);
+  bool _validAuthoredQuiz(Sport sport, PredictionQuiz quiz) =>
+      quiz.questions.length == 5 &&
+      quiz.questions.every(
+        (question) =>
+            question.isSettled || QuizArchetypes.canResolve(sport, question),
+      );
+
+  PredictionQuiz _validatedSettlement(SportMatch fixture, PredictionQuiz quiz) {
+    if (quiz.settleable) return quiz;
+    final fingerprint = SettlementWriter.quizResultFingerprint(fixture, quiz);
+    if (fingerprint == null) return quiz;
+
+    final key = predictionStorageKey(fixture.id, quiz.id);
+    final checkpoint = _settlementCheckpoints[key];
+    final now = _now();
+    if (checkpoint == null || checkpoint.fingerprint != fingerprint) {
+      _settlementCheckpoints[key] = SettlementValidationCheckpoint(
+        matchId: fixture.id,
+        quizId: quiz.id,
+        fingerprint: fingerprint,
+        firstSeenAt: now,
+        sourceUpdatedAt: fixture.liveLastUpdated,
+      );
+      return quiz;
+    }
+    if (checkpoint.sourceUpdatedAt != null &&
+        checkpoint.sourceUpdatedAt == fixture.liveLastUpdated) {
+      return quiz;
+    }
+    if (now.difference(checkpoint.firstSeenAt) < _settlementValidationDelay) {
+      return quiz;
+    }
+
+    _settlementCheckpoints.remove(key);
+    return SettlementWriter.computeQuizSettlement(fixture, quiz);
+  }
+
+  Future<void> _persistGeneratedQuizzes(
+    Iterable<PredictionQuiz> quizzes,
+  ) async {
+    try {
+      await _storage.savePredictionQuizzes(
+        quizzes.where((quiz) => quiz.generated).toList(growable: false),
+      );
+    } catch (error) {
+      debugPrint('PredictionCubit: failed to persist quiz snapshots: $error');
+    }
+  }
+
+  Future<void> _persistSettlementCheckpoints() async {
+    try {
+      await _storage.savePredictionSettlementCheckpoints(
+        _settlementCheckpoints.values.toList(growable: false),
+      );
+    } catch (error) {
+      debugPrint(
+        'PredictionCubit: failed to persist settlement validation: $error',
+      );
+    }
+  }
+
+  Map<String, LiveQuestionIntel> _buildQuestionIntel(
+    Iterable<SportMatch> fixtures,
+    Map<String, PredictionQuiz> quizzes,
+    Map<String, UserPrediction> predictions,
+  ) {
+    final intel = <String, LiveQuestionIntel>{};
+    for (final fixture in fixtures) {
+      if (fixture.status == MatchStatus.upcoming) continue;
+      for (final quiz in quizzes.values.where(
+        (candidate) => candidate.matchId == fixture.id,
+      )) {
+        final prediction =
+            predictions[predictionStorageKey(fixture.id, quiz.id)];
+        if (prediction == null || prediction.status == PredictionStatus.open) {
+          continue;
+        }
+        for (final question in quiz.questions) {
+          intel[predictionQuestionIntelKey(
+            fixture.id,
+            quiz.id,
+            question.id,
+          )] = QuizArchetypes.liveIntel(
+            fixture,
+            question,
+            prediction.answers[question.id],
+          );
+        }
+      }
+    }
+    return intel;
+  }
+
+  Future<void> refreshMatch(String matchId) async {
+    SportMatch? fixture;
+    for (final candidate in state.fixtures) {
+      if (candidate.id == matchId) {
+        fixture = candidate;
+        break;
+      }
+    }
+    if (fixture == null || state.loadingSports.contains(fixture.sport)) return;
+    await _loadSportUnchecked(fixture.sport);
+  }
+
+  /// Resume catch-up for entries that can change while the app is backgrounded.
+  /// Daily rolling-window refresh still discovers new fixtures; this narrower
+  /// pass keeps live scores and pending final confirmations current the rest of
+  /// the day.
+  Future<void> refreshLiveAndPendingMatches() async {
+    final lockedMatchIds = state.predictions.values
+        .where((prediction) => prediction.status == PredictionStatus.locked)
+        .map((prediction) => prediction.matchId)
+        .toSet();
+    final sports = state.fixtures
+        .where(
+          (fixture) =>
+              lockedMatchIds.contains(fixture.id) &&
+              fixture.status != MatchStatus.upcoming,
+        )
+        .map((fixture) => fixture.sport)
+        .toSet();
+    for (final sport in sports) {
+      if (!state.loadingSports.contains(sport)) {
+        await _loadSportUnchecked(sport);
+      }
+    }
+  }
+
+  LiveQuestionIntel? questionIntelFor(
+    String matchId,
+    String quizId,
+    String questionId,
+  ) =>
+      state.questionIntel[predictionQuestionIntelKey(
+        matchId,
+        quizId,
+        questionId,
+      )];
+
+  static Map<int, int> _fallbackVoteTotals(
+    String matchId,
+    String quizId,
+    QuizQuestion question,
+  ) {
+    final seed = _stableSeed('$matchId:$quizId:${question.id}');
+    if (question.isScorePrediction) {
+      final scores = <int>[
+        ScoreAnswer.encode(1, 0),
+        ScoreAnswer.encode(1, 1),
+        ScoreAnswer.encode(2, 1),
+        ScoreAnswer.encode(0, 0),
+        ScoreAnswer.encode(0, 1),
+      ];
+      return {
+        for (var index = 0; index < scores.length; index++)
+          scores[index]: 28 + ((seed + index * 23) % 72),
+      };
+    }
+    return {
+      for (var index = 0; index < question.options.length; index++)
+        index: 34 + ((seed + index * 29) % 96),
+    };
+  }
+
+  static int _stableSeed(String value) {
+    var hash = 17;
+    for (final unit in value.codeUnits) {
+      hash = (hash * 31 + unit) % 100000;
+    }
+    return hash;
+  }
+
+  Future<List<PredictionQuiz>> quizzesFor(String matchId) async {
+    final cached = state.quizzes.values
+        .where((quiz) => quiz.matchId == matchId)
+        .toList(growable: false);
+    return cached.isNotEmpty ? cached : _repository.quizzesFor(matchId);
+  }
 
   Future<PredictionQuiz?> quizFor(
     String matchId, [
     String quizId = kDefaultPredictionQuizId,
-  ]) => _repository.quizFor(matchId, quizId);
+  ]) async {
+    final cached = state.quizzes[predictionStorageKey(matchId, quizId)];
+    if (cached != null) return cached;
+    return _repository.quizFor(matchId, quizId);
+  }
 
   Future<PredictionVoteBreakdown?> votesFor(
     String matchId,
     String quizId,
     String questionId,
-  ) => _repository.votesFor(matchId, quizId, questionId);
+  ) async {
+    final repositoryVotes = await _repository.votesFor(
+      matchId,
+      quizId,
+      questionId,
+    );
+    if (repositoryVotes != null) return repositoryVotes;
+    final quiz = await quizFor(matchId, quizId);
+    QuizQuestion? question;
+    for (final candidate in quiz?.questions ?? const <QuizQuestion>[]) {
+      if (candidate.id == questionId) {
+        question = candidate;
+        break;
+      }
+    }
+    if (question == null) return null;
+    return PredictionVoteBreakdown(
+      matchId: matchId,
+      questionId: questionId,
+      totals: _fallbackVoteTotals(matchId, quizId, question),
+    );
+  }
 
   Future<List<MatchPredictionLeaderboardEntry>> matchLeaderboard(
     String matchId,
     String quizId,
   ) => _repository.matchLeaderboard(matchId, quizId);
 
-  /// Stores (or replaces) the user's answers for a fixture.
+  /// Creates or updates an editable prediction draft.
+  ///
+  /// Draft writes preserve the original [UserPrediction.submittedAt] timestamp
+  /// and can never reopen a locked or settled prediction. Returns false when
+  /// the prediction is immutable or persistence fails.
+  Future<bool> saveDraft(
+    String matchId,
+    String quizId,
+    Map<String, int> answers, {
+    Map<String, PredictionMultiplier> multipliersByQuestion = const {},
+  }) async {
+    final key = predictionStorageKey(matchId, quizId);
+    final existing = state.predictions[key];
+    if (existing != null && existing.status != PredictionStatus.open) {
+      return false;
+    }
+    // New entries are never accepted after kickoff. Existing drafts are left
+    // to the deadline-lock path so a queued pre-kickoff autosave can still be
+    // flushed before its immutable snapshot is sealed.
+    if (existing == null && _fixtureHasStarted(matchId)) return false;
+    final prediction = existing == null
+        ? UserPrediction(
+            matchId: matchId,
+            quizId: quizId,
+            answers: Map<String, int>.from(answers),
+            multipliersByQuestion: Map<String, PredictionMultiplier>.from(
+              multipliersByQuestion,
+            ),
+            submittedAt: _now(),
+            status: PredictionStatus.open,
+          )
+        : existing.copyWith(
+            answers: Map<String, int>.from(answers),
+            multipliersByQuestion: Map<String, PredictionMultiplier>.from(
+              multipliersByQuestion,
+            ),
+          );
+    final previous = state.predictions;
+    final next = Map<String, UserPrediction>.from(previous)..[key] = prediction;
+    emit(state.copyWith(predictions: next));
+    try {
+      await _storage.savePredictions(next.values.toList());
+      return true;
+    } catch (error) {
+      if (!isClosed) {
+        emit(
+          state.copyWith(
+            predictions: previous,
+            questionIntel: _buildQuestionIntel(
+              state.fixtures,
+              state.quizzes,
+              previous,
+            ),
+          ),
+        );
+      }
+      debugPrint('PredictionCubit: failed to save draft $key: $error');
+      return false;
+    }
+  }
+
+  bool _fixtureHasStarted(String matchId) {
+    for (final fixture in state.fixtures) {
+      if (fixture.id != matchId) continue;
+      return fixture.status != MatchStatus.upcoming ||
+          !fixture.kickoff.isAfter(_now());
+    }
+    return false;
+  }
+
+  /// Compatibility wrapper for older callers. New UI should use [saveDraft].
+  @Deprecated('Use saveDraft; submitted predictions remain editable drafts.')
   Future<void> submit(
     String matchId,
     String quizId,
     Map<String, int> answers, {
     Map<String, PredictionMultiplier> multipliersByQuestion = const {},
   }) async {
-    final prediction = UserPrediction(
-      matchId: matchId,
-      quizId: quizId,
-      answers: answers,
+    await saveDraft(
+      matchId,
+      quizId,
+      answers,
       multipliersByQuestion: multipliersByQuestion,
-      submittedAt: DateTime.now(),
-      status: PredictionStatus.open,
     );
-    final next = Map<String, UserPrediction>.from(state.predictions)
-      ..[prediction.key] = prediction;
-    emit(state.copyWith(predictions: next));
-    await _storage.savePredictions(next.values.toList());
+  }
+
+  /// Atomically writes the latest visible answers and freezes the prediction.
+  ///
+  /// Re-locking an already locked prediction succeeds without writing again.
+  /// Settled predictions and missing drafts cannot be locked.
+  Future<bool> lockPrediction(
+    String matchId,
+    String quizId, {
+    Map<String, int>? answers,
+    Map<String, PredictionMultiplier>? multipliersByQuestion,
+  }) async {
+    final key = predictionStorageKey(matchId, quizId);
+    final existing = state.predictions[key];
+    if (existing == null || existing.status == PredictionStatus.settled) {
+      return false;
+    }
+    if (existing.status == PredictionStatus.locked) return true;
+
+    final locked = existing.copyWith(
+      answers: answers == null
+          ? existing.answers
+          : Map<String, int>.from(answers),
+      multipliersByQuestion: multipliersByQuestion == null
+          ? existing.multipliersByQuestion
+          : Map<String, PredictionMultiplier>.from(multipliersByQuestion),
+      status: PredictionStatus.locked,
+    );
+    final previous = state.predictions;
+    final next = Map<String, UserPrediction>.from(previous)..[key] = locked;
+    emit(
+      state.copyWith(
+        predictions: next,
+        questionIntel: _buildQuestionIntel(state.fixtures, state.quizzes, next),
+      ),
+    );
+    try {
+      await _storage.savePredictions(next.values.toList());
+      return true;
+    } catch (error) {
+      if (!isClosed) {
+        emit(
+          state.copyWith(
+            predictions: previous,
+            questionIntel: _buildQuestionIntel(
+              state.fixtures,
+              state.quizzes,
+              previous,
+            ),
+          ),
+        );
+      }
+      debugPrint('PredictionCubit: failed to lock $key: $error');
+      return false;
+    }
+  }
+
+  /// Freezes every open draft whose fixture has reached its deadline.
+  ///
+  /// This is called after fixture refreshes so drafts are normalized even when
+  /// the app was closed at kickoff. The prediction screen also invokes it when
+  /// its foreground countdown crosses zero.
+  Future<int> lockDuePredictions(
+    Iterable<SportMatch> fixtures, {
+    DateTime? now,
+  }) async {
+    final deadline = now ?? _now();
+    final fixturesById = <String, SportMatch>{
+      for (final fixture in fixtures) fixture.id: fixture,
+    };
+    final previous = state.predictions;
+    final next = Map<String, UserPrediction>.from(previous);
+    var lockedCount = 0;
+
+    for (final entry in previous.entries) {
+      final prediction = entry.value;
+      if (prediction.status != PredictionStatus.open) continue;
+      final fixture = fixturesById[prediction.matchId];
+      if (fixture == null) continue;
+      final due =
+          fixture.status != MatchStatus.upcoming ||
+          !fixture.kickoff.isAfter(deadline);
+      if (!due) continue;
+      next[entry.key] = prediction.copyWith(status: PredictionStatus.locked);
+      lockedCount++;
+    }
+
+    if (lockedCount == 0) return 0;
+    emit(
+      state.copyWith(
+        predictions: next,
+        questionIntel: _buildQuestionIntel(state.fixtures, state.quizzes, next),
+      ),
+    );
+    try {
+      await _storage.savePredictions(next.values.toList());
+      return lockedCount;
+    } catch (error) {
+      if (!isClosed) {
+        emit(
+          state.copyWith(
+            predictions: previous,
+            questionIntel: _buildQuestionIntel(
+              state.fixtures,
+              state.quizzes,
+              previous,
+            ),
+          ),
+        );
+      }
+      debugPrint(
+        'PredictionCubit: failed to persist $lockedCount deadline locks: $error',
+      );
+      return 0;
+    }
   }
 
   /// Mock settlement: scores the stored answers against the quiz's
@@ -319,10 +787,10 @@ class PredictionCubit extends Cubit<PredictionState> {
     String quizId = kDefaultPredictionQuizId,
   ]) async {
     final prediction = state.predictionFor(matchId, quizId);
-    if (prediction == null || prediction.status == PredictionStatus.settled) {
+    if (prediction == null || prediction.status != PredictionStatus.locked) {
       return _noSettlement;
     }
-    final quiz = await _repository.quizFor(matchId, quizId);
+    final quiz = await quizFor(matchId, quizId);
     if (quiz == null || !quiz.settleable) return _noSettlement;
 
     var correct = 0;

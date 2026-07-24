@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 import '../config/theme.dart';
 import '../models/streak.dart';
 import '../screens/predictions/widgets/history_hud.dart' show CutChipBorder;
@@ -44,10 +43,16 @@ class StreakElevatedSurface extends StatelessWidget {
 }
 
 class StreakBadge extends StatelessWidget {
-  const StreakBadge({required this.value, this.compact = false, super.key});
+  const StreakBadge({
+    required this.value,
+    this.compact = false,
+    this.scale = 1,
+    super.key,
+  }) : assert(scale > 0);
 
   final int value;
   final bool compact;
+  final double scale;
 
   @override
   Widget build(BuildContext context) {
@@ -55,20 +60,22 @@ class StreakBadge extends StatelessWidget {
     return Semantics(
       label: '$value day streak',
       child: SizedBox(
-        height: StreakTheme.badgeHeight,
+        height: StreakTheme.badgeHeight * scale,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               Icons.local_fire_department_outlined,
               color: StreakTheme.primary,
-              size: StreakTheme.badgeIconSize,
+              size: StreakTheme.badgeIconSize * scale,
             ),
-            if (!compact) const SizedBox(width: StreakTheme.space4),
+            if (!compact) SizedBox(width: StreakTheme.space4 * scale),
             if (!compact)
               Text(
                 '$value',
-                style: StreakTheme.badge(color: StreakTheme.primary),
+                style: StreakTheme.badge(
+                  color: StreakTheme.primary,
+                ).apply(fontSizeFactor: scale),
               ),
           ],
         ),

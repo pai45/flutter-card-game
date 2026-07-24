@@ -1,5 +1,7 @@
 import 'football_chess.dart';
 
+const _deckSlotSentinel = Object();
+
 class StoredDeckSlot {
   const StoredDeckSlot({
     required this.id,
@@ -37,6 +39,46 @@ class StoredDeckSlot {
   /// Formation used when this deck is played in 5v5 Football Chess.
   /// Null means default (ChessFormation.box).
   final ChessFormation? chessFormation;
+
+  StoredDeckSlot copyWith({
+    String? id,
+    String? name,
+    List<String>? attackers,
+    List<String>? defenders,
+    List<String>? actions,
+    List<String>? finalOverBatsmen,
+    List<String>? basketballPlayers,
+    Object? basketballStarter = _deckSlotSentinel,
+    List<String>? tennisPlayers,
+    Object? tennisStarter = _deckSlotSentinel,
+    List<String>? racingPlayers,
+    Object? racingStarter = _deckSlotSentinel,
+    Object? keeper = _deckSlotSentinel,
+    Object? chessFormation = _deckSlotSentinel,
+  }) => StoredDeckSlot(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    attackers: attackers ?? this.attackers,
+    defenders: defenders ?? this.defenders,
+    actions: actions ?? this.actions,
+    finalOverBatsmen: finalOverBatsmen ?? this.finalOverBatsmen,
+    basketballPlayers: basketballPlayers ?? this.basketballPlayers,
+    basketballStarter: basketballStarter == _deckSlotSentinel
+        ? this.basketballStarter
+        : basketballStarter as String?,
+    tennisPlayers: tennisPlayers ?? this.tennisPlayers,
+    tennisStarter: tennisStarter == _deckSlotSentinel
+        ? this.tennisStarter
+        : tennisStarter as String?,
+    racingPlayers: racingPlayers ?? this.racingPlayers,
+    racingStarter: racingStarter == _deckSlotSentinel
+        ? this.racingStarter
+        : racingStarter as String?,
+    keeper: keeper == _deckSlotSentinel ? this.keeper : keeper as String?,
+    chessFormation: chessFormation == _deckSlotSentinel
+        ? this.chessFormation
+        : chessFormation as ChessFormation?,
+  );
 
   Map<String, dynamic> toJson() => {
     'id': id,
