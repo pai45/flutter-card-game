@@ -4,7 +4,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../config/enums.dart';
 import '../config/theme.dart';
 import '../models/achievement.dart';
 import '../screens/profile/widgets/achievement_badge.dart';
@@ -36,7 +35,8 @@ class AchievementUnlockCelebration extends StatefulWidget {
 }
 
 class _AchievementUnlockCelebrationState
-    extends State<AchievementUnlockCelebration> with TickerProviderStateMixin {
+    extends State<AchievementUnlockCelebration>
+    with TickerProviderStateMixin {
   late final AnimationController _vignetteCtrl = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 300),
@@ -62,8 +62,10 @@ class _AchievementUnlockCelebrationState
     duration: const Duration(milliseconds: 350),
   );
 
-  late final Animation<double> _badgeScale = Tween<double>(begin: 0, end: 1)
-      .animate(CurvedAnimation(parent: _badgeCtrl, curve: Curves.easeOutBack));
+  late final Animation<double> _badgeScale = Tween<double>(
+    begin: 0,
+    end: 1,
+  ).animate(CurvedAnimation(parent: _badgeCtrl, curve: Curves.easeOutBack));
 
   late final Animation<Offset> _bannerSlide = Tween<Offset>(
     begin: const Offset(0, 0.12),
@@ -78,17 +80,10 @@ class _AchievementUnlockCelebrationState
   Timer? _dismissTimer;
   bool _dismissed = false;
 
-  int get _tierRank => switch (widget.achievement.tier) {
-    CardTier.bronze => 0,
-    CardTier.silver => 1,
-    CardTier.gold => 2,
-    CardTier.platinum => 3,
-  };
-
   @override
   void initState() {
     super.initState();
-    playSound(rarityRevealSound(_tierRank));
+    playSound(SoundEffect.achievement);
     HapticFeedback.heavyImpact();
     _vignetteCtrl.forward();
     Future.delayed(const Duration(milliseconds: 100), () {
@@ -139,7 +134,9 @@ class _AchievementUnlockCelebrationState
             AnimatedBuilder(
               animation: _vignetteCtrl,
               builder: (context, _) => ColoredBox(
-                color: Colors.black.withValues(alpha: _vignetteCtrl.value * 0.82),
+                color: Colors.black.withValues(
+                  alpha: _vignetteCtrl.value * 0.82,
+                ),
               ),
             ),
             AnimatedBuilder(
@@ -175,18 +172,19 @@ class _AchievementUnlockCelebrationState
                           opacity: _badgeCtrl.value.clamp(0.0, 1.0),
                           child: Text(
                             'ACHIEVEMENT UNLOCKED',
-                            style: Cyber.label(
-                              13,
-                              color: tier,
-                              letterSpacing: 3.4,
-                            ).copyWith(
-                              shadows: [
-                                Shadow(
-                                  color: tier.withValues(alpha: 0.65),
-                                  blurRadius: 16,
+                            style:
+                                Cyber.label(
+                                  13,
+                                  color: tier,
+                                  letterSpacing: 3.4,
+                                ).copyWith(
+                                  shadows: [
+                                    Shadow(
+                                      color: tier.withValues(alpha: 0.65),
+                                      blurRadius: 16,
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
                           ),
                         ),
                         const SizedBox(height: 22),
@@ -214,23 +212,25 @@ class _AchievementUnlockCelebrationState
                                 Text(
                                   achievement.title.toUpperCase(),
                                   textAlign: TextAlign.center,
-                                  style: Cyber.display(
-                                    32,
-                                    color: Colors.white,
-                                    letterSpacing: 1.5,
-                                  ).copyWith(
-                                    shadows: [
-                                      Shadow(
-                                        color: tier.withValues(alpha: 0.55),
-                                        blurRadius: 18,
+                                  style:
+                                      Cyber.display(
+                                        32,
+                                        color: Colors.white,
+                                        letterSpacing: 1.5,
+                                      ).copyWith(
+                                        shadows: [
+                                          Shadow(
+                                            color: tier.withValues(alpha: 0.55),
+                                            blurRadius: 18,
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
                                 ),
                                 const SizedBox(height: 10),
                                 ConstrainedBox(
-                                  constraints:
-                                      const BoxConstraints(maxWidth: 300),
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 300,
+                                  ),
                                   child: Text(
                                     achievement.description,
                                     textAlign: TextAlign.center,
@@ -263,7 +263,11 @@ class _AchievementUnlockCelebrationState
                   child: Center(
                     child: Text(
                       'TAP TO CONTINUE',
-                      style: Cyber.label(11, color: Cyber.muted, letterSpacing: 2),
+                      style: Cyber.label(
+                        11,
+                        color: Cyber.muted,
+                        letterSpacing: 2,
+                      ),
                     ),
                   ),
                 ),

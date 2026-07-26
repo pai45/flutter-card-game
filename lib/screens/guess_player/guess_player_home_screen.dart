@@ -1,279 +1,344 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../blocs/guess_player/guess_player_cubit.dart';
 import '../../config/theme.dart';
+import '../../models/guess_player.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/game_scaffold.dart';
 
-class GuessPlayerHomeScreen extends StatelessWidget {
+class GuessPlayerHomeScreen extends StatefulWidget {
   const GuessPlayerHomeScreen({
     required this.state,
     required this.onBack,
-    required this.onOpenDay,
+    required this.onOpenToday,
     required this.onOpenLogs,
+    required this.onRetry,
     super.key,
   });
 
   final GuessPlayerState state;
   final VoidCallback onBack;
-  final ValueChanged<String> onOpenDay;
+  final VoidCallback onOpenToday;
   final VoidCallback onOpenLogs;
+  final VoidCallback onRetry;
+
+  @override
+  State<GuessPlayerHomeScreen> createState() => _GuessPlayerHomeScreenState();
+}
+
+class _GuessPlayerHomeScreenState extends State<GuessPlayerHomeScreen> {
+  Timer? _ticker;
+  Duration _untilReset = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateCountdown();
+    _ticker = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => _updateCountdown(),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  void _updateCountdown() {
+    final now = DateTime.now();
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
+    if (!mounted) return;
+    setState(() => _untilReset = tomorrow.difference(now));
+  }
 
   @override
   Widget build(BuildContext context) {
-    final today = state.todayKey;
-    final todayResult = state.archive.resultsByDay[today];
-    final solvedCount = state.archive.resultsByDay.values
-        .where((result) => result.won)
-        .length;
-    final ctaLabel = todayResult != null
-        ? (todayResult.won ? 'REVIEW SOLUTION' : 'REVIEW RESULTS')
-        : 'PLAY TODAY\'S MYSTERY';
+    return GameScaffold(
+      title: 'DAILY CAREER INTEL',
+      subtitle: 'GUESS THE PLAYER',
+      leading: IconButton(
+        tooltip: 'Back to games',
+        onPressed: () {
+          playSound(SoundEffect.uiTap);
+          widget.onBack();
+        },
+        icon: const Icon(Icons.arrow_back, color: Cyber.cyan),
+      ),
+      rightSlot: const Icon(
+        Icons.person_search_rounded,
+        color: Cyber.magenta,
+        size: 22,
+      ),
+      child: _body(),
+    );
+  }
 
-    return Scaffold(
-      backgroundColor: Cyber.bg,
-      appBar: _HomeHeader(onBack: onBack),
-      body: CyberArenaBackground(
-        assetPath: 'assets/backgrounds/home_stadium.png',
-        accent: Cyber.magenta,
-        secondaryAccent: Cyber.cyan,
-        assetOpacity: 0.22,
-        horizonColor: Cyber.arenaVioletHorizon,
-        topShadeAlpha: 0.16,
-        middleShadeAlpha: 0.3,
-        bottomShadeAlpha: 0.78,
-        child: SafeArea(
-          top: false,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final topGap = (constraints.maxHeight * 0.27)
-                  .clamp(120.0, 238.0)
-                  .toDouble();
+  Widget _body() {
+    if (widget.state.loadStatus == GuessPlayerLoadStatus.loading) {
+      return const Center(
+        child: SizedBox(
+          width: 32,
+          height: 32,
+          child: CircularProgressIndicator(
+            color: Cyber.magenta,
+            strokeWidth: 2,
+          ),
+        ),
+      );
+    }
+    if (widget.state.loadStatus == GuessPlayerLoadStatus.error) {
+      return CyberNoDataState(
+        icon: Icons.sync_problem_rounded,
+        title: 'INTEL LINK FAILED',
+        message:
+            widget.state.errorMessage ??
+            'The daily mystery could not be loaded.',
+        accent: Cyber.danger,
+        actionLabel: 'RETRY LINK',
+        actionIcon: Icons.refresh,
+        onAction: widget.onRetry,
+      );
+    }
 
-              return ListView(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+    final record =
+        widget.state.archive.resultsByDay[widget.state.currentDayKey];
+    final archive = widget.state.archive;
+    final streak = archive.solveStreak(widget.state.currentDayKey);
+    final winRate = (archive.winRate * 100).round();
+    final averageAttempts = archive.averageAttempts;
+    final ctaLabel = switch (record?.status) {
+      GuessPlayerResultStatus.inProgress
+          when (record?.startedAtEpochMs ?? 0) > 0 =>
+        'RESUME',
+      GuessPlayerResultStatus.inProgress => 'PLAY',
+      _ => 'REVIEW',
+    };
+
+    return CyberArenaBackground(
+      assetPath: 'assets/backgrounds/home_stadium.png',
+      accent: Cyber.magenta,
+      secondaryAccent: Cyber.cyan,
+      assetOpacity: 0.2,
+      horizonColor: Cyber.violet,
+      topShadeAlpha: 0.22,
+      middleShadeAlpha: 0.38,
+      bottomShadeAlpha: 0.86,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 28),
+        children: [
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 430),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  SizedBox(height: topGap),
-                  Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 430),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _LandingHero(
-                            solvedCount: solvedCount,
-                            unlockedCount: state.unlockedDayKeys.length,
-                          ),
-                          const SizedBox(height: 20),
-                          CyberSlideUpFadeIn(
-                            delay: const Duration(milliseconds: 390),
-                            offset: 22,
-                            child: HudCtaButton(
-                              label: ctaLabel,
-                              icon: Icons.person_search,
-                              accent: Cyber.magenta,
-                              tapSound: SoundEffect.playMatch,
-                              onTap: () => onOpenDay(today),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          CyberSlideUpFadeIn(
-                            delay: const Duration(milliseconds: 470),
-                            offset: 22,
-                            child: _DailyLogsHeader(onTap: onOpenLogs),
-                          ),
-                        ],
+                  CyberSlideUpFadeIn(
+                    child: HudCornerFrame(
+                      accent: Cyber.magenta,
+                      padding: const EdgeInsets.all(16),
+                      child: _Hero(
+                        dayKey: widget.state.currentDayKey,
+                        resetLabel: _formatCountdown(_untilReset),
                       ),
                     ),
                   ),
+                  const SizedBox(height: 20),
+                  CyberSlideUpFadeIn(
+                    delay: const Duration(milliseconds: 100),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _StatTile(
+                            label: 'SOLVE STREAK',
+                            value: '$streak',
+                            accent: streak > 0 ? Cyber.success : Cyber.muted,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _StatTile(
+                            label: 'WIN RATE',
+                            value: '$winRate%',
+                            accent: Cyber.cyan,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _StatTile(
+                            label: 'AVG TRIES',
+                            value: averageAttempts == 0
+                                ? '—'
+                                : averageAttempts.toStringAsFixed(1),
+                            accent: Cyber.gold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  CyberSlideUpFadeIn(
+                    delay: const Duration(milliseconds: 170),
+                    child: _AllTimeStrip(
+                      solved: archive.solvedCount,
+                      played: archive.completedCount,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  CyberSlideUpFadeIn(
+                    delay: const Duration(milliseconds: 240),
+                    child: HudCtaButton(
+                      label: ctaLabel,
+                      icon: Icons.radar_rounded,
+                      accent: Cyber.magenta,
+                      tapSound: SoundEffect.playMatch,
+                      onTap: widget.onOpenToday,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  CyberSlideUpFadeIn(
+                    delay: const Duration(milliseconds: 320),
+                    child: _ArchiveLink(onTap: widget.onOpenLogs),
+                  ),
                 ],
-              );
-            },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Hero extends StatelessWidget {
+  const _Hero({required this.dayKey, required this.resetLabel});
+
+  final String dayKey;
+  final String resetLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 64,
+          height: 64,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Cyber.panel,
+            border: Border.all(color: Cyber.magenta.withValues(alpha: 0.55)),
+          ),
+          child: const Icon(
+            Icons.fingerprint_rounded,
+            color: Cyber.magenta,
+            size: 34,
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _HomeHeader extends StatelessWidget implements PreferredSizeWidget {
-  const _HomeHeader({required this.onBack});
-
-  final VoidCallback onBack;
-
-  @override
-  Size get preferredSize => const Size.fromHeight(66);
-
-  @override
-  Widget build(BuildContext context) {
-    return AppBar(
-      automaticallyImplyLeading: false,
-      toolbarHeight: 66,
-      backgroundColor: const Color(0xff070a14),
-      surfaceTintColor: Colors.transparent,
-      titleSpacing: 0,
-      title: Container(
-        height: 66,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: AppTheme.borderMuted)),
-        ),
-        child: Row(
-          children: [
-            IconButton(
-              tooltip: 'Back to matches',
-              onPressed: () {
-                playSound(SoundEffect.uiTap);
-                onBack();
-              },
-              icon: const Icon(Icons.arrow_back, color: Colors.white, size: 22),
-            ),
-            const Spacer(),
-            const Icon(Icons.person_search, color: Cyber.magenta, size: 24),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LandingHero extends StatelessWidget {
-  const _LandingHero({required this.solvedCount, required this.unlockedCount});
-
-  final int solvedCount;
-  final int unlockedCount;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const CyberSlideUpFadeIn(child: _TelemetryStrip()),
-        const SizedBox(height: 12),
-        CyberSlideUpFadeIn(
-          delay: const Duration(milliseconds: 80),
-          offset: 24,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const _GuessIconBay(),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        'GUESS THE PLAYER',
-                        maxLines: 1,
-                        style: Cyber.display(22, color: Colors.white).copyWith(
-                          letterSpacing: 1.1,
-                          shadows: [
-                            Shadow(
-                              color: Cyber.magenta.withValues(alpha: 0.32),
-                              blurRadius: 8,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      'CAREER TIMELINE GAME',
-                      style: Cyber.label(10, color: Cyber.muted),
-                    ),
-                    const SizedBox(height: 8),
-                    const CyberChip(
-                      label: 'DAILY MYSTERY',
-                      color: Cyber.magenta,
-                    ),
-                  ],
+              Text(
+                'CLASSIFIED PLAYER',
+                style: Cyber.display(
+                  18,
+                  color: AppTheme.textPrimary,
+                  letterSpacing: 1.2,
                 ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                'Decode six career signals. Earlier solves earn more XP.',
+                style: Cyber.body(12, color: Cyber.muted, height: 1.3),
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  CyberChip(label: dayKey, color: Cyber.cyan),
+                  CyberChip(label: 'RESET $resetLabel', color: Cyber.magenta),
+                ],
               ),
             ],
           ),
-        ),
-        const SizedBox(height: 18),
-        Row(
-          children: [
-            Expanded(
-              child: CyberDealtCard(
-                key: const ValueKey('guess-home-stat-solved'),
-                index: 0,
-                initialDelay: const Duration(milliseconds: 180),
-                flyDistance: 130,
-                child: _StatTile(label: 'SOLVED', value: '$solvedCount'),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: CyberDealtCard(
-                key: const ValueKey('guess-home-stat-unlocked'),
-                index: 1,
-                initialDelay: const Duration(milliseconds: 180),
-                flyDistance: 130,
-                child: _StatTile(label: 'UNLOCKED', value: '$unlockedCount'),
-              ),
-            ),
-          ],
         ),
       ],
     );
   }
 }
 
-class _TelemetryStrip extends StatelessWidget {
-  const _TelemetryStrip();
+class _StatTile extends StatelessWidget {
+  const _StatTile({
+    required this.label,
+    required this.value,
+    required this.accent,
+  });
+
+  final String label;
+  final String value;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return CyberPanel(
+      accent: Cyber.border,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      child: Column(
+        children: [
+          Text(
+            value,
+            maxLines: 1,
+            style: Cyber.display(
+              17,
+              color: accent,
+            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Cyber.label(7.5, color: Cyber.muted, letterSpacing: 0.7),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AllTimeStrip extends StatelessWidget {
+  const _AllTimeStrip({required this.solved, required this.played});
+
+  final int solved;
+  final int played;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 30,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: const Color(0xff071321).withValues(alpha: 0.82),
-        border: Border(
-          left: BorderSide(color: Cyber.magenta.withValues(alpha: 0.35)),
-          right: BorderSide(color: Cyber.magenta.withValues(alpha: 0.35)),
-        ),
+        color: Cyber.panel.withValues(alpha: 0.88),
+        border: Border.all(color: Cyber.borderSubtle),
       ),
       child: Row(
         children: [
-          Container(
-            width: 7,
-            height: 7,
-            decoration: BoxDecoration(
-              color: Cyber.lime,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Cyber.lime.withValues(alpha: 0.6),
-                  blurRadius: 8,
-                ),
-              ],
-            ),
-          ),
+          const Icon(Icons.storage_rounded, color: Cyber.muted, size: 15),
           const SizedBox(width: 8),
-          Text('ONLINE', style: Cyber.display(9, color: Cyber.lime)),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Container(
-              height: 1,
-              color: Cyber.magenta.withValues(alpha: 0.18),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Flexible(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                'SYS://CAREER TIMELINE | 1.0.0',
-                style: Cyber.label(8, color: Cyber.muted),
-              ),
-            ),
+          Text('CAREER ARCHIVE', style: Cyber.label(9, color: Cyber.muted)),
+          const Spacer(),
+          Text(
+            '$solved SOLVED  //  $played PLAYED',
+            style: Cyber.display(
+              9,
+              color: Cyber.cyan,
+            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
         ],
       ),
@@ -281,169 +346,50 @@ class _TelemetryStrip extends StatelessWidget {
   }
 }
 
-class _GuessIconBay extends StatelessWidget {
-  const _GuessIconBay();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 92,
-      height: 92,
-      child: Stack(
-        children: [
-          const Positioned(
-            left: 0,
-            top: 0,
-            child: _HudCorner(top: true, left: true),
-          ),
-          const Positioned(
-            right: 0,
-            top: 0,
-            child: _HudCorner(top: true, left: false),
-          ),
-          const Positioned(
-            left: 0,
-            bottom: 0,
-            child: _HudCorner(top: false, left: true),
-          ),
-          const Positioned(
-            right: 0,
-            bottom: 0,
-            child: _HudCorner(top: false, left: false),
-          ),
-          Center(
-            child: Container(
-              width: 66,
-              height: 66,
-              decoration: BoxDecoration(
-                color: const Color(0xff102036).withValues(alpha: 0.95),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Cyber.magenta.withValues(alpha: 0.16),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Cyber.magenta.withValues(alpha: 0.14),
-                    blurRadius: 24,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.person_search,
-                color: Cyber.magenta,
-                size: 28,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HudCorner extends StatelessWidget {
-  const _HudCorner({required this.top, required this.left});
-
-  final bool top;
-  final bool left;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 18,
-      height: 18,
-      decoration: BoxDecoration(
-        border: Border(
-          top: top
-              ? BorderSide(color: Cyber.magenta.withValues(alpha: 0.75))
-              : BorderSide.none,
-          bottom: top
-              ? BorderSide.none
-              : BorderSide(color: Cyber.magenta.withValues(alpha: 0.75)),
-          left: left
-              ? BorderSide(color: Cyber.magenta.withValues(alpha: 0.75))
-              : BorderSide.none,
-          right: left
-              ? BorderSide.none
-              : BorderSide(color: Cyber.magenta.withValues(alpha: 0.75)),
-        ),
-      ),
-    );
-  }
-}
-
-class _DailyLogsHeader extends StatelessWidget {
-  const _DailyLogsHeader({required this.onTap});
+class _ArchiveLink extends StatelessWidget {
+  const _ArchiveLink({required this.onTap});
 
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        playSound(SoundEffect.uiTap);
-        onTap();
-      },
-      child: Container(
-        height: 50,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(
-          color: const Color(0xff102036).withValues(alpha: 0.92),
-          border: Border.all(color: Cyber.border.withValues(alpha: 0.45)),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.history, color: Cyber.magenta, size: 18),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'DAILY LOGS',
-                style: Cyber.display(
-                  14,
-                  color: Cyber.magenta,
-                ).copyWith(letterSpacing: 1.4),
+    return Semantics(
+      button: true,
+      label: 'Open 30 day mystery archive',
+      child: InkWell(
+        onTap: () {
+          playSound(SoundEffect.uiTap);
+          onTap();
+        },
+        child: Container(
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: Cyber.panel,
+            border: Border.all(color: Cyber.borderSubtle),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.history_rounded, color: Cyber.magenta, size: 18),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'OPEN 30-DAY INTEL ARCHIVE',
+                  style: Cyber.display(11, color: Cyber.magenta),
+                ),
               ),
-            ),
-            const Icon(Icons.chevron_right, color: Cyber.cyan, size: 22),
-          ],
+              const Icon(Icons.chevron_right, color: Cyber.cyan),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _StatTile extends StatelessWidget {
-  const _StatTile({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 48,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xff102036).withValues(alpha: 0.86),
-        border: Border.all(color: Cyber.magenta.withValues(alpha: 0.45)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            value,
-            style: Cyber.display(
-              16,
-              color: Cyber.magenta,
-            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-          ),
-          const SizedBox(height: 2),
-          Text(label, style: Cyber.label(8, color: Cyber.muted)),
-        ],
-      ),
-    );
-  }
+String _formatCountdown(Duration value) {
+  final hours = value.inHours.toString().padLeft(2, '0');
+  final minutes = (value.inMinutes % 60).toString().padLeft(2, '0');
+  final seconds = (value.inSeconds % 60).toString().padLeft(2, '0');
+  return '$hours:$minutes:$seconds';
 }

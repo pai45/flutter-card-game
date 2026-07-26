@@ -61,14 +61,18 @@ class _ShopAcquireOverlayState extends State<ShopAcquireOverlay>
     duration: const Duration(milliseconds: 350),
   );
 
-  late final Animation<double> _itemScale = Tween<double>(begin: 0, end: 1)
-      .animate(CurvedAnimation(parent: _itemCtrl, curve: Curves.easeOutBack));
+  late final Animation<double> _itemScale = Tween<double>(
+    begin: 0,
+    end: 1,
+  ).animate(CurvedAnimation(parent: _itemCtrl, curve: Curves.easeOutBack));
   late final Animation<Offset> _bannerSlide = Tween<Offset>(
     begin: const Offset(0, 0.12),
     end: Offset.zero,
   ).animate(CurvedAnimation(parent: _bannerCtrl, curve: Curves.easeOutCubic));
-  late final Animation<double> _bannerOpacity =
-      CurvedAnimation(parent: _bannerCtrl, curve: Curves.easeOut);
+  late final Animation<double> _bannerOpacity = CurvedAnimation(
+    parent: _bannerCtrl,
+    curve: Curves.easeOut,
+  );
 
   Timer? _dismissTimer;
   bool _dismissed = false;
@@ -76,7 +80,7 @@ class _ShopAcquireOverlayState extends State<ShopAcquireOverlay>
   @override
   void initState() {
     super.initState();
-    playSound(SoundEffect.coins);
+    playSound(SoundEffect.cardReveal);
     HapticFeedback.heavyImpact();
     _vignetteCtrl.forward();
     Future.delayed(const Duration(milliseconds: 90), () {
@@ -125,7 +129,9 @@ class _ShopAcquireOverlayState extends State<ShopAcquireOverlay>
             AnimatedBuilder(
               animation: _vignetteCtrl,
               builder: (context, _) => ColoredBox(
-                color: Colors.black.withValues(alpha: _vignetteCtrl.value * 0.84),
+                color: Colors.black.withValues(
+                  alpha: _vignetteCtrl.value * 0.84,
+                ),
               ),
             ),
             AnimatedBuilder(
@@ -143,7 +149,8 @@ class _ShopAcquireOverlayState extends State<ShopAcquireOverlay>
             AnimatedBuilder(
               animation: Listenable.merge([_itemCtrl, _bannerCtrl, _shakeCtrl]),
               builder: (context, _) {
-                final shakeOffset = math.sin(_shakeCtrl.value * math.pi * 6) *
+                final shakeOffset =
+                    math.sin(_shakeCtrl.value * math.pi * 6) *
                     7 *
                     (1 - _shakeCtrl.value);
                 return Transform.translate(
@@ -156,15 +163,19 @@ class _ShopAcquireOverlayState extends State<ShopAcquireOverlay>
                           opacity: _itemCtrl.value.clamp(0.0, 1.0),
                           child: Text(
                             'ACQUIRED',
-                            style: Cyber.label(13, color: accent, letterSpacing: 4.2)
-                                .copyWith(
-                              shadows: [
-                                Shadow(
-                                  color: accent.withValues(alpha: 0.65),
-                                  blurRadius: 16,
+                            style:
+                                Cyber.label(
+                                  13,
+                                  color: accent,
+                                  letterSpacing: 4.2,
+                                ).copyWith(
+                                  shadows: [
+                                    Shadow(
+                                      color: accent.withValues(alpha: 0.65),
+                                      blurRadius: 16,
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
                           ),
                         ),
                         const SizedBox(height: 22),
@@ -172,7 +183,11 @@ class _ShopAcquireOverlayState extends State<ShopAcquireOverlay>
                           scale: _itemScale.value.clamp(0.0, 1.4),
                           child: Container(
                             decoration: BoxDecoration(
-                              boxShadow: Cyber.glow(accent, alpha: 0.5, blur: 36),
+                              boxShadow: Cyber.glow(
+                                accent,
+                                alpha: 0.5,
+                                blur: 36,
+                              ),
                             ),
                             child: widget.preview,
                           ),
@@ -185,24 +200,29 @@ class _ShopAcquireOverlayState extends State<ShopAcquireOverlay>
                             child: Column(
                               children: [
                                 ConstrainedBox(
-                                  constraints: const BoxConstraints(maxWidth: 300),
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 300,
+                                  ),
                                   child: Text(
                                     widget.name.toUpperCase(),
                                     textAlign: TextAlign.center,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
-                                    style: Cyber.display(
-                                      26,
-                                      color: Colors.white,
-                                      letterSpacing: 1.4,
-                                    ).copyWith(
-                                      shadows: [
-                                        Shadow(
-                                          color: accent.withValues(alpha: 0.55),
-                                          blurRadius: 18,
+                                    style:
+                                        Cyber.display(
+                                          26,
+                                          color: Colors.white,
+                                          letterSpacing: 1.4,
+                                        ).copyWith(
+                                          shadows: [
+                                            Shadow(
+                                              color: accent.withValues(
+                                                alpha: 0.55,
+                                              ),
+                                              blurRadius: 18,
+                                            ),
+                                          ],
                                         ),
-                                      ],
-                                    ),
                                   ),
                                 ),
                                 if (widget.coinsSpent > 0) ...[
@@ -214,14 +234,15 @@ class _ShopAcquireOverlayState extends State<ShopAcquireOverlay>
                                       const SizedBox(width: 6),
                                       Text(
                                         '−${_formatInt(widget.coinsSpent)}',
-                                        style: Cyber.display(
-                                          18,
-                                          color: Cyber.muted,
-                                        ).copyWith(
-                                          fontFeatures: const [
-                                            FontFeature.tabularFigures(),
-                                          ],
-                                        ),
+                                        style:
+                                            Cyber.display(
+                                              18,
+                                              color: Cyber.muted,
+                                            ).copyWith(
+                                              fontFeatures: const [
+                                                FontFeature.tabularFigures(),
+                                              ],
+                                            ),
                                       ),
                                     ],
                                   ),
@@ -247,7 +268,11 @@ class _ShopAcquireOverlayState extends State<ShopAcquireOverlay>
                   child: Center(
                     child: Text(
                       'TAP TO CONTINUE',
-                      style: Cyber.label(11, color: Cyber.muted, letterSpacing: 2),
+                      style: Cyber.label(
+                        11,
+                        color: Cyber.muted,
+                        letterSpacing: 2,
+                      ),
                     ),
                   ),
                 ),

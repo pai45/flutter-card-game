@@ -11,23 +11,35 @@ import 'basketball_lobby_screen.dart';
 /// mode's cubit; the lobby swaps to a basketball roster-deck builder when
 /// editing, and app-level navigation is delegated up via [onNavigate].
 class BasketballTabContent extends StatelessWidget {
-  const BasketballTabContent({required this.onNavigate, super.key});
+  const BasketballTabContent({
+    required this.onNavigate,
+    this.onBrowseShop,
+    super.key,
+  });
 
   final ValueChanged<AppSection> onNavigate;
+  final VoidCallback? onBrowseShop;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => BasketballCubit(SecureGameStorage())..load(),
-      child: _BasketballRouter(onNavigate: onNavigate),
+      child: _BasketballRouter(
+        onNavigate: onNavigate,
+        onBrowseShop: onBrowseShop,
+      ),
     );
   }
 }
 
 class _BasketballRouter extends StatefulWidget {
-  const _BasketballRouter({required this.onNavigate});
+  const _BasketballRouter({
+    required this.onNavigate,
+    this.onBrowseShop,
+  });
 
   final ValueChanged<AppSection> onNavigate;
+  final VoidCallback? onBrowseShop;
 
   @override
   State<_BasketballRouter> createState() => _BasketballRouterState();
@@ -42,6 +54,7 @@ class _BasketballRouterState extends State<_BasketballRouter> {
       return BasketballDeckBuilderScreen(
         onBack: () => setState(() => _editingDeck = false),
         onPlayHoopDuel: () => setState(() => _editingDeck = false),
+        onBrowseShop: widget.onBrowseShop,
       );
     }
 

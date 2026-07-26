@@ -78,13 +78,11 @@ void main() {
                 if (sport == Sport.football) footballQuizOpens++;
                 if (sport == Sport.basketball) basketballQuizOpens++;
                 if (sport == Sport.cricket) cricketQuizOpens++;
-                if (sport == Sport.f1) f1QuizOpens++;
+                if (sport == Sport.motorsport) f1QuizOpens++;
                 if (sport == Sport.tennis) tennisQuizOpens++;
               },
               onOpenFootballBingo: () => footballBingoOpens++,
               onOpenFootballChess: () => footballChessOpens++,
-              onOpenSuperOver: () {},
-              onOpenCricketDeck: () {},
               onOpenGuessPlayer: () => footballGuessPlayerOpens++,
               onOpenBasketballGuessPlayer: () => basketballGuessPlayerOpens++,
               onOpenCricketGuessPlayer: () => cricketGuessPlayerOpens++,

@@ -31,6 +31,7 @@ import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/profile_banner_visual.dart';
 import '../../widgets/team_logo.dart';
 import '../deck/all_cards_screen.dart';
+import '../deck/all_decks_screen.dart';
 import '../friends/friends_arena_screen.dart';
 import '../how_to_play/how_to_play_hub_screen.dart';
 import '../leaderboard/widgets/rank_widgets.dart';
@@ -39,8 +40,10 @@ import '../predictions/prediction_match_history_screen.dart';
 import '../predictions/prediction_picks_history_screen.dart';
 import 'achievements_screen.dart';
 import 'oz_coin_history_screen.dart';
+import 'talk_to_statoz_screen.dart';
 import 'xp_history_screen.dart';
 import 'widgets/achievement_grid.dart';
+import 'widgets/all_decks_profile_card.dart';
 import 'widgets/level_progress.dart';
 import 'widgets/oz_coin_tracker_card.dart';
 import 'widgets/profile_card.dart';
@@ -237,6 +240,16 @@ class ProfileScreen extends StatelessWidget {
                                   game.matchHistory,
                                 ),
                               ),
+                              const SizedBox(height: 14),
+                              AllDecksProfileCard(
+                                game: game,
+                                onTap: () => _push(
+                                  context,
+                                  (nav) => AllDecksScreen(
+                                    onBack: () => nav(AppSection.profile),
+                                  ),
+                                ),
+                              ),
                               const SizedBox(height: 18),
                               const _TimeZoneSetupCard(),
                               const SizedBox(height: 14),
@@ -257,9 +270,13 @@ class ProfileScreen extends StatelessWidget {
                                 ),
                               ),
                               _NavRow(
-                                icon: Icons.bug_report,
-                                label: 'Report a Bug / Mismatch',
-                                onTap: () => _showBugReportDialog(context),
+                                icon: Icons.headset_mic,
+                                label: 'Talk to StatOz 1:1',
+                                onTap: () => _push(
+                                  context,
+                                  (nav) =>
+                                      TalkToStatozScreen(onNavigate: nav),
+                                ),
                               ),
                               _NavRow(
                                 icon: Icons.settings,
@@ -311,29 +328,6 @@ class ProfileScreen extends StatelessWidget {
       builder: (context) => const _LogoutConfirmDialog(),
     );
     return result ?? false;
-  }
-
-  Future<void> _showBugReportDialog(BuildContext context) async {
-    final report = await showDialog<_BugReport>(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.8),
-      builder: (context) => const _BugReportDialog(),
-    );
-
-    if (!context.mounted || report == null) return;
-
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(
-            'Report submitted: ${report.description}',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          duration: const Duration(seconds: 2),
-        ),
-      );
   }
 
   void _push(
@@ -960,200 +954,10 @@ class _CountBadge extends StatelessWidget {
   }
 }
 
-// ─── Bug report dialog ────────────────────────────────────────────────────────
+// ─── Dialog action (shared by logout confirm) ────────────────────────────────
 
-class _BugReport {
-  const _BugReport({required this.description, required this.content});
-
-  final String description;
-  final String content;
-}
-
-class _BugReportDialog extends StatefulWidget {
-  const _BugReportDialog();
-
-  @override
-  State<_BugReportDialog> createState() => _BugReportDialogState();
-}
-
-class _BugReportDialogState extends State<_BugReportDialog> {
-  final _description = TextEditingController();
-  final _content = TextEditingController();
-
-  bool _submittedEmpty = false;
-
-  @override
-  void dispose() {
-    _description.dispose();
-    _content.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final description = _description.text.trim();
-    final content = _content.text.trim();
-
-    if (description.isEmpty || content.isEmpty) {
-      setState(() => _submittedEmpty = true);
-      return;
-    }
-
-    Navigator.of(
-      context,
-    ).pop(_BugReport(description: description, content: content));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      elevation: 0,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 20),
-      backgroundColor: Colors.transparent,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 380),
-        child: CyberPanel(
-          accent: Cyber.cyan,
-          padding: EdgeInsets.zero,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.bug_report,
-                          color: Cyber.cyan,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'REPORT',
-                          style: Cyber.label(
-                            11,
-                            color: Cyber.cyan,
-                            letterSpacing: 2.2,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'BUG / MISMATCH',
-                      style: Cyber.display(16, letterSpacing: 1.1),
-                    ),
-                    const SizedBox(height: 14),
-                    _BugReportField(
-                      controller: _description,
-                      label: 'Description',
-                      hint: 'Short summary',
-                      error:
-                          _submittedEmpty && _description.text.trim().isEmpty,
-                    ),
-                    const SizedBox(height: 12),
-                    _BugReportField(
-                      controller: _content,
-                      label: 'Content',
-                      hint: 'What happened?',
-                      maxLines: 5,
-                      error: _submittedEmpty && _content.text.trim().isEmpty,
-                    ),
-                  ],
-                ),
-              ),
-              const HudLine(),
-              SizedBox(
-                height: 50,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _BugReportAction(
-                        label: 'Cancel',
-                        color: Cyber.muted,
-                        onTap: () => Navigator.of(context).pop(),
-                      ),
-                    ),
-                    Container(width: 1, color: const Color(0xff2a303c)),
-                    Expanded(
-                      child: _BugReportAction(
-                        label: 'Submit >',
-                        color: Cyber.cyan,
-                        onTap: _submit,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _BugReportField extends StatelessWidget {
-  const _BugReportField({
-    required this.controller,
-    required this.label,
-    required this.hint,
-    required this.error,
-    this.maxLines = 1,
-  });
-
-  final TextEditingController controller;
-  final String label;
-  final String hint;
-  final bool error;
-  final int maxLines;
-
-  @override
-  Widget build(BuildContext context) {
-    final borderColor = error ? Cyber.red : const Color(0xff343b49);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label.toUpperCase(),
-          style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1.3),
-        ),
-        const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          maxLines: maxLines,
-          style: Cyber.body(13),
-          cursorColor: Cyber.cyan,
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: Cyber.body(13, color: Cyber.muted),
-            filled: true,
-            fillColor: Cyber.bg.withValues(alpha: 0.45),
-            isDense: true,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.zero,
-              borderSide: BorderSide(color: borderColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.zero,
-              borderSide: BorderSide(color: borderColor, width: 1.4),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _BugReportAction extends StatelessWidget {
-  const _BugReportAction({
+class _DialogAction extends StatelessWidget {
+  const _DialogAction({
     required this.label,
     required this.color,
     required this.onTap,
@@ -1353,15 +1157,15 @@ class _LogoutConfirmDialog extends StatelessWidget {
                 child: Row(
                   children: [
                     Expanded(
-                      child: _BugReportAction(
+                      child: _DialogAction(
                         label: 'Cancel',
                         color: Cyber.muted,
                         onTap: () => Navigator.of(context).pop(false),
                       ),
                     ),
-                    Container(width: 1, color: const Color(0xff2a303c)),
+                    Container(width: 1, color: Cyber.line),
                     Expanded(
-                      child: _BugReportAction(
+                      child: _DialogAction(
                         label: 'Log Out >',
                         color: Cyber.red,
                         onTap: () => Navigator.of(context).pop(true),

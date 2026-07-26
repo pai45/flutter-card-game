@@ -1,6 +1,9 @@
 import '../../config/enums.dart';
+import '../../data/basketball_teams.dart';
+import '../../data/grand_prix_liveries.dart';
 import '../../models/cards.dart';
 import '../../models/deck.dart';
+import '../../models/grand_prix.dart';
 import '../../models/match.dart';
 import '../../models/oz_coin_ledger.dart';
 import '../../models/packs.dart';
@@ -63,7 +66,7 @@ class PackRevealData {
     actionCards: result.actionCards,
     headline: 'CRICKET\nSTARTER',
     statusLabel: 'UNLOCKED',
-    ctaLabel: 'ENTER SUPER OVER',
+    ctaLabel: 'ENTER FINAL OVER',
     summaryLabel: '${result.cardCount} CARDS ADDED TO YOUR COLLECTION',
     xpGained: result.xpGained,
     levelsGained: levelsGained,
@@ -83,6 +86,36 @@ class PackRevealData {
     xpGained: result.xpGained,
     levelsGained: levelsGained,
     maxAnimatedPlayerCards: 3,
+  );
+
+  factory PackRevealData.tennisStarter({
+    required PackResult result,
+    required List<int> levelsGained,
+  }) => PackRevealData(
+    playerCards: result.playerCards,
+    actionCards: result.actionCards,
+    headline: 'TENNIS\nSTARTER',
+    statusLabel: 'UNLOCKED',
+    ctaLabel: 'ENTER TENNIS RALLY',
+    summaryLabel: 'YOUR FIRST PLAYER IS SIGNED',
+    xpGained: result.xpGained,
+    levelsGained: levelsGained,
+    maxAnimatedPlayerCards: tennisStarterCardCount,
+  );
+
+  factory PackRevealData.grandPrixStarter({
+    required PackResult result,
+    required List<int> levelsGained,
+  }) => PackRevealData(
+    playerCards: result.playerCards,
+    actionCards: result.actionCards,
+    headline: 'PIT LANE\nSTARTER',
+    statusLabel: 'UNLOCKED',
+    ctaLabel: 'ENTER GRAND PRIX DASH',
+    summaryLabel: 'YOUR FIRST DRIVER IS SIGNED',
+    xpGained: result.xpGained,
+    levelsGained: levelsGained,
+    maxAnimatedPlayerCards: grandPrixStarterCardCount,
   );
 
   factory PackRevealData.shop({
@@ -195,9 +228,13 @@ class GameState {
     required this.deckDefenders,
     required this.deckActions,
     required this.deckKeeper,
-    required this.deckBatsmen,
+    required this.deckFinalOverBatsmen,
     required this.deckBasketballPlayers,
     required this.deckBasketballStarter,
+    required this.deckTennisPlayers,
+    required this.deckTennisStarter,
+    required this.deckRacingPlayers,
+    required this.deckRacingStarter,
     required this.coins,
     required this.coinLedger,
     required this.xpLedger,
@@ -209,12 +246,17 @@ class GameState {
     required this.equippedAvatarFrameId,
     required this.ownedAvatarIds,
     required this.ownedBannerIds,
+    required this.ownedFinalOverKitIds,
+    required this.ownedGrandPrixLiveryIds,
+    required this.ownedBasketballTeamIds,
     required this.matchHistory,
     required this.tutorialSeen,
     required this.pendingPackReveal,
     required this.starterPackClaimed,
     required this.cricketStarterPackClaimed,
     required this.basketballStarterPackClaimed,
+    required this.tennisStarterPackClaimed,
+    required this.grandPrixStarterPackClaimed,
     required this.dailyDropLastClaimedAt,
     required this.phase,
     required this.currentRound,
@@ -228,6 +270,8 @@ class GameState {
     required this.currentScenario,
     required this.selectedPlayerCard,
     required this.selectedActionCard,
+    required this.opponentSelectedPlayerCard,
+    required this.opponentSelectedActionCard,
     required this.usedPlayerCards,
     required this.usedActionCards,
     required this.redCardedCards,
@@ -255,7 +299,10 @@ class GameState {
       goalkeepers,
       [defaultDeckSlots.first.keeper].whereType<String>().toList(),
     ).firstOrNull,
-    deckBatsmen: cardsByIds(batsmen, defaultDeckSlots.first.batsmen),
+    deckFinalOverBatsmen: cardsByIds(
+      batsmen,
+      defaultDeckSlots.first.finalOverBatsmen,
+    ),
     deckBasketballPlayers: cardsByIds(
       basketballPlayerCards,
       defaultDeckSlots.first.basketballPlayers,
@@ -263,6 +310,22 @@ class GameState {
     deckBasketballStarter: cardsByIds(
       basketballPlayerCards,
       [defaultDeckSlots.first.basketballStarter].whereType<String>().toList(),
+    ).firstOrNull,
+    deckTennisPlayers: cardsByIds(
+      tennisPlayerCards,
+      defaultDeckSlots.first.tennisPlayers,
+    ),
+    deckTennisStarter: cardsByIds(
+      tennisPlayerCards,
+      [defaultDeckSlots.first.tennisStarter].whereType<String>().toList(),
+    ).firstOrNull,
+    deckRacingPlayers: cardsByIds(
+      racingPlayerCards,
+      defaultDeckSlots.first.racingPlayers,
+    ),
+    deckRacingStarter: cardsByIds(
+      racingPlayerCards,
+      [defaultDeckSlots.first.racingStarter].whereType<String>().toList(),
     ).firstOrNull,
     coins: 0,
     coinLedger: const [],
@@ -275,12 +338,17 @@ class GameState {
     equippedAvatarFrameId: '',
     ownedAvatarIds: const [],
     ownedBannerIds: const [],
+    ownedFinalOverKitIds: const ['voltage'],
+    ownedGrandPrixLiveryIds: defaultOwnedGrandPrixLiveryIds(),
+    ownedBasketballTeamIds: defaultOwnedBasketballTeamIds(),
     matchHistory: const [],
     tutorialSeen: const {},
     pendingPackReveal: null,
     starterPackClaimed: false,
     cricketStarterPackClaimed: false,
     basketballStarterPackClaimed: false,
+    tennisStarterPackClaimed: false,
+    grandPrixStarterPackClaimed: false,
     dailyDropLastClaimedAt: null,
     phase: MatchPhase.idle,
     currentRound: 0,
@@ -294,6 +362,8 @@ class GameState {
     currentScenario: null,
     selectedPlayerCard: null,
     selectedActionCard: null,
+    opponentSelectedPlayerCard: null,
+    opponentSelectedActionCard: null,
     usedPlayerCards: const [],
     usedActionCards: const [],
     redCardedCards: const [],
@@ -316,9 +386,13 @@ class GameState {
   final List<PlayerCard> deckDefenders;
   final List<ActionCard> deckActions;
   final PlayerCard? deckKeeper;
-  final List<PlayerCard> deckBatsmen;
+  final List<PlayerCard> deckFinalOverBatsmen;
   final List<PlayerCard> deckBasketballPlayers;
   final PlayerCard? deckBasketballStarter;
+  final List<PlayerCard> deckTennisPlayers;
+  final PlayerCard? deckTennisStarter;
+  final List<PlayerCard> deckRacingPlayers;
+  final PlayerCard? deckRacingStarter;
   final int coins;
   final List<OzCoinLedgerEntry> coinLedger;
   final List<XpLedgerEntry> xpLedger;
@@ -332,12 +406,17 @@ class GameState {
   // portrait short-names; banner ids are the shop banner placeholder ids.
   final List<String> ownedAvatarIds;
   final List<String> ownedBannerIds;
+  final List<String> ownedFinalOverKitIds;
+  final List<String> ownedGrandPrixLiveryIds;
+  final List<String> ownedBasketballTeamIds;
   final List<MatchHistoryEntry> matchHistory;
   final Set<String> tutorialSeen;
   final PackRevealData? pendingPackReveal;
   final bool starterPackClaimed;
   final bool cricketStarterPackClaimed;
   final bool basketballStarterPackClaimed;
+  final bool tennisStarterPackClaimed;
+  final bool grandPrixStarterPackClaimed;
   final DateTime? dailyDropLastClaimedAt;
   final MatchPhase phase;
   final int currentRound;
@@ -351,6 +430,12 @@ class GameState {
   final ScenarioCard? currentScenario;
   final PlayerCard? selectedPlayerCard;
   final ActionCard? selectedActionCard;
+
+  /// The CPU's committed pick for this round, decided when the play beat
+  /// starts (so the board can lift their face-down card) and consumed by
+  /// [MovePlayed] at resolve. Cleared after every round.
+  final PlayerCard? opponentSelectedPlayerCard;
+  final ActionCard? opponentSelectedActionCard;
   final List<String> usedPlayerCards;
   final List<String> usedActionCards;
   final List<String> redCardedCards;
@@ -383,9 +468,9 @@ class GameState {
       deckActions.every((card) => ownedActionCardIds.contains(card.id)) &&
       ownedCardIds.contains(deckKeeper!.id);
 
-  bool get superOverDeckReady =>
-      deckBatsmen.length == 3 &&
-      deckBatsmen.every((card) => ownedCardIds.contains(card.id));
+  bool get finalOverDeckReady =>
+      deckFinalOverBatsmen.length == 3 &&
+      deckFinalOverBatsmen.every((card) => ownedCardIds.contains(card.id));
 
   bool get hoopDuelDeckReady =>
       deckBasketballPlayers.length == 3 &&
@@ -404,6 +489,30 @@ class GameState {
       ) &&
       deckBasketballPlayers.every((card) => ownedCardIds.contains(card.id));
 
+  bool get tennisDeckReady =>
+      deckTennisPlayers.isNotEmpty &&
+      deckTennisStarter != null &&
+      deckTennisPlayers.any((card) => card.id == deckTennisStarter!.id) &&
+      ownedCardIds.contains(deckTennisStarter!.id);
+
+  bool get racingDriverDeckReady =>
+      deckRacingPlayers.isNotEmpty &&
+      deckRacingStarter != null &&
+      deckRacingPlayers.any((card) => card.id == deckRacingStarter!.id) &&
+      ownedCardIds.contains(deckRacingStarter!.id);
+
+  int get sportDeckReadyCount => [
+    pitchDuelDeckReady,
+    finalOverDeckReady,
+    hoopDuelDeckReady,
+    tennisDeckReady,
+    racingDriverDeckReady,
+  ].where((ready) => ready).length;
+
+  bool grandPrixPitDeckReady(GrandPrixLivery equippedLivery) =>
+      racingDriverDeckReady &&
+      isGrandPrixLiveryOwned(equippedLivery.name, ownedGrandPrixLiveryIds);
+
   GameState copyWith({
     bool? loading,
     List<StoredDeckSlot>? deckSlots,
@@ -412,9 +521,13 @@ class GameState {
     List<PlayerCard>? deckDefenders,
     List<ActionCard>? deckActions,
     Object? deckKeeper = _sentinel,
-    List<PlayerCard>? deckBatsmen,
+    List<PlayerCard>? deckFinalOverBatsmen,
     List<PlayerCard>? deckBasketballPlayers,
     Object? deckBasketballStarter = _sentinel,
+    List<PlayerCard>? deckTennisPlayers,
+    Object? deckTennisStarter = _sentinel,
+    List<PlayerCard>? deckRacingPlayers,
+    Object? deckRacingStarter = _sentinel,
     int? coins,
     List<OzCoinLedgerEntry>? coinLedger,
     List<XpLedgerEntry>? xpLedger,
@@ -426,12 +539,17 @@ class GameState {
     String? equippedAvatarFrameId,
     List<String>? ownedAvatarIds,
     List<String>? ownedBannerIds,
+    List<String>? ownedFinalOverKitIds,
+    List<String>? ownedGrandPrixLiveryIds,
+    List<String>? ownedBasketballTeamIds,
     List<MatchHistoryEntry>? matchHistory,
     Set<String>? tutorialSeen,
     Object? pendingPackReveal = _sentinel,
     bool? starterPackClaimed,
     bool? cricketStarterPackClaimed,
     bool? basketballStarterPackClaimed,
+    bool? tennisStarterPackClaimed,
+    bool? grandPrixStarterPackClaimed,
     Object? dailyDropLastClaimedAt = _sentinel,
     MatchPhase? phase,
     int? currentRound,
@@ -445,6 +563,8 @@ class GameState {
     Object? currentScenario = _sentinel,
     Object? selectedPlayerCard = _sentinel,
     Object? selectedActionCard = _sentinel,
+    Object? opponentSelectedPlayerCard = _sentinel,
+    Object? opponentSelectedActionCard = _sentinel,
     List<String>? usedPlayerCards,
     List<String>? usedActionCards,
     List<String>? redCardedCards,
@@ -469,11 +589,19 @@ class GameState {
     deckKeeper: deckKeeper == _sentinel
         ? this.deckKeeper
         : deckKeeper as PlayerCard?,
-    deckBatsmen: deckBatsmen ?? this.deckBatsmen,
+    deckFinalOverBatsmen: deckFinalOverBatsmen ?? this.deckFinalOverBatsmen,
     deckBasketballPlayers: deckBasketballPlayers ?? this.deckBasketballPlayers,
     deckBasketballStarter: deckBasketballStarter == _sentinel
         ? this.deckBasketballStarter
         : deckBasketballStarter as PlayerCard?,
+    deckTennisPlayers: deckTennisPlayers ?? this.deckTennisPlayers,
+    deckTennisStarter: deckTennisStarter == _sentinel
+        ? this.deckTennisStarter
+        : deckTennisStarter as PlayerCard?,
+    deckRacingPlayers: deckRacingPlayers ?? this.deckRacingPlayers,
+    deckRacingStarter: deckRacingStarter == _sentinel
+        ? this.deckRacingStarter
+        : deckRacingStarter as PlayerCard?,
     coins: coins ?? this.coins,
     coinLedger: coinLedger ?? this.coinLedger,
     xpLedger: xpLedger ?? this.xpLedger,
@@ -485,6 +613,11 @@ class GameState {
     equippedAvatarFrameId: equippedAvatarFrameId ?? this.equippedAvatarFrameId,
     ownedAvatarIds: ownedAvatarIds ?? this.ownedAvatarIds,
     ownedBannerIds: ownedBannerIds ?? this.ownedBannerIds,
+    ownedFinalOverKitIds: ownedFinalOverKitIds ?? this.ownedFinalOverKitIds,
+    ownedGrandPrixLiveryIds:
+        ownedGrandPrixLiveryIds ?? this.ownedGrandPrixLiveryIds,
+    ownedBasketballTeamIds:
+        ownedBasketballTeamIds ?? this.ownedBasketballTeamIds,
     matchHistory: matchHistory ?? this.matchHistory,
     tutorialSeen: tutorialSeen ?? this.tutorialSeen,
     pendingPackReveal: pendingPackReveal == _sentinel
@@ -495,6 +628,10 @@ class GameState {
         cricketStarterPackClaimed ?? this.cricketStarterPackClaimed,
     basketballStarterPackClaimed:
         basketballStarterPackClaimed ?? this.basketballStarterPackClaimed,
+    tennisStarterPackClaimed:
+        tennisStarterPackClaimed ?? this.tennisStarterPackClaimed,
+    grandPrixStarterPackClaimed:
+        grandPrixStarterPackClaimed ?? this.grandPrixStarterPackClaimed,
     dailyDropLastClaimedAt: dailyDropLastClaimedAt == _sentinel
         ? this.dailyDropLastClaimedAt
         : dailyDropLastClaimedAt as DateTime?,
@@ -524,6 +661,12 @@ class GameState {
     selectedActionCard: selectedActionCard == _sentinel
         ? this.selectedActionCard
         : selectedActionCard as ActionCard?,
+    opponentSelectedPlayerCard: opponentSelectedPlayerCard == _sentinel
+        ? this.opponentSelectedPlayerCard
+        : opponentSelectedPlayerCard as PlayerCard?,
+    opponentSelectedActionCard: opponentSelectedActionCard == _sentinel
+        ? this.opponentSelectedActionCard
+        : opponentSelectedActionCard as ActionCard?,
     usedPlayerCards: usedPlayerCards ?? this.usedPlayerCards,
     usedActionCards: usedActionCards ?? this.usedActionCards,
     redCardedCards: redCardedCards ?? this.redCardedCards,

@@ -9,11 +9,54 @@ import 'package:card_game/data/final_over_kits.dart';
 import 'package:card_game/games/final_over/final_over_game.dart';
 import 'package:card_game/screens/final_over/widgets/final_over_controls.dart';
 import 'package:card_game/screens/final_over/widgets/final_over_hud.dart';
-import 'package:card_game/widgets/cyber/cyber_cta_button.dart';
+import 'package:card_game/screens/final_over/widgets/final_over_swing_surface.dart';
 import 'package:card_game/widgets/cyber/cyber_widgets.dart';
 
 void main() {
-  testWidgets('gesture setup collapses into a clear hold and release CTA', (
+  group('classifyBattingGesture', () {
+    test('a short press is a grounded straight tap', () {
+      final gesture = classifyBattingGesture(delta: const Offset(6, -4));
+      expect(gesture.isSwipe, isFalse);
+      expect(gesture.direction, ShotDirection.straight);
+      expect(gesture.elevation, Elevation.ground);
+    });
+
+    test('a leftward swipe aims off side along the ground', () {
+      final gesture = classifyBattingGesture(delta: const Offset(-70, 0));
+      expect(gesture.isSwipe, isTrue);
+      expect(gesture.direction, ShotDirection.offSide);
+      expect(gesture.elevation, Elevation.ground);
+    });
+
+    test('a rightward swipe aims leg side along the ground', () {
+      final gesture = classifyBattingGesture(delta: const Offset(70, 0));
+      expect(gesture.direction, ShotDirection.legSide);
+      expect(gesture.elevation, Elevation.ground);
+    });
+
+    test('an upward swipe lofts it straight', () {
+      final gesture = classifyBattingGesture(delta: const Offset(0, -70));
+      expect(gesture.direction, ShotDirection.straight);
+      expect(gesture.elevation, Elevation.loft);
+    });
+
+    test('an up-left swipe lofts it toward the off side', () {
+      final gesture = classifyBattingGesture(delta: const Offset(-70, -70));
+      expect(gesture.direction, ShotDirection.offSide);
+      expect(gesture.elevation, Elevation.loft);
+    });
+
+    test('a fast flat flick still lofts', () {
+      final gesture = classifyBattingGesture(
+        delta: const Offset(60, -4),
+        velocity: 1400,
+      );
+      expect(gesture.direction, ShotDirection.legSide);
+      expect(gesture.elevation, Elevation.loft);
+    });
+  });
+
+  testWidgets('the batting deck shows a status strip, not a CTA or pickers', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(360, 800);
@@ -22,14 +65,7 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     final controller = MatchController();
     addTearDown(controller.dispose);
-    final game = FinalOverGame(
-      controller: controller,
-      kit: finalOverKitById('voltage'),
-      opponentKit: finalOverOpponentKit('voltage'),
-      onEvents: (_) {},
-      reducedMotion: true,
-    );
-
+    final game = _gameFor(controller);
     controller.startMatch(seed: 77, target: 10);
     controller.dispatch(const StartCommand());
     game.update(1 / 60);
@@ -38,133 +74,61 @@ void main() {
       _controlsApp(game: game, size: const Size(360, 800), showHints: true),
     );
 
-    expect(find.text('NEXT BALL'), findsNothing);
-    expect(find.text('3'), findsOneWidget);
-    expect(find.text('GROUND'), findsOneWidget);
-    expect(find.text('LOFT'), findsOneWidget);
-    expect(find.text('OFF'), findsOneWidget);
-    expect(find.text('STRAIGHT'), findsOneWidget);
-    expect(find.text('LEG'), findsOneWidget);
-    expect(find.text('WAIT'), findsNothing);
-    expect(find.text('OVERDRIVE'), findsOneWidget);
-    expect(find.byType(HudHoldCtaButton), findsNothing);
+    // No more HOLD TO SWING button, SHOT LOCKED strip, or GROUND/LOFT/aim
+    // pickers — the swing moved onto the pitch.
+    expect(find.text('HOLD TO SWING'), findsNothing);
+    expect(find.text('RELEASE AT THE BAT'), findsNothing);
+    expect(find.text('SHOT LOCKED'), findsNothing);
+    expect(find.text('GROUND'), findsNothing);
+    expect(find.text('LOFT'), findsNothing);
+    expect(find.text('READ THE BALL'), findsOneWidget);
     expect(
       tester.getSize(find.byKey(_controlStackKey)).height,
-      lessThanOrEqualTo(184),
+      lessThanOrEqualTo(140),
     );
-    await tester.tap(find.text('OVERDRIVE'));
-    game.update(0.001);
-    await tester.pump();
-    expect(controller.state.powerShotArmed, isFalse);
-
-    await tester.tap(find.byKey(const ValueKey('shot-type-loft')));
-    game.update(0.001);
-    await tester.pump();
-    expect(controller.state.selectedElevation, Elevation.loft);
-
-    await _dragAim(tester, const Offset(-38, -34));
-    game.update(0.001);
-    await tester.pump();
-    expect(controller.state.selectedDirection, ShotDirection.offSide);
-
-    await _dragAim(tester, const Offset(0, -38));
-    game.update(0.001);
-    await tester.pump();
-    expect(controller.state.selectedDirection, ShotDirection.straight);
-
-    await _dragAim(tester, const Offset(38, -34));
-    game.update(0.001);
-    await tester.pump();
-    expect(controller.state.selectedDirection, ShotDirection.legSide);
-
-    final aimRect = tester.getRect(find.byKey(_aimFanKey));
-    final cancelled = await tester.startGesture(
-      Offset(aimRect.center.dx, aimRect.bottom - 8),
-    );
-    await cancelled.moveBy(const Offset(-38, -34));
-    await cancelled.cancel();
-    game.update(0.001);
-    await tester.pump();
-    expect(controller.state.selectedDirection, ShotDirection.legSide);
-
-    final semantics = tester.ensureSemantics();
-    await tester.tap(find.text('OFF'));
-    game.update(0.001);
-    await tester.pump();
-    expect(controller.state.selectedDirection, ShotDirection.offSide);
-
-    final aimNode = tester.getSemantics(find.byKey(_aimFanKey));
-    final aimSemantics = find.semantics.byLabel('Shot direction');
-    expect(
-      aimNode.getSemanticsData().hasAction(ui.SemanticsAction.increase),
-      isTrue,
-    );
-    tester.semantics.increase(aimSemantics);
-    game.update(0.001);
-    await tester.pump();
-    expect(controller.state.selectedDirection, ShotDirection.straight);
-
-    final updatedAimNode = tester.getSemantics(find.byKey(_aimFanKey));
-    expect(
-      updatedAimNode.getSemanticsData().hasAction(ui.SemanticsAction.decrease),
-      isTrue,
-    );
-    tester.semantics.decrease(aimSemantics);
-    game.update(0.001);
-    await tester.pump();
-    expect(controller.state.selectedDirection, ShotDirection.offSide);
-    semantics.dispose();
-
-    await tester.tap(find.text('LEG'));
-    game.update(0.001);
-    await tester.pump();
-    expect(controller.state.selectedDirection, ShotDirection.legSide);
 
     _advanceUntil(
       controller,
       () => controller.state.phase == MatchPhase.bowlerRunUp,
     );
     game.update(0.001);
-    await _settleLockTransition(tester);
-    expect(find.text('SHOT LOCKED'), findsOneWidget);
-    expect(find.text('LOFT  •  LEG'), findsOneWidget);
+    await _settle(tester);
     expect(find.text('WATCH THE RELEASE'), findsOneWidget);
-    expect(find.byKey(_aimFanKey), findsNothing);
-    expect(find.byType(HudHoldCtaButton), findsNothing);
-    expect(
-      tester.getSize(find.byKey(_controlStackKey)).height,
-      lessThanOrEqualTo(124),
-    );
-    controller.dispatch(const SelectDirectionCommand(ShotDirection.offSide));
-    expect(controller.state.selectedDirection, ShotDirection.legSide);
+    expect(find.text('HOLD TO SWING'), findsNothing);
 
     _advanceUntil(
       controller,
       () => controller.state.phase == MatchPhase.incomingBall,
     );
     game.update(0.001);
-    await tester.pump(const Duration(milliseconds: 220));
-    expect(find.text('HOLD TO SWING'), findsOneWidget);
-    expect(find.text('RELEASE AT THE BAT'), findsOneWidget);
-    expect(
-      tester.widget<HudHoldCtaButton>(find.byType(HudHoldCtaButton)).enabled,
-      isTrue,
-    );
+    await _settle(tester);
+    expect(find.text('TAP TO HIT'), findsOneWidget);
+    expect(find.text('HOLD TO SWING'), findsNothing);
+  });
 
-    final cancelledSwing = await tester.startGesture(
-      tester.getCenter(find.text('HOLD TO SWING')),
+  testWidgets('a tap anywhere on the pitch plays a grounded straight drive', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final controller = MatchController();
+    addTearDown(controller.dispose);
+    final game = _gameFor(controller);
+    controller.startMatch(seed: 77, target: 10);
+    controller.dispatch(const StartCommand());
+    _advanceUntil(
+      controller,
+      () => controller.state.phase == MatchPhase.incomingBall,
     );
-    await tester.pump();
-    expect(find.text('RELEASE TO SWING'), findsOneWidget);
-    expect(find.text('TIME THE RELEASE'), findsOneWidget);
-    await cancelledSwing.cancel();
-    await tester.pump();
-    expect(controller.state.swingIntent, isNull);
-    expect(find.text('HOLD TO SWING'), findsOneWidget);
+    game.update(1 / 60);
 
-    final gesture = await tester.startGesture(
-      tester.getCenter(find.text('HOLD TO SWING')),
-    );
+    await tester.pumpWidget(_surfaceApp(game));
+    await tester.pump();
+    expect(game.canSwing.value, isTrue);
+
+    final gesture = await tester.startGesture(const Offset(180, 400));
     final expectedContact =
         controller.state.currentDelivery!.expectedContactMicros;
     _advanceUntil(
@@ -174,8 +138,72 @@ void main() {
     await gesture.up();
 
     expect(controller.state.swingIntent, isNotNull);
+    expect(controller.state.swingIntent!.direction, ShotDirection.straight);
+    expect(controller.state.selectedElevation, Elevation.ground);
+    expect(controller.state.contactOutcome, isNotNull);
+  });
+
+  testWidgets('a right-up swipe on the pitch lofts it to the leg side', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final controller = MatchController();
+    addTearDown(controller.dispose);
+    final game = _gameFor(controller);
+    controller.startMatch(seed: 77, target: 10);
+    controller.dispatch(const StartCommand());
+    _advanceUntil(
+      controller,
+      () => controller.state.phase == MatchPhase.incomingBall,
+    );
+    game.update(1 / 60);
+
+    await tester.pumpWidget(_surfaceApp(game));
+    await tester.pump();
+
+    final gesture = await tester.startGesture(const Offset(140, 500));
+    await gesture.moveBy(const Offset(80, -70));
+    final expectedContact =
+        controller.state.currentDelivery!.expectedContactMicros;
+    _advanceUntil(
+      controller,
+      () => controller.state.simulationMicros >= expectedContact,
+    );
+    await gesture.up();
+
+    expect(controller.state.swingIntent!.direction, ShotDirection.legSide);
+    expect(controller.state.selectedElevation, Elevation.loft);
+  });
+
+  test('a swing command can aim and loft the shot mid-delivery', () {
+    final controller = MatchController();
+    addTearDown(controller.dispose);
+    controller.startMatch(seed: 77, target: 10);
+    controller.dispatch(const StartCommand());
+    _advanceUntil(
+      controller,
+      () => controller.state.phase == MatchPhase.incomingBall,
+    );
+    final expectedContact =
+        controller.state.currentDelivery!.expectedContactMicros;
+    _advanceUntil(
+      controller,
+      () => controller.state.simulationMicros >= expectedContact,
+    );
+    expect(controller.state.canSwing, isTrue);
+
+    controller.dispatch(
+      const SwingCommand(ShotDirection.legSide, elevation: Elevation.loft),
+    );
+
+    expect(controller.state.swingIntent, isNotNull);
     expect(controller.state.swingIntent!.direction, ShotDirection.legSide);
     expect(controller.state.swingIntent!.charge, isNull);
+    expect(controller.state.selectedElevation, Elevation.loft);
+    expect(controller.state.contactOutcome, isNotNull);
   });
 
   for (final size in const [
@@ -184,7 +212,7 @@ void main() {
     Size(412, 915),
     Size(480, 1040),
   ]) {
-    testWidgets('compact deck fits setup and locked states at '
+    testWidgets('batting deck stays compact at '
         '${size.width.toInt()}x${size.height.toInt()}', (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
@@ -200,7 +228,7 @@ void main() {
       await tester.pumpWidget(_controlsApp(game: game, size: size));
       expect(
         tester.getSize(find.byKey(_controlStackKey)).height,
-        lessThanOrEqualTo(184),
+        lessThanOrEqualTo(140),
       );
       expect(tester.takeException(), isNull);
 
@@ -209,10 +237,10 @@ void main() {
         () => controller.state.phase == MatchPhase.bowlerRunUp,
       );
       game.update(0.001);
-      await _settleLockTransition(tester);
+      await _settle(tester);
       expect(
         tester.getSize(find.byKey(_controlStackKey)).height,
-        lessThanOrEqualTo(124),
+        lessThanOrEqualTo(140),
       );
       expect(find.text('WATCH THE RELEASE'), findsOneWidget);
       expect(tester.takeException(), isNull);
@@ -254,7 +282,7 @@ void main() {
     game.update(0.001);
     await tester.pump(const Duration(milliseconds: 180));
     expect(find.text('OVERDRIVE ARMED'), findsNothing);
-    expect(find.text('OD'), findsOneWidget);
+    expect(find.text('OD'), findsNothing);
   });
 
   test('bounce progress and marker visibility follow delivery length', () {
@@ -375,7 +403,6 @@ void main() {
 }
 
 const _controlStackKey = ValueKey<String>('final-over-control-stack');
-const _aimFanKey = ValueKey<String>('final-over-shot-aim');
 
 FinalOverGame _gameFor(MatchController controller) => FinalOverGame(
   controller: controller,
@@ -419,16 +446,18 @@ Widget _controlsApp({
   );
 }
 
-Future<void> _dragAim(WidgetTester tester, Offset delta) async {
-  final rect = tester.getRect(find.byKey(_aimFanKey));
-  final gesture = await tester.startGesture(
-    Offset(rect.center.dx, rect.bottom - 8),
-  );
-  await gesture.moveBy(delta);
-  await gesture.up();
-}
+Widget _surfaceApp(FinalOverGame game) => MaterialApp(
+  home: Scaffold(
+    backgroundColor: Cyber.bg,
+    body: SizedBox(
+      width: 360,
+      height: 800,
+      child: FinalOverSwingSurface(game: game),
+    ),
+  ),
+);
 
-Future<void> _settleLockTransition(WidgetTester tester) async {
+Future<void> _settle(WidgetTester tester) async {
   for (var frame = 0; frame < 20; frame++) {
     await tester.pump(const Duration(milliseconds: 16));
   }

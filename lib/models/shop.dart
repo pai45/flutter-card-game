@@ -194,6 +194,58 @@ const shopPacks = [
   ),
 ];
 
+const racingShopPacks = [
+  ShopPack(
+    id: 'racing-grid',
+    name: 'Grid Pack',
+    coinPrice: 150,
+    inrPrice: 50,
+    playerCount: 1,
+    actionCount: 0,
+    guarantee: '1 DRIVER / MOSTLY BRONZE',
+    accent: Color(0xff35e7ff),
+    odds: {
+      CardTier.bronze: 65,
+      CardTier.silver: 28,
+      CardTier.gold: 6,
+      CardTier.platinum: 1,
+    },
+  ),
+  ShopPack(
+    id: 'racing-podium',
+    name: 'Podium Pack',
+    coinPrice: 400,
+    inrPrice: 400,
+    playerCount: 2,
+    actionCount: 0,
+    guarantee: '2 DRIVERS / SILVER OR GOLD SHOT',
+    accent: Color(0xffff3df7),
+    odds: {
+      CardTier.bronze: 35,
+      CardTier.silver: 45,
+      CardTier.gold: 16,
+      CardTier.platinum: 4,
+    },
+  ),
+  ShopPack(
+    id: 'racing-pole',
+    name: 'Pole Pack',
+    coinPrice: 900,
+    inrPrice: 1000,
+    playerCount: 3,
+    actionCount: 0,
+    guarantee: '3 DRIVERS / BEST PLATINUM ODDS',
+    accent: Color(0xffffd700),
+    odds: {
+      CardTier.bronze: 10,
+      CardTier.silver: 40,
+      CardTier.gold: 35,
+      CardTier.platinum: 15,
+    },
+    gradientAccent: true,
+  ),
+];
+
 const cardBacks = [
   CardBackItem(
     id: 'default',

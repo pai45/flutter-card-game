@@ -154,6 +154,36 @@ class PickMarket {
   final String? resolvedOutcomeId;
   final String? voidReason;
 
+  PickMarket copyWith({
+    PickMarketStatus? status,
+    String? resultNote,
+    String? resolvedOutcomeId,
+    String? voidReason,
+  }) => PickMarket(
+    id: id,
+    question: question,
+    type: type,
+    sport: sport,
+    leagueId: leagueId,
+    leagueLabel: leagueLabel,
+    status: status ?? this.status,
+    outcomes: outcomes,
+    volumeOz: volumeOz,
+    closesAt: closesAt,
+    priceHistory: priceHistory,
+    matchId: matchId,
+    contextTitle: contextTitle,
+    contextSubtitle: contextSubtitle,
+    homeLabel: homeLabel,
+    awayLabel: awayLabel,
+    homeScore: homeScore,
+    awayScore: awayScore,
+    liveLabel: liveLabel,
+    resultNote: resultNote ?? this.resultNote,
+    resolvedOutcomeId: resolvedOutcomeId ?? this.resolvedOutcomeId,
+    voidReason: voidReason ?? this.voidReason,
+  );
+
   bool get canBuy =>
       status == PickMarketStatus.upcoming || status == PickMarketStatus.live;
 

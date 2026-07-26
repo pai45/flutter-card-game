@@ -52,6 +52,7 @@ class _FootballBingoScreenState extends State<FootballBingoScreen>
     WidgetsBinding.instance.addObserver(this);
     _cubit = context.read<FootballBingoCubit>();
     _elapsedSeconds = _cubit.state.progress.elapsedSeconds;
+    AudioController.instance.enterScene(AudioScene.bingo);
 
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
@@ -70,6 +71,7 @@ class _FootballBingoScreenState extends State<FootballBingoScreen>
   @override
   void dispose() {
     _timer?.cancel();
+    AudioController.instance.leaveScene(AudioScene.bingo);
     WidgetsBinding.instance.removeObserver(this);
     _cubit.updateElapsedTime(_elapsedSeconds);
     super.dispose();
@@ -107,14 +109,34 @@ class _FootballBingoScreenState extends State<FootballBingoScreen>
           end: endRect,
         );
       }
+      playSound(SoundEffect.bingoCorrect);
+      if (_completedLineAt(cellId)) {
+        playSound(SoundEffect.bingoLine);
+      }
       if (_cubit.state.completed) {
         _cubit.updateElapsedTime(_elapsedSeconds);
         await _showCompletedAndReturn();
       }
     } else {
-      playSound(SoundEffect.redCard);
+      playSound(SoundEffect.bingoWrong);
       HapticFeedback.heavyImpact();
     }
+  }
+
+  bool _completedLineAt(String cellId) {
+    final state = _cubit.state;
+    final cell = state.puzzle.cells
+        .where((candidate) => candidate.id == cellId)
+        .firstOrNull;
+    if (cell == null) return false;
+    final solved = state.solvedCellIds;
+    final rowComplete = state.puzzle.cells
+        .where((candidate) => candidate.rowId == cell.rowId)
+        .every((candidate) => solved.contains(candidate.id));
+    final columnComplete = state.puzzle.cells
+        .where((candidate) => candidate.columnId == cell.columnId)
+        .every((candidate) => solved.contains(candidate.id));
+    return rowComplete || columnComplete;
   }
 
   GlobalKey _cellKey(String cellId) =>
@@ -173,7 +195,8 @@ class _FootballBingoScreenState extends State<FootballBingoScreen>
         subtitle: '+1 LIFE',
       ),
     );
-    playSound(SoundEffect.coins);
+    playSound(SoundEffect.coinSpend);
+    playSound(SoundEffect.lifeline);
   }
 
   void _showMessage(String message) {
@@ -892,7 +915,7 @@ class _CompletionOverlayState extends State<_CompletionOverlay> {
   @override
   void initState() {
     super.initState();
-    playSound(SoundEffect.whoosh);
+    playSound(SoundEffect.bingoComplete);
     _autoAdvance();
   }
 
@@ -906,7 +929,7 @@ class _CompletionOverlayState extends State<_CompletionOverlay> {
   }
 
   void _showSummary() {
-    playSound(SoundEffect.matchWin);
+    playSound(SoundEffect.coins);
     setState(() => _summary = true);
   }
 

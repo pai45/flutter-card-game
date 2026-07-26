@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../blocs/guess_player/guess_player_cubit.dart';
 import '../../config/theme.dart';
+import '../../models/guess_player.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
-import '../shop/widgets/shop_card.dart';
+import '../../widgets/game_scaffold.dart';
 
 class GuessPlayerLogsScreen extends StatelessWidget {
   const GuessPlayerLogsScreen({
@@ -16,145 +17,279 @@ class GuessPlayerLogsScreen extends StatelessWidget {
 
   final GuessPlayerState state;
   final VoidCallback onBack;
-  final ValueChanged<String> onOpenDay;
+  final Future<bool> Function(String dayKey) onOpenDay;
 
   @override
   Widget build(BuildContext context) {
-    final items = state.unlockedDayKeys.reversed.toList();
-    final completed = items
-        .where((dayKey) => state.archive.resultsByDay[dayKey]?.won ?? false)
-        .length;
-    final completionRate = items.isEmpty
-        ? 0
-        : (completed / items.length * 100).round();
+    final currentDate =
+        DateTime.tryParse(state.currentDayKey) ?? DateTime.now();
+    final days = [
+      for (var index = 0; index < GuessPlayerCubit.archiveWindowDays; index++)
+        guessPlayerDayKey(currentDate.subtract(Duration(days: index))),
+    ];
+    final records = days
+        .map((day) => state.archive.resultsByDay[day])
+        .whereType<GuessPlayerDayRecord>()
+        .where(
+          (record) =>
+              record.status != GuessPlayerResultStatus.inProgress &&
+              record.status != GuessPlayerResultStatus.expired,
+        )
+        .toList();
+    final solved = records.where((record) => record.effectiveWon).length;
+    final rate = records.isEmpty ? 0.0 : solved / records.length;
 
-    return Scaffold(
-      backgroundColor: Cyber.bg,
-      body: CyberBackground(
-        child: SafeArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(18, 14, 8, 0),
-                child: Row(
+    return GameScaffold(
+      title: '30-DAY INTEL ARCHIVE',
+      subtitle: '${state.archive.solvedCount} ALL-TIME SOLVES',
+      leading: IconButton(
+        tooltip: 'Back to mystery home',
+        onPressed: () {
+          playSound(SoundEffect.uiTap);
+          onBack();
+        },
+        icon: const Icon(Icons.arrow_back, color: Cyber.cyan),
+      ),
+      rightSlot: const Icon(
+        Icons.storage_rounded,
+        color: Cyber.magenta,
+        size: 21,
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600),
+              child: CyberPanel(
+                accent: Cyber.magenta,
+                padding: const EdgeInsets.all(14),
+                child: Column(
                   children: [
-                    Container(width: 3, height: 22, color: Cyber.magenta),
-                    const SizedBox(width: 10),
-                    const Expanded(
-                      child: Text(
-                        'MYSTERY LOGS',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontFamily: 'Orbitron',
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 1.2,
+                    Row(
+                      children: [
+                        _ArchiveMetric(
+                          label: 'SOLVED',
+                          value: '$solved',
+                          accent: Cyber.success,
                         ),
-                      ),
+                        const _MetricDivider(),
+                        _ArchiveMetric(
+                          label: 'PLAYED',
+                          value: '${records.length}',
+                          accent: Cyber.cyan,
+                        ),
+                        const _MetricDivider(),
+                        _ArchiveMetric(
+                          label: 'WIN RATE',
+                          value: '${(rate * 100).round()}%',
+                          accent: Cyber.gold,
+                        ),
+                      ],
                     ),
-                    IconButton(
-                      onPressed: () {
-                        playSound(SoundEffect.uiTap);
-                        onBack();
-                      },
-                      icon: const Icon(Icons.close, color: Cyber.magenta),
+                    const SizedBox(height: 10),
+                    CyberProgressBar(
+                      value: rate,
+                      accent: rate > 0 ? Cyber.success : Cyber.muted,
+                      height: 7,
                     ),
                   ],
                 ),
               ),
-              if (items.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
-                  child: Row(
+            ),
+          ),
+          Expanded(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = constraints.maxWidth >= 700 ? 4 : 2;
+                return GridView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: columns,
+                    childAspectRatio: columns == 2 ? 1.28 : 1.15,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                  ),
+                  itemCount: days.length,
+                  itemBuilder: (context, index) {
+                    final dayKey = days[index];
+                    return _ArchiveCard(
+                      dayKey: dayKey,
+                      isToday: dayKey == state.currentDayKey,
+                      record: state.archive.resultsByDay[dayKey],
+                      onTap: () async {
+                        playSound(SoundEffect.uiTap);
+                        await onOpenDay(dayKey);
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ArchiveMetric extends StatelessWidget {
+  const _ArchiveMetric({
+    required this.label,
+    required this.value,
+    required this.accent,
+  });
+
+  final String label;
+  final String value;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: Cyber.display(17, color: accent).copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(label, style: Cyber.label(8, color: Cyber.muted)),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetricDivider extends StatelessWidget {
+  const _MetricDivider();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 1,
+    height: 32,
+    color: Cyber.borderSubtle,
+  );
+}
+
+class _ArchiveCard extends StatelessWidget {
+  const _ArchiveCard({
+    required this.dayKey,
+    required this.isToday,
+    required this.record,
+    required this.onTap,
+  });
+
+  final String dayKey;
+  final bool isToday;
+  final GuessPlayerDayRecord? record;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = _statusFor(record, isToday);
+    final tappable =
+        isToday ||
+        (record != null &&
+            record!.status != GuessPlayerResultStatus.expired &&
+            record!.status != GuessPlayerResultStatus.inProgress);
+    final accent = switch (status) {
+      _ArchiveStatus.solved => Cyber.success,
+      _ArchiveStatus.failed => Cyber.danger,
+      _ArchiveStatus.live => Cyber.magenta,
+      _ArchiveStatus.missed => Cyber.muted,
+    };
+    final icon = switch (status) {
+      _ArchiveStatus.solved => Icons.check_circle_rounded,
+      _ArchiveStatus.failed => Icons.cancel_rounded,
+      _ArchiveStatus.live => Icons.radar_rounded,
+      _ArchiveStatus.missed => Icons.lock_clock_rounded,
+    };
+    final label = switch (status) {
+      _ArchiveStatus.solved => 'SOLVED',
+      _ArchiveStatus.failed => 'MISSED',
+      _ArchiveStatus.live => isToday ? 'TODAY · LIVE' : 'IN PROGRESS',
+      _ArchiveStatus.missed => 'NO SIGNAL',
+    };
+
+    return Semantics(
+      button: tappable,
+      label: '${_formatDate(dayKey)}, $label',
+      child: InkWell(
+        onTap: tappable ? onTap : null,
+        child: CyberPanel(
+          accent: isToday ? Cyber.magenta : Cyber.border,
+          padding: EdgeInsets.zero,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(11),
+                  color: Color.alphaBlend(
+                    accent.withValues(alpha: status == _ArchiveStatus.missed
+                        ? 0.02
+                        : 0.07),
+                    Cyber.panel,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _LogStatBox('GUESSED', '$completed', Cyber.success),
-                      const SizedBox(width: 8),
-                      _LogStatBox('PLAYED', '${items.length}', Cyber.cyan),
-                      const Spacer(),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                      Row(
                         children: [
-                          Text(
-                            '$completionRate%',
-                            style: Cyber.display(
-                              24,
-                              color: completed > 0
-                                  ? Cyber.success
-                                  : Cyber.muted,
+                          Icon(icon, color: accent, size: 18),
+                          const Spacer(),
+                          if (isToday)
+                            Text(
+                              'TODAY',
+                              style: Cyber.label(7.5, color: Cyber.magenta),
                             ),
-                          ),
-                          const Text(
-                            'WIN RATE',
-                            style: TextStyle(
-                              color: Cyber.muted,
-                              fontFamily: 'Orbitron',
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1.5,
-                            ),
-                          ),
                         ],
+                      ),
+                      const SizedBox(height: 9),
+                      Text(
+                        _formatDate(dayKey),
+                        style: Cyber.display(
+                          12.5,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        label,
+                        style: Cyber.label(8, color: accent),
                       ),
                     ],
                   ),
                 ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-                child: ClipRRect(
-                  child: SizedBox(
-                    height: 4,
-                    child: Row(
-                      children: [
-                        if (completed > 0)
-                          Expanded(
-                            flex: completed,
-                            child: Container(color: Cyber.success),
-                          ),
-                        if (items.length - completed > 0)
-                          Expanded(
-                            flex: items.length - completed,
-                            child: Container(color: Cyber.magenta),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
               ),
-              if (items.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 10, 16, 14),
-                  child: Text(
-                    'No mystery logs yet.',
-                    style: TextStyle(color: Cyber.muted, fontSize: 12),
-                  ),
+              Container(
+                constraints: const BoxConstraints(minHeight: 30),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 9,
+                  vertical: 7,
                 ),
-              Expanded(
-                child: items.isEmpty
-                    ? const SizedBox.shrink()
-                    : GridView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              childAspectRatio: 1.15,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                            ),
-                        itemCount: items.length,
-                        itemBuilder: (context, index) {
-                          final dayKey = items[index];
-                          final result = state.archive.resultsByDay[dayKey];
-                          final isToday = dayKey == state.todayKey;
-
-                          return _LogItem(
-                            dayKey: dayKey,
-                            isToday: isToday,
-                            won: result?.won,
-                            onTap: () => onOpenDay(dayKey),
-                          );
-                        },
+                color: Cyber.bg2,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _detail(record, status),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Cyber.label(7.5, color: Cyber.muted),
                       ),
+                    ),
+                    if (tappable)
+                      Icon(
+                        Icons.chevron_right,
+                        color: accent,
+                        size: 15,
+                      ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -164,153 +299,53 @@ class GuessPlayerLogsScreen extends StatelessWidget {
   }
 }
 
-class _LogStatBox extends StatelessWidget {
-  const _LogStatBox(this.label, this.value, this.color);
+enum _ArchiveStatus { solved, failed, live, missed }
 
-  final String label;
-  final String value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 72,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xff0a0d18),
-        borderRadius: BorderRadius.zero,
-        border: Border.all(color: Cyber.borderSubtle),
-      ),
-      child: Column(
-        children: [
-          Text(value, style: Cyber.display(18, color: color)),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Cyber.muted,
-              fontFamily: 'Orbitron',
-              fontSize: 9,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.0,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+_ArchiveStatus _statusFor(GuessPlayerDayRecord? record, bool isToday) {
+  if (record == null) return isToday ? _ArchiveStatus.live : _ArchiveStatus.missed;
+  if (record.effectiveWon) return _ArchiveStatus.solved;
+  return switch (record.status) {
+    GuessPlayerResultStatus.inProgress => isToday
+        ? _ArchiveStatus.live
+        : _ArchiveStatus.missed,
+    GuessPlayerResultStatus.lost ||
+    GuessPlayerResultStatus.gaveUp ||
+    GuessPlayerResultStatus.legacy => _ArchiveStatus.failed,
+    GuessPlayerResultStatus.expired => _ArchiveStatus.missed,
+    GuessPlayerResultStatus.won => _ArchiveStatus.solved,
+  };
 }
 
-class _LogItem extends StatelessWidget {
-  const _LogItem({
-    required this.dayKey,
-    required this.isToday,
-    required this.won,
-    required this.onTap,
-  });
-
-  final String dayKey;
-  final bool isToday;
-  final bool? won; // null means played but not finished, or just not played
-  final VoidCallback onTap;
-
-  String _formatDate(String key) {
-    final date = DateTime.tryParse(key);
-    if (date == null) return key;
-    final months = [
-      'JAN',
-      'FEB',
-      'MAR',
-      'APR',
-      'MAY',
-      'JUN',
-      'JUL',
-      'AUG',
-      'SEP',
-      'OCT',
-      'NOV',
-      'DEC',
-    ];
-    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+String _detail(
+  GuessPlayerDayRecord? record,
+  _ArchiveStatus status,
+) {
+  if (record == null || status == _ArchiveStatus.missed) return 'PAST DAYS LOCKED';
+  if (record.legacy) return 'LEGACY LOG';
+  if (status == _ArchiveStatus.live) {
+    return record.startedAtEpochMs == 0
+        ? 'PLAY MYSTERY'
+        : '${record.attemptsRemaining} TRIES LEFT';
   }
+  return '${record.score} PTS · +${record.xpEarned} XP';
+}
 
-  @override
-  Widget build(BuildContext context) {
-    final accent = won == true
-        ? Cyber.success
-        : (won == false ? Cyber.danger : Cyber.magenta);
-    final icon = won == true
-        ? Icons.check_circle
-        : (won == false ? Icons.cancel : Icons.hourglass_empty);
-    final status = won == true ? 'GUESSED' : (won == false ? 'MISSED' : 'OPEN');
-    final action = won == null ? 'PLAY MYSTERY' : 'CHECK ANSWER';
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        playSound(SoundEffect.uiTap);
-        onTap();
-      },
-      child: ShopCardFrame(
-        accent: accent,
-        elevated: true,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Color.lerp(Cyber.panel, accent, 0.045),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(icon, color: accent, size: 18),
-                        const Spacer(),
-                        Text(
-                          isToday ? 'TODAY' : (won == null ? 'OPEN' : 'DONE'),
-                          style: Cyber.label(8.5, color: accent),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      _formatDate(dayKey),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Cyber.display(14, color: Colors.white),
-                    ),
-                    const Spacer(),
-                    Text(
-                      status,
-                      style: Cyber.label(
-                        8.5,
-                        color: Cyber.muted,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Container(
-              height: 32,
-              color: Colors.black.withValues(alpha: 0.88),
-              alignment: Alignment.center,
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Text(
-                action,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Cyber.label(9, color: accent, letterSpacing: 0.55),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+String _formatDate(String key) {
+  final date = DateTime.tryParse(key);
+  if (date == null) return key;
+  const months = [
+    'JAN',
+    'FEB',
+    'MAR',
+    'APR',
+    'MAY',
+    'JUN',
+    'JUL',
+    'AUG',
+    'SEP',
+    'OCT',
+    'NOV',
+    'DEC',
+  ];
+  return '${months[date.month - 1]} ${date.day}';
 }

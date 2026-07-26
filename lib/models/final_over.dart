@@ -66,6 +66,7 @@ class FinalOverMatchConfig {
     required this.tier,
     required this.target,
     required this.kitId,
+    required this.batsmanIds,
     this.showHints = false,
   });
 
@@ -74,6 +75,7 @@ class FinalOverMatchConfig {
   final FinalOverTier tier;
   final int target;
   final String kitId;
+  final List<String> batsmanIds;
 
   /// First chase only — the control deck explains itself, then never again.
   final bool showHints;

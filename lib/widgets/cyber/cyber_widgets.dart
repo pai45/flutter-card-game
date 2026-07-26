@@ -12,6 +12,8 @@ import '../../config/theme.dart';
 import '../../models/cards.dart';
 import '../../utils/label_helpers.dart';
 import '../../utils/sound_effects.dart';
+import '../racing/racing_driver_portrait.dart';
+import 'sport_signal_painters.dart';
 
 class CyberConfirmDialog extends StatelessWidget {
   const CyberConfirmDialog({
@@ -892,6 +894,81 @@ class HudLine extends StatelessWidget {
   }
 }
 
+/// Shared HUD corner-tick frame. It adds structure without turning a calm
+/// surface into another glowing panel.
+class HudCornerFrame extends StatelessWidget {
+  const HudCornerFrame({
+    required this.child,
+    this.accent = Cyber.cyan,
+    this.padding = const EdgeInsets.all(8),
+    this.cornerLength = 16,
+    this.strokeWidth = 1.5,
+    super.key,
+  });
+
+  final Widget child;
+  final Color accent;
+  final EdgeInsetsGeometry padding;
+  final double cornerLength;
+  final double strokeWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _HudCornerFramePainter(
+        color: accent.withValues(alpha: 0.5),
+        cornerLength: cornerLength,
+        strokeWidth: strokeWidth,
+      ),
+      child: Padding(padding: padding, child: child),
+    );
+  }
+}
+
+class _HudCornerFramePainter extends CustomPainter {
+  const _HudCornerFramePainter({
+    required this.color,
+    required this.cornerLength,
+    required this.strokeWidth,
+  });
+
+  final Color color;
+  final double cornerLength;
+  final double strokeWidth;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final length = cornerLength.clamp(0, size.shortestSide / 2).toDouble();
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke;
+    canvas
+      ..drawLine(Offset.zero, Offset(length, 0), paint)
+      ..drawLine(Offset.zero, Offset(0, length), paint)
+      ..drawLine(Offset(size.width, 0), Offset(size.width - length, 0), paint)
+      ..drawLine(Offset(size.width, 0), Offset(size.width, length), paint)
+      ..drawLine(Offset(0, size.height), Offset(length, size.height), paint)
+      ..drawLine(Offset(0, size.height), Offset(0, size.height - length), paint)
+      ..drawLine(
+        Offset(size.width, size.height),
+        Offset(size.width - length, size.height),
+        paint,
+      )
+      ..drawLine(
+        Offset(size.width, size.height),
+        Offset(size.width, size.height - length),
+        paint,
+      );
+  }
+
+  @override
+  bool shouldRepaint(covariant _HudCornerFramePainter oldDelegate) =>
+      oldDelegate.color != color ||
+      oldDelegate.cornerLength != cornerLength ||
+      oldDelegate.strokeWidth != strokeWidth;
+}
+
 /// A polished progress / meter bar shared by every XP, rank and power meter so
 /// the "gradient flow" reads identically across the app. The fill ramps from a
 /// soft translucent accent to full colour over ~70% of its width and finishes
@@ -1238,6 +1315,110 @@ class CyberPanel extends StatelessWidget {
           ),
           child: Padding(padding: padding, child: child),
         ),
+      ),
+    );
+  }
+}
+
+/// Compact live-status telemetry shared by game lobbies.
+///
+/// The status dot is the only persistent element allowed to glow because it
+/// communicates a live system state. The rest of the strip stays deliberately
+/// quiet so it does not compete with the lobby CTA.
+class CyberLobbyStatusBar extends StatelessWidget {
+  const CyberLobbyStatusBar({
+    required this.systemLabel,
+    this.statusLabel = 'ONLINE',
+    this.statusColor = Cyber.success,
+    this.lineColor = Cyber.cyan,
+    super.key,
+  });
+
+  final String systemLabel;
+  final String statusLabel;
+  final Color statusColor;
+  final Color lineColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 7,
+          height: 7,
+          decoration: BoxDecoration(
+            color: statusColor,
+            shape: BoxShape.circle,
+            boxShadow: Cyber.glow(statusColor, alpha: 0.6, blur: 8, spread: 0),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          statusLabel.toUpperCase(),
+          style: Cyber.display(9, color: statusColor, letterSpacing: 2),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(height: 1, color: lineColor.withValues(alpha: 0.16)),
+        ),
+        const SizedBox(width: 10),
+        Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: Text(
+              systemLabel.toUpperCase(),
+              maxLines: 1,
+              style: Cyber.display(8.5, color: Cyber.muted, letterSpacing: 1.2),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Calm telemetry cell for game-lobby progression and performance numbers.
+class CyberHudStat extends StatelessWidget {
+  const CyberHudStat({
+    required this.label,
+    required this.value,
+    this.accent = Cyber.cyan,
+    super.key,
+  });
+
+  final String label;
+  final String value;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Cyber.bg.withValues(alpha: 0.5),
+        border: Border.all(color: accent.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: Cyber.display(
+                16,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            label.toUpperCase(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Cyber.display(7.5, color: Cyber.muted, letterSpacing: 0.8),
+          ),
+        ],
       ),
     );
   }
@@ -1699,8 +1880,10 @@ class CyberPlayerCardTile extends StatefulWidget {
     required this.card,
     required this.selected,
     this.disabled = false,
+    this.disabledLabel = 'IN DECK',
     this.size = VisualCardSize.sm,
     this.selectedAccent = Cyber.cyan,
+    this.tiltOnSelect = true,
     this.onTap,
     super.key,
   });
@@ -1708,8 +1891,10 @@ class CyberPlayerCardTile extends StatefulWidget {
   final PlayerCard card;
   final bool selected;
   final bool disabled;
+  final String disabledLabel;
   final VisualCardSize size;
   final Color selectedAccent;
+  final bool tiltOnSelect;
   final VoidCallback? onTap;
 
   @override
@@ -1766,6 +1951,11 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
       PlayerRole.basketballGuard => Cyber.gold,
       PlayerRole.basketballWing => Cyber.cyan,
       PlayerRole.basketballBig => Cyber.violet,
+      PlayerRole.tennisSingles => Cyber.lime,
+      PlayerRole.f1Driver ||
+      PlayerRole.f2Driver ||
+      PlayerRole.nascarDriver ||
+      PlayerRole.indycarDriver => Cyber.f1Red,
     };
     final small = size == VisualCardSize.sm;
     final large = size == VisualCardSize.lg;
@@ -1781,9 +1971,10 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
     final scaleAnim = Tween<double>(begin: 1.0, end: 1.08).animate(
       CurvedAnimation(parent: _tapController, curve: Curves.easeOutBack),
     );
-    final rotateAnim = Tween<double>(begin: 0, end: 0.06).animate(
-      CurvedAnimation(parent: _tapController, curve: Curves.easeOutBack),
-    );
+    final rotateAnim =
+        Tween<double>(begin: 0, end: widget.tiltOnSelect ? 0.06 : 0).animate(
+          CurvedAnimation(parent: _tapController, curve: Curves.easeOutBack),
+        );
 
     return AnimatedBuilder(
       animation: _tapController,
@@ -1796,6 +1987,7 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
         height: height,
         selected: selected,
         disabled: disabled,
+        disabledLabel: widget.disabledLabel,
         accent: tier,
         selectedAccent: selectedAccent,
         clipper: clipper,
@@ -1829,24 +2021,40 @@ class _CyberPlayerCardTileState extends State<CyberPlayerCardTile>
                   top: 4,
                   bottom: height * 0.24,
                   child: card.hasPortrait
-                      ? Image.asset(
-                          card.resolvedPortraitAsset!,
-                          fit: BoxFit.cover,
-                          alignment: Alignment.topCenter,
-                          // ignore: prefer_void_to_null
-                          errorBuilder: (_, _, _) => _CardIconFallback(
-                            card: card,
-                            tier: tier,
-                            small: small,
-                            large: large,
-                          ),
-                        )
+                      ? (isRacingPlayerCard(card)
+                            ? RacingDriverPortrait(card: card)
+                            : Image.asset(
+                                card.resolvedPortraitAsset!,
+                                fit: BoxFit.cover,
+                                alignment: Alignment.topCenter,
+                                // ignore: prefer_void_to_null
+                                errorBuilder: (_, _, _) => _CardIconFallback(
+                                  card: card,
+                                  tier: tier,
+                                  small: small,
+                                  large: large,
+                                ),
+                              ))
                       : _CardIconFallback(
                           card: card,
                           tier: tier,
                           small: small,
                           large: large,
                         ),
+                ),
+                Positioned(
+                  left: 4,
+                  right: 4,
+                  top: 4,
+                  bottom: height * 0.24,
+                  child: IgnorePointer(
+                    child: CustomPaint(
+                      painter: SportCardSignalPainter(
+                        role: card.role,
+                        accent: posColor,
+                      ),
+                    ),
+                  ),
                 ),
                 Positioned(
                   top: 0,
@@ -2213,6 +2421,7 @@ class CyberActionCardTile extends StatefulWidget {
     this.disabledLabel = 'IN DECK',
     this.size = VisualCardSize.sm,
     this.selectedAccent = Cyber.cyan,
+    this.tiltOnSelect = true,
     this.onTap,
     super.key,
   });
@@ -2223,6 +2432,7 @@ class CyberActionCardTile extends StatefulWidget {
   final String disabledLabel;
   final VisualCardSize size;
   final Color selectedAccent;
+  final bool tiltOnSelect;
   final VoidCallback? onTap;
 
   @override
@@ -2288,9 +2498,10 @@ class _CyberActionCardTileState extends State<CyberActionCardTile>
     final scaleAnim = Tween<double>(begin: 1.0, end: 1.12).animate(
       CurvedAnimation(parent: _tapController, curve: Curves.easeOutBack),
     );
-    final rotateAnim = Tween<double>(begin: 0, end: 0.08).animate(
-      CurvedAnimation(parent: _tapController, curve: Curves.easeOutBack),
-    );
+    final rotateAnim =
+        Tween<double>(begin: 0, end: widget.tiltOnSelect ? 0.08 : 0).animate(
+          CurvedAnimation(parent: _tapController, curve: Curves.easeOutBack),
+        );
 
     return AnimatedBuilder(
       animation: _tapController,
@@ -2557,6 +2768,85 @@ class CyberChip extends StatelessWidget {
           fontSize: 10,
           fontWeight: FontWeight.w700,
           fontFeatures: const [FontFeature.tabularFigures()],
+        ),
+      ),
+    );
+  }
+}
+
+class CyberDeckPill extends StatelessWidget {
+  const CyberDeckPill({
+    required this.label,
+    required this.meta,
+    required this.selected,
+    required this.onTap,
+    this.accent = Cyber.cyan,
+    super.key,
+  });
+
+  final String label;
+  final String meta;
+  final bool selected;
+  final VoidCallback? onTap;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return PressableScale(
+      onTap: onTap == null
+          ? null
+          : () {
+              playSound(SoundEffect.cardSelect);
+              onTap!();
+            },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected
+              ? Color.alphaBlend(accent.withValues(alpha: 0.88), Cyber.panel)
+              : Cyber.panel,
+          border: Border.all(
+            color: selected ? accent : Cyber.line,
+            width: selected ? 1.5 : 1,
+          ),
+          boxShadow: selected
+              ? Cyber.glow(accent, alpha: 0.24, blur: 10)
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (selected) ...[
+              const Icon(Icons.check, size: 13, color: Cyber.bg),
+              const SizedBox(width: 6),
+            ],
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label.toUpperCase(),
+                  style: Cyber.display(
+                    10,
+                    color: selected ? Cyber.bg : Colors.white,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  meta.toUpperCase(),
+                  style: Cyber.label(
+                    7,
+                    color: selected
+                        ? Cyber.bg.withValues(alpha: 0.68)
+                        : Cyber.muted,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -3477,15 +3767,17 @@ class _GlidingActiveTabPainter extends CustomPainter {
       old.accent != accent || old.chamfer != chamfer;
 }
 
-/// A face-down card on the shared chamfered card silhouette: flat [Cyber.panel]
-/// fill, diagonal-line weave and a dim centre emblem. Used wherever a card
-/// exists but its value is hidden (Duel Board opponent deck row and
-/// placed-but-unrevealed arena slots). Size it from the outside (SizedBox /
-/// AspectRatio ~0.64 to match card tiles).
+enum CardBackSilhouette { player, action }
+
+/// A face-down card with the matching player or action-card silhouette: flat
+/// [Cyber.panel] fill, diagonal-line weave and a dim centre emblem. Used
+/// wherever a card exists but its value is hidden (Duel Board opponent deck
+/// rows and placed-but-unrevealed arena slots). Size it from the outside.
 class CardBackFace extends StatelessWidget {
   const CardBackFace({
     this.accent = Cyber.cyan,
     this.dimmed = false,
+    this.silhouette = CardBackSilhouette.player,
     super.key,
   });
 
@@ -3494,17 +3786,27 @@ class CardBackFace extends StatelessWidget {
   /// Greys the back out (red-carded / spent slots in a face-down row).
   final bool dimmed;
 
-  static const _clipper = HudChamferClipper(bigCut: 9, smallCut: 4.5);
+  /// Matches the hidden card's outline to its visible card family.
+  final CardBackSilhouette silhouette;
+
+  static const _playerClipper = HudChamferClipper(bigCut: 9, smallCut: 4.5);
 
   @override
   Widget build(BuildContext context) {
     final tone = dimmed ? Cyber.muted : accent;
     final weave = tone.withValues(alpha: dimmed ? 0.14 : 0.28);
     final edge = tone.withValues(alpha: dimmed ? 0.30 : 0.55);
+    final clipper = switch (silhouette) {
+      CardBackSilhouette.player => _playerClipper,
+      CardBackSilhouette.action => RectangleClipper(),
+    };
     return CustomPaint(
-      foregroundPainter: _CardBackEdgePainter(color: edge),
+      foregroundPainter: _CardBackEdgePainter(
+        color: edge,
+        silhouette: silhouette,
+      ),
       child: ClipPath(
-        clipper: _clipper,
+        clipper: clipper,
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -3556,14 +3858,19 @@ class _CardBackWeavePainter extends CustomPainter {
 }
 
 class _CardBackEdgePainter extends CustomPainter {
-  const _CardBackEdgePainter({required this.color});
+  const _CardBackEdgePainter({required this.color, required this.silhouette});
 
   final Color color;
+  final CardBackSilhouette silhouette;
 
   @override
   void paint(Canvas canvas, Size size) {
+    final path = switch (silhouette) {
+      CardBackSilhouette.player => CardBackFace._playerClipper.buildPath(size),
+      CardBackSilhouette.action => RectangleClipper().getClip(size),
+    };
     canvas.drawPath(
-      CardBackFace._clipper.buildPath(size),
+      path,
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.2
@@ -3572,5 +3879,6 @@ class _CardBackEdgePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_CardBackEdgePainter old) => old.color != color;
+  bool shouldRepaint(_CardBackEdgePainter old) =>
+      old.color != color || old.silhouette != silhouette;
 }

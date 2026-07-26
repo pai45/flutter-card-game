@@ -4,16 +4,29 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:card_game/models/tennis.dart';
 
 void main() {
-  test('ships the eight specified athletes and exact headline ratings', () {
-    expect(tennisPlayers, hasLength(8));
-    expect(tennisPlayerById('nova-reyes').ratings.speed, 80);
-    expect(tennisPlayerById('jett-okafor').ratings.power, 92);
-    expect(tennisPlayerById('mira-chen').ratings.stamina, 94);
-    expect(tennisPlayerById('luca-vale').ratings.volley, 93);
-    expect(tennisPlayerById('sora-malik').ratings.spin, 94);
-    expect(tennisPlayerById('kaia-brooks').ratings.serve, 86);
-    expect(tennisPlayerById('theo-laurent').ratings.reach, 89);
-    expect(tennisPlayerById('riven-cole').ratings.control, 87);
+  test('ships the real Top 100 with unique ascii ids', () {
+    expect(tennisPlayers, hasLength(100));
+    expect(
+      tennisPlayers.map((player) => player.id).toSet(),
+      hasLength(100),
+      reason: 'ids are persisted as card ids, so they must be unique',
+    );
+    for (final player in tennisPlayers) {
+      expect(player.id.codeUnits.every((unit) => unit < 128), isTrue,
+          reason: '${player.id} must be ascii-safe');
+    }
+    expect(tennisPlayerById('jannik-sinner').name, 'Jannik Sinner');
+    expect(tennisPlayerById('frances-tiafoe').overallRating, 85);
+  });
+
+  test('sub-ratings average out to the athletes overall rating', () {
+    for (final player in tennisPlayers) {
+      expect(
+        player.ratings.overall,
+        player.overallRating,
+        reason: '${player.id} would otherwise desync tier from rally physics',
+      );
+    }
   });
 
   test(
@@ -21,11 +34,11 @@ void main() {
     () {
       final original = TennisProfile(
         starterPackClaimed: true,
-        ownedPlayerIds: const ['mira-chen'],
-        selectedPlayerId: 'mira-chen',
+        ownedPlayerIds: const ['casper-ruud'],
+        selectedPlayerId: 'casper-ruud',
         difficulty: TennisDifficulty.allStar,
         completedLessons: const {1, 2, 3},
-        masteryXp: const {'mira-chen': 420},
+        masteryXp: const {'casper-ruud': 420},
         achievements: const {'clean-hold', 'ace-high'},
         trophies: const {'rookie': 1},
         settings: const TennisSettings(
@@ -38,11 +51,11 @@ void main() {
         jsonDecode(jsonEncode(original.toJson())) as Map<String, dynamic>,
       );
       expect(restored.starterPackClaimed, isTrue);
-      expect(restored.ownedPlayerIds, ['mira-chen']);
-      expect(restored.selectedPlayerId, 'mira-chen');
+      expect(restored.ownedPlayerIds, ['casper-ruud']);
+      expect(restored.selectedPlayerId, 'casper-ruud');
       expect(restored.difficulty, TennisDifficulty.allStar);
       expect(restored.completedLessons, {1, 2, 3});
-      expect(restored.masteryFor('mira-chen'), 420);
+      expect(restored.masteryFor('casper-ruud'), 420);
       expect(restored.achievements, contains('ace-high'));
       expect(restored.settings.leftHanded, isTrue);
 
@@ -62,7 +75,7 @@ void main() {
     () {
       final restored = TennisProfile.fromJson(<String, dynamic>{
         'selectedPlayerId': 'luca-vale',
-        'lastOpponentId': 'jett-okafor',
+        'lastOpponentId': 'taylor-fritz',
         'setsWon': 3,
       });
 
@@ -78,8 +91,8 @@ void main() {
       config: const TennisMatchConfig(
         matchId: 'resume-1',
         mode: TennisMode.targetPractice,
-        playerId: 'nova-reyes',
-        opponentId: 'jett-okafor',
+        playerId: 'frances-tiafoe',
+        opponentId: 'taylor-fritz',
         difficulty: TennisDifficulty.pro,
         seed: 12,
       ),
@@ -99,22 +112,18 @@ void main() {
     expect(restored.savedAtMillis, 12345);
   });
 
-  test('mastery levels and athlete availability follow progression gates', () {
+  test('mastery levels rise with xp and availability follows ownership', () {
     const base = TennisProfile();
-    expect(base.masteryLevel('nova-reyes'), 1);
-    expect(base.isPlayerUnlocked('nova-reyes'), isTrue);
-    expect(base.isPlayerUnlocked('sora-malik'), isFalse);
+    expect(base.masteryLevel('frances-tiafoe'), 1);
+    expect(base.isPlayerUnlocked('frances-tiafoe'), isFalse);
 
     final progressed = base.copyWith(
-      masteryXp: const {'nova-reyes': 310},
-      completedLessons: const {1, 2, 3, 4, 5, 6, 7, 8},
-      trophies: const {'rookie': 1, 'pro': 1, 'allStar': 1},
+      ownedPlayerIds: const ['frances-tiafoe'],
+      masteryXp: const {'frances-tiafoe': 310},
     );
-    expect(progressed.masteryLevel('nova-reyes'), 3);
-    expect(progressed.isPlayerUnlocked('sora-malik'), isTrue);
-    expect(progressed.isPlayerUnlocked('kaia-brooks'), isTrue);
-    expect(progressed.isPlayerUnlocked('theo-laurent'), isTrue);
-    expect(progressed.isPlayerUnlocked('riven-cole'), isTrue);
+    expect(progressed.masteryLevel('frances-tiafoe'), 3);
+    expect(progressed.isPlayerUnlocked('frances-tiafoe'), isTrue);
+    expect(progressed.isPlayerUnlocked('jannik-sinner'), isFalse);
   });
 
   test('fourth identical Rookie quick match suppresses farm bonuses', () {
@@ -137,8 +146,8 @@ void main() {
     const summary = TennisMatchSummary(
       matchId: 'farm-4',
       mode: TennisMode.quickMatch,
-      playerId: 'nova-reyes',
-      opponentId: 'jett-okafor',
+      playerId: 'frances-tiafoe',
+      opponentId: 'taylor-fritz',
       difficulty: TennisDifficulty.rookie,
       playerGames: 6,
       opponentGames: 0,
@@ -146,7 +155,7 @@ void main() {
       stats: stats,
     );
     const profile = TennisProfile(
-      lastQuickSignature: 'nova-reyes:jett-okafor:rookie',
+      lastQuickSignature: 'frances-tiafoe:taylor-fritz:rookie',
       quickRepeatCount: 3,
     );
     final reward = calculateTennisReward(summary, profile);
@@ -166,8 +175,8 @@ void main() {
       const training = TennisMatchSummary(
         matchId: 'lesson',
         mode: TennisMode.training,
-        playerId: 'nova-reyes',
-        opponentId: 'jett-okafor',
+        playerId: 'frances-tiafoe',
+        opponentId: 'taylor-fritz',
         difficulty: TennisDifficulty.pro,
         playerGames: 0,
         opponentGames: 0,
@@ -187,7 +196,7 @@ void main() {
       const title = TennisMatchSummary(
         matchId: 'title',
         mode: TennisMode.tournament,
-        playerId: 'nova-reyes',
+        playerId: 'frances-tiafoe',
         opponentId: 'riven-cole',
         difficulty: TennisDifficulty.allStar,
         playerGames: 7,

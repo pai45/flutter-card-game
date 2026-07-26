@@ -11,6 +11,7 @@ class PredictionState {
     this.predictions = const {},
     this.standingsByLeague = const {},
     this.quizzes = const {},
+    this.questionIntel = const {},
     this.loadedSports = const {},
     this.loadingSports = const {},
   });
@@ -29,6 +30,10 @@ class PredictionState {
 
   /// quiz key (matchId::quizId) → PredictionQuiz
   final Map<String, PredictionQuiz> quizzes;
+
+  /// matchId::quizId::questionId → latest ESPN-derived status for a locked
+  /// prediction question. Crowd percentages remain repository-backed.
+  final Map<String, LiveQuestionIntel> questionIntel;
 
   /// Fixtures grouped under their league, preserving league order.
   Map<League, List<SportMatch>> get fixturesByLeague {
@@ -97,6 +102,7 @@ class PredictionState {
     Map<String, UserPrediction>? predictions,
     Map<String, List<TeamStanding>>? standingsByLeague,
     Map<String, PredictionQuiz>? quizzes,
+    Map<String, LiveQuestionIntel>? questionIntel,
   }) => PredictionState(
     loading: loading ?? this.loading,
     loadedSports: loadedSports ?? this.loadedSports,
@@ -106,8 +112,15 @@ class PredictionState {
     predictions: predictions ?? this.predictions,
     standingsByLeague: standingsByLeague ?? this.standingsByLeague,
     quizzes: quizzes ?? this.quizzes,
+    questionIntel: questionIntel ?? this.questionIntel,
   );
 }
+
+String predictionQuestionIntelKey(
+  String matchId,
+  String quizId,
+  String questionId,
+) => '$matchId::$quizId::$questionId';
 
 int _summaryStatusRank(PredictionStatus status) => switch (status) {
   PredictionStatus.open => 1,

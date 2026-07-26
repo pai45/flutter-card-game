@@ -28,6 +28,24 @@ void main() {
     expect(find.byType(Container), findsNothing);
   });
 
+  testWidgets('streak badges can scale their icon and tally together', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: StreakBadge(value: 2, scale: 1.25)),
+      ),
+    );
+
+    expect(
+      tester
+          .widget<Icon>(find.byIcon(Icons.local_fire_department_outlined))
+          .size,
+      20,
+    );
+    expect(tester.widget<Text>(find.text('2')).style!.fontSize, 13.75);
+  });
+
   testWidgets('streak page remains usable with enlarged text', (tester) async {
     final bloc = GameBloc(SecureGameStorage());
     final predictionCubit = PredictionCubit(

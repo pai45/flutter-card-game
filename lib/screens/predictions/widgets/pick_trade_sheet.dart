@@ -301,7 +301,7 @@ class _PickTradeSheetState extends State<_PickTradeSheet> {
       ),
     );
     context.read<GameBloc>().add(StreakActivityRecorded(StreakActivity.pick));
-    playSound(SoundEffect.coins);
+    playSound(SoundEffect.coinSpend);
     Navigator.of(context).pop(
       _PickTradeSuccess(
         marketQuestion: widget.market.question,

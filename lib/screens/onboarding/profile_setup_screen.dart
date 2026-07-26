@@ -645,7 +645,7 @@ class _ClubsStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isFormulaOne = sport == Sport.f1;
+    final isFormulaOne = sport == Sport.motorsport;
     final activeLeague = followableLeagueById(activeLeagueId) ?? leagues.first;
     final selectedTeamId = favoriteTeams[activeLeague.league.id];
     final followedCount = followedIds.length;

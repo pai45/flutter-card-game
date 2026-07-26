@@ -2,7 +2,7 @@ import '../../models/cards.dart';
 import '../../models/deck.dart';
 import '../../models/oz_coin_ledger.dart';
 import '../../models/streak.dart';
-import '../../models/super_over.dart';
+import '../../models/sport_match.dart';
 import '../../models/xp_ledger.dart';
 
 sealed class GameEvent {}
@@ -82,6 +82,26 @@ class PredictionXpAdded extends GameEvent {
   final String title;
 }
 
+class DailyGuessPlayerSettled extends GameEvent {
+  DailyGuessPlayerSettled({
+    required this.sport,
+    required this.dayKey,
+    required this.xp,
+    required this.score,
+    required this.won,
+    required this.completedAt,
+  });
+
+  final Sport sport;
+  final String dayKey;
+  final int xp;
+  final int score;
+  final bool won;
+  final DateTime completedAt;
+
+  String get settlementId => 'guess-player:${sport.name}:$dayKey';
+}
+
 class CardPurchased extends GameEvent {
   CardPurchased(this.cardId);
   final String cardId;
@@ -120,6 +140,10 @@ class StarterPackOpened extends GameEvent {}
 class CricketStarterPackOpened extends GameEvent {}
 
 class BasketballStarterPackOpened extends GameEvent {}
+
+class TennisStarterPackOpened extends GameEvent {}
+
+class GrandPrixStarterPackOpened extends GameEvent {}
 
 class DailyDropClaimed extends GameEvent {}
 
@@ -172,6 +196,45 @@ class ShopBannerPurchased extends GameEvent {
   });
 
   final String bannerId;
+  final int price;
+  final String name;
+}
+
+/// Buy a Final Over kit design with coins — BUY → OWNED, equip in deck builder.
+class ShopFinalOverKitPurchased extends GameEvent {
+  ShopFinalOverKitPurchased({
+    required this.kitId,
+    required this.price,
+    required this.name,
+  });
+
+  final String kitId;
+  final int price;
+  final String name;
+}
+
+/// Buy a Grand Prix livery with coins — BUY → OWNED, equip in pit deck.
+class ShopGrandPrixLiveryPurchased extends GameEvent {
+  ShopGrandPrixLiveryPurchased({
+    required this.liveryId,
+    required this.price,
+    required this.name,
+  });
+
+  final String liveryId;
+  final int price;
+  final String name;
+}
+
+/// Buy a Hoop Duel jersey with coins — BUY → OWNED, equip in roster deck.
+class ShopBasketballTeamPurchased extends GameEvent {
+  ShopBasketballTeamPurchased({
+    required this.teamId,
+    required this.price,
+    required this.name,
+  });
+
+  final String teamId;
   final int price;
   final String name;
 }
@@ -367,12 +430,4 @@ class TennisFinished extends GameEvent {
   final int opponentGames;
   final int xp;
   final int coins;
-}
-
-/// Fired once by Super Over mode when an over finishes to award XP
-/// and record history.
-class SuperOverFinished extends GameEvent {
-  SuperOverFinished({required this.summary});
-
-  final SuperOverMatchSummary summary;
 }

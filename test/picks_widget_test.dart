@@ -49,17 +49,35 @@ void main() {
     );
     await tester.pump(const Duration(seconds: 1));
 
-    expect(find.text('ALL'), findsOneWidget);
-    expect(find.text('Punjab'), findsAtLeastNWidgets(1));
-    expect(find.text('Bangalore'), findsAtLeastNWidgets(1));
-    expect(find.text('68%'), findsAtLeastNWidgets(1));
+    // The TYPE filter's "ALL" chip is always present; with markets covering
+    // more leagues now (e.g. Allsvenskan's league-code badge also reads
+    // "ALL"), the literal string can appear more than once on screen.
+    expect(find.text('ALL'), findsAtLeastNWidgets(1));
     expect(find.byIcon(Icons.settings), findsOneWidget);
 
+    // Settings is part of the fixed header, checked before scrolling the
+    // market rail (which would carry the header off-screen with it).
     await tester.tap(find.byIcon(Icons.settings));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('LEAGUE'), findsOneWidget);
     expect(find.text('FIFA'), findsOneWidget);
+    await tester.tapAt(const Offset(20, 20)); // dismiss the settings sheet
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // Markets now cover far more leagues, so the target card can sit below
+    // the initial viewport — scroll it into view rather than assuming it
+    // renders on the first frame.
+    await tester.scrollUntilVisible(
+      find.text('Punjab'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
+    expect(find.text('Punjab'), findsAtLeastNWidgets(1));
+    expect(find.text('Bangalore'), findsAtLeastNWidgets(1));
+    expect(find.text('68%'), findsAtLeastNWidgets(1));
   });
 
   testWidgets('future pick cards build all outcome CTAs in the rail', (
@@ -98,6 +116,16 @@ void main() {
     await tester.tap(find.text('FUTURES'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
+
+    // The FUTURES rail can now hold more cards than fit in one viewport (more
+    // leagues have real markets), so scroll the IPL card into view rather
+    // than assuming it renders without scrolling.
+    await tester.scrollUntilVisible(
+      find.text('Who will win IPL 2026?'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pump();
 
     expect(find.text('Who will win IPL 2026?'), findsOneWidget);
     expect(find.text('MUM'), findsOneWidget);

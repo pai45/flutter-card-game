@@ -84,7 +84,7 @@ TriviaQuestion _generatedQuestion(Sport sport, QuizMode mode, int number) {
       QuizMode.hard => _basketballScaffold('Hard', variant, cycle),
       QuizMode.global => _basketballScaffold('Global', variant, cycle),
     },
-    Sport.f1 => switch (mode) {
+    Sport.motorsport => switch (mode) {
       QuizMode.easy => _f1Scaffold('Easy', variant, cycle),
       QuizMode.medium => _f1Scaffold('Medium', variant, cycle),
       QuizMode.hard => _f1Scaffold('Hard', variant, cycle),

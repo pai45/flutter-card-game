@@ -5,9 +5,14 @@ import 'sport_match.dart';
 /// The maximum number of characters accepted by a Match Circle post.
 const int matchCirclePostMaxLength = 500;
 
-/// Stable storage/state key for a match discussion.
-String matchCircleThreadKey(SportMatch match) =>
-    '${match.sport.name}:${match.leagueId}:${match.id}';
+/// Stable storage/state key for a match discussion. Keeps emitting the
+/// pre-rename 'f1' segment for motorsport so installs with persisted F1
+/// discussion threads don't get silently orphaned by the Sport.f1 ->
+/// Sport.motorsport rename.
+String matchCircleThreadKey(SportMatch match) {
+  final sportKey = match.sport == Sport.motorsport ? 'f1' : match.sport.name;
+  return '$sportKey:${match.leagueId}:${match.id}';
+}
 
 /// Compact count used by the Match Circle call-to-action.
 String compactMatchCircleCount(int count) {

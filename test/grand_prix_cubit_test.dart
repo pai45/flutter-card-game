@@ -34,7 +34,10 @@ void main() {
     final cubit = makeCubit();
     await cubit.load();
     cubit.selectCircuit(GrandPrixCircuitId.desertMile);
-    cubit.selectLivery(GrandPrixLivery.midnight);
+    cubit.selectLivery(
+      GrandPrixLivery.midnight,
+      ownedLiveryIds: const ['gridLine', 'midnight'],
+    );
     expect(cubit.state.circuitId, GrandPrixCircuitId.desertMile);
     expect(cubit.state.livery, GrandPrixLivery.midnight);
 

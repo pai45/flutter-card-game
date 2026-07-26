@@ -7,83 +7,159 @@ import '../../../games/final_over/final_over_rig.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 
-class FinalOverKitPicker extends StatelessWidget {
-  const FinalOverKitPicker({
+/// Kit locker for the Final Over deck builder — free kits plus owned paid kits.
+class FinalOverKitSelector extends StatelessWidget {
+  const FinalOverKitSelector({
     required this.selectedId,
+    required this.ownedKitIds,
     required this.onSelected,
+    this.onBrowseShop,
     super.key,
   });
 
+  final String selectedId;
+  final Iterable<String> ownedKitIds;
+  final ValueChanged<String> onSelected;
+  final VoidCallback? onBrowseShop;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = finalOverKitById(selectedId);
+    final ownedPaid = finalOverKits
+        .where(
+          (kit) =>
+              !isFinalOverKitFree(kit) && ownedKitIds.contains(kit.id),
+        )
+        .toList();
+    final freeKits = finalOverKits.where(isFinalOverKitFree).toList();
+
+    return CyberPanel(
+      key: const ValueKey('final-over-kit-selector'),
+      accent: Cyber.cyan,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const SectionLabel(label: 'TEAM KIT'),
+              const Spacer(),
+              Container(
+                width: 5,
+                height: 5,
+                color: Cyber.cyan,
+                margin: const EdgeInsets.only(right: 6),
+              ),
+              Flexible(
+                child: Text(
+                  '${selected.name} // EQUIPPED',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.end,
+                  style: Cyber.label(
+                    7.5,
+                    color: Cyber.cyan,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'FREE KITS',
+            style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.6),
+          ),
+          const SizedBox(height: 8),
+          _KitGrid(
+            kits: freeKits,
+            selectedId: selectedId,
+            onSelected: onSelected,
+          ),
+          if (ownedPaid.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Text(
+              'YOUR KITS',
+              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.6),
+            ),
+            const SizedBox(height: 8),
+            _KitGrid(
+              kits: ownedPaid,
+              selectedId: selectedId,
+              onSelected: onSelected,
+            ),
+          ] else if (onBrowseShop != null) ...[
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: onBrowseShop,
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  'BROWSE MORE KITS IN SHOP',
+                  style: Cyber.label(8, color: Cyber.cyan, letterSpacing: 1.2),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _KitGrid extends StatelessWidget {
+  const _KitGrid({
+    required this.kits,
+    required this.selectedId,
+    required this.onSelected,
+  });
+
+  final List<FinalOverKit> kits;
   final String selectedId;
   final ValueChanged<String> onSelected;
 
   @override
   Widget build(BuildContext context) {
-    final selected = finalOverKitById(selectedId);
-    return Column(
-      key: const ValueKey('final-over-kit-picker'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const columns = 4;
+        const gap = 8.0;
+        final tileWidth = (constraints.maxWidth - gap * (columns - 1)) / columns;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
           children: [
-            const SectionLabel(label: 'TEAM KIT'),
-            const Spacer(),
-            Container(
-              width: 5,
-              height: 5,
-              color: Cyber.cyan,
-              margin: const EdgeInsets.only(right: 6),
-            ),
-            Flexible(
-              child: Text(
-                '${selected.name} // EQUIPPED',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.end,
-                style: Cyber.label(7.5, color: Cyber.cyan, letterSpacing: 1.1),
+            for (var index = 0; index < kits.length; index++)
+              FinalOverKitTile(
+                kit: kits[index],
+                index: index,
+                selected: kits[index].id == selectedId,
+                width: tileWidth,
+                onTap: () {
+                  playSound(SoundEffect.cardSelect);
+                  HapticFeedback.selectionClick();
+                  onSelected(kits[index].id);
+                },
               ),
-            ),
           ],
-        ),
-        const SizedBox(height: 10),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            const columns = 4;
-            const gap = 8.0;
-            final tileWidth =
-                (constraints.maxWidth - gap * (columns - 1)) / columns;
-            return Wrap(
-              spacing: gap,
-              runSpacing: gap,
-              children: [
-                for (var index = 0; index < finalOverKits.length; index++)
-                  _KitTile(
-                    kit: finalOverKits[index],
-                    index: index,
-                    selected: finalOverKits[index].id == selectedId,
-                    width: tileWidth,
-                    onTap: () {
-                      playSound(SoundEffect.cardSelect);
-                      HapticFeedback.selectionClick();
-                      onSelected(finalOverKits[index].id);
-                    },
-                  ),
-              ],
-            );
-          },
-        ),
-      ],
+        );
+      },
     );
   }
 }
 
-class _KitTile extends StatelessWidget {
-  const _KitTile({
+class FinalOverKitTile extends StatelessWidget {
+  const FinalOverKitTile({
     required this.kit,
     required this.index,
     required this.selected,
     required this.width,
     required this.onTap,
+    super.key,
   });
 
   final FinalOverKit kit;
@@ -161,7 +237,7 @@ class _KitTile extends StatelessWidget {
                       top: 9,
                       bottom: 20,
                       child: CustomPaint(
-                        painter: _KitBatterPreviewPainter(kit),
+                        painter: FinalOverKitPreviewPainter(kit),
                       ),
                     ),
                     Positioned(
@@ -194,8 +270,8 @@ class _KitTile extends StatelessWidget {
 
 /// Uses the same athlete rig as the match so every swatch previews the full
 /// shirt, trim, pads, helmet, boots, and number instead of an abstract palette.
-class _KitBatterPreviewPainter extends CustomPainter {
-  const _KitBatterPreviewPainter(this.kit);
+class FinalOverKitPreviewPainter extends CustomPainter {
+  const FinalOverKitPreviewPainter(this.kit);
 
   final FinalOverKit kit;
 
@@ -219,6 +295,6 @@ class _KitBatterPreviewPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _KitBatterPreviewPainter oldDelegate) =>
+  bool shouldRepaint(covariant FinalOverKitPreviewPainter oldDelegate) =>
       oldDelegate.kit != kit;
 }

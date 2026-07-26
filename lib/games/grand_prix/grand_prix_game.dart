@@ -13,6 +13,8 @@ import '../../models/grand_prix.dart';
 import 'grand_prix_car_painter.dart';
 import 'grand_prix_engine.dart';
 
+enum GrandPrixAudioEvent { tireScrub, wallContact, carContact }
+
 /// Flame renderer + real-time loop for Grand Prix Dash.
 ///
 /// Unlike turn-based Football Chess (where the cubit owns the clock), the 60fps
@@ -28,6 +30,7 @@ class GrandPrixGame extends FlameGame {
     required this.onPositionChanged,
     required this.onOvertake,
     required this.onPlayerFinished,
+    required this.onAudioEvent,
     this.reducedMotion = false,
   });
 
@@ -35,6 +38,7 @@ class GrandPrixGame extends FlameGame {
   final void Function(int position) onPositionChanged;
   final void Function(OvertakeEvent event) onOvertake;
   final void Function(PlayerRaceOutcome outcome) onPlayerFinished;
+  final void Function(GrandPrixAudioEvent event) onAudioEvent;
   final bool reducedMotion;
 
   // HUD bindings — cheap 60fps reads, never bloc emissions.
@@ -181,6 +185,14 @@ class GrandPrixGame extends FlameGame {
       }
       onOvertake(overtake);
     }
+    if (events.playerTireScrub) {
+      onAudioEvent(GrandPrixAudioEvent.tireScrub);
+    }
+    if (events.playerWallContact) {
+      onAudioEvent(GrandPrixAudioEvent.wallContact);
+    } else if (events.playerContact) {
+      onAudioEvent(GrandPrixAudioEvent.carContact);
+    }
     if ((events.playerWallContact || events.playerContact) && !reducedMotion) {
       _spawnSparks(
         events.playerWallContact ? Cyber.danger : Cyber.amber,
@@ -204,11 +216,7 @@ class GrandPrixGame extends FlameGame {
       _finishedReported = true;
       _running = false;
       onPlayerFinished(
-        const PlayerRaceOutcome(
-          position: kFieldSize,
-          lapTimeMs: 0,
-          dnf: true,
-        ),
+        const PlayerRaceOutcome(position: kFieldSize, lapTimeMs: 0, dnf: true),
       );
     }
   }
@@ -263,11 +271,8 @@ class GrandPrixGame extends FlameGame {
           ? 0
           : min(field.laps - 1, player.distance ~/ lapLength);
       currentLap.value = lapIndex + 1;
-      lapProgress.value =
-          ((player.distance - lapIndex * lapLength) / lapLength).clamp(
-        0.0,
-        1.0,
-      );
+      lapProgress.value = ((player.distance - lapIndex * lapLength) / lapLength)
+          .clamp(0.0, 1.0);
     }
     slipstreamActive.value = player.slipstreaming;
     stuckSeconds.value = _running ? field.playerStuckSeconds : 0;
@@ -436,9 +441,11 @@ class _TrackComponent extends PositionComponent
 
         // Kerbs: alternating dashes on both edges through the section.
         var red = true;
-        for (var s = max(sectionStart, from);
-            s < min(sectionEnd, to);
-            s += 5, red = !red) {
+        for (
+          var s = max(sectionStart, from);
+          s < min(sectionEnd, to);
+          s += 5, red = !red
+        ) {
           final paint = Paint()
             ..style = PaintingStyle.stroke
             ..strokeWidth = 4
@@ -486,7 +493,12 @@ class _TrackComponent extends PositionComponent
     }
   }
 
-  void _checker(Canvas canvas, GrandPrixGame gameRef, double at, {int rows = 2}) {
+  void _checker(
+    Canvas canvas,
+    GrandPrixGame gameRef,
+    double at, {
+    int rows = 2,
+  }) {
     const cells = 8;
     final cellW = kTrackHalfWidth * 2 / cells;
     for (var row = 0; row < rows; row++) {
@@ -503,9 +515,7 @@ class _TrackComponent extends PositionComponent
         canvas.drawRect(
           Rect.fromPoints(a, b),
           Paint()
-            ..color = even
-                ? const Color(0xffe8ecf2)
-                : const Color(0xff0a0e14),
+            ..color = even ? const Color(0xffe8ecf2) : const Color(0xff0a0e14),
         );
       }
     }
@@ -518,8 +528,8 @@ class _TrackComponent extends PositionComponent
 /// RULE).
 class _CarComponent extends PositionComponent {
   _CarComponent({required this.car, required GrandPrixLiverySpec spec})
-      : _glowColor = spec.accent,
-        _style = GrandPrixCarStyle(spec) {
+    : _glowColor = spec.accent,
+      _style = GrandPrixCarStyle(spec) {
     anchor = Anchor.center;
   }
 

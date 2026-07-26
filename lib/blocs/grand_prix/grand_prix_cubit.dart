@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/grand_prix_circuits.dart';
+import '../../data/grand_prix_liveries.dart' as gp_liveries;
 import '../../games/grand_prix/grand_prix_engine.dart';
 import '../../models/grand_prix.dart';
 import '../../models/progression.dart';
@@ -40,6 +41,17 @@ class GrandPrixCubit extends Cubit<GrandPrixState> {
     emit(state.copyWith(loading: false, stats: stats));
   }
 
+  /// Clamps an equipped livery the player no longer owns back to the free
+  /// default.
+  void ensureEquippedLiveryOwned(Iterable<String> ownedLiveryIds) {
+    final clamped = gp_liveries.ensureEquippedLiveryOwned(
+      ownedLiveryIds,
+      state.stats.lastLivery,
+    );
+    if (clamped == state.stats.lastLivery) return;
+    _persistStats(state.stats.copyWith(lastLivery: clamped));
+  }
+
   // -- lobby ----------------------------------------------------------------
 
   void selectCircuit(GrandPrixCircuitId id) {
@@ -47,7 +59,11 @@ class GrandPrixCubit extends Cubit<GrandPrixState> {
     _persistStats(state.stats.copyWith(lastCircuit: id));
   }
 
-  void selectLivery(GrandPrixLivery livery) {
+  void selectLivery(
+    GrandPrixLivery livery, {
+    required Iterable<String> ownedLiveryIds,
+  }) {
+    if (!gp_liveries.isGrandPrixLiveryOwned(livery.name, ownedLiveryIds)) return;
     if (livery == state.stats.lastLivery) return;
     _persistStats(state.stats.copyWith(lastLivery: livery));
   }

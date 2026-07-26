@@ -10,6 +10,7 @@ import 'package:card_game/services/prediction_repository.dart';
 import 'package:card_game/services/secure_storage_service.dart';
 import 'package:card_game/utils/sound_effects.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -19,6 +20,16 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('xyz.luan/audioplayers.global'),
+          (_) async => null,
+        );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('xyz.luan/audioplayers'),
+          (_) async => null,
+        );
     AudioController.instance.muted.value = true;
     FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({});
@@ -34,8 +45,6 @@ void main() {
     expect(_headingText('TODAY'), findsOneWidget);
     expect(_headingText('(1)'), findsOneWidget);
   });
-
-
 
   testWidgets('match day arrows move to tomorrow and yesterday', (
     tester,
@@ -138,13 +147,11 @@ Future<void> _pumpHome(
           onOpenQuiz: (_) {},
           onOpenFootballBingo: () {},
           onOpenFootballChess: () {},
-          onOpenSuperOver: () {},
           onOpenGuessPlayer: () {},
           onOpenGrandPrix: () {},
           onOpenF1GuessDriver: () {},
-              onOpenTennisGuessWinner: () {},
+          onOpenTennisGuessWinner: () {},
           onOpenBasketball: () {},
-          onOpenCricketDeck: () {},
           onOpenBasketballGuessPlayer: () {},
           onOpenCricketGuessPlayer: () {},
         ),
@@ -203,10 +210,14 @@ class _NavRepo implements PredictionRepository {
   Future<List<League>> leagues() async => const [_league];
 
   @override
-  Future<List<SportMatch>> fixtures({DateTime? day, Sport? sport}) async => const [];
+  Future<List<SportMatch>> fixtures({DateTime? day, Sport? sport}) async =>
+      const [];
 
   @override
-  Future<List<SportMatch>> enrichFixturesForSport(List<SportMatch> fixtures, Sport sport) async => fixtures;
+  Future<List<SportMatch>> enrichFixturesForSport(
+    List<SportMatch> fixtures,
+    Sport sport,
+  ) async => fixtures;
 
   @override
   Future<List<PredictionQuiz>> quizzesFor(String matchId) async => const [];

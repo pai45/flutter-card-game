@@ -1,5 +1,9 @@
 import 'dart:math';
 
+import '../config/enums.dart';
+import '../data/tennis_athletes.dart';
+import 'starter_pack.dart';
+
 enum TennisMode {
   quickMatch,
   tournament,
@@ -166,6 +170,7 @@ class TennisPlayer {
     required this.archetype,
     required this.ratings,
     required this.signature,
+    required this.overallRating,
   });
 
   final String id;
@@ -173,146 +178,15 @@ class TennisPlayer {
   final TennisArchetype archetype;
   final TennisRatings ratings;
   final String signature;
+  final int overallRating;
+
+  CardTier get tier => packRarityForRating(overallRating);
 }
 
-const tennisPlayers = <TennisPlayer>[
-  TennisPlayer(
-    id: 'nova-reyes',
-    name: 'Nova Reyes',
-    archetype: TennisArchetype.allRounder,
-    signature: 'Balanced timing and reliable recovery',
-    ratings: TennisRatings(
-      speed: 80,
-      acceleration: 82,
-      power: 78,
-      control: 84,
-      serve: 77,
-      stamina: 85,
-      volley: 76,
-      spin: 79,
-      reach: 75,
-    ),
-  ),
-  TennisPlayer(
-    id: 'jett-okafor',
-    name: 'Jett Okafor',
-    archetype: TennisArchetype.powerBaseliner,
-    signature: 'Heavy first strike from the baseline',
-    ratings: TennisRatings(
-      speed: 70,
-      acceleration: 72,
-      power: 92,
-      control: 77,
-      serve: 88,
-      stamina: 76,
-      volley: 65,
-      spin: 72,
-      reach: 84,
-    ),
-  ),
-  TennisPlayer(
-    id: 'mira-chen',
-    name: 'Mira Chen',
-    archetype: TennisArchetype.speedDefender,
-    signature: 'Elite retrieval and counterattack speed',
-    ratings: TennisRatings(
-      speed: 93,
-      acceleration: 94,
-      power: 68,
-      control: 82,
-      serve: 72,
-      stamina: 94,
-      volley: 74,
-      spin: 80,
-      reach: 86,
-    ),
-  ),
-  TennisPlayer(
-    id: 'luca-vale',
-    name: 'Luca Vale',
-    archetype: TennisArchetype.serveAndVolley,
-    signature: 'Fast serve followed by decisive net pressure',
-    ratings: TennisRatings(
-      speed: 84,
-      acceleration: 86,
-      power: 80,
-      control: 76,
-      serve: 91,
-      stamina: 78,
-      volley: 93,
-      spin: 70,
-      reach: 88,
-    ),
-  ),
-  TennisPlayer(
-    id: 'sora-malik',
-    name: 'Sora Malik',
-    archetype: TennisArchetype.spinSpecialist,
-    signature: 'Sharp angles and disruptive changes of pace',
-    ratings: TennisRatings(
-      speed: 79,
-      acceleration: 81,
-      power: 72,
-      control: 90,
-      serve: 78,
-      stamina: 84,
-      volley: 77,
-      spin: 94,
-      reach: 76,
-    ),
-  ),
-  TennisPlayer(
-    id: 'kaia-brooks',
-    name: 'Kaia Brooks',
-    archetype: TennisArchetype.powerBaseliner,
-    signature: 'High-pace serve and attacking forehand',
-    ratings: TennisRatings(
-      speed: 76,
-      acceleration: 78,
-      power: 89,
-      control: 81,
-      serve: 86,
-      stamina: 82,
-      volley: 70,
-      spin: 76,
-      reach: 80,
-    ),
-  ),
-  TennisPlayer(
-    id: 'theo-laurent',
-    name: 'Theo Laurent',
-    archetype: TennisArchetype.speedDefender,
-    signature: 'Deep defence with patient spin variation',
-    ratings: TennisRatings(
-      speed: 90,
-      acceleration: 88,
-      power: 73,
-      control: 85,
-      serve: 75,
-      stamina: 92,
-      volley: 78,
-      spin: 84,
-      reach: 89,
-    ),
-  ),
-  TennisPlayer(
-    id: 'riven-cole',
-    name: 'Riven Cole',
-    archetype: TennisArchetype.allCourtRival,
-    signature: 'Complete all-court pressure without a weak zone',
-    ratings: TennisRatings(
-      speed: 86,
-      acceleration: 85,
-      power: 86,
-      control: 87,
-      serve: 85,
-      stamina: 86,
-      volley: 84,
-      spin: 86,
-      reach: 85,
-    ),
-  ),
-];
+/// The playable tennis roster. Backed by the real Top 100 (2026) list so that
+/// starter-pack pulls, CPU opponents and the Flame engine all resolve against
+/// the same athletes.
+const tennisPlayers = tennisTop100;
 
 TennisPlayer tennisPlayerById(String id) => tennisPlayers.firstWhere(
   (player) => player.id == id,
@@ -829,8 +703,8 @@ class TennisProfile {
     this.schemaVersion = 1,
     this.starterPackClaimed = false,
     this.ownedPlayerIds = const <String>[],
-    this.selectedPlayerId = 'nova-reyes',
-    this.lastOpponentId = 'jett-okafor',
+    this.selectedPlayerId = 'arthur-fery',
+    this.lastOpponentId = 'alexander-blockx',
     this.difficulty = TennisDifficulty.pro,
     this.settings = const TennisSettings(),
     this.setsPlayed = 0,
@@ -976,16 +850,10 @@ class TennisProfile {
 
   bool ownsPlayer(String playerId) => ownedPlayerIds.contains(playerId);
 
-  bool isPlayerUnlocked(String playerId) =>
-      ownsPlayer(playerId) ||
-      switch (playerId) {
-        'nova-reyes' || 'jett-okafor' || 'mira-chen' || 'luca-vale' => true,
-        'sora-malik' => completedLessons.length >= 8,
-        'kaia-brooks' => (trophies[TennisDifficulty.rookie.name] ?? 0) > 0,
-        'theo-laurent' => (trophies[TennisDifficulty.pro.name] ?? 0) > 0,
-        'riven-cole' => (trophies[TennisDifficulty.allStar.name] ?? 0) > 0,
-        _ => false,
-      };
+  /// Playable athletes are exactly the ones the player has collected. Tennis
+  /// shares the card economy with the other sports now, so cards beyond the
+  /// starter are earned through packs rather than hardcoded unlock rules.
+  bool isPlayerUnlocked(String playerId) => ownsPlayer(playerId);
 
   TennisProfile copyWith({
     bool? starterPackClaimed,

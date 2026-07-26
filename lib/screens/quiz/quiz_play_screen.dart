@@ -63,6 +63,13 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
   void initState() {
     super.initState();
     _questions = buildQuizSet(_sport, _mode, _setNumber);
+    AudioController.instance.enterScene(AudioScene.quiz);
+  }
+
+  @override
+  void dispose() {
+    AudioController.instance.leaveScene(AudioScene.quiz);
+    super.dispose();
   }
 
   void _select(int option) {
@@ -140,7 +147,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
   Future<void> _submit() async {
     if (!_allAnswered || _submitting) return;
     setState(() => _submitting = true);
-    playSound(SoundEffect.matchWin);
+    playSound(SoundEffect.quizSubmit);
     HapticFeedback.mediumImpact();
 
     final results = <SettlementQuestionResult>[];
@@ -210,6 +217,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
         subtitle: '${_mode.label} SET $_setNumber RETRY',
       ),
     );
+    playSound(SoundEffect.coinSpend);
     await Future<void>.delayed(const Duration(milliseconds: 120));
     if (!mounted) return;
     playSound(SoundEffect.playMatch);

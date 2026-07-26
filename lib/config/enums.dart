@@ -34,6 +34,11 @@ enum PlayerRole {
   basketballGuard,
   basketballWing,
   basketballBig,
+  tennisSingles,
+  f1Driver,
+  f2Driver,
+  nascarDriver,
+  indycarDriver,
 }
 
 enum ActionCategory { attack, defense, special }

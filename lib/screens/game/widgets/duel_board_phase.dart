@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ import '../../../config/enums.dart';
 import '../../../config/theme.dart';
 import '../../../models/cards.dart';
 import '../../../models/match.dart';
+import '../../../utils/game_audio_mappings.dart';
 import '../../../utils/label_helpers.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
@@ -72,6 +74,15 @@ class _DuelBoardPhaseState extends State<DuelBoardPhase>
     duration: const Duration(milliseconds: 950),
   );
 
+  /// CPU commit: a beat into the play phase the opponent's chosen face-down
+  /// card lifts and locks, UNO-style — they've moved, now it's on you.
+  late final AnimationController _cpuCommitCtrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 600),
+  );
+  Timer? _cpuThinkTimer;
+  bool _cpuCommitted = false;
+
   bool _roleStingFired = false;
   bool _flipFired = false;
   bool _meterFired = false;
@@ -130,6 +141,7 @@ class _DuelBoardPhaseState extends State<DuelBoardPhase>
   }
 
   void _enterBeat({required MatchPhase? from}) {
+    _cpuThinkTimer?.cancel();
     switch (_phase) {
       case MatchPhase.roleReveal:
         _roleStingFired = false;
@@ -142,6 +154,19 @@ class _DuelBoardPhaseState extends State<DuelBoardPhase>
         } else {
           _roleCtrl.forward(from: 0);
         }
+      case MatchPhase.play:
+        _cpuCommitted = false;
+        _cpuCommitCtrl.value = 0;
+        if (_reduceMotion) {
+          _cpuCommitted = true;
+          _cpuCommitCtrl.value = 1;
+        } else {
+          // A short randomized "thinking" beat before the CPU commits.
+          _cpuThinkTimer = Timer(
+            Duration(milliseconds: 1500 + Random().nextInt(1000)),
+            _commitCpu,
+          );
+        }
       case MatchPhase.roundResult:
         _startRevealBeat();
       default:
@@ -150,6 +175,18 @@ class _DuelBoardPhaseState extends State<DuelBoardPhase>
         // dispatches [PlayStarted] itself.
         break;
     }
+  }
+
+  void _commitCpu() {
+    if (!mounted ||
+        _phase != MatchPhase.play ||
+        widget.state.opponentSelectedPlayerCard == null) {
+      return;
+    }
+    setState(() => _cpuCommitted = true);
+    _cpuCommitCtrl.forward(from: 0);
+    playSound(SoundEffect.commit);
+    HapticFeedback.lightImpact();
   }
 
   void _startRevealBeat() {
@@ -225,20 +262,14 @@ class _DuelBoardPhaseState extends State<DuelBoardPhase>
   void _fireVerdictSounds() {
     final outcome = _lastResult?.outcome;
     if (outcome == null) return;
-    playSound(switch (outcome) {
-      RoundOutcome.redCard => SoundEffect.redCard,
-      RoundOutcome.goal => SoundEffect.goal,
-      RoundOutcome.saved || RoundOutcome.blocked => SoundEffect.save,
-      _ => SoundEffect.cardSlam,
-    });
+    playSound(pitchDuelSoundForOutcome(outcome));
     if (outcome == RoundOutcome.goal || outcome == RoundOutcome.redCard) {
       HapticFeedback.heavyImpact();
     }
   }
 
-  RoundResult? get _lastResult => widget.state.roundResults.isEmpty
-      ? null
-      : widget.state.roundResults.last;
+  RoundResult? get _lastResult =>
+      widget.state.roundResults.isEmpty ? null : widget.state.roundResults.last;
 
   StingerKind? get _stingerKind => switch (_lastResult?.outcome) {
     RoundOutcome.goal => StingerKind.goal,
@@ -248,9 +279,11 @@ class _DuelBoardPhaseState extends State<DuelBoardPhase>
 
   @override
   void dispose() {
+    _cpuThinkTimer?.cancel();
     _roleCtrl.dispose();
     _revealCtrl.dispose();
     _stinger.dispose();
+    _cpuCommitCtrl.dispose();
     super.dispose();
   }
 
@@ -337,39 +370,27 @@ class _DuelBoardPhaseState extends State<DuelBoardPhase>
       child: Stack(
         children: [
           const Positioned.fill(child: StadiumBackground()),
-          Column(
-            children: [
-              // ── Opponent's side: face-down squad on their pitch half ──
-              _OpponentBoardStrip(state: state),
-              // ── Central arena: both placements + flip + VS ──
-              SpotlightTarget(
-                spotlightKey: _arenaKey,
-                child: _DuelArena(
-                  state: state,
-                  roleCtrl: _roleCtrl,
-                  revealCtrl: _revealCtrl,
-                  result: resolveBeat ? _lastResult : null,
-                ),
-              ),
-              // ── Your side: the hand (play) or briefing/resolution beats ──
-              Expanded(
-                child: playBeat
-                    // The play beat NEVER scrolls: the whole hand + power
-                    // strip fits the band; tiny screens scale down instead.
-                    ? _buildPlayHand(context, state, bottomInset)
-                    : ListView(
-                        clipBehavior: Clip.none,
-                        padding: EdgeInsets.fromLTRB(
-                          16,
-                          12,
-                          16,
-                          (bottomAction == null ? 16 : 128) + bottomInset,
-                        ),
-                        children:
-                            _buildLowerChildren(context, state, resolveBeat),
-                      ),
-              ),
-            ],
+          const Positioned.fill(
+            child: FullPitchBackground(key: ValueKey('duel-full-pitch')),
+          ),
+          Positioned.fill(
+            child: LayoutBuilder(
+              builder: (context, board) => playBeat
+                  ? _buildPlayBoard(
+                      context,
+                      state,
+                      board.maxHeight,
+                      bottomInset,
+                    )
+                  : _buildRoundBeatBoard(
+                      context,
+                      state,
+                      resolveBeat,
+                      board.maxHeight,
+                      bottomInset,
+                      bottomAction != null,
+                    ),
+            ),
           ),
           Positioned(
             left: 0,
@@ -423,10 +444,147 @@ class _DuelBoardPhaseState extends State<DuelBoardPhase>
               left: 16,
               right: 16,
               bottom: 32 + bottomInset,
-              child: bottomAction,
+              child: AnimatedSwitcher(
+                duration: Duration(milliseconds: _reduceMotion ? 120 : 260),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.12),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
+                ),
+                child: bottomAction,
+              ),
             ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPlayBoard(
+    BuildContext context,
+    GameState state,
+    double boardHeight,
+    double bottomInset,
+  ) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned(
+          left: 0,
+          right: 0,
+          top: 0,
+          child: _OpponentDuelHand(
+            state: state,
+            commitCtrl: _cpuCommitCtrl,
+            committed: _cpuCommitted,
+          ),
+        ),
+        Align(
+          alignment: const Alignment(0, -0.08),
+          child: SpotlightTarget(
+            spotlightKey: _powerKey,
+            child: _DuelIntelStrip(state: state),
+          ),
+        ),
+        Positioned(
+          left: 0,
+          right: 0,
+          top: boardHeight * 0.48,
+          bottom: 0,
+          child: _buildPlayHand(context, state, bottomInset),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRoundBeatBoard(
+    BuildContext context,
+    GameState state,
+    bool resolveBeat,
+    double boardHeight,
+    double bottomInset,
+    bool hasBottomAction,
+  ) {
+    const opponentHeight = 78.0;
+    final lowerChildren = _buildLowerChildren(context, state, resolveBeat);
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned(
+          left: 0,
+          right: 0,
+          top: 0,
+          child: _OpponentBoardStrip(state: state),
+        ),
+        if (state.phase == MatchPhase.scenario)
+          Positioned.fill(
+            top: opponentHeight,
+            child: LayoutBuilder(
+              builder: (context, available) {
+                final bottomPadding = 16 + bottomInset;
+                return SingleChildScrollView(
+                  clipBehavior: Clip.none,
+                  padding: EdgeInsets.fromLTRB(16, 12, 16, bottomPadding),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: max(
+                        0,
+                        available.maxHeight - 12 - bottomPadding,
+                      ),
+                    ),
+                    child: Center(
+                      child: Transform.translate(
+                        offset: const Offset(0, -opponentHeight / 2),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: lowerChildren,
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          )
+        else
+          Positioned.fill(
+            top: opponentHeight,
+            child: ListView(
+              clipBehavior: Clip.none,
+              padding: EdgeInsets.fromLTRB(
+                16,
+                max(
+                  12,
+                  boardHeight * 0.5 - opponentHeight - (resolveBeat ? 104 : 94),
+                ),
+                16,
+                (hasBottomAction ? 128 : 16) + bottomInset,
+              ),
+              children: [
+                SpotlightTarget(
+                  spotlightKey: _arenaKey,
+                  child: _DuelArena(
+                    state: state,
+                    roleCtrl: _roleCtrl,
+                    revealCtrl: _revealCtrl,
+                    result: resolveBeat ? _lastResult : null,
+                  ),
+                ),
+                if (lowerChildren.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  ...lowerChildren,
+                ],
+              ],
+            ),
+          ),
+      ],
     );
   }
 
@@ -447,15 +605,23 @@ class _DuelBoardPhaseState extends State<DuelBoardPhase>
   ) {
     if (resolveBeat && _revealDone && state.currentRound >= 4) {
       return CyberCtaButton(
+        key: const ValueKey('full-time-result'),
         label: 'Full-Time Result',
         primary: true,
         onPressed: () => context.read<GameBloc>().add(RoundAdvanced()),
       );
     }
     if (state.phase != MatchPhase.play) return null;
-    final hasCompleteSelection =
-        state.selectedPlayerCard != null && state.selectedActionCard != null;
-    if (!hasCompleteSelection) return null;
+    final hasPlayer = state.selectedPlayerCard != null;
+    final hasAction = state.selectedActionCard != null;
+    if (!hasPlayer || !hasAction) {
+      return _MoveGuidanceDock(
+        key: ValueKey('move-guidance-$hasPlayer-$hasAction'),
+        attacking: state.playerAttacking,
+        playerSelected: hasPlayer,
+        actionSelected: hasAction,
+      );
+    }
 
     final accent = roleAccent(state.playerAttacking);
     final scenarioBonus = state.playerAttacking
@@ -469,10 +635,13 @@ class _DuelBoardPhaseState extends State<DuelBoardPhase>
     final chanceLabel = state.playerAttacking ? 'GOAL CHANCE' : 'STOP CHANCE';
 
     return BottomLockButton(
-      label: state.playerAttacking ? 'LOCK ATTACK' : 'LOCK DEFENSE',
-      helper:
-          '$chancePct% ${state.playerAttacking ? 'GOAL' : 'STOP'} · TAP TO STRIKE',
+      key: ValueKey(state.playerAttacking ? 'commit-attack' : 'commit-defense'),
+      label: state.playerAttacking ? 'COMMIT ATTACK' : 'COMMIT DEFENSE',
+      helper: state.playerAttacking
+          ? '$chancePct% GOAL CHANCE • TIME YOUR STRIKE'
+          : '$chancePct% STOP CHANCE • TIME YOUR BLOCK',
       accent: accent,
+      icon: state.playerAttacking ? Icons.sports_soccer : Icons.shield,
       onPressed: () async {
         final bloc = context.read<GameBloc>();
         if (MediaQuery.of(context).disableAnimations) {
@@ -513,7 +682,11 @@ class _DuelBoardPhaseState extends State<DuelBoardPhase>
         AnimatedBuilder(
           animation: _revealCtrl,
           builder: (context, _) {
-            final meterT = _timelineT(_kFlipEnd, _kMeterEnd, Curves.easeOutCubic);
+            final meterT = _timelineT(
+              _kFlipEnd,
+              _kMeterEnd,
+              Curves.easeOutCubic,
+            );
             final deflated = result.outcome == RoundOutcome.missed;
             final verdictT = _timelineT(
               _kVerdictStart,
@@ -608,19 +781,23 @@ class _DuelBoardPhaseState extends State<DuelBoardPhase>
     return const [];
   }
 
-  /// The zero-scroll play hand: your pitch half carrying a slim power strip,
-  /// the two role players and the action rail — everything visible at once.
-  /// On extreme small screens the whole block scales down instead of
-  /// scrolling or overflowing.
+  /// The zero-scroll play hand: your FULL four-card hand on your pitch half
+  /// (the on-role pair full-size and live, the off-role pair benched) above the
+  /// action rail — everything visible at once. On extreme small screens the
+  /// whole block scales down instead of scrolling or overflowing.
   Widget _buildPlayHand(
     BuildContext context,
     GameState state,
     double bottomInset,
   ) {
     final accent = roleAccent(state.playerAttacking);
-    final playerPool = state.playerAttacking
-        ? state.deckAttackers
-        : state.deckDefenders;
+    // Fixed order across rounds, mirroring the opponent's hand: attackers
+    // left, defenders right — the lifted pair seesaws with the role.
+    final handCards = [...state.deckAttackers, ...state.deckDefenders];
+    final activeIds =
+        (state.playerAttacking ? state.deckAttackers : state.deckDefenders)
+            .map((card) => card.id)
+            .toSet();
     final availableActions = state.deckActions
         .where(
           (card) => state.playerAttacking
@@ -630,38 +807,17 @@ class _DuelBoardPhaseState extends State<DuelBoardPhase>
                     card.category == ActionCategory.special,
         )
         .toList();
-    final scenarioBonus = state.playerAttacking
-        ? state.currentScenario?.attackBonus ?? 0
-        : state.currentScenario?.defenseBonus ?? 0;
-    final selectedAction = state.selectedActionCard;
-    final hasCompleteSelection =
-        state.selectedPlayerCard != null && selectedAction != null;
-    final basePower = !hasCompleteSelection
-        ? null
-        : state.selectedPlayerCard!.rating +
-              selectedAction.power +
-              scenarioBonus;
 
     final hand = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         SpotlightTarget(
-          spotlightKey: _powerKey,
-          child: _PowerStrip(
-            player: state.selectedPlayerCard,
-            action: selectedAction,
-            bonus: scenarioBonus,
-            total: basePower,
-            attacking: state.playerAttacking,
-            accent: accent,
-          ),
-        ),
-        const SizedBox(height: 10),
-        SpotlightTarget(
           spotlightKey: _playersKey,
           child: _BoardHandPlayers(
-            cards: playerPool,
+            cards: handCards,
+            activeIds: activeIds,
             selectedId: state.selectedPlayerCard?.id,
+            usedIds: state.usedPlayerCards,
             redCardedIds: state.redCardedCards,
             accent: accent,
             onSelect: (card) =>
@@ -683,20 +839,21 @@ class _DuelBoardPhaseState extends State<DuelBoardPhase>
       ],
     );
 
-    // The docked LOCK CTA needs ~102px of clearance; everything above it must
-    // fit the remaining band. If it can't (very short screens), scale the
-    // whole hand down — never scroll.
+    // The guidance/commit dock needs ~102px of clearance. If the remaining
+    // band is too short, scale the whole hand down instead of scrolling.
     return Padding(
       padding: EdgeInsets.fromLTRB(16, 10, 16, 108 + bottomInset),
       child: LayoutBuilder(
         builder: (context, box) {
-          const needed = 356.0; // strip 34 + gaps + players 156 + actions 152
+          const needed = 332.0; // players 168 + gap 8 + actions 156
+          // Anchor the hand to the bottom, hugging the move dock — cards held
+          // at the table's edge, with the pitch breathing above them.
           if (box.maxHeight >= needed) {
-            return Align(alignment: Alignment.topCenter, child: hand);
+            return Align(alignment: Alignment.bottomCenter, child: hand);
           }
           return FittedBox(
             fit: BoxFit.scaleDown,
-            alignment: Alignment.topCenter,
+            alignment: Alignment.bottomCenter,
             child: SizedBox(width: box.maxWidth, child: hand),
           );
         },
@@ -709,6 +866,133 @@ class _DuelBoardPhaseState extends State<DuelBoardPhase>
     if (v <= a) return 0;
     if (v >= b) return 1;
     return curve.transform(((v - a) / (b - a)).clamp(0.0, 1.0));
+  }
+}
+
+/// Calm two-step guidance that occupies the commit dock until both cards are
+/// ready. It never glows; the decisive commit CTA inherits that focus once the
+/// move is complete.
+class _MoveGuidanceDock extends StatelessWidget {
+  const _MoveGuidanceDock({
+    required this.attacking,
+    required this.playerSelected,
+    required this.actionSelected,
+    super.key,
+  });
+
+  final bool attacking;
+  final bool playerSelected;
+  final bool actionSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = roleAccent(attacking);
+    final playerRole = attacking ? 'attacker' : 'defender';
+    final actionPrompt = attacking
+        ? 'Now play an attack action card'
+        : 'Now play a defense action card';
+
+    final (title, helper, icon) = switch ((playerSelected, actionSelected)) {
+      (false, false) => (
+        attacking ? 'BUILD YOUR ATTACK' : 'SET YOUR DEFENSE',
+        'Play 1 $playerRole + 1 action card',
+        attacking ? Icons.sports_soccer : Icons.shield,
+      ),
+      (true, false) => ('PLAYER READY', actionPrompt, Icons.style),
+      (false, true) => (
+        'ACTION PRIMED',
+        'Now choose your $playerRole',
+        Icons.person_search,
+      ),
+      (true, true) => throw StateError('Complete moves use BottomLockButton'),
+    };
+
+    return CyberPanel(
+      accent: accent,
+      glow: false,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      child: SizedBox(
+        height: 50,
+        child: Row(
+          children: [
+            Icon(icon, color: accent, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Cyber.display(12, color: accent, letterSpacing: 1.6),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    helper,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Cyber.body(11, color: Cyber.muted),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                _MoveStepStatus(
+                  label: 'PLAYER',
+                  complete: playerSelected,
+                  active: !playerSelected,
+                  accent: accent,
+                ),
+                const SizedBox(height: 4),
+                _MoveStepStatus(
+                  label: 'ACTION',
+                  complete: actionSelected,
+                  active: playerSelected && !actionSelected,
+                  accent: accent,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MoveStepStatus extends StatelessWidget {
+  const _MoveStepStatus({
+    required this.label,
+    required this.complete,
+    required this.active,
+    required this.accent,
+  });
+
+  final String label;
+  final bool complete;
+  final bool active;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = complete || active ? accent : Cyber.muted;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          complete ? Icons.check : Icons.chevron_right,
+          color: color,
+          size: 12,
+        ),
+        const SizedBox(width: 3),
+        Text(label, style: Cyber.label(8, color: color, letterSpacing: 1.2)),
+      ],
+    );
   }
 }
 
@@ -730,18 +1014,16 @@ class _OpponentBoardStrip extends StatelessWidget {
               ? state.playerAttacking
               : state.roundResults.last.playerAttacking)
         : state.playerAttacking;
-    final pool = attackingRound
-        ? state.opponentDefenders
-        : state.opponentAttackers;
+    final pool = [...state.opponentAttackers, ...state.opponentDefenders];
     final oppRole = attackingRound ? 'DEFENDING' : 'ATTACKING';
     final oppAccent = roleAccent(!attackingRound);
 
     return SizedBox(
+      key: const ValueKey('opponent-compact-hand'),
       height: 78,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          const PitchHalfBackground(half: PitchHalf.top, opacity: 0.4),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
             child: Row(
@@ -782,14 +1064,235 @@ class _OpponentBoardStrip extends StatelessWidget {
               ],
             ),
           ),
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: HudLine(),
-          ),
         ],
       ),
+    );
+  }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Opponent duel hand — role-valid actions above the full player hand, all
+// face-down and mirrored across the table during the play beat.
+// ═════════════════════════════════════════════════════════════════════════════
+
+class _OpponentDuelHand extends StatelessWidget {
+  const _OpponentDuelHand({
+    required this.state,
+    required this.commitCtrl,
+    required this.committed,
+  });
+
+  final GameState state;
+  final AnimationController commitCtrl;
+  final bool committed;
+
+  static const _playerCardW = 76.0;
+  static const _playerCardH = 119.0;
+  static const _actionCardW = 64.0;
+  static const _actionCardH = 86.0;
+  static const _gap = 8.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final oppRole = state.playerAttacking ? 'DEFENDING' : 'ATTACKING';
+    final oppAccent = roleAccent(!state.playerAttacking);
+    // Fixed order across rounds — reading their backs is a memory game.
+    final playerHand = [...state.opponentAttackers, ...state.opponentDefenders];
+    final playerLockIndex = playerHand.indexWhere(
+      (card) => card.id == state.opponentSelectedPlayerCard?.id,
+    );
+    final relevantCategory = state.playerAttacking
+        ? ActionCategory.defense
+        : ActionCategory.attack;
+    final roleActions = state.opponentActions
+        .where(
+          (card) =>
+              card.category == relevantCategory ||
+              card.category == ActionCategory.special,
+        )
+        .toList();
+    // Match GameBloc's CPU fallback exactly: an unusual deck with no
+    // role-valid actions still shows the pool the CPU may draw from.
+    final actionHand = roleActions.isEmpty
+        ? state.opponentActions
+        : roleActions;
+    final actionLockIndex = actionHand.indexWhere(
+      (card) => card.id == state.opponentSelectedActionCard?.id,
+    );
+
+    return SizedBox(
+      key: const ValueKey('opponent-full-hand'),
+      height: 264,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    '${compactOpponentName(state)} //',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Cyber.label(
+                      11,
+                      color: Cyber.muted,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                CyberChip(label: oppRole, color: oppAccent),
+              ],
+            ),
+            const SizedBox(height: 3),
+            _straightRail(
+              key: const ValueKey('opponent-action-rail'),
+              height: 92,
+              children: [
+                for (var i = 0; i < actionHand.length; i++)
+                  _hiddenBack(
+                    key: ValueKey('opponent-action-card-${actionHand[i].id}'),
+                    width: _actionCardW,
+                    height: _actionCardH,
+                    silhouette: CardBackSilhouette.action,
+                    locked: committed && i == actionLockIndex,
+                    actionLock: true,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 3),
+            _straightRail(
+              key: const ValueKey('opponent-player-rail'),
+              height: 128,
+              children: [
+                for (var i = 0; i < playerHand.length; i++)
+                  _hiddenBack(
+                    key: ValueKey('opponent-player-card-${playerHand[i].id}'),
+                    width: _playerCardW,
+                    height: _playerCardH,
+                    silhouette: CardBackSilhouette.player,
+                    dimmed: state.opponentRedCarded.contains(playerHand[i].id),
+                    locked: committed && i == playerLockIndex,
+                    actionLock: false,
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _straightRail({
+    required Key key,
+    required double height,
+    required List<Widget> children,
+  }) {
+    return SizedBox(
+      key: key,
+      width: double.infinity,
+      height: height,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.bottomCenter,
+        child: SizedBox(
+          height: height,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0) const SizedBox(width: _gap),
+                children[i],
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _hiddenBack({
+    required Key key,
+    required double width,
+    required double height,
+    required CardBackSilhouette silhouette,
+    required bool locked,
+    required bool actionLock,
+    bool dimmed = false,
+  }) {
+    final face = SizedBox(
+      width: width,
+      height: height,
+      child: CardBackFace(
+        accent: Cyber.danger,
+        dimmed: dimmed,
+        silhouette: silhouette,
+      ),
+    );
+    Widget rotatedFace(Widget child) =>
+        Transform.rotate(key: key, angle: pi, child: child);
+
+    if (!locked || dimmed) return rotatedFace(face);
+
+    // The committed player moves first. The action follows a fraction later;
+    // both travel down toward midfield and finish flat. The stamp lives inside
+    // the 180-degree transform so it faces the rival along with the card.
+    return AnimatedBuilder(
+      animation: commitCtrl,
+      builder: (context, child) {
+        final rawT = commitCtrl.value;
+        final stagedT = actionLock
+            ? const Interval(0.22, 1, curve: Curves.easeOutBack).transform(rawT)
+            : const Interval(
+                0,
+                0.82,
+                curve: Curves.easeOutBack,
+              ).transform(rawT);
+        final pulseT = stagedT.clamp(0.0, 1.0);
+        final pulse = sin(pi * pulseT);
+        final travel = actionLock ? 8.0 : 12.0;
+        return Transform.translate(
+          offset: Offset(0, travel * stagedT),
+          child: Transform.scale(
+            scale: 1 + 0.04 * stagedT,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                boxShadow: pulse > 0.01
+                    ? Cyber.glow(Cyber.danger, alpha: 0.45 * pulse)
+                    : null,
+              ),
+              child: rotatedFace(
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    child!,
+                    Positioned(
+                      left: 2,
+                      right: 2,
+                      bottom: 6,
+                      child: Center(
+                        child: Opacity(
+                          opacity: ((stagedT - 0.5) * 2).clamp(0.0, 1.0),
+                          child: const FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: CyberChip(
+                              label: 'LOCKED',
+                              color: Cyber.danger,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+      child: face,
     );
   }
 }
@@ -825,16 +1328,24 @@ class _DuelArena extends StatelessWidget {
     final playerAccent = roleAccent(attackingRound);
     final oppAccent = roleAccent(!attackingRound);
     final playerCard = resolving
-        ? (result!.playerAttacking ? result!.attackerCard : result!.defenderCard)
+        ? (result!.playerAttacking
+              ? result!.attackerCard
+              : result!.defenderCard)
         : state.selectedPlayerCard;
     final oppCard = resolving
-        ? (result!.playerAttacking ? result!.defenderCard : result!.attackerCard)
+        ? (result!.playerAttacking
+              ? result!.defenderCard
+              : result!.attackerCard)
         : null;
     final playerAction = resolving
-        ? (result!.playerAttacking ? result!.attackAction : result!.defenseAction)
+        ? (result!.playerAttacking
+              ? result!.attackAction
+              : result!.defenseAction)
         : state.selectedActionCard;
     final oppAction = resolving
-        ? (result!.playerAttacking ? result!.defenseAction : result!.attackAction)
+        ? (result!.playerAttacking
+              ? result!.defenseAction
+              : result!.attackAction)
         : null;
 
     final scenario = state.currentScenario;
@@ -1139,13 +1650,87 @@ class _VsMedallion extends StatelessWidget {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// Zero-scroll play hand — slim power strip + sm-card rows
+// Zero-scroll play hand — intel strip + sm-card rows
 // ═════════════════════════════════════════════════════════════════════════════
 
-/// One-line power readout replacing the old two-row PowerPreviewBar:
-/// `⚽ 80 + ⚡ 12 + +5 = 97–117`. Honest range (floor..floor+20); gold total.
-class _PowerStrip extends StatelessWidget {
-  const _PowerStrip({
+/// The play beat's middle band: the two hands face each other across this
+/// strip — scenario reminder up top, then your role chip and the
+/// live power equation. A calm flat plate; the glow stays on the cards.
+class _DuelIntelStrip extends StatelessWidget {
+  const _DuelIntelStrip({required this.state});
+
+  final GameState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final attacking = state.playerAttacking;
+    final accent = roleAccent(attacking);
+    final scenario = state.currentScenario;
+    final bonus = attacking
+        ? scenario?.attackBonus ?? 0
+        : scenario?.defenseBonus ?? 0;
+    final player = state.selectedPlayerCard;
+    final action = state.selectedActionCard;
+    final total = player == null || action == null
+        ? null
+        : player.rating + action.power + bonus;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 360),
+        child: SizedBox(
+          width: double.infinity,
+          child: CyberPanel(
+            accent: accent,
+            glow: false,
+            padding: EdgeInsets.zero,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _ArenaScenarioStrip(
+                  title: scenario?.title ?? 'Awaiting intel',
+                  bonus: bonus,
+                  attacking: attacking,
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                  child: Row(
+                    children: [
+                      CyberChip(
+                        label: attacking ? 'ATTACKING' : 'DEFENDING',
+                        color: accent,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: _PowerEquation(
+                            player: player,
+                            action: action,
+                            bonus: bonus,
+                            total: total,
+                            attacking: attacking,
+                            accent: accent,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One-line live power readout: `⚽ 80 + ⚡ 12 + +5 = 97–117`, with `--`
+/// placeholders until each pick lands. Honest range (floor..floor+20).
+class _PowerEquation extends StatelessWidget {
+  const _PowerEquation({
     required this.player,
     required this.action,
     required this.bonus,
@@ -1171,62 +1756,58 @@ class _PowerStrip extends StatelessWidget {
       ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
     );
     Widget sym(String text) => Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 6),
       child: Text(text, style: Cyber.display(13, color: Cyber.muted)),
     );
 
-    return Container(
-      height: 34,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: Cyber.panel.withValues(alpha: 0.6),
-        border: Border.all(color: Cyber.borderSubtle),
-      ),
-      child: FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              attacking ? 'ATK //' : 'DEF //',
-              style: Cyber.label(9, color: accent, letterSpacing: 1.6),
-            ),
-            const SizedBox(width: 10),
-            Icon(
-              attacking ? Icons.sports_soccer : Icons.shield,
-              color: accent,
-              size: 14,
-            ),
-            const SizedBox(width: 6),
-            num(player == null ? '--' : '${player!.rating}', accent),
-            sym('+'),
-            Icon(action?.icon ?? Icons.style, color: Cyber.magenta, size: 14),
-            const SizedBox(width: 6),
-            num(action == null ? '--' : '${action!.power}', Cyber.magenta),
-            sym('+'),
-            num('+$bonus', Cyber.success),
-            sym('='),
-            num(total == null ? '--' : '$total–${total! + 20}', Cyber.gold),
-          ],
-        ),
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            attacking ? Icons.sports_soccer : Icons.shield,
+            color: accent,
+            size: 14,
+          ),
+          const SizedBox(width: 6),
+          num(player == null ? '--' : '${player!.rating}', accent),
+          sym('+'),
+          Icon(action?.icon ?? Icons.style, color: Cyber.magenta, size: 14),
+          const SizedBox(width: 6),
+          num(action == null ? '--' : '${action!.power}', Cyber.magenta),
+          sym('+'),
+          num('+$bonus', Cyber.success),
+          sym('='),
+          num(total == null ? '--' : '$total–${total! + 20}', Cyber.gold),
+        ],
       ),
     );
   }
 }
 
-/// Your role players as a centered row of compact tiles — no heading, no
-/// backdrop panel: the pitch half behind the board already sets the scene.
+/// Your FULL four-card hand as a centered straight row — the on-role pair is
+/// full-size and live, the off-role pair waits benched (small, dim, inert) at the
+/// baseline. USED cards stay visible but locked: each player card plays once
+/// per match, UNO-style. No heading, no backdrop panel: the pitch half behind
+/// the board already sets the scene.
 class _BoardHandPlayers extends StatelessWidget {
   const _BoardHandPlayers({
     required this.cards,
+    required this.activeIds,
     required this.selectedId,
+    required this.usedIds,
     required this.redCardedIds,
     required this.accent,
     required this.onSelect,
   });
 
   final List<PlayerCard> cards;
+
+  /// The on-role pair — selectable this round.
+  final Set<String> activeIds;
   final String? selectedId;
+  final List<String> usedIds;
   final List<String> redCardedIds;
   final Color accent;
   final ValueChanged<PlayerCard> onSelect;
@@ -1234,30 +1815,71 @@ class _BoardHandPlayers extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
+      key: const ValueKey('user-player-rail'),
       // sm tile (144) + selection lift/shadow headroom.
-      height: 156,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          for (var i = 0; i < cards.length; i++) ...[
-            if (i > 0) const SizedBox(width: 14),
-            _StaggerIn(
-              index: i,
-              child: CyberPlayerCardTile(
-                card: cards[i],
-                selected: selectedId == cards[i].id,
-                disabled: redCardedIds.contains(cards[i].id),
-                size: VisualCardSize.sm,
-                selectedAccent: accent,
-                onTap: redCardedIds.contains(cards[i].id)
-                    ? null
-                    : () => onSelect(cards[i]),
-              ),
-            ),
-          ],
-        ],
+      height: 168,
+      width: double.infinity,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.bottomCenter,
+        child: SizedBox(
+          height: 168,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              for (var i = 0; i < cards.length; i++) ...[
+                if (i > 0) const SizedBox(width: 6),
+                _StaggerIn(index: i, child: _tile(cards[i])),
+              ],
+            ],
+          ),
+        ),
       ),
+    );
+  }
+
+  Widget _tile(PlayerCard card) {
+    final active = activeIds.contains(card.id);
+    final used = usedIds.contains(card.id);
+    final redCarded = redCardedIds.contains(card.id);
+    final locked = used || redCarded;
+    final selected = selectedId == card.id;
+
+    final Widget tile = CyberPlayerCardTile(
+      key: ValueKey('user-player-card-${card.id}'),
+      card: card,
+      selected: selected,
+      disabled: active && locked,
+      disabledLabel: redCarded ? 'SENT OFF' : 'USED',
+      size: VisualCardSize.sm,
+      selectedAccent: accent,
+      tiltOnSelect: false,
+      onTap: active && !locked ? () => onSelect(card) : null,
+    );
+
+    if (!active) {
+      // Off-role: benched this round — smaller, dim and inert. IgnorePointer
+      // is required (not just a null onTap): the shell still plays the tap
+      // SFX otherwise.
+      return SizedBox(
+        width: 78,
+        height: 117,
+        child: FittedBox(
+          child: SizedBox(
+            width: 96,
+            height: 144,
+            child: Opacity(opacity: 0.45, child: IgnorePointer(child: tile)),
+          ),
+        ),
+      );
+    }
+    // Every resting card shares one baseline. Only the live selection lifts.
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutCubic,
+      transform: Matrix4.translationValues(0, selected ? -10 : 0, 0),
+      child: tile,
     );
   }
 }
@@ -1280,7 +1902,7 @@ class _BoardActionRail extends StatelessWidget {
   final ValueChanged<ActionCard> onSelect;
 
   static const _tileW = 96.0;
-  static const _gap = 8.0;
+  static const _gap = 6.0;
 
   @override
   Widget build(BuildContext context) {
@@ -1290,24 +1912,39 @@ class _BoardActionRail extends StatelessWidget {
         index: index,
         baseDelayMs: 220,
         child: CyberActionCardTile(
+          key: ValueKey('user-action-card-${card.id}'),
           card: card,
           selected: selectedId == card.id,
           disabled: used,
           disabledLabel: 'USED',
           size: VisualCardSize.sm,
           selectedAccent: accent,
+          tiltOnSelect: false,
           onTap: used ? null : () => onSelect(card),
         ),
       );
     }
 
+    Widget elevated(int index, Widget child) {
+      return AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
+        transform: Matrix4.translationValues(
+          0,
+          selectedId == cards[index].id ? -8 : 0,
+          0,
+        ),
+        child: child,
+      );
+    }
+
     return SizedBox(
+      key: const ValueKey('user-action-rail'),
       height: 156,
       child: LayoutBuilder(
         builder: (context, box) {
           final fitsAsRow =
-              cards.length * _tileW + (cards.length - 1) * _gap <=
-              box.maxWidth;
+              cards.length * _tileW + (cards.length - 1) * _gap <= box.maxWidth;
           if (fitsAsRow) {
             return Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -1315,7 +1952,7 @@ class _BoardActionRail extends StatelessWidget {
               children: [
                 for (var i = 0; i < cards.length; i++) ...[
                   if (i > 0) const SizedBox(width: _gap),
-                  tile(cards[i], i),
+                  elevated(i, tile(cards[i], i)),
                 ],
               ],
             );
@@ -1328,7 +1965,7 @@ class _BoardActionRail extends StatelessWidget {
             separatorBuilder: (_, _) => const SizedBox(width: _gap),
             itemBuilder: (context, index) => Align(
               alignment: Alignment.bottomCenter,
-              child: tile(cards[index], index),
+              child: elevated(index, tile(cards[index], index)),
             ),
           );
         },
@@ -1437,13 +2074,10 @@ class _RoleBanner extends StatelessWidget {
                 children: [
                   Text(
                     'ROUND $round // $context2',
-                    style: Cyber.label(
-                      10,
-                      color: Cyber.muted,
-                      letterSpacing: 2,
-                    ).copyWith(
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
+                    style: Cyber.label(10, color: Cyber.muted, letterSpacing: 2)
+                        .copyWith(
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
                   ),
                   const SizedBox(height: 10),
                   Transform.scale(

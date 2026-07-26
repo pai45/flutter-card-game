@@ -72,6 +72,34 @@ class MatchLineup {
   final String? manager; // Manager/Coach name
 }
 
+/// One head-to-head statistic — the same metric for both sides, ready to draw
+/// as a labelled split bar. [homeDisplay]/[awayDisplay] carry the formatted
+/// text ("54.1%", "469"), while the numeric pair sizes the bar.
+class TeamStatLine {
+  const TeamStatLine({
+    required this.label,
+    required this.homeDisplay,
+    required this.awayDisplay,
+    required this.homeValue,
+    required this.awayValue,
+  });
+
+  final String label;
+  final String homeDisplay;
+  final String awayDisplay;
+  final double homeValue;
+  final double awayValue;
+
+  /// The home side's share of the pair (0..1), used as the split point. Falls
+  /// back to an even split when neither side recorded anything, so a 0–0 stat
+  /// renders as a balanced bar rather than collapsing to one side.
+  double get homeShare {
+    final total = homeValue + awayValue;
+    if (total <= 0) return 0.5;
+    return homeValue / total;
+  }
+}
+
 class F1SessionResult {
   const F1SessionResult({
     required this.name,
@@ -82,7 +110,7 @@ class F1SessionResult {
 }
 
 /// Sport governs how sport-specific surfaces lay out scores and modules.
-enum Sport { football, cricket, f1, basketball, tennis }
+enum Sport { football, cricket, motorsport, basketball, tennis }
 
 /// One side of a fixture. Crest art can be added later via [crestAsset];
 /// until then the UI falls back to an initials badge tinted with [color].
@@ -93,6 +121,7 @@ class SportTeam {
     required this.shortName,
     required this.color,
     this.crestAsset,
+    this.flagUrl,
   });
 
   final String id;
@@ -102,6 +131,11 @@ class SportTeam {
   final String shortName;
   final Color color;
   final String? crestAsset;
+
+  /// Real flag image URL for a tennis player's nationality, when the source
+  /// feed provides one (e.g. ESPN's `athlete.flag.href`). Null falls back to
+  /// [TennisCountryMap]'s emoji/colour badge.
+  final String? flagUrl;
 }
 
 /// A fixture shown on the prediction home. Mock-sourced for now; later this maps
@@ -129,6 +163,7 @@ class SportMatch {
     this.basketballScorecard,
     this.tennisScorecard,
     this.commentary,
+    this.teamStats,
     this.f1Sessions,
     this.f1DriverStandings,
     this.f1WeekendEndDate,
@@ -177,6 +212,10 @@ class SportMatch {
   /// Play-by-play commentary.
   final List<MatchCommentary>? commentary;
 
+  /// Head-to-head team statistics (possession, shots, passes …) shown as split
+  /// bars on the STATS tab. Null when the feed carries no stats for the tie.
+  final List<TeamStatLine>? teamStats;
+
   /// F1 Driver Standings.
   final List<String>? f1DriverStandings;
 
@@ -216,6 +255,7 @@ class SportMatch {
     BasketballScorecard? basketballScorecard,
     TennisScorecard? tennisScorecard,
     List<MatchCommentary>? commentary,
+    List<TeamStatLine>? teamStats,
     List<F1SessionResult>? f1Sessions,
     List<String>? f1DriverStandings,
     DateTime? f1WeekendEndDate,
@@ -252,6 +292,7 @@ class SportMatch {
     basketballScorecard: basketballScorecard ?? this.basketballScorecard,
     tennisScorecard: tennisScorecard ?? this.tennisScorecard,
     commentary: commentary ?? this.commentary,
+    teamStats: teamStats ?? this.teamStats,
     f1Sessions: f1Sessions ?? this.f1Sessions,
     f1DriverStandings: f1DriverStandings ?? this.f1DriverStandings,
     f1WeekendEndDate: f1WeekendEndDate ?? this.f1WeekendEndDate,

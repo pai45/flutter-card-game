@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../models/picks.dart';
 import '../models/sport_match.dart';
+import 'market_archetypes.dart';
+import 'match_outcome_resolver.dart';
+import 'prediction_repository.dart';
 
 abstract class PickRepository {
   Future<List<PickMarket>> markets();
@@ -10,13 +13,174 @@ abstract class PickRepository {
 }
 
 class MockPickRepository implements PickRepository {
-  MockPickRepository() {
-    _markets = _buildMarkets();
-  }
+  MockPickRepository();
 
-  late final List<PickMarket> _markets;
   late final DateTime _now = DateTime.now();
   late final DateTime _today = DateTime(_now.year, _now.month, _now.day);
+
+  /// Recomputed on every access (not cached) so a day-boundary refresh (the
+  /// rolling-window job) sees genuinely fresh fixture statuses for the
+  /// generation/auto-settlement step — hand-authored markets' own
+  /// upcoming/live/closed status still derives from this repository
+  /// instance's `_now`, same as before this existed.
+  List<PickMarket> get _markets => _finalizeMarkets(_buildMarkets());
+
+  /// Any matchId lacking a hand-authored market gets one auto-generated
+  /// (a `'<matchId>::winner'`/`'<matchId>::race_winner'` market, priced from
+  /// the same seeded-hash technique the FIFA knockout markets already use),
+  /// and every market — hand-authored or generated — tied to a finished
+  /// fixture gets auto-settled via [MarketArchetypes], the same "never stuck"
+  /// guarantee [SettlementWriter] already gives prediction quizzes. A market
+  /// that's already settled/voided by hand is left alone (hand-authored
+  /// results always win, same precedence as quiz settlement).
+  List<PickMarket> _finalizeMarkets(List<PickMarket> handAuthored) {
+    final fixturesById = {
+      for (final fixture in MockPredictionRepository().seedFixtures)
+        fixture.id: fixture,
+    };
+    final coveredMatchIds = handAuthored
+        .map((m) => m.matchId)
+        .whereType<String>()
+        .toSet();
+    final generated = _buildGeneratedMarkets(fixturesById, coveredMatchIds);
+    return [
+      for (final market in [...handAuthored, ...generated])
+        _autoSettleIfDue(market, fixturesById[market.matchId]),
+    ];
+  }
+
+  PickMarket _autoSettleIfDue(PickMarket market, SportMatch? fixture) {
+    if (fixture == null || fixture.status != MatchStatus.finished) {
+      return market;
+    }
+    if (market.isResultKnown) return market; // hand-authored result wins
+    final outcome = MatchOutcomeResolver.resolve(fixture);
+    return MarketArchetypes.settle(market, outcome);
+  }
+
+  List<PickMarket> _buildGeneratedMarkets(
+    Map<String, SportMatch> fixturesById,
+    Set<String> coveredMatchIds,
+  ) {
+    final markets = <PickMarket>[];
+    for (final fixture in fixturesById.values) {
+      if (coveredMatchIds.contains(fixture.id)) continue;
+      final market = fixture.sport == Sport.motorsport
+          ? _generatedRaceWinnerMarket(fixture)
+          : _generatedWinnerMarket(fixture);
+      if (market != null) markets.add(market);
+    }
+    return markets;
+  }
+
+  PickMarketStatus _statusForFixture(SportMatch fixture) => switch (fixture.status) {
+    MatchStatus.upcoming => PickMarketStatus.upcoming,
+    MatchStatus.live => PickMarketStatus.live,
+    MatchStatus.finished => PickMarketStatus.closed,
+  };
+
+  PickMarket? _generatedWinnerMarket(SportMatch fixture) {
+    final seed = _stableSeed(fixture.id);
+    final hasDraw = fixture.sport == Sport.football || fixture.sport == Sport.cricket;
+    final homeWin = hasDraw ? 40 + seed % 20 : 46 + seed % 20;
+    final draw = hasDraw ? 16 + seed % 10 : 0;
+    final awayWin = 100 - homeWin - draw;
+    final outcomes = <PickOutcome>[
+      PickOutcome(
+        id: 'home',
+        label: fixture.home.name,
+        probabilityPercent: homeWin,
+        color: fixture.home.color,
+      ),
+      if (hasDraw)
+        PickOutcome(
+          id: 'draw',
+          label: 'Draw',
+          probabilityPercent: draw,
+          color: const Color(0xff64748b),
+        ),
+      PickOutcome(
+        id: 'away',
+        label: fixture.away.name,
+        probabilityPercent: awayWin,
+        color: fixture.away.color,
+      ),
+    ];
+    return PickMarket(
+      id: '${fixture.id}::winner',
+      question: '${fixture.home.name} vs ${fixture.away.name} result',
+      type: PickMarketType.match,
+      sport: fixture.sport,
+      leagueId: fixture.leagueId,
+      leagueLabel: fixture.leagueId.toUpperCase(),
+      status: _statusForFixture(fixture),
+      outcomes: outcomes,
+      volumeOz: 1500 + seed % 4000,
+      closesAt: fixture.kickoff,
+      matchId: fixture.id,
+      priceHistory: _history([
+        {
+          'home': _percent(homeWin - 3),
+          if (hasDraw) 'draw': _percent(draw + 1),
+          'away': _percent(awayWin + (hasDraw ? 2 : 3)),
+        },
+        {
+          'home': _percent(homeWin),
+          if (hasDraw) 'draw': _percent(draw),
+          'away': _percent(awayWin),
+        },
+      ]),
+      contextTitle: '${fixture.home.name} vs ${fixture.away.name}',
+      resultNote: 'Resolves at full time',
+    );
+  }
+
+  /// Motorsport has no home/away side, so the generated market offers the
+  /// top-billed drivers from [SportMatch.f1DriverStandings] as candidates
+  /// plus an 'other' catch-all — the same ids [MarketArchetypes._settleRaceWinner]
+  /// matches the eventual race winner's (slugified) name against.
+  PickMarket? _generatedRaceWinnerMarket(SportMatch fixture) {
+    final standings = fixture.f1DriverStandings;
+    if (standings == null || standings.isEmpty) return null;
+    final seed = _stableSeed(fixture.id);
+    final candidates = standings.take(5).toList();
+    final weights = [for (var i = 0; i < candidates.length; i++) 34 - i * 6];
+    final candidateTotal = weights.fold(0, (a, b) => a + b);
+    final otherPercent = (100 - candidateTotal).clamp(2, 96);
+    final outcomes = <PickOutcome>[
+      for (var i = 0; i < candidates.length; i++)
+        PickOutcome(
+          id: MarketArchetypes.slugifyName(candidates[i]),
+          label: candidates[i],
+          probabilityPercent: weights[i],
+          color: Color(0xffe10600 - i * 0x101010),
+        ),
+      PickOutcome(
+        id: 'other',
+        label: 'Other',
+        probabilityPercent: otherPercent,
+        color: const Color(0xff64748b),
+      ),
+    ];
+    return PickMarket(
+      id: '${fixture.id}::race_winner',
+      question: '${fixture.home.name}: race winner',
+      type: PickMarketType.event,
+      sport: Sport.motorsport,
+      leagueId: fixture.leagueId,
+      leagueLabel: fixture.leagueId.toUpperCase(),
+      status: _statusForFixture(fixture),
+      outcomes: outcomes,
+      volumeOz: 2200 + seed % 5000,
+      closesAt: fixture.kickoff,
+      matchId: fixture.id,
+      priceHistory: _history([
+        {for (final o in outcomes) o.id: _percent(o.probabilityPercent)},
+      ]),
+      contextTitle: fixture.home.name,
+      resultNote: 'Resolves at chequered flag',
+    );
+  }
 
   DateTime _at(int dayOffset, int hour, [int minute = 0]) =>
       _today.add(Duration(days: dayOffset, hours: hour, minutes: minute));
@@ -1077,7 +1241,7 @@ class MockPickRepository implements PickRepository {
         id: 'f1_belgian_gp_winner',
         question: 'Who wins the Belgian Grand Prix?',
         type: PickMarketType.future,
-        sport: Sport.f1,
+        sport: Sport.motorsport,
         leagueId: 'f1',
         leagueLabel: 'F1',
         status: PickMarketStatus.upcoming,
@@ -1135,7 +1299,7 @@ class MockPickRepository implements PickRepository {
         id: 'f1_belgian_gp_pole',
         question: 'Who takes pole at Spa?',
         type: PickMarketType.future,
-        sport: Sport.f1,
+        sport: Sport.motorsport,
         leagueId: 'f1',
         leagueLabel: 'F1',
         status: PickMarketStatus.upcoming,
@@ -1187,7 +1351,7 @@ class MockPickRepository implements PickRepository {
         id: 'f1_belgian_gp_rain',
         question: 'Will it rain during the Belgian GP?',
         type: PickMarketType.event,
-        sport: Sport.f1,
+        sport: Sport.motorsport,
         leagueId: 'f1',
         leagueLabel: 'F1',
         status: PickMarketStatus.upcoming,
@@ -1221,7 +1385,7 @@ class MockPickRepository implements PickRepository {
         id: 'f1_belgian_gp_safety_car',
         question: 'Safety car during the Belgian GP?',
         type: PickMarketType.event,
-        sport: Sport.f1,
+        sport: Sport.motorsport,
         leagueId: 'f1',
         leagueLabel: 'F1',
         status: PickMarketStatus.upcoming,
@@ -1255,7 +1419,7 @@ class MockPickRepository implements PickRepository {
         id: 'f1_belgian_gp_verstappen_podium',
         question: 'Verstappen to finish on the podium?',
         type: PickMarketType.event,
-        sport: Sport.f1,
+        sport: Sport.motorsport,
         leagueId: 'f1',
         leagueLabel: 'F1',
         status: PickMarketStatus.upcoming,

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 
@@ -34,6 +35,58 @@ class SettlementQuestionResult {
   final PredictionMultiplier? multiplier;
 }
 
+class PredictionQuestionAnalytics {
+  const PredictionQuestionAnalytics({
+    required this.index,
+    required this.question,
+    required this.actualAnswer,
+    required this.correctVotes,
+    required this.totalVotes,
+  });
+
+  final int index;
+  final String question;
+  final String actualAnswer;
+  final int correctVotes;
+  final int totalVotes;
+
+  double? get correctVoteShare =>
+      totalVotes == 0 ? null : correctVotes / totalVotes;
+}
+
+/// Immutable, already-computed match intelligence consumed by the settlement
+/// reveal. Keeping the arithmetic out of the animation makes every beat
+/// deterministic and straightforward to test.
+class PredictionSettlementAnalytics {
+  const PredictionSettlementAnalytics({
+    required this.playerCorrect,
+    required this.totalQuestions,
+    required this.playerRank,
+    required this.rivalCount,
+    required this.beatenShare,
+    required this.scoreDistribution,
+    required this.crowdCorrectVotes,
+    required this.crowdTotalVotes,
+    required this.questions,
+  });
+
+  final int playerCorrect;
+  final int totalQuestions;
+  final int playerRank;
+  final int rivalCount;
+  final double? beatenShare;
+  final Map<int, int> scoreDistribution;
+  final int crowdCorrectVotes;
+  final int crowdTotalVotes;
+  final List<PredictionQuestionAnalytics> questions;
+
+  int get fieldSize => rivalCount + 1;
+  double get playerAccuracy =>
+      totalQuestions == 0 ? 0 : playerCorrect / totalQuestions;
+  double? get crowdAccuracy =>
+      crowdTotalVotes == 0 ? null : crowdCorrectVotes / crowdTotalVotes;
+}
+
 /// Full-screen settlement cinematic for a finished prediction, mirroring the
 /// quiz's staged reveal language:
 ///   1. header beat — RESULTS ARE IN + fixture recap;
@@ -51,7 +104,7 @@ class SettlementRevealOverlay extends StatefulWidget {
     required this.results,
     required this.totalXp,
     required this.xpBefore,
-    required this.beatenShare,
+    required this.analytics,
     required this.onDone,
     this.contestRank = 0,
     this.contestPrizeOz = 0,
@@ -64,9 +117,7 @@ class SettlementRevealOverlay extends StatefulWidget {
   final int totalXp;
   final int xpBefore;
 
-  /// Share (0..1) of this match's predictors the user matched or beat.
-  /// Null hides the crowd comparison line.
-  final double? beatenShare;
+  final PredictionSettlementAnalytics analytics;
   final VoidCallback onDone;
 
   /// Paid-contest result. [contestRank] 0 = not a contest (beat hidden);
@@ -86,6 +137,7 @@ class _SettlementRevealOverlayState extends State<SettlementRevealOverlay> {
   /// 0 = header beat, 1..n = that many verdicts stamped, n+1 = summary.
   int _stage = 0;
   int _run = 0;
+  bool _showAnalytics = false;
 
   int get _summaryStage => widget.results.length + 1;
   bool get _onSummary => _stage >= _summaryStage;
@@ -147,7 +199,14 @@ class _SettlementRevealOverlayState extends State<SettlementRevealOverlay> {
     _enterSummary();
   }
 
-  void _continue() => widget.onDone();
+  void _continue() {
+    if (_showAnalytics) {
+      widget.onDone();
+      return;
+    }
+    playSound(SoundEffect.uiTap);
+    setState(() => _showAnalytics = true);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -161,7 +220,11 @@ class _SettlementRevealOverlayState extends State<SettlementRevealOverlay> {
             duration: const Duration(milliseconds: 320),
             switchInCurve: Curves.easeOutCubic,
             switchOutCurve: Curves.easeInCubic,
-            child: _onSummary ? _summary() : _flips(),
+            child: _showAnalytics
+                ? _analytics()
+                : _onSummary
+                ? _summary()
+                : _flips(),
           ),
         ),
       ),
@@ -231,7 +294,7 @@ class _SettlementRevealOverlayState extends State<SettlementRevealOverlay> {
   Widget _summary() {
     final progressBefore = levelProgress(widget.xpBefore);
     final progressAfter = levelProgress(widget.xpBefore + widget.totalXp);
-    final beaten = widget.beatenShare;
+    final beaten = widget.analytics.beatenShare;
     return Stack(
       key: const ValueKey('settlement-summary'),
       alignment: Alignment.center,
@@ -329,6 +392,481 @@ class _SettlementRevealOverlayState extends State<SettlementRevealOverlay> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _analytics() => _MatchIntelPage(
+    key: const ValueKey('settlement-match-intel'),
+    match: widget.match,
+    analytics: widget.analytics,
+    onDone: _continue,
+  );
+}
+
+class _MatchIntelPage extends StatelessWidget {
+  const _MatchIntelPage({
+    required this.match,
+    required this.analytics,
+    required this.onDone,
+    super.key,
+  });
+
+  final SportMatch match;
+  final PredictionSettlementAnalytics analytics;
+  final VoidCallback onDone;
+
+  @override
+  Widget build(BuildContext context) {
+    final beaten = analytics.beatenShare;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const IgnorePointer(child: CyberTextureOverlay()),
+        Column(
+          children: [
+            const SizedBox(height: 20),
+            Text(
+              'MATCH INTEL // FINAL',
+              textAlign: TextAlign.center,
+              style: Cyber.display(20, color: Colors.white, letterSpacing: 2.2),
+            ),
+            const SizedBox(height: 8),
+            _FixtureRecap(match: match),
+            const SizedBox(height: 16),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _IntelMetric(
+                          label: 'YOUR SCORE',
+                          value:
+                              '${analytics.playerCorrect}/${analytics.totalQuestions}',
+                          accent: Cyber.cyan,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _IntelMetric(
+                          label: 'FIELD RANK',
+                          value: analytics.rivalCount == 0
+                              ? '—'
+                              : '#${analytics.playerRank}/${analytics.fieldSize}',
+                          accent: Cyber.success,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _IntelMetric(
+                          label: 'PERCENTILE',
+                          value: beaten == null
+                              ? '—'
+                              : 'TOP ${(100 - beaten * 100).clamp(1, 100).round()}%',
+                          accent: Cyber.violet,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _FieldDistributionPanel(analytics: analytics),
+                  const SizedBox(height: 12),
+                  _AccuracyComparisonPanel(analytics: analytics),
+                  const SizedBox(height: 12),
+                  _RealityAlignmentPanel(analytics: analytics),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: HudCtaButton(
+                label: 'DONE',
+                icon: Icons.check,
+                onTap: onDone,
+                tapSound: SoundEffect.uiTap,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _IntelMetric extends StatelessWidget {
+  const _IntelMetric({
+    required this.label,
+    required this.value,
+    required this.accent,
+  });
+
+  final String label;
+  final String value;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return CyberPanel(
+      accent: accent,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      child: Column(
+        children: [
+          Text(
+            value,
+            maxLines: 1,
+            textAlign: TextAlign.center,
+            style: Cyber.display(
+              14,
+              color: accent,
+            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            maxLines: 1,
+            textAlign: TextAlign.center,
+            style: Cyber.label(7.5, color: Cyber.muted, letterSpacing: 0.8),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FieldDistributionPanel extends StatelessWidget {
+  const _FieldDistributionPanel({required this.analytics});
+
+  final PredictionSettlementAnalytics analytics;
+
+  @override
+  Widget build(BuildContext context) {
+    return CyberPanel(
+      accent: Cyber.cyan,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'YOU VS FIELD',
+            style: Cyber.label(10, color: Cyber.cyan, letterSpacing: 1.6),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'SCORE DISTRIBUTION // CORRECT PICKS',
+            style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1),
+          ),
+          const SizedBox(height: 14),
+          if (analytics.rivalCount == 0)
+            const _IntelEmpty(message: 'NO FIELD DATA FOR THIS MATCH')
+          else
+            _ScoreDistributionChart(analytics: analytics),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScoreDistributionChart extends StatelessWidget {
+  const _ScoreDistributionChart({required this.analytics});
+
+  final PredictionSettlementAnalytics analytics;
+
+  @override
+  Widget build(BuildContext context) {
+    final maxCount = analytics.scoreDistribution.values.fold<int>(
+      1,
+      (highest, count) => max(highest, count),
+    );
+    return SizedBox(
+      height: 150,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          for (var score = 0; score <= analytics.totalQuestions; score++)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: _DistributionColumn(
+                  score: score,
+                  count: analytics.scoreDistribution[score] ?? 0,
+                  maxCount: maxCount,
+                  playerBin: score == analytics.playerCorrect,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DistributionColumn extends StatelessWidget {
+  const _DistributionColumn({
+    required this.score,
+    required this.count,
+    required this.maxCount,
+    required this.playerBin,
+  });
+
+  final int score;
+  final int count;
+  final int maxCount;
+  final bool playerBin;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = playerBin ? Cyber.cyan : Cyber.line;
+    final heightFactor = count == 0
+        ? 0.03
+        : (count / maxCount).clamp(0.08, 1.0);
+    return Column(
+      children: [
+        SizedBox(
+          height: 20,
+          child: playerBin
+              ? Text(
+                  'YOU',
+                  style: Cyber.label(
+                    7.5,
+                    color: Cyber.cyan,
+                    letterSpacing: 0.8,
+                  ),
+                )
+              : Text(
+                  '$count',
+                  style: Cyber.label(
+                    7.5,
+                    color: Cyber.muted,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+        ),
+        Expanded(
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: FractionallySizedBox(
+              heightFactor: heightFactor,
+              widthFactor: 0.65,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: playerBin ? 0.92 : 0.5),
+                  border: Border.all(color: accent),
+                  boxShadow: playerBin
+                      ? Cyber.glow(Cyber.cyan, alpha: 0.35, blur: 10)
+                      : null,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          '$score',
+          style: Cyber.display(
+            9,
+            color: accent,
+          ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+        ),
+      ],
+    );
+  }
+}
+
+class _AccuracyComparisonPanel extends StatelessWidget {
+  const _AccuracyComparisonPanel({required this.analytics});
+
+  final PredictionSettlementAnalytics analytics;
+
+  @override
+  Widget build(BuildContext context) {
+    return CyberPanel(
+      accent: Cyber.violet,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'ACCURACY DUEL',
+            style: Cyber.label(10, color: Cyber.violet, letterSpacing: 1.6),
+          ),
+          const SizedBox(height: 14),
+          _AccuracyBar(
+            label: 'YOU',
+            value: analytics.playerAccuracy,
+            accent: Cyber.cyan,
+          ),
+          const SizedBox(height: 12),
+          if (analytics.crowdAccuracy case final crowd?)
+            _AccuracyBar(label: 'CROWD', value: crowd, accent: Cyber.violet)
+          else
+            const _IntelEmpty(message: 'NO CROWD VOTES RECORDED'),
+        ],
+      ),
+    );
+  }
+}
+
+class _AccuracyBar extends StatelessWidget {
+  const _AccuracyBar({
+    required this.label,
+    required this.value,
+    required this.accent,
+  });
+
+  final String label;
+  final double value;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Text(label, style: Cyber.label(9, color: accent, letterSpacing: 1)),
+            const Spacer(),
+            Text(
+              '${(value * 100).round()}%',
+              style: Cyber.display(
+                11,
+                color: accent,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        CyberProgressBar(value: value, accent: accent, height: 8),
+      ],
+    );
+  }
+}
+
+class _RealityAlignmentPanel extends StatelessWidget {
+  const _RealityAlignmentPanel({required this.analytics});
+
+  final PredictionSettlementAnalytics analytics;
+
+  @override
+  Widget build(BuildContext context) {
+    final crowdAccuracy = analytics.crowdAccuracy;
+    return CyberPanel(
+      accent: Cyber.success,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'CROWD VS REALITY',
+                  style: Cyber.label(
+                    10,
+                    color: Cyber.success,
+                    letterSpacing: 1.6,
+                  ),
+                ),
+              ),
+              if (crowdAccuracy != null)
+                Text(
+                  '${(crowdAccuracy * 100).round()}% OVERALL',
+                  style: Cyber.label(
+                    8.5,
+                    color: Cyber.success,
+                    letterSpacing: 0.8,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (analytics.questions.isEmpty)
+            const _IntelEmpty(message: 'NO SETTLED CROWD SIGNAL')
+          else
+            for (final question in analytics.questions) ...[
+              _RealityQuestionBar(question: question),
+              if (question != analytics.questions.last)
+                const SizedBox(height: 12),
+            ],
+        ],
+      ),
+    );
+  }
+}
+
+class _RealityQuestionBar extends StatelessWidget {
+  const _RealityQuestionBar({required this.question});
+
+  final PredictionQuestionAnalytics question;
+
+  @override
+  Widget build(BuildContext context) {
+    final share = question.correctVoteShare;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Q${question.index}',
+              style: Cyber.label(9, color: Cyber.success, letterSpacing: 0.8),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'REAL: ${question.actualAnswer.toUpperCase()}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Cyber.body(10.5, color: Cyber.muted),
+              ),
+            ),
+            Text(
+              share == null ? 'NO VOTES' : '${(share * 100).round()}%',
+              style: Cyber.display(
+                10,
+                color: share == null ? Cyber.muted : Cyber.success,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        CyberProgressBar(
+          value: share ?? 0,
+          accent: share == null ? Cyber.muted : Cyber.success,
+          height: 7,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          share == null
+              ? 'NO AUDIENCE SAMPLE'
+              : '${question.correctVotes} OF ${question.totalVotes} VOTES MATCHED REALITY',
+          style: Cyber.label(
+            7.5,
+            color: Cyber.muted,
+            letterSpacing: 0.7,
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _IntelEmpty extends StatelessWidget {
+  const _IntelEmpty({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Text(
+        message,
+        textAlign: TextAlign.center,
+        style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1),
+      ),
     );
   }
 }
@@ -642,7 +1180,9 @@ class _ContestPrizeBeat extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            won ? 'CONTEST · $_ordinal PLACE$fieldLabel' : 'FINISHED $_ordinal$fieldLabel',
+            won
+                ? 'CONTEST · $_ordinal PLACE$fieldLabel'
+                : 'FINISHED $_ordinal$fieldLabel',
             textAlign: TextAlign.center,
             style: Cyber.label(
               10,
@@ -663,8 +1203,12 @@ class _ContestPrizeBeat extends StatelessWidget {
                   curve: Curves.easeOutCubic,
                   builder: (context, v, _) => Text(
                     '+${v.round()}',
-                    style: Cyber.display(30, color: Cyber.gold, letterSpacing: 1)
-                        .copyWith(
+                    style:
+                        Cyber.display(
+                          30,
+                          color: Cyber.gold,
+                          letterSpacing: 1,
+                        ).copyWith(
                           fontFeatures: const [FontFeature.tabularFigures()],
                           shadows: [
                             Shadow(

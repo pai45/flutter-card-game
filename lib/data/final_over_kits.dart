@@ -34,8 +34,6 @@ class FinalOverKit {
   final Color accent;
 }
 
-/// Eight kits. Deliberately saturated so a batter reads against the outfield at
-/// small sizes; none are near-black, which would vanish into `Cyber.bg`.
 const finalOverKits = <FinalOverKit>[
   FinalOverKit(
     id: 'voltage',
@@ -94,6 +92,30 @@ const finalOverKits = <FinalOverKit>[
     accent: Color(0xFF20E3B2),
   ),
 ];
+
+/// The one kit every player starts with — no coin cost.
+const finalOverFreeKitId = 'voltage';
+
+/// Coin price for every non-free kit in the Shop.
+const finalOverKitCoinPrice = 100;
+
+bool isFinalOverKitFree(FinalOverKit kit) => kit.id == finalOverFreeKitId;
+
+int finalOverKitPrice(FinalOverKit kit) =>
+    isFinalOverKitFree(kit) ? 0 : finalOverKitCoinPrice;
+
+/// Default owned kit ids for a fresh wallet.
+List<String> defaultOwnedFinalOverKitIds() => [finalOverFreeKitId];
+
+/// Ensures the free kit is always present and dedupes ids.
+List<String> normalizeOwnedFinalOverKitIds(Iterable<String> ids) {
+  final owned = ids.toSet()..add(finalOverFreeKitId);
+  return owned.toList();
+}
+
+bool isFinalOverKitOwned(String kitId, Iterable<String> ownedKitIds) =>
+    isFinalOverKitFree(finalOverKitById(kitId)) ||
+    ownedKitIds.contains(kitId);
 
 FinalOverKit finalOverKitById(String id) =>
     finalOverKits.firstWhere((k) => k.id == id, orElse: () => finalOverKits.first);

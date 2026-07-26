@@ -34,17 +34,17 @@ class _ShootoutScreenState extends State<ShootoutScreen> {
   /// (and re-rolls the opponent name + squad).
   int _session = 0;
   bool _finishDispatched = false;
+  bool _suddenDeathSounded = false;
 
   @override
   void initState() {
     super.initState();
-    // Low cyber ambient bed under the whole shootout; stings duck it.
-    AudioController.instance.playLoop(MusicTrack.matchAmbient);
+    AudioController.instance.enterScene(AudioScene.shootout);
   }
 
   @override
   void dispose() {
-    AudioController.instance.stopLoop();
+    AudioController.instance.leaveScene(AudioScene.shootout);
     super.dispose();
   }
 
@@ -76,6 +76,7 @@ class _ShootoutScreenState extends State<ShootoutScreen> {
     setState(() {
       _session++;
       _finishDispatched = false;
+      _suddenDeathSounded = false;
     });
   }
 
@@ -110,6 +111,10 @@ class _ShootoutScreenState extends State<ShootoutScreen> {
       create: _createBloc,
       child: BlocConsumer<ShootoutBloc, ShootoutState>(
         listener: (context, state) {
+          if (state.suddenDeath && !_suddenDeathSounded) {
+            _suddenDeathSounded = true;
+            playSound(SoundEffect.penaltySuddenDeath);
+          }
           // Award XP/coins/history through GameBloc exactly once per shootout.
           if (state.over && !_finishDispatched) {
             _finishDispatched = true;

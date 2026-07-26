@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../data/final_over_kits.dart';
 import '../../models/final_over.dart';
 import '../../services/secure_storage_service.dart';
 import 'final_over_state.dart';
@@ -23,6 +24,12 @@ class FinalOverCubit extends Cubit<FinalOverState> {
     emit(state.copyWith(stats: stats, loaded: true));
   }
 
+  /// Clamps an equipped kit the player no longer owns back to the free kit.
+  void ensureEquippedKitOwned(Iterable<String> ownedKitIds) {
+    if (isFinalOverKitOwned(state.stats.kitId, ownedKitIds)) return;
+    selectKit(finalOverFreeKitId, ownedKitIds: ownedKitIds);
+  }
+
   void selectTier(FinalOverTier tier) {
     if (tier == state.stats.tier) return;
     final stats = state.stats.copyWith(tier: tier);
@@ -30,7 +37,8 @@ class FinalOverCubit extends Cubit<FinalOverState> {
     _storage.saveFinalOverStats(stats);
   }
 
-  void selectKit(String kitId) {
+  void selectKit(String kitId, {required Iterable<String> ownedKitIds}) {
+    if (!isFinalOverKitOwned(kitId, ownedKitIds)) return;
     if (kitId == state.stats.kitId) return;
     final stats = state.stats.copyWith(kitId: kitId);
     emit(state.copyWith(stats: stats));
@@ -39,7 +47,7 @@ class FinalOverCubit extends Cubit<FinalOverState> {
 
   /// Builds a chase. The seed is what makes a match reproducible — the engine
   /// derives the delivery sequence from it, so the same seed is the same over.
-  FinalOverMatchConfig buildMatch() {
+  FinalOverMatchConfig buildMatch({required List<String> batsmanIds}) {
     final tier = state.stats.tier;
     final targets = tier.targets;
     final config = FinalOverMatchConfig(
@@ -48,6 +56,7 @@ class FinalOverCubit extends Cubit<FinalOverState> {
       tier: tier,
       target: targets[_random.nextInt(targets.length)],
       kitId: state.stats.kitId,
+      batsmanIds: List<String>.from(batsmanIds),
       showHints: !state.stats.hintsSeen,
     );
     emit(state.copyWith(

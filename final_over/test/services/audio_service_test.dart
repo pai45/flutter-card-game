@@ -5,12 +5,16 @@ import 'package:flutter_test/flutter_test.dart';
 
 class _FakeBackend implements AudioBackend {
   final calls = <String>[];
+  final volumes = <double>[];
 
   @override
   Future<void> dispose() async => calls.add('dispose');
 
   @override
-  Future<void> playEffect(String assetPath) async => calls.add(assetPath);
+  Future<void> playEffect(String assetPath, {required double volume}) async {
+    calls.add(assetPath);
+    volumes.add(volume);
+  }
 
   @override
   Future<void> startLoop(String assetPath) async =>
@@ -22,10 +26,11 @@ class _FakeBackend implements AudioBackend {
 
 class _DuckableFakeBackend extends _FakeBackend
     implements DuckableAudioBackend {
-  final volumes = <double>[];
+  final ambienceVolumes = <double>[];
 
   @override
-  Future<void> setAmbienceVolume(double volume) async => volumes.add(volume);
+  Future<void> setAmbienceVolume(double volume) async =>
+      ambienceVolumes.add(volume);
 }
 
 class _PreloadableFakeBackend extends _FakeBackend
@@ -51,6 +56,7 @@ void main() {
       'loop:audio/ambience.wav',
       'stop',
     ]);
+    expect(backend.volumes, <double>[.84]);
   });
 
   test('generated audio pack contains valid PCM WAV files', () {
@@ -72,7 +78,7 @@ void main() {
     await service.duckFor(Duration.zero);
     await Future<void>.delayed(Duration.zero);
 
-    expect(backend.volumes, <double>[.08, .22]);
+    expect(backend.ambienceVolumes, <double>[.08, .18]);
     await service.dispose();
   });
 
@@ -86,4 +92,24 @@ void main() {
     expect(backend.loaded.toSet(), hasLength(backend.loaded.length));
     expect(backend.loaded, contains('audio/ambience.wav'));
   });
+
+  test(
+    'distinct effects overlap while per-cue cooldown blocks chatter',
+    () async {
+      final backend = _FakeBackend();
+      final service = AudioService(backend: backend);
+
+      await service.play(AudioCue.release);
+      await service.play(AudioCue.cleanHit);
+      await service.play(AudioCue.bounce);
+      await service.play(AudioCue.bounce);
+
+      expect(backend.calls, <String>[
+        'audio/release.wav',
+        'audio/clean_hit.wav',
+        'audio/bounce.wav',
+      ]);
+      expect(backend.volumes, <double>[.65, .84, .58]);
+    },
+  );
 }

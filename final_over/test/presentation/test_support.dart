@@ -15,7 +15,7 @@ final class RecordingAudioBackend implements AudioBackend {
   }
 
   @override
-  Future<void> playEffect(String assetPath) async {
+  Future<void> playEffect(String assetPath, {required double volume}) async {
     effects.add(assetPath);
   }
 

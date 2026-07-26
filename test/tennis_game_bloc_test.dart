@@ -21,7 +21,7 @@ void main() {
     addTearDown(bloc.close);
     final event = TennisFinished(
       matchId: 'tennis-settlement-1',
-      playerName: 'Nova Reyes',
+      playerName: 'Frances Tiafoe',
       opponentName: 'Jett Okafor',
       modeLabel: 'QUICK MATCH',
       difficultyLabel: 'PRO',

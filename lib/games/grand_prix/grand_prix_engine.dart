@@ -98,7 +98,11 @@ LaunchGrade gradeLaunch(Duration reaction) {
 ({double initialSpeed, double accelFactor, double boostSeconds}) launchBoost(
   LaunchGrade grade,
 ) => switch (grade) {
-  LaunchGrade.perfect => (initialSpeed: 14, accelFactor: 1.5, boostSeconds: 3.0),
+  LaunchGrade.perfect => (
+    initialSpeed: 14,
+    accelFactor: 1.5,
+    boostSeconds: 3.0,
+  ),
   LaunchGrade.great => (initialSpeed: 10, accelFactor: 1.35, boostSeconds: 2.5),
   LaunchGrade.good => (initialSpeed: 7, accelFactor: 1.2, boostSeconds: 2.0),
   LaunchGrade.slow => (initialSpeed: 2, accelFactor: 1.0, boostSeconds: 0),
@@ -192,11 +196,8 @@ class RaceSetup {
 }
 
 class RaceField {
-  RaceField({
-    required this.circuit,
-    required this.cars,
-    this.laps = 1,
-  }) : sectionStarts = _cumulative(circuit.sections);
+  RaceField({required this.circuit, required this.cars, this.laps = 1})
+    : sectionStarts = _cumulative(circuit.sections);
 
   final GrandPrixCircuit circuit;
   final List<CarState> cars;
@@ -251,6 +252,7 @@ class RaceTickEvents {
   final List<OvertakeEvent> overtakes = [];
   bool playerWallContact = false;
   bool playerContact = false;
+  bool playerTireScrub = false;
   bool playerCrossedLine = false;
 
   /// The player stayed stuck past [kStuckTimeout] — the race is over (DNF).
@@ -261,6 +263,7 @@ class RaceTickEvents {
       overtakes.isEmpty &&
       !playerWallContact &&
       !playerContact &&
+      !playerTireScrub &&
       !playerCrossedLine &&
       !playerStuckOut;
 }
@@ -269,7 +272,11 @@ class RaceTickEvents {
 // Geometry helpers
 // ---------------------------------------------------------------------------
 
-int sectionAt(List<double> sectionStarts, List<TrackSection> sections, double s) {
+int sectionAt(
+  List<double> sectionStarts,
+  List<TrackSection> sections,
+  double s,
+) {
   if (s <= 0) return 0;
   for (var i = sections.length - 1; i >= 0; i--) {
     if (s >= sectionStarts[i]) return i;
@@ -307,7 +314,11 @@ double raceCenterlineX(
 /// Rendering-only: the sideways world offset of the track centerline at lap
 /// distance [s]. Straights hold their offset; a corner eases across by its
 /// signed bend; a chicane swings out and back (an S through the section).
-double centerlineX(GrandPrixCircuit circuit, List<double> sectionStarts, double s) {
+double centerlineX(
+  GrandPrixCircuit circuit,
+  List<double> sectionStarts,
+  double s,
+) {
   var x = 0.0;
   final clamped = s.clamp(0.0, circuit.lapLength);
   for (var i = 0; i < circuit.sections.length; i++) {
@@ -393,11 +404,7 @@ RaceField buildField(RaceSetup setup, List<String> driverNames, Random random) {
       cpuCount++;
     }
   }
-  return RaceField(
-    circuit: setup.circuit,
-    cars: cars,
-    laps: setup.laps,
-  );
+  return RaceField(circuit: setup.circuit, cars: cars, laps: setup.laps);
 }
 
 /// Applies lights-out launches: the player's graded boost (or jump-start
@@ -569,6 +576,7 @@ class GrandPrixEngine {
     final safeSpeed = section.safeSpeed;
     if (safeSpeed != null && !car.spinning && car.speed > safeSpeed) {
       car.speed = max(0, car.speed - kScrub * (car.speed - safeSpeed) * dt);
+      if (car.isPlayer) events.playerTireScrub = true;
     }
 
     // Lateral integration: steering, then the corner's curvature drift.
@@ -659,7 +667,9 @@ class GrandPrixEngine {
     }
 
     final delta = target - car.lateral;
-    final steer = delta.abs() < 0.25 ? 0.0 : (delta.sign * min(1, delta.abs() / 2));
+    final steer = delta.abs() < 0.25
+        ? 0.0
+        : (delta.sign * min(1, delta.abs() / 2));
     return RaceInputs(steer: steer, throttle: !brake, brake: brake);
   }
 
@@ -685,7 +695,11 @@ class GrandPrixEngine {
   /// Physics stopping-distance check against the next corner. [errorFactor]
   /// inflates the believed-safe entry speed — weak CPUs arrive hot and pay in
   /// the corner resolution.
-  bool _shouldBrake(RaceField field, CarState car, {required double errorFactor}) {
+  bool _shouldBrake(
+    RaceField field,
+    CarState car, {
+    required double errorFactor,
+  }) {
     final sections = field.circuit.sections;
     final lapLength = field.circuit.lapLength;
     final localDistance = lapLocalDistance(lapLength, car.distance);
@@ -704,7 +718,11 @@ class GrandPrixEngine {
     // Look ahead to the next corner within braking range, wrapping across the
     // start/finish line on multi-lap races (every circuit opens with a long
     // straight, so the wrap never triggers braking before the actual finish).
-    for (var step = currentSafe != null ? 1 : 0; step < sections.length; step++) {
+    for (
+      var step = currentSafe != null ? 1 : 0;
+      step < sections.length;
+      step++
+    ) {
       final i = (index + step) % sections.length;
       var distTo = field.sectionStarts[i] - localDistance;
       if (i < index || (i == index && step > 0)) distTo += lapLength;
@@ -778,7 +796,8 @@ class GrandPrixEngine {
       rear.speed = max(0, rear.speed - kContactRearDecel * softening * dt);
       front.speed = max(0, front.speed - kContactFrontDecel * softening * dt);
       // Nudge apart laterally.
-      final push = (rear.lateral <= front.lateral ? -1 : 1) * kContactPushRate * dt;
+      final push =
+          (rear.lateral <= front.lateral ? -1 : 1) * kContactPushRate * dt;
       rear.lateral = (rear.lateral + push).clamp(-kWallLateral, kWallLateral);
       front.lateral = (front.lateral - push).clamp(-kWallLateral, kWallLateral);
 

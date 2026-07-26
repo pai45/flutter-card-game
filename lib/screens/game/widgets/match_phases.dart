@@ -1697,6 +1697,7 @@ class BottomLockButton extends StatelessWidget {
     required this.helper,
     required this.accent,
     required this.onPressed,
+    this.icon = Icons.sports_soccer,
     super.key,
   });
 
@@ -1704,13 +1705,14 @@ class BottomLockButton extends StatelessWidget {
   final String helper;
   final Color accent;
   final VoidCallback onPressed;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
     return HudCtaButton(
       label: label,
       helper: helper,
-      icon: Icons.sports_soccer,
+      icon: icon,
       accent: accent,
       // The round's decisive action — a meatier "commit" cue, not a plain tap.
       tapSound: SoundEffect.commit,

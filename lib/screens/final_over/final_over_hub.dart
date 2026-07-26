@@ -14,12 +14,10 @@ import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
 import '../../widgets/player_level_badge.dart';
 import '../match_history/match_history_pages.dart';
+import 'final_over_deck_builder_screen.dart';
 import 'final_over_match_screen.dart';
-import 'widgets/final_over_kit_picker.dart';
 
-/// The Final Over lobby. Same bones as the Hoop Duel lobby: a status strip, a
-/// hero, a record panel, the two things you pick (how hard, what you wear), and
-/// one glowing CTA.
+/// The Final Over lobby. Tier selection, primary CTA, and secondary links.
 class FinalOverHub extends StatelessWidget {
   const FinalOverHub({required this.onExit, super.key});
 
@@ -29,104 +27,146 @@ class FinalOverHub extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<GameBloc, GameState>(
       buildWhen: (p, c) =>
-          p.progression != c.progression || p.matchHistory != c.matchHistory,
-      builder: (context, gameState) => BlocBuilder<FinalOverCubit, FinalOverState>(
-        builder: (context, state) {
-          if (!state.loaded) {
-            return const Scaffold(
+          p.progression != c.progression ||
+          p.matchHistory != c.matchHistory ||
+          p.finalOverDeckReady != c.finalOverDeckReady ||
+          p.ownedFinalOverKitIds != c.ownedFinalOverKitIds,
+      builder: (context, gameState) {
+        context.read<FinalOverCubit>().ensureEquippedKitOwned(
+          gameState.ownedFinalOverKitIds,
+        );
+        return BlocBuilder<FinalOverCubit, FinalOverState>(
+          builder: (context, state) {
+            if (!state.loaded) {
+              return const Scaffold(
+                backgroundColor: Cyber.bg,
+                body: Center(
+                  child: CircularProgressIndicator(color: Cyber.gold),
+                ),
+              );
+            }
+            final ready = gameState.finalOverDeckReady;
+            return Scaffold(
               backgroundColor: Cyber.bg,
-              body: Center(child: CircularProgressIndicator(color: Cyber.gold)),
-            );
-          }
-          return Scaffold(
-            backgroundColor: Cyber.bg,
-            appBar: ReactHeaderBar(
-              title: 'FINAL OVER',
-              subtitle: '// SIX-BALL CHASE',
-              showTitle: false,
-              onBack: onExit,
-              rightSlot: PlayerLevelBadge(progression: gameState.progression),
-            ),
-            body: CyberBackground(
-              animated: true,
-              child: SafeArea(
-                top: false,
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 440),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const CyberSlideUpFadeIn(child: _PitchStatusBar()),
-                          const SizedBox(height: 14),
-                          CyberSlideUpFadeIn(
-                            delay: const Duration(milliseconds: 80),
-                            child: _HeroRow(tier: state.tier),
+              appBar: ReactHeaderBar(
+                title: 'FINAL OVER',
+                subtitle: '// SIX-BALL CHASE',
+                showTitle: false,
+                onBack: onExit,
+                rightSlot: PlayerLevelBadge(progression: gameState.progression),
+              ),
+              body: CyberBackground(
+                animated: true,
+                child: SafeArea(
+                  top: false,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
                           ),
-                          const SizedBox(height: 18),
-                          CyberSlideUpFadeIn(
-                            delay: const Duration(milliseconds: 160),
-                            child: _RecordPanel(stats: state.stats),
-                          ),
-                          const SizedBox(height: 20),
-                          const SectionLabel(label: 'CHASE TIER'),
-                          const SizedBox(height: 10),
-                          CyberSlideUpFadeIn(
-                            delay: const Duration(milliseconds: 240),
-                            child: _TierPicker(selected: state.tier),
-                          ),
-                          const SizedBox(height: 20),
-                          CyberSlideUpFadeIn(
-                            delay: const Duration(milliseconds: 320),
-                            child: FinalOverKitPicker(
-                              selectedId: state.kitId,
-                              onSelected: context
-                                  .read<FinalOverCubit>()
-                                  .selectKit,
-                            ),
-                          ),
-                          const SizedBox(height: 22),
-                          CyberSlideUpFadeIn(
-                            delay: const Duration(milliseconds: 400),
-                            child: HudCtaButton(
-                              label: 'TAKE GUARD',
-                              icon: Icons.sports_cricket_rounded,
-                              accent: Cyber.gold,
-                              helper:
-                                  '${state.tier.label} // TARGET ${state.tier.range}',
-                              onTap: () => _startMatch(context),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          CyberDealtCard(
-                            index: 0,
-                            child: CyberCtaButton(
-                              label: 'Match History',
-                              clip: false,
-                              onPressed: () => showMatchHistoryArchive(
-                                context,
-                                gameState.matchHistory,
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 440),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  const CyberSlideUpFadeIn(child: _PitchStatusBar()),
+                                  const SizedBox(height: 14),
+                                  CyberSlideUpFadeIn(
+                                    delay: const Duration(milliseconds: 80),
+                                    child: _HeroRow(tier: state.tier),
+                                  ),
+                                  const SizedBox(height: 18),
+                                  CyberSlideUpFadeIn(
+                                    delay: const Duration(milliseconds: 160),
+                                    child: _RecordPanel(stats: state.stats),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  const SectionLabel(label: 'CHASE TIER'),
+                                  const SizedBox(height: 10),
+                                  CyberSlideUpFadeIn(
+                                    delay: const Duration(milliseconds: 240),
+                                    child: _TierPicker(selected: state.tier),
+                                  ),
+                                  const SizedBox(height: 22),
+                                  CyberSlideUpFadeIn(
+                                    delay: const Duration(milliseconds: 320),
+                                    child: HudCtaButton(
+                                      label: ready ? 'TAKE GUARD' : 'BUILD SQUAD',
+                                      icon: Icons.sports_cricket_rounded,
+                                      accent: Cyber.gold,
+                                      helper: ready
+                                          ? '${state.tier.label} // TARGET ${state.tier.range}'
+                                          : 'PICK 3 OWNED BATTERS TO CHASE',
+                                      onTap: () => ready
+                                          ? _startMatch(context, gameState)
+                                          : _openDeckBuilder(context),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 14),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: CyberDealtCard(
+                                          index: 0,
+                                          child: CyberCtaButton(
+                                            label: 'Cricket Deck',
+                                            clip: false,
+                                            onPressed: () =>
+                                                _openDeckBuilder(context),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: CyberDealtCard(
+                                          index: 1,
+                                          child: CyberCtaButton(
+                                            label: 'Match History',
+                                            clip: false,
+                                            onPressed: () => showMatchHistoryArchive(
+                                              context,
+                                              gameState.matchHistory,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _openDeckBuilder(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => FinalOverDeckBuilderScreen(onBack: () => Navigator.of(context).pop()),
       ),
     );
   }
 
-  void _startMatch(BuildContext context) {
+  void _startMatch(BuildContext context, GameState gameState) {
     final cubit = context.read<FinalOverCubit>();
-    final config = cubit.buildMatch();
+    final batsmanIds =
+        gameState.deckFinalOverBatsmen.map((card) => card.id).toList();
+    final config = cubit.buildMatch(batsmanIds: batsmanIds);
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => BlocProvider.value(
@@ -275,7 +315,6 @@ class _RecordStat extends StatelessWidget {
   );
 }
 
-/// How steep a chase you're asking for. The target ladder, made a decision.
 class _TierPicker extends StatelessWidget {
   const _TierPicker({required this.selected});
   final FinalOverTier selected;

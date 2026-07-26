@@ -1,26 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../blocs/basketball/basketball_cubit.dart';
 import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_event.dart';
 import '../../blocs/game/game_state.dart';
 import '../../config/enums.dart';
 import '../../config/theme.dart';
+import '../../data/basketball_athletes.dart';
 import '../../models/cards.dart';
+import '../../models/basketball.dart';
 import '../../models/deck.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/cyber/sport_signal_painters.dart';
 import '../../widgets/game_scaffold.dart';
 import '../../widgets/match_widgets.dart';
+import '../basketball/widgets/basketball_jersey_selector.dart';
 
 class BasketballDeckBuilderScreen extends StatefulWidget {
   const BasketballDeckBuilderScreen({
     required this.onBack,
+    this.onSaved,
     this.onPlayHoopDuel,
+    this.onBrowseShop,
     super.key,
   });
 
   final VoidCallback onBack;
+  final VoidCallback? onSaved;
   final VoidCallback? onPlayHoopDuel;
+  final VoidCallback? onBrowseShop;
 
   @override
   State<BasketballDeckBuilderScreen> createState() =>
@@ -48,13 +57,18 @@ class _BasketballDeckBuilderScreenState
   void initState() {
     super.initState();
     _loadDeckIntoEditor(context.read<GameBloc>().state);
+    _syncTeamOwnership(context.read<GameBloc>().state);
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<GameBloc, GameState>(
-      listener: (_, state) => _loadDeckIntoEditor(state),
+      listener: (context, state) {
+        _loadDeckIntoEditor(state);
+        _syncTeamOwnership(state);
+      },
       builder: (context, state) {
+        final bbState = context.watch<BasketballCubit>().state;
         final active = state.deckSlots.firstWhere(
           (slot) => slot.id == state.activeDeckId,
           orElse: () => state.deckSlots.first,
@@ -82,7 +96,7 @@ class _BasketballDeckBuilderScreenState
           title: 'Roster Deck',
           subtitle: '// Hoop Duel',
           leading: IconButton(
-            onPressed: widget.onBack,
+            onPressed: () => _attemptBack(active),
             icon: const Icon(Icons.arrow_back_ios_new, size: 18),
           ),
           child: Column(
@@ -112,26 +126,54 @@ class _BasketballDeckBuilderScreenState
                       onClear: _clearActiveSlot,
                       onSelect: _assignCardToActiveSlot,
                     ),
+                    const SizedBox(height: 10),
+                    BasketballJerseySelector(
+                      selectedId: bbState.teamId,
+                      ownedTeamIds: state.ownedBasketballTeamIds,
+                      onSelected: (teamId) => context
+                          .read<BasketballCubit>()
+                          .setTeamId(
+                            teamId,
+                            ownedTeamIds: state.ownedBasketballTeamIds,
+                          ),
+                      onBrowseShop: widget.onBrowseShop,
+                    ),
                   ],
                 ),
               ),
               BottomActionBar(
-                primaryLabel: 'PLAY',
-                primaryEnabled: valid && widget.onPlayHoopDuel != null,
+                primaryLabel: widget.onSaved != null
+                    ? 'SAVE LOADOUT'
+                    : 'PLAY',
+                primaryEnabled: valid &&
+                    (widget.onSaved != null || widget.onPlayHoopDuel != null),
                 primaryOnTap: () async {
                   await _save(active);
                   if (!context.mounted) return;
-                  widget.onPlayHoopDuel?.call();
+                  if (widget.onSaved != null) {
+                    widget.onSaved!.call();
+                  } else {
+                    widget.onPlayHoopDuel?.call();
+                  }
                 },
-                secondaryLabel: 'SAVE',
-                secondaryOnTap: () async => _save(active),
-                tertiaryLabel: 'BACK',
-                tertiaryOnTap: widget.onBack,
+                secondaryLabel: widget.onSaved != null ? 'BACK' : 'SAVE',
+                secondaryOnTap: widget.onSaved != null
+                    ? () => _attemptBack(active)
+                    : () async => _save(active),
+                tertiaryLabel: widget.onSaved == null ? 'BACK' : null,
+                tertiaryOnTap:
+                    widget.onSaved == null ? () => _attemptBack(active) : null,
               ),
             ],
           ),
         );
       },
+    );
+  }
+
+  void _syncTeamOwnership(GameState state) {
+    context.read<BasketballCubit>().ensureEquippedTeamOwned(
+      state.ownedBasketballTeamIds,
     );
   }
 
@@ -150,9 +192,13 @@ class _BasketballDeckBuilderScreenState
   }
 
   Future<void> _save(StoredDeckSlot active) async {
-    final bloc = context.read<GameBloc>();
     final nextPlayers = selectedPlayers.whereType<String>().toList();
     final starterId = selectedStarterId ?? nextPlayers.firstOrNull;
+    if (_sameIds(active.basketballPlayers, nextPlayers) &&
+        active.basketballStarter == starterId) {
+      return;
+    }
+    final bloc = context.read<GameBloc>();
     final saved = bloc.stream.firstWhere(
       (state) =>
           _sameIds(
@@ -163,17 +209,9 @@ class _BasketballDeckBuilderScreenState
     );
     bloc.add(
       DeckSaved(
-        StoredDeckSlot(
-          id: active.id,
-          name: active.name,
-          attackers: active.attackers,
-          defenders: active.defenders,
-          actions: active.actions,
-          batsmen: active.batsmen,
+        active.copyWith(
           basketballPlayers: nextPlayers,
           basketballStarter: starterId,
-          keeper: active.keeper,
-          chessFormation: active.chessFormation,
         ),
       ),
     );
@@ -181,6 +219,24 @@ class _BasketballDeckBuilderScreenState
       const Duration(seconds: 2),
       onTimeout: () => bloc.state,
     );
+  }
+
+  Future<void> _attemptBack(StoredDeckSlot active) async {
+    final nextPlayers = selectedPlayers.whereType<String>().toList();
+    final nextStarter = selectedStarterId ?? nextPlayers.firstOrNull;
+    if (!_sameIds(active.basketballPlayers, nextPlayers) ||
+        active.basketballStarter != nextStarter) {
+      final discard = await showCyberConfirmDialog(
+        context,
+        title: 'DISCARD CHANGES?',
+        message: 'Your Hoop Duel roster edits have not been saved.',
+        confirmLabel: 'Discard',
+        cancelLabel: 'Keep editing',
+        destructive: true,
+      );
+      if (!mounted || !discard) return;
+    }
+    widget.onBack();
   }
 
   bool _sameIds(List<String> a, List<String> b) {
@@ -284,24 +340,65 @@ class _RosterPanel extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              for (var i = 0; i < 3; i++) ...[
-                if (i > 0) const SizedBox(width: 8),
-                Expanded(
-                  child: _RosterSlot(
-                    index: i,
-                    card: cards.elementAtOrNull(i),
-                    selected: focusedIndex == i,
-                    starter: cards.elementAtOrNull(i)?.id == starterId,
-                    onTap: () => onSlotTap(i),
-                    onStarter: cards.elementAtOrNull(i) == null
-                        ? null
-                        : () => onStarter(cards[i]!.id),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const slotWidth = 108.0;
+              return SizedBox(
+                height: 390,
+                child: CustomPaint(
+                  painter: const BasketballHalfCourtSignalPainter(),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        top: 10,
+                        left: (constraints.maxWidth - slotWidth) / 2,
+                        width: slotWidth,
+                        child: _RosterSlot(
+                          index: 0,
+                          card: cards.elementAtOrNull(0),
+                          selected: focusedIndex == 0,
+                          starter: cards.elementAtOrNull(0)?.id == starterId,
+                          onTap: () => onSlotTap(0),
+                          onStarter: cards.elementAtOrNull(0) == null
+                              ? null
+                              : () => onStarter(cards[0]!.id),
+                        ),
+                      ),
+                      Positioned(
+                        top: 198,
+                        left: 0,
+                        width: slotWidth,
+                        child: _RosterSlot(
+                          index: 1,
+                          card: cards.elementAtOrNull(1),
+                          selected: focusedIndex == 1,
+                          starter: cards.elementAtOrNull(1)?.id == starterId,
+                          onTap: () => onSlotTap(1),
+                          onStarter: cards.elementAtOrNull(1) == null
+                              ? null
+                              : () => onStarter(cards[1]!.id),
+                        ),
+                      ),
+                      Positioned(
+                        top: 198,
+                        right: 0,
+                        width: slotWidth,
+                        child: _RosterSlot(
+                          index: 2,
+                          card: cards.elementAtOrNull(2),
+                          selected: focusedIndex == 2,
+                          starter: cards.elementAtOrNull(2)?.id == starterId,
+                          onTap: () => onSlotTap(2),
+                          onStarter: cards.elementAtOrNull(2) == null
+                              ? null
+                              : () => onStarter(cards[2]!.id),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ],
+              );
+            },
           ),
         ],
       ),
@@ -386,10 +483,33 @@ class _RosterSlot extends StatelessWidget {
             else
               CyberPlayerCardTile(
                 card: card,
-                selected: selected || starter,
+                selected: selected,
+                selectedAccent: Cyber.gold,
                 size: VisualCardSize.sm,
                 onTap: onTap,
               ),
+            if (card != null) ...[
+              const SizedBox(height: 5),
+              GestureDetector(
+                onTap: onStarter,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  color: starter
+                      ? Cyber.gold.withValues(alpha: 0.88)
+                      : Cyber.panel2,
+                  child: Text(
+                    starter ? '★ STARTER' : 'SET STARTER',
+                    textAlign: TextAlign.center,
+                    style: Cyber.label(
+                      7,
+                      color: starter ? Cyber.bg : Cyber.muted,
+                      letterSpacing: 0.7,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -418,6 +538,9 @@ class _BasketballPickerPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final athlete = selectedCard == null
+        ? null
+        : basketballAthleteById(selectedCard!.id);
     return CyberPanel(
       accent: Cyber.cyan,
       child: Column(
@@ -481,6 +604,10 @@ class _BasketballPickerPanel extends StatelessWidget {
               ],
             ),
           ),
+          if (athlete != null) ...[
+            const SizedBox(height: 8),
+            _BasketballTelemetry(athlete: athlete),
+          ],
           const SizedBox(height: 10),
           SizedBox(
             height: 330,
@@ -507,6 +634,74 @@ class _BasketballPickerPanel extends StatelessWidget {
                       ],
                     ),
                   ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BasketballTelemetry extends StatelessWidget {
+  const _BasketballTelemetry({required this.athlete});
+
+  final BasketballAthlete athlete;
+
+  @override
+  Widget build(BuildContext context) {
+    final stats = switch (athlete.cardRole) {
+      BasketballCardRole.guard => [
+          ('SPD', athlete.speed),
+          ('HANDLE', athlete.handling),
+          ('3PT', athlete.three),
+          ('STEAL', athlete.steal),
+        ],
+      BasketballCardRole.wing => [
+          ('SPD', athlete.speed),
+          ('3PT', athlete.three),
+          ('DUNK', athlete.dunk),
+          ('DEF', athlete.defense),
+        ],
+      BasketballCardRole.big => [
+          ('INSIDE', athlete.inside),
+          ('DUNK', athlete.dunk),
+          ('BLOCK', athlete.block),
+          ('REB', athlete.rebound),
+        ],
+    };
+    return Container(
+      padding: const EdgeInsets.fromLTRB(8, 7, 8, 8),
+      decoration: BoxDecoration(
+        color: Cyber.bg.withValues(alpha: 0.5),
+        border: Border.all(color: Cyber.gold.withValues(alpha: 0.24)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${basketballArchetypeLabel(athlete.archetype)} // ROLE RATINGS',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Cyber.label(7, color: Cyber.gold, letterSpacing: 0.8),
+          ),
+          const SizedBox(height: 7),
+          Row(
+            children: [
+              for (final stat in stats)
+                Expanded(
+                  child: Column(
+                    children: [
+                      Text(
+                        '${stat.$2}',
+                        style: Cyber.display(13, color: Cyber.gold),
+                      ),
+                      Text(
+                        stat.$1,
+                        style: Cyber.label(6, color: Cyber.muted),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
           ),
         ],
       ),

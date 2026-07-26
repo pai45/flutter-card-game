@@ -36,7 +36,7 @@ void main() {
     final f1 = _match(
       id: 'british-gp',
       leagueId: 'f1',
-      sport: Sport.f1,
+      sport: Sport.motorsport,
       homeName: 'British Grand Prix',
       status: MatchStatus.upcoming,
     );
@@ -271,7 +271,7 @@ SportMatch _match({
   ),
   away: SportTeam(
     id: 'away-$id',
-    name: sport == Sport.f1 ? 'Formula 1' : 'Liverpool',
+    name: sport == Sport.motorsport ? 'Formula 1' : 'Liverpool',
     shortName: 'AWY',
     color: Colors.blue,
   ),

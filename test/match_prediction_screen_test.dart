@@ -3,6 +3,7 @@ import 'package:card_game/blocs/game/game_bloc.dart';
 import 'package:card_game/blocs/picks/picks_cubit.dart';
 import 'package:card_game/blocs/picks/picks_state.dart';
 import 'package:card_game/blocs/prediction/prediction_cubit.dart';
+import 'package:card_game/blocs/prediction/prediction_state.dart';
 import 'package:card_game/models/league.dart';
 import 'package:card_game/models/picks.dart';
 import 'package:card_game/models/prediction.dart';
@@ -14,6 +15,7 @@ import 'package:card_game/services/prediction_repository.dart';
 import 'package:card_game/services/secure_storage_service.dart';
 import 'package:card_game/utils/sound_effects.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -23,6 +25,16 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('xyz.luan/audioplayers.global'),
+          (_) async => null,
+        );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('xyz.luan/audioplayers'),
+          (_) async => null,
+        );
     AudioController.instance.muted.value = true;
     FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({});
@@ -46,12 +58,132 @@ void main() {
     final cubit = PredictionCubit(_QuizRepo(_quiz), SecureGameStorage());
     addTearDown(cubit.close);
 
-    await cubit.submit(_match.id, 'main', const {'q1': 0});
-    await cubit.submit(_match.id, 'events', const {'q1': 1});
+    await cubit.saveDraft(_match.id, 'main', const {'q1': 0});
+    await cubit.saveDraft(_match.id, 'events', const {'q1': 1});
 
     expect(cubit.state.predictions, hasLength(2));
     expect(cubit.state.predictionFor(_match.id, 'main')?.answers['q1'], 0);
     expect(cubit.state.predictionFor(_match.id, 'events')?.answers['q1'], 1);
+  });
+
+  test('curated multi-quiz fixtures retain the paid entry contest', () async {
+    const quizzes = [
+      PredictionQuiz(
+        id: 'main',
+        matchId: 'quiz_match',
+        title: 'Scoreline Quiz',
+        entryFee: kScorelineQuizEntryFee,
+        questions: [
+          QuizQuestion(
+            id: 'score',
+            text: 'Score?',
+            options: ['1-0'],
+            reward: 5,
+          ),
+        ],
+      ),
+      PredictionQuiz(
+        id: 'events',
+        matchId: 'quiz_match',
+        title: 'Match Events Quiz',
+        questions: [
+          QuizQuestion(
+            id: 'event',
+            text: 'Event?',
+            options: ['Yes'],
+            reward: 5,
+          ),
+        ],
+      ),
+    ];
+    final cubit = PredictionCubit(
+      _CuratedMultiQuizRepo(_match, quizzes),
+      _MemorySecureGameStorage(),
+    );
+    addTearDown(cubit.close);
+
+    await cubit.loadSport(Sport.football);
+    final loaded = await cubit.quizzesFor(_match.id);
+
+    expect(loaded.map((quiz) => quiz.id), ['main', 'events']);
+    expect(loaded.first.entryFee, kScorelineQuizEntryFee);
+    expect(loaded.first.isContest, isTrue);
+  });
+
+  test(
+    'new prediction drafts are rejected after a fixture has started',
+    () async {
+      final cubit = _TestPredictionCubit(_QuizRepo(_quiz));
+      cubit.seedFixtures([_liveMatch]);
+      addTearDown(cubit.close);
+
+      expect(
+        await cubit.saveDraft(_liveMatch.id, 'main', const {'q1': 0}),
+        isFalse,
+      );
+      expect(cubit.state.predictionFor(_liveMatch.id), isNull);
+    },
+  );
+
+  test('draft updates preserve timestamp and cannot reopen a lock', () async {
+    final cubit = PredictionCubit(_QuizRepo(_quiz), SecureGameStorage());
+    addTearDown(cubit.close);
+
+    expect(
+      await cubit.saveDraft(_match.id, 'main', const {'q1': 0, 'q2': 0}),
+      isTrue,
+    );
+    final submittedAt = cubit.state.predictionFor(_match.id)!.submittedAt;
+
+    expect(
+      await cubit.saveDraft(_match.id, 'main', const {'q1': 1, 'q2': 0}),
+      isTrue,
+    );
+    expect(cubit.state.predictionFor(_match.id)!.submittedAt, submittedAt);
+
+    expect(await cubit.lockPrediction(_match.id, 'main'), isTrue);
+    expect(await cubit.lockPrediction(_match.id, 'main'), isTrue);
+    expect(
+      await cubit.saveDraft(_match.id, 'main', const {'q1': 0, 'q2': 1}),
+      isFalse,
+    );
+    expect(cubit.state.predictionFor(_match.id)?.answers, const {
+      'q1': 1,
+      'q2': 0,
+    });
+    expect(
+      cubit.state.predictionFor(_match.id)?.status,
+      PredictionStatus.locked,
+    );
+  });
+
+  test('deadline normalization locks the last saved draft', () async {
+    final cubit = PredictionCubit(_QuizRepo(_quiz), SecureGameStorage());
+    addTearDown(cubit.close);
+    final deadline = DateTime(2026, 7, 24, 12);
+    final overdue = _match.copyWith(
+      kickoff: deadline.subtract(const Duration(seconds: 1)),
+    );
+
+    await cubit.saveDraft(_match.id, 'main', const {'q1': 1, 'q2': 0});
+    final count = await cubit.lockDuePredictions([overdue], now: deadline);
+
+    expect(count, 1);
+    expect(
+      cubit.state.predictionFor(_match.id)?.status,
+      PredictionStatus.locked,
+    );
+  });
+
+  test('open draft cannot settle before it is locked', () async {
+    final cubit = PredictionCubit(_QuizRepo(_settledQuiz), SecureGameStorage());
+    addTearDown(cubit.close);
+
+    await cubit.saveDraft(_match.id, 'main', const {'q1': 1, 'q2': 1});
+    final settlement = await cubit.settle(_match.id);
+
+    expect(settlement.xp, 0);
+    expect(cubit.state.predictionFor(_match.id)?.status, PredictionStatus.open);
   });
 
   testWidgets('prediction quiz reveals number, words, then options', (
@@ -78,6 +210,61 @@ void main() {
 
     expect(find.text('Will'), findsOneWidget);
     expect(find.text('YES'), findsOneWidget);
+  });
+
+  testWidgets('a started fixture blocks a new quiz entry', (tester) async {
+    final cubit = _TestPredictionCubit(_QuizRepo(_quiz));
+    addTearDown(cubit.close);
+
+    await _pumpPredictionScreen(tester, cubit: cubit, match: _liveMatch);
+
+    expect(find.text('PREDICTIONS CLOSED'), findsOneWidget);
+    expect(find.text('Will home win'), findsNothing);
+    expect(find.text('SUBMIT QUIZ'), findsNothing);
+    expect(find.text('HOLD TO LOCK'), findsNothing);
+  });
+
+  testWidgets('a finished unentered quiz shows community final results', (
+    tester,
+  ) async {
+    final cubit = _TestPredictionCubit(_QuizRepo(_settledQuiz));
+    addTearDown(cubit.close);
+
+    await _pumpPredictionScreen(tester, cubit: cubit, match: _finishedMatch);
+
+    expect(find.text('COMMUNITY // FINAL'), findsOneWidget);
+    expect(find.text('36% CROWD ACCURACY'), findsOneWidget);
+    expect(find.text('ACTUAL RESULT'), findsOneWidget);
+    expect(find.text('CROWD PICK %'), findsOneWidget);
+    expect(find.text('HOLD TO LOCK'), findsNothing);
+    expect(find.text('YOUR PICK'), findsNothing);
+  });
+
+  testWidgets('finished multi-quiz hub opens the community results route', (
+    tester,
+  ) async {
+    final cubit = _TestPredictionCubit(
+      _CuratedMultiQuizRepo(_finishedMatch, _finishedCommunityQuizzes),
+    );
+    addTearDown(cubit.close);
+
+    await tester.pumpWidget(
+      BlocProvider<PredictionCubit>.value(
+        value: cubit,
+        child: MaterialApp(
+          home: MatchPredictionScreen(match: _finishedMatch, embedded: true),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('VIEW COMMUNITY RESULTS'), findsNWidgets(2));
+    await tester.tap(find.text('Match Events Quiz'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('COMMUNITY // FINAL'), findsOneWidget);
+    expect(find.text('ACTUAL RESULT'), findsOneWidget);
   });
 
   testWidgets('prediction quiz keeps NEXT disabled until the current answer', (
@@ -120,7 +307,7 @@ void main() {
     await _pumpPredictionScreen(tester, cubit: cubit, match: _match);
 
     expect(
-      find.text('You can update answers until match starts.'),
+      find.text('Changes auto-save. Hold to lock before kickoff.'),
       findsOneWidget,
     );
     expect(find.text('Will home win'), findsOneWidget);
@@ -129,7 +316,7 @@ void main() {
     expect(find.text('NO').hitTestable(), findsNothing);
   });
 
-  testWidgets('review row expands and save updates stores changed answer', (
+  testWidgets('review row expands and auto-saves changed answer', (
     tester,
   ) async {
     final cubit = _TestPredictionCubit(_QuizRepo(_quiz));
@@ -139,15 +326,118 @@ void main() {
     await _pumpPredictionScreen(tester, cubit: cubit, match: _match);
 
     await tester.tap(find.text('Will home win'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 220));
     await tester.ensureVisible(find.text('NO'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 220));
     await tester.tap(find.text('NO'));
-    await tester.pumpAndSettle();
-    await _tapButton(tester, 'SAVE UPDATES');
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pump();
 
     expect(cubit.state.predictionFor(_match.id)?.answers['q1'], 1);
+    expect(find.text('ALL CHANGES SAVED'), findsOneWidget);
+  });
+
+  testWidgets('releasing lock before 1.2 seconds keeps draft editable', (
+    tester,
+  ) async {
+    final cubit = _TestPredictionCubit(_QuizRepo(_quiz));
+    cubit.seed(_prediction(status: PredictionStatus.open));
+    addTearDown(cubit.close);
+
+    await _pumpPredictionScreen(tester, cubit: cubit, match: _match);
+
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.text('HOLD TO LOCK')),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    await gesture.up();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+
+    expect(cubit.state.predictionFor(_match.id)?.status, PredictionStatus.open);
+    expect(find.text('HOLD TO LOCK'), findsOneWidget);
+    expect(find.bySemanticsLabel('PREDICTION LOCKED'), findsNothing);
+  });
+
+  testWidgets('full hold locks prediction and reveals crowd vote shares', (
+    tester,
+  ) async {
+    final cubit = _TestPredictionCubit(_QuizRepo(_quiz));
+    cubit.seed(_prediction(status: PredictionStatus.open));
+    addTearDown(cubit.close);
+
+    await _pumpPredictionScreen(tester, cubit: cubit, match: _match);
+
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.text('HOLD TO LOCK')),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1250));
+    await gesture.up();
+    await _pumpFrames(tester, const Duration(milliseconds: 2500));
+    await tester.pump();
+
+    expect(
+      cubit.state.predictionFor(_match.id)?.status,
+      PredictionStatus.locked,
+    );
+    expect(find.bySemanticsLabel('PREDICTION LOCKED'), findsOneWidget);
+
+    await _pumpFrames(tester, const Duration(seconds: 5));
+
+    expect(find.text('CROWD PICK %'), findsAtLeastNWidgets(1));
+    expect(find.text('100 TOTAL VOTES'), findsAtLeastNWidgets(1));
+    expect(find.text('64% · 64 VOTES'), findsAtLeastNWidgets(1));
+    expect(find.text('HOLD TO LOCK'), findsNothing);
+  });
+
+  testWidgets('failed lock persistence keeps the draft editable', (
+    tester,
+  ) async {
+    final cubit = _TestPredictionCubit(
+      _QuizRepo(_quiz),
+      storage: _FailingPredictionStorage(),
+    );
+    cubit.seed(_prediction(status: PredictionStatus.open));
+    addTearDown(cubit.close);
+
+    await _pumpPredictionScreen(tester, cubit: cubit, match: _match);
+
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.text('HOLD TO LOCK')),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1250));
+    await gesture.up();
+    await _pumpFrames(tester, const Duration(milliseconds: 500));
+    await tester.pump();
+
+    expect(cubit.state.predictionFor(_match.id)?.status, PredictionStatus.open);
+    expect(find.text('SAVE FAILED • RETRY'), findsOneWidget);
+    expect(find.bySemanticsLabel('PREDICTION LOCKED'), findsNothing);
+    expect(find.text('HOLD TO LOCK'), findsOneWidget);
+  });
+
+  testWidgets('kickoff auto-locks an open draft with the kickoff seal', (
+    tester,
+  ) async {
+    final cubit = _TestPredictionCubit(_QuizRepo(_quiz));
+    cubit.seed(_prediction(status: PredictionStatus.open));
+    addTearDown(cubit.close);
+    final imminentMatch = _match.copyWith(
+      kickoff: DateTime.now().subtract(const Duration(milliseconds: 1)),
+    );
+
+    await _pumpPredictionScreen(tester, cubit: cubit, match: imminentMatch);
+    await _pumpFrames(tester, const Duration(milliseconds: 500));
+    await tester.pump();
+
+    expect(
+      cubit.state.predictionFor(imminentMatch.id)?.status,
+      PredictionStatus.locked,
+    );
+    expect(find.bySemanticsLabel('KICKOFF LOCK ACTIVATED'), findsOneWidget);
   });
 
   test('old prediction json loads with empty multipliers', () {
@@ -293,64 +583,64 @@ void main() {
     expect(multipliers, {'q1': PredictionMultiplier.x15});
   });
 
-  testWidgets('fresh submit lands on review list with an OPEN PICKS dock', (
-    tester,
-  ) async {
-    final cubit = _TestPredictionCubit(_QuizRepo(_quiz));
-    cubit.seedFixtures([_match]);
-    final picksCubit = _TestPicksCubit([_marketFor(_match)]);
-    addTearDown(cubit.close);
-    addTearDown(picksCubit.close);
+  testWidgets(
+    'fresh submit lands on review list with lock CTA and inline picks',
+    (tester) async {
+      final cubit = _TestPredictionCubit(_QuizRepo(_quiz));
+      cubit.seedFixtures([_match]);
+      final picksCubit = _TestPicksCubit([_marketFor(_match)]);
+      addTearDown(cubit.close);
+      addTearDown(picksCubit.close);
 
-    await tester.pumpWidget(
-      MultiBlocProvider(
-        providers: [
-          BlocProvider<PredictionCubit>.value(value: cubit),
-          BlocProvider<PicksCubit>.value(value: picksCubit),
-          BlocProvider<AchievementCelebrationController>(
-            create: (_) =>
-                AchievementCelebrationController(SecureGameStorage()),
-          ),
-        ],
-        child: MaterialApp(home: MatchPredictionScreen(match: _match)),
-      ),
-    );
+      await tester.pumpWidget(
+        MultiBlocProvider(
+          providers: [
+            BlocProvider<PredictionCubit>.value(value: cubit),
+            BlocProvider<PicksCubit>.value(value: picksCubit),
+            BlocProvider<AchievementCelebrationController>(
+              create: (_) =>
+                  AchievementCelebrationController(SecureGameStorage()),
+            ),
+          ],
+          child: MaterialApp(home: MatchPredictionScreen(match: _match)),
+        ),
+      );
 
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 16));
-    await _pumpFrames(tester, const Duration(seconds: 5));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 16));
+      await _pumpFrames(tester, const Duration(seconds: 5));
 
-    await _tapOption(tester, 'YES');
-    await tester.pumpAndSettle();
-    await _tapButton(tester, 'NEXT');
-    await _pumpFrames(tester, const Duration(seconds: 5));
-    await _tapOption(tester, 'HOME');
-    await tester.pumpAndSettle();
-    await _tapButton(tester, 'SUBMIT QUIZ');
-    await tester.pump();
+      await _tapOption(tester, 'YES');
+      await tester.pumpAndSettle();
+      await _tapButton(tester, 'NEXT');
+      await _pumpFrames(tester, const Duration(seconds: 5));
+      await _tapOption(tester, 'HOME');
+      await tester.pumpAndSettle();
+      await _tapButton(tester, 'SUBMIT QUIZ');
+      await tester.pump();
 
-    // Drive the ~4.5s SUBMITTED celebration to completion.
-    await _pumpFrames(tester, const Duration(milliseconds: 5200));
+      await tester.pump(const Duration(milliseconds: 700));
 
-    // We stay on the quiz-submitted list (no pop): the celebration is gone, the
-    // dock opens this match's picks market rather than SAVE UPDATES.
-    expect(find.text('PREDICTION SUBMITTED'), findsNothing);
-    expect(find.text('SAVE UPDATES'), findsNothing);
-    expect(find.text('OPEN PICKS'), findsOneWidget);
+      // We stay on the editable draft summary. Lock owns the dock while picks is
+      // preserved as a calm inline route.
+      expect(find.text('SAVE UPDATES'), findsNothing);
+      expect(find.text('HOLD TO LOCK'), findsOneWidget);
+      expect(find.text('OPEN SAME-MATCH PICKS'), findsOneWidget);
 
-    await _tapButton(tester, 'OPEN PICKS');
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('OPEN SAME-MATCH PICKS'));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Home FC vs Away FC result'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('same_match_prediction_quiz_cta')),
-      300,
-      scrollable: find.byType(Scrollable).last,
-    );
-    expect(find.text('PREDICTION QUIZ'), findsOneWidget);
-  });
+      expect(find.text('Home FC vs Away FC result'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('same_match_prediction_quiz_cta')),
+        300,
+        scrollable: find.byType(Scrollable).last,
+      );
+      expect(find.text('PREDICTION QUIZ'), findsOneWidget);
+    },
+  );
 
-  testWidgets('submitted review can move multiplier and save updates', (
+  testWidgets('submitted review can move multiplier and auto-save', (
     tester,
   ) async {
     final cubit = _TestPredictionCubit(_QuizRepo(_quiz));
@@ -365,14 +655,19 @@ void main() {
     await _pumpPredictionScreen(tester, cubit: cubit, match: _match);
 
     await _tapButton(tester, 'Second question');
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 220));
     expect(find.text('MOVE'), findsNothing);
     await tester.ensureVisible(find.text('2x').last);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('2x').last);
-    await tester.pumpAndSettle();
-    await _tapButton(tester, 'SAVE UPDATES');
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 220));
+    final multiplierTap = find
+        .ancestor(
+          of: find.text('2x').last,
+          matching: find.byType(GestureDetector),
+        )
+        .first;
+    tester.widget<GestureDetector>(multiplierTap).onTap!();
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pump();
 
     final multipliers = cubit.state
         .predictionFor(_match.id)
@@ -411,6 +706,7 @@ void main() {
           'q2': PredictionMultiplier.x15,
         },
         submittedAt: DateTime.now(),
+        status: PredictionStatus.locked,
       ),
     );
     addTearDown(cubit.close);
@@ -425,13 +721,16 @@ void main() {
   });
 
   test('contest settlement pays a podium finish and is idempotent', () async {
-    final cubit = _TestPredictionCubit(_ContestRepo(_contestQuiz, _contestBoard));
+    final cubit = _TestPredictionCubit(
+      _ContestRepo(_contestQuiz, _contestBoard),
+    );
     cubit.seed(
       UserPrediction(
         matchId: _match.id,
         // 3 of 4 correct (all correct is option 0).
         answers: const {'q1': 0, 'q2': 0, 'q3': 0, 'q4': 1},
         submittedAt: DateTime.now(),
+        status: PredictionStatus.locked,
       ),
     );
     addTearDown(cubit.close);
@@ -454,13 +753,16 @@ void main() {
   });
 
   test('contest settlement pays nothing off the podium', () async {
-    final cubit = _TestPredictionCubit(_ContestRepo(_contestQuiz, _contestBoard));
+    final cubit = _TestPredictionCubit(
+      _ContestRepo(_contestQuiz, _contestBoard),
+    );
     cubit.seed(
       UserPrediction(
         matchId: _match.id,
         // 0 correct → every rival finishes ahead → 4th → no prize.
         answers: const {'q1': 1, 'q2': 1, 'q3': 1, 'q4': 1},
         submittedAt: DateTime.now(),
+        status: PredictionStatus.locked,
       ),
     );
     addTearDown(cubit.close);
@@ -484,9 +786,37 @@ void main() {
 
     await _pumpPredictionScreen(tester, cubit: cubit, match: _liveMatch);
 
-    expect(find.text('CROWD VOTES'), findsAtLeastNWidgets(1));
-    expect(find.text('100 votes'), findsAtLeastNWidgets(1));
+    expect(find.text('CROWD PICK %'), findsAtLeastNWidgets(1));
+    expect(find.text('100 TOTAL VOTES'), findsAtLeastNWidgets(1));
     expect(find.text('SAVE UPDATES'), findsNothing);
+  });
+
+  testWidgets('live review shows question and player-pick status', (
+    tester,
+  ) async {
+    final cubit = _TestPredictionCubit(_QuizRepo(_quiz));
+    final prediction = _prediction(
+      matchId: _liveMatch.id,
+      status: PredictionStatus.locked,
+    );
+    cubit.seedLiveReview(
+      match: _liveMatch,
+      quiz: _quiz,
+      prediction: prediction,
+      intel: LiveQuestionIntel(
+        questionId: 'q1',
+        questionState: PredictionQuestionState.live,
+        pickState: PredictionPickState.leading,
+        updatedAt: DateTime(2026, 7, 24, 12, 30),
+      ),
+    );
+    addTearDown(cubit.close);
+
+    await _pumpPredictionScreen(tester, cubit: cubit, match: _liveMatch);
+
+    expect(find.text('LIVE'), findsAtLeastNWidgets(1));
+    expect(find.text('YOUR PICK · LEADING'), findsOneWidget);
+    expect(find.text('12:30'), findsOneWidget);
   });
 
   testWidgets('finished prediction review highlights right answer and votes', (
@@ -502,7 +832,7 @@ void main() {
 
     expect(find.text('CORRECT ANSWER: No'), findsOneWidget);
     expect(find.text('RIGHT'), findsAtLeastNWidgets(1));
-    expect(find.text('CROWD VOTES'), findsAtLeastNWidgets(1));
+    expect(find.text('CROWD PICK %'), findsAtLeastNWidgets(1));
   });
 
   testWidgets('settleable review auto-reveals on open and credits XP', (
@@ -542,9 +872,20 @@ void main() {
     expect(find.text('CONTINUE'), findsOneWidget);
 
     await tester.tap(find.text('CONTINUE'));
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('MATCH INTEL // FINAL'), findsOneWidget);
+    expect(find.text('YOU VS FIELD'), findsOneWidget);
+    expect(find.text('ACCURACY DUEL'), findsOneWidget);
+    expect(find.text('CROWD VS REALITY'), findsOneWidget);
+    expect(find.text('#2/3'), findsOneWidget);
+    expect(find.text('36% OVERALL'), findsOneWidget);
+    expect(find.text('DONE'), findsOneWidget);
+
+    await tester.tap(find.text('DONE'));
     await tester.pumpAndSettle();
 
-    expect(find.text('CONTINUE'), findsNothing);
+    expect(find.text('MATCH INTEL // FINAL'), findsNothing);
     expect(
       cubit.state.predictionFor(_finishedMatch.id)?.status,
       PredictionStatus.settled,
@@ -626,10 +967,14 @@ class _QuizRepo implements PredictionRepository {
   Future<List<League>> leagues() async => const [];
 
   @override
-  Future<List<SportMatch>> fixtures({DateTime? day, Sport? sport}) async => const [];
+  Future<List<SportMatch>> fixtures({DateTime? day, Sport? sport}) async =>
+      const [];
 
   @override
-  Future<List<SportMatch>> enrichFixturesForSport(List<SportMatch> fixtures, Sport sport) async => fixtures;
+  Future<List<SportMatch>> enrichFixturesForSport(
+    List<SportMatch> fixtures,
+    Sport sport,
+  ) async => fixtures;
 
   @override
   Future<List<PredictionQuiz>> quizzesFor(String matchId) async =>
@@ -664,7 +1009,43 @@ class _QuizRepo implements PredictionRepository {
       points: 640,
       correct: 4,
     ),
+    MatchPredictionLeaderboardEntry(
+      rank: 2,
+      name: 'Maya',
+      points: 610,
+      correct: 2,
+    ),
+    MatchPredictionLeaderboardEntry(
+      rank: 3,
+      name: 'Dev',
+      points: 580,
+      correct: 1,
+    ),
   ];
+}
+
+class _CuratedMultiQuizRepo extends _QuizRepo {
+  _CuratedMultiQuizRepo(this.fixture, this.quizzes) : super(_quiz);
+
+  final SportMatch fixture;
+  final List<PredictionQuiz> quizzes;
+
+  @override
+  Future<List<SportMatch>> fixtures({DateTime? day, Sport? sport}) async =>
+      sport == null || sport == fixture.sport ? [fixture] : const [];
+
+  @override
+  Future<List<PredictionQuiz>> quizzesFor(String matchId) async =>
+      matchId == fixture.id ? quizzes : const [];
+
+  @override
+  Future<PredictionQuiz?> quizFor(String matchId, String quizId) async {
+    if (matchId != fixture.id) return null;
+    for (final quiz in quizzes) {
+      if (quiz.id == quizId) return quiz;
+    }
+    return null;
+  }
 }
 
 /// [_QuizRepo] with a caller-supplied contest leaderboard, for settlement tests.
@@ -705,8 +1086,10 @@ class _TestPicksCubit extends PicksCubit {
 }
 
 class _TestPredictionCubit extends PredictionCubit {
-  _TestPredictionCubit(PredictionRepository repository)
-    : super(repository, SecureGameStorage());
+  _TestPredictionCubit(
+    PredictionRepository repository, {
+    SecureGameStorage? storage,
+  }) : super(repository, storage ?? _MemorySecureGameStorage());
 
   void seed(UserPrediction prediction) {
     emit(state.copyWith(predictions: {prediction.key: prediction}));
@@ -714,6 +1097,40 @@ class _TestPredictionCubit extends PredictionCubit {
 
   void seedFixtures(List<SportMatch> fixtures) {
     emit(state.copyWith(fixtures: fixtures));
+  }
+
+  @override
+  Future<void> refreshMatch(String matchId) async {}
+
+  void seedLiveReview({
+    required SportMatch match,
+    required PredictionQuiz quiz,
+    required UserPrediction prediction,
+    required LiveQuestionIntel intel,
+  }) {
+    emit(
+      state.copyWith(
+        fixtures: [match],
+        quizzes: {predictionStorageKey(match.id, quiz.id): quiz},
+        predictions: {prediction.key: prediction},
+        questionIntel: {
+          predictionQuestionIntelKey(match.id, quiz.id, intel.questionId):
+              intel,
+        },
+      ),
+    );
+  }
+}
+
+class _MemorySecureGameStorage extends SecureGameStorage {
+  @override
+  Future<void> savePredictions(List<UserPrediction> predictions) async {}
+}
+
+class _FailingPredictionStorage extends SecureGameStorage {
+  @override
+  Future<void> savePredictions(List<UserPrediction> predictions) async {
+    throw StateError('simulated persistence failure');
   }
 }
 
@@ -852,23 +1269,98 @@ const _settledQuiz = PredictionQuiz(
   ],
 );
 
+const _finishedCommunityQuizzes = [
+  PredictionQuiz(
+    id: 'main',
+    matchId: 'quiz_match',
+    title: 'Scoreline Quiz',
+    questions: [
+      QuizQuestion(
+        id: 'q1',
+        text: 'Final score market',
+        options: ['Home win', 'Away win'],
+        reward: 5,
+        settledOptionIndex: 0,
+      ),
+    ],
+  ),
+  PredictionQuiz(
+    id: 'events',
+    matchId: 'quiz_match',
+    title: 'Match Events Quiz',
+    questions: [
+      QuizQuestion(
+        id: 'q2',
+        text: 'Did both teams score?',
+        options: ['Yes', 'No'],
+        reward: 5,
+        settledOptionIndex: 1,
+      ),
+    ],
+  ),
+];
+
 /// A settled paid-contest quiz: 4 questions, correct answer is option 0.
 const _contestQuiz = PredictionQuiz(
   matchId: 'quiz_match',
   entryFee: kScorelineQuizEntryFee,
   questions: [
-    QuizQuestion(id: 'q1', text: 'q1', options: ['A', 'B'], reward: 5, settledOptionIndex: 0),
-    QuizQuestion(id: 'q2', text: 'q2', options: ['A', 'B'], reward: 5, settledOptionIndex: 0),
-    QuizQuestion(id: 'q3', text: 'q3', options: ['A', 'B'], reward: 5, settledOptionIndex: 0),
-    QuizQuestion(id: 'q4', text: 'q4', options: ['A', 'B'], reward: 5, settledOptionIndex: 0),
+    QuizQuestion(
+      id: 'q1',
+      text: 'q1',
+      options: ['A', 'B'],
+      reward: 5,
+      settledOptionIndex: 0,
+    ),
+    QuizQuestion(
+      id: 'q2',
+      text: 'q2',
+      options: ['A', 'B'],
+      reward: 5,
+      settledOptionIndex: 0,
+    ),
+    QuizQuestion(
+      id: 'q3',
+      text: 'q3',
+      options: ['A', 'B'],
+      reward: 5,
+      settledOptionIndex: 0,
+    ),
+    QuizQuestion(
+      id: 'q4',
+      text: 'q4',
+      options: ['A', 'B'],
+      reward: 5,
+      settledOptionIndex: 0,
+    ),
   ],
 );
 
 /// Seeded field for the contest: "You" is ignored; one rival scored 4/4, so a
 /// player on 3/4 places 2nd and a player on 0/4 places 4th (field of 4).
 const _contestBoard = [
-  MatchPredictionLeaderboardEntry(rank: 1, name: 'You', points: 600, correct: 5),
-  MatchPredictionLeaderboardEntry(rank: 2, name: 'Aarav', points: 590, correct: 4),
-  MatchPredictionLeaderboardEntry(rank: 3, name: 'Maya', points: 560, correct: 3),
-  MatchPredictionLeaderboardEntry(rank: 4, name: 'Dev', points: 540, correct: 2),
+  MatchPredictionLeaderboardEntry(
+    rank: 1,
+    name: 'You',
+    points: 600,
+    correct: 5,
+  ),
+  MatchPredictionLeaderboardEntry(
+    rank: 2,
+    name: 'Aarav',
+    points: 590,
+    correct: 4,
+  ),
+  MatchPredictionLeaderboardEntry(
+    rank: 3,
+    name: 'Maya',
+    points: 560,
+    correct: 3,
+  ),
+  MatchPredictionLeaderboardEntry(
+    rank: 4,
+    name: 'Dev',
+    points: 540,
+    correct: 2,
+  ),
 ];

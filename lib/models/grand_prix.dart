@@ -12,7 +12,15 @@ enum GrandPrixCircuitId {
   coastalSprint,
 }
 
-enum GrandPrixLivery { scarlet, silverArrow, papaya, midnight, racingGreen, skyBlue }
+enum GrandPrixLivery {
+  gridLine,
+  scarlet,
+  silverArrow,
+  papaya,
+  midnight,
+  racingGreen,
+  skyBlue,
+}
 
 enum TrackSectionType { straight, corner, chicane }
 
@@ -38,7 +46,7 @@ GrandPrixCircuitId grandPrixCircuitFromName(String? name) =>
 GrandPrixLivery grandPrixLiveryFromName(String? name) =>
     GrandPrixLivery.values.firstWhere(
       (livery) => livery.name == name,
-      orElse: () => GrandPrixLivery.scarlet,
+      orElse: () => GrandPrixLivery.gridLine,
     );
 
 /// One stretch of track. The simulation is 1D (distance along the lap plus a
@@ -212,7 +220,7 @@ class GrandPrixStats {
     this.bestStreak = 0,
     this.bestLapMsByCircuit = const {},
     this.lastCircuit = GrandPrixCircuitId.emeraldPark,
-    this.lastLivery = GrandPrixLivery.scarlet,
+    this.lastLivery = GrandPrixLivery.gridLine,
     this.lastLaps = 1,
   });
 

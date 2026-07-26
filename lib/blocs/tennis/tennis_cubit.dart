@@ -76,28 +76,33 @@ class TennisCubit extends Cubit<TennisState> {
     );
   }
 
-  Future<TennisPlayer> claimStarterPack() async {
-    if (state.profile.starterPackClaimed &&
-        state.profile.ownedPlayerIds.isNotEmpty) {
-      return tennisPlayerById(state.profile.selectedPlayerId);
-    }
-    final starter = tennisPlayers[_random.nextInt(tennisPlayers.length)];
-    final opponentId = _randomOpponentIdFor(starter.id);
+  /// Mirrors the tennis cards held in the active [GameBloc] deck slot into the
+  /// tennis profile.
+  ///
+  /// The starter pack itself is granted by `GameBloc` (see
+  /// `TennisStarterPackOpened`) so tennis shares one card economy with every
+  /// other sport; this profile is a cache of that, not a second source of truth.
+  Future<void> syncFromDeck(List<String> ownedIds, String? starterId) async {
+    final validIds = tennisPlayers.map((player) => player.id).toSet();
+    final owned = ownedIds.where(validIds.contains).toSet().toList();
+    if (owned.isEmpty) return;
+
+    final selectedId = owned.contains(starterId) ? starterId! : owned.first;
+    final unchanged =
+        state.profile.starterPackClaimed &&
+        state.profile.selectedPlayerId == selectedId &&
+        state.profile.ownedPlayerIds.toSet().containsAll(owned) &&
+        owned.length == state.profile.ownedPlayerIds.length;
+    if (unchanged) return;
+
     final profile = state.profile.copyWith(
       starterPackClaimed: true,
-      ownedPlayerIds: [starter.id],
-      selectedPlayerId: starter.id,
-      lastOpponentId: opponentId,
+      ownedPlayerIds: owned,
+      selectedPlayerId: selectedId,
+      lastOpponentId: _randomOpponentIdFor(selectedId),
     );
-    emit(
-      state.copyWith(
-        profile: profile,
-        selectedMode: TennisMode.quickMatch,
-        phase: TennisFlowPhase.preview,
-      ),
-    );
+    emit(state.copyWith(profile: profile));
     await _storage.saveTennisProfile(profile);
-    return starter;
   }
 
   void prepareQuickMatchPreview() {

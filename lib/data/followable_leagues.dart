@@ -270,7 +270,7 @@ const List<FollowableLeague> followableLeagues = [
   ),
 
   FollowableLeague(
-    sport: Sport.f1,
+    sport: Sport.motorsport,
     league: League(
       id: 'formula1',
       name: 'Formula 1',

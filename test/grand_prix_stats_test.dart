@@ -140,7 +140,7 @@ void main() {
       'bestLapMsByCircuit': {'retiredCircuit': 90000, 'emeraldPark': 91000},
     });
     expect(legacy.lastCircuit, GrandPrixCircuitId.emeraldPark);
-    expect(legacy.lastLivery, GrandPrixLivery.scarlet);
+    expect(legacy.lastLivery, GrandPrixLivery.gridLine);
     expect(legacy.bestLapMs(GrandPrixCircuitId.emeraldPark), 91000);
   });
 

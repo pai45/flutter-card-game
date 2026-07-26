@@ -417,17 +417,17 @@ class LocalMatchCircleRepository implements MatchCircleRepository {
         reply: 'The return game made the difference.',
         secondary: 'Best rally of the match?',
       ),
-      (Sport.f1, MatchStatus.upcoming) => (
+      (Sport.motorsport, MatchStatus.upcoming) => (
         primary: 'Who takes pole at ${match.home.name}?',
         reply: 'Race pace could look very different from qualifying.',
         secondary: 'Give us your podium prediction.',
       ),
-      (Sport.f1, MatchStatus.live) => (
+      (Sport.motorsport, MatchStatus.live) => (
         primary: 'Race strategy is getting interesting now.',
         reply: 'The next pit window could decide it.',
         secondary: 'Who makes the next move through the field?',
       ),
-      (Sport.f1, MatchStatus.finished) => (
+      (Sport.motorsport, MatchStatus.finished) => (
         primary: 'How do you rate the ${match.home.name} weekend?',
         reply: 'Strategy made all the difference.',
         secondary: 'Who is your driver of the day?',

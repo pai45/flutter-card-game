@@ -32,7 +32,22 @@ void main() {
     'ambience.wav': ambience(5),
   };
   for (final entry in cues.entries) {
-    File('${directory.path}/${entry.key}').writeAsBytesSync(wav(entry.value));
+    final loop = entry.key == 'ambience.wav';
+    final category = loop
+        ? 'ambient'
+        : entry.key == 'ui_tap.wav'
+        ? 'ui'
+        : {
+            'four_crowd.wav',
+            'six_crowd.wav',
+            'wicket.wav',
+            'victory.wav',
+            'defeat.wav',
+          }.contains(entry.key)
+        ? 'reward'
+        : 'gameplay';
+    final mastered = master(entry.value, category: category, loop: loop);
+    File('${directory.path}/${entry.key}').writeAsBytesSync(wav(mastered));
   }
   stdout.writeln('Generated ${cues.length} original Final Over audio cues.');
 }
@@ -126,13 +141,73 @@ List<double> chord(List<double> notes, double seconds, {required bool rising}) {
 
 List<double> ambience(int seconds) {
   final count = seconds * sampleRate;
-  var low = 0.0;
-  return List.generate(count, (i) {
-    low += .004 * ((random.nextDouble() * 2 - 1) - low);
-    final hum = sin(2 * pi * 55 * i / sampleRate) * .018;
-    final loopEnvelope = .92 + .08 * cos(2 * pi * i / count);
-    return (low * .28 + hum) * loopEnvelope;
+  var lowCrowd = 0.0;
+  final output = List.generate(count, (i) {
+    final t = i / sampleRate;
+    lowCrowd += .012 * ((random.nextDouble() * 2 - 1) - lowCrowd);
+    final stadiumAir =
+        sin(2 * pi * 31 * t) * .018 +
+        sin(2 * pi * 67 * t) * .012 +
+        sin(2 * pi * 113 * t) * .008;
+    final distantCrowd =
+        lowCrowd * (.16 + .04 * sin(2 * pi * 0.4 * t)) +
+        sin(2 * pi * 181 * t) * .004 +
+        sin(2 * pi * 233 * t) * .003;
+    return stadiumAir + distantCrowd;
   });
+  final seam = (.4 * sampleRate).round();
+  for (var i = 0; i < seam; i++) {
+    final blend = i / seam;
+    final index = count - seam + i;
+    final target =
+        output[count - seam] + (output.first - output[count - seam]) * blend;
+    output[index] = output[index] * (1 - blend) + target * blend;
+  }
+  output[count - 1] = output.first;
+  return output;
+}
+
+List<double> master(
+  List<double> source, {
+  required String category,
+  required bool loop,
+}) {
+  final output = List<double>.from(source);
+  final mean = output.reduce((a, b) => a + b) / output.length;
+  for (var i = 0; i < output.length; i++) {
+    output[i] -= mean;
+  }
+  if (!loop) {
+    final fade = min(output.length ~/ 4, (.008 * sampleRate).round());
+    for (var i = 0; i < fade; i++) {
+      final gain = i / fade;
+      output[i] *= gain;
+      output[output.length - 1 - i] *= gain;
+    }
+  }
+  final rms = sqrt(
+    output.map((sample) => sample * sample).reduce((a, b) => a + b) /
+        output.length,
+  );
+  final loudnessDb = switch (category) {
+    'ui' => -22.0,
+    'gameplay' => -18.0,
+    'reward' => -16.0,
+    _ => -30.0,
+  };
+  final loudnessGain = pow(10, loudnessDb / 20) / max(rms, 1e-9);
+  for (var i = 0; i < output.length; i++) {
+    output[i] *= loudnessGain;
+  }
+  final peak = output.map((sample) => sample.abs()).reduce(max);
+  final peakTarget = switch (category) {
+    'ui' => .42,
+    'gameplay' => .72,
+    'reward' => .89,
+    _ => .13,
+  };
+  final peakGain = peak > peakTarget ? peakTarget / peak : 1.0;
+  return output.map((sample) => sample * peakGain).toList();
 }
 
 List<double> mix(List<List<double>> sources) {
