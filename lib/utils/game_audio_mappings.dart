@@ -39,6 +39,8 @@ SoundEffect? finalOverSoundForEvent(
   GameplayEventType.extraAwarded => SoundEffect.cricketExtra,
   GameplayEventType.deliveryCompleted =>
     finalBallPressure ? SoundEffect.cricketCrowdPressure : null,
+  GameplayEventType.overComplete => SoundEffect.bannerSlam,
+  GameplayEventType.fieldLayoutChanged => null,
   GameplayEventType.matchStarted ||
   GameplayEventType.swingAccepted ||
   GameplayEventType.paused ||

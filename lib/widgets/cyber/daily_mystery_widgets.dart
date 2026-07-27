@@ -19,6 +19,92 @@ class DailyMysteryDetail {
   final String value;
 }
 
+class DailyMysteryCoinHint extends StatelessWidget {
+  const DailyMysteryCoinHint({
+    required this.label,
+    required this.value,
+    required this.revealed,
+    required this.affordable,
+    required this.cost,
+    required this.onTap,
+    this.compact = false,
+    super.key,
+  });
+
+  final String label;
+  final String value;
+  final bool revealed;
+  final bool affordable;
+  final int cost;
+  final VoidCallback onTap;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = revealed
+        ? Cyber.cyan
+        : affordable
+        ? Cyber.muted
+        : Cyber.danger;
+    final status = revealed ? 'DECRYPTED' : '$cost COINS';
+    return Semantics(
+      button: !revealed,
+      label: revealed
+          ? '$label hint decrypted. $value.'
+          : '$label hint. Unlock for $cost coins.',
+      child: InkWell(
+        onTap: revealed ? null : onTap,
+        child: Container(
+          constraints: BoxConstraints(minHeight: compact ? 40 : 52),
+          padding: EdgeInsets.symmetric(
+            horizontal: compact ? 8 : 10,
+            vertical: compact ? 6 : 8,
+          ),
+          decoration: BoxDecoration(
+            color: revealed ? Cyber.cyan.withValues(alpha: 0.08) : Cyber.panel2,
+            border: Border.all(
+              color: revealed
+                  ? Cyber.cyan.withValues(alpha: 0.55)
+                  : Cyber.borderSubtle,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Cyber.label(6.5, color: Cyber.muted),
+              ),
+              SizedBox(height: compact ? 4 : 6),
+              Row(
+                children: [
+                  Icon(
+                    revealed ? Icons.visibility_rounded : Icons.lock_outline,
+                    size: 11,
+                    color: accent,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      revealed ? value : status,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Cyber.label(7.5, color: accent),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class DailyMysteryLanding extends StatefulWidget {
   const DailyMysteryLanding({
     required this.title,
@@ -598,6 +684,7 @@ class DailyMysteryPlayLayout extends StatelessWidget {
     required this.onCleared,
     required this.onSubmit,
     this.audioProfile = const DailyMysteryAudioProfile(),
+    this.extraPanel,
     super.key,
   });
 
@@ -625,6 +712,7 @@ class DailyMysteryPlayLayout extends StatelessWidget {
   final VoidCallback onCleared;
   final VoidCallback onSubmit;
   final DailyMysteryAudioProfile audioProfile;
+  final Widget? extraPanel;
 
   @override
   Widget build(BuildContext context) {
@@ -676,6 +764,10 @@ class DailyMysteryPlayLayout extends StatelessWidget {
                                 compact: compact,
                               ),
                             ),
+                            if (extraPanel != null) ...[
+                              SizedBox(height: compact ? 8 : 12),
+                              extraPanel!,
+                            ],
                             SizedBox(height: compact ? 12 : 20),
                             Text(
                               searchLabel,

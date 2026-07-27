@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:final_over/final_over.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -42,14 +44,67 @@ class FinalOverHudBar extends StatelessWidget {
                 iconSize: 20,
               ),
               const _ScoreBlock(),
+              const SizedBox(width: 10),
+              const _OverChip(),
               const Spacer(),
               const _ChaseCluster(),
             ],
           ),
           const SizedBox(height: 8),
           const _BallStrip(),
+          const _BowlerLine(),
         ],
       ),
+    );
+  }
+}
+
+class _OverChip extends StatelessWidget {
+  const _OverChip();
+
+  @override
+  Widget build(BuildContext context) {
+    final game = _gameOf(context);
+    return AnimatedBuilder(
+      animation: Listenable.merge([game.currentOver, game.maximumOvers]),
+      builder: (context, _) {
+        final over = game.currentOver.value + 1;
+        final max = game.maximumOvers.value;
+        return CyberChip(
+          label: 'OVER $over/$max',
+          color: Cyber.cyan,
+        );
+      },
+    );
+  }
+}
+
+class _BowlerLine extends StatelessWidget {
+  const _BowlerLine();
+
+  @override
+  Widget build(BuildContext context) {
+    final game = _gameOf(context);
+    return AnimatedBuilder(
+      animation: Listenable.merge([game.bowlerName, game.nextBatterLabel]),
+      builder: (context, _) {
+        final next = game.nextBatterLabel.value;
+        return Padding(
+          padding: const EdgeInsets.only(left: 12, top: 6),
+          child: Row(
+            children: [
+              Text(
+                'BOWLING · ${game.bowlerName.value}',
+                style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.3),
+              ),
+              if (next != null) ...[
+                const SizedBox(width: 8),
+                CyberChip(label: next, color: Cyber.lime),
+              ],
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -160,32 +215,50 @@ class _ChaseCluster extends StatelessWidget {
   }
 }
 
-/// Six tokens, one per legal ball. The over as a strip — cricket's own HUD,
-/// and the fastest way to read a chase.
+/// Six tokens for the *current* over, plus ticks for overs already done.
 class _BallStrip extends StatelessWidget {
   const _BallStrip();
 
   @override
   Widget build(BuildContext context) {
     final game = _gameOf(context);
-    return ValueListenableBuilder<List<BallResult>>(
-      valueListenable: game.history,
-      builder: (context, history, _) {
+    return AnimatedBuilder(
+      animation: Listenable.merge([game.history, game.currentOver, game.maximumOvers]),
+      builder: (context, _) {
+        final history = game.history.value;
         final legal = history.where((b) => b.legal).toList();
+        final overIndex = game.currentOver.value;
+        final ballsPerOver = 6;
+        final start = overIndex * ballsPerOver;
+        final overBalls = legal.length > start
+            ? legal.sublist(start, math.min(legal.length, start + ballsPerOver))
+            : const <BallResult>[];
+        final extrasThisOver = history
+            .where(
+              (b) =>
+                  !b.legal &&
+                  b.legalBallsBefore >= start &&
+                  b.legalBallsBefore < start + ballsPerOver,
+            )
+            .take(3);
         return Padding(
           padding: const EdgeInsets.only(left: 8),
           child: Row(
             children: [
-              for (var i = 0; i < 6; i++) ...[
+              for (var o = 0; o < game.maximumOvers.value; o++) ...[
+                if (o > 0) const SizedBox(width: 4),
+                _OverTick(done: o < overIndex, live: o == overIndex),
+              ],
+              const SizedBox(width: 10),
+              for (var i = 0; i < ballsPerOver; i++) ...[
                 _BallToken(
-                  result: i < legal.length ? legal[i] : null,
-                  next: i == legal.length,
+                  result: i < overBalls.length ? overBalls[i] : null,
+                  next: i == overBalls.length,
                 ),
-                if (i < 5) const SizedBox(width: 5),
+                if (i < ballsPerOver - 1) const SizedBox(width: 5),
               ],
               const Spacer(),
-              // Extras don't advance the over, but they happened — show them.
-              for (final extra in history.where((b) => !b.legal).take(3)) ...[
+              for (final extra in extrasThisOver) ...[
                 _ExtraToken(result: extra),
                 const SizedBox(width: 4),
               ],
@@ -193,6 +266,31 @@ class _BallStrip extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _OverTick extends StatelessWidget {
+  const _OverTick({required this.done, required this.live});
+
+  final bool done;
+  final bool live;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = live
+        ? Cyber.cyan
+        : done
+        ? Cyber.success
+        : Cyber.border;
+    return Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(
+        color: live || done ? color.withValues(alpha: 0.35) : Cyber.panel,
+        border: Border.all(color: color.withValues(alpha: live ? 0.95 : 0.45)),
+        boxShadow: live ? Cyber.glow(Cyber.cyan, alpha: 0.35, blur: 6) : null,
+      ),
     );
   }
 }

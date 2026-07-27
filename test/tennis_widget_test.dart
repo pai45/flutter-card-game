@@ -18,6 +18,7 @@ import 'package:card_game/services/prediction_repository.dart';
 import 'package:card_game/services/secure_storage_service.dart';
 import 'package:card_game/utils/sound_effects.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -27,6 +28,16 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('xyz.luan/audioplayers.global'),
+          (_) async => null,
+        );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('xyz.luan/audioplayers'),
+          (_) async => null,
+        );
     AudioController.instance.muted.value = true;
     FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({});
@@ -56,10 +67,11 @@ void main() {
             onTabChanged: (_) {},
             activeMatchSportTab: 0,
             onMatchSportTabChanged: (_) {},
-            activeGamesSportTab: 3,
+            activeGamesSportTab: 4,
             onGamesSportTabChanged: (_) {},
             onNavigate: (_) {},
             onOpenMatch: (_) {},
+            onOpenMarket: (_) {},
             onOpenLeague: (_) {},
             onOpenGame: () {},
             onOpenShootout: () {},
@@ -81,10 +93,10 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
 
     expect(find.text('TENNIS RALLY'), findsOneWidget);
-    expect(find.text('TENNIS TRIVIA'), findsOneWidget);
+    expect(find.text('TENNIS QUIZ'), findsOneWidget);
     expect(
       tester.getTopLeft(find.text('TENNIS RALLY')).dy,
-      lessThan(tester.getTopLeft(find.text('TENNIS TRIVIA')).dy),
+      lessThan(tester.getTopLeft(find.text('TENNIS QUIZ')).dy),
     );
     await tester.tap(find.text('TENNIS RALLY'));
     expect(opened, isTrue);

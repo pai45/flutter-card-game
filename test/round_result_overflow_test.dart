@@ -44,6 +44,7 @@ void main() {
   Future<void> pumpResolveBeat(
     WidgetTester tester, {
     required RoundResult result,
+    VoidCallback? verifyLayout,
   }) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -84,6 +85,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       expect(tester.takeException(), isNull);
     }
+    verifyLayout?.call();
     // ...then let the next-round countdown finish so no timers are pending.
     for (var step = 0; step < 5; step++) {
       await tester.pump(const Duration(seconds: 1));
@@ -107,6 +109,29 @@ void main() {
           result: _sampleResult(playerAttacking: attacking, outcome: outcome),
         );
       }
+    }
+  });
+
+  testWidgets('resolve layout follows the attacking side', (tester) async {
+    for (final playerAttacking in [true, false]) {
+      await pumpResolveBeat(
+        tester,
+        result: _sampleResult(
+          playerAttacking: playerAttacking,
+          outcome: RoundOutcome.goal,
+        ),
+        verifyLayout: () {
+          final scoreY = tester.getCenter(find.text('SCORE')).dy;
+          final faceoffY = tester.getCenter(find.text('VS')).dy;
+          final verdictY = tester.getCenter(find.text('GOAL')).dy;
+
+          expect(scoreY, lessThan(faceoffY));
+          expect(
+            verdictY,
+            playerAttacking ? lessThan(scoreY) : greaterThan(faceoffY),
+          );
+        },
+      );
     }
   });
 }

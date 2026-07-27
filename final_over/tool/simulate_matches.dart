@@ -6,7 +6,7 @@ import 'dart:math' as math;
 import 'package:final_over/application/application.dart';
 import 'package:final_over/domain/domain.dart';
 
-const int _maximumSimulationMicros = 120 * Duration.microsecondsPerSecond;
+const int _maximumSimulationMicros = 240 * Duration.microsecondsPerSecond;
 
 /// Timing buckets used by the balancing bot.
 ///
@@ -348,10 +348,10 @@ final class SimulationReport {
     );
     _checkRange(failures, 'wide rate', wideRate, 0.02, 0.08);
     _checkRange(failures, 'no-ball rate', noBallRate, 0.005, 0.04);
-    if (maximumDurationSeconds >= 120) {
+    if (maximumDurationSeconds >= 240) {
       failures.add(
         'maximum match duration ${maximumDurationSeconds.toStringAsFixed(2)}s '
-        'must be below 120s',
+        'must be below 240s',
       );
     }
     if ((runStarts[RiskLevel.danger] ?? 0) != 0) {
@@ -470,7 +470,7 @@ final class SimulationReport {
 
 Future<MatchMetrics> simulateMatch({
   required int seed,
-  int target = 14,
+  int target = 48,
   GameplayTuning tuning = GameplayTuning.elite,
 }) async {
   final controller = MatchController(tuning: tuning);
@@ -507,6 +507,8 @@ Future<MatchMetrics> simulateMatch({
           GameplayEventType.boundary ||
           GameplayEventType.wicket ||
           GameplayEventType.deliveryCompleted ||
+          GameplayEventType.overComplete ||
+          GameplayEventType.fieldLayoutChanged ||
           GameplayEventType.paused ||
           GameplayEventType.resumed ||
           GameplayEventType.matchEnded ||
@@ -581,13 +583,19 @@ Future<MatchMetrics> simulateMatch({
 
 Future<SimulationReport> simulateMatches({
   int matches = 10000,
-  int target = 14,
+  int target = 48,
   int seedStart = 1,
   GameplayTuning tuning = GameplayTuning.elite,
 }) async {
   if (matches <= 0) throw ArgumentError.value(matches, 'matches');
-  if (target < 6 || target > 24) {
-    throw RangeError.range(target, 6, 24, 'target');
+  if (target < GameplayTuning.targetMinimum ||
+      target > GameplayTuning.targetMaximum) {
+    throw RangeError.range(
+      target,
+      GameplayTuning.targetMinimum,
+      GameplayTuning.targetMaximum,
+      'target',
+    );
   }
 
   var wins = 0;
@@ -717,7 +725,7 @@ String _hex64(int value) {
 
 Future<void> main(List<String> arguments) async {
   var matches = 10000;
-  var target = 14;
+  var target = 48;
   var seedStart = 1;
   var jsonOutput = false;
   var enforceGates = true;
@@ -736,7 +744,7 @@ Future<void> main(List<String> arguments) async {
     } else if (argument == '--help' || argument == '-h') {
       stdout.writeln(
         'Usage: dart run tool/simulate_matches.dart '
-        '[--matches=10000] [--target=14] [--seed-start=1] '
+        '[--matches=10000] [--target=48] [--seed-start=1] '
         '[--json] [--no-gate]',
       );
       return;

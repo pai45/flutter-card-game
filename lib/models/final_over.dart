@@ -7,8 +7,7 @@ library;
 import 'package:final_over/final_over.dart' show GameplayTuning;
 
 /// How steep a chase to set. The engine picks the actual target from its
-/// approved ladder (8, 10, 12, 14, 16, 18, 20); a tier just says which rungs
-/// are in play.
+/// approved ladder (32–66); a tier just says which rungs are in play.
 enum FinalOverTier { rookie, pro, elite }
 
 extension FinalOverTierX on FinalOverTier {
@@ -29,9 +28,9 @@ extension FinalOverTierX on FinalOverTier {
   /// not invent one, or [GameplayTuning.targetOptions] and the balance report
   /// stop meaning anything.
   List<int> get targets => switch (this) {
-    FinalOverTier.rookie => const [8, 10],
-    FinalOverTier.pro => const [10, 12, 14],
-    FinalOverTier.elite => const [16, 18, 20],
+    FinalOverTier.rookie => const [32, 36, 40],
+    FinalOverTier.pro => const [44, 48, 52, 56],
+    FinalOverTier.elite => const [58, 62, 66],
   };
 
   String get range => '${targets.first}–${targets.last}';
@@ -67,6 +66,7 @@ class FinalOverMatchConfig {
     required this.target,
     required this.kitId,
     required this.batsmanIds,
+    required this.opponentName,
     this.showHints = false,
   });
 
@@ -76,6 +76,9 @@ class FinalOverMatchConfig {
   final int target;
   final String kitId;
   final List<String> batsmanIds;
+
+  /// Cosmetic rival identity for the shared matchmaking banner.
+  final String opponentName;
 
   /// First chase only — the control deck explains itself, then never again.
   final bool showHints;
@@ -113,7 +116,7 @@ class FinalOverMatchSummary {
   final int bestCombo;
   final int xp;
 
-  int get ballsToSpare => won ? (6 - legalBalls).clamp(0, 6) : 0;
+  int get ballsToSpare => won ? (18 - legalBalls).clamp(0, 18) : 0;
 
   String get scoreLine => '$runs/$wickets';
 
@@ -232,7 +235,7 @@ class FinalOverStats {
 /// Deliberately generous on effort and stingy on repetition: you are rewarded
 /// for runs you actually scored, for the stars the engine awarded, and for
 /// finishing early — not for pressing PLAY. Losing still pays, because a
-/// six-ball chase you lost by two runs was a better game than one you won by
+/// three-over chase you lost by two runs was a better game than one you won by
 /// ten, and the player should not resent having played it.
 int calculateFinalOverXp({
   required bool won,

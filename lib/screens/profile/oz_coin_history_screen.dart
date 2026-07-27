@@ -145,7 +145,8 @@ class _OzCoinHistoryScreenState extends State<OzCoinHistoryScreen> {
             entry.source == OzCoinTransactionSource.quizContestPayout ||
             entry.source == OzCoinTransactionSource.footballBingoLifeline ||
             entry.source == OzCoinTransactionSource.guessPlayerHint ||
-            entry.source == OzCoinTransactionSource.guessPlayerExtraAttempt,
+            entry.source == OzCoinTransactionSource.guessPlayerExtraAttempt ||
+            entry.source == OzCoinTransactionSource.guessDriverHint,
     };
   }
 }
@@ -314,6 +315,7 @@ IconData _sourceIcon(OzCoinTransactionSource source) {
     OzCoinTransactionSource.guessPlayerHint ||
     OzCoinTransactionSource.guessPlayerExtraAttempt =>
       Icons.manage_search_rounded,
+    OzCoinTransactionSource.guessDriverHint => Icons.sports_motorsports,
     OzCoinTransactionSource.streakReward => Icons.local_fire_department,
     OzCoinTransactionSource.referralReward => Icons.card_giftcard_rounded,
     OzCoinTransactionSource.pickStake ||

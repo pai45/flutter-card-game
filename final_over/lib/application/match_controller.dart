@@ -54,12 +54,19 @@ final class MatchController {
     canRun: _state.canRun,
   );
 
-  /// Starts at the intro. [target] is injectable from 6-24 for tests/debug;
+  /// Starts at the intro. [target] is injectable from 32-66 for tests/debug;
   /// production callers omit it to use the approved seeded target set.
   void startMatch({required int seed, int? target}) {
     _ensureAlive();
-    if (target != null && (target < 6 || target > 24)) {
-      throw RangeError.range(target, 6, 24, 'target');
+    if (target != null &&
+        (target < GameplayTuning.targetMinimum ||
+            target > GameplayTuning.targetMaximum)) {
+      throw RangeError.range(
+        target,
+        GameplayTuning.targetMinimum,
+        GameplayTuning.targetMaximum,
+        'target',
+      );
     }
     _accumulatorMicros = 0;
     _deliveries.clear();
@@ -78,20 +85,42 @@ final class MatchController {
       ObjectiveType.completeDouble,
     ];
     final objective = selectionRandom.choose(objectives);
+    final bowlers = _shuffleBowlers(selectionRandom);
+    final openingField = GameplayTuning.fieldLayoutFor(
+      matchSeed: seed,
+      physicalOrdinal: 1,
+    );
     _setState(
       MatchState.initial().copyWith(
         matchSeed: seed,
         target: selectedTarget,
         phase: MatchPhase.matchIntro,
         objective: objective,
-        fielders: GameplayTuning.balancedField,
+        fielders: openingField.fielders,
+        maximumLegalBalls: tuning.maximumLegalBalls,
+        ballsPerOver: tuning.ballsPerOver,
+        maximumOvers: tuning.maximumOvers,
+        bowlerIndex: 0,
+        bowlers: bowlers,
       ),
     );
     _emit(GameplayEventType.matchStarted, {
       'seed': seed,
       'target': selectedTarget,
       'objective': objective,
+      'bowler': bowlers.first.name,
     });
+  }
+
+  List<BowlerProfile> _shuffleBowlers(DeterministicRandom random) {
+    final bowlers = List<BowlerProfile>.from(BowlerProfile.attack);
+    for (var i = bowlers.length - 1; i > 0; i--) {
+      final j = random.nextInt(i + 1);
+      final tmp = bowlers[i];
+      bowlers[i] = bowlers[j];
+      bowlers[j] = tmp;
+    }
+    return bowlers;
   }
 
   /// Positional convenience for simulations and simple host integrations.
@@ -213,6 +242,10 @@ final class MatchController {
   void _prepareDelivery() {
     if (_state.isTerminal || _state.phase == MatchPhase.quit) return;
     final ordinal = _state.physicalDeliveries + 1;
+    final fieldLayout = GameplayTuning.fieldLayoutFor(
+      matchSeed: _state.matchSeed,
+      physicalOrdinal: ordinal,
+    );
     final expectedContact =
         _state.simulationMicros +
         tuning.deliveryPreparationMicros +
@@ -227,6 +260,7 @@ final class MatchController {
       history: _state.history,
       previousDeliveries: _deliveries,
       expectedContactMicros: expectedContact,
+      bowler: _state.currentBowler,
     );
     _deliveries.add(delivery);
     _resetTransientSimulation();
@@ -242,7 +276,7 @@ final class MatchController {
         ball: null,
         cameraTransition: 0,
         runner: const RunnerState(),
-        fielders: GameplayTuning.balancedField,
+        fielders: fieldLayout.fielders,
         ledger: const DeliveryLedger(),
         pendingRuns: 0,
         pendingExtras: 0,
@@ -257,6 +291,13 @@ final class MatchController {
       ),
     );
     _emit(GameplayEventType.deliveryPrepared, {'delivery': delivery});
+    if (ordinal > 1) {
+      _emit(GameplayEventType.fieldLayoutChanged, {
+        'id': fieldLayout.id,
+        'label': fieldLayout.label,
+        'deliveryOrdinal': ordinal,
+      });
+    }
   }
 
   void _advanceIncomingBall() {
@@ -378,7 +419,7 @@ final class MatchController {
   void _launchContactedBall(ContactOutcome contact) {
     final ball = _physicsResolver.launch(contact);
     final predicted = _predictPosition(ball, 2.0);
-    final fielders = GameplayTuning.balancedField
+    final fielders = _state.fielders
         .map(
           (fielder) => fielder.copyWith(
             motion: FielderMotion.reacting,
@@ -1010,6 +1051,7 @@ final class MatchController {
         objectiveCompleted: objectiveUpdate.completed,
         legalBalls: legalBalls,
         wickets: wickets,
+        maximumLegalBalls: tuning.maximumLegalBalls,
       );
       next = next.copyWith(
         phase: MatchPhase.won,
@@ -1026,11 +1068,34 @@ final class MatchController {
         phase: MatchPhase.lost,
         endReason: MatchEndReason.ballsExhausted,
       );
+    } else if (result.legal &&
+        legalBalls > 0 &&
+        legalBalls % tuning.ballsPerOver == 0) {
+      // Over complete — rotate to the next bowler before the next delivery.
+      final nextBowlerIndex = math.min(
+        next.bowlerIndex + 1,
+        math.max(0, next.bowlers.length - 1),
+      );
+      next = next.copyWith(bowlerIndex: nextBowlerIndex);
     }
     _setState(next);
     _emit(GameplayEventType.deliveryCompleted, {'result': result});
     if (result.isWicket) {
       _emit(GameplayEventType.wicket, {'dismissal': result.dismissal});
+    }
+    if (result.legal &&
+        legalBalls > 0 &&
+        legalBalls % tuning.ballsPerOver == 0 &&
+        !next.isTerminal) {
+      final bowler = next.currentBowler;
+      _emit(GameplayEventType.overComplete, {
+        'over': legalBalls ~/ tuning.ballsPerOver,
+        'nextOver': next.currentOver + 1,
+        'bowler': bowler?.name,
+        'bowlerId': bowler?.id,
+        'lookKey': bowler?.lookKey,
+        'jerseyNumber': bowler?.jerseyNumber,
+      });
     }
     if (next.isTerminal) {
       _emit(GameplayEventType.matchEnded, {

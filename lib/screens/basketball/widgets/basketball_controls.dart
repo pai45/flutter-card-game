@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../config/theme.dart';
+import '../../../games/basketball/basketball_engine.dart';
 import '../../../games/basketball/basketball_game.dart';
+import '../../../widgets/cyber/cyber_widgets.dart';
 
 /// The Hoop Duel control deck: a MOVE pad (◀ away / ▶ to rim) on the left and
 /// a contextual ACTION pad on the right. Both are raw [Listener]s (not
@@ -13,7 +15,11 @@ import '../../../games/basketball/basketball_game.dart';
 /// step-back. Pads are calm plates; pressed state is an accent fill, never a
 /// glow (only the on-court ball-handler glows).
 class BasketballControls extends StatelessWidget {
-  const BasketballControls({required this.game, this.showHints = false, super.key});
+  const BasketballControls({
+    required this.game,
+    this.showHints = false,
+    super.key,
+  });
 
   final BasketballGame game;
   final bool showHints;
@@ -228,55 +234,128 @@ class _ActionPadState extends State<_ActionPad> {
 
   @override
   Widget build(BuildContext context) {
+    const clipper = HudChamferClipper(bigCut: 12, smallCut: 4);
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        if (widget.showHint) const _HintLabel('SHOOT / DEFEND'),
+        if (widget.showHint) const _HintLabel('ACTION'),
         Listener(
+          behavior: HitTestBehavior.opaque,
           onPointerDown: _onDown,
           onPointerMove: _onMove,
           onPointerUp: _onUp,
           onPointerCancel: _onCancel,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 90),
-            width: 150,
-            height: 68,
-            decoration: BoxDecoration(
-              color: _down
-                  ? Cyber.gold.withValues(alpha: 0.26)
-                  : Cyber.panel.withValues(alpha: 0.85),
-              border: Border.all(
-                color: Cyber.gold.withValues(alpha: _down ? 0.9 : 0.45),
-                width: _down ? 1.7 : 1,
-              ),
-            ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.sports_basketball,
-                    color: _down ? Cyber.gold : Cyber.gold.withValues(alpha: 0.8),
-                    size: 26,
+          child: ValueListenableBuilder<BasketballActionCue>(
+            valueListenable: widget.game.actionCue,
+            builder: (context, cue, _) => ChamferedActionSurface(
+              clipper: clipper,
+              borderColor: Cyber.gold.withValues(alpha: _down ? 0.9 : 0.45),
+              borderWidth: _down ? 1.7 : 1,
+              child: AnimatedContainer(
+                duration: reduceMotion
+                    ? Duration.zero
+                    : const Duration(milliseconds: 90),
+                width: 150,
+                height: 68,
+                color: _down
+                    ? Cyber.gold.withValues(alpha: 0.26)
+                    : Cyber.panel.withValues(alpha: 0.9),
+                alignment: Alignment.center,
+                child: AnimatedSwitcher(
+                  duration: reduceMotion
+                      ? Duration.zero
+                      : const Duration(milliseconds: 140),
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  child: _ActionCueCopy(
+                    key: ValueKey(cue),
+                    cue: cue,
+                    down: _down,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'HOLD · TAP · SWIPE',
-                    style: TextStyle(
-                      color: _down ? Cyber.gold : Cyber.muted,
-                      fontFamily: Cyber.displayFont,
-                      fontSize: 7.5,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ActionCueCopy extends StatelessWidget {
+  const _ActionCueCopy({required this.cue, required this.down, super.key});
+
+  final BasketballActionCue cue;
+  final bool down;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, instruction, icon) = switch (cue) {
+      BasketballActionCue.shoot => (
+        'SHOOT',
+        'HOLD · RELEASE IN LIME',
+        Icons.sports_basketball,
+      ),
+      BasketballActionCue.finish => (
+        'FINISH',
+        'TAP LAYUP · HOLD DUNK',
+        Icons.sports_handball,
+      ),
+      BasketballActionCue.release => (
+        'RELEASE',
+        'HIT THE LIME',
+        Icons.vertical_align_top,
+      ),
+      BasketballActionCue.defend => (
+        'DEFEND',
+        'TAP STEAL · HOLD GUARD',
+        Icons.shield_outlined,
+      ),
+      BasketballActionCue.block => (
+        'BLOCK',
+        'RELEASE WITH SHOOTER',
+        Icons.pan_tool_alt_outlined,
+      ),
+      BasketballActionCue.rebound => (
+        'REBOUND',
+        'TAP AT MARKER',
+        Icons.keyboard_double_arrow_up,
+      ),
+    };
+    final accent = down ? Cyber.gold : Cyber.gold.withValues(alpha: 0.86);
+
+    return Semantics(
+      label: '$label. $instruction',
+      child: ExcludeSemantics(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: accent, size: 17),
+                const SizedBox(width: 5),
+                Text(
+                  label,
+                  style: Cyber.display(11, color: accent, letterSpacing: 1.4),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              instruction,
+              maxLines: 1,
+              style: Cyber.label(
+                6.5,
+                color: down ? Cyber.gold : Cyber.muted,
+                letterSpacing: 0.65,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -293,10 +372,8 @@ class _HintLabel extends StatelessWidget {
       child: TweenAnimationBuilder<double>(
         tween: Tween(begin: 0.4, end: 1),
         duration: const Duration(milliseconds: 700),
-        builder: (context, t, child) => Opacity(
-          opacity: (0.5 + 0.5 * t).clamp(0.0, 1.0),
-          child: child,
-        ),
+        builder: (context, t, child) =>
+            Opacity(opacity: (0.5 + 0.5 * t).clamp(0.0, 1.0), child: child),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
@@ -305,13 +382,7 @@ class _HintLabel extends StatelessWidget {
           ),
           child: Text(
             text,
-            style: const TextStyle(
-              color: Cyber.gold,
-              fontFamily: Cyber.displayFont,
-              fontSize: 8,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1.4,
-            ),
+            style: Cyber.label(8, color: Cyber.gold, letterSpacing: 1.4),
           ),
         ),
       ),

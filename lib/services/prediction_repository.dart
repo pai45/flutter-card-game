@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/theme.dart';
+import '../data/rival_roster.dart';
 import '../data/wc_third_place_2026.dart';
 import '../models/basketball_scorecard.dart';
 import '../models/league.dart';
@@ -43,13 +44,25 @@ abstract class PredictionRepository {
   );
 
   /// Enrich fixtures with live network data asynchronously
-  Future<List<SportMatch>> enrichFixturesForSport(List<SportMatch> fixtures, Sport sport);
+  Future<List<SportMatch>> enrichFixturesForSport(
+    List<SportMatch> fixtures,
+    Sport sport,
+  );
+}
+
+/// Optional lookup used by configured surfaces that reference a known mock
+/// fixture directly. Keeping it separate from [PredictionRepository] avoids
+/// changing the normal sport-feed contract or injecting demo fixtures into
+/// sport-specific match pages.
+abstract interface class PredictionCatalogLookup {
+  Future<SportMatch?> fixtureById(String matchId);
 }
 
 /// Hardcoded fixtures + quizzes mirroring the home mockup, spanning every card
 /// state: upcoming-open, upcoming-predicted, live, and finished (football +
 /// cricket). Single source of truth for fixtures until a backend exists.
-class MockPredictionRepository implements PredictionRepository {
+class MockPredictionRepository
+    implements PredictionRepository, PredictionCatalogLookup {
   // ── Leagues (EPL first to match the reference order) ─────────────────────────
   static const _intl = League(
     id: '23810',
@@ -264,13 +277,13 @@ class MockPredictionRepository implements PredictionRepository {
     id: '7853',
     name: 'AGF',
     shortName: 'AGF',
-    color: Color(0xff64748b),  // lifted
+    color: Color(0xff64748b), // lifted
   );
   static const _araratArmenia = SportTeam(
     id: '20024',
     name: 'Ararat-Armenia',
     shortName: 'ARA',
-    color: Color(0xff64748b),  // lifted
+    color: Color(0xff64748b), // lifted
   );
   static const _athleticoPr = SportTeam(
     id: '3458',
@@ -288,7 +301,7 @@ class MockPredictionRepository implements PredictionRepository {
     id: '7632',
     name: 'Atlético-MG',
     shortName: 'CAM',
-    color: Color(0xfffafafc),  // alternate
+    color: Color(0xfffafafc), // alternate
   );
   static const _austinFc = SportTeam(
     id: '20906',
@@ -300,13 +313,13 @@ class MockPredictionRepository implements PredictionRepository {
     id: '7834',
     name: 'BK Häcken',
     shortName: 'BKH',
-    color: Color(0xfff7ee09),  // alternate
+    color: Color(0xfff7ee09), // alternate
   );
   static const _bahia = SportTeam(
     id: '9967',
     name: 'Bahia',
     shortName: 'BAH',
-    color: Color(0xff0093ec),  // alternate
+    color: Color(0xff0093ec), // alternate
   );
   static const _bodoGlimt = SportTeam(
     id: '2980',
@@ -318,7 +331,7 @@ class MockPredictionRepository implements PredictionRepository {
     id: '6086',
     name: 'Botafogo',
     shortName: 'BOT',
-    color: Color(0xfffafafc),  // alternate
+    color: Color(0xfffafafc), // alternate
   );
   static const _cfMontreal = SportTeam(
     id: '9720',
@@ -330,7 +343,7 @@ class MockPredictionRepository implements PredictionRepository {
     id: '8089',
     name: 'CSU Craiova',
     shortName: 'UCRA',
-    color: Color(0xff64748b),  // lifted
+    color: Color(0xff64748b), // lifted
   );
   static const _chapecoense = SportTeam(
     id: '9318',
@@ -360,13 +373,13 @@ class MockPredictionRepository implements PredictionRepository {
     id: '183',
     name: 'Columbus Crew',
     shortName: 'CLB',
-    color: Color(0xfffedd00),  // alternate
+    color: Color(0xfffedd00), // alternate
   );
   static const _corinthians = SportTeam(
     id: '874',
     name: 'Corinthians',
     shortName: 'COR',
-    color: Color(0xfffafafc),  // alternate
+    color: Color(0xfffafafc), // alternate
   );
   static const _coritiba = SportTeam(
     id: '3456',
@@ -378,7 +391,7 @@ class MockPredictionRepository implements PredictionRepository {
     id: '218',
     name: 'Cruz Azul',
     shortName: 'CAZ',
-    color: Color(0xffffffff),  // alternate
+    color: Color(0xffffffff), // alternate
   );
   static const _cruzeiro = SportTeam(
     id: '2022',
@@ -390,19 +403,19 @@ class MockPredictionRepository implements PredictionRepository {
     id: '193',
     name: 'D.C. United',
     shortName: 'DC',
-    color: Color(0xffd61018),  // alternate
+    color: Color(0xffd61018), // alternate
   );
   static const _degerforsIf = SportTeam(
     id: '20856',
     name: 'Degerfors IF',
     shortName: 'DEG',
-    color: Color(0xff64748b),  // lifted
+    color: Color(0xff64748b), // lifted
   );
   static const _dinamoZagreb = SportTeam(
     id: '597',
     name: 'Dinamo Zagreb',
     shortName: 'DZG',
-    color: Color(0xffccff00),  // alternate
+    color: Color(0xffccff00), // alternate
   );
   static const _djurgarden = SportTeam(
     id: '2339',
@@ -414,13 +427,13 @@ class MockPredictionRepository implements PredictionRepository {
     id: '21943',
     name: 'Egnatia',
     shortName: 'EGN',
-    color: Color(0xff64748b),  // lifted
+    color: Color(0xff64748b), // lifted
   );
   static const _fcCincinnati = SportTeam(
     id: '18267',
     name: 'FC Cincinnati',
     shortName: 'CIN',
-    color: Color(0xfffe5000),  // alternate
+    color: Color(0xfffe5000), // alternate
   );
   static const _fcDallas = SportTeam(
     id: '185',
@@ -444,13 +457,13 @@ class MockPredictionRepository implements PredictionRepository {
     id: '819',
     name: 'Flamengo',
     shortName: 'FLA',
-    color: Color(0xffd84f4f),  // lifted
+    color: Color(0xffd84f4f), // lifted
   );
   static const _gornikZabrze = SportTeam(
     id: '8180',
     name: 'Gornik Zabrze',
     shortName: 'GOR',
-    color: Color(0xff64748b),  // lifted
+    color: Color(0xff64748b), // lifted
   );
   static const _halmstadsBk = SportTeam(
     id: '3017',
@@ -462,7 +475,7 @@ class MockPredictionRepository implements PredictionRepository {
     id: '21380',
     name: 'Hamarkameratene',
     shortName: 'HAM',
-    color: Color(0xff64748b),  // lifted
+    color: Color(0xff64748b), // lifted
   );
   static const _hammarbyIf = SportTeam(
     id: '2495',
@@ -480,7 +493,7 @@ class MockPredictionRepository implements PredictionRepository {
     id: '262',
     name: 'Heart of Midlothian',
     shortName: 'HOM',
-    color: Color(0xffead6b7),  // alternate
+    color: Color(0xffead6b7), // alternate
   );
   static const _houstonDynamoFc = SportTeam(
     id: '6077',
@@ -504,25 +517,25 @@ class MockPredictionRepository implements PredictionRepository {
     id: '20025',
     name: 'Iberia 1999',
     shortName: 'IBE',
-    color: Color(0xff64748b),  // lifted
+    color: Color(0xff64748b), // lifted
   );
   static const _interMiamiCf = SportTeam(
     id: '20232',
     name: 'Inter Miami CF',
     shortName: 'MIA',
-    color: Color(0xfff7b5cd),  // alternate
+    color: Color(0xfff7b5cd), // alternate
   );
   static const _internacional = SportTeam(
     id: '1936',
     name: 'Internacional',
     shortName: 'INT',
-    color: Color(0xffd84f4f),  // lifted
+    color: Color(0xffd84f4f), // lifted
   );
   static const _kiKlaksvik = SportTeam(
     id: '2547',
     name: 'KI Klaksvik',
     shortName: 'KLA',
-    color: Color(0xff64748b),  // lifted
+    color: Color(0xff64748b), // lifted
   );
   static const _kairatAlmaty = SportTeam(
     id: '2528',
@@ -540,37 +553,37 @@ class MockPredictionRepository implements PredictionRepository {
     id: '20028',
     name: 'Kauno Zalgiris',
     shortName: 'ZAL',
-    color: Color(0xff64748b),  // lifted
+    color: Color(0xff64748b), // lifted
   );
   static const _kupsKuopio = SportTeam(
     id: '8169',
     name: 'KuPS Kuopio',
     shortName: 'KUPS',
-    color: Color(0xff64748b),  // lifted
+    color: Color(0xff64748b), // lifted
   );
   static const _laGalaxy = SportTeam(
     id: '187',
     name: 'LA Galaxy',
     shortName: 'LA',
-    color: Color(0xffffffff),  // alternate
+    color: Color(0xffffffff), // alternate
   );
   static const _lafc = SportTeam(
     id: '18966',
     name: 'LAFC',
     shortName: 'LAFC',
-    color: Color(0xffc7a36f),  // alternate
+    color: Color(0xffc7a36f), // alternate
   );
   static const _larne = SportTeam(
     id: '20039',
     name: 'Larne',
     shortName: 'LAR',
-    color: Color(0xffffffff),  // alternate
+    color: Color(0xffffffff), // alternate
   );
   static const _lechPoznan = SportTeam(
     id: '2990',
     name: 'Lech Poznan',
     shortName: 'LECH',
-    color: Color(0xff64748b),  // lifted
+    color: Color(0xff64748b), // lifted
   );
   static const _levskiSofia = SportTeam(
     id: '490',
@@ -588,7 +601,7 @@ class MockPredictionRepository implements PredictionRepository {
     id: '17856',
     name: 'Lincoln Red Imps',
     shortName: 'LRI',
-    color: Color(0xffffffff),  // alternate
+    color: Color(0xffffffff), // alternate
   );
   static const _malmoFf = SportTeam(
     id: '2720',
@@ -600,19 +613,19 @@ class MockPredictionRepository implements PredictionRepository {
     id: '17362',
     name: 'Minnesota United FC',
     shortName: 'MIN',
-    color: Color(0xff9bcde4),  // alternate
+    color: Color(0xff9bcde4), // alternate
   );
   static const _mjallbyAif = SportTeam(
     id: '20301',
     name: 'Mjällby AIF',
     shortName: 'MJA',
-    color: Color(0xffffd400),  // alternate
+    color: Color(0xffffd400), // alternate
   );
   static const _nkCelje = SportTeam(
     id: '3362',
     name: 'NK Celje',
     shortName: 'NKC',
-    color: Color(0xffff6600),  // alternate
+    color: Color(0xffff6600), // alternate
   );
   static const _nashvilleSc = SportTeam(
     id: '18986',
@@ -624,7 +637,7 @@ class MockPredictionRepository implements PredictionRepository {
     id: '189',
     name: 'New England Revolution',
     shortName: 'NE',
-    color: Color(0xffce0e2d),  // alternate
+    color: Color(0xffce0e2d), // alternate
   );
   static const _newYorkCityFc = SportTeam(
     id: '17606',
@@ -642,7 +655,7 @@ class MockPredictionRepository implements PredictionRepository {
     id: '131552',
     name: 'Örgryte IS',
     shortName: 'Örg',
-    color: Color(0xff64748b),  // lifted
+    color: Color(0xff64748b), // lifted
   );
   static const _orlandoCitySc = SportTeam(
     id: '12011',
@@ -660,7 +673,7 @@ class MockPredictionRepository implements PredictionRepository {
     id: '10739',
     name: 'Philadelphia Union',
     shortName: 'PHI',
-    color: Color(0xffe0d0a6),  // alternate
+    color: Color(0xffe0d0a6), // alternate
   );
   static const _portlandTimbers = SportTeam(
     id: '9723',
@@ -714,7 +727,7 @@ class MockPredictionRepository implements PredictionRepository {
     id: '21922',
     name: 'Sabah FK',
     shortName: 'SAB',
-    color: Color(0xff64748b),  // lifted
+    color: Color(0xff64748b), // lifted
   );
   static const _sanDiegoFc = SportTeam(
     id: '22529',
@@ -732,7 +745,7 @@ class MockPredictionRepository implements PredictionRepository {
     id: '2026',
     name: 'São Paulo',
     shortName: 'SAO',
-    color: Color(0xffd84f4f),  // lifted
+    color: Color(0xffd84f4f), // lifted
   );
   static const _seattleSoundersFc = SportTeam(
     id: '9726',
@@ -786,13 +799,13 @@ class MockPredictionRepository implements PredictionRepository {
     id: '510',
     name: 'Viking FK',
     shortName: 'VIK',
-    color: Color(0xffffffff),  // alternate
+    color: Color(0xffffffff), // alternate
   );
   static const _vikingurReykjavik = SportTeam(
     id: '8249',
     name: 'Vikingur Reykjavik',
     shortName: 'VIK',
-    color: Color(0xffffffff),  // alternate
+    color: Color(0xffffffff), // alternate
   );
   static const _vitoria = SportTeam(
     id: '3457',
@@ -2051,11 +2064,13 @@ class MockPredictionRepository implements PredictionRepository {
       homeScore: '3',
       awayScore: '0',
       prizeLabel: 'Win 8500 coins',
-      tennisScorecard: const TennisScorecard(sets: [
-        TennisSet(homeScore: 6, awayScore: 4, isHomeWinner: true),
-        TennisSet(homeScore: 6, awayScore: 2, isHomeWinner: true),
-        TennisSet(homeScore: 6, awayScore: 1, isHomeWinner: true),
-      ]),
+      tennisScorecard: const TennisScorecard(
+        sets: [
+          TennisSet(homeScore: 6, awayScore: 4, isHomeWinner: true),
+          TennisSet(homeScore: 6, awayScore: 2, isHomeWinner: true),
+          TennisSet(homeScore: 6, awayScore: 1, isHomeWinner: true),
+        ],
+      ),
     ),
     // Wimbledon Women's Final (Mock)
     SportMatch(
@@ -2069,11 +2084,13 @@ class MockPredictionRepository implements PredictionRepository {
       homeScore: '2',
       awayScore: '1',
       prizeLabel: 'Win 8200 coins',
-      tennisScorecard: const TennisScorecard(sets: [
-        TennisSet(homeScore: 6, awayScore: 2, isHomeWinner: true),
-        TennisSet(homeScore: 2, awayScore: 6, isAwayWinner: true),
-        TennisSet(homeScore: 6, awayScore: 4, isHomeWinner: true),
-      ]),
+      tennisScorecard: const TennisScorecard(
+        sets: [
+          TennisSet(homeScore: 6, awayScore: 2, isHomeWinner: true),
+          TennisSet(homeScore: 2, awayScore: 6, isAwayWinner: true),
+          TennisSet(homeScore: 6, awayScore: 4, isHomeWinner: true),
+        ],
+      ),
     ),
     // ATP 250 Kitzbühel · Round 1 · Müller vs Navone (real result via ESPN).
     // Source: site.api.espn.com/.../tennis/atp/scoreboard?dates=20260720,
@@ -2093,10 +2110,12 @@ class MockPredictionRepository implements PredictionRepository {
       homeScore: '0',
       awayScore: '2',
       resultLine: 'Navone won 6-4, 6-0',
-      tennisScorecard: const TennisScorecard(sets: [
-        TennisSet(homeScore: 4, awayScore: 6, isAwayWinner: true),
-        TennisSet(homeScore: 0, awayScore: 6, isAwayWinner: true),
-      ]),
+      tennisScorecard: const TennisScorecard(
+        sets: [
+          TennisSet(homeScore: 4, awayScore: 6, isAwayWinner: true),
+          TennisSet(homeScore: 0, awayScore: 6, isAwayWinner: true),
+        ],
+      ),
     ),
     // FIFA World Cup 26 knockout stage only: Round of 32 through Final.
     SportMatch(
@@ -3231,7 +3250,9 @@ class MockPredictionRepository implements PredictionRepository {
         QuizQuestion(
           id: 'q2',
           text: 'Total sets played?',
-          options: isMens ? ['3 sets', '4 sets', '5 sets'] : ['2 sets', '3 sets'],
+          options: isMens
+              ? ['3 sets', '4 sets', '5 sets']
+              : ['2 sets', '3 sets'],
           reward: 50,
         ),
         QuizQuestion(
@@ -3734,6 +3755,9 @@ class MockPredictionRepository implements PredictionRepository {
   }
 
   @override
+  Future<SportMatch?> fixtureById(String matchId) async => _fixtureFor(matchId);
+
+  @override
   Future<PredictionQuiz?> quizFor(String matchId, String quizId) async {
     final quizzes = await quizzesFor(matchId);
     for (final quiz in quizzes) {
@@ -3767,10 +3791,13 @@ class MockPredictionRepository implements PredictionRepository {
   }
 
   @override
-  Future<List<SportMatch>> enrichFixturesForSport(List<SportMatch> fixtures, Sport sport) async {
+  Future<List<SportMatch>> enrichFixturesForSport(
+    List<SportMatch> fixtures,
+    Sport sport,
+  ) async {
     final espnService = EspnScoreService();
     final dynamicMatches = await espnService.fetchDynamicMatchesForSport(sport);
-    
+
     // Combine local and dynamic fixtures avoiding duplicates by id
     final Map<String, SportMatch> allFixturesMap = {};
     for (final f in fixtures) {
@@ -3781,10 +3808,13 @@ class MockPredictionRepository implements PredictionRepository {
     for (final f in dynamicMatches) {
       allFixturesMap[f.id] = f;
     }
-    
+
     final allFixturesForSport = allFixturesMap.values.toList();
-    final enriched = await espnService.enrichAllForSport(allFixturesForSport, sport);
-    
+    final enriched = await espnService.enrichAllForSport(
+      allFixturesForSport,
+      sport,
+    );
+
     // Merge back with other sports
     final otherFixtures = fixtures.where((f) => f.sport != sport).toList();
     return [...otherFixtures, ...enriched];
@@ -3796,22 +3826,29 @@ class MockPredictionRepository implements PredictionRepository {
     String quizId,
   ) async {
     final seed = _stableSeed('$matchId:$quizId');
-    final names = const [
-      'You',
-      'Aarav',
-      'Maya',
-      'Dev',
-      'Priya',
-      'Kabir',
-      'Isha',
+    // Index 0 is the local player's slot; the cubit replaces its score with the
+    // real result and re-ranks the field. Rivals are drawn from the shared
+    // roster (so faces, PRO badges and dossiers match the season leaderboard),
+    // rotated by the seed so each match+quiz fields a different lineup.
+    final userSeed = kRivalRoster.firstWhere((s) => s.isUser);
+    final pool = kRivalRoster.where((s) => !s.isUser).toList(growable: false);
+    final field = <RivalSeed>[
+      userSeed,
+      for (var i = 0; i < 6; i++) pool[(seed + i * 5) % pool.length],
     ];
     return [
-      for (var i = 0; i < names.length; i++)
+      // The points/correct curves are deliberately unchanged — the Scoreline
+      // contest ranks the player against these rivals for real coin prizes.
+      for (var i = 0; i < field.length; i++)
         MatchPredictionLeaderboardEntry(
           rank: i + 1,
-          name: names[i],
+          name: field[i].name,
           points: 620 - i * 47 + (seed + i * 13) % 31,
           correct: 5 - (i % 3),
+          movement: field[i].movement,
+          badge: field[i].isUser ? null : field[i].badge,
+          isUser: field[i].isUser,
+          isNew: field[i].isNew,
         ),
     ];
   }
@@ -3894,7 +3931,11 @@ class MockPredictionRepository implements PredictionRepository {
         QuizQuestion(
           id: 'b1',
           text: 'Who gets the fastest lap?',
-          options: const ['Lewis Hamilton', 'Charles Leclerc', 'George Russell'],
+          options: const [
+            'Lewis Hamilton',
+            'Charles Leclerc',
+            'George Russell',
+          ],
           reward: 75,
           settledOptionIndex: fastLapSettled,
         ),

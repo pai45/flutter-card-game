@@ -240,6 +240,34 @@ void main() {
     expect(find.text('YOUR PICK'), findsNothing);
   });
 
+  testWidgets('embedded single quiz shows quiz-set hub card', (tester) async {
+    final cubit = PredictionCubit(_QuizRepo(_quiz), SecureGameStorage());
+    addTearDown(cubit.close);
+
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<PredictionCubit>.value(value: cubit),
+          BlocProvider<AchievementCelebrationController>(
+            create: (_) =>
+                AchievementCelebrationController(SecureGameStorage()),
+          ),
+        ],
+        child: MaterialApp(
+          home: MatchPredictionScreen(match: _match, embedded: true),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Prediction Quiz'), findsOneWidget);
+    expect(find.text('TAP TO PREDICT · 2 QUESTIONS'), findsOneWidget);
+    // Inline Q1 must not auto-open when embedded — hub card first.
+    expect(find.text('Yes'), findsNothing);
+    expect(find.text('NEXT'), findsNothing);
+  });
+
   testWidgets('finished multi-quiz hub opens the community results route', (
     tester,
   ) async {
@@ -752,6 +780,49 @@ void main() {
     expect(again.prizeOz, 0);
   });
 
+  test('match board holds the player out until their card settles', () async {
+    final cubit = _TestPredictionCubit(
+      _ContestRepo(_contestQuiz, _contestBoard),
+    );
+    addTearDown(cubit.close);
+
+    final board = await cubit.matchLeaderboard(_match.id, _contestQuiz.id);
+
+    // Only the rivals, ranked by points — an invented provisional rank for an
+    // unplayed card would be meaningless.
+    expect(board.every((e) => !e.isUser), isTrue);
+    expect(board.map((e) => e.name), ['Aarav', 'Maya', 'Dev']);
+    expect(board.map((e) => e.rank), [1, 2, 3]);
+  });
+
+  test('match board ranks a settled player on merit', () async {
+    final cubit = _TestPredictionCubit(
+      _ContestRepo(_contestQuiz, _contestBoard),
+    );
+    cubit.seed(
+      UserPrediction(
+        matchId: _match.id,
+        // 3 of 4 correct (all correct is option 0).
+        answers: const {'q1': 0, 'q2': 0, 'q3': 0, 'q4': 1},
+        submittedAt: DateTime.now(),
+        status: PredictionStatus.locked,
+      ),
+    );
+    addTearDown(cubit.close);
+
+    await cubit.settle(_match.id);
+    final board = await cubit.matchLeaderboard(_match.id, _contestQuiz.id);
+
+    // 3/4 → (620 * 3/4).round() + 4 answers * 6 = 489, behind all three
+    // rivals. The player is no longer parked at #1 regardless of their card.
+    expect(board.map((e) => e.name), ['Aarav', 'Maya', 'Dev', 'pai']);
+    final user = board.last;
+    expect(user.isUser, isTrue);
+    expect(user.rank, 4);
+    expect(user.points, 489);
+    expect(user.correct, 3);
+  });
+
   test('contest settlement pays nothing off the podium', () async {
     final cubit = _TestPredictionCubit(
       _ContestRepo(_contestQuiz, _contestBoard),
@@ -1005,9 +1076,10 @@ class _QuizRepo implements PredictionRepository {
   ) async => const [
     MatchPredictionLeaderboardEntry(
       rank: 1,
-      name: 'You',
+      name: 'pai',
       points: 640,
       correct: 4,
+      isUser: true,
     ),
     MatchPredictionLeaderboardEntry(
       rank: 2,
@@ -1336,14 +1408,16 @@ const _contestQuiz = PredictionQuiz(
   ],
 );
 
-/// Seeded field for the contest: "You" is ignored; one rival scored 4/4, so a
-/// player on 3/4 places 2nd and a player on 0/4 places 4th (field of 4).
+/// Seeded field for the contest: the player's own row is ignored; one rival
+/// scored 4/4, so a player on 3/4 places 2nd and a player on 0/4 places 4th
+/// (field of 4).
 const _contestBoard = [
   MatchPredictionLeaderboardEntry(
     rank: 1,
-    name: 'You',
+    name: 'pai',
     points: 600,
     correct: 5,
+    isUser: true,
   ),
   MatchPredictionLeaderboardEntry(
     rank: 2,

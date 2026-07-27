@@ -598,7 +598,7 @@ class ShotElevationIconPainter extends CustomPainter {
   }
 }
 
-enum ShotDirectionVisual { off, straight, leg }
+enum ShotDirectionVisual { off, straight, leg, back }
 
 class ShotDirectionIcon extends StatelessWidget {
   const ShotDirectionIcon({
@@ -645,6 +645,7 @@ class ShotDirectionIconPainter extends CustomPainter {
       ShotDirectionVisual.off => -2.18,
       ShotDirectionVisual.straight => -math.pi / 2,
       ShotDirectionVisual.leg => -.96,
+      ShotDirectionVisual.back => math.pi / 2,
     };
     final length = size.shortestSide * .36 * p;
     final end = center + Offset(math.cos(angle), math.sin(angle)) * length;

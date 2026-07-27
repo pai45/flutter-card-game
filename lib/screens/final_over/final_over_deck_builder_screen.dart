@@ -71,7 +71,7 @@ class _FinalOverDeckBuilderScreenState extends State<FinalOverDeckBuilderScreen>
 
         return GameScaffold(
           title: 'Final Over Squad',
-          subtitle: '// 3-BAT CHASE UNIT',
+          subtitle: '// 5-BAT CHASE UNIT',
           leading: IconButton(
             onPressed: () => _attemptBack(active),
             icon: const Icon(Icons.arrow_back_ios_new, size: 18),
@@ -140,7 +140,7 @@ class _FinalOverDeckBuilderScreenState extends State<FinalOverDeckBuilderScreen>
 
   void _loadDeckIntoEditor(GameState state) {
     selectedBatsmen = List<String?>.generate(
-      3,
+      5,
       (index) => index < state.deckFinalOverBatsmen.length
           ? state.deckFinalOverBatsmen[index].id
           : null,
@@ -286,19 +286,40 @@ class _BattingOrderPanel extends StatelessWidget {
               painter: const CricketCreaseSignalPainter(),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(5, 14, 5, 12),
-                child: Row(
+                child: Column(
                   children: [
-                    for (var i = 0; i < 3; i++) ...[
-                      if (i > 0) const SizedBox(width: 8),
-                      Expanded(
-                        child: _BatsmanSlot(
-                          index: i,
-                          card: batsmen.elementAtOrNull(i),
-                          selected: focusedIndex == i,
-                          onTap: () => onSlotTap(i),
-                        ),
-                      ),
-                    ],
+                    Row(
+                      children: [
+                        for (var i = 0; i < 3; i++) ...[
+                          if (i > 0) const SizedBox(width: 8),
+                          Expanded(
+                            child: _BatsmanSlot(
+                              index: i,
+                              card: batsmen.elementAtOrNull(i),
+                              selected: focusedIndex == i,
+                              onTap: () => onSlotTap(i),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        for (var i = 3; i < 5; i++) ...[
+                          if (i > 3) const SizedBox(width: 8),
+                          Expanded(
+                            child: _BatsmanSlot(
+                              index: i,
+                              card: batsmen.elementAtOrNull(i),
+                              selected: focusedIndex == i,
+                              onTap: () => onSlotTap(i),
+                            ),
+                          ),
+                        ],
+                        const Expanded(child: SizedBox.shrink()),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -468,7 +489,7 @@ class _BatsmanPickerPanel extends StatelessWidget {
         children: [
           Row(
             children: [
-              for (var i = 0; i < 3; i++) ...[
+              for (var i = 0; i < 5; i++) ...[
                 if (i > 0) const SizedBox(width: 6),
                 _SlotChip(
                   label: '${i + 1}',

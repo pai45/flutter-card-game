@@ -227,7 +227,9 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
         if (quiz.id == targetId) return quiz;
       }
     }
-    if (widget.embedded && quizzes.length > 1) return null;
+    // Embedded Predict tab always shows the quiz-set hub (even for one quiz).
+    // Tapping a card pushes the full-page question flow.
+    if (widget.embedded) return null;
     return quizzes.first;
   }
 
@@ -890,7 +892,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
         .toList(growable: false);
     final totalQuestions = scorable.length;
     final rivals = _leaderboard
-        .where((entry) => entry.name.trim().toLowerCase() != 'you')
+        .where((entry) => !entry.isUser)
         .toList(growable: false);
     final clampedPlayer = playerCorrect.clamp(0, totalQuestions).toInt();
     final scoreDistribution = <int, int>{
@@ -1290,9 +1292,7 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     final quiz = _quiz;
     if (quiz == null) return const SizedBox.shrink();
     final crowd = _communityAccuracy(quiz);
-    final fieldSize = _leaderboard
-        .where((entry) => entry.name.trim().toLowerCase() != 'you')
-        .length;
+    final fieldSize = _leaderboard.where((entry) => !entry.isUser).length;
 
     return Column(
       children: [
@@ -1436,9 +1436,19 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
     }
     playSound(SoundEffect.uiTap);
     if (widget.embedded) {
+      final openPicks = widget.onOpenPicks;
       Navigator.of(context).push(
         MaterialPageRoute<void>(
-          builder: (_) => MatchPredictionScreen(match: _match, quizId: quiz.id),
+          builder: (_) => MatchPredictionScreen(
+            match: _match,
+            quizId: quiz.id,
+            onOpenPicks: openPicks == null
+                ? null
+                : () {
+                    Navigator.of(context).pop();
+                    openPicks();
+                  },
+          ),
         ),
       );
       return;

@@ -39,8 +39,8 @@ final class ContactResolver {
       DeliveryLine.off ||
       DeliveryLine.wideOff => direction == ShotDirection.offSide,
       DeliveryLine.middle => direction == ShotDirection.straight,
-      DeliveryLine.leg ||
-      DeliveryLine.wideLeg => direction == ShotDirection.legSide,
+      DeliveryLine.leg || DeliveryLine.wideLeg =>
+        direction == ShotDirection.legSide || direction == ShotDirection.behind,
     };
     if (lineMatch) {
       score += delivery.line == DeliveryLine.middle ? 0.20 : 0.18;
@@ -67,8 +67,7 @@ final class ContactResolver {
   double backliftPower(double? charge) {
     if (charge == null) return 1;
     final loaded = (charge / tuning.chargePerfectCenter).clamp(0.0, 1.0);
-    return tuning.backliftPowerFloor +
-        (1 - tuning.backliftPowerFloor) * loaded;
+    return tuning.backliftPowerFloor + (1 - tuning.backliftPowerFloor) * loaded;
   }
 
   /// 0 until you pass [GameplayTuning.overswingFrom], then ramps to 1 at a
@@ -180,6 +179,7 @@ final class ContactResolver {
     ShotDirection.offSide => -45,
     ShotDirection.straight => 0,
     ShotDirection.legSide => 45,
+    ShotDirection.behind => 180,
   };
 
   static ({double power, double control}) _profile(TimingGrade timing) =>
@@ -422,10 +422,12 @@ final class ScoringResolver {
     required bool objectiveCompleted,
     required int legalBalls,
     required int wickets,
+    int maximumLegalBalls = 18,
   }) {
     var stars = 1;
     if (objectiveCompleted) stars++;
-    if (6 - legalBalls >= 2 || 2 - wickets >= 1) stars++;
+    // Early finish (2+ balls spare) or an unbeaten chase earns the third star.
+    if (maximumLegalBalls - legalBalls >= 2 || wickets == 0) stars++;
     return stars;
   }
 }

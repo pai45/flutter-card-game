@@ -14,9 +14,9 @@ void main() {
     });
 
     test('target pools keep the full ladder with easier progression', () {
-      expect(FinalOverTier.rookie.targets, [8, 10]);
-      expect(FinalOverTier.pro.targets, [10, 12, 14]);
-      expect(FinalOverTier.elite.targets, [16, 18, 20]);
+      expect(FinalOverTier.rookie.targets, [32, 36, 40]);
+      expect(FinalOverTier.pro.targets, [44, 48, 52, 56]);
+      expect(FinalOverTier.elite.targets, [58, 62, 66]);
     });
 
     test('Rookie applies the forgiving gameplay profile', () {
@@ -25,7 +25,7 @@ void main() {
       expect(tuning.goodWindowMs, 180);
       expect(tuning.earlyLateWindowMs, 300);
       expect(tuning.poorWindowMs, 400);
-      expect(tuning.maximumWickets, 3);
+      expect(tuning.maximumWickets, 4);
       expect(tuning.baseCatchChance, 0.58);
       expect(tuning.keeperCatchChance, 0.68);
       expect(tuning.fielderSpeed, 0.24);
@@ -47,6 +47,7 @@ void main() {
         expect(pro.perfectWindowMs, 65);
         expect(pro.goodWindowMs, 150);
         expect(pro.poorWindowMs, 330);
+        expect(pro.maximumWickets, 3);
         expect(pro.baseCatchChance, 0.68);
         expect(pro.fielderSpeed, 0.27);
         expect(pro.powerShotSegments, 5);

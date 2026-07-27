@@ -90,7 +90,8 @@ class EspnScoreService {
         tasks.add(_fetchCricketDay(dateStr));
       }
       if (sport == Sport.football) {
-        for (final league in ['eng.1', 'uefa.euro']) {
+        // usa.1 = MLS; mapped to curated league id `mls` in _fetchFootballDay.
+        for (final league in ['eng.1', 'uefa.euro', 'usa.1']) {
           tasks.add(_fetchFootballDay(league, dateStr));
         }
       }
@@ -119,8 +120,8 @@ class EspnScoreService {
   }
 
   /// Fetches one motorsport series' full-season schedule and keeps only the
-  /// race weekends inside the rolling window (same -7..+3 day range every
-  /// other sport uses), rather than the old hardcoded 2-GP-name filter.
+  /// race weekends inside the week-aligned rolling window (previous / current /
+  /// next Mon–Sun weeks), rather than the old hardcoded 2-GP-name filter.
   Future<List<SportMatch>> _fetchMotorsportSeries(
     String espnSlug,
     String leagueId,
@@ -138,21 +139,20 @@ class EspnScoreService {
       final data = json.decode(res.body);
       final events = data['events'] as List? ?? [];
       final now = DateTime.now();
-      final windowStart = DateTime(
-        now.year,
-        now.month,
-        now.day,
-      ).subtract(const Duration(days: 7));
-      final windowEnd = DateTime(
-        now.year,
-        now.month,
-        now.day,
-      ).add(const Duration(days: 3));
+      final today = DateTime(now.year, now.month, now.day);
+      final thisMonday = today.subtract(Duration(days: today.weekday - 1));
+      final windowStart = thisMonday.subtract(const Duration(days: 7));
+      final windowEnd = thisMonday.add(const Duration(days: 13));
       final matches = <SportMatch>[];
       for (var event in events) {
         final eventDate = DateTime.tryParse(event['date']?.toString() ?? '');
         if (eventDate == null) continue;
-        if (eventDate.isBefore(windowStart) || eventDate.isAfter(windowEnd)) {
+        final eventDay = DateTime(
+          eventDate.year,
+          eventDate.month,
+          eventDate.day,
+        );
+        if (eventDay.isBefore(windowStart) || eventDay.isAfter(windowEnd)) {
           continue;
         }
         final match = _parseMotorsportEventToMatch(
@@ -211,8 +211,12 @@ class EspnScoreService {
           .timeout(_fetchTimeout);
       if (res.statusCode != 200) return const [];
       final data = json.decode(res.body);
-      final leagueId =
-          _registerLeagueFromPayload(data['leagues'] as List?) ?? 'fifa';
+      // Prefer curated ids where we already ship a League entry (MLS → `mls`)
+      // so fixtures pass prediction-home's validLeagueIds filter without
+      // duplicating under ESPN's numeric id (770).
+      final leagueId = league == 'usa.1'
+          ? 'mls'
+          : (_registerLeagueFromPayload(data['leagues'] as List?) ?? 'fifa');
       final events = data['events'] as List? ?? [];
       final matches = <SportMatch>[];
       for (var event in events) {
@@ -307,10 +311,13 @@ class EspnScoreService {
       final comps = event['competitions'] as List?;
       if (comps != null && comps.isNotEmpty) {
         for (var comp in comps) {
-          final compName =
-              comp['type']?['abbreviation']?.toString() ??
-              comp['type']?['text']?.toString() ??
-              'Session';
+          // Prefer full text ("Qualifying") over abbr ("QUAL") when ESPN
+          // sends both — UI/settlement also accept abbr via isQualifying.
+          final typeText = comp['type']?['text']?.toString().trim();
+          final typeAbbr = comp['type']?['abbreviation']?.toString().trim();
+          final compName = (typeText != null && typeText.isNotEmpty)
+              ? typeText
+              : (typeAbbr != null && typeAbbr.isNotEmpty ? typeAbbr : 'Session');
           final competitors = comp['competitors'] as List?;
           final results = <String>[];
           if (competitors != null && competitors.isNotEmpty) {

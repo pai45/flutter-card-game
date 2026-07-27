@@ -154,9 +154,11 @@ const defaultDeckSlots = [
     ],
     keeper: 'bra-alisson-becker',
     finalOverBatsmen: [
-      'ind-virat-kohli',
-      'eng-joe-root',
-      'afg-rahmanullah-gurbaz',
+      'cricket-rcb-virat-kohli',
+      'cricket-mi-rohit-sharma',
+      'cricket-gt-shubman-gill',
+      'cricket-mi-suryakumar-yadav',
+      'cricket-srh-heinrich-klaasen',
     ],
   ),
 ];

@@ -64,20 +64,31 @@ class QuizLobbyScreen extends StatelessWidget {
                       const SizedBox(height: 20),
                       const SectionLabel(label: 'CHOOSE A CATEGORY'),
                       const SizedBox(height: 10),
-                      for (final mode in QuizMode.values) ...[
-                        CyberDealtCard(
-                          key: ValueKey('quiz-mode-${mode.name}'),
-                          index: mode.index,
-                          initialDelay: const Duration(milliseconds: 120),
-                          child: _ModeTile(
-                            mode: mode,
-                            progress: progress.forMode(mode),
-                            onTap: () => _openSets(context, mode),
-                          ),
-                        ),
-                        if (mode != QuizMode.values.last)
-                          const SizedBox(height: 12),
-                      ],
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: QuizMode.values.length,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              childAspectRatio: 0.92,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                            ),
+                        itemBuilder: (context, index) {
+                          final mode = QuizMode.values[index];
+                          return CyberDealtCard(
+                            key: ValueKey('quiz-mode-${mode.name}'),
+                            index: mode.index,
+                            initialDelay: const Duration(milliseconds: 120),
+                            child: _ModeTile(
+                              mode: mode,
+                              progress: progress.forMode(mode),
+                              onTap: () => _openSets(context, mode),
+                            ),
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -694,68 +705,80 @@ class _ModeTile extends StatelessWidget {
         onTap: onTap,
         child: CyberPanel(
           accent: accent,
-          padding: const EdgeInsets.all(14),
-          child: Row(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                width: 50,
-                height: 58,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.12),
-                  border: Border.all(color: accent.withValues(alpha: 0.42)),
-                ),
-                child: Icon(mode.icon, color: accent, size: 25),
-              ),
-              const SizedBox(width: 13),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            mode.label,
-                            style: Cyber.display(17, letterSpacing: 1.2),
-                          ),
-                        ),
-                        Text(
-                          '+${mode.reward} XP / CORRECT',
-                          style: Cyber.label(8, color: Cyber.gold),
-                        ),
-                      ],
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.12),
+                      border: Border.all(color: accent.withValues(alpha: 0.42)),
                     ),
-                    const SizedBox(height: 5),
-                    Text(
-                      '${mode.blurb} · ${complete ? 'LADDER COMPLETE' : 'NEXT SET $_nextSet'}',
-                      maxLines: 1,
+                    child: Icon(mode.icon, color: accent, size: 22),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '+${mode.reward} XP / CORRECT',
+                      textAlign: TextAlign.right,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: Cyber.label(
-                        8,
-                        color: complete ? Cyber.success : Cyber.muted,
-                        letterSpacing: 0.7,
+                        7,
+                        color: Cyber.gold,
+                        letterSpacing: 0.4,
+                        height: 1.2,
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: CyberProgressBar(
-                            value: progress.passedCount / kQuizSetCount,
-                            accent: accent,
-                            height: 6,
-                            animate: false,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          '${progress.passedCount}/$kQuizSetCount',
-                          style: Cyber.display(11, color: accent),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                mode.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Cyber.display(15, letterSpacing: 1.2),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                mode.blurb,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Cyber.label(7.5, color: Cyber.muted, letterSpacing: 0.65),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                complete ? 'LADDER COMPLETE' : 'NEXT SET $_nextSet',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Cyber.label(
+                  7.5,
+                  color: complete ? Cyber.success : accent.withValues(alpha: 0.9),
+                  letterSpacing: 0.7,
+                ),
+              ),
+              const Spacer(),
+              CyberProgressBar(
+                value: progress.passedCount / kQuizSetCount,
+                accent: accent,
+                height: 6,
+                animate: false,
+              ),
+              const SizedBox(height: 6),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  '${progress.passedCount}/$kQuizSetCount',
+                  style: Cyber.display(11, color: accent).copyWith(
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
                 ),
               ),
             ],

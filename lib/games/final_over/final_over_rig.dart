@@ -33,9 +33,11 @@ enum FoBatterPose {
   groundOff,
   groundStraight,
   groundLeg,
+  groundBack,
   loftOff,
   loftStraight,
   loftLeg,
+  loftBack,
   miss,
   bowled,
   running,
@@ -63,7 +65,11 @@ double _swing(double a, double b, double t) =>
 /// swing poses) or free-running seconds (for stance/celebrate); [runPhase]
 /// drives the run cycle and advances with *distance travelled*, not time, so
 /// the feet never skate.
-FoBatterFrame foBatterFrame(FoBatterPose kind, double t, {double runPhase = 0}) {
+FoBatterFrame foBatterFrame(
+  FoBatterPose kind,
+  double t, {
+  double runPhase = 0,
+}) {
   switch (kind) {
     case FoBatterPose.stance:
       // Front-foot-forward guard: crouched, weight forward, BOTH hands gripping
@@ -108,45 +114,80 @@ FoBatterFrame foBatterFrame(FoBatterPose kind, double t, {double runPhase = 0}) 
     case FoBatterPose.groundOff:
     case FoBatterPose.groundStraight:
     case FoBatterPose.groundLeg:
+    case FoBatterPose.groundBack:
       final k = t.clamp(0.0, 1.0);
       final lateral = switch (kind) {
-        FoBatterPose.groundOff => -0.14, // opens the face, across the line
-        FoBatterPose.groundLeg => 0.16, // whips it away to leg
+        FoBatterPose.groundOff => -0.20, // opens the face, across the line
+        FoBatterPose.groundLeg => 0.22, // whips it away to leg
+        FoBatterPose.groundBack => -0.08, // late hands, behind square
         _ => 0.0,
       };
+      final finishAngle = switch (kind) {
+        FoBatterPose.groundOff => -0.05,
+        FoBatterPose.groundStraight => 0.35,
+        FoBatterPose.groundLeg => 0.76,
+        FoBatterPose.groundBack => 1.18,
+        _ => 0.35,
+      };
+      final behind = kind == FoBatterPose.groundBack;
       return FoBatterFrame(
         RigPose(
-          hip: _swing(0.86, 0.80, k),
-          lean: _swing(0.12, 0.46, k), // drives over the ball
-          footNear: Offset(_swing(0.18, 0.34, k), 0),
-          footFar: const Offset(-0.24, 0),
-          handNear: Offset(_swing(-0.02, 0.44 + lateral, k), _swing(-0.62, -0.24, k)),
-          handFar: Offset(_swing(-0.06, 0.36 + lateral, k), _swing(-0.68, -0.32, k)),
+          hip: _swing(0.86, behind ? 0.88 : 0.80, k),
+          lean: _swing(0.12, behind ? 0.08 : 0.46, k),
+          footNear: Offset(_swing(0.18, behind ? 0.10 : 0.34, k), 0),
+          footFar: Offset(behind ? -0.34 : -0.24, 0),
+          handNear: Offset(
+            _swing(-0.02, (behind ? 0.02 : 0.44) + lateral, k),
+            _swing(-0.62, behind ? 0.02 : -0.24, k),
+          ),
+          handFar: Offset(
+            _swing(-0.06, (behind ? -0.04 : 0.36) + lateral, k),
+            _swing(-0.68, behind ? -0.04 : -0.32, k),
+          ),
         ),
-        _swing(-2.35, 0.35, k), // through the line, finishing low
+        _swing(-2.35, finishAngle, k),
       );
 
     case FoBatterPose.loftOff:
     case FoBatterPose.loftStraight:
     case FoBatterPose.loftLeg:
+    case FoBatterPose.loftBack:
       final k = t.clamp(0.0, 1.0);
       final lateral = switch (kind) {
-        FoBatterPose.loftOff => -0.16,
-        FoBatterPose.loftLeg => 0.20,
+        FoBatterPose.loftOff => -0.22,
+        FoBatterPose.loftLeg => 0.24,
+        FoBatterPose.loftBack => -0.10,
         _ => 0.0,
       };
+      final finishAngle = switch (kind) {
+        FoBatterPose.loftOff => -1.55,
+        FoBatterPose.loftStraight => -1.15,
+        FoBatterPose.loftLeg => -0.72,
+        FoBatterPose.loftBack => 0.42,
+        _ => -1.15,
+      };
+      final behind = kind == FoBatterPose.loftBack;
       // Front leg braces, torso opens up, hands finish high over the shoulder.
       return FoBatterFrame(
         RigPose(
-          hip: _swing(0.86, 0.94, k),
-          lean: _swing(0.14, -0.30, k), // leans back to get under it
-          footNear: Offset(_swing(0.18, 0.38, k), _swing(0, 0.10, k)),
-          footFar: const Offset(-0.26, 0),
-          handNear: Offset(_swing(-0.02, 0.30 + lateral, k), _swing(-0.60, -0.96, k)),
-          handFar: Offset(_swing(-0.06, 0.22 + lateral, k), _swing(-0.66, -1.00, k)),
+          hip: _swing(0.86, behind ? 0.90 : 0.94, k),
+          lean: _swing(0.14, behind ? -0.04 : -0.30, k),
+          footNear: Offset(
+            _swing(0.18, behind ? 0.08 : 0.38, k),
+            _swing(0, behind ? 0.02 : 0.10, k),
+          ),
+          footFar: Offset(behind ? -0.34 : -0.26, 0),
+          handNear: Offset(
+            _swing(-0.02, (behind ? -0.02 : 0.30) + lateral, k),
+            _swing(-0.60, behind ? -0.70 : -0.96, k),
+          ),
+          handFar: Offset(
+            _swing(-0.06, (behind ? -0.08 : 0.22) + lateral, k),
+            _swing(-0.66, behind ? -0.78 : -1.00, k),
+          ),
           headBob: k * 0.02,
         ),
-        _swing(-2.35, -1.15, k), // finishes high
+        _swing(-2.35, finishAngle, k),
       );
 
     case FoBatterPose.miss:
@@ -315,7 +356,10 @@ RigPose foUmpirePose(FoUmpireSignal signal, double t) {
         lean: 0.04,
         footNear: const Offset(0.14, 0),
         footFar: const Offset(-0.14, 0),
-        handNear: Offset(_swing(0.10, -0.44, k) + wave, _swing(-0.20, -0.52, k)),
+        handNear: Offset(
+          _swing(0.10, -0.44, k) + wave,
+          _swing(-0.20, -0.52, k),
+        ),
         handFar: const Offset(-0.12, -0.20),
       );
     case FoUmpireSignal.six:
@@ -604,12 +648,10 @@ void drawFoRig(
     canvas.save();
     canvas.translate(numberPos.dx, numberPos.dy);
     canvas.scale(facing.toDouble(), 1);
-    rigNumberPaint(kit.accent, px * 0.2).render(
-      canvas,
-      '$number',
-      Vector2.zero(),
-      anchor: Anchor.center,
-    );
+    rigNumberPaint(
+      kit.accent,
+      px * 0.2,
+    ).render(canvas, '$number', Vector2.zero(), anchor: Anchor.center);
     canvas.restore();
   }
 
@@ -735,7 +777,10 @@ void _drawHead(
           ..strokeCap = StrokeCap.round,
       );
       canvas.drawArc(
-        Rect.fromCircle(center: center.translate(0, -r * 0.22), radius: r * 0.9),
+        Rect.fromCircle(
+          center: center.translate(0, -r * 0.22),
+          radius: r * 0.9,
+        ),
         pi,
         pi,
         false,
@@ -897,10 +942,8 @@ void drawFoRunnerMark(
       ..style = PaintingStyle.stroke
       ..strokeWidth = radius * 0.3,
   );
-  rigNumberPaint(kit.secondary, radius * 1.1).render(
-    canvas,
-    '$number',
-    Vector2(at.dx, at.dy),
-    anchor: Anchor.center,
-  );
+  rigNumberPaint(
+    kit.secondary,
+    radius * 1.1,
+  ).render(canvas, '$number', Vector2(at.dx, at.dy), anchor: Anchor.center);
 }

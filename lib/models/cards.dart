@@ -40,8 +40,17 @@ class PlayerCard {
   final IconData icon;
   final String? portraitAsset;
 
-  String? get resolvedPortraitAsset =>
-      portraitAsset ?? playerPortraitAssets[shortName];
+  String? get resolvedPortraitAsset {
+    if (portraitAsset != null) return portraitAsset;
+    final football = playerPortraitAssets[shortName];
+    if (football != null) return football;
+    // Cricket cards without an explicit portrait still resolve to the canonical
+    // slug path so shop avatars light up once assets are dropped in.
+    if (id.startsWith('cricket-')) {
+      return cricketPortraitAssetForName(name);
+    }
+    return null;
+  }
 
   bool get hasPortrait => resolvedPortraitAsset != null;
 
@@ -5167,6 +5176,17 @@ const cricketPlayerCards = [...cricketBattingCards, ...cricketBowlingCards];
 
 const batsmen = cricketBattingCards;
 
+/// Canonical cricket portrait path from a player display name
+/// (`Virat Kohli` → `assets/cricketer_images/virat_kohli.webp`).
+String cricketPortraitAssetForName(String name) {
+  final slug = name
+      .trim()
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+      .replaceAll(RegExp(r'^_+|_+$'), '');
+  return 'assets/cricketer_images/$slug.webp';
+}
+
 final List<PlayerCard> basketballPlayerCards = [
   for (final athlete in basketballAthletes) _basketballPlayerCard(athlete),
 ];
@@ -5183,6 +5203,7 @@ PlayerCard _basketballPlayerCard(BasketballAthlete athlete) => PlayerCard(
   trait: basketballArchetypeLabel(athlete.archetype),
   tier: _basketballTier(athlete.ovr),
   icon: Icons.sports_basketball,
+  portraitAsset: 'assets/basketball_player_images/${athlete.id}.webp',
 );
 
 String _basketballShortName(String name) {
@@ -5223,6 +5244,7 @@ PlayerCard _tennisPlayerCard(TennisPlayer athlete) => PlayerCard(
   trait: athlete.signature,
   tier: packRarityForRating(athlete.overallRating),
   icon: Icons.sports_tennis,
+  portraitAsset: 'assets/tennis_player_images/${athlete.id}.webp',
 );
 
 String _tennisShortName(String name) {

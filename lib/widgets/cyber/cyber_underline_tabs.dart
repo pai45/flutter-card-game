@@ -84,25 +84,28 @@ class CyberUnderlineTabs extends StatelessWidget {
                   ],
                 ),
                 // The bar's one glow: the active indicator slides between tabs.
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOutCubic,
-                  left: tabWidth * activeIndex + tabWidth * 0.18,
-                  bottom: 0,
-                  width: tabWidth * 0.64,
-                  height: 3,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: accent,
-                      boxShadow: [
-                        BoxShadow(
-                          color: accent.withValues(alpha: 0.7),
-                          blurRadius: 10,
-                        ),
-                      ],
+                // A negative index intentionally leaves action-only strips with
+                // no selected shortcut (for example, Motorsport via All Sports).
+                if (activeIndex >= 0 && activeIndex < count)
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOutCubic,
+                    left: tabWidth * activeIndex + tabWidth * 0.18,
+                    bottom: 0,
+                    width: tabWidth * 0.64,
+                    height: 3,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: accent,
+                        boxShadow: [
+                          BoxShadow(
+                            color: accent.withValues(alpha: 0.7),
+                            blurRadius: 10,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           );

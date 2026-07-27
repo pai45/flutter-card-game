@@ -31,6 +31,7 @@ import 'screens/home/widgets/starter_pack_onboarding.dart';
 import 'screens/onboarding/profile_setup_screen.dart';
 import 'screens/predictions/league_detail_screen.dart';
 import 'screens/predictions/match_detail_screen.dart';
+import 'screens/predictions/market_detail_screen.dart';
 import 'screens/predictions/prediction_home_screen.dart';
 import 'screens/quiz/quiz_hub.dart';
 import 'screens/guess_player/guess_player_hub.dart';
@@ -154,7 +155,7 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
-  // Default landing is Matches; its first internal tab is Predict.
+  // Default landing is Matches; both hub strips start on Trending.
   AppSection section = AppSection.predictions;
   int _predictionTab = 0;
   int _predictionMatchSportTab = 0;
@@ -587,6 +588,14 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     );
   }
 
+  void _openMarket(String marketId) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => MarketDetailScreen(marketId: marketId),
+      ),
+    );
+  }
+
   void _openLeague(League league) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
@@ -679,6 +688,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
                   setState(() => _predictionGamesSportTab = tab),
               onNavigate: _go,
               onOpenMatch: _openMatch,
+              onOpenMarket: _openMarket,
               onOpenLeague: _openLeague,
               onOpenGame: _openGame,
               onOpenShootout: _openShootout,

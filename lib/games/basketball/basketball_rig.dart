@@ -14,8 +14,6 @@ library;
 import 'dart:math';
 import 'dart:ui';
 
-import 'package:flutter/material.dart' show Colors;
-
 import 'package:flame/components.dart';
 
 import '../../config/theme.dart';
@@ -33,7 +31,11 @@ typedef BasketballPose = RigPose;
 
 /// Computes the pose for the current engine body state. All motion in here is
 /// a pure function of state + timers, so rendering stays deterministic.
-BasketballPose poseFor(BasketballAthleteBody body, double runPhase, {double? dribbleBallY}) {
+BasketballPose poseFor(
+  BasketballAthleteBody body,
+  double runPhase, {
+  double? dribbleBallY,
+}) {
   final pose = _basePoseFor(body, runPhase);
   if (dribbleBallY != null && _isDribblingState(body.body)) {
     final scaleM = body.spec.heightM / 1.95;
@@ -341,11 +343,20 @@ class AthleteComponent extends PositionComponent
         width: heightPx * 0.42 * (1 - b.jumpHeight * 0.4),
         height: heightPx * 0.07,
       ),
-      Paint()..color = const Color(0x66000000),
+      Paint()..color = Cyber.bg.withValues(alpha: 0.75),
+    );
+    _drawMovementTicks(
+      canvas,
+      b,
+      heightPx,
+      lift,
+      reducedMotion: gameRef.reducedMotion,
     );
 
     // Heat aura — the one glow on court.
-    if (engine.teams[team].heatActive) {
+    if (engine.teams[team].heatActive &&
+        engine.ball.phase == BallPhase.held &&
+        engine.ball.holder == team) {
       canvas.drawOval(
         Rect.fromCenter(
           center: Offset(0, -heightPx * 0.45),
@@ -362,7 +373,8 @@ class AthleteComponent extends PositionComponent
     if (engine.ball.holder == team && engine.ball.phase == BallPhase.held) {
       final guarded = (engine.bodies[1 - team].x - b.x).abs() <= kBbGuardedGap;
       final height = guarded ? 0.5 : 0.75;
-      final bounce = sin(gameRef.dribblePhase * (guarded ? 1.6 : 1.0)).abs() * height;
+      final bounce =
+          sin(gameRef.dribblePhase * (guarded ? 1.6 : 1.0)).abs() * height;
       dribbleBallY = 0.14 + bounce + 0.12; // target near the top of the ball
     }
 
@@ -385,7 +397,7 @@ class AthleteComponent extends PositionComponent
       );
       canvas.saveLayer(
         bounds,
-        Paint()..color = const Color(0xFFFFFFFF).withValues(alpha: kBbReflectAlpha),
+        Paint()..color = Cyber.textPrimary.withValues(alpha: kBbReflectAlpha),
       );
       drawBasketballRig(
         canvas,
@@ -396,6 +408,7 @@ class AthleteComponent extends PositionComponent
         primary: livery.primary,
         secondary: livery.secondary,
         accent: livery.accent,
+        reflectionPass: true,
       );
       canvas.restore();
       canvas.restore();
@@ -411,6 +424,9 @@ class AthleteComponent extends PositionComponent
       secondary: livery.secondary,
       accent: livery.accent,
     );
+    if (team == 0) {
+      _drawYouMarker(canvas, b, heightPx);
+    }
     canvas.restore();
   }
 
@@ -424,6 +440,97 @@ class AthleteComponent extends PositionComponent
     return const Offset(1, 1);
   }
 
+  void _drawMovementTicks(
+    Canvas canvas,
+    BasketballAthleteBody body,
+    double heightPx,
+    double floorOffset, {
+    required bool reducedMotion,
+  }) {
+    final y = floorOffset - heightPx * 0.015;
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.square
+      ..strokeWidth = max(1.0, heightPx * 0.012);
+
+    switch (body.body) {
+      case BodyState.drive:
+        final pulse = reducedMotion
+            ? 0.24
+            : 0.18 + sin(_runPhase * 2).abs() * 0.12;
+        paint.color = Cyber.cyan.withValues(alpha: pulse);
+        for (var i = 0; i < 2; i++) {
+          final x = -heightPx * (0.18 + i * 0.11);
+          canvas.drawLine(
+            Offset(x, y - heightPx * (0.015 + i * 0.018)),
+            Offset(x - heightPx * 0.09, y),
+            paint,
+          );
+        }
+        break;
+      case BodyState.stepback:
+        final fade = (1 - body.stateT / 0.42).clamp(0.0, 1.0);
+        paint.color = Cyber.cyan.withValues(alpha: 0.42 * fade);
+        for (var i = 0; i < 3; i++) {
+          final x = heightPx * (0.12 + i * 0.1);
+          canvas.drawLine(Offset(x, y), Offset(x + heightPx * 0.065, y), paint);
+        }
+        break;
+      case BodyState.land:
+        final fade = (1 - body.stateT / 0.18).clamp(0.0, 1.0);
+        paint.color = Cyber.cyan.withValues(alpha: 0.48 * fade);
+        canvas.drawLine(
+          Offset(-heightPx * 0.28, y),
+          Offset(-heightPx * 0.16, y - heightPx * 0.055),
+          paint,
+        );
+        canvas.drawLine(
+          Offset(heightPx * 0.28, y),
+          Offset(heightPx * 0.16, y - heightPx * 0.055),
+          paint,
+        );
+        break;
+      default:
+        break;
+    }
+  }
+
+  void _drawYouMarker(
+    Canvas canvas,
+    BasketballAthleteBody body,
+    double heightPx,
+  ) {
+    final width = heightPx * 0.34;
+    final height = heightPx * 0.14;
+    final top = -heightPx * 1.18;
+    final path = Path()
+      ..moveTo(-width * 0.5, top)
+      ..lineTo(width * 0.38, top)
+      ..lineTo(width * 0.5, top + height * 0.28)
+      ..lineTo(width * 0.5, top + height)
+      ..lineTo(-width * 0.38, top + height)
+      ..lineTo(-width * 0.5, top + height * 0.72)
+      ..close();
+    canvas.drawPath(path, Paint()..color = Cyber.cyan);
+
+    canvas.save();
+    canvas.translate(0, top + height * 0.5);
+    canvas.scale(body.facing.toDouble(), 1);
+    rigNumberPaint(
+      Cyber.bg,
+      heightPx * 0.075,
+    ).render(canvas, 'YOU', Vector2.zero(), anchor: Anchor.center);
+    canvas.restore();
+
+    canvas.drawPath(
+      Path()
+        ..moveTo(-height * 0.12, top + height)
+        ..lineTo(height * 0.12, top + height)
+        ..lineTo(0, top + height * 1.3)
+        ..close(),
+      Paint()..color = Cyber.cyan,
+    );
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -442,111 +549,124 @@ void drawBasketballRig(
   required Color primary,
   required Color secondary,
   required Color accent,
+  bool reflectionPass = false,
 }) {
-    final primaryColor = primary;
-    final secondaryColor = secondary;
-    final accentColor = accent;
+  final primaryColor = primary;
+  final secondaryColor = secondary;
+  final accentColor = accent;
 
-    final h = b.spec.heightM;
-    final scaleM = h / 1.95; // proportions relative to a 1.95m frame
+  final h = b.spec.heightM;
+  final scaleM = h / 1.95; // proportions relative to a 1.95m frame
+  final frame = look.buildScale;
 
-    // Anchor points (athlete-local px, y up → canvas y down).
-    Offset pt(double xM, double yM) => Offset(xM * px, -yM * px);
+  // Anchor points (athlete-local px, y up → canvas y down).
+  Offset pt(double xM, double yM) => Offset(xM * px, -yM * px);
 
-    final hip = pt(0, pose.hip * scaleM);
-    final shoulderY = pose.hip * scaleM + 0.52 * scaleM;
-    final shoulder = pt(sin(pose.lean) * 0.3, shoulderY);
-    final headCenter = pt(
-      sin(pose.lean) * 0.42,
-      shoulderY + 0.24 * scaleM + pose.headBob,
-    );
+  final hip = pt(0, pose.hip * scaleM);
+  final shoulderY = pose.hip * scaleM + 0.52 * scaleM;
+  final shoulder = pt(sin(pose.lean) * 0.3, shoulderY);
+  final headCenter = pt(
+    sin(pose.lean) * 0.42,
+    shoulderY + 0.24 * scaleM + pose.headBob,
+  );
+  final footFar = pt(pose.footFar.dx * scaleM, pose.footFar.dy * scaleM);
+  final footNear = pt(pose.footNear.dx * scaleM, pose.footNear.dy * scaleM);
+  final handFar = shoulder + pose.handFar * (scaleM * px);
+  final handNear = shoulder + pose.handNear * (scaleM * px);
 
-    final strokeBody = Paint()
-      ..color = primaryColor
-      ..strokeWidth = px * 0.19
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-    final strokeSkin = Paint()
-      ..color = look.skin
-      ..strokeWidth = px * 0.095
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-    final strokeSkinFar = Paint()
-      ..color = rigDarken(look.skin, 0.25)
-      ..strokeWidth = px * 0.095
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-    final strokeShorts = Paint()
-      ..color = rigDarken(primaryColor, 0.15)
-      ..strokeWidth = px * 0.15
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-      
-    final padPaint = Paint()
-      ..color = secondaryColor
-      ..strokeWidth = px * 0.10
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
+  final strokeBody = Paint()
+    ..color = primaryColor
+    ..strokeWidth = px * 0.19 * frame
+    ..strokeCap = StrokeCap.round
+    ..style = PaintingStyle.stroke;
+  final strokeSkin = Paint()
+    ..color = look.skin
+    ..strokeWidth = px * 0.095 * frame
+    ..strokeCap = StrokeCap.round
+    ..style = PaintingStyle.stroke;
+  final strokeSkinFar = Paint()
+    ..color = rigDarken(look.skin, 0.25)
+    ..strokeWidth = px * 0.095 * frame
+    ..strokeCap = StrokeCap.round
+    ..style = PaintingStyle.stroke;
+  final strokeShorts = Paint()
+    ..color = rigDarken(primaryColor, 0.15)
+    ..strokeWidth = px * 0.15 * frame
+    ..strokeCap = StrokeCap.round
+    ..style = PaintingStyle.stroke;
 
-    final sleevePaint = Paint()
-      ..color = secondaryColor
-      ..strokeWidth = px * 0.10
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-
-    // Legs (far first, darker).
-    rigLimb(
+  final headR = 0.155 * scaleM * px;
+  if (!reflectionPass) {
+    _drawRigUnderStroke(
       canvas,
-      hip,
-      pt(pose.footFar.dx * scaleM, pose.footFar.dy * scaleM),
-      bend: -0.22 * px,
-      upper: strokeShorts,
-      lower: strokeSkinFar,
-      lowerOverlay: rigDarken(padPaint.color, 0.25),
-      shoe: rigDarken(accentColor, 0.2),
-      shoeAccent: rigDarken(secondaryColor, 0.2),
+      hip: hip,
+      shoulder: shoulder,
+      headCenter: headCenter,
+      headRadius: headR,
+      footFar: footFar,
+      footNear: footNear,
+      handFar: handFar,
+      handNear: handNear,
+      frame: frame,
       px: px,
     );
-    rigLimb(
-      canvas,
-      hip,
-      pt(pose.footNear.dx * scaleM, pose.footNear.dy * scaleM),
-      bend: -0.26 * px,
-      upper: strokeShorts,
-      lower: strokeSkin,
-      lowerOverlay: padPaint.color,
-      shoe: accentColor,
-      shoeAccent: secondaryColor,
-      px: px,
-    );
+  }
 
-    // Far arm behind the torso. Hand offsets use canvas convention already
-    // (negative dy = up), so they add to the shoulder directly.
-    rigLimb(
-      canvas,
-      shoulder,
-      shoulder + pose.handFar * (scaleM * px),
-      bend: 0.2 * px,
-      upper: strokeSkinFar,
-      lower: strokeSkinFar,
-      lowerOverlay: rigDarken(sleevePaint.color, 0.25),
-      px: px,
-    );
+  // Legs (far first, darker).
+  rigLimb(
+    canvas,
+    hip,
+    footFar,
+    bend: -0.22 * px,
+    upper: strokeShorts,
+    lower: strokeSkinFar,
+    shoe: rigDarken(accentColor, 0.2),
+    shoeAccent: rigDarken(secondaryColor, 0.2),
+    px: px,
+  );
+  rigLimb(
+    canvas,
+    hip,
+    footNear,
+    bend: -0.26 * px,
+    upper: strokeShorts,
+    lower: strokeSkin,
+    lowerOverlay:
+        !reflectionPass && look.gear == BasketballAthleteGear.kneeSleeve
+        ? secondaryColor
+        : null,
+    shoe: accentColor,
+    shoeAccent: secondaryColor,
+    px: px,
+  );
 
-    // Torso (jersey) + trim + volume shading.
-    canvas.drawLine(hip, shoulder, strokeBody);
-    
-    // Torso shading
+  // Far arm behind the torso. Hand offsets use canvas convention already
+  // (negative dy = up), so they add to the shoulder directly.
+  rigLimb(
+    canvas,
+    shoulder,
+    handFar,
+    bend: 0.2 * px,
+    upper: strokeSkinFar,
+    lower: strokeSkinFar,
+    px: px,
+  );
+
+  // Torso (jersey) + trim + volume shading.
+  canvas.drawLine(hip, shoulder, strokeBody);
+
+  if (!reflectionPass) {
+    // Torso shading.
     canvas.drawLine(
-      Offset(hip.dx + px * 0.04, hip.dy), 
-      Offset(shoulder.dx + px * 0.04, shoulder.dy), 
+      Offset(hip.dx + px * 0.04, hip.dy),
+      Offset(shoulder.dx + px * 0.04, shoulder.dy),
       Paint()
-        ..color = Colors.black.withValues(alpha: 0.15)
+        ..color = Cyber.bg.withValues(alpha: 0.3)
         ..strokeWidth = px * 0.05
-        ..strokeCap = StrokeCap.round
+        ..strokeCap = StrokeCap.round,
     );
 
-    // Jersey Stripes
+    // Jersey stripes.
     canvas.drawLine(
       Offset.lerp(hip, shoulder, 0.1)!,
       Offset.lerp(hip, shoulder, 0.9)!,
@@ -563,19 +683,21 @@ void drawBasketballRig(
         ..strokeWidth = px * 0.05
         ..strokeCap = StrokeCap.round,
     );
+  }
 
-    // Shoulder bar — widens the silhouette into a T at the top of the jersey.
-    canvas.drawLine(
-      shoulder + Offset(-0.15 * scaleM * px, 0),
-      shoulder + Offset(0.15 * scaleM * px, 0),
-      Paint()
-        ..color = primaryColor
-        ..strokeWidth = px * 0.15
-        ..strokeCap = StrokeCap.round,
-    );
+  // Shoulder bar — widens the silhouette into a T at the top of the jersey.
+  canvas.drawLine(
+    shoulder + Offset(-0.15 * scaleM * px * frame, 0),
+    shoulder + Offset(0.15 * scaleM * px * frame, 0),
+    Paint()
+      ..color = primaryColor
+      ..strokeWidth = px * 0.15 * frame
+      ..strokeCap = StrokeCap.round,
+  );
 
-    // Jersey number — the surrounding canvas is X-flipped by facing, so
-    // un-flip locally to keep the digits readable in both directions.
+  // Jersey number — the surrounding canvas is X-flipped by facing, so
+  // un-flip locally to keep the digits readable in both directions.
+  if (!reflectionPass) {
     final numberPos = Offset.lerp(hip, shoulder, 0.55)!;
     canvas.save();
     canvas.translate(numberPos.dx, numberPos.dy);
@@ -587,40 +709,46 @@ void drawBasketballRig(
       anchor: Anchor.center,
     );
     canvas.restore();
+  }
 
-    // Head + hair + headband.
-    final headR = 0.155 * scaleM * px;
-    canvas.drawCircle(headCenter, headR, Paint()..color = look.skin);
-    
-    // Head shading
-    canvas.drawArc(
-       Rect.fromCircle(center: headCenter, radius: headR),
-       -pi / 2,
-       pi,
-       false,
-       Paint()
-         ..color = Colors.black.withValues(alpha: 0.15)
-         ..style = PaintingStyle.stroke
-         ..strokeWidth = headR * 0.3
-    );
+  // Head + hair + headband.
+  canvas.drawCircle(headCenter, headR, Paint()..color = look.skin);
 
+  if (reflectionPass) {
     canvas.drawArc(
-      Rect.fromCircle(center: headCenter, radius: headR * 1.06),
+      Rect.fromCircle(center: headCenter, radius: headR * look.hairScale),
       pi,
       pi,
       false,
       Paint()
         ..color = look.hair
         ..style = PaintingStyle.stroke
-        ..strokeWidth = headR * 0.62,
+        ..strokeWidth = headR * 0.48,
     );
-    canvas.drawLine(
-      headCenter + Offset(-headR, headR * 0.1),
-      headCenter + Offset(headR, headR * 0.1),
+  } else {
+    // Head shading.
+    canvas.drawArc(
+      Rect.fromCircle(center: headCenter, radius: headR),
+      -pi / 2,
+      pi,
+      false,
       Paint()
-        ..color = primaryColor
-        ..strokeWidth = headR * 0.26,
+        ..color = Cyber.bg.withValues(alpha: 0.3)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = headR * 0.3,
     );
+
+    _drawBasketballHair(canvas, headCenter, headR, look);
+    if (look.gear == BasketballAthleteGear.headband) {
+      canvas.drawLine(
+        headCenter + Offset(-headR, headR * 0.08),
+        headCenter + Offset(headR, headR * 0.08),
+        Paint()
+          ..color = secondaryColor
+          ..strokeWidth = headR * 0.25
+          ..strokeCap = StrokeCap.square,
+      );
+    }
 
     // Visor face hint — a lit line across the front of the face. Flat color,
     // no blur: a lit line is not a glow (THE GLOW RULE stays intact).
@@ -632,16 +760,159 @@ void drawBasketballRig(
         ..strokeWidth = headR * 0.2
         ..strokeCap = StrokeCap.round,
     );
+  }
 
-    // Near arm in front.
-    rigLimb(
-      canvas,
-      shoulder,
-      shoulder + pose.handNear * (scaleM * px),
-      bend: 0.24 * px,
-      upper: strokeSkin,
-      lower: strokeSkin,
-      lowerOverlay: sleevePaint.color,
-      px: px,
+  // Near arm in front.
+  rigLimb(
+    canvas,
+    shoulder,
+    handNear,
+    bend: 0.24 * px,
+    upper: strokeSkin,
+    lower: strokeSkin,
+    lowerOverlay:
+        !reflectionPass && look.gear == BasketballAthleteGear.shootingSleeve
+        ? secondaryColor
+        : null,
+    px: px,
+  );
+}
+
+void _drawRigUnderStroke(
+  Canvas canvas, {
+  required Offset hip,
+  required Offset shoulder,
+  required Offset headCenter,
+  required double headRadius,
+  required Offset footFar,
+  required Offset footNear,
+  required Offset handFar,
+  required Offset handNear,
+  required double frame,
+  required double px,
+}) {
+  final outline = Paint()
+    ..color = Cyber.bg.withValues(alpha: 0.96)
+    ..strokeCap = StrokeCap.round
+    ..style = PaintingStyle.stroke;
+
+  void limb(Offset from, Offset to, double bend, double width) {
+    final mid = Offset.lerp(from, to, 0.5)!;
+    final direction = to - from;
+    final length = direction.distance;
+    final normal = length > 0.001
+        ? Offset(-direction.dy / length, direction.dx / length)
+        : const Offset(1, 0);
+    final joint = mid + normal * bend;
+    outline.strokeWidth = width + px * 0.055;
+    canvas.drawLine(from, joint, outline);
+    canvas.drawLine(joint, to, outline);
+    canvas.drawCircle(
+      to,
+      outline.strokeWidth * 0.5,
+      Paint()..color = outline.color,
     );
   }
+
+  limb(hip, footFar, -0.22 * px, px * 0.15 * frame);
+  limb(hip, footNear, -0.26 * px, px * 0.15 * frame);
+  limb(shoulder, handFar, 0.2 * px, px * 0.095 * frame);
+  limb(shoulder, handNear, 0.24 * px, px * 0.095 * frame);
+
+  outline.strokeWidth = px * (0.19 * frame + 0.055);
+  canvas.drawLine(hip, shoulder, outline);
+  canvas.drawCircle(
+    headCenter,
+    headRadius + px * 0.028,
+    Paint()..color = outline.color,
+  );
+}
+
+void _drawBasketballHair(
+  Canvas canvas,
+  Offset center,
+  double headRadius,
+  BasketballAthleteLook look,
+) {
+  final radius = headRadius * look.hairScale;
+  final hairPaint = Paint()
+    ..color = look.hair
+    ..strokeCap = StrokeCap.round;
+
+  switch (look.hairStyle) {
+    case BasketballHairStyle.closeCrop:
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        pi,
+        pi,
+        false,
+        hairPaint
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = radius * 0.38,
+      );
+      break;
+    case BasketballHairStyle.fade:
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius * 1.02),
+        pi * 1.08,
+        pi * 0.84,
+        false,
+        hairPaint
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = radius * 0.5,
+      );
+      canvas.drawLine(
+        center + Offset(-radius * 0.92, -radius * 0.12),
+        center + Offset(-radius * 0.82, radius * 0.28),
+        hairPaint..strokeWidth = radius * 0.18,
+      );
+      break;
+    case BasketballHairStyle.curls:
+      hairPaint.style = PaintingStyle.fill;
+      for (var i = 0; i < 5; i++) {
+        final angle = pi + i * pi / 4;
+        canvas.drawCircle(
+          center +
+              Offset(cos(angle), sin(angle)) * (radius * 0.86) +
+              Offset(0, -radius * 0.08),
+          radius * 0.31,
+          hairPaint,
+        );
+      }
+      break;
+    case BasketballHairStyle.highTop:
+      canvas.drawPath(
+        Path()
+          ..moveTo(center.dx - radius * 0.82, center.dy - radius * 0.55)
+          ..lineTo(center.dx - radius * 0.62, center.dy - radius * 1.28)
+          ..lineTo(center.dx + radius * 0.58, center.dy - radius * 1.28)
+          ..lineTo(center.dx + radius * 0.82, center.dy - radius * 0.55)
+          ..close(),
+        hairPaint..style = PaintingStyle.fill,
+      );
+      break;
+    case BasketballHairStyle.twists:
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        pi,
+        pi,
+        false,
+        hairPaint
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = radius * 0.34,
+      );
+      for (final x in const [-0.55, 0.0, 0.55]) {
+        canvas.drawLine(
+          center + Offset(radius * x, -radius * 0.72),
+          center + Offset(radius * x, -radius * 1.18),
+          hairPaint..strokeWidth = radius * 0.18,
+        );
+        canvas.drawCircle(
+          center + Offset(radius * x, -radius * 1.22),
+          radius * 0.12,
+          hairPaint..style = PaintingStyle.fill,
+        );
+      }
+      break;
+  }
+}

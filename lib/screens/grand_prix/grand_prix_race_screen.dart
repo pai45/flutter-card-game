@@ -363,11 +363,11 @@ class _RaceHud extends StatelessWidget {
                   valueListenable: game.lapProgress,
                   builder: (context, progress, _) => CyberProgressBar(
                     value: progress,
-                    accent: Cyber.magenta,
+                    accent: Cyber.f1Red,
                     height: 5,
                     radius: 2,
                     animate: false,
-                    trackColor: Cyber.magenta.withValues(alpha: 0.14),
+                    trackColor: Cyber.f1Red.withValues(alpha: 0.14),
                   ),
                 ),
               ),

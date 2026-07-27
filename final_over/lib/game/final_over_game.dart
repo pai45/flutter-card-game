@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 
 import 'package:final_over/application/application.dart';
 import 'package:final_over/domain/domain.dart';
+import 'contact_ball_flight.dart';
 import 'visuals/final_over_visuals.dart' as art;
 
 /// The Flame rendering boundary for Final Over.
@@ -102,6 +103,8 @@ final class FinalOverGame with Game {
           GameplayEventType.ballPickedUp ||
           GameplayEventType.throwStarted ||
           GameplayEventType.deliveryCompleted ||
+          GameplayEventType.overComplete ||
+          GameplayEventType.fieldLayoutChanged ||
           GameplayEventType.paused ||
           GameplayEventType.resumed ||
           GameplayEventType.matchEnded ||
@@ -315,15 +318,22 @@ final class FinalOverGame with Game {
       (Elevation.ground, ShotDirection.straight) =>
         art.BatterPose.groundStraight,
       (Elevation.ground, ShotDirection.legSide) => art.BatterPose.groundLeg,
+      (Elevation.ground, ShotDirection.behind) => art.BatterPose.groundBack,
       (Elevation.loft, ShotDirection.offSide) => art.BatterPose.loftOff,
       (Elevation.loft, ShotDirection.straight) => art.BatterPose.loftStraight,
       (Elevation.loft, ShotDirection.legSide) => art.BatterPose.loftLeg,
+      (Elevation.loft, ShotDirection.behind) => art.BatterPose.loftBack,
     };
   }
 
   void _paintPerspectiveBall(Canvas canvas, Size size, MatchState state) {
     final delivery = state.currentDelivery;
     if (delivery == null) return;
+    if (state.phase == MatchPhase.cameraTransition ||
+        state.suspendedPhase == MatchPhase.cameraTransition) {
+      // Avoid respawning the real physics ball in the fading batting layer.
+      return;
+    }
     double x;
     double y;
     double apparent;
@@ -332,6 +342,24 @@ final class FinalOverGame with Game {
       x = size.width * (.5 + ball.position.x * .24);
       y = size.height * (.77 - distance * .34 - ball.height * .22);
       apparent = size.shortestSide * (.037 - distance * .012);
+    } else if (state.phase == MatchPhase.contact &&
+        state.contactOutcome?.madeContact == true) {
+      final outcome = state.contactOutcome!;
+      final progress =
+          (state.phaseElapsedMicros /
+                  math.max(1, controller.tuning.impactHoldMicros))
+              .clamp(0.0, 1.0);
+      final point = contactBallFlightPoint(
+        viewport: size,
+        origin: Offset(size.width * .5, size.height * .77),
+        direction: outcome.direction,
+        elevation: outcome.elevation,
+        power: outcome.power,
+        progress: progress,
+      );
+      x = point.dx;
+      y = point.dy;
+      apparent = size.shortestSide * (.018 - progress * .004);
     } else {
       final progress = _incomingProgress(state);
       x = size.width * (.5 + delivery.contactX * (1.1 + progress * 1.8));
@@ -655,6 +683,8 @@ final class FinalOverGame with Game {
           GameplayEventType.ballPickedUp ||
           GameplayEventType.throwStarted ||
           GameplayEventType.deliveryCompleted ||
+          GameplayEventType.overComplete ||
+          GameplayEventType.fieldLayoutChanged ||
           GameplayEventType.paused ||
           GameplayEventType.resumed ||
           GameplayEventType.matchEnded ||

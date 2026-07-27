@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/game/game_bloc.dart';
 import '../../../config/theme.dart';
 import '../../../models/grand_prix.dart';
+import '../../../models/progression.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../../widgets/level_up_celebration.dart';
@@ -96,7 +97,7 @@ class _GrandPrixResultState extends State<GrandPrixResultOverlay>
         : switch (result.verdict) {
             GrandPrixVerdict.win => ('WIN', Cyber.gold, Icons.emoji_events),
             GrandPrixVerdict.podium =>
-              ('PODIUM', Cyber.violet, Icons.military_tech),
+              ('PODIUM', Cyber.f1Red, Icons.military_tech),
             GrandPrixVerdict.points => ('POINTS', Cyber.cyan, Icons.flag),
             GrandPrixVerdict.finished =>
               ('FINISHED', Cyber.amber, Icons.sports_score),
@@ -185,6 +186,7 @@ class _GrandPrixResultState extends State<GrandPrixResultOverlay>
                   levels: game.pendingLevelUps,
                   progression: game.progression,
                   xpEarned: game.lastMatchXP ?? 0,
+                  trackLabel: game.pendingLevelUpTrack?.displayLabel,
                   onDismissed: () => setState(() => _showLevelUp = false),
                 ),
             ],
@@ -398,7 +400,7 @@ class _XpPanel extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Cyber.panel.withValues(alpha: 0.85),
-        border: Border.all(color: Cyber.violet.withValues(alpha: 0.4)),
+        border: Border.all(color: Cyber.f1Red.withValues(alpha: 0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -410,18 +412,18 @@ class _XpPanel extends StatelessWidget {
               fontSize: 26,
               fontWeight: FontWeight.w900,
               letterSpacing: 1,
-              color: Cyber.violet,
+              color: Cyber.f1Red,
               fontFeatures: [FontFeature.tabularFigures()],
             ),
           ),
           const SizedBox(height: 12),
           CyberProgressBar(
             value: barFill,
-            accent: Cyber.violet,
+            accent: Cyber.f1Red,
             height: 6,
             radius: 3,
             animate: false,
-            trackColor: Cyber.violet.withValues(alpha: 0.15),
+            trackColor: Cyber.f1Red.withValues(alpha: 0.15),
           ),
           const SizedBox(height: 8),
           Text(

@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -8,11 +6,13 @@ import '../../blocs/game/game_state.dart';
 import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../models/match.dart';
+import '../../models/progression.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
 import '../../widgets/player_level_badge.dart';
 import '../../screens/match_history/match_history_pages.dart';
+import 'widgets/shootout_arena_background.dart';
 import 'widgets/shootout_emblem.dart';
 
 /// Penalty Shootout lobby — mirrors the Pitch Duel home (stats, hero, CTAs) but
@@ -42,9 +42,12 @@ class ShootoutHomeScreen extends StatelessWidget {
                     icon: const Icon(Icons.arrow_back_ios_new, size: 18),
                     color: Cyber.lime,
                   ),
-            rightSlot: PlayerLevelBadge(progression: state.progression),
+            rightSlot: PlayerLevelBadge(
+              progression: state.progression,
+              track: ProgressTrack.shootout,
+            ),
           ),
-          body: _ShootoutArenaBackground(
+          body: ShootoutArenaBackground(
             // Arena art stays full-bleed; inset the scroll content above the
             // gesture bar so the PLAY CTA isn't clipped.
             child: SafeArea(
@@ -129,7 +132,8 @@ class ShootoutHomeScreen extends StatelessWidget {
                               flyDistance: 130,
                               child: _HudStat(
                                 label: 'LEVEL',
-                                value: '${state.progression.playerLevel}',
+                                value:
+                                    '${state.progression.levelFor(ProgressTrack.shootout)}',
                               ),
                             ),
                           ),
@@ -141,8 +145,12 @@ class ShootoutHomeScreen extends StatelessWidget {
                               initialDelay: const Duration(milliseconds: 180),
                               flyDistance: 130,
                               child: _HudStat(
-                                label: 'TOTAL XP',
-                                value: _grp(state.progression.totalXP),
+                                label: 'MODE XP',
+                                value: _grp(
+                                  state.progression.xpFor(
+                                    ProgressTrack.shootout,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -224,9 +232,12 @@ class ShootoutHomeScreen extends StatelessWidget {
                               child: CyberCtaButton(
                                 label: 'Match History',
                                 clip: false,
-                                onPressed: () => showMatchHistoryArchive(
+                                onPressed: () => showGameMatchHistory(
                                   context,
-                                  state.matchHistory,
+                                  gameLabel: 'Shootout',
+                                  history: state.matchHistory
+                                      .where((e) => e.isShootout)
+                                      .toList(growable: false),
                                 ),
                               ),
                             ),
@@ -361,98 +372,6 @@ class _HudStat extends StatelessWidget {
               letterSpacing: 0.8,
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Arena backdrop for the shootout lobby. Uses the dedicated penalty-arena
-/// image with a graceful gradient fallback, plus the shared HUD texture.
-class _ShootoutArenaBackground extends StatefulWidget {
-  const _ShootoutArenaBackground({required this.child});
-
-  final Widget child;
-
-  @override
-  State<_ShootoutArenaBackground> createState() =>
-      _ShootoutArenaBackgroundState();
-}
-
-class _ShootoutArenaBackgroundState extends State<_ShootoutArenaBackground>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 20),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xff02060f), Color(0xff06121f), Color(0xff01040a)],
-        ),
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: AnimatedBuilder(
-              animation: _controller,
-              builder: (context, child) {
-                final phase = _controller.value * math.pi * 2;
-                return Transform.translate(
-                  offset: Offset(math.sin(phase) * 6, math.cos(phase) * 4),
-                  child: Transform.scale(
-                    scale: 1.05 + 0.008 * math.sin(phase * 2),
-                    child: child,
-                  ),
-                );
-              },
-              child: Opacity(
-                opacity: 0.45,
-                child: Image.asset(
-                  'assets/backgrounds/penalty_arena.png',
-                  fit: BoxFit.cover,
-                  alignment: Alignment.center,
-                  // Missing art falls back to the gradient bed below.
-                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                ),
-              ),
-            ),
-          ),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Cyber.bg.withValues(alpha: 0.28),
-                    Colors.transparent,
-                    Cyber.bg.withValues(alpha: 0.6),
-                  ],
-                  stops: const [0.0, 0.46, 1.0],
-                ),
-              ),
-            ),
-          ),
-          const Positioned.fill(child: CyberTextureOverlay()),
-          widget.child,
         ],
       ),
     );

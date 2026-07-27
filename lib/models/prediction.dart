@@ -344,18 +344,52 @@ class PredictionVoteBreakdown {
   }
 }
 
+/// One row on an in-match prediction board. Identities come from the shared
+/// rival roster so a player reads the same here as on the season leaderboard.
 class MatchPredictionLeaderboardEntry {
   const MatchPredictionLeaderboardEntry({
     required this.rank,
     required this.name,
     required this.points,
     required this.correct,
+    this.movement = 0,
+    this.badge,
+    this.isUser = false,
+    this.isNew = false,
   });
 
   final int rank;
   final String name;
   final int points;
   final int correct;
+
+  /// >0 climbed, <0 dropped, 0 held.
+  final int movement;
+
+  /// 'PRO' for a ranked rival; null otherwise.
+  final String? badge;
+
+  /// Identifies the local player. Never compare [name] against `'you'` — the
+  /// board shows the player's real handle.
+  final bool isUser;
+  final bool isNew;
+
+  MatchPredictionLeaderboardEntry copyWith({
+    int? rank,
+    int? points,
+    int? correct,
+  }) {
+    return MatchPredictionLeaderboardEntry(
+      rank: rank ?? this.rank,
+      name: name,
+      points: points ?? this.points,
+      correct: correct ?? this.correct,
+      movement: movement,
+      badge: badge,
+      isUser: isUser,
+      isNew: isNew,
+    );
+  }
 }
 
 Map<String, PredictionMultiplier> _predictionMultipliersFromJson(

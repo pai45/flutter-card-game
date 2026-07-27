@@ -142,6 +142,7 @@ class ReactHeaderBar extends StatelessWidget implements PreferredSizeWidget {
                             Expanded(
                               child: Text(
                                 title.toUpperCase(),
+                                maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   color: Colors.white,

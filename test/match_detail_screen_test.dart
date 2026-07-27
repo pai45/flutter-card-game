@@ -65,7 +65,7 @@ void main() {
           home: PredictionHomeScreen(
             activeTab: 0,
             onTabChanged: (_) {},
-            activeMatchSportTab: 0,
+            activeMatchSportTab: 1,
             onMatchSportTabChanged: (_) {},
             activeGamesSportTab: 0,
             onGamesSportTabChanged: (_) {},
@@ -77,6 +77,7 @@ void main() {
                 ),
               );
             },
+            onOpenMarket: (_) {},
             onOpenLeague: (_) {},
             onOpenGame: () {},
             onOpenShootout: () {},
@@ -131,7 +132,7 @@ void main() {
           home: PredictionHomeScreen(
             activeTab: 0,
             onTabChanged: (_) {},
-            activeMatchSportTab: 0,
+            activeMatchSportTab: 1,
             onMatchSportTabChanged: (_) {},
             activeGamesSportTab: 0,
             onGamesSportTabChanged: (_) {},
@@ -143,6 +144,7 @@ void main() {
                 ),
               );
             },
+            onOpenMarket: (_) {},
             onOpenLeague: (_) {},
             onOpenGame: () {},
             onOpenShootout: () {},
@@ -300,11 +302,31 @@ void main() {
     expect(find.text('Match Events Quiz'), findsOneWidget);
   });
 
+  testWidgets('predict tab shows quiz-set hub for a single quiz', (
+    tester,
+  ) async {
+    await _pumpDetail(tester);
+
+    expect(find.text('Prediction Quiz'), findsOneWidget);
+    expect(find.text('TAP TO PREDICT · 1 QUESTIONS'), findsOneWidget);
+    expect(find.text('YES'), findsNothing);
+
+    await tester.tap(find.text('Prediction Quiz'));
+    await tester.pumpAndSettle();
+    await _pumpFrames(tester, const Duration(seconds: 5));
+
+    expect(find.text('YES'), findsOneWidget);
+    expect(find.text('SUBMIT QUIZ'), findsOneWidget);
+  });
+
   testWidgets('submitted prediction open picks switches to picks tab', (
     tester,
   ) async {
     await _pumpDetail(tester);
     await tester.pump(const Duration(milliseconds: 16));
+
+    await tester.tap(find.text('Prediction Quiz'));
+    await tester.pumpAndSettle();
     await _pumpFrames(tester, const Duration(seconds: 5));
 
     await _tapOption(tester, 'YES');
@@ -587,9 +609,11 @@ class _TwoQuestionPredictionRepo extends _PredictionRepo {
     String matchId,
     String quizId,
   ) async => [
+    // A rival, not the player: the player only joins the ranked field once
+    // their own card settles (see PredictionCubit.matchLeaderboard).
     MatchPredictionLeaderboardEntry(
       rank: 1,
-      name: 'You',
+      name: 'Vortex',
       points: quizId == 'events' ? 720 : 640,
       correct: quizId == 'events' ? 3 : 2,
     ),

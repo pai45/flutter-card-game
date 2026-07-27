@@ -7,12 +7,15 @@ import 'cyber/cyber_widgets.dart';
 class PlayerLevelBadge extends StatefulWidget {
   const PlayerLevelBadge({
     required this.progression,
+    this.track,
     this.onTap,
     this.flatStyle = false,
     super.key,
   });
 
   final PlayerProgression progression;
+  /// When set, shows that track's level/XP instead of the profile total.
+  final ProgressTrack? track;
   final VoidCallback? onTap;
   final bool flatStyle;
 
@@ -30,16 +33,22 @@ class _PlayerLevelBadgeState extends State<PlayerLevelBadge> {
 
   @override
   Widget build(BuildContext context) {
-    final progress = (widget.progression.xpIntoLevel /
-            widget.progression.xpToNextLevel)
-        .clamp(0.0, 1.0);
+    final track = widget.track;
+    final xp = track == null
+        ? widget.progression.totalXP
+        : widget.progression.xpFor(track);
+    final level = track == null
+        ? widget.progression.playerLevel
+        : widget.progression.levelFor(track);
+    final band = levelProgress(xp);
+    final progress = (band.intoLevel / band.levelSpan).clamp(0.0, 1.0);
 
     return GestureDetector(
       onTap: _toggleExpanded,
       child: Semantics(
         button: true,
         toggled: _expanded,
-        label: 'Player level',
+        label: track == null ? 'Player level' : '${track.displayLabel} level',
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 360),
           curve: Curves.easeOutBack,
@@ -48,36 +57,13 @@ class _PlayerLevelBadgeState extends State<PlayerLevelBadge> {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           clipBehavior: Clip.hardEdge,
           decoration: BoxDecoration(
-            color: widget.flatStyle ? Cyber.panel2 : null,
-            gradient: widget.flatStyle
-                ? null
-                : LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Cyber.cyan.withValues(alpha: _expanded ? 0.22 : 0.12),
-                      Cyber.panel,
-                      Cyber.bg2,
-                    ],
-                  ),
+            color: Cyber.panel,
             border: Border.all(
-              color: widget.flatStyle
-                  ? Cyber.border
-                  : _expanded
-                      ? Cyber.gold.withValues(alpha: 0.85)
-                      : Cyber.cyan.withValues(alpha: 0.45),
+              color: _expanded
+                  ? AppTheme.primary950
+                  : AppTheme.primary950.withValues(alpha: 0.9),
+              width: 1.2,
             ),
-            boxShadow: widget.flatStyle
-                ? null
-                : [
-                    BoxShadow(
-                      color: (_expanded ? Cyber.gold : Cyber.cyan).withValues(
-                        alpha: _expanded ? 0.30 : 0.14,
-                      ),
-                      blurRadius: _expanded ? 22 : 12,
-                      spreadRadius: _expanded ? -4 : -8,
-                    ),
-                  ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -96,7 +82,7 @@ class _PlayerLevelBadgeState extends State<PlayerLevelBadge> {
                       ),
                     ),
                     Text(
-                      '${widget.progression.playerLevel}',
+                      '$level',
                       style: Cyber.display(24, color: Cyber.gold),
                     ),
                   ],
@@ -112,8 +98,7 @@ class _PlayerLevelBadgeState extends State<PlayerLevelBadge> {
                 width: 46,
                 child: _XpMeter(
                   progress: progress,
-                  label:
-                      '${widget.progression.xpIntoLevel}/${widget.progression.xpToNextLevel}',
+                  label: '${band.intoLevel}/${band.levelSpan}',
                 ),
               ),
               AnimatedSwitcher(
@@ -140,7 +125,7 @@ class _PlayerLevelBadgeState extends State<PlayerLevelBadge> {
                               ),
                               const SizedBox(height: 3),
                               Text(
-                                '${widget.progression.xpRemainingToNextLevel} XP',
+                                '${band.toNextLevel} XP',
                                 overflow: TextOverflow.ellipsis,
                                 style: Cyber.label(
                                   13,
@@ -150,7 +135,9 @@ class _PlayerLevelBadgeState extends State<PlayerLevelBadge> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'TOTAL ${widget.progression.totalXP}',
+                                track == null
+                                    ? 'TOTAL $xp'
+                                    : '${track.shortLabel} $xp',
                                 overflow: TextOverflow.ellipsis,
                                 style: Cyber.body(
                                   8,
@@ -174,7 +161,9 @@ class _PlayerLevelBadgeState extends State<PlayerLevelBadge> {
                 child: Icon(
                   Icons.expand_more,
                   size: 14,
-                  color: _expanded ? Cyber.gold : Cyber.cyan,
+                  color: _expanded
+                      ? AppTheme.primary950
+                      : Cyber.cyan.withValues(alpha: 0.7),
                 ),
               ),
             ],

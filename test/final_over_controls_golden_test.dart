@@ -54,7 +54,7 @@ void main() {
         onEvents: (_) {},
         reducedMotion: true,
       );
-      controller.startMatch(seed: 77, target: 10);
+      controller.startMatch(seed: 77, target: 40);
       controller.dispatch(const StartCommand());
       if (state == 'live') {
         _advanceUntil(controller, () => controller.state.canSwing);

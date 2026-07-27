@@ -19,9 +19,13 @@ class F1RaceCard {
 }
 
 class GuessDriverArchive {
-  const GuessDriverArchive({this.resultsByDay = const {}});
+  const GuessDriverArchive({
+    this.resultsByDay = const {},
+    this.hintedDayKeys = const {},
+  });
 
   final Map<String, GuessDriverDailyResult> resultsByDay;
+  final Set<String> hintedDayKeys;
 
   int get wonCount => resultsByDay.values.where((result) => result.won).length;
 
@@ -43,6 +47,7 @@ class GuessDriverArchive {
 
   factory GuessDriverArchive.fromJson(Map<String, dynamic> json) {
     final results = <String, GuessDriverDailyResult>{};
+    final hintedDays = <String>{};
     if (json['resultsByDay'] is Map) {
       final map = json['resultsByDay'] as Map;
       for (final key in map.keys) {
@@ -53,12 +58,25 @@ class GuessDriverArchive {
         }
       }
     }
-    return GuessDriverArchive(resultsByDay: results);
+    final rawHintedDays = json['hintedDayKeys'];
+    if (rawHintedDays is List) {
+      hintedDays.addAll(rawHintedDays.whereType<String>());
+    }
+    return GuessDriverArchive(
+      resultsByDay: results,
+      hintedDayKeys: hintedDays,
+    );
   }
 
-  Map<String, dynamic> toJson() => {
+  Map<String, dynamic> toJson() {
+    final json = <String, dynamic>{
     'resultsByDay': resultsByDay.map((k, v) => MapEntry(k, v.toJson())),
-  };
+    };
+    if (hintedDayKeys.isNotEmpty) {
+      json['hintedDayKeys'] = hintedDayKeys.toList()..sort();
+    }
+    return json;
+  }
 }
 
 class GuessDriverDailyResult {

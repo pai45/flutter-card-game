@@ -110,6 +110,8 @@ flutter:
     - assets/avatar_options/
     - assets/player_images/
     - assets/cricketer_images/
+    - assets/basketball_player_images/
+    - assets/tennis_player_images/
     - assets/racing_driver_images/
     - assets/audio/
     - assets/packs/

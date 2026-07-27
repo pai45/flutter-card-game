@@ -1,6 +1,6 @@
 # Final Over
 
-Final Over is an original, offline-first portrait cricket chase for Android. The player has six legal balls and two wickets to reach a deterministic target selected from 8, 10, 12, 14, 16, 18, and 20.
+Final Over is an original, offline-first portrait cricket chase for Android. The player has three overs and two wickets to reach a deterministic target in the range 32–66.
 
 This package is a clean-room application. It does not import the parent app, share its services or persistence, or reference its game code, fonts, audio, and assets.
 

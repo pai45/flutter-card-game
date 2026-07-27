@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../blocs/picks/picks_cubit.dart';
@@ -7,7 +8,9 @@ import '../../blocs/picks/picks_state.dart';
 import '../../blocs/prediction/prediction_cubit.dart';
 import '../../blocs/match_circle/match_circle_cubit.dart';
 import '../../blocs/match_circle/match_circle_state.dart';
+import '../../config/sport_modules.dart';
 import '../../config/theme.dart';
+import '../../data/rival_roster.dart';
 import '../../data/team_palettes.dart';
 import '../../models/match_circle.dart';
 import '../../models/picks.dart';
@@ -25,6 +28,9 @@ import '../../widgets/cricket_scorecard_view.dart';
 import '../../widgets/basketball_scorecard_view.dart';
 import '../../widgets/tennis_scorecard_view.dart';
 import '../../widgets/match_summary_header.dart';
+import '../../widgets/staggered_card_entrance.dart';
+import '../leaderboard/leaderboard_screen.dart' show showRivalDossier;
+import '../leaderboard/widgets/rank_board.dart';
 import 'all_picks_screen.dart';
 import 'market_detail_screen.dart';
 import 'match_circle_screen.dart';
@@ -182,7 +188,10 @@ class _MatchTabsViewState extends State<MatchTabsView> {
                   onOpenPicks: () => _setTab(1),
                 ),
                 1 => _MatchPicksTab(match: _match),
-                2 => _MatchLeaderboardTab(match: _match),
+                2 => _MatchLeaderboardTab(
+                  match: _match,
+                  onJoin: () => _setTab(0),
+                ),
                 _ => _ScoreboardTab(match: _match),
               },
             ),
@@ -453,9 +462,12 @@ class _AllPicksCta extends StatelessWidget {
 }
 
 class _MatchLeaderboardTab extends StatefulWidget {
-  const _MatchLeaderboardTab({required this.match});
+  const _MatchLeaderboardTab({required this.match, this.onJoin});
 
   final SportMatch match;
+
+  /// Jumps to the PREDICT tab so an unranked player can enter the board.
+  final VoidCallback? onJoin;
 
   @override
   State<_MatchLeaderboardTab> createState() => _MatchLeaderboardTabState();
@@ -466,6 +478,8 @@ class _MatchLeaderboardTabState extends State<_MatchLeaderboardTab> {
   List<MatchPredictionLeaderboardEntry> _entries = const [];
   int _selectedIndex = 0;
   bool _loading = true;
+  Timer? _lockTimer;
+  String _untilLock = '';
 
   PredictionQuiz? get _selectedQuiz => _quizzes.isEmpty
       ? null
@@ -475,6 +489,7 @@ class _MatchLeaderboardTabState extends State<_MatchLeaderboardTab> {
   void initState() {
     super.initState();
     unawaited(_load());
+    _startLockTimer();
   }
 
   @override
@@ -483,7 +498,35 @@ class _MatchLeaderboardTabState extends State<_MatchLeaderboardTab> {
     if (oldWidget.match.id != widget.match.id) {
       _selectedIndex = 0;
       unawaited(_load());
+      _startLockTimer();
     }
+  }
+
+  @override
+  void dispose() {
+    _lockTimer?.cancel();
+    super.dispose();
+  }
+
+  /// Drives the amber LOCKS IN pill. Ticks every second but only rebuilds when
+  /// the rendered label actually changes.
+  void _startLockTimer() {
+    _lockTimer?.cancel();
+    _untilLock = _lockLabel();
+    if (_untilLock.isEmpty) return;
+    _lockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      final next = _lockLabel();
+      if (next == _untilLock) return;
+      if (!mounted) return;
+      setState(() => _untilLock = next);
+    });
+  }
+
+  String _lockLabel() {
+    if (widget.match.status != MatchStatus.upcoming) return '';
+    final remaining = widget.match.kickoff.difference(DateTime.now());
+    if (remaining <= Duration.zero) return '';
+    return formatBoardCountdown(remaining);
   }
 
   Future<void> _load() async {
@@ -533,11 +576,30 @@ class _MatchLeaderboardTabState extends State<_MatchLeaderboardTab> {
     });
   }
 
-  MatchPredictionLeaderboardEntry? get _userEntry {
-    for (final entry in _entries) {
-      if (entry.name.toLowerCase() == 'you') return entry;
-    }
-    return null;
+  void _openRival(LeaderboardEntry entry) {
+    if (entry.isUser) return;
+    playSound(SoundEffect.uiTap);
+    HapticFeedback.selectionClick();
+    showRivalDossier(context, entry.name);
+  }
+
+  /// The board rows, already ranked by the cubit. The player only appears here
+  /// once their card is settled — see [PredictionCubit.matchLeaderboard].
+  List<LeaderboardEntry> _boardEntries() {
+    return [
+      for (final entry in _entries)
+        LeaderboardEntry(
+          rank: entry.rank,
+          name: entry.name,
+          score: entry.points,
+          movement: entry.movement,
+          isNew: entry.isNew,
+          badge: entry.badge,
+          isUser: entry.isUser,
+          xp: entry.points,
+          subtitle: '${entry.correct} CORRECT',
+        ),
+    ];
   }
 
   @override
@@ -557,99 +619,204 @@ class _MatchLeaderboardTabState extends State<_MatchLeaderboardTab> {
       );
     }
 
+    final accent = sportModuleFor(widget.match.sport).accent;
     final prediction = context.watch<PredictionCubit>().state.predictionFor(
       widget.match.id,
       quiz.id,
     );
-    final user = _userEntry;
+    final entries = _boardEntries();
+    const meta = (unit: 'PTS');
 
-    return ListView(
+    // A thin field (< 3) skips the podium and lists everyone as flat rows.
+    final usePodium = entries.length >= 3;
+    final podium = usePodium ? entries.take(3).toList() : const <LeaderboardEntry>[];
+    final rest = usePodium ? entries.skip(3).toList() : entries;
+
+    return Column(
       key: const ValueKey('match-leaderboard-tab'),
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
       children: [
-        if (_quizzes.length > 1) ...[
-          CyberUnderlineTabs(
-            labels: [for (final quiz in _quizzes) quiz.title.toUpperCase()],
-            activeIndex: _selectedIndex,
-            accent: Cyber.gold,
-            onTap: _selectQuiz,
-          ),
-          const SizedBox(height: 14),
-        ],
-        _LeaderboardStatsPanel(
-          user: user,
-          prediction: prediction,
-          entries: _entries,
-          quiz: quiz,
-        ),
-        const SizedBox(height: 14),
-        _Panel(
-          title: _leaderboardModeLabel(widget.match, prediction, quiz),
-          accent: Cyber.gold,
-          child: _entries.isEmpty
-              ? _LeaderboardEmpty(match: widget.match, prediction: prediction)
-              : Column(
-                  children: [
-                    for (var i = 0; i < _entries.length; i++) ...[
-                      if (i > 0) const SizedBox(height: 9),
-                      _LeaderboardRow(entry: _entries[i]),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (_quizzes.length > 1) ...[
+                  CyberUnderlineTabs(
+                    labels: [
+                      for (final quiz in _quizzes) quiz.title.toUpperCase(),
                     ],
-                  ],
+                    activeIndex: _selectedIndex,
+                    accent: Cyber.gold,
+                    onTap: _selectQuiz,
+                  ),
+                  const SizedBox(height: 14),
+                ],
+                _BoardMetaStrip(
+                  untilLock: _untilLock,
+                  answered: prediction?.answers.length ?? 0,
+                  total: quiz.questions.length,
+                  players: entries.length,
+                  accent: accent,
                 ),
+                const SizedBox(height: 12),
+                _BoardHeader(
+                  label: _leaderboardModeLabel(widget.match, prediction, quiz),
+                ),
+                const SizedBox(height: 14),
+                if (entries.isEmpty)
+                  _LeaderboardEmpty(match: widget.match, prediction: prediction)
+                else ...[
+                  RankPodium(
+                    entries: podium,
+                    meta: meta,
+                    accent: accent,
+                    animateCards: true,
+                    onTapEntry: _openRival,
+                  ),
+                  if (rest.isNotEmpty) ...[
+                    const SizedBox(height: 18),
+                    for (var i = 0; i < rest.length; i++)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: StaggeredCardEntrance(
+                          index: i + podium.length,
+                          animate: true,
+                          maxAnimatedIndex: entries.length,
+                          child: RankRow(
+                            entry: rest[i],
+                            accent: accent,
+                            meta: meta,
+                            onTap: () => _openRival(rest[i]),
+                          ),
+                        ),
+                      ),
+                  ],
+                ],
+              ],
+            ),
+          ),
+        ),
+        _MatchBoardUserBar(
+          entries: entries,
+          prediction: prediction,
+          quiz: quiz,
+          accent: accent,
+          onJoin: widget.onJoin,
         ),
       ],
     );
   }
 }
 
-class _LeaderboardStatsPanel extends StatelessWidget {
-  const _LeaderboardStatsPanel({
-    required this.user,
-    required this.prediction,
+/// The docked "where you stand" card, in its three states: settled (a real
+/// rank), submitted-but-unsettled (pending), and not played (join).
+class _MatchBoardUserBar extends StatelessWidget {
+  const _MatchBoardUserBar({
     required this.entries,
+    required this.prediction,
     required this.quiz,
+    required this.accent,
+    this.onJoin,
   });
 
-  final MatchPredictionLeaderboardEntry? user;
+  final List<LeaderboardEntry> entries;
   final UserPrediction? prediction;
-  final List<MatchPredictionLeaderboardEntry> entries;
   final PredictionQuiz quiz;
+  final Color accent;
+  final VoidCallback? onJoin;
 
   @override
   Widget build(BuildContext context) {
-    final answered = prediction?.answers.length ?? user?.correct ?? 0;
+    const meta = (unit: 'PTS');
+    final total = quiz.questions.length;
+
+    for (final entry in entries) {
+      if (!entry.isUser) continue;
+      final correct = prediction?.correctCount ?? 0;
+      return RankUserBar(
+        user: LeaderboardEntry(
+          rank: entry.rank,
+          name: entry.name,
+          score: entry.score,
+          movement: entry.movement,
+          isNew: entry.isNew,
+          badge: entry.badge,
+          isUser: true,
+          xp: entry.xp,
+          subtitle: '$correct / $total CORRECT',
+        ),
+        meta: meta,
+        accent: accent,
+      );
+    }
+
+    final name = kRivalRoster.firstWhere((seed) => seed.isUser).name;
+    final answered = prediction?.answers.length ?? 0;
+    final pending = prediction != null;
+    return RankUserBar(
+      user: LeaderboardEntry(
+        rank: 0,
+        name: name,
+        score: 0,
+        movement: 0,
+        isUser: true,
+        subtitle: pending
+            ? '$answered / $total LOCKED · PENDING'
+            : 'PLAY THE QUIZ TO ENTER',
+      ),
+      meta: meta,
+      accent: accent,
+      label: 'Your standing',
+      rankText: pending ? '#--' : 'UNRANKED',
+      showScore: false,
+      ctaLabel: pending ? null : 'JOIN',
+      onTap: pending ? null : onJoin,
+    );
+  }
+}
+
+/// Countdown to lock plus the two board telemetry cells.
+class _BoardMetaStrip extends StatelessWidget {
+  const _BoardMetaStrip({
+    required this.untilLock,
+    required this.answered,
+    required this.total,
+    required this.players,
+    required this.accent,
+  });
+
+  final String untilLock;
+  final int answered;
+  final int total;
+  final int players;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(
-          child: _LeaderboardStat(
-            label: 'YOUR RANK',
-            value: user == null ? '--' : '#${user!.rank}',
-            color: Cyber.cyan,
-          ),
+        if (untilLock.isNotEmpty)
+          CountdownPill(label: 'LOCKS IN', remaining: untilLock),
+        const Spacer(),
+        _BoardMetaCell(
+          label: 'PREDICTIONS',
+          value: '$answered/$total',
+          color: Cyber.gold,
         ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _LeaderboardStat(
-            label: 'PREDICTIONS',
-            value: '$answered/${quiz.questions.length}',
-            color: Cyber.gold,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _LeaderboardStat(
-            label: 'PLAYERS',
-            value: '${entries.length}',
-            color: Cyber.lime,
-          ),
+        const SizedBox(width: 18),
+        _BoardMetaCell(
+          label: 'PLAYERS',
+          value: '$players',
+          color: accent,
         ),
       ],
     );
   }
 }
 
-class _LeaderboardStat extends StatelessWidget {
-  const _LeaderboardStat({
+class _BoardMetaCell extends StatelessWidget {
+  const _BoardMetaCell({
     required this.label,
     required this.value,
     required this.color,
@@ -661,138 +828,39 @@ class _LeaderboardStat extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 62,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-      decoration: BoxDecoration(
-        color: Cyber.panel.withValues(alpha: 0.58),
-        border: Border.all(color: color.withValues(alpha: 0.28)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Cyber.label(9, color: Cyber.muted, letterSpacing: 0.7),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Cyber.display(
-              17,
-              color: color,
-            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-          ),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(label, style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1)),
+        const SizedBox(height: 3),
+        Text(
+          value,
+          style: Cyber.display(
+            14,
+            color: color,
+          ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+        ),
+      ],
     );
   }
 }
 
-class _LeaderboardRow extends StatelessWidget {
-  const _LeaderboardRow({required this.entry});
+/// The state-driven board caption (LOCKED IN · CROWD VOTES, FINAL RESULTS, …)
+/// over a hairline rule.
+class _BoardHeader extends StatelessWidget {
+  const _BoardHeader({required this.label});
 
-  final MatchPredictionLeaderboardEntry entry;
-
-  @override
-  Widget build(BuildContext context) {
-    final isUser = entry.name.toLowerCase() == 'you';
-    final rankColor = entry.rank <= 3 ? Cyber.gold : Cyber.cyan;
-    return Container(
-      height: 68,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: isUser
-            ? Cyber.cyan.withValues(alpha: 0.10)
-            : Cyber.panel.withValues(alpha: 0.34),
-        border: Border.all(
-          color: isUser
-              ? Cyber.cyan.withValues(alpha: 0.55)
-              : Cyber.line.withValues(alpha: entry.rank <= 3 ? 0.24 : 0.08),
-        ),
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 36,
-            child: Text(
-              '#${entry.rank}',
-              style: Cyber.display(
-                13,
-                color: rankColor,
-              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-            ),
-          ),
-          const SizedBox(width: 10),
-          _LeaderboardAvatar(name: entry.name, highlight: isUser),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  entry.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Cyber.body(
-                    14,
-                    weight: isUser ? FontWeight.w800 : FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${entry.correct} correct',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Cyber.label(8.5, color: Cyber.muted),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            '${entry.points}',
-            style: Cyber.display(
-              16,
-              color: isUser ? Cyber.cyan : rankColor,
-            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LeaderboardAvatar extends StatelessWidget {
-  const _LeaderboardAvatar({required this.name, required this.highlight});
-
-  final String name;
-  final bool highlight;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    final color = highlight ? Cyber.cyan : Cyber.line;
-    return Container(
-      width: 42,
-      height: 42,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Color.lerp(_avatarFill(name), Cyber.panel, 0.42),
-        border: Border.all(
-          color: color.withValues(alpha: highlight ? 0.9 : 0.42),
-          width: highlight ? 2 : 1.2,
-        ),
-      ),
-      child: Text(
-        _initials(name),
-        style: Cyber.display(12, color: Colors.white, letterSpacing: 0),
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(label, style: Cyber.label(10, color: Cyber.gold, letterSpacing: 1.6)),
+        const SizedBox(height: 8),
+        Container(height: 1, color: Cyber.gold.withValues(alpha: 0.22)),
+      ],
     );
   }
 }
@@ -903,8 +971,9 @@ class _ScoreboardTabState extends State<_ScoreboardTab> {
                         children: [
                           _MatchFactPanel(match: widget.match),
                           if (widget.match.sport == Sport.motorsport &&
-                              widget.match.f1Sessions != null &&
-                              widget.match.f1Sessions!.isNotEmpty) ...[
+                              _f1NonQualifyingSessions(
+                                widget.match.f1Sessions,
+                              ).isNotEmpty) ...[
                             const SizedBox(height: 14),
                             _F1SessionsPanel(match: widget.match),
                           ],
@@ -1057,6 +1126,9 @@ class _LineupsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     if (match.sport == Sport.cricket) {
       return CricketLineupView(match: match);
+    }
+    if (match.sport == Sport.motorsport) {
+      return _F1QualifyingLineupView(match: match);
     }
     return MatchPitchView(match: match);
   }
@@ -1220,8 +1292,9 @@ class _F1SessionsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sessions = match.f1Sessions;
-    if (sessions == null || sessions.isEmpty) return const SizedBox.shrink();
+    // Qualifying lives on the LINEUP tab as the starting grid.
+    final sessions = _f1NonQualifyingSessions(match.f1Sessions);
+    if (sessions.isEmpty) return const SizedBox.shrink();
 
     return _Panel(
       title: 'SESSION RESULTS',
@@ -1265,6 +1338,217 @@ class _F1SessionsPanel extends StatelessWidget {
       ),
     );
   }
+}
+
+/// F1 LINEUP tab — ESPN qualifying order as the starting grid.
+class _F1QualifyingLineupView extends StatelessWidget {
+  const _F1QualifyingLineupView({required this.match});
+  final SportMatch match;
+
+  @override
+  Widget build(BuildContext context) {
+    final sessions = _f1QualifyingSessions(match.f1Sessions);
+    if (sessions.isEmpty) {
+      return const CyberNoDataState(
+        icon: Icons.grid_view_outlined,
+        title: 'Grid not set',
+        message:
+            'Qualifying results will lock the starting grid here once the session runs.',
+        accent: Cyber.cyan,
+        spark: Icons.flag_outlined,
+      );
+    }
+
+    final hasAnyResults = sessions.any((s) => s.results.isNotEmpty);
+    if (!hasAnyResults) {
+      return const CyberNoDataState(
+        icon: Icons.timer_outlined,
+        title: 'Qualifying pending',
+        message:
+            'The session is on the schedule — grid order drops here when times are in.',
+        accent: Cyber.gold,
+        spark: Icons.electric_bolt,
+      );
+    }
+
+    return ListView(
+      key: const ValueKey('f1-qualifying-lineup'),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+      children: [
+        for (var s = 0; s < sessions.length; s++) ...[
+          if (s > 0) const SizedBox(height: 14),
+          _F1QualifyingGridPanel(session: sessions[s]),
+        ],
+      ],
+    );
+  }
+}
+
+class _F1QualifyingGridPanel extends StatelessWidget {
+  const _F1QualifyingGridPanel({required this.session});
+  final F1SessionResult session;
+
+  @override
+  Widget build(BuildContext context) {
+    final isSprint = session.isSprintQualifying;
+    final title = isSprint ? 'SPRINT QUALIFYING' : 'STARTING GRID';
+    final accent = isSprint ? Cyber.magenta : Cyber.cyan;
+
+    return _Panel(
+      title: title,
+      accent: accent,
+      child: Column(
+        children: [
+          if (session.results.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Text(
+                'Not yet run.',
+                style: Cyber.body(13, color: Cyber.muted),
+              ),
+            )
+          else
+            for (var i = 0; i < session.results.length; i++) ...[
+              if (i > 0)
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: Cyber.line.withValues(alpha: 0.1),
+                ),
+              _F1GridRow(
+                entry: session.results[i],
+                index: i,
+                isPole: i == 0 && !isSprint,
+              ),
+            ],
+        ],
+      ),
+    );
+  }
+}
+
+class _F1GridRow extends StatelessWidget {
+  const _F1GridRow({
+    required this.entry,
+    required this.index,
+    required this.isPole,
+  });
+
+  final String entry;
+  final int index;
+  final bool isPole;
+
+  @override
+  Widget build(BuildContext context) {
+    final parsed = _parseF1ResultEntry(entry);
+    final posColor = isPole
+        ? Cyber.gold
+        : (index < 3 ? Cyber.cyan : Cyber.muted);
+    final nameWeight = isPole || index < 3 ? FontWeight.w800 : FontWeight.w600;
+
+    return Container(
+      height: 52,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: isPole
+          ? BoxDecoration(
+              color: Color.alphaBlend(
+                Cyber.gold.withValues(alpha: 0.08),
+                Cyber.panel,
+              ),
+            )
+          : null,
+      child: Row(
+        children: [
+          SizedBox(
+            width: 36,
+            child: Text(
+              'P${parsed.position ?? (index + 1)}',
+              style: Cyber.display(13, color: posColor).copyWith(
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  parsed.driver,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Cyber.body(14, weight: nameWeight),
+                ),
+                if (parsed.constructor != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    parsed.constructor!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.0),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (isPole) ...[
+            const SizedBox(width: 8),
+            Text(
+              'POLE',
+              style: Cyber.label(9, color: Cyber.gold, letterSpacing: 1.4),
+            ),
+          ],
+          if (parsed.time != null) ...[
+            const SizedBox(width: 10),
+            Text(
+              parsed.time!,
+              style: Cyber.display(
+                12,
+                color: isPole ? Cyber.gold : Cyber.muted,
+              ).copyWith(
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+List<F1SessionResult> _f1QualifyingSessions(List<F1SessionResult>? sessions) {
+  if (sessions == null || sessions.isEmpty) return const [];
+  return sessions.where((s) => s.isQualifying).toList(growable: false);
+}
+
+List<F1SessionResult> _f1NonQualifyingSessions(List<F1SessionResult>? sessions) {
+  if (sessions == null || sessions.isEmpty) return const [];
+  return sessions.where((s) => !s.isQualifying).toList(growable: false);
+}
+
+({int? position, String driver, String? constructor, String? time})
+_parseF1ResultEntry(String entry) {
+  final positionMatch = RegExp(r'^\s*(\d+)[.)]\s*').firstMatch(entry);
+  final int? position = positionMatch == null
+      ? null
+      : int.tryParse(positionMatch.group(1)!);
+  final stripped = entry
+      .replaceFirst(RegExp(r'^\s*\d+[.)]\s*'), '')
+      .trim();
+  final timeMatch = RegExp(r'\(([^)]+)\)\s*$').firstMatch(stripped);
+  final String? time = timeMatch?.group(1)?.trim();
+  final withoutTime = timeMatch == null
+      ? stripped
+      : stripped.substring(0, timeMatch.start).trim();
+  final parts = withoutTime.split(' · ');
+  final driver = parts.first.trim();
+  final constructor = parts.length > 1 ? parts[1].trim() : null;
+  return (
+    position: position,
+    driver: driver.isEmpty ? entry : driver,
+    constructor: constructor == null || constructor.isEmpty ? null : constructor,
+    time: time == null || time.isEmpty ? null : time,
+  );
 }
 
 class _StatePanel extends StatelessWidget {
@@ -1548,30 +1832,6 @@ String _leaderboardModeLabel(
   }
   if (prediction != null) return 'DRAFT ACTIVE · REVIEW & LOCK';
   return 'JOIN BEFORE LOCK';
-}
-
-String _initials(String name) {
-  final parts = name
-      .trim()
-      .split(RegExp(r'\s+'))
-      .where((part) => part.isNotEmpty)
-      .toList();
-  if (parts.isEmpty) return '?';
-  if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
-  return '${parts.first.substring(0, 1)}${parts.last.substring(0, 1)}'
-      .toUpperCase();
-}
-
-Color _avatarFill(String name) {
-  const palette = [
-    Cyber.cyan,
-    Cyber.violet,
-    Cyber.gold,
-    Cyber.lime,
-    Cyber.danger,
-  ];
-  final seed = name.codeUnits.fold<int>(0, (sum, unit) => sum + unit);
-  return palette[seed % palette.length];
 }
 
 int _compareMatchMarkets(PickMarket a, PickMarket b) {

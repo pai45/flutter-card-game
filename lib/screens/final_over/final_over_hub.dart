@@ -8,6 +8,7 @@ import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_state.dart';
 import '../../config/theme.dart';
 import '../../models/final_over.dart';
+import '../../models/progression.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
@@ -50,10 +51,13 @@ class FinalOverHub extends StatelessWidget {
               backgroundColor: Cyber.bg,
               appBar: ReactHeaderBar(
                 title: 'FINAL OVER',
-                subtitle: '// SIX-BALL CHASE',
+                subtitle: '// THREE-OVER CHASE',
                 showTitle: false,
                 onBack: onExit,
-                rightSlot: PlayerLevelBadge(progression: gameState.progression),
+                rightSlot: PlayerLevelBadge(
+                  progression: gameState.progression,
+                  track: ProgressTrack.finalOver,
+                ),
               ),
               body: CyberBackground(
                 animated: true,
@@ -81,11 +85,6 @@ class FinalOverHub extends StatelessWidget {
                                     child: _HeroRow(tier: state.tier),
                                   ),
                                   const SizedBox(height: 18),
-                                  CyberSlideUpFadeIn(
-                                    delay: const Duration(milliseconds: 160),
-                                    child: _RecordPanel(stats: state.stats),
-                                  ),
-                                  const SizedBox(height: 20),
                                   const SectionLabel(label: 'CHASE TIER'),
                                   const SizedBox(height: 10),
                                   CyberSlideUpFadeIn(
@@ -128,9 +127,16 @@ class FinalOverHub extends StatelessWidget {
                                           child: CyberCtaButton(
                                             label: 'Match History',
                                             clip: false,
-                                            onPressed: () => showMatchHistoryArchive(
+                                            onPressed: () =>
+                                                showGameMatchHistory(
                                               context,
-                                              gameState.matchHistory,
+                                              gameLabel: 'Final Over',
+                                              history: gameState.matchHistory
+                                                  .where((e) => e.isFinalOver)
+                                                  .toList(growable: false),
+                                              career: _RecordPanel(
+                                                stats: state.stats,
+                                              ),
                                             ),
                                           ),
                                         ),
@@ -250,7 +256,7 @@ class _HeroRow extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              'SIX BALLS. TWO WICKETS. ONE CHASE.',
+              'THREE OVERS. FIVE BATTERS. ONE CHASE.',
               style: Cyber.label(8.5, color: Cyber.muted, letterSpacing: 1.4),
             ),
             const SizedBox(height: 8),

@@ -12,10 +12,16 @@ import '../../blocs/game/game_event.dart';
 import '../../config/theme.dart';
 import '../../games/basketball/basketball_engine.dart';
 import '../../games/basketball/basketball_game.dart';
+import '../../models/avatar_frame_option.dart';
+import '../../models/avatar_option.dart';
 import '../../models/basketball.dart';
+import '../../models/progression.dart';
+import '../../services/secure_storage_service.dart';
 import '../../utils/game_audio_mappings.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/matchmaking/game_match_gate.dart';
+import '../../widgets/matchmaking/game_matchmaking_config.dart';
 import 'widgets/basketball_controls.dart';
 import 'widgets/basketball_hud.dart';
 import 'widgets/basketball_overlays.dart';
@@ -300,9 +306,10 @@ class _PhaseOverlays extends StatelessWidget {
           case BasketballPhase.intro:
             if (config == null) return const SizedBox.shrink();
             return Positioned.fill(
-              child: BasketballIntroOverlay(
+              child: _HoopDuelMatchGate(
                 config: config,
-                onDone: onBeginPlay,
+                onReady: onBeginPlay,
+                onCancel: onExit,
               ),
             );
           case BasketballPhase.halftime:
@@ -335,6 +342,68 @@ class _PhaseOverlays extends StatelessWidget {
             return const SizedBox.shrink();
         }
       },
+    );
+  }
+}
+
+class _HoopDuelMatchGate extends StatefulWidget {
+  const _HoopDuelMatchGate({
+    required this.config,
+    required this.onReady,
+    required this.onCancel,
+  });
+
+  final BasketballMatchConfig config;
+  final VoidCallback onReady;
+  final VoidCallback onCancel;
+
+  @override
+  State<_HoopDuelMatchGate> createState() => _HoopDuelMatchGateState();
+}
+
+class _HoopDuelMatchGateState extends State<_HoopDuelMatchGate> {
+  final SecureGameStorage _storage = SecureGameStorage();
+  String? _selectedAvatarId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAvatar();
+  }
+
+  Future<void> _loadAvatar() async {
+    final avatarId = await _storage.loadSelectedAvatarId();
+    if (!mounted) return;
+    setState(() => _selectedAvatarId = avatarId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final game = context.watch<GameBloc>().state;
+    final level = game.progression.levelFor(ProgressTrack.hoopDuel);
+    final playerAvatar = avatarOptionById(_selectedAvatarId);
+    final frame = avatarFrameOptionById(game.equippedAvatarFrameId);
+    final rival = widget.config.cpuRoster[widget.config.cpuStarterIndex];
+
+    return GameMatchGate(
+      goLabel: 'TIP OFF!',
+      config: GameMatchmakingConfig(
+        title: 'HOOP DUEL',
+        queueLabel: 'SCANNING GLOBAL HOOP QUEUE',
+        player: MatchmakingFighter(
+          name: 'PLAYER ONE',
+          avatarAsset: playerAvatar.assetPath,
+          frame: frame,
+          badge: 'LV $level',
+        ),
+        opponent: MatchmakingFighter(
+          name: rival.name,
+          avatarAsset: avatarForName(rival.name).assetPath,
+          badge: 'LV $level',
+        ),
+      ),
+      onReady: widget.onReady,
+      onCancel: widget.onCancel,
     );
   }
 }

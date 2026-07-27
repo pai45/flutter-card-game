@@ -16,6 +16,7 @@ import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_tooltip.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/cyber/daily_mystery_widgets.dart';
 import '../../widgets/game_scaffold.dart';
 import '../../widgets/team_logo.dart';
 import 'widgets/guess_player_result_view.dart';
@@ -770,12 +771,12 @@ class _IntelHintMarket extends StatelessWidget {
               GuessPlayerHintType.affiliation,
             ]) ...[
               Expanded(
-                child: _IntelHintTile(
-                  type: type,
+                child: DailyMysteryCoinHint(
                   label: _hintLabel(type, sport),
                   value: _hintValue(type, state.targetPlayer),
                   revealed: state.hasHint(type),
                   affordable: balance >= coinCost,
+                  cost: coinCost,
                   compact: compact,
                   onTap: () => onUnlock(type),
                 ),
@@ -786,91 +787,6 @@ class _IntelHintMarket extends StatelessWidget {
           ],
         ),
       ],
-    );
-  }
-}
-
-class _IntelHintTile extends StatelessWidget {
-  const _IntelHintTile({
-    required this.type,
-    required this.label,
-    required this.value,
-    required this.revealed,
-    required this.affordable,
-    required this.compact,
-    required this.onTap,
-  });
-
-  final GuessPlayerHintType type;
-  final String label;
-  final String value;
-  final bool revealed;
-  final bool affordable;
-  final bool compact;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = revealed
-        ? Cyber.cyan
-        : affordable
-        ? Cyber.muted
-        : Cyber.danger;
-    final status = revealed ? 'DECRYPTED' : '25 COINS';
-    return Semantics(
-      button: !revealed,
-      label: revealed
-          ? '$label hint decrypted. $value.'
-          : '$label hint. Unlock for 25 coins.',
-      child: InkWell(
-        onTap: revealed ? null : onTap,
-        child: Container(
-          constraints: BoxConstraints(minHeight: compact ? 40 : 52),
-          padding: EdgeInsets.symmetric(
-            horizontal: compact ? 8 : 10,
-            vertical: compact ? 6 : 8,
-          ),
-          decoration: BoxDecoration(
-            color: revealed ? Cyber.cyan.withValues(alpha: 0.08) : Cyber.panel2,
-            border: Border.all(
-              color: revealed
-                  ? Cyber.cyan.withValues(alpha: 0.55)
-                  : Cyber.borderSubtle,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Cyber.label(6.5, color: Cyber.muted),
-              ),
-              SizedBox(height: compact ? 4 : 6),
-              Row(
-                children: [
-                  Icon(
-                    revealed ? Icons.visibility_rounded : Icons.lock_outline,
-                    size: 11,
-                    color: accent,
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      revealed ? value : status,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Cyber.label(7.5, color: accent),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

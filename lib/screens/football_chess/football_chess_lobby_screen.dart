@@ -72,7 +72,7 @@ class _FootballChessLobbyScreenState extends State<FootballChessLobbyScreen> {
       ...game.deckDefenders,
       game.deckKeeper!,
     ];
-    final level = game.progression.playerLevel;
+    final level = game.progression.levelFor(ProgressTrack.footballChess);
     final opponentName = randomOpponentName();
     final opponentLevel = (level + _rng.nextInt(4) - 1).clamp(1, 99);
     final opponent = generateShootoutOpponent(
@@ -141,7 +141,10 @@ class _FootballChessLobbyScreenState extends State<FootballChessLobbyScreen> {
                 subtitle: '// TACTICAL GRID DUEL',
                 onBack: () => widget.onNavigate(AppSection.predictions),
                 showTitle: false,
-                rightSlot: PlayerLevelBadge(progression: gameState.progression),
+                rightSlot: PlayerLevelBadge(
+                  progression: gameState.progression,
+                  track: ProgressTrack.footballChess,
+                ),
               ),
               body: CyberBackground(
                 animated: true,

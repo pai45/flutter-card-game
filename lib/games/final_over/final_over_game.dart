@@ -16,6 +16,7 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:final_over/final_over.dart';
+import 'package:final_over/game/contact_ball_flight.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
@@ -134,9 +135,13 @@ class FinalOverGame extends FlameGame {
   // ── HUD bindings — cheap 60fps reads, never bloc emissions. ────────────────
   final ValueNotifier<int> score = ValueNotifier(0);
   final ValueNotifier<int> wickets = ValueNotifier(0);
-  final ValueNotifier<int> ballsLeft = ValueNotifier(6);
+  final ValueNotifier<int> ballsLeft = ValueNotifier(18);
   final ValueNotifier<int> runsNeeded = ValueNotifier(0);
   final ValueNotifier<int> target = ValueNotifier(0);
+  final ValueNotifier<int> currentOver = ValueNotifier(0);
+  final ValueNotifier<int> maximumOvers = ValueNotifier(3);
+  final ValueNotifier<String> bowlerName = ValueNotifier('VOLT');
+  final ValueNotifier<String?> nextBatterLabel = ValueNotifier(null);
   final ValueNotifier<int> combo = ValueNotifier(1);
   final ValueNotifier<int> powerSegments = ValueNotifier(0);
   final ValueNotifier<bool> powerArmed = ValueNotifier(false);
@@ -170,6 +175,12 @@ class FinalOverGame extends FlameGame {
   double _bowlerRunPhase = 0;
   double _stingClearAt = -1;
   double? _battingControlDeckTop;
+  double _nextBatterClearAt = -1;
+
+  int _syncedWickets = 0;
+  int _nextBatterIndex = 2;
+  late String _strikerActorId;
+  late String _partnerActorId;
 
   /// The finger is on HIT. A hold is cancelled whenever the live-ball input
   /// window closes, so it can never leak into the next delivery.
@@ -198,6 +209,12 @@ class FinalOverGame extends FlameGame {
 
   @override
   Future<void> onLoad() async {
+    _strikerActorId = batsmanIds.isNotEmpty ? batsmanIds.first : 'fo-striker';
+    _partnerActorId = batsmanIds.length > 1
+        ? batsmanIds[1]
+        : batsmanIds.isNotEmpty
+        ? batsmanIds.first
+        : 'fo-partner';
     _events = controller.eventStream.listen(_onEvent);
   }
 
@@ -210,6 +227,10 @@ class FinalOverGame extends FlameGame {
       ballsLeft,
       runsNeeded,
       target,
+      currentOver,
+      maximumOvers,
+      bowlerName,
+      nextBatterLabel,
       combo,
       powerSegments,
       powerArmed,
@@ -320,6 +341,10 @@ class FinalOverGame extends FlameGame {
       sting.value = null;
       _stingClearAt = -1;
     }
+    if (_nextBatterClearAt > 0 && _visualSeconds >= _nextBatterClearAt) {
+      nextBatterLabel.value = null;
+      _nextBatterClearAt = -1;
+    }
     _syncNotifiers(s);
   }
 
@@ -329,6 +354,12 @@ class FinalOverGame extends FlameGame {
     ballsLeft.value = s.ballsRemaining;
     runsNeeded.value = s.runsNeeded;
     target.value = s.target;
+    currentOver.value = s.currentOver;
+    maximumOvers.value = s.maximumOvers;
+    final bowler = s.currentBowler;
+    if (bowler != null && bowlerName.value != bowler.name) {
+      bowlerName.value = bowler.name;
+    }
     combo.value = s.combo;
     powerSegments.value = s.powerSegments;
     powerArmed.value = s.powerShotArmed;
@@ -355,6 +386,17 @@ class FinalOverGame extends FlameGame {
       _swingHeldAtMicros = null;
     }
     if (!identical(history.value, s.history)) history.value = s.history;
+    _rotateBatsmanOnWicket(s);
+  }
+
+  void _rotateBatsmanOnWicket(MatchState s) {
+    if (s.wickets <= _syncedWickets) return;
+    _syncedWickets = s.wickets;
+    if (_nextBatterIndex >= batsmanIds.length) return;
+    final incoming = batsmanIds[_nextBatterIndex++];
+    _strikerActorId = incoming;
+    nextBatterLabel.value = 'NEXT BAT';
+    _nextBatterClearAt = _visualSeconds + 2.2;
   }
 
   void _setDouble(ValueNotifier<double> n, double v) {
@@ -413,6 +455,9 @@ class FinalOverGame extends FlameGame {
         if (s.contactOutcome?.timing == TimingGrade.perfect) {
           next = const FinalOverSting('PERFECT', Cyber.lime);
         }
+      case GameplayEventType.fieldLayoutChanged:
+        final label = event.payload['label'] as String? ?? 'FIELD SHIFT';
+        next = FinalOverSting('FIELD SHIFT · $label', Cyber.cyan);
       default:
         return;
     }
@@ -1000,6 +1045,10 @@ class FinalOverGame extends FlameGame {
     // bowler's feet (0.44h) or the two silhouettes collide mid-pitch.
     final bowlerPx = size.height * 0.145 * 0.85 / kFoReferenceHeightM;
     final (bowlerKind, bowlerT) = _bowlerPose(s);
+    final bowler = s.currentBowler;
+    final bowlerLookKey = bowler?.lookKey ?? 'fo-bowler';
+    final bowlerNumber =
+        bowler?.jerseyNumber ?? finalOverNumberFor('fo-bowler');
     _paintActor(
       canvas,
       projection.pointAt(depth: 0.15, lateral: -0.065),
@@ -1009,10 +1058,10 @@ class FinalOverGame extends FlameGame {
         c,
         foBowlerPose(bowlerKind, bowlerT, runPhase: _bowlerRunPhase),
         kit: opponentKit,
-        look: finalOverLookFor('fo-bowler'),
+        look: finalOverLookFor(bowlerLookKey),
         px: bowlerPx,
         heightM: kFoReferenceHeightM,
-        number: finalOverNumberFor('fo-bowler'),
+        number: bowlerNumber,
         facing: f,
         ballInHand:
             bowlerKind != FoBowlerPose.followThrough &&
@@ -1224,6 +1273,12 @@ class FinalOverGame extends FlameGame {
     final delivery = s.currentDelivery;
     if (delivery == null) return;
     final size = projection.size;
+    if (s.phase == MatchPhase.cameraTransition ||
+        s.suspendedPhase == MatchPhase.cameraTransition) {
+      // The presentation ball has already exited the batting viewport. During
+      // the blend, only the field camera owns the real physics ball.
+      return;
+    }
 
     double x;
     double y;
@@ -1233,6 +1288,44 @@ class FinalOverGame extends FlameGame {
       x = size.width * (0.5 + ball.position.x * 0.24);
       y = size.height * (0.77 - distance * 0.34 - ball.height * 0.22);
       r = size.shortestSide * (0.037 - distance * 0.012) * 0.5;
+    } else if (s.phase == MatchPhase.contact &&
+        s.contactOutcome?.madeContact == true) {
+      final outcome = s.contactOutcome!;
+      final progress =
+          (s.phaseElapsedMicros /
+                  math.max(1, controller.tuning.impactHoldMicros))
+              .clamp(0.0, 1.0);
+      final origin = projection.incomingPoint(delivery, 1);
+      final point = contactBallFlightPoint(
+        viewport: size,
+        origin: origin,
+        direction: outcome.direction,
+        elevation: outcome.elevation,
+        power: outcome.power,
+        progress: progress,
+      );
+      x = point.dx;
+      y = point.dy;
+      r = size.shortestSide * (0.018 - progress * 0.004);
+
+      if (!reducedMotion && progress > 0.08) {
+        for (var trail = 2; trail >= 1; trail--) {
+          final trailProgress = (progress - trail * 0.06).clamp(0.0, 1.0);
+          final trailPoint = contactBallFlightPoint(
+            viewport: size,
+            origin: origin,
+            direction: outcome.direction,
+            elevation: outcome.elevation,
+            power: outcome.power,
+            progress: trailProgress,
+          );
+          canvas.drawCircle(
+            trailPoint,
+            r * (1 - trail * 0.16),
+            Paint()..color = Cyber.cyan.withValues(alpha: 0.18 / trail),
+          );
+        }
+      }
     } else {
       final p = _incomingProgress(s);
       // Hold the ball in the hand until the arm has actually come over.
@@ -1397,15 +1490,6 @@ class FinalOverGame extends FlameGame {
     );
   }
 
-  String get _strikerActorId =>
-      batsmanIds.isNotEmpty ? batsmanIds.first : 'fo-striker';
-
-  String get _partnerActorId => batsmanIds.length > 1
-      ? batsmanIds[1]
-      : batsmanIds.isNotEmpty
-      ? batsmanIds.first
-      : 'fo-partner';
-
   // ── Pose selection (a projection of state, nothing more) ───────────────────
   (FoBowlerPose, double) _bowlerPose(MatchState s) {
     final p = s.phaseElapsedMicros / math.max(1, controller.tuning.runUpMicros);
@@ -1446,9 +1530,11 @@ class FinalOverGame extends FlameGame {
       (Elevation.ground, ShotDirection.offSide) => FoBatterPose.groundOff,
       (Elevation.ground, ShotDirection.straight) => FoBatterPose.groundStraight,
       (Elevation.ground, ShotDirection.legSide) => FoBatterPose.groundLeg,
+      (Elevation.ground, ShotDirection.behind) => FoBatterPose.groundBack,
       (Elevation.loft, ShotDirection.offSide) => FoBatterPose.loftOff,
       (Elevation.loft, ShotDirection.straight) => FoBatterPose.loftStraight,
       (Elevation.loft, ShotDirection.legSide) => FoBatterPose.loftLeg,
+      (Elevation.loft, ShotDirection.behind) => FoBatterPose.loftBack,
     };
   }
 
@@ -1467,8 +1553,10 @@ class FinalOverGame extends FlameGame {
         // Deliberately NOT clamped to 1.0: `backlift` clamps the 0→1 windup
         // itself but reads the raw overflow to drive an idle coil for as
         // long as the hold continues past full cock.
-        return ((s.simulationMicros - heldAt) / kFoBackliftLoadMicros)
-            .clamp(0.0, double.infinity);
+        return ((s.simulationMicros - heldAt) / kFoBackliftLoadMicros).clamp(
+          0.0,
+          double.infinity,
+        );
       }
       return s.phase == MatchPhase.incomingBall
           ? _incomingProgress(s)
@@ -1481,9 +1569,11 @@ class FinalOverGame extends FlameGame {
     FoBatterPose.groundOff,
     FoBatterPose.groundStraight,
     FoBatterPose.groundLeg,
+    FoBatterPose.groundBack,
     FoBatterPose.loftOff,
     FoBatterPose.loftStraight,
     FoBatterPose.loftLeg,
+    FoBatterPose.loftBack,
     FoBatterPose.miss, // still a full-speed swing through the zone
   };
 

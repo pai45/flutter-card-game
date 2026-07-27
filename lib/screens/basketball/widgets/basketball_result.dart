@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/game/game_bloc.dart';
 import '../../../config/theme.dart';
 import '../../../models/basketball.dart';
+import '../../../models/progression.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_cta_button.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
@@ -231,6 +232,11 @@ class _BasketballResultOverlayState extends State<BasketballResultOverlay> {
                 levels: context.read<GameBloc>().state.pendingLevelUps,
                 progression: context.read<GameBloc>().state.progression,
                 xpEarned: context.read<GameBloc>().state.lastMatchXP ?? 0,
+                trackLabel: context
+                    .read<GameBloc>()
+                    .state
+                    .pendingLevelUpTrack
+                    ?.displayLabel,
                 onDismissed: () => setState(() => _showLevelUp = false),
               ),
           ],

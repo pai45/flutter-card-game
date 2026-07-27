@@ -6,6 +6,7 @@ import 'package:card_game/models/prediction.dart';
 import 'package:card_game/models/sport_match.dart';
 import 'package:card_game/models/team_standing.dart';
 import 'package:card_game/screens/predictions/prediction_home_screen.dart';
+import 'package:card_game/screens/predictions/widgets/motorsport_week_picker.dart';
 import 'package:card_game/services/prediction_repository.dart';
 import 'package:card_game/services/secure_storage_service.dart';
 import 'package:card_game/utils/sound_effects.dart';
@@ -40,7 +41,7 @@ void main() {
     cubit.seed(_fixtures());
     addTearDown(cubit.close);
 
-    await _pumpHome(tester, cubit);
+    await _pumpHome(tester, cubit, activeMatchSportTab: 1);
 
     expect(_headingText('TODAY'), findsOneWidget);
     expect(_headingText('(1)'), findsOneWidget);
@@ -53,7 +54,7 @@ void main() {
     cubit.seed(_fixtures());
     addTearDown(cubit.close);
 
-    await _pumpHome(tester, cubit);
+    await _pumpHome(tester, cubit, activeMatchSportTab: 1);
 
     await tester.tap(find.byKey(const ValueKey('match-day-next-button')));
     await tester.pumpAndSettle();
@@ -71,7 +72,7 @@ void main() {
     cubit.seed(_fixtures());
     addTearDown(cubit.close);
 
-    await _pumpHome(tester, cubit);
+    await _pumpHome(tester, cubit, activeMatchSportTab: 1);
 
     await tester.drag(
       find.byKey(const ValueKey('match-day-swipe-area')),
@@ -93,7 +94,7 @@ void main() {
     cubit.seed(_fixtures());
     addTearDown(cubit.close);
 
-    await _pumpHome(tester, cubit);
+    await _pumpHome(tester, cubit, activeMatchSportTab: 1);
 
     await tester.tap(find.byKey(const ValueKey('match-day-calendar-button')));
     await tester.pumpAndSettle();
@@ -114,11 +115,71 @@ void main() {
 
     expect(_headingText(expectedLabel), findsOneWidget);
   });
+
+  testWidgets('motorsport week header starts on this week', (tester) async {
+    final cubit = _NavCubit(_NavRepo());
+    cubit.seed(_motorsportFixtures());
+    addTearDown(cubit.close);
+
+    await _pumpHome(tester, cubit, activeMatchSportTab: 5);
+
+    expect(_headingText('THIS WEEK'), findsOneWidget);
+    expect(_headingText('(2)'), findsOneWidget);
+  });
+
+  testWidgets('motorsport arrows jump by week', (tester) async {
+    final cubit = _NavCubit(_NavRepo());
+    cubit.seed(_motorsportFixtures());
+    addTearDown(cubit.close);
+
+    await _pumpHome(tester, cubit, activeMatchSportTab: 5);
+
+    await tester.tap(find.byKey(const ValueKey('match-day-next-button')));
+    await tester.pumpAndSettle();
+    expect(_headingText('NEXT WEEK'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('match-day-previous-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('match-day-previous-button')));
+    await tester.pumpAndSettle();
+    expect(_headingText('LAST WEEK'), findsOneWidget);
+  });
+
+  testWidgets('motorsport calendar picks a day and locks that week', (
+    tester,
+  ) async {
+    final cubit = _NavCubit(_NavRepo());
+    cubit.seed(_motorsportFixtures());
+    addTearDown(cubit.close);
+
+    await _pumpHome(tester, cubit, activeMatchSportTab: 5);
+
+    await tester.tap(find.byKey(const ValueKey('match-day-calendar-button')));
+    await tester.pumpAndSettle();
+
+    final nextMonday = mondayOf(_today()).add(const Duration(days: 7));
+    final midWeek = nextMonday.add(const Duration(days: 2));
+    if (midWeek.month != mondayOf(_today()).month) {
+      await tester.tap(find.byTooltip('Next month'));
+      await tester.pumpAndSettle();
+    }
+    final targetCell = find.descendant(
+      of: find.byType(CalendarDatePicker),
+      matching: find.text('${midWeek.day}'),
+    );
+    await tester.tap(targetCell.first);
+    await tester.pump();
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    expect(_headingText('NEXT WEEK'), findsOneWidget);
+  });
 }
 
 Future<void> _pumpHome(
   WidgetTester tester,
   PredictionCubit cubit, {
+  int activeMatchSportTab = 1,
   VoidCallback? onOpenGame,
   VoidCallback? onOpenShootout,
 }) async {
@@ -135,12 +196,13 @@ Future<void> _pumpHome(
         home: PredictionHomeScreen(
           activeTab: 0,
           onTabChanged: (_) {},
-          activeMatchSportTab: 0,
+          activeMatchSportTab: activeMatchSportTab,
           onMatchSportTabChanged: (_) {},
           activeGamesSportTab: 0,
           onGamesSportTabChanged: (_) {},
           onNavigate: (_) {},
           onOpenMatch: (_) {},
+          onOpenMarket: (_) {},
           onOpenLeague: (_) {},
           onOpenGame: onOpenGame ?? () {},
           onOpenShootout: onOpenShootout ?? () {},
@@ -175,6 +237,21 @@ List<SportMatch> _fixtures() {
   ];
 }
 
+List<SportMatch> _motorsportFixtures() {
+  final today = _today();
+  final thisMonday = mondayOf(today);
+  final sat = thisMonday.add(const Duration(days: 5));
+  final sun = thisMonday.add(const Duration(days: 6));
+  final nextSat = thisMonday.add(const Duration(days: 12));
+  final lastSat = thisMonday.subtract(const Duration(days: 2));
+  return [
+    _race('this-sat', sat),
+    _race('this-sun', sun),
+    _race('next-sat', nextSat),
+    _race('last-sat', lastSat),
+  ];
+}
+
 SportMatch _match(String id, DateTime day) => SportMatch(
   id: id,
   leagueId: _league.id,
@@ -182,6 +259,16 @@ SportMatch _match(String id, DateTime day) => SportMatch(
   home: _home,
   away: _away,
   kickoff: DateTime(day.year, day.month, day.day, 18),
+  status: MatchStatus.upcoming,
+);
+
+SportMatch _race(String id, DateTime day) => SportMatch(
+  id: id,
+  leagueId: _motorsportLeague.id,
+  sport: Sport.motorsport,
+  home: _home,
+  away: _away,
+  kickoff: DateTime(day.year, day.month, day.day, 14),
   status: MatchStatus.upcoming,
 );
 
@@ -195,10 +282,13 @@ class _NavCubit extends PredictionCubit {
     : super(repository, SecureGameStorage());
 
   void seed(List<SportMatch> fixtures) {
+    final leagues = fixtures.any((f) => f.sport == Sport.motorsport)
+        ? [_motorsportLeague]
+        : [_league];
     emit(
       const PredictionState().copyWith(
         loading: false,
-        leagues: [_league],
+        leagues: leagues,
         fixtures: fixtures,
       ),
     );
@@ -207,7 +297,7 @@ class _NavCubit extends PredictionCubit {
 
 class _NavRepo implements PredictionRepository {
   @override
-  Future<List<League>> leagues() async => const [_league];
+  Future<List<League>> leagues() async => const [_league, _motorsportLeague];
 
   @override
   Future<List<SportMatch>> fixtures({DateTime? day, Sport? sport}) async =>
@@ -247,6 +337,13 @@ const _league = League(
   name: 'Test League',
   shortCode: 'TST',
   accent: Color(0xff31d0ff),
+);
+
+const _motorsportLeague = League(
+  id: 'f1',
+  name: 'Formula 1',
+  shortCode: 'F1',
+  accent: Color(0xffe10600),
 );
 
 const _home = SportTeam(

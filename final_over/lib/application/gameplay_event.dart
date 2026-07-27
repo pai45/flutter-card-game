@@ -18,6 +18,8 @@ enum GameplayEventType {
   boundary,
   wicket,
   deliveryCompleted,
+  overComplete,
+  fieldLayoutChanged,
   paused,
   resumed,
   matchEnded,

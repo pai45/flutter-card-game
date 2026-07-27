@@ -36,7 +36,7 @@ void main() {
     await tester.pumpWidget(
       _harness(
         levels: const [6],
-        progression: const PlayerProgression(totalXP: 1515),
+        progression: PlayerProgression(totalXP: 1515),
         xpEarned: 25,
         onDismissed: () => dismissals++,
       ),
@@ -78,7 +78,7 @@ void main() {
       await tester.pumpWidget(
         _harness(
           levels: const [6, 7],
-          progression: const PlayerProgression(totalXP: 2120),
+          progression: PlayerProgression(totalXP: 2120),
           xpEarned: 630,
           onDismissed: () {},
         ),
@@ -109,7 +109,7 @@ void main() {
       await tester.pumpWidget(
         _harness(
           levels: const [6],
-          progression: const PlayerProgression(totalXP: 1515),
+          progression: PlayerProgression(totalXP: 1515),
           xpEarned: 25,
           reducedMotion: true,
           onDismissed: () => dismissed = true,
@@ -141,7 +141,7 @@ void main() {
       await tester.pumpWidget(
         _harness(
           levels: const [12],
-          progression: const PlayerProgression(totalXP: 6650),
+          progression: PlayerProgression(totalXP: 6650),
           xpEarned: 26,
           reducedMotion: true,
           onDismissed: () {},

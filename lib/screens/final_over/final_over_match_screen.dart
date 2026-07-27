@@ -14,10 +14,16 @@ import '../../blocs/game/game_event.dart';
 import '../../config/theme.dart';
 import '../../data/final_over_kits.dart';
 import '../../games/final_over/final_over_game.dart';
+import '../../models/avatar_frame_option.dart';
+import '../../models/avatar_option.dart';
 import '../../models/final_over.dart';
+import '../../models/progression.dart';
+import '../../services/secure_storage_service.dart';
 import '../../utils/game_audio_mappings.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/matchmaking/game_match_gate.dart';
+import '../../widgets/matchmaking/game_matchmaking_config.dart';
 import 'widgets/final_over_controls.dart';
 import 'widgets/final_over_hud.dart';
 import 'widgets/final_over_overlays.dart';
@@ -56,6 +62,8 @@ class _FinalOverMatchScreenState extends State<FinalOverMatchScreen>
   bool _rewardsDispatched = false;
   bool _paused = false;
   double _controlStackHeight = 116;
+  int? _bowlerRevealOver;
+  String? _bowlerRevealName;
 
   // Tallied from the engine's own ball ledger, never counted here.
   int _sixes = 0;
@@ -193,11 +201,29 @@ class _FinalOverMatchScreenState extends State<FinalOverMatchScreen>
         playSound(finalOverSoundForEvent(event.type)!);
       case GameplayEventType.deliveryCompleted:
         _tallyBall(s.lastResult);
-        // Last ball of the over: let the crowd tell them.
+        // Last ball of the innings still coming: let the crowd tell them.
         if (s.ballsRemaining == 1 && !s.isTerminal) {
           playSound(
             finalOverSoundForEvent(event.type, finalBallPressure: true)!,
           );
+        }
+      case GameplayEventType.overComplete:
+        final nextOver = event.payload['nextOver'] as int? ?? (s.currentOver + 1);
+        final name = event.payload['bowler'] as String? ?? s.currentBowler?.name;
+        if (name != null) {
+          playSound(SoundEffect.bannerSlam);
+          HapticFeedback.mediumImpact();
+          setState(() {
+            _bowlerRevealOver = nextOver;
+            _bowlerRevealName = name;
+          });
+          Future.delayed(const Duration(milliseconds: 1600), () {
+            if (!mounted) return;
+            setState(() {
+              _bowlerRevealOver = null;
+              _bowlerRevealName = null;
+            });
+          });
         }
       case GameplayEventType.matchEnded:
         _onMatchEnded();
@@ -230,7 +256,9 @@ class _FinalOverMatchScreenState extends State<FinalOverMatchScreen>
       wickets: s.wickets,
       stars: s.stars,
       objectiveCompleted: s.objectiveCompleted,
-      ballsToSpare: won ? (6 - s.legalBalls).clamp(0, 6) : 0,
+      ballsToSpare: won
+          ? (s.maximumLegalBalls - s.legalBalls).clamp(0, s.maximumLegalBalls)
+          : 0,
       tier: widget.config.tier,
     );
     final summary = FinalOverMatchSummary(
@@ -303,7 +331,7 @@ class _FinalOverMatchScreenState extends State<FinalOverMatchScreen>
     final leave = await showCyberConfirmDialog(
       context,
       title: 'LEAVE THE CHASE?',
-      message: 'Walking out abandons the over — no XP, no record.',
+      message: 'Walking out abandons the chase — no XP, no record.',
       confirmLabel: 'Leave',
       cancelLabel: 'Keep batting',
       destructive: true,
@@ -388,6 +416,17 @@ class _FinalOverMatchScreenState extends State<FinalOverMatchScreen>
                         onQuit: widget.onExit,
                       ),
                     ),
+                  if (_bowlerRevealOver != null && _bowlerRevealName != null)
+                    Positioned.fill(
+                      child: FinalOverBowlerRevealOverlay(
+                        overNumber: _bowlerRevealOver!,
+                        bowlerName: _bowlerRevealName!,
+                        onDone: () => setState(() {
+                          _bowlerRevealOver = null;
+                          _bowlerRevealName = null;
+                        }),
+                      ),
+                    ),
                   _PhaseOverlays(
                     game: _game,
                     onBeginPlay: _beginPlay,
@@ -462,7 +501,11 @@ class _PhaseOverlays extends StatelessWidget {
             final config = state.config;
             if (config == null) return const SizedBox.shrink();
             return Positioned.fill(
-              child: FinalOverIntroOverlay(config: config, onDone: onBeginPlay),
+              child: _FinalOverMatchGate(
+                config: config,
+                onReady: onBeginPlay,
+                onCancel: onExit,
+              ),
             );
           case FinalOverPhase.result:
             final summary = state.summary;
@@ -482,6 +525,68 @@ class _PhaseOverlays extends StatelessWidget {
             return const SizedBox.shrink();
         }
       },
+    );
+  }
+}
+
+class _FinalOverMatchGate extends StatefulWidget {
+  const _FinalOverMatchGate({
+    required this.config,
+    required this.onReady,
+    required this.onCancel,
+  });
+
+  final FinalOverMatchConfig config;
+  final VoidCallback onReady;
+  final VoidCallback onCancel;
+
+  @override
+  State<_FinalOverMatchGate> createState() => _FinalOverMatchGateState();
+}
+
+class _FinalOverMatchGateState extends State<_FinalOverMatchGate> {
+  final SecureGameStorage _storage = SecureGameStorage();
+  String? _selectedAvatarId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAvatar();
+  }
+
+  Future<void> _loadAvatar() async {
+    final avatarId = await _storage.loadSelectedAvatarId();
+    if (!mounted) return;
+    setState(() => _selectedAvatarId = avatarId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final game = context.watch<GameBloc>().state;
+    final level = game.progression.levelFor(ProgressTrack.finalOver);
+    final playerAvatar = avatarOptionById(_selectedAvatarId);
+    final frame = avatarFrameOptionById(game.equippedAvatarFrameId);
+    final rival = widget.config.opponentName;
+
+    return GameMatchGate(
+      goLabel: 'PLAY!',
+      config: GameMatchmakingConfig(
+        title: 'FINAL OVER',
+        queueLabel: 'SCANNING GLOBAL CRICKET QUEUE',
+        player: MatchmakingFighter(
+          name: 'PLAYER ONE',
+          avatarAsset: playerAvatar.assetPath,
+          frame: frame,
+          badge: 'LV $level',
+        ),
+        opponent: MatchmakingFighter(
+          name: rival,
+          avatarAsset: avatarForName(rival).assetPath,
+          badge: 'LV $level',
+        ),
+      ),
+      onReady: widget.onReady,
+      onCancel: widget.onCancel,
     );
   }
 }

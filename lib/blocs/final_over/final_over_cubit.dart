@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/final_over_kits.dart';
+import '../../data/random_opponent_names.dart';
 import '../../models/final_over.dart';
 import '../../services/secure_storage_service.dart';
 import 'final_over_state.dart';
@@ -57,6 +58,7 @@ class FinalOverCubit extends Cubit<FinalOverState> {
       target: targets[_random.nextInt(targets.length)],
       kitId: state.stats.kitId,
       batsmanIds: List<String>.from(batsmanIds),
+      opponentName: randomOpponentName(random: _random),
       showHints: !state.stats.hintsSeen,
     );
     emit(state.copyWith(

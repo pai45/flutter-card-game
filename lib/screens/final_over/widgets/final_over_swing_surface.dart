@@ -9,9 +9,9 @@ import '../../../games/final_over/final_over_game.dart';
 ///
 /// There is no HOLD TO SWING button any more: the player taps or swipes
 /// *anywhere* over the play area to hit the ball. A tap drives it straight along
-/// the ground; a swipe places the shot (left = off, right = leg, matching the
-/// aim taught elsewhere in the game) and an upward or fast flick lofts it. The
-/// hit is timed by the release, exactly as the engine already grades.
+/// the ground; dominant swipes place it left/off, front/straight, right/leg or
+/// back/behind. An upward front swipe or fast flick lofts the shot. The hit is
+/// timed by the release, exactly as the engine already grades.
 ///
 /// The surface is only live during the engine's legal swing window
 /// ([FinalOverGame.canSwing]); outside it the layer is inert so the HUD, the
@@ -65,7 +65,10 @@ class _FinalOverSwingSurfaceState extends State<FinalOverSwingSurface> {
       delta: delta,
       velocity: _velocity(delta, event.timeStamp),
     );
-    _game.releaseSwing(direction: gesture.direction, elevation: gesture.elevation);
+    _game.releaseSwing(
+      direction: gesture.direction,
+      elevation: gesture.elevation,
+    );
     HapticFeedback.lightImpact();
     _reset();
   }
@@ -126,7 +129,7 @@ class _FinalOverSwingSurfaceState extends State<FinalOverSwingSurface> {
 }
 
 /// The shot a batting gesture resolves to. [direction] feeds `SwingCommand`;
-/// [elevation] feeds it too (tap = grounded straight, swipe places + lofts).
+/// [elevation] feeds it too (tap = grounded front drive).
 @immutable
 class SwingGesture {
   const SwingGesture(this.direction, this.elevation, {required this.isSwipe});
@@ -155,9 +158,9 @@ class SwingGesture {
 
 /// Classify a batting gesture from its start→end displacement (and optional
 /// release speed). Short travel is a tap → grounded straight drive. A longer
-/// drag places the shot from its horizontal component — using the same
-/// `dx < -.34·dist → off`, `dx > .34·dist → leg` split the retired aim-fan
-/// taught — and lofts it when the swipe travels upward or is flicked fast.
+/// drag uses its dominant axis: left/right choose the cricket off/leg channels,
+/// up drives in front and down plays behind the striker. An upward front swipe
+/// lofts; every other direction needs a fast flick to leave the ground.
 SwingGesture classifyBattingGesture({
   required Offset delta,
   double velocity = 0,
@@ -169,12 +172,17 @@ SwingGesture classifyBattingGesture({
   final distance = delta.distance;
   if (distance < tapSlop) return SwingGesture.tap;
 
-  final direction = delta.dx < -distance * .34
-      ? ShotDirection.offSide
-      : delta.dx > distance * .34
-      ? ShotDirection.legSide
+  final horizontal = delta.dx.abs() >= delta.dy.abs();
+  final direction = horizontal
+      ? delta.dx < 0
+            ? ShotDirection.offSide
+            : ShotDirection.legSide
+      : delta.dy > 0
+      ? ShotDirection.behind
       : ShotDirection.straight;
-  final lofted = delta.dy < -loftRise || velocity >= loftSpeed;
+  final upwardFront =
+      direction == ShotDirection.straight && delta.dy < -loftRise;
+  final lofted = upwardFront || velocity >= loftSpeed;
   return SwingGesture(
     direction,
     lofted ? Elevation.loft : Elevation.ground,
@@ -273,10 +281,7 @@ class _SwingAimPainter extends CustomPainter {
       painter.width + 16,
       painter.height + 8,
     );
-    canvas.drawRect(
-      bgRect,
-      Paint()..color = Cyber.bg.withValues(alpha: .82),
-    );
+    canvas.drawRect(bgRect, Paint()..color = Cyber.bg.withValues(alpha: .82));
     canvas.drawRect(
       bgRect,
       Paint()
@@ -288,9 +293,10 @@ class _SwingAimPainter extends CustomPainter {
   }
 
   static String _directionLabel(ShotDirection direction) => switch (direction) {
-    ShotDirection.offSide => 'OFF',
-    ShotDirection.straight => 'STRAIGHT',
-    ShotDirection.legSide => 'LEG',
+    ShotDirection.offSide => 'LEFT',
+    ShotDirection.straight => 'FRONT',
+    ShotDirection.legSide => 'RIGHT',
+    ShotDirection.behind => 'BACK',
   };
 
   @override

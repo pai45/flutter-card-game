@@ -10,7 +10,7 @@ void main() {
       'three-second preparation reveals delivery and locks shot choices',
       () {
         final controller = MatchController();
-        controller.startMatch(seed: 41, target: 10);
+        controller.startMatch(seed: 41, target: 40);
         controller.dispatch(const GameCommand.start());
 
         final preparedAt = controller.state.simulationMicros;
@@ -52,7 +52,7 @@ void main() {
 
     test('pause freezes preparation and swing only opens at ball release', () {
       final controller = MatchController();
-      controller.startMatch(seed: 42, target: 10);
+      controller.startMatch(seed: 42, target: 40);
       controller.dispatch(const GameCommand.start());
       for (var tick = 0; tick < 60; tick++) {
         controller.step(const Duration(microseconds: 16667));
@@ -101,7 +101,10 @@ void main() {
           );
           expect(controller.state.phase, MatchPhase.matchIntro);
           if (controller.state.objective == ObjectiveType.twoBoundaries) {
-            expect(controller.state.target, greaterThanOrEqualTo(8));
+            expect(
+              controller.state.target,
+              greaterThanOrEqualTo(GameplayTuning.targetMinimum),
+            );
           }
         }
       },
@@ -110,8 +113,8 @@ void main() {
     test('same seed and commands produce identical delivery state', () {
       final first = MatchController();
       final second = MatchController();
-      first.startMatch(seed: 124, target: 14);
-      second.startMatch(seed: 124, target: 14);
+      first.startMatch(seed: 124, target: 48);
+      second.startMatch(seed: 124, target: 48);
       first.dispatch(const GameCommand.start());
       second.dispatch(const GameCommand.start());
 
@@ -140,7 +143,7 @@ void main() {
     test('duplicate swing is ignored', () {
       final generator = ScriptedDeliveryGenerator([scripted()]);
       final controller = MatchController(deliveryGenerator: generator);
-      controller.startMatch(seed: 4, target: 14);
+      controller.startMatch(seed: 4, target: 48);
       controller.dispatch(const GameCommand.start());
       advanceUntil(
         controller,
@@ -160,7 +163,7 @@ void main() {
       controller.stateStream.listen(states.add);
       controller.eventStream.listen(events.add);
 
-      controller.startMatch(seed: 9, target: 14);
+      controller.startMatch(seed: 9, target: 48);
       controller.dispatch(const GameCommand.start());
 
       expect(states, isNotEmpty);
@@ -175,7 +178,7 @@ void main() {
   group('pause and lifecycle', () {
     test('pause and background freeze simulation and restore exact phase', () {
       final controller = MatchController();
-      controller.startMatch(seed: 3, target: 14);
+      controller.startMatch(seed: 3, target: 48);
       controller.dispatch(const GameCommand.start());
       advanceUntil(
         controller,
@@ -210,7 +213,7 @@ void main() {
           scripted(),
         ]);
         final controller = MatchController(deliveryGenerator: generator);
-        controller.startMatch(seed: 1, target: 14);
+        controller.startMatch(seed: 1, target: 48);
         controller.dispatch(const GameCommand.start());
 
         advanceUntil(controller, () => controller.state.history.length == 1);
@@ -233,21 +236,21 @@ void main() {
 
     test('target-winning no-ball extra finalizes before contact', () {
       final generator = ScriptedDeliveryGenerator([
-        for (var i = 0; i < 5; i++)
+        for (var i = 0; i < 31; i++)
           scripted(line: DeliveryLine.wideOff, extra: ExtraType.wide),
         scripted(extra: ExtraType.noBall),
       ]);
       final controller = MatchController(deliveryGenerator: generator);
-      controller.startMatch(seed: 2, target: 6);
+      controller.startMatch(seed: 2, target: 32);
       controller.dispatch(const GameCommand.start());
 
       advanceUntil(controller, () => controller.state.isTerminal);
 
       expect(controller.state.phase, MatchPhase.won);
-      expect(controller.state.score, 6);
+      expect(controller.state.score, 32);
       expect(controller.state.legalBalls, 0);
-      expect(controller.state.physicalDeliveries, 6);
-      expect(controller.state.history, hasLength(6));
+      expect(controller.state.physicalDeliveries, 32);
+      expect(controller.state.history, hasLength(32));
       expect(controller.state.history.last.extra, ExtraType.noBall);
       expect(controller.state.history.last.contactType, ContactType.none);
       expect(controller.state.contactOutcome, isNull);
@@ -255,28 +258,28 @@ void main() {
   });
 
   group('terminal ordering and exact-once ledger', () {
-    test('six legal dots are recorded before balls-exhausted loss', () {
+    test('eighteen legal dots are recorded before balls-exhausted loss', () {
       final generator = ScriptedDeliveryGenerator([
-        for (var i = 0; i < 6; i++)
+        for (var i = 0; i < 18; i++)
           scripted(line: DeliveryLine.wideOff, length: DeliveryLength.short),
       ]);
       final controller = MatchController(deliveryGenerator: generator);
-      controller.startMatch(seed: 5, target: 14);
+      controller.startMatch(seed: 5, target: 48);
       controller.dispatch(const GameCommand.start());
 
       advanceUntil(controller, () => controller.state.isTerminal);
 
       expect(controller.state.phase, MatchPhase.lost);
       expect(controller.state.endReason, MatchEndReason.ballsExhausted);
-      expect(controller.state.legalBalls, 6);
-      expect(controller.state.history, hasLength(6));
-      expect(controller.state.history.last.legalBallsBefore, 5);
+      expect(controller.state.legalBalls, 18);
+      expect(controller.state.history, hasLength(18));
+      expect(controller.state.history.last.legalBallsBefore, 17);
     });
 
     test('two valid bowled wickets end the match', () {
       final generator = ScriptedDeliveryGenerator([scripted(), scripted()]);
       final controller = MatchController(deliveryGenerator: generator);
-      controller.startMatch(seed: 7, target: 14);
+      controller.startMatch(seed: 7, target: 48);
       controller.dispatch(const GameCommand.start());
 
       advanceUntil(controller, () => controller.state.isTerminal);
@@ -295,42 +298,29 @@ void main() {
       expect(controller.state.wickets, 2);
     });
 
-    test('winning legal boundary commits once and records ball used', () {
+    test('completing an over rotates the bowler and emits overComplete', () {
       final generator = ScriptedDeliveryGenerator([
-        scripted(line: DeliveryLine.off, length: DeliveryLength.full),
+        for (var i = 0; i < 6; i++)
+          scripted(line: DeliveryLine.wideOff, length: DeliveryLength.short),
       ]);
-      final controller = MatchController(
-        tuning: const GameplayTuning(
-          fielderSpeed: 0.01,
-          catchRadius: 0.001,
-          ballPickupRadius: 0.001,
-        ),
-        deliveryGenerator: generator,
-      );
-      controller.startMatch(seed: 5, target: 6);
+      final controller = MatchController(deliveryGenerator: generator);
+      final events = <GameplayEventType>[];
+      final sub = controller.eventStream.listen((e) => events.add(e.type));
+      controller.startMatch(seed: 11, target: 48);
+      final firstBowler = controller.state.currentBowler!.id;
       controller.dispatch(const GameCommand.start());
-      controller.dispatch(const GameCommand.selectElevation(Elevation.loft));
+
       advanceUntil(
         controller,
-        () => controller.state.phase == MatchPhase.incomingBall,
+        () => controller.state.legalBalls >= 6 || controller.state.isTerminal,
       );
-      final contactAt = controller.state.currentDelivery!.expectedContactMicros;
-      advanceUntil(
-        controller,
-        () => controller.state.simulationMicros >= contactAt - 30000,
-      );
-      controller.dispatch(const GameCommand.swing(ShotDirection.offSide));
+      sub.cancel();
 
-      advanceUntil(controller, () => controller.state.isTerminal);
-
-      expect(controller.state.phase, MatchPhase.won);
-      expect(controller.state.committedScore, 6);
-      expect(controller.state.pendingBatRuns, 0);
-      expect(controller.state.legalBalls, 1);
-      expect(controller.state.history, hasLength(1));
-      expect(controller.state.history.single.boundary, 6);
-      expect(controller.state.history.single.legalBallsBefore, 0);
-      expect(controller.state.stars, greaterThanOrEqualTo(2));
+      expect(controller.state.legalBalls, 6);
+      expect(controller.state.currentOver, 1);
+      expect(controller.state.bowlerIndex, 1);
+      expect(controller.state.currentBowler!.id, isNot(firstBowler));
+      expect(events, contains(GameplayEventType.overComplete));
     });
   });
 
@@ -350,7 +340,7 @@ void main() {
           (event) => events.add(event.type),
         );
         addTearDown(subscription.cancel);
-        controller.startMatch(seed: 17, target: 14);
+        controller.startMatch(seed: 17, target: 48);
         controller.dispatch(const GameCommand.start());
         controller.dispatch(
           const GameCommand.selectElevation(Elevation.ground),
@@ -388,7 +378,7 @@ void main() {
         scripted(line: DeliveryLine.off, length: DeliveryLength.full),
       ]);
       final controller = MatchController(deliveryGenerator: generator);
-      controller.startMatch(seed: 17, target: 14);
+      controller.startMatch(seed: 17, target: 48);
       controller.dispatch(const GameCommand.start());
       controller.dispatch(const GameCommand.selectElevation(Elevation.ground));
       advanceUntil(
@@ -413,6 +403,114 @@ void main() {
       advanceUntil(controller, () => !controller.state.runner.active);
       expect(controller.state.pendingRuns, 0);
       expect(controller.state.runner.completedRuns, 0);
+    });
+  });
+
+  group('dynamic field layouts', () {
+    for (final extra in [ExtraType.wide, ExtraType.noBall]) {
+      test('the field shifts after a ${extra.name} delivery', () {
+        final generator = ScriptedDeliveryGenerator([
+          scripted(extra: extra),
+          scripted(),
+        ]);
+        final controller = MatchController(deliveryGenerator: generator);
+        addTearDown(controller.dispose);
+        final events = <GameplayEvent>[];
+        final subscription = controller.eventStream.listen(events.add);
+        addTearDown(subscription.cancel);
+
+        controller.startMatch(seed: 23, target: 48);
+        controller.dispatch(const GameCommand.start());
+        final firstPositions = controller.state.fielders
+            .map((fielder) => fielder.homePosition)
+            .toList();
+
+        advanceUntil(
+          controller,
+          () => controller.state.physicalDeliveries == 2,
+        );
+
+        final secondPositions = controller.state.fielders
+            .map((fielder) => fielder.homePosition)
+            .toList();
+        expect(secondPositions, isNot(orderedEquals(firstPositions)));
+        final shift = events.lastWhere(
+          (event) => event.type == GameplayEventType.fieldLayoutChanged,
+        );
+        expect(shift.payload['deliveryOrdinal'], 2);
+        expect(shift.payload['id'], isNotEmpty);
+        expect(shift.payload['label'], isNotEmpty);
+      });
+    }
+
+    test('contact launch preserves the prepared formation', () {
+      final generator = ScriptedDeliveryGenerator([
+        scripted(line: DeliveryLine.middle, length: DeliveryLength.full),
+      ]);
+      final controller = MatchController(deliveryGenerator: generator);
+      addTearDown(controller.dispose);
+      controller.startMatch(seed: 31, target: 48);
+      controller.dispatch(const GameCommand.start());
+      final preparedPositions = controller.state.fielders
+          .map((fielder) => fielder.homePosition)
+          .toList();
+
+      advanceUntil(
+        controller,
+        () => controller.state.phase == MatchPhase.incomingBall,
+      );
+      final contactAt = controller.state.currentDelivery!.expectedContactMicros;
+      advanceUntil(
+        controller,
+        () => controller.state.simulationMicros >= contactAt - 20000,
+      );
+      controller.dispatch(const GameCommand.swing(ShotDirection.straight));
+      advanceUntil(
+        controller,
+        () => controller.state.phase == MatchPhase.cameraTransition,
+      );
+
+      expect(
+        controller.state.fielders.map((fielder) => fielder.homePosition),
+        orderedEquals(preparedPositions),
+      );
+      expect(
+        controller.state.fielders.map((fielder) => fielder.position),
+        orderedEquals(preparedPositions),
+      );
+    });
+
+    test('contact holds the batting camera for 450 milliseconds', () {
+      final generator = ScriptedDeliveryGenerator([
+        scripted(line: DeliveryLine.middle, length: DeliveryLength.full),
+      ]);
+      final controller = MatchController(deliveryGenerator: generator);
+      addTearDown(controller.dispose);
+      controller.startMatch(seed: 41, target: 48);
+      controller.dispatch(const GameCommand.start());
+
+      advanceUntil(
+        controller,
+        () => controller.state.phase == MatchPhase.incomingBall,
+      );
+      final contactAt = controller.state.currentDelivery!.expectedContactMicros;
+      advanceUntil(
+        controller,
+        () => controller.state.simulationMicros >= contactAt - 20000,
+      );
+      controller.dispatch(const GameCommand.swing(ShotDirection.straight));
+      advanceUntil(
+        controller,
+        () => controller.state.phase == MatchPhase.contact,
+      );
+
+      for (var frame = 0; frame < 26; frame++) {
+        controller.step(const Duration(microseconds: 16667));
+      }
+      expect(controller.state.phase, MatchPhase.contact);
+
+      controller.step(const Duration(microseconds: 16667));
+      expect(controller.state.phase, MatchPhase.cameraTransition);
     });
   });
 }

@@ -1,4 +1,5 @@
 import 'package:card_game/blocs/guess_driver/guess_driver_cubit.dart';
+import 'package:card_game/blocs/game/game_bloc.dart';
 import 'package:card_game/blocs/guess_winner/guess_winner_cubit.dart';
 import 'package:card_game/config/theme.dart';
 import 'package:card_game/models/guess_driver.dart';
@@ -199,14 +200,19 @@ void main() {
         storage: SecureGameStorage(),
         now: () => DateTime(2026, 7, 19, 12),
       );
+      final gameBloc = GameBloc(SecureGameStorage());
       addTearDown(cubit.close);
+      addTearDown(gameBloc.close);
       await cubit.load();
       await cubit.openToday();
 
       await _pumpAt(
         tester,
-        BlocProvider<GuessDriverCubit>.value(
-          value: cubit,
+        MultiBlocProvider(
+          providers: [
+            BlocProvider<GuessDriverCubit>.value(value: cubit),
+            BlocProvider<GameBloc>.value(value: gameBloc),
+          ],
           child: GuessDriverScreen(onBack: () {}),
         ),
       );
@@ -215,7 +221,8 @@ void main() {
       expect(find.text('YEAR'), findsOneWidget);
       expect(find.text('TRACK'), findsOneWidget);
       expect(find.text('COUNTRY'), findsOneWidget);
-      expect(find.text('TEAM'), findsNothing);
+      expect(find.text('TEAM'), findsOneWidget);
+      expect(find.text('25 COINS'), findsOneWidget);
       for (var index = 0; index < 10; index++) {
         expect(
           find.byKey(ValueKey('daily-mystery-heart-$index')),
@@ -237,6 +244,105 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('team hint spends 25 coins and reveals the team', (tester) async {
+    tester.view.physicalSize = const Size(393, 852);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final cubit = GuessDriverCubit(
+      races: const [_race],
+      allDrivers: const ['Lando Norris'],
+      storage: SecureGameStorage(),
+      now: () => DateTime(2026, 7, 19, 12),
+    );
+    final gameBloc = GameBloc(SecureGameStorage());
+    gameBloc.emit(gameBloc.state.copyWith(coins: 25));
+    addTearDown(cubit.close);
+    addTearDown(gameBloc.close);
+    await cubit.load();
+    await cubit.openToday();
+
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<GuessDriverCubit>.value(value: cubit),
+          BlocProvider<GameBloc>.value(value: gameBloc),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: GuessDriverScreen(onBack: () {}),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('25 COINS'));
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(find.text('UNLOCK TEAM INTEL?'), findsOneWidget);
+    await tester.tap(find.text('SPEND 25 >'));
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(cubit.state.teamHintRevealed, isTrue);
+    expect(find.text('MCLAREN'), findsOneWidget);
+    expect(gameBloc.state.coins, 0);
+    expect(
+      gameBloc.state.coinLedger.any(
+        (entry) => entry.source.name == 'guessDriverHint',
+      ),
+      isTrue,
+    );
+    expect(cubit.state.remainingHearts, GuessDriverCubit.maxHearts);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('team hint blocks low funds and respects cancellation', (
+    tester,
+  ) async {
+    final cubit = GuessDriverCubit(
+      races: const [_race],
+      allDrivers: const ['Lando Norris'],
+      storage: SecureGameStorage(),
+      now: () => DateTime(2026, 7, 19, 12),
+    );
+    final gameBloc = GameBloc(SecureGameStorage());
+    addTearDown(cubit.close);
+    addTearDown(gameBloc.close);
+    await cubit.load();
+    await cubit.openToday();
+
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<GuessDriverCubit>.value(value: cubit),
+          BlocProvider<GameBloc>.value(value: gameBloc),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: GuessDriverScreen(onBack: () {}),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('25 COINS'));
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(find.text('COINS REQUIRED'), findsOneWidget);
+    await tester.tap(find.text('CLOSE'));
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(cubit.state.teamHintRevealed, isFalse);
+    expect(gameBloc.state.coins, 0);
+
+    gameBloc.emit(gameBloc.state.copyWith(coins: 25));
+    await tester.pump();
+    await tester.tap(find.text('25 COINS'));
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.tap(find.text('KEEP COINS'));
+    await tester.pump(const Duration(milliseconds: 350));
+    expect(cubit.state.teamHintRevealed, isFalse);
+    expect(gameBloc.state.coins, 25);
+  });
 
   testWidgets('winner play remains usable on a short keyboard-open screen', (
     tester,

@@ -238,7 +238,7 @@ class _GameplayScreenState extends State<GameplayScreen>
       history: state.history.map((ball) => ball.historyToken).toList(),
       reason: switch (state.endReason) {
         MatchEndReason.targetReached => 'TARGET CHASED',
-        MatchEndReason.ballsExhausted => 'SIX LEGAL BALLS USED',
+        MatchEndReason.ballsExhausted => 'THREE OVERS USED',
         MatchEndReason.wicketsLost => 'TWO WICKETS LOST',
         MatchEndReason.quit || null => null,
       },
@@ -703,7 +703,7 @@ class _ControlDeck extends StatelessWidget {
             children: [
               Expanded(
                 child: _DirectionButton(
-                  label: 'OFF',
+                  label: 'LEFT',
                   visual: art.ShotDirectionVisual.off,
                   enabled: canSwing,
                   onTap: () =>
@@ -713,7 +713,7 @@ class _ControlDeck extends StatelessWidget {
               const SizedBox(width: 7),
               Expanded(
                 child: _DirectionButton(
-                  label: 'STRAIGHT',
+                  label: 'FRONT',
                   visual: art.ShotDirectionVisual.straight,
                   enabled: canSwing,
                   onTap: () => onCommand(
@@ -724,11 +724,21 @@ class _ControlDeck extends StatelessWidget {
               const SizedBox(width: 7),
               Expanded(
                 child: _DirectionButton(
-                  label: 'LEG',
+                  label: 'RIGHT',
                   visual: art.ShotDirectionVisual.leg,
                   enabled: canSwing,
                   onTap: () =>
                       onCommand(const GameCommand.swing(ShotDirection.legSide)),
+                ),
+              ),
+              const SizedBox(width: 7),
+              Expanded(
+                child: _DirectionButton(
+                  label: 'BACK',
+                  visual: art.ShotDirectionVisual.back,
+                  enabled: canSwing,
+                  onTap: () =>
+                      onCommand(const GameCommand.swing(ShotDirection.behind)),
                 ),
               ),
             ],
@@ -1010,7 +1020,7 @@ class _MatchIntroOverlay extends StatelessWidget {
                     fontSize: 68,
                   ),
                 ),
-                const Text('RUNS • SIX LEGAL BALLS • TWO WICKETS'),
+                const Text('RUNS • THREE OVERS • WICKETS'),
                 const SizedBox(height: 16),
                 _ObjectiveCard(
                   label: objectiveLabel(state.objective),

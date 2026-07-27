@@ -106,7 +106,7 @@ class _Wordmark extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         const Text(
-          'SIX BALLS. ONE CHASE.',
+          'THREE OVERS. ONE CHASE.',
           style: TextStyle(letterSpacing: 2, color: FinalOverPalette.muted),
         ),
       ],

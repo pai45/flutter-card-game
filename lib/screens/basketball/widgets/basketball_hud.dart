@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../blocs/basketball/basketball_cubit.dart';
@@ -14,11 +15,7 @@ import '../../../widgets/cyber/cyber_widgets.dart';
 /// [ValueNotifier]s (never bloc state @60fps); the half label is the one
 /// coarse read from the cubit.
 class BasketballHudBar extends StatelessWidget {
-  const BasketballHudBar({
-    required this.game,
-    required this.onExit,
-    super.key,
-  });
+  const BasketballHudBar({required this.game, required this.onExit, super.key});
 
   final BasketballGame game;
   final VoidCallback onExit;
@@ -46,32 +43,42 @@ class BasketballHudBar extends StatelessWidget {
             visualDensity: VisualDensity.compact,
           ),
           Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _ScoreBlock(
-                  label: 'YOU',
-                  accent: Cyber.cyan,
-                  score: game.scorePlayer,
-                  heat: game.heatPlayer,
-                  heatActive: game.heatActivePlayer,
-                  possession: game.possession,
-                  team: 0,
-                ),
-                const SizedBox(width: 14),
-                _ClockCluster(game: game),
-                const SizedBox(width: 14),
-                _ScoreBlock(
-                  label: 'CPU',
-                  accent: Cyber.magenta,
-                  score: game.scoreCpu,
-                  heat: game.heatCpu,
-                  heatActive: game.heatActiveCpu,
-                  possession: game.possession,
-                  team: 1,
-                ),
-              ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final gap = constraints.maxWidth < 260 ? 6.0 : 14.0;
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _ScoreBlock(
+                      label: 'YOU',
+                      accent: Cyber.cyan,
+                      score: game.scorePlayer,
+                      heat: game.heatPlayer,
+                      heatActive: game.heatActivePlayer,
+                      possession: game.possession,
+                      team: 0,
+                    ),
+                    SizedBox(width: gap),
+                    Expanded(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.topCenter,
+                        child: _ClockCluster(game: game),
+                      ),
+                    ),
+                    SizedBox(width: gap),
+                    _ScoreBlock(
+                      label: 'CPU',
+                      accent: Cyber.magenta,
+                      score: game.scoreCpu,
+                      heat: game.heatCpu,
+                      heatActive: game.heatActiveCpu,
+                      possession: game.possession,
+                      team: 1,
+                    ),
+                  ],
+                );
+              },
             ),
           ),
           const SizedBox(width: 32),
@@ -131,25 +138,45 @@ class _ScoreBlock extends StatelessWidget {
           valueListenable: score,
           builder: (context, value, _) => Text(
             '$value',
-            style: Cyber.display(26, color: accent).copyWith(
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
+            style: Cyber.display(
+              26,
+              color: accent,
+            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
         ),
         const SizedBox(height: 3),
         SizedBox(
-          width: 52,
+          width: 58,
           child: ValueListenableBuilder<bool>(
             valueListenable: heatActive,
             builder: (context, active, _) => ValueListenableBuilder<double>(
               valueListenable: heat,
-              builder: (context, value, _) => CyberProgressBar(
-                value: active ? 1 : value,
-                accent: active ? Cyber.gold : accent,
-                height: 4,
-                radius: 2,
-                animate: false,
-                trackColor: accent.withValues(alpha: 0.14),
+              builder: (context, value, _) => Column(
+                children: [
+                  AnimatedSwitcher(
+                    duration: MediaQuery.disableAnimationsOf(context)
+                        ? Duration.zero
+                        : const Duration(milliseconds: 140),
+                    child: Text(
+                      active ? 'ON FIRE' : 'HEAT',
+                      key: ValueKey(active),
+                      style: Cyber.label(
+                        5.5,
+                        color: active ? Cyber.gold : Cyber.muted,
+                        letterSpacing: active ? 0.8 : 1.2,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  CyberProgressBar(
+                    value: active ? 1 : value,
+                    accent: active ? Cyber.gold : accent,
+                    height: 4,
+                    radius: 2,
+                    animate: false,
+                    trackColor: accent.withValues(alpha: 0.14),
+                  ),
+                ],
               ),
             ),
           ),
@@ -189,7 +216,11 @@ class _ClockCluster extends StatelessWidget {
           builder: (context, state) => state.halfIndex >= 2
               ? Text(
                   'SUDDEN DEATH',
-                  style: Cyber.display(14, color: Cyber.gold, letterSpacing: 1.5),
+                  style: Cyber.display(
+                    14,
+                    color: Cyber.gold,
+                    letterSpacing: 1.5,
+                  ),
                 )
               : ValueListenableBuilder<int>(
                   valueListenable: game.halfClockTenths,
@@ -200,12 +231,13 @@ class _ClockCluster extends StatelessWidget {
                       seconds >= 10
                           ? '0:${seconds.floor().toString().padLeft(2, '0')}'
                           : seconds.toStringAsFixed(1),
-                      style: Cyber.display(
-                        20,
-                        color: danger ? Cyber.danger : Colors.white,
-                      ).copyWith(
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
+                      style:
+                          Cyber.display(
+                            20,
+                            color: danger ? Cyber.danger : Colors.white,
+                          ).copyWith(
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
                     );
                   },
                 ),
@@ -264,13 +296,35 @@ class BasketballStaminaRail extends StatelessWidget {
           Expanded(
             child: ValueListenableBuilder<double>(
               valueListenable: game.stamina01,
-              builder: (context, value, _) => CyberProgressBar(
-                value: value,
-                accent: value < 0.3 ? Cyber.danger : Cyber.success,
-                height: 5,
-                radius: 2,
-                animate: false,
-                trackColor: Cyber.success.withValues(alpha: 0.12),
+              builder: (context, value, _) => Row(
+                children: [
+                  Expanded(
+                    child: CyberProgressBar(
+                      value: value,
+                      accent: value < 0.3 ? Cyber.danger : Cyber.success,
+                      height: 5,
+                      radius: 2,
+                      animate: false,
+                      trackColor: Cyber.success.withValues(alpha: 0.12),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  SizedBox(
+                    width: 30,
+                    child: Text(
+                      '${(value * 100).round()}%',
+                      textAlign: TextAlign.right,
+                      style:
+                          Cyber.label(
+                            7.5,
+                            color: value < 0.3 ? Cyber.danger : Cyber.muted,
+                            letterSpacing: 0.5,
+                          ).copyWith(
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -284,23 +338,47 @@ class BasketballStaminaRail extends StatelessWidget {
 // Shot meter — anchored above the action pad while a shot is gathering
 // ---------------------------------------------------------------------------
 
-class BasketballShotMeter extends StatelessWidget {
+class BasketballShotMeter extends StatefulWidget {
   const BasketballShotMeter({required this.game, super.key});
 
   final BasketballGame game;
 
   @override
+  State<BasketballShotMeter> createState() => _BasketballShotMeterState();
+}
+
+class _BasketballShotMeterState extends State<BasketballShotMeter> {
+  bool _wasHot = false;
+
+  void _syncHot(bool hot) {
+    if (hot == _wasHot) return;
+    _wasHot = hot;
+    if (hot) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) HapticFeedback.lightImpact();
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<ShotMeterView?>(
-      valueListenable: game.meter,
+      valueListenable: widget.game.meter,
       builder: (context, view, _) {
-        if (view == null) return const SizedBox.shrink();
+        if (view == null) {
+          _syncHot(false);
+          return const SizedBox.shrink();
+        }
+        final hot =
+            (view.progress - view.perfectCenter).abs() <= view.perfectHalf;
+        _syncHot(hot);
         return CyberChargeMeter(
           view: ChargeMeterView(
             progress: view.progress,
             perfectCenter: view.perfectCenter,
             perfectHalf: view.perfectHalf,
             goodHalf: view.goodHalf,
+            hot: hot,
           ),
         );
       },
@@ -358,9 +436,7 @@ class BasketballStingLayer extends StatelessWidget {
                   color: sting.color.withValues(alpha: 0.8),
                   width: major ? 1.6 : 1,
                 ),
-                boxShadow: major
-                    ? Cyber.glow(sting.color, alpha: 0.4)
-                    : null,
+                boxShadow: major ? Cyber.glow(sting.color, alpha: 0.4) : null,
               ),
               child: Text(
                 sting.label,

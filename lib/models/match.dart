@@ -1,5 +1,6 @@
 import '../config/enums.dart';
 import 'cards.dart';
+import 'sport_match.dart';
 
 class MatchHistoryRound {
   const MatchHistoryRound({
@@ -48,7 +49,7 @@ class MatchHistoryEntry {
   });
 
   final String id;
-  final String mode; // Includes match, shootout, grandprix, basketball, tennis.
+  final String mode; // match, shootout, grandprix, basketball, tennis, finalover.
   final String deckName;
   final String timestampIso;
   final String resultLabel;
@@ -63,6 +64,17 @@ class MatchHistoryEntry {
   bool get isGrandPrix => mode == 'grandprix';
   bool get isBasketball => mode == 'basketball';
   bool get isTennis => mode == 'tennis';
+  bool get isFinalOver => mode == 'finalover';
+
+  /// Maps archived game modes onto the hub sport tabs.
+  Sport get sport => switch (mode) {
+        'finalover' => Sport.cricket,
+        'basketball' => Sport.basketball,
+        'tennis' => Sport.tennis,
+        'grandprix' => Sport.motorsport,
+        // Pitch Duel + shootout (and any legacy default).
+        _ => Sport.football,
+      };
 
   Map<String, dynamic> toJson() => {
     'id': id,

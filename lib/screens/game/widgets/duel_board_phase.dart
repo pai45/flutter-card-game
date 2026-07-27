@@ -513,6 +513,16 @@ class _DuelBoardPhaseState extends State<DuelBoardPhase>
   ) {
     const opponentHeight = 78.0;
     final lowerChildren = _buildLowerChildren(context, state, resolveBeat);
+    final result = resolveBeat ? _lastResult : null;
+    final resolutionChildren = result == null
+        ? const <Widget>[]
+        : _buildResolutionChildren(context, state, result);
+    final contentTopPadding = resolveBeat && result?.playerAttacking == true
+        ? 12.0
+        : max(
+            12.0,
+            boardHeight * 0.5 - opponentHeight - (resolveBeat ? 104 : 94),
+          );
 
     return Stack(
       clipBehavior: Clip.none,
@@ -560,32 +570,121 @@ class _DuelBoardPhaseState extends State<DuelBoardPhase>
               clipBehavior: Clip.none,
               padding: EdgeInsets.fromLTRB(
                 16,
-                max(
-                  12,
-                  boardHeight * 0.5 - opponentHeight - (resolveBeat ? 104 : 94),
-                ),
+                contentTopPadding,
                 16,
                 (hasBottomAction ? 128 : 16) + bottomInset,
               ),
-              children: [
-                SpotlightTarget(
-                  spotlightKey: _arenaKey,
-                  child: _DuelArena(
-                    state: state,
-                    roleCtrl: _roleCtrl,
-                    revealCtrl: _revealCtrl,
-                    result: resolveBeat ? _lastResult : null,
-                  ),
-                ),
-                if (lowerChildren.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  ...lowerChildren,
-                ],
-              ],
+              children: resolveBeat
+                  ? resolutionChildren
+                  : [
+                      SpotlightTarget(
+                        spotlightKey: _arenaKey,
+                        child: _DuelArena(
+                          state: state,
+                          roleCtrl: _roleCtrl,
+                          revealCtrl: _revealCtrl,
+                          result: null,
+                        ),
+                      ),
+                      if (lowerChildren.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        ...lowerChildren,
+                      ],
+                    ],
             ),
           ),
       ],
     );
+  }
+
+  List<Widget> _buildResolutionChildren(
+    BuildContext context,
+    GameState state,
+    RoundResult result,
+  ) {
+    final playerAttacking = result.playerAttacking;
+    final playerPower = playerAttacking
+        ? result.attackPower
+        : result.defensePower;
+    final oppPower = playerAttacking ? result.defensePower : result.attackPower;
+    final goalScored = result.outcome == RoundOutcome.goal;
+
+    return [
+      AnimatedBuilder(
+        animation: _revealCtrl,
+        builder: (context, _) {
+          final meterT = _timelineT(_kFlipEnd, _kMeterEnd, Curves.easeOutCubic);
+          final deflated = result.outcome == RoundOutcome.missed;
+          final verdictT = _timelineT(
+            _kVerdictStart,
+            _kVerdictEnd,
+            deflated ? Curves.easeOut : Curves.easeOutBack,
+          );
+          final scoreT = _timelineT(_kVerdictEnd, 1.0, Curves.easeOutCubic);
+          final verdict = VerdictHero(
+            outcome: result.outcome,
+            playerAttacking: playerAttacking,
+            accent: outcomeColor(result.outcome),
+            t: verdictT,
+          );
+
+          return Column(
+            children: [
+              if (playerAttacking) ...[verdict, const SizedBox(height: 12)],
+              ScoreImpactStrip(
+                playerScore: state.playerScore,
+                opponentScore: state.opponentScore,
+                opponentLabel: compactOpponentName(state),
+                goalScored: goalScored,
+                scoringIsPlayer: playerAttacking,
+                t: scoreT,
+              ),
+              SpotlightTarget(
+                spotlightKey: _arenaKey,
+                child: _DuelArena(
+                  state: state,
+                  roleCtrl: _roleCtrl,
+                  revealCtrl: _revealCtrl,
+                  result: result,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Opacity(
+                opacity: meterT.clamp(0.0, 1.0),
+                child: HeadToHeadPowerMeter(
+                  playerRole: playerAttacking ? 'ATTACK' : 'DEFEND',
+                  oppRole: playerAttacking ? 'DEFEND' : 'ATTACK',
+                  playerPower: playerPower,
+                  oppPower: oppPower,
+                  playerAccent: roleAccent(playerAttacking),
+                  oppAccent: roleAccent(!playerAttacking),
+                  progress: meterT,
+                ),
+              ),
+              if (!playerAttacking) ...[const SizedBox(height: 14), verdict],
+            ],
+          );
+        },
+      ),
+      const SizedBox(height: 14),
+      if (state.currentRound < 4)
+        AnimatedOpacity(
+          opacity: _revealDone ? 1.0 : 0.0,
+          duration: const Duration(milliseconds: 400),
+          child: _revealDone
+              ? NextRoundCountdown(
+                  key: _countdownKey,
+                  deferCountdown:
+                      state.currentRound == 1 &&
+                      !context.read<GameBloc>().state.tutorialSeen.contains(
+                        'round-result',
+                      ),
+                  onComplete: () =>
+                      context.read<GameBloc>().add(RoundAdvanced()),
+                )
+              : const SizedBox(height: 72),
+        ),
+    ];
   }
 
   Color get _stingerAccent {
@@ -666,88 +765,7 @@ class _DuelBoardPhaseState extends State<DuelBoardPhase>
     GameState state,
     bool resolveBeat,
   ) {
-    // ── Resolution: powers tick, verdict stamps, score pays off ──
-    if (resolveBeat) {
-      final result = _lastResult;
-      if (result == null) return const [];
-      final playerAttacking = result.playerAttacking;
-      final playerPower = playerAttacking
-          ? result.attackPower
-          : result.defensePower;
-      final oppPower = playerAttacking
-          ? result.defensePower
-          : result.attackPower;
-      final goalScored = result.outcome == RoundOutcome.goal;
-      return [
-        AnimatedBuilder(
-          animation: _revealCtrl,
-          builder: (context, _) {
-            final meterT = _timelineT(
-              _kFlipEnd,
-              _kMeterEnd,
-              Curves.easeOutCubic,
-            );
-            final deflated = result.outcome == RoundOutcome.missed;
-            final verdictT = _timelineT(
-              _kVerdictStart,
-              _kVerdictEnd,
-              deflated ? Curves.easeOut : Curves.easeOutBack,
-            );
-            final scoreT = _timelineT(_kVerdictEnd, 1.0, Curves.easeOutCubic);
-            return Column(
-              children: [
-                Opacity(
-                  opacity: meterT.clamp(0.0, 1.0),
-                  child: HeadToHeadPowerMeter(
-                    playerRole: playerAttacking ? 'ATTACK' : 'DEFEND',
-                    oppRole: playerAttacking ? 'DEFEND' : 'ATTACK',
-                    playerPower: playerPower,
-                    oppPower: oppPower,
-                    playerAccent: roleAccent(playerAttacking),
-                    oppAccent: roleAccent(!playerAttacking),
-                    progress: meterT,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                VerdictHero(
-                  outcome: result.outcome,
-                  playerAttacking: playerAttacking,
-                  accent: outcomeColor(result.outcome),
-                  t: verdictT,
-                ),
-                const SizedBox(height: 12),
-                ScoreImpactStrip(
-                  playerScore: state.playerScore,
-                  opponentScore: state.opponentScore,
-                  opponentLabel: compactOpponentName(state),
-                  goalScored: goalScored,
-                  scoringIsPlayer: playerAttacking,
-                  t: scoreT,
-                ),
-              ],
-            );
-          },
-        ),
-        const SizedBox(height: 14),
-        if (state.currentRound < 4)
-          AnimatedOpacity(
-            opacity: _revealDone ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 400),
-            child: _revealDone
-                ? NextRoundCountdown(
-                    key: _countdownKey,
-                    deferCountdown:
-                        state.currentRound == 1 &&
-                        !context.read<GameBloc>().state.tutorialSeen.contains(
-                          'round-result',
-                        ),
-                    onComplete: () =>
-                        context.read<GameBloc>().add(RoundAdvanced()),
-                  )
-                : const SizedBox(height: 72),
-          ),
-      ];
-    }
+    if (resolveBeat) return const [];
 
     // ── Scenario briefing: the shipped decrypt cinematic, embedded on the
     // board. It owns its entrance + countdown and dispatches [PlayStarted]

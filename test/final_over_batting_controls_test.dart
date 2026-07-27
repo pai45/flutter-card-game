@@ -40,9 +40,24 @@ void main() {
       expect(gesture.elevation, Elevation.loft);
     });
 
-    test('an up-left swipe lofts it toward the off side', () {
+    test('an up-left swipe uses the dominant horizontal channel', () {
       final gesture = classifyBattingGesture(delta: const Offset(-70, -70));
       expect(gesture.direction, ShotDirection.offSide);
+      expect(gesture.elevation, Elevation.ground);
+    });
+
+    test('a downward swipe plays behind the striker', () {
+      final gesture = classifyBattingGesture(delta: const Offset(0, 70));
+      expect(gesture.direction, ShotDirection.behind);
+      expect(gesture.elevation, Elevation.ground);
+    });
+
+    test('a fast downward flick lofts the back shot', () {
+      final gesture = classifyBattingGesture(
+        delta: const Offset(4, 70),
+        velocity: 1200,
+      );
+      expect(gesture.direction, ShotDirection.behind);
       expect(gesture.elevation, Elevation.loft);
     });
 
@@ -66,7 +81,7 @@ void main() {
     final controller = MatchController();
     addTearDown(controller.dispose);
     final game = _gameFor(controller);
-    controller.startMatch(seed: 77, target: 10);
+    controller.startMatch(seed: 77, target: 40);
     controller.dispatch(const StartCommand());
     game.update(1 / 60);
 
@@ -116,7 +131,7 @@ void main() {
     final controller = MatchController();
     addTearDown(controller.dispose);
     final game = _gameFor(controller);
-    controller.startMatch(seed: 77, target: 10);
+    controller.startMatch(seed: 77, target: 40);
     controller.dispatch(const StartCommand());
     _advanceUntil(
       controller,
@@ -143,9 +158,7 @@ void main() {
     expect(controller.state.contactOutcome, isNotNull);
   });
 
-  testWidgets('a right-up swipe on the pitch lofts it to the leg side', (
-    tester,
-  ) async {
+  testWidgets('a right-up drag plays a grounded leg-side shot', (tester) async {
     tester.view.physicalSize = const Size(360, 800);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -153,7 +166,7 @@ void main() {
     final controller = MatchController();
     addTearDown(controller.dispose);
     final game = _gameFor(controller);
-    controller.startMatch(seed: 77, target: 10);
+    controller.startMatch(seed: 77, target: 40);
     controller.dispatch(const StartCommand());
     _advanceUntil(
       controller,
@@ -175,13 +188,13 @@ void main() {
     await gesture.up();
 
     expect(controller.state.swingIntent!.direction, ShotDirection.legSide);
-    expect(controller.state.selectedElevation, Elevation.loft);
+    expect(controller.state.selectedElevation, Elevation.ground);
   });
 
   test('a swing command can aim and loft the shot mid-delivery', () {
     final controller = MatchController();
     addTearDown(controller.dispose);
-    controller.startMatch(seed: 77, target: 10);
+    controller.startMatch(seed: 77, target: 40);
     controller.dispatch(const StartCommand());
     _advanceUntil(
       controller,
@@ -221,7 +234,7 @@ void main() {
       final controller = MatchController(tuning: GameplayTuning.rookie);
       addTearDown(controller.dispose);
       final game = _gameFor(controller);
-      controller.startMatch(seed: 77, target: 10);
+      controller.startMatch(seed: 77, target: 40);
       controller.dispatch(const StartCommand());
       game.update(1 / 60);
 
@@ -258,7 +271,7 @@ void main() {
     final controller = MatchController(tuning: tuning);
     addTearDown(controller.dispose);
     final game = _gameFor(controller);
-    controller.startMatch(seed: 77, target: 10);
+    controller.startMatch(seed: 77, target: 40);
     controller.dispatch(const StartCommand());
     game.update(1 / 60);
 

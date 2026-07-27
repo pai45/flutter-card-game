@@ -288,6 +288,7 @@ class _GuessPlayerResultViewState extends State<GuessPlayerResultView> {
               levels: levels,
               progression: PlayerProgression(totalXP: afterXp!),
               xpEarned: record.xpEarned,
+              trackLabel: ProgressTrack.guessPlayer.displayLabel,
               onDismissed: () => setState(() => _showLevelUp = false),
             ),
           ),
