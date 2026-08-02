@@ -116,3 +116,112 @@ class XpMeter extends StatelessWidget {
     );
   }
 }
+
+/// Horizontal mastery readout — one compact chip per track with XP.
+/// Flat chamfered chips only (no glow); the profile LevelChip stays the focus.
+class MasteryStrip extends StatelessWidget {
+  const MasteryStrip({
+    required this.progression,
+    this.onTrackTap,
+    super.key,
+  });
+
+  final PlayerProgression progression;
+  final ValueChanged<ProgressTrack>? onTrackTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tracks = progression.earnedTracks;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'MASTERY',
+          style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.6),
+        ),
+        const SizedBox(height: 8),
+        if (tracks.isEmpty)
+          Text(
+            'PLAY A MODE TO START A TRACK',
+            style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.2),
+          )
+        else
+          SizedBox(
+            height: 36,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: tracks.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final track = tracks[index];
+                final level = progression.levelFor(track);
+                return _MasteryChip(
+                  label: track.shortLabel,
+                  level: level,
+                  onTap: onTrackTap == null ? null : () => onTrackTap!(track),
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _MasteryChip extends StatelessWidget {
+  const _MasteryChip({
+    required this.label,
+    required this.level,
+    this.onTap,
+  });
+
+  final String label;
+  final int level;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: onTap != null,
+      label: '$label level $level',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: ShapeDecoration(
+            color: Cyber.panel,
+            shape: CutChipBorder(
+              cut: 6,
+              side: BorderSide(
+                color: Cyber.border.withValues(alpha: 0.9),
+                width: 1,
+              ),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: Cyber.label(
+                  8,
+                  color: Cyber.muted,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'L$level',
+                style: Cyber.display(
+                  14,
+                  color: Cyber.cyan,
+                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

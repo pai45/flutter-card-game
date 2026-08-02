@@ -9,7 +9,7 @@ import 'starter_pack.dart';
 /// format requires 6, so the starter pack rolls 6 here even though a freshly
 /// rolled [StarterPack] defaults to 5.
 const starterDeckActionCount = 6;
-const cricketStarterCardCount = 3;
+const cricketStarterCardCount = 5;
 const basketballStarterCardCount = 3;
 const tennisStarterCardCount = 1;
 const grandPrixStarterCardCount = 1;

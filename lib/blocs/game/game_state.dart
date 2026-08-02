@@ -284,6 +284,7 @@ class GameState {
     required this.progression,
     required this.previousProgression,
     required this.pendingLevelUps,
+    this.pendingLevelUpTrack,
     required this.lastMatchXP,
     required this.streak,
   });
@@ -375,6 +376,7 @@ class GameState {
     progression: PlayerProgression.initial(),
     previousProgression: null,
     pendingLevelUps: const [],
+    pendingLevelUpTrack: null,
     lastMatchXP: null,
     streak: StreakSnapshot.seeded(DateTime.now()),
   );
@@ -451,6 +453,8 @@ class GameState {
   final PlayerProgression progression;
   final PlayerProgression? previousProgression;
   final List<int> pendingLevelUps;
+  /// Track that produced the pending level-up (for celebration label).
+  final ProgressTrack? pendingLevelUpTrack;
   final int? lastMatchXP;
   final StreakSnapshot streak;
 
@@ -469,7 +473,7 @@ class GameState {
       ownedCardIds.contains(deckKeeper!.id);
 
   bool get finalOverDeckReady =>
-      deckFinalOverBatsmen.length == 3 &&
+      deckFinalOverBatsmen.length == 5 &&
       deckFinalOverBatsmen.every((card) => ownedCardIds.contains(card.id));
 
   bool get hoopDuelDeckReady =>
@@ -577,6 +581,7 @@ class GameState {
     PlayerProgression? progression,
     Object? previousProgression = _sentinel,
     List<int>? pendingLevelUps,
+    Object? pendingLevelUpTrack = _sentinel,
     Object? lastMatchXP = _sentinel,
     StreakSnapshot? streak,
   }) => GameState(
@@ -683,6 +688,9 @@ class GameState {
         ? this.previousProgression
         : previousProgression as PlayerProgression?,
     pendingLevelUps: pendingLevelUps ?? this.pendingLevelUps,
+    pendingLevelUpTrack: pendingLevelUpTrack == _sentinel
+        ? this.pendingLevelUpTrack
+        : pendingLevelUpTrack as ProgressTrack?,
     lastMatchXP: lastMatchXP == _sentinel
         ? this.lastMatchXP
         : lastMatchXP as int?,

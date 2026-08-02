@@ -57,9 +57,11 @@ void main() {
 
   Future<({GameBloc gameBloc, ShootoutBloc shootoutBloc})> pumpWithBlocs(
     WidgetTester tester,
-    Widget child,
-  ) async {
-    tester.view.physicalSize = const Size(1080, 2400);
+    Widget child, {
+    bool disableAnimations = true,
+    Size logicalSize = const Size(360, 800),
+  }) async {
+    tester.view.physicalSize = logicalSize * 3;
     tester.view.devicePixelRatio = 3.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -83,7 +85,9 @@ void main() {
         theme: ThemeData.dark(),
         home: Builder(
           builder: (context) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(disableAnimations: true),
+            data: MediaQuery.of(
+              context,
+            ).copyWith(disableAnimations: disableAnimations),
             child: MultiBlocProvider(
               providers: [
                 BlocProvider.value(value: gameBloc),
@@ -99,7 +103,62 @@ void main() {
     return (gameBloc: gameBloc, shootoutBloc: shootoutBloc);
   }
 
-  testWidgets('opponent draw locks a random player and advances to lineup', (
+  testWidgets('matchmaking reveals the rival and advances automatically', (
+    tester,
+  ) async {
+    final blocs = await pumpWithBlocs(
+      tester,
+      ShootoutOpponentRevealPhase(state: baseState(), onQuit: () {}),
+      disableAnimations: false,
+    );
+
+    expect(find.text('PLAYER ONE'), findsOneWidget);
+    expect(find.text('SEARCHING FOR\nOPPONENT...'), findsOneWidget);
+    expect(find.text('CANCEL'), findsOneWidget);
+    expect(find.text('MAYA SANTOS'), findsNothing);
+    expect(find.text('OPPONENT FOUND'), findsNothing);
+    expect(find.text('SQUAD CLASH'), findsNothing);
+
+    // Give the controller one frame beyond its 2.6 s duration so its completed
+    // status listener can rebuild the rival banner.
+    await tester.pump(const Duration(milliseconds: 2700));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 360));
+    await tester.pump(const Duration(milliseconds: 1));
+
+    expect(find.text('MAYA SANTOS'), findsOneWidget);
+    expect(find.text('SEARCHING FOR\nOPPONENT...'), findsNothing);
+    expect(find.text('OPPONENT FOUND'), findsNothing);
+    expect(find.text('SQUAD CLASH'), findsNothing);
+    expect(blocs.shootoutBloc.state.stage, ShootoutStage.opponentReveal);
+
+    await tester.pump(const Duration(milliseconds: 700));
+
+    expect(blocs.shootoutBloc.state.stage, ShootoutStage.lineup);
+  });
+
+  testWidgets('cancel prevents the delayed matchmaking transition', (
+    tester,
+  ) async {
+    var quitCalls = 0;
+    final blocs = await pumpWithBlocs(
+      tester,
+      ShootoutOpponentRevealPhase(
+        state: baseState(),
+        onQuit: () => quitCalls++,
+      ),
+      disableAnimations: false,
+    );
+
+    await tester.tap(find.text('CANCEL'));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 4));
+
+    expect(quitCalls, 1);
+    expect(blocs.shootoutBloc.state.stage, ShootoutStage.opponentReveal);
+  });
+
+  testWidgets('reduced motion keeps the rival beat and then advances', (
     tester,
   ) async {
     final blocs = await pumpWithBlocs(
@@ -107,16 +166,32 @@ void main() {
       ShootoutOpponentRevealPhase(state: baseState(), onQuit: () {}),
     );
 
-    await tester.pump();
-
-    expect(find.text('OPPONENT DRAW'), findsOneWidget);
     expect(find.text('MAYA SANTOS'), findsOneWidget);
-    expect(find.text('SQUAD CLASH'), findsOneWidget);
+    expect(blocs.shootoutBloc.state.stage, ShootoutStage.opponentReveal);
 
-    await tester.tap(find.text('SQUAD CLASH'));
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 180));
 
     expect(blocs.shootoutBloc.state.stage, ShootoutStage.lineup);
+  });
+
+  testWidgets('matchmaking remains overflow-free on a compact phone', (
+    tester,
+  ) async {
+    await pumpWithBlocs(
+      tester,
+      ShootoutOpponentRevealPhase(state: baseState(), onQuit: () {}),
+      disableAnimations: false,
+      logicalSize: const Size(320, 568),
+    );
+
+    expect(tester.takeException(), isNull);
+
+    await tester.pump(const Duration(milliseconds: 2700));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 361));
+
+    expect(find.text('MAYA SANTOS'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('lineup names the drawn opponent squad instead of CPU', (

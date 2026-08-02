@@ -12,11 +12,11 @@ import '../../widgets/cyber/cyber_widgets.dart';
 import '../predictions/widgets/history_hud.dart';
 import 'widgets/profile_card.dart';
 
-void showXpHistory(BuildContext context) {
+void showXpHistory(BuildContext context, {ProgressTrack? initialTrack}) {
   Navigator.of(context).push(
     PageRouteBuilder<void>(
       pageBuilder: (context, animation, secondaryAnimation) =>
-          const XpHistoryScreen(),
+          XpHistoryScreen(initialTrack: initialTrack),
       transitionsBuilder: (context, animation, secondaryAnimation, child) =>
           FadeTransition(opacity: animation, child: child),
     ),
@@ -24,7 +24,9 @@ void showXpHistory(BuildContext context) {
 }
 
 class XpHistoryScreen extends StatefulWidget {
-  const XpHistoryScreen({super.key});
+  const XpHistoryScreen({this.initialTrack, super.key});
+
+  final ProgressTrack? initialTrack;
 
   @override
   State<XpHistoryScreen> createState() => _XpHistoryScreenState();
@@ -33,6 +35,13 @@ class XpHistoryScreen extends StatefulWidget {
 class _XpHistoryScreenState extends State<XpHistoryScreen> {
   XpChartRange _range = XpChartRange.all;
   _XpHistoryFilter _filter = _XpHistoryFilter.all;
+  ProgressTrack? _trackFilter;
+
+  @override
+  void initState() {
+    super.initState();
+    _trackFilter = widget.initialTrack;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +58,12 @@ class _XpHistoryScreenState extends State<XpHistoryScreen> {
                 final ledger = [...state.xpLedger]
                   ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
                 final filtered = ledger
-                    .where((entry) => _matches(entry, _filter))
+                    .where(
+                      (entry) =>
+                          _matches(entry, _filter) &&
+                          (_trackFilter == null ||
+                              entry.track == _trackFilter),
+                    )
                     .toList();
                 final earned = ledger
                     .where(
@@ -128,6 +142,24 @@ class _XpHistoryScreenState extends State<XpHistoryScreen> {
                             onSelect: (filter) =>
                                 setState(() => _filter = filter),
                           ),
+                          if (state.progression.earnedTracks.isNotEmpty) ...[
+                            const SizedBox(height: 10),
+                            _XpTrackFilterBar(
+                              tracks: state.progression.earnedTracks,
+                              active: _trackFilter,
+                              counts: {
+                                for (final track
+                                    in state.progression.earnedTracks)
+                                  track: ledger
+                                      .where((e) => e.track == track)
+                                      .length,
+                              },
+                              onSelect: (track) => setState(() {
+                                _trackFilter =
+                                    _trackFilter == track ? null : track;
+                              }),
+                            ),
+                          ],
                           const SizedBox(height: 12),
                           if (filtered.isEmpty)
                             _EmptyXpHistory(hasAny: ledger.isNotEmpty)
@@ -493,6 +525,41 @@ class _XpRangeTabs extends StatelessWidget {
 
 enum _XpHistoryFilter { all, earned, lost, games, predictions, rewards }
 
+class _XpTrackFilterBar extends StatelessWidget {
+  const _XpTrackFilterBar({
+    required this.tracks,
+    required this.active,
+    required this.counts,
+    required this.onSelect,
+  });
+
+  final List<ProgressTrack> tracks;
+  final ProgressTrack? active;
+  final Map<ProgressTrack, int> counts;
+  final ValueChanged<ProgressTrack> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final track in tracks) ...[
+            HistoryFilterChip(
+              label: track.shortLabel,
+              count: counts[track] ?? 0,
+              active: active == track,
+              accent: Cyber.cyan,
+              onTap: () => onSelect(track),
+            ),
+            const SizedBox(width: 8),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _XpFilterBar extends StatelessWidget {
   const _XpFilterBar({
     required this.active,
@@ -643,8 +710,11 @@ bool _matches(XpLedgerEntry entry, _XpHistoryFilter filter) {
           entry.source == XpTransactionSource.footballChess ||
           entry.source == XpTransactionSource.superOver ||
           entry.source == XpTransactionSource.basketball ||
+          entry.source == XpTransactionSource.tennis ||
+          entry.source == XpTransactionSource.grandPrix ||
           entry.source == XpTransactionSource.finalOver ||
-          entry.source == XpTransactionSource.guessPlayer,
+          entry.source == XpTransactionSource.guessPlayer ||
+          entry.source == XpTransactionSource.bingo,
     _XpHistoryFilter.predictions =>
       entry.source == XpTransactionSource.prediction,
     _XpHistoryFilter.rewards =>
@@ -712,6 +782,7 @@ IconData _sourceIcon(XpTransactionSource source) {
     XpTransactionSource.tennis => Icons.sports_tennis,
     XpTransactionSource.finalOver => Icons.sports_cricket,
     XpTransactionSource.guessPlayer => Icons.person_search_rounded,
+    XpTransactionSource.bingo => Icons.grid_view_rounded,
     XpTransactionSource.prediction => Icons.analytics,
     XpTransactionSource.pack => Icons.inventory_2,
     XpTransactionSource.dailyDrop => Icons.calendar_today,

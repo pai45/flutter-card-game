@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../blocs/prediction/prediction_cubit.dart';
 import '../../blocs/prediction/prediction_state.dart';
+import '../../config/sport_modules.dart';
 import '../../config/theme.dart';
 import '../../models/league.dart';
 import '../../models/prediction.dart';
@@ -10,6 +12,7 @@ import '../../models/sport_match.dart';
 import '../../utils/prediction_helpers.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/cyber/fixture_card.dart';
+import '../../widgets/cyber/sport_underline_tabs.dart';
 import '../../widgets/team_logo.dart';
 import 'match_prediction_screen.dart';
 import 'widgets/history_hud.dart';
@@ -36,8 +39,11 @@ class PredictionMatchHistoryScreen extends StatefulWidget {
 class _PredictionMatchHistoryScreenState
     extends State<PredictionMatchHistoryScreen> {
   _MatchFilter _filter = _MatchFilter.all;
+  int _activeSportTab = 0;
   Map<String, PredictionQuiz?> _quizzes = {};
   bool _loadingQuizzes = true;
+
+  Sport get _selectedSport => sportTabOrder[_activeSportTab];
 
   @override
   void initState() {
@@ -61,6 +67,12 @@ class _PredictionMatchHistoryScreenState
     });
   }
 
+  void _onSportTabChanged(int index) {
+    if (index == _activeSportTab) return;
+    HapticFeedback.selectionClick();
+    setState(() => _activeSportTab = index);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -82,20 +94,31 @@ class _PredictionMatchHistoryScreenState
                         quiz: _quizzes[entry.prediction.key]!,
                       ),
                 ];
+                final sportItems = items
+                    .where((item) => item.match.sport == _selectedSport)
+                    .toList(growable: false);
                 final counts = {
                   for (final filter in _MatchFilter.values)
-                    filter: items.where((item) => item.matches(filter)).length,
+                    filter: sportItems
+                        .where((item) => item.matches(filter))
+                        .length,
                 };
-                final filtered = items
+                final filtered = sportItems
                     .where((item) => item.matches(_filter))
                     .toList();
-                final totalAnswers = state.predictions.values.fold<int>(
+                final totalAnswers = sportItems.fold<int>(
                   0,
-                  (sum, p) => sum + p.answers.length,
+                  (sum, item) => sum + item.prediction.answers.length,
+                );
+                final correctAnswers = sportItems.fold<int>(
+                  0,
+                  (sum, item) => sum + (item.prediction.correctCount ?? 0),
                 );
                 final accuracy = totalAnswers == 0
                     ? 0
-                    : (state.correctPredictions / totalAnswers * 100).round();
+                    : (correctAnswers / totalAnswers * 100).round();
+                final sportLabel =
+                    sportModuleFor(_selectedSport).label.toUpperCase();
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -105,6 +128,11 @@ class _PredictionMatchHistoryScreenState
                       accent: Cyber.violet,
                       onBack: () => Navigator.pop(context),
                     ),
+                    SportUnderlineTabs(
+                      activeIndex: _activeSportTab,
+                      selectedSport: _selectedSport,
+                      onTap: _onSportTabChanged,
+                    ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                       child: Row(
@@ -112,7 +140,7 @@ class _PredictionMatchHistoryScreenState
                           Expanded(
                             child: HistoryStatCell(
                               label: 'MATCHES',
-                              value: '${state.predictionsMade}',
+                              value: '${sportItems.length}',
                               accent: Cyber.violet,
                             ),
                           ),
@@ -143,38 +171,66 @@ class _PredictionMatchHistoryScreenState
                     ),
                     const SizedBox(height: 12),
                     Expanded(
-                      child: _loadingQuizzes
-                          ? const Center(
-                              child: CircularProgressIndicator(
-                                color: Cyber.cyan,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : filtered.isEmpty
-                          ? _EmptyHistory(
-                              hasAnyQuizzes: items.isNotEmpty,
-                              filterLabel: _filterLabel(_filter),
-                            )
-                          : ListView.separated(
-                              padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
-                              itemCount: filtered.length,
-                              separatorBuilder: (context, index) =>
-                                  const SizedBox(height: 16),
-                              itemBuilder: (context, index) {
-                                final item = filtered[index];
-                                return _MatchQuizCard(
-                                  item: item,
-                                  onDetails: () => Navigator.of(context).push(
-                                    MaterialPageRoute<void>(
-                                      builder: (_) => MatchPredictionScreen(
-                                        match: item.entry.match,
-                                        quizId: item.prediction.quizId,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 240),
+                        transitionBuilder: (child, animation) {
+                          final slide = Tween<Offset>(
+                            begin: const Offset(0, 0.03),
+                            end: Offset.zero,
+                          ).animate(animation);
+                          return FadeTransition(
+                            opacity: animation,
+                            child: SlideTransition(
+                              position: slide,
+                              child: child,
                             ),
+                          );
+                        },
+                        child: KeyedSubtree(
+                          key: ValueKey<Sport>(_selectedSport),
+                          child: _loadingQuizzes
+                              ? const Center(
+                                  child: CircularProgressIndicator(
+                                    color: Cyber.cyan,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : filtered.isEmpty
+                              ? _EmptyHistory(
+                                  hasAnyQuizzes: sportItems.isNotEmpty,
+                                  filterLabel: _filterLabel(_filter),
+                                  sportLabel: sportLabel,
+                                )
+                              : ListView.separated(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    4,
+                                    16,
+                                    28,
+                                  ),
+                                  itemCount: filtered.length,
+                                  separatorBuilder: (context, index) =>
+                                      const SizedBox(height: 16),
+                                  itemBuilder: (context, index) {
+                                    final item = filtered[index];
+                                    return _MatchQuizCard(
+                                      item: item,
+                                      onDetails: () =>
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute<void>(
+                                              builder: (_) =>
+                                                  MatchPredictionScreen(
+                                                    match: item.entry.match,
+                                                    quizId:
+                                                        item.prediction.quizId,
+                                                  ),
+                                            ),
+                                          ),
+                                    );
+                                  },
+                                ),
+                        ),
+                      ),
                     ),
                   ],
                 );
@@ -686,19 +742,26 @@ class _OutcomeDot extends StatelessWidget {
 }
 
 class _EmptyHistory extends StatelessWidget {
-  const _EmptyHistory({required this.hasAnyQuizzes, required this.filterLabel});
+  const _EmptyHistory({
+    required this.hasAnyQuizzes,
+    required this.filterLabel,
+    required this.sportLabel,
+  });
 
   final bool hasAnyQuizzes;
   final String filterLabel;
+  final String sportLabel;
 
   @override
   Widget build(BuildContext context) {
     return CyberNoDataState(
       icon: hasAnyQuizzes ? Icons.filter_alt_off : Icons.sports_esports,
-      title: hasAnyQuizzes ? 'No $filterLabel entries' : 'Be the 1st to play',
+      title: hasAnyQuizzes
+          ? 'No $filterLabel entries'
+          : 'No $sportLabel quizzes yet',
       message: hasAnyQuizzes
           ? 'Switch filters to review the quizzes already played.'
-          : 'No one has played a prediction quiz yet. Start one and claim the first rank.',
+          : 'Play a $sportLabel prediction quiz and it will land here.',
       accent: hasAnyQuizzes ? Cyber.violet : Cyber.cyan,
       spark: hasAnyQuizzes ? Icons.tune : Icons.bolt,
     );

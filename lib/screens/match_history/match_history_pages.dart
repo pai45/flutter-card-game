@@ -1,17 +1,47 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../../config/sport_modules.dart';
 import '../../config/theme.dart';
 import '../../models/match.dart';
+import '../../models/sport_match.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/cyber/sport_underline_tabs.dart';
 import '../../widgets/match_widgets.dart';
 
 void showMatchHistoryArchive(
   BuildContext context,
-  List<MatchHistoryEntry> history,
-) {
+  List<MatchHistoryEntry> history, {
+  Sport? initialSport,
+}) {
   Navigator.of(context).push(
     PageRouteBuilder<void>(
-      pageBuilder: (ctx, a, b) => _MatchHistoryArchivePage(history: history),
+      pageBuilder: (ctx, a, b) => _MatchHistoryArchivePage(
+        history: history,
+        initialSport: initialSport,
+      ),
+      transitionsBuilder: (ctx, animation, b, child) =>
+          FadeTransition(opacity: animation, child: child),
+    ),
+  );
+}
+
+/// Per-game match history — no sport tabs. Optional [career] board sits above
+/// the W/D/L strip. Profile keeps [showMatchHistoryArchive] for the cross-sport
+/// archive.
+void showGameMatchHistory(
+  BuildContext context, {
+  required String gameLabel,
+  required List<MatchHistoryEntry> history,
+  Widget? career,
+}) {
+  Navigator.of(context).push(
+    PageRouteBuilder<void>(
+      pageBuilder: (ctx, a, b) => _GameMatchHistoryPage(
+        gameLabel: gameLabel,
+        history: history,
+        career: career,
+      ),
       transitionsBuilder: (ctx, animation, b, child) =>
           FadeTransition(opacity: animation, child: child),
     ),
@@ -28,19 +58,254 @@ void showMatchHistoryDetail(BuildContext context, MatchHistoryEntry entry) {
   );
 }
 
-// ─── Archive list ─────────────────────────────────────────────────────────────
+// ─── Per-game history ─────────────────────────────────────────────────────────
 
-class _MatchHistoryArchivePage extends StatelessWidget {
-  const _MatchHistoryArchivePage({required this.history});
+class _GameMatchHistoryPage extends StatelessWidget {
+  const _GameMatchHistoryPage({
+    required this.gameLabel,
+    required this.history,
+    this.career,
+  });
 
+  final String gameLabel;
   final List<MatchHistoryEntry> history;
+  final Widget? career;
 
   @override
   Widget build(BuildContext context) {
-    final wins   = history.where((e) => e.resultLabel == 'Victory').length;
-    final draws  = history.where((e) => e.resultLabel == 'Draw').length;
+    final wins = history.where((e) => e.resultLabel == 'Victory').length;
+    final draws = history.where((e) => e.resultLabel == 'Draw').length;
     final losses = history.length - wins - draws;
     final winPct = history.isEmpty ? 0 : (wins / history.length * 100).round();
+    final label = gameLabel.toUpperCase();
+
+    return Scaffold(
+      backgroundColor: Cyber.bg,
+      body: CyberBackground(
+        child: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 14, 8, 0),
+                child: Row(
+                  children: [
+                    Container(width: 3, height: 22, color: Cyber.cyan),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'MATCH HISTORY',
+                            style: Cyber.display(18, color: Colors.white)
+                                .copyWith(
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.2,
+                                ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '// $label',
+                            style: Cyber.label(9, color: Cyber.muted),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close, color: Cyber.cyan),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: CustomScrollView(
+                  slivers: [
+                    if (career != null)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+                          child: career,
+                        ),
+                      ),
+                    if (history.isNotEmpty)
+                      SliverToBoxAdapter(
+                        child: _MatchHistoryRecordStrip(
+                          wins: wins,
+                          draws: draws,
+                          losses: losses,
+                          winPct: winPct,
+                        ),
+                      )
+                    else
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+                          child: Text(
+                            'No $label matches yet.',
+                            style: Cyber.body(12, color: Cyber.muted),
+                          ),
+                        ),
+                      ),
+                    if (history.isNotEmpty)
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+                        sliver: SliverList.separated(
+                          itemCount: history.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: 10),
+                          itemBuilder: (context, index) {
+                            final entry = history[index];
+                            return MatchHistoryTile(
+                              entry: entry,
+                              onTap: () =>
+                                  showMatchHistoryDetail(context, entry),
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MatchHistoryRecordStrip extends StatelessWidget {
+  const _MatchHistoryRecordStrip({
+    required this.wins,
+    required this.draws,
+    required this.losses,
+    required this.winPct,
+  });
+
+  final int wins;
+  final int draws;
+  final int losses;
+  final int winPct;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+          child: Row(
+            children: [
+              _StatBox('W', '$wins', Cyber.success),
+              const SizedBox(width: 8),
+              _StatBox('D', '$draws', Cyber.amber),
+              const SizedBox(width: 8),
+              _StatBox('L', '$losses', Cyber.danger),
+              const Spacer(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '$winPct%',
+                    style: Cyber.display(
+                      24,
+                      color: wins > losses ? Cyber.success : Cyber.muted,
+                    ),
+                  ),
+                  Text(
+                    'WIN RATE',
+                    style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.5),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+          child: ClipRRect(
+            child: SizedBox(
+              height: 4,
+              child: Row(
+                children: [
+                  if (wins > 0)
+                    Expanded(
+                      flex: wins,
+                      child: Container(color: Cyber.success),
+                    ),
+                  if (draws > 0)
+                    Expanded(
+                      flex: draws,
+                      child: Container(color: Cyber.amber),
+                    ),
+                  if (losses > 0)
+                    Expanded(
+                      flex: losses,
+                      child: Container(color: Cyber.danger),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─── Archive list ─────────────────────────────────────────────────────────────
+
+class _MatchHistoryArchivePage extends StatefulWidget {
+  const _MatchHistoryArchivePage({
+    required this.history,
+    this.initialSport,
+  });
+
+  final List<MatchHistoryEntry> history;
+  final Sport? initialSport;
+
+  @override
+  State<_MatchHistoryArchivePage> createState() =>
+      _MatchHistoryArchivePageState();
+}
+
+class _MatchHistoryArchivePageState extends State<_MatchHistoryArchivePage> {
+  late int _activeSportTab;
+
+  @override
+  void initState() {
+    super.initState();
+    final sport = widget.initialSport;
+    if (sport == null) {
+      _activeSportTab = 0;
+    } else {
+      final index = sportTabOrder.indexOf(sport);
+      _activeSportTab = index < 0 ? 0 : index;
+    }
+  }
+
+  Sport get _selectedSport => sportTabOrder[_activeSportTab];
+
+  List<MatchHistoryEntry> get _filteredHistory => widget.history
+      .where((entry) => entry.sport == _selectedSport)
+      .toList(growable: false);
+
+  void _onSportTabChanged(int index) {
+    if (index == _activeSportTab) return;
+    HapticFeedback.selectionClick();
+    setState(() => _activeSportTab = index);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final history = _filteredHistory;
+    final wins = history.where((e) => e.resultLabel == 'Victory').length;
+    final draws = history.where((e) => e.resultLabel == 'Draw').length;
+    final losses = history.length - wins - draws;
+    final winPct = history.isEmpty ? 0 : (wins / history.length * 100).round();
+    final sportLabel = sportModuleFor(_selectedSport).label.toUpperCase();
 
     return Scaffold(
       backgroundColor: Cyber.bg,
@@ -75,15 +340,21 @@ class _MatchHistoryArchivePage extends StatelessWidget {
                   ],
                 ),
               ),
+              // ── sport tabs (same strip as MATCH / GAMES hub) ───────────────
+              SportUnderlineTabs(
+                activeIndex: _activeSportTab,
+                selectedSport: _selectedSport,
+                onTap: _onSportTabChanged,
+              ),
               // ── stats bar ───────────────────────────────────────────────────
               if (history.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
                   child: Row(
                     children: [
-                      _StatBox('W', '$wins',   Cyber.success),
+                      _StatBox('W', '$wins', Cyber.success),
                       const SizedBox(width: 8),
-                      _StatBox('D', '$draws',  Cyber.amber),
+                      _StatBox('D', '$draws', Cyber.amber),
                       const SizedBox(width: 8),
                       _StatBox('L', '$losses', Cyber.danger),
                       const Spacer(),
@@ -141,29 +412,45 @@ class _MatchHistoryArchivePage extends StatelessWidget {
                   ),
                 ),
               if (history.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 10, 16, 14),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
                   child: Text(
-                    'No archived matches yet.',
-                    style: TextStyle(color: Cyber.muted, fontSize: 12),
+                    'No $sportLabel games archived yet.',
+                    style: const TextStyle(color: Cyber.muted, fontSize: 12),
                   ),
                 ),
               // ── list ────────────────────────────────────────────────────────
               Expanded(
-                child: history.isEmpty
-                    ? const SizedBox.shrink()
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
-                        itemCount: history.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 10),
-                        itemBuilder: (context, index) {
-                          final entry = history[index];
-                          return MatchHistoryTile(
-                            entry: entry,
-                            onTap: () => showMatchHistoryDetail(context, entry),
-                          );
-                        },
-                      ),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 240),
+                  transitionBuilder: (child, animation) {
+                    final slide = Tween<Offset>(
+                      begin: const Offset(0, 0.03),
+                      end: Offset.zero,
+                    ).animate(animation);
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(position: slide, child: child),
+                    );
+                  },
+                  child: history.isEmpty
+                      ? const SizedBox.shrink(key: ValueKey('empty'))
+                      : ListView.separated(
+                          key: ValueKey<Sport>(_selectedSport),
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+                          itemCount: history.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: 10),
+                          itemBuilder: (context, index) {
+                            final entry = history[index];
+                            return MatchHistoryTile(
+                              entry: entry,
+                              onTap: () =>
+                                  showMatchHistoryDetail(context, entry),
+                            );
+                          },
+                        ),
+                ),
               ),
             ],
           ),

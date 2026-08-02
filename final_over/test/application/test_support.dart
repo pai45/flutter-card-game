@@ -17,6 +17,7 @@ final class ScriptedDeliveryGenerator extends DeliveryGenerator {
     required List<BallResult> history,
     required List<DeliverySpec> previousDeliveries,
     int expectedContactMicros = 0,
+    BowlerProfile? bowler,
   }) {
     final source = script[_index.clamp(0, script.length - 1)];
     _index++;
@@ -60,7 +61,7 @@ DeliverySpec scripted({
 void advanceUntil(
   MatchController controller,
   bool Function() predicate, {
-  int maximumTicks = 3000,
+  int maximumTicks = 20000,
 }) {
   for (var tick = 0; tick < maximumTicks && !predicate(); tick++) {
     controller.step(const Duration(microseconds: 16667));

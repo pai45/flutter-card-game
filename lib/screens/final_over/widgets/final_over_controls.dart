@@ -208,9 +208,14 @@ class _BattingStatusStrip extends StatelessWidget {
           ? 'TRY ${_directionLabel(recommendDirection!)}'
                 '${recommendElevation != null ? ' · ${_elevationLabel(recommendElevation!)}' : ''}'
           : verbose
-          ? 'SWIPE AIMS · FLICK UP LOFTS'
+          ? 'SWIPE 4 WAYS · FLICK FAST TO LOFT'
           : 'TAP OR SWIPE THE PITCH';
-      return ('TAP TO HIT', recommend, Icons.sports_cricket_rounded, Cyber.cyan);
+      return (
+        'TAP TO HIT',
+        recommend,
+        Icons.sports_cricket_rounded,
+        Cyber.cyan,
+      );
     }
     return switch (phase) {
       MatchPhase.bowlerRunUp => (
@@ -235,7 +240,7 @@ class _BattingStatusStrip extends StatelessWidget {
       ),
       _ => (
         'READ THE BALL',
-        'TAP TO DRIVE · SWIPE TO PLACE',
+        'TAP FRONT · SWIPE L/R/BACK',
         Icons.sports_cricket_rounded,
         Cyber.muted,
       ),
@@ -464,9 +469,10 @@ class _PlateState extends State<_Plate> {
 }
 
 String _directionLabel(ShotDirection direction) => switch (direction) {
-  ShotDirection.offSide => 'OFF',
-  ShotDirection.straight => 'STRAIGHT',
-  ShotDirection.legSide => 'LEG',
+  ShotDirection.offSide => 'LEFT',
+  ShotDirection.straight => 'FRONT',
+  ShotDirection.legSide => 'RIGHT',
+  ShotDirection.behind => 'BACK',
 };
 
 String _elevationLabel(Elevation elevation) => switch (elevation) {

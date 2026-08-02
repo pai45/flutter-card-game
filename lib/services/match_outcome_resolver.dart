@@ -265,7 +265,15 @@ abstract final class MatchOutcomeResolver {
         : _constructorName(race.results.first);
 
     String? poleSitter;
-    final qualifying = _sessionNamed(sessions, 'qualifying');
+    F1SessionResult? qualifying;
+    for (final s in sessions) {
+      if (!s.isQualifying) continue;
+      if (!s.isSprintQualifying) {
+        qualifying = s;
+        break;
+      }
+      qualifying ??= s;
+    }
     if (qualifying != null && qualifying.results.isNotEmpty) {
       poleSitter = _driverName(qualifying.results.first);
     }

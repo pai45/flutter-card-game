@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_event.dart';
 import '../../blocs/picks/picks_cubit.dart';
 import '../../blocs/picks/picks_state.dart';
+import '../../config/sport_modules.dart';
 import '../../config/theme.dart';
 import '../../models/oz_coin_ledger.dart';
 import '../../models/picks.dart';
+import '../../models/sport_match.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/cyber/fixture_card.dart';
+import '../../widgets/cyber/sport_underline_tabs.dart';
 import '../shop/shop_screen.dart' show CoinIcon;
 import 'market_detail_screen.dart';
 import 'widgets/history_hud.dart';
@@ -39,6 +43,15 @@ class PredictionPicksHistoryScreen extends StatefulWidget {
 class _PredictionPicksHistoryScreenState
     extends State<PredictionPicksHistoryScreen> {
   _PicksFilter _filter = _PicksFilter.all;
+  int _activeSportTab = 0;
+
+  Sport get _selectedSport => sportTabOrder[_activeSportTab];
+
+  void _onSportTabChanged(int index) {
+    if (index == _activeSportTab) return;
+    HapticFeedback.selectionClick();
+    setState(() => _activeSportTab = index);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,20 +65,35 @@ class _PredictionPicksHistoryScreenState
           SafeArea(
             child: BlocBuilder<PicksCubit, PicksState>(
               builder: (context, state) {
-                final positions = state.positionList;
+                final sportPositions = state.positionList
+                    .where(
+                      (position) =>
+                          state.marketFor(position.marketId)?.sport ==
+                          _selectedSport,
+                    )
+                    .toList(growable: false);
                 final counts = {
                   for (final filter in _PicksFilter.values)
-                    filter: positions.where((p) => _matches(p, filter)).length,
+                    filter: sportPositions
+                        .where((p) => _matches(p, filter))
+                        .length,
                 };
-                final filtered = positions
+                final filtered = sportPositions
                     .where((position) => _matches(position, _filter))
                     .toList();
-                final net = state.realizedProfitOz;
+                final openExposure = sportPositions
+                    .where((position) => !position.isFinal)
+                    .fold(0, (sum, position) => sum + position.stakeOz);
+                final net = sportPositions
+                    .where((position) => position.isFinal)
+                    .fold(0, (sum, position) => sum + position.realizedProfit);
                 final profitColor = net > 0
                     ? Cyber.lime
                     : net < 0
                     ? Cyber.red
                     : Colors.white;
+                final sportLabel =
+                    sportModuleFor(_selectedSport).label.toUpperCase();
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -74,6 +102,11 @@ class _PredictionPicksHistoryScreenState
                       accent: Cyber.success,
                       onBack: () => Navigator.pop(context),
                     ),
+                    SportUnderlineTabs(
+                      activeIndex: _activeSportTab,
+                      selectedSport: _selectedSport,
+                      onTap: _onSportTabChanged,
+                    ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                       child: Row(
@@ -81,7 +114,7 @@ class _PredictionPicksHistoryScreenState
                           Expanded(
                             child: HistoryStatCell(
                               label: 'PICKS',
-                              value: '${positions.length}',
+                              value: '${sportPositions.length}',
                               accent: Cyber.success,
                             ),
                           ),
@@ -89,7 +122,7 @@ class _PredictionPicksHistoryScreenState
                           Expanded(
                             child: HistoryStatCell(
                               label: 'EXPOSURE',
-                              value: formatOzCompact(state.openExposureOz),
+                              value: formatOzCompact(openExposure),
                               accent: Cyber.success,
                             ),
                           ),
@@ -115,29 +148,58 @@ class _PredictionPicksHistoryScreenState
                     ),
                     const SizedBox(height: 12),
                     Expanded(
-                      child: filtered.isEmpty
-                          ? _EmptyHistory(
-                              hasAnyPicks: positions.isNotEmpty,
-                              filterLabel: _filterLabel(_filter),
-                            )
-                          : ListView.separated(
-                              padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
-                              itemCount: filtered.length,
-                              separatorBuilder: (context, index) =>
-                                  const SizedBox(height: 16),
-                              itemBuilder: (context, index) {
-                                final position = filtered[index];
-                                return _OzPickCard(
-                                  position: position,
-                                  market: state.marketFor(position.marketId),
-                                  onTap: () =>
-                                      _openMarket(context, position.marketId),
-                                  onSettle: position.canSettle
-                                      ? () => _settle(context, position)
-                                      : null,
-                                );
-                              },
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 240),
+                        transitionBuilder: (child, animation) {
+                          final slide = Tween<Offset>(
+                            begin: const Offset(0, 0.03),
+                            end: Offset.zero,
+                          ).animate(animation);
+                          return FadeTransition(
+                            opacity: animation,
+                            child: SlideTransition(
+                              position: slide,
+                              child: child,
                             ),
+                          );
+                        },
+                        child: KeyedSubtree(
+                          key: ValueKey<Sport>(_selectedSport),
+                          child: filtered.isEmpty
+                              ? _EmptyHistory(
+                                  hasAnyPicks: sportPositions.isNotEmpty,
+                                  filterLabel: _filterLabel(_filter),
+                                  sportLabel: sportLabel,
+                                )
+                              : ListView.separated(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    4,
+                                    16,
+                                    28,
+                                  ),
+                                  itemCount: filtered.length,
+                                  separatorBuilder: (context, index) =>
+                                      const SizedBox(height: 16),
+                                  itemBuilder: (context, index) {
+                                    final position = filtered[index];
+                                    return _OzPickCard(
+                                      position: position,
+                                      market: state.marketFor(
+                                        position.marketId,
+                                      ),
+                                      onTap: () => _openMarket(
+                                        context,
+                                        position.marketId,
+                                      ),
+                                      onSettle: position.canSettle
+                                          ? () => _settle(context, position)
+                                          : null,
+                                    );
+                                  },
+                                ),
+                        ),
+                      ),
                     ),
                   ],
                 );
@@ -600,19 +662,26 @@ class _PickHistoryStrip extends StatelessWidget {
 }
 
 class _EmptyHistory extends StatelessWidget {
-  const _EmptyHistory({required this.hasAnyPicks, required this.filterLabel});
+  const _EmptyHistory({
+    required this.hasAnyPicks,
+    required this.filterLabel,
+    required this.sportLabel,
+  });
 
   final bool hasAnyPicks;
   final String filterLabel;
+  final String sportLabel;
 
   @override
   Widget build(BuildContext context) {
     return CyberNoDataState(
       icon: hasAnyPicks ? Icons.filter_alt_off : Icons.ads_click,
-      title: hasAnyPicks ? 'No $filterLabel entries' : 'Be the 1st to pick',
+      title: hasAnyPicks
+          ? 'No $filterLabel entries'
+          : 'No $sportLabel picks yet',
       message: hasAnyPicks
           ? 'Switch filters to review the picks already on your board.'
-          : 'No one has submitted a pick here yet. Make the first call.',
+          : 'Place a $sportLabel pick and it will show up here.',
       accent: hasAnyPicks ? Cyber.success : Cyber.lime,
       spark: hasAnyPicks ? Icons.tune : Icons.flash_on,
     );

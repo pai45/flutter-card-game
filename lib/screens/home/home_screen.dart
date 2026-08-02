@@ -249,9 +249,12 @@ class HomeScreen extends StatelessWidget {
                                     child: CyberCtaButton(
                                       label: 'Match History',
                                       clip: false,
-                                      onPressed: () => showMatchHistoryArchive(
+                                      onPressed: () => showGameMatchHistory(
                                         context,
-                                        state.matchHistory,
+                                        gameLabel: 'Pitch Duel',
+                                        history: state.matchHistory
+                                            .where((e) => e.mode == 'match')
+                                            .toList(growable: false),
                                       ),
                                     ),
                                   ),

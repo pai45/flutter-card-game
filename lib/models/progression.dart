@@ -167,38 +167,190 @@ int calculateBasketballXP({
   return overtime ? min(26, base + 2) : base;
 }
 
+/// Per-mode / meta XP tracks. Profile total level uses [levelFromXp] on the
+/// sum of all track XP — the same curve as each individual track.
+enum ProgressTrack {
+  pitchDuel,
+  shootout,
+  footballChess,
+  quiz,
+  bingo,
+  guessPlayer,
+  finalOver,
+  hoopDuel,
+  grandPrix,
+  tennis,
+  prediction,
+  cardsMeta,
+}
+
+extension ProgressTrackX on ProgressTrack {
+  String get shortLabel => switch (this) {
+    ProgressTrack.pitchDuel => 'PITCH',
+    ProgressTrack.shootout => 'SHOOTOUT',
+    ProgressTrack.footballChess => 'CHESS',
+    ProgressTrack.quiz => 'QUIZ',
+    ProgressTrack.bingo => 'BINGO',
+    ProgressTrack.guessPlayer => 'GUESS',
+    ProgressTrack.finalOver => 'FINAL OVER',
+    ProgressTrack.hoopDuel => 'HOOP',
+    ProgressTrack.grandPrix => 'GP',
+    ProgressTrack.tennis => 'TENNIS',
+    ProgressTrack.prediction => 'PREDICT',
+    ProgressTrack.cardsMeta => 'CARDS',
+  };
+
+  String get displayLabel => switch (this) {
+    ProgressTrack.pitchDuel => 'PITCH DUEL',
+    ProgressTrack.shootout => 'PENALTY SHOOTOUT',
+    ProgressTrack.footballChess => 'FOOTBALL CHESS',
+    ProgressTrack.quiz => 'QUIZ',
+    ProgressTrack.bingo => 'FOOTBALL BINGO',
+    ProgressTrack.guessPlayer => 'GUESS PLAYER',
+    ProgressTrack.finalOver => 'FINAL OVER',
+    ProgressTrack.hoopDuel => 'HOOP DUEL',
+    ProgressTrack.grandPrix => 'GRAND PRIX',
+    ProgressTrack.tennis => 'TENNIS RALLY',
+    ProgressTrack.prediction => 'PREDICTIONS',
+    ProgressTrack.cardsMeta => 'CARDS / META',
+  };
+}
+
+Map<ProgressTrack, int> _normalizeXpByTrack(Map<ProgressTrack, int> raw) {
+  final out = <ProgressTrack, int>{};
+  for (final track in ProgressTrack.values) {
+    final xp = raw[track] ?? 0;
+    if (xp > 0) out[track] = xp;
+  }
+  return Map.unmodifiable(out);
+}
+
+Map<ProgressTrack, int> _xpByTrackFromJson(Map<String, dynamic> json) {
+  final raw = json['xpByTrack'];
+  if (raw is! Map) return const {};
+  final out = <ProgressTrack, int>{};
+  for (final entry in raw.entries) {
+    final name = entry.key.toString();
+    ProgressTrack? track;
+    for (final value in ProgressTrack.values) {
+      if (value.name == name) {
+        track = value;
+        break;
+      }
+    }
+    if (track == null) continue;
+    final xp = entry.value;
+    final asInt = xp is int ? xp : int.tryParse(xp.toString()) ?? 0;
+    if (asInt > 0) out[track] = asInt;
+  }
+  return _normalizeXpByTrack(out);
+}
+
 class PlayerProgression {
-  const PlayerProgression({required this.totalXP});
+  const PlayerProgression._(this.xpByTrack);
 
-  factory PlayerProgression.initial() => const PlayerProgression(totalXP: 0);
+  /// Test / rival helper: places [totalXP] on Cards/Meta so aggregate level
+  /// matches the legacy single-pool value.
+  factory PlayerProgression({int totalXP = 0, Map<ProgressTrack, int>? xpByTrack}) {
+    if (xpByTrack != null) {
+      return PlayerProgression._(_normalizeXpByTrack(xpByTrack));
+    }
+    if (totalXP <= 0) return PlayerProgression.initial();
+    return PlayerProgression._(
+      _normalizeXpByTrack({ProgressTrack.cardsMeta: totalXP}),
+    );
+  }
 
-  factory PlayerProgression.fromJson(Map<String, dynamic> json) =>
-      PlayerProgression(totalXP: json['totalXP'] as int? ?? 0);
+  factory PlayerProgression.initial() => const PlayerProgression._({});
 
-  final int totalXP;
+  factory PlayerProgression.fromJson(Map<String, dynamic> json) {
+    if (json['xpByTrack'] is Map) {
+      return PlayerProgression._(_xpByTrackFromJson(json));
+    }
+    // Legacy single-pool blob — caller should migrate via ledger when possible.
+    final legacyTotal = json['totalXP'] as int? ?? 0;
+    if (legacyTotal <= 0) return PlayerProgression.initial();
+    return PlayerProgression._(
+      _normalizeXpByTrack({ProgressTrack.cardsMeta: legacyTotal}),
+    );
+  }
+
+  /// True when JSON was the pre-track `{totalXP}` shape (no `xpByTrack` key).
+  static bool jsonIsLegacy(Map<String, dynamic> json) =>
+      json['xpByTrack'] is! Map;
+
+  final Map<ProgressTrack, int> xpByTrack;
+
+  int xpFor(ProgressTrack track) => xpByTrack[track] ?? 0;
+
+  int levelFor(ProgressTrack track) => levelFromXp(xpFor(track));
+
+  LevelProgress progressFor(ProgressTrack track) =>
+      levelProgress(xpFor(track));
+
+  int get totalXP => xpByTrack.values.fold<int>(0, (sum, xp) => sum + xp);
 
   int get playerLevel => levelFromXp(totalXP);
   int get xpIntoLevel => levelProgress(totalXP).intoLevel;
   int get xpToNextLevel => levelProgress(totalXP).levelSpan;
   int get xpRemainingToNextLevel => levelProgress(totalXP).toNextLevel;
 
-  Map<String, dynamic> toJson() => {'totalXP': totalXP};
+  /// Tracks with any XP, stable enum order — for mastery UI.
+  List<ProgressTrack> get earnedTracks => [
+    for (final track in ProgressTrack.values)
+      if (xpFor(track) > 0) track,
+  ];
 
-  // Apply XP delta and compute new level.
-  // Returns the updated progression state and a list of levels newly crossed.
-  // XP is never negative; losses floor at 0. No de-leveling occurs.
-  ({PlayerProgression updated, List<int> levelsGained}) applyXP(int delta) {
-    final oldLevel = playerLevel;
-    final newTotal = max(0, totalXP + delta);
-    final level = levelFromXp(newTotal);
-    final gained = List<int>.generate(
-      max(0, level - oldLevel),
-      (i) => oldLevel + i + 1,
+  Map<String, dynamic> toJson() => {
+    'xpByTrack': {
+      for (final track in ProgressTrack.values)
+        if (xpFor(track) > 0) track.name: xpFor(track),
+    },
+    // Keep totalXP for older readers / debugging; source of truth is xpByTrack.
+    'totalXP': totalXP,
+  };
+
+  /// Apply XP to one track. Returns levels crossed on the **total** curve when
+  /// any, otherwise levels crossed on the track (for celebration).
+  ({
+    PlayerProgression updated,
+    List<int> levelsGained,
+    List<int> trackLevelsGained,
+    List<int> totalLevelsGained,
+    ProgressTrack track,
+  })
+  applyXP(int delta, ProgressTrack track) {
+    final oldTrackXp = xpFor(track);
+    final oldTrackLevel = levelFromXp(oldTrackXp);
+    final oldTotalLevel = playerLevel;
+    final newTrackXp = max(0, oldTrackXp + delta);
+    final next = Map<ProgressTrack, int>.from(xpByTrack);
+    if (newTrackXp > 0) {
+      next[track] = newTrackXp;
+    } else {
+      next.remove(track);
+    }
+    final updated = PlayerProgression._(_normalizeXpByTrack(next));
+    final newTrackLevel = updated.levelFor(track);
+    final newTotalLevel = updated.playerLevel;
+    final trackLevelsGained = List<int>.generate(
+      max(0, newTrackLevel - oldTrackLevel),
+      (i) => oldTrackLevel + i + 1,
     );
+    final totalLevelsGained = List<int>.generate(
+      max(0, newTotalLevel - oldTotalLevel),
+      (i) => oldTotalLevel + i + 1,
+    );
+    final levelsGained = totalLevelsGained.isNotEmpty
+        ? totalLevelsGained
+        : trackLevelsGained;
 
     return (
-      updated: PlayerProgression(totalXP: newTotal),
-      levelsGained: gained,
+      updated: updated,
+      levelsGained: levelsGained,
+      trackLevelsGained: trackLevelsGained,
+      totalLevelsGained: totalLevelsGained,
+      track: track,
     );
   }
 }

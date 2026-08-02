@@ -1054,7 +1054,7 @@ const _guides = <_ModeGuide>[
       _GuideStat(
         icon: Icons.local_fire_department,
         label: 'HEAT',
-        sub: '3 straight = on fire',
+        sub: 'fill it to ignite',
         color: Cyber.amber,
       ),
     ],
@@ -1063,8 +1063,9 @@ const _guides = <_ModeGuide>[
         title: 'Move & Drive',
         body:
             'Hold ◀ ▶ to move. Double-tap a direction to burst-drive at the '
-            'rim. Quick direction flips are crossovers — they shake defenders '
-            'but expose the ball for a beat.',
+            'rim; double-tap again mid-drive to spin. Quick direction flips '
+            'are crossovers — they shake defenders but expose the ball for a '
+            'beat.',
       ),
       _GuideStep(
         title: 'Shoot on the meter',
@@ -1095,11 +1096,11 @@ const _guides = <_ModeGuide>[
             'rises to leap for the block. Whiffed lunges leave you beat.',
       ),
       _GuideStep(
-        title: 'Clear it & crash boards',
+        title: 'Crash the boards',
         body:
-            'Misses are live — tap under the drop marker to rebound. After a '
-            'steal or defensive board, carry the ball back beyond the arc '
-            'before you can score.',
+            'Misses are live — track the drop marker and tap ACTION to leap '
+            'for the rebound. An offensive board opens a quick put-back '
+            'window; there is no clear-the-ball step.',
       ),
     ],
     facts: [
@@ -1107,8 +1108,10 @@ const _guides = <_ModeGuide>[
         icon: Icons.local_fire_department,
         label: 'Heat',
         body:
-            'Three unanswered baskets set you on fire: faster, wider perfect '
-            'window, until the opponent answers.',
+            'Baskets, defensive stops and offensive boards build heat. Fill '
+            'the meter — or score 6 unanswered points — for 15 seconds of '
+            'faster movement, a wider perfect window, steadier stamina and a '
+            'shot boost. An opponent score ends it.',
       ),
       _GuideFact(
         icon: Icons.groups,

@@ -13,12 +13,11 @@ import 'dart:collection';
 import 'dart:math';
 import 'dart:ui';
 
-import 'package:flutter/material.dart' show Colors, TextPainter;
+import 'package:flutter/material.dart' show TextPainter;
 
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flame/particles.dart';
-import 'package:flame/text.dart';
 import 'package:flutter/foundation.dart' show ValueNotifier;
 
 import '../../config/theme.dart';
@@ -79,6 +78,9 @@ class BasketballGame extends FlameGame {
   final ValueNotifier<bool> heatActiveCpu = ValueNotifier(false);
   final ValueNotifier<ShotMeterView?> meter = ValueNotifier(null);
   final ValueNotifier<int> possession = ValueNotifier(0);
+  final ValueNotifier<BasketballActionCue> actionCue = ValueNotifier(
+    BasketballActionCue.defend,
+  );
   final ValueNotifier<BasketballSting?> sting = ValueNotifier(null);
 
   // Input state fed by the Flutter control pads.
@@ -332,6 +334,7 @@ class BasketballGame extends FlameGame {
     heatActiveCpu.value = engine.teams[1].heatActive;
     meter.value = engine.meterView(0);
     possession.value = engine.ball.holder;
+    actionCue.value = engine.playerActionCue;
   }
 
   // -- event → juice mapping ---------------------------------------------------
@@ -367,7 +370,11 @@ class BasketballGame extends FlameGame {
           crowdHype = 1;
           _sting(
             event.team == 0
-                ? _pick(const ['THROWN DOWN!', 'HAMMER TIME!', 'WITH AUTHORITY!'])
+                ? _pick(const [
+                    'THROWN DOWN!',
+                    'HAMMER TIME!',
+                    'WITH AUTHORITY!',
+                  ])
                 : 'DUNKED ON YOUR RIM',
             event.team == 0 ? Cyber.gold : Cyber.danger,
             major: event.team == 0,
@@ -398,7 +405,9 @@ class BasketballGame extends FlameGame {
           );
         case BasketballEventType.steal:
           _sting(
-            event.team == 0 ? _pick(const ['STOLEN!', 'PICKED HIS POCKET!']) : 'TURNOVER!',
+            event.team == 0
+                ? _pick(const ['STOLEN!', 'PICKED HIS POCKET!'])
+                : 'TURNOVER!',
             event.team == 0 ? Cyber.cyan : Cyber.danger,
           );
         case BasketballEventType.ankleBreaker:
@@ -459,8 +468,7 @@ class BasketballGame extends FlameGame {
   }
 
   /// Render-side label variety — uses the fx RNG, never the sim RNG.
-  String _pick(List<String> options) =>
-      options[_fxRng.nextInt(options.length)];
+  String _pick(List<String> options) => options[_fxRng.nextInt(options.length)];
 
   void _swishBurst() {
     if (reducedMotion || !isLoaded) return;
@@ -530,6 +538,7 @@ class BasketballGame extends FlameGame {
     heatActiveCpu.dispose();
     meter.dispose();
     possession.dispose();
+    actionCue.dispose();
     sting.dispose();
     super.onRemove();
   }
@@ -542,42 +551,245 @@ class BasketballGame extends FlameGame {
 /// Rooftop neon court: skyline greebles, bobbing crowd silhouettes, hardwood
 /// band with cyber markings, hoop assembly with a swaying net and a diegetic
 /// shot-clock box. Court markings stay high-contrast; atmosphere stays dark.
+class _StarSpec {
+  const _StarSpec(this.x01, this.y01, this.radius, this.alpha);
+
+  final double x01;
+  final double y01;
+  final double radius;
+  final double alpha;
+}
+
+class _TowerWindowSpec {
+  const _TowerWindowSpec(this.x01, this.y01, this.cyan);
+
+  final double x01;
+  final double y01;
+  final bool cyan;
+}
+
+class _TowerSpec {
+  const _TowerSpec({
+    required this.worldX,
+    required this.width,
+    required this.height,
+    required this.near,
+    required this.billboard,
+    required this.billboardY01,
+    required this.billboardCyan,
+    required this.windows,
+  });
+
+  final double worldX;
+  final double width;
+  final double height;
+  final bool near;
+  final bool billboard;
+  final double billboardY01;
+  final bool billboardCyan;
+  final List<_TowerWindowSpec> windows;
+}
+
+enum _RoofPropKind { acUnit, antenna, railing }
+
+class _RoofPropSpec {
+  const _RoofPropSpec({
+    required this.worldX,
+    required this.kind,
+    required this.width,
+    required this.height,
+  });
+
+  final double worldX;
+  final _RoofPropKind kind;
+  final double width;
+  final double height;
+}
+
+class _ArenaFixtureSpec {
+  const _ArenaFixtureSpec(this.x01, this.homeSide, this.drop);
+
+  final double x01;
+  final bool homeSide;
+  final double drop;
+}
+
+class _CameraFlashSpec {
+  const _CameraFlashSpec(this.x01, this.height, this.phase);
+
+  final double x01;
+  final double height;
+  final int phase;
+}
+
 class _CourtComponent extends PositionComponent
     with HasGameReference<BasketballGame> {
+  _CourtComponent()
+    : _stars = _buildStars(),
+      _towers = _buildTowers(),
+      _roofPropSpecs = _buildRoofProps();
+
   double _time = 0;
 
+  final List<_StarSpec> _stars;
+  final List<_TowerSpec> _towers;
+  final List<_RoofPropSpec> _roofPropSpecs;
+
+  static const List<_ArenaFixtureSpec> _arenaFixtures = [
+    _ArenaFixtureSpec(0.10, true, 0.18),
+    _ArenaFixtureSpec(0.25, true, 0.10),
+    _ArenaFixtureSpec(0.39, true, 0.16),
+    _ArenaFixtureSpec(0.61, false, 0.16),
+    _ArenaFixtureSpec(0.75, false, 0.10),
+    _ArenaFixtureSpec(0.90, false, 0.18),
+  ];
+  static const List<_CameraFlashSpec> _cameraFlashes = [
+    _CameraFlashSpec(0.12, 1.08, 0),
+    _CameraFlashSpec(0.32, 0.92, 4),
+    _CameraFlashSpec(0.56, 1.18, 7),
+    _CameraFlashSpec(0.78, 1.02, 10),
+    _CameraFlashSpec(0.92, 0.88, 13),
+  ];
+
+  final Paint _fillPaint = Paint();
+  final Paint _strokePaint = Paint()..style = PaintingStyle.stroke;
+  final Paint _linePaint = Paint();
+  final Paint _shaderPaint = Paint();
+
+  double _shaderWidth = -1;
+  double _shaderHeight = -1;
+  double _shaderFloorY = -1;
+  Shader? _skyShader;
+  Shader? _hazeShader;
+  Shader? _floorShader;
+
+  static List<_StarSpec> _buildStars() {
+    final rng = Random(11);
+    return List<_StarSpec>.unmodifiable(
+      List.generate(
+        24,
+        (_) => _StarSpec(
+          rng.nextDouble(),
+          rng.nextDouble() * 0.72,
+          0.4 + rng.nextDouble() * 1.1,
+          0.08 + rng.nextDouble() * 0.16,
+        ),
+      ),
+    );
+  }
+
+  static List<_TowerSpec> _buildTowers() {
+    final rng = Random(7);
+    return List<_TowerSpec>.unmodifiable(
+      List.generate(12, (index) {
+        final windows = <_TowerWindowSpec>[];
+        for (var window = 0; window < 7; window++) {
+          if (rng.nextDouble() < 0.44) continue;
+          windows.add(
+            _TowerWindowSpec(
+              0.12 + rng.nextDouble() * 0.76,
+              0.10 + rng.nextDouble() * 0.78,
+              window.isEven,
+            ),
+          );
+        }
+        return _TowerSpec(
+          worldX: index * 1.55 - 2.6,
+          width: 0.78 + rng.nextDouble() * 0.85,
+          height: 2.0 + rng.nextDouble() * 2.5,
+          near: index.isOdd,
+          billboard: rng.nextDouble() < 0.36,
+          billboardY01: 0.18 + rng.nextDouble() * 0.32,
+          billboardCyan: rng.nextBool(),
+          windows: List.unmodifiable(windows),
+        );
+      }),
+    );
+  }
+
+  static List<_RoofPropSpec> _buildRoofProps() {
+    final rng = Random(23);
+    return List<_RoofPropSpec>.unmodifiable(
+      List.generate(
+        13,
+        (index) => _RoofPropSpec(
+          worldX: index * 1.35 - 2.0,
+          kind: _RoofPropKind.values[rng.nextInt(_RoofPropKind.values.length)],
+          width: 0.55 + rng.nextDouble() * 0.55,
+          height: 0.28 + rng.nextDouble() * 0.75,
+        ),
+      ),
+    );
+  }
+
   static final TextPaint _clockText = TextPaint(
-    style: TextStyle(
-      fontFamily: Cyber.displayFont,
-      fontSize: 13,
-      fontWeight: FontWeight.w800,
+    style: Cyber.label(
+      13,
       color: Cyber.gold,
+      weight: FontWeight.w800,
+      letterSpacing: 0,
       fontFeatures: const [FontFeature.tabularFigures()],
     ),
   );
   static final TextPaint _clockTextDanger = TextPaint(
-    style: TextStyle(
-      fontFamily: Cyber.displayFont,
-      fontSize: 13,
-      fontWeight: FontWeight.w800,
+    style: Cyber.label(
+      13,
       color: Cyber.danger,
+      weight: FontWeight.w800,
+      letterSpacing: 0,
       fontFeatures: const [FontFeature.tabularFigures()],
     ),
   );
   static final TextPaint _tickerStyle = TextPaint(
-    style: TextStyle(
-      fontFamily: Cyber.displayFont,
-      fontSize: 10,
-      fontWeight: FontWeight.w700,
-      letterSpacing: 2,
+    style: Cyber.label(
+      10,
       color: Cyber.cyan.withValues(alpha: 0.5),
+      weight: FontWeight.w700,
+      letterSpacing: 2,
       fontFeatures: const [FontFeature.tabularFigures()],
     ),
   );
 
   // Cached ticker layout — rebuilt only when the score/half changes.
+  static final TextPaint _bannerStyle = TextPaint(
+    style: Cyber.label(
+      8,
+      color: AppTheme.textContrast.withValues(alpha: 0.84),
+      weight: FontWeight.w800,
+      letterSpacing: 1.3,
+    ),
+  );
+  static final TextPaint _goldCourtLabel = TextPaint(
+    style: Cyber.label(
+      8,
+      color: Cyber.gold.withValues(alpha: 0.52),
+      weight: FontWeight.w800,
+      letterSpacing: 1.5,
+    ),
+  );
+  static final TextPaint _cyanCourtLabel = TextPaint(
+    style: Cyber.label(
+      8,
+      color: Cyber.cyan.withValues(alpha: 0.46),
+      weight: FontWeight.w800,
+      letterSpacing: 1.5,
+    ),
+  );
+  static final TextPaint _emblemStyle = TextPaint(
+    style: Cyber.label(
+      8,
+      color: Cyber.cyan.withValues(alpha: 0.38),
+      weight: FontWeight.w900,
+      letterSpacing: 1.8,
+    ),
+  );
+
   int _tickerKey = -1;
   TextPainter? _tickerPainter;
+  String? _homeBannerId;
+  String? _cpuBannerId;
+  TextPainter? _homeBannerPainter;
+  TextPainter? _cpuBannerPainter;
 
   @override
   void update(double dt) {
@@ -595,6 +807,7 @@ class _CourtComponent extends PositionComponent
 
     _skyline(canvas, gameRef, size, floorY, px);
     _roofProps(canvas, gameRef, size, floorY, px);
+    _eventRig(canvas, gameRef, size, floorY, px);
     _crowd(canvas, gameRef, size, floorY, px);
     _floor(canvas, gameRef, size, floorY, px);
     _hoop(canvas, gameRef, px);
@@ -602,6 +815,61 @@ class _CourtComponent extends PositionComponent
 
   /// Near-rooftop props (AC units, antennas, railing) at parallax 0.3 —
   /// the depth layer between the far towers (0.15) and the crowd (1.0).
+  double _decorativeTime(BasketballGame gameRef) =>
+      gameRef.reducedMotion ? 0 : _time;
+
+  Paint _solid(Color color) => _fillPaint
+    ..shader = null
+    ..style = PaintingStyle.fill
+    ..color = color;
+
+  Paint _outline(Color color, double width) => _strokePaint
+    ..shader = null
+    ..style = PaintingStyle.stroke
+    ..strokeCap = StrokeCap.butt
+    ..strokeWidth = width
+    ..color = color;
+
+  Paint _line(Color color, double width, {StrokeCap cap = StrokeCap.butt}) =>
+      _linePaint
+        ..shader = null
+        ..style = PaintingStyle.fill
+        ..strokeCap = cap
+        ..strokeWidth = width
+        ..color = color;
+
+  void _ensureShaders(Vector2 size, double floorY, double px) {
+    if (_shaderWidth == size.x &&
+        _shaderHeight == size.y &&
+        _shaderFloorY == floorY) {
+      return;
+    }
+    _shaderWidth = size.x;
+    _shaderHeight = size.y;
+    _shaderFloorY = floorY;
+    final skyBottom = max(1.0, floorY - 2.0 * px);
+    _skyShader = Gradient.linear(
+      Offset.zero,
+      Offset(0, skyBottom),
+      [Cyber.arenaSky, Cyber.arenaVioletHorizon, Cyber.bg],
+      const [0, 0.62, 1],
+    );
+    _hazeShader = Gradient.linear(
+      Offset(0, skyBottom - px * 0.9),
+      Offset(0, skyBottom + px * 0.5),
+      [
+        Cyber.arenaHorizon.withValues(alpha: 0),
+        Cyber.cyan.withValues(alpha: 0.055),
+        Cyber.arenaHorizon.withValues(alpha: 0.28),
+      ],
+      const [0, 0.56, 1],
+    );
+    _floorShader = Gradient.linear(Offset(0, floorY), Offset(0, size.y), [
+      Cyber.arenaVioletHorizon,
+      Cyber.arenaFloor,
+    ]);
+  }
+
   void _roofProps(
     Canvas canvas,
     BasketballGame gameRef,
@@ -609,56 +877,60 @@ class _CourtComponent extends PositionComponent
     double floorY,
     double px,
   ) {
-    final rng = Random(23);
-    final dark = Paint()..color = const Color(0xff0d1220);
-    final darker = Paint()..color = const Color(0xff161d30);
     final baseY = floorY - 1.62 * px;
-    for (var i = 0; i < 12; i++) {
-      final worldX = i * 1.45 - 1.8;
+    for (final spec in _roofPropSpecs) {
       final at = gameRef.worldToScreen(
-        worldX * 0.7 + gameRef._camX * 0.3,
+        spec.worldX * 0.7 + gameRef._camX * 0.3,
         0,
       );
-      switch (rng.nextInt(3)) {
-        case 0: // AC unit with a fan hint.
-          final w = (0.5 + rng.nextDouble() * 0.3) * px;
-          final h = 0.30 * px;
-          canvas.drawRect(
-            Rect.fromLTWH(at.dx - w / 2, baseY - h, w, h),
-            dark,
+      final width = spec.width * px;
+      final height = spec.height * px;
+      switch (spec.kind) {
+        case _RoofPropKind.acUnit:
+          final unit = Rect.fromLTWH(
+            at.dx - width / 2,
+            baseY - min(height, 0.42 * px),
+            width,
+            min(height, 0.42 * px),
           );
-          canvas.drawCircle(Offset(at.dx, baseY - h / 2), h * 0.28, darker);
-        case 1: // Antenna mast with a cross-bar.
-          final h = (0.7 + rng.nextDouble() * 0.5) * px;
-          final mast = Paint()
-            ..color = const Color(0xff0d1220)
-            ..strokeWidth = 2;
+          canvas.drawRect(unit, _solid(Cyber.bg));
+          canvas.drawRect(
+            unit.deflate(2),
+            _outline(Cyber.line.withValues(alpha: 0.28), 1),
+          );
+          canvas.drawCircle(
+            unit.center,
+            unit.height * 0.24,
+            _outline(Cyber.line.withValues(alpha: 0.34), 1),
+          );
+        case _RoofPropKind.antenna:
           canvas.drawLine(
             Offset(at.dx, baseY),
-            Offset(at.dx, baseY - h),
-            mast,
+            Offset(at.dx, baseY - height),
+            _line(Cyber.borderMuted, 2),
           );
           canvas.drawLine(
-            Offset(at.dx - 0.1 * px, baseY - h * 0.6),
-            Offset(at.dx + 0.1 * px, baseY - h * 0.6),
-            mast,
+            Offset(at.dx - 0.1 * px, baseY - height * 0.62),
+            Offset(at.dx + 0.1 * px, baseY - height * 0.62),
+            _line(Cyber.borderMuted, 2),
           );
-        case 2: // Railing run.
-          final w = (0.8 + rng.nextDouble() * 0.4) * px;
-          final rail = Paint()
-            ..color = const Color(0xff0d1220)
-            ..strokeWidth = 2;
+          canvas.drawCircle(
+            Offset(at.dx, baseY - height),
+            2,
+            _solid(Cyber.magenta.withValues(alpha: 0.32)),
+          );
+        case _RoofPropKind.railing:
           canvas.drawLine(
-            Offset(at.dx - w / 2, baseY - 0.16 * px),
-            Offset(at.dx + w / 2, baseY - 0.16 * px),
-            rail,
+            Offset(at.dx - width / 2, baseY - 0.16 * px),
+            Offset(at.dx + width / 2, baseY - 0.16 * px),
+            _line(Cyber.borderMuted, 2),
           );
           for (var p = 0; p <= 3; p++) {
-            final postX = at.dx - w / 2 + w * p / 3;
+            final postX = at.dx - width / 2 + width * p / 3;
             canvas.drawLine(
               Offset(postX, baseY),
               Offset(postX, baseY - 0.16 * px),
-              rail,
+              _line(Cyber.borderMuted, 2),
             );
           }
       }
@@ -672,35 +944,26 @@ class _CourtComponent extends PositionComponent
     double floorY,
     double px,
   ) {
-    // Night-sky gradient: deep violet up top settling into the base bg at
-    // the tower line — the farthest depth layer.
-    final skyBottom = floorY - 2.2 * px;
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, size.x, max(0, skyBottom)),
-      Paint()
-        ..shader = Gradient.linear(
-          Offset.zero,
-          Offset(0, skyBottom),
-          [const Color(0xff140b1e), Cyber.bg],
-        ),
-    );
+    _ensureShaders(size, floorY, px);
+    final skyBottom = floorY - 2.0 * px;
+    _shaderPaint
+      ..style = PaintingStyle.fill
+      ..shader = _skyShader;
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.x, floorY), _shaderPaint);
 
-    // Star specks (seeded, screen-fixed — infinite-distance parallax).
-    final starRng = Random(11);
-    for (var i = 0; i < 16; i++) {
-      final sx = starRng.nextDouble() * size.x;
-      final sy = starRng.nextDouble() * max(0, skyBottom) * 0.65;
+    final decorativeT = _decorativeTime(gameRef);
+    for (var i = 0; i < _stars.length; i++) {
+      final star = _stars[i];
+      final twinkle = gameRef.reducedMotion
+          ? 1.0
+          : 0.82 + sin(decorativeT * 1.7 + i * 1.9) * 0.18;
       canvas.drawCircle(
-        Offset(sx, sy),
-        0.4 + starRng.nextDouble() * 1.2,
-        Paint()
-          ..color = const Color(0xffe8ecf2).withValues(
-            alpha: 0.10 + starRng.nextDouble() * 0.15,
-          ),
+        Offset(star.x01 * size.x, star.y01 * max(0, skyBottom)),
+        star.radius,
+        _solid(AppTheme.textContrast.withValues(alpha: star.alpha * twinkle)),
       );
     }
 
-    // Crescent moon: two offset flat circles, no blur.
     final moonC = Offset(
       size.x * 0.78 - gameRef._camX * px * 0.05,
       size.y * 0.14,
@@ -708,96 +971,288 @@ class _CourtComponent extends PositionComponent
     canvas.drawCircle(
       moonC,
       px * 0.30,
-      Paint()..color = const Color(0xffe8ecf2).withValues(alpha: 0.45),
+      _solid(AppTheme.textContrast.withValues(alpha: 0.42)),
     );
     canvas.drawCircle(
       moonC + Offset(-px * 0.11, -px * 0.05),
       px * 0.27,
-      Paint()..color = const Color(0xff140b1e),
+      _solid(Cyber.arenaSky),
     );
 
-    // Drifting blimp with a holo side-banner in the player's livery.
     final blimpW = px * 1.4;
-    final blimpX =
-        (_time * 8) % (size.x + blimpW * 2) - blimpW;
+    final blimpTravel = size.x + blimpW * 2;
+    final blimpX = gameRef.reducedMotion
+        ? size.x * 0.24
+        : (decorativeT * 8) % blimpTravel - blimpW;
     final blimpY = size.y * 0.09;
     final hull = Rect.fromCenter(
       center: Offset(blimpX, blimpY),
       width: blimpW,
       height: px * 0.4,
     );
-    final hullPaint = Paint()..color = const Color(0xff10172a);
-    canvas.drawOval(hull, hullPaint);
-    // Tail fin.
+    canvas.drawOval(hull, _solid(Cyber.card));
     final fin = Path()
       ..moveTo(blimpX - blimpW * 0.42, blimpY)
       ..lineTo(blimpX - blimpW * 0.62, blimpY - px * 0.22)
       ..lineTo(blimpX - blimpW * 0.62, blimpY + px * 0.22)
       ..close();
-    canvas.drawPath(fin, hullPaint);
+    canvas.drawPath(fin, _solid(Cyber.card));
     canvas.drawRect(
       Rect.fromCenter(
         center: Offset(blimpX, blimpY),
         width: blimpW * 0.6,
         height: px * 0.16,
       ),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.4
-        ..color = basketballTeamById(gameRef.config.teamId)
-            .primary
-            .withValues(alpha: 0.15),
+      _outline(
+        basketballTeamById(
+          gameRef.config.teamId,
+        ).primary.withValues(alpha: 0.28),
+        1.4,
+      ),
     );
 
-    // Background Grid
-    for (var i = 0; i < 15; i++) {
-       final gridY = floorY - px * 2.5 - i * px * 0.45;
-       canvas.drawLine(
-         Offset(0, gridY),
-         Offset(size.x, gridY),
-         Paint()..color = Cyber.magenta.withValues(alpha: 0.04)..strokeWidth = 1
-       );
+    for (var i = 0; i < 12; i++) {
+      final gridY = floorY - px * 2.3 - i * px * 0.45;
+      canvas.drawLine(
+        Offset(0, gridY),
+        Offset(size.x, gridY),
+        _line(Cyber.magenta.withValues(alpha: 0.035), 1),
+      );
     }
 
-    // Parallax towers: dark slabs with sparse neon windows and holo billboards.
-    final rng = Random(7);
-    for (var i = 0; i < 9; i++) {
-      final worldX = i * 1.9 - 1.5;
-      final at = gameRef.worldToScreen(worldX * 0.85 + gameRef._camX * 0.15, 0);
-      final width = (0.9 + rng.nextDouble()) * px;
-      final height = (2.4 + rng.nextDouble() * 2.6) * px;
-      final top = floorY - 2.2 * px - height;
-      canvas.drawRect(
-        Rect.fromLTWH(at.dx - width / 2, top, width, height),
-        Paint()..color = Cyber.bg2,
+    _drawTowerLayer(canvas, gameRef, floorY, px, near: false);
+
+    _shaderPaint
+      ..style = PaintingStyle.fill
+      ..shader = _hazeShader;
+    canvas.drawRect(
+      Rect.fromLTWH(0, max(0, skyBottom - px * 0.9), size.x, px * 1.45),
+      _shaderPaint,
+    );
+
+    _drawTowerLayer(canvas, gameRef, floorY, px, near: true);
+  }
+
+  void _drawTowerLayer(
+    Canvas canvas,
+    BasketballGame gameRef,
+    double floorY,
+    double px, {
+    required bool near,
+  }) {
+    final baseY = floorY - (near ? 1.78 : 1.95) * px;
+    for (final tower in _towers) {
+      if (tower.near != near) continue;
+      final parallax = near ? 0.86 : 0.68;
+      final centerX =
+          gameRef.size.x / 2 + (tower.worldX - gameRef._camX) * px * parallax;
+      final width = tower.width * px * (near ? 1 : 0.82);
+      final height = tower.height * px * (near ? 1 : 0.78);
+      final rect = Rect.fromLTWH(
+        centerX - width / 2,
+        baseY - height,
+        width,
+        height,
       );
-      
-      if (rng.nextDouble() < 0.35) {
-         canvas.drawRect(
-           Rect.fromLTWH(at.dx - width / 2 - 2, top + px * 0.5, width + 4, px * 0.8),
-           Paint()
-             ..color = (rng.nextBool() ? Cyber.cyan : Cyber.gold).withValues(alpha: 0.12)
-             ..style = PaintingStyle.stroke
-             ..strokeWidth = 2,
-         );
+      canvas.drawRect(rect, _solid(near ? Cyber.bg2 : Cyber.arenaHorizon));
+
+      if (tower.billboard) {
+        final board = Rect.fromLTWH(
+          rect.left - 2,
+          rect.top + rect.height * tower.billboardY01,
+          rect.width + 4,
+          min(px * 0.5, rect.height * 0.24),
+        );
+        final color = tower.billboardCyan ? Cyber.cyan : Cyber.magenta;
+        canvas.drawRect(
+          board,
+          _outline(color.withValues(alpha: near ? 0.19 : 0.10), 1.4),
+        );
       }
 
-      for (var w = 0; w < 4; w++) {
-        if (rng.nextDouble() < 0.5) continue;
+      for (final window in tower.windows) {
         canvas.drawRect(
           Rect.fromLTWH(
-            at.dx - width / 2 + 4 + rng.nextDouble() * (width - 10),
-            top + 6 + rng.nextDouble() * (height - 14),
-            3,
-            5,
+            rect.left + rect.width * window.x01,
+            rect.top + rect.height * window.y01,
+            near ? 3 : 2,
+            near ? 5 : 4,
           ),
-          Paint()
-            ..color = (w.isEven ? Cyber.cyan : Cyber.magenta).withValues(
-              alpha: 0.28,
+          _solid(
+            (window.cyan ? Cyber.cyan : Cyber.magenta).withValues(
+              alpha: near ? 0.23 : 0.12,
             ),
+          ),
         );
       }
     }
+  }
+
+  void _eventRig(
+    Canvas canvas,
+    BasketballGame gameRef,
+    Vector2 size,
+    double floorY,
+    double px,
+  ) {
+    final home = basketballTeamById(gameRef.config.teamId);
+    final cpu = basketballTeamById(gameRef.config.cpuTeamId);
+
+    // Stepped grandstand slabs create a readable event bowl behind the player
+    // silhouettes without competing with the live court markings.
+    for (var tier = 0; tier < 3; tier++) {
+      final inset = size.x * (0.015 + tier * 0.025);
+      final top = floorY - (1.72 - tier * 0.32) * px;
+      final bottom = top + px * 0.38;
+      final step = Path()
+        ..moveTo(inset + px * 0.18, top)
+        ..lineTo(size.x - inset, top)
+        ..lineTo(size.x - inset - px * 0.18, bottom)
+        ..lineTo(inset, bottom)
+        ..close();
+      canvas.drawPath(
+        step,
+        _solid(
+          (tier.isEven ? Cyber.bg2 : Cyber.panel).withValues(
+            alpha: tier == 2 ? 0.72 : 0.55,
+          ),
+        ),
+      );
+      canvas.drawLine(
+        Offset(inset + px * 0.18, top),
+        Offset(size.x - inset, top),
+        _line(Cyber.line.withValues(alpha: 0.22), 1),
+      );
+    }
+
+    final trussTop = floorY - 3.05 * px;
+    final trussBase = floorY - 0.72 * px;
+    final left = size.x * 0.045;
+    final right = size.x * 0.955;
+    canvas.drawLine(
+      Offset(left, trussTop),
+      Offset(right, trussTop),
+      _line(Cyber.borderMuted.withValues(alpha: 0.72), 2),
+    );
+    for (final x in [left, right]) {
+      canvas.drawLine(
+        Offset(x, trussTop),
+        Offset(x, trussBase),
+        _line(Cyber.borderMuted.withValues(alpha: 0.72), 2),
+      );
+      for (var segment = 0; segment < 4; segment++) {
+        final y0 = trussTop + (trussBase - trussTop) * segment / 4;
+        final y1 = trussTop + (trussBase - trussTop) * (segment + 1) / 4;
+        final inward = x == left ? px * 0.17 : -px * 0.17;
+        canvas.drawLine(
+          Offset(x, y0),
+          Offset(x + inward, y1),
+          _line(Cyber.line.withValues(alpha: 0.34), 1),
+        );
+        canvas.drawLine(
+          Offset(x + inward, y0),
+          Offset(x, y1),
+          _line(Cyber.line.withValues(alpha: 0.34), 1),
+        );
+      }
+    }
+
+    for (final fixture in _arenaFixtures) {
+      final x = size.x * fixture.x01;
+      final team = fixture.homeSide ? home : cpu;
+      final fixtureRect = Rect.fromCenter(
+        center: Offset(x, trussTop + fixture.drop * px),
+        width: px * 0.22,
+        height: px * 0.16,
+      );
+      canvas.drawRect(fixtureRect, _solid(Cyber.panel));
+      canvas.drawLine(
+        Offset(x, trussTop),
+        Offset(x, fixtureRect.top),
+        _line(Cyber.line.withValues(alpha: 0.38), 1),
+      );
+      canvas.drawLine(
+        Offset(fixtureRect.left + 2, fixtureRect.bottom),
+        Offset(fixtureRect.right - 2, fixtureRect.bottom),
+        _line(team.primary.withValues(alpha: 0.42), 2),
+      );
+    }
+
+    _ensureBannerPainters(home.id, cpu.id);
+    final bannerY = floorY - 2.35 * px;
+    _drawTeamBanner(
+      canvas,
+      center: Offset(size.x * 0.21, bannerY),
+      width: px * 1.55,
+      height: px * 0.48,
+      color: home.primary,
+      painter: _homeBannerPainter!,
+      mirrored: false,
+    );
+    _drawTeamBanner(
+      canvas,
+      center: Offset(size.x * 0.79, bannerY),
+      width: px * 1.55,
+      height: px * 0.48,
+      color: cpu.primary,
+      painter: _cpuBannerPainter!,
+      mirrored: true,
+    );
+  }
+
+  void _ensureBannerPainters(String homeId, String cpuId) {
+    if (_homeBannerId != homeId) {
+      _homeBannerId = homeId;
+      _homeBannerPainter = _bannerStyle.toTextPainter(
+        'YOU·${_arenaTeamCode(homeId)}',
+      );
+    }
+    if (_cpuBannerId != cpuId) {
+      _cpuBannerId = cpuId;
+      _cpuBannerPainter = _bannerStyle.toTextPainter(
+        '${_arenaTeamCode(cpuId)}·CPU',
+      );
+    }
+  }
+
+  String _arenaTeamCode(String id) =>
+      id.substring(0, min(3, id.length)).toUpperCase();
+
+  void _drawTeamBanner(
+    Canvas canvas, {
+    required Offset center,
+    required double width,
+    required double height,
+    required Color color,
+    required TextPainter painter,
+    required bool mirrored,
+  }) {
+    final rect = Rect.fromCenter(center: center, width: width, height: height);
+    final cut = min(8.0, height * 0.28);
+    final banner = Path()
+      ..moveTo(rect.left + (mirrored ? 0 : cut), rect.top)
+      ..lineTo(rect.right - (mirrored ? cut : 0), rect.top)
+      ..lineTo(rect.right, rect.top + (mirrored ? cut : 0))
+      ..lineTo(rect.right - (mirrored ? 0 : cut), rect.bottom)
+      ..lineTo(rect.left + (mirrored ? cut : 0), rect.bottom)
+      ..lineTo(rect.left, rect.bottom - (mirrored ? 0 : cut))
+      ..close();
+    canvas.drawPath(banner, _solid(Color.lerp(Cyber.panel, color, 0.22)!));
+    canvas.drawPath(
+      banner,
+      _outline(Color.lerp(Cyber.line, color, 0.58)!, 1.2),
+    );
+    canvas
+      ..save()
+      ..clipPath(banner);
+    painter.paint(
+      canvas,
+      Offset(
+        rect.center.dx - painter.width / 2,
+        rect.center.dy - painter.height / 2,
+      ),
+    );
+    canvas.restore();
   }
 
   void _crowd(
@@ -811,16 +1266,16 @@ class _CourtComponent extends PositionComponent
     final hyped = engine.teams[0].heatActive || engine.teams[1].heatActive;
     // Sustained heat sets the floor; big-play hype surges on top (the crowd
     // "stands up" for a beat, then settles).
-    final amp = (hyped ? 0.08 : 0.03) + gameRef.crowdHype * 0.06;
+    final amp = gameRef.reducedMotion
+        ? 0.0
+        : (hyped ? 0.08 : 0.03) + gameRef.crowdHype * 0.06;
     final freq = hyped ? 7.0 : 2.4 + gameRef.crowdHype * 3;
+    final decorativeT = _decorativeTime(gameRef);
     final userLivery = basketballTeamById(gameRef.config.teamId);
     final cpuLivery = basketballTeamById(gameRef.config.cpuTeamId);
     for (final layer in const [0, 1]) {
       final baseY = floorY - (1.35 - layer * 0.55) * px;
-      final base = layer == 0
-          ? const Color(0xff0b101c)
-          : const Color(0xff10172a);
-      final paint = Paint()..color = base;
+      final base = layer == 0 ? Cyber.bg : Cyber.card;
       final path = Path()..moveTo(0, baseY + px);
       final pockets = <Rect>[];
       final pocketColors = <Color>[];
@@ -831,7 +1286,7 @@ class _CourtComponent extends PositionComponent
         final hash = sin(sx * 12.9898 + layer * 78.233) * 43758.5453;
         final variance = (hash - hash.floorToDouble()) * 0.16;
         final head = 0.16 + variance + layer * 0.1;
-        final bob = sin(_time * freq + sx * 0.11 + layer * 2) * amp * px;
+        final bob = sin(decorativeT * freq + sx * 0.11 + layer * 2) * amp * px;
         path.lineTo(sx, baseY - head * px + bob);
         path.lineTo(sx + px * 0.25, baseY - (0.05 + layer * 0.1) * px + bob);
         // Team-color fan pockets, alternating supporters.
@@ -852,24 +1307,25 @@ class _CourtComponent extends PositionComponent
       path
         ..lineTo(size.x + 20, baseY + px)
         ..close();
-      canvas.drawPath(path, paint);
+      canvas.drawPath(path, _solid(base));
       for (var i = 0; i < pockets.length; i++) {
-        canvas.drawRect(pockets[i], Paint()..color = pocketColors[i]);
+        canvas.drawRect(pockets[i], _solid(pocketColors[i]));
       }
     }
     // Camera flashes when hyped or surging on a big play.
-    if (hyped || gameRef.crowdHype > 0.3) {
-      final flashRng = Random((_time * 12).floor());
-      for (var i = 0; i < 4; i++) {
-         if (flashRng.nextDouble() < 0.15) {
-             final fx = flashRng.nextDouble() * size.x;
-             final fy = floorY - px * (0.85 + flashRng.nextDouble() * 0.5);
-             canvas.drawCircle(
-               Offset(fx, fy),
-               px * 0.12,
-               Paint()..color = Colors.white.withValues(alpha: flashRng.nextDouble() * 0.9),
-             );
-         }
+    if (!gameRef.reducedMotion && (hyped || gameRef.crowdHype > 0.3)) {
+      final beat = (decorativeT * 12).floor();
+      for (final flash in _cameraFlashes) {
+        if ((beat + flash.phase) % 17 != 0) continue;
+        canvas.drawCircle(
+          Offset(flash.x01 * size.x, floorY - px * flash.height),
+          px * 0.055,
+          _solid(
+            AppTheme.textContrast.withValues(
+              alpha: 0.28 + gameRef.crowdHype * 0.42,
+            ),
+          ),
+        );
       }
     }
 
@@ -878,19 +1334,40 @@ class _CourtComponent extends PositionComponent
     final railH = 0.78 * px;
     canvas.drawRect(
       Rect.fromLTWH(0, railY, size.x, railH),
-      Paint()..color = const Color(0xff070b14),
+      _solid(Cyber.arenaFloor),
     );
     _ticker(canvas, gameRef, size, railY, railH);
     // The rail edge lifts briefly when a basket flashes the boards.
-    final edgeLift =
-        gameRef.scoreFlashT > 0 ? gameRef.scoreFlashT / kBbScoreFlashSeconds : 0.0;
+    final edgeLift = gameRef.scoreFlashT > 0
+        ? gameRef.scoreFlashT / kBbScoreFlashSeconds
+        : 0.0;
     canvas.drawLine(
       Offset(0, railY),
       Offset(size.x, railY),
-      Paint()
-        ..color = Cyber.cyan.withValues(alpha: 0.25 + edgeLift * 0.4)
-        ..strokeWidth = 2.0,
+      _line(
+        edgeLift > 0
+            ? gameRef.scoreFlashColor.withValues(alpha: 0.25 + edgeLift * 0.5)
+            : Cyber.cyan.withValues(alpha: 0.25),
+        2,
+      ),
     );
+
+    // Calm team-color LED segments brand the venue; only the scoring response
+    // brightens them, keeping persistent chrome free of glow.
+    final ledY = railY + railH - 3;
+    const ledCount = 12;
+    final gap = 3.0;
+    final ledW = (size.x - gap * (ledCount + 1)) / ledCount;
+    for (var index = 0; index < ledCount; index++) {
+      final teamColor = index < ledCount ~/ 2
+          ? userLivery.primary
+          : cpuLivery.primary;
+      final activeColor = edgeLift > 0 ? gameRef.scoreFlashColor : teamColor;
+      canvas.drawRect(
+        Rect.fromLTWH(gap + index * (ledW + gap), ledY, ledW, 1.5),
+        _solid(activeColor.withValues(alpha: 0.22 + edgeLift * 0.42)),
+      );
+    }
   }
 
   /// Scrolling LED score/flavor line on the hoarding rail. The laid-out text
@@ -903,7 +1380,8 @@ class _CourtComponent extends PositionComponent
     double railH,
   ) {
     final engine = gameRef.engine;
-    final key = engine.teams[0].score * 1000 +
+    final key =
+        engine.teams[0].score * 1000 +
         engine.teams[1].score +
         engine.halfIndex * 1000000;
     if (key != _tickerKey || _tickerPainter == null) {
@@ -924,7 +1402,9 @@ class _CourtComponent extends PositionComponent
     canvas.save();
     canvas.clipRect(Rect.fromLTWH(0, railY, size.x, railH));
     final textY = railY + (railH - tp.height) / 2;
-    var dx = ((_time * -40) % tp.width) - tp.width;
+    var dx = gameRef.reducedMotion
+        ? 8.0
+        : ((_decorativeTime(gameRef) * -40) % tp.width) - tp.width;
     while (dx < size.x) {
       tp.paint(canvas, Offset(dx, textY));
       dx += tp.width;
@@ -939,88 +1419,159 @@ class _CourtComponent extends PositionComponent
     double floorY,
     double px,
   ) {
-    // Hardwood band with subtle gradient to simulate polish reflection.
-    final floorRect = Rect.fromLTWH(0, floorY, size.x, size.y - floorY);
-    canvas.drawRect(
-      floorRect,
-      Paint()
-        ..shader = Gradient.linear(
-          Offset(0, floorY),
-          Offset(0, size.y),
-          [const Color(0xff1c1524), const Color(0xff0b080f)],
-        ),
-    );
+    _ensureShaders(size, floorY, px);
+    final floorDepth = size.y - floorY;
+    final floorRect = Rect.fromLTWH(0, floorY, size.x, floorDepth);
+    _shaderPaint
+      ..style = PaintingStyle.fill
+      ..shader = _floorShader;
+    canvas.drawRect(floorRect, _shaderPaint);
 
-    // Plank seams.
-    final seam = Paint()
-      ..color = const Color(0xff2a2233)
-      ..strokeWidth = 1.4;
-    final camLeft = gameRef._camX - size.x / 2 / px - 1;
-    final camRight = gameRef._camX + size.x / 2 / px + 1;
-    for (var wx = camLeft.floorToDouble(); wx <= camRight; wx += 0.62) {
-      final at = gameRef.worldToScreen(wx, 0);
-      canvas.drawLine(at, Offset(at.dx + px * 0.5, size.y), seam);
+    // Perspective depth bands stay flat and quiet; the live court lines keep
+    // the visual hierarchy.
+    for (var band = 1; band <= 5; band++) {
+      final depth = pow(band / 5, 1.55).toDouble();
+      final y = floorY + floorDepth * depth;
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(size.x, y),
+        _line(
+          (band.isEven ? Cyber.cyan : Cyber.line).withValues(
+            alpha: band.isEven ? 0.035 : 0.12,
+          ),
+          band == 5 ? 1.5 : 1,
+        ),
+      );
     }
 
-    // Center court emblem (holographic/neon ring)
-    final emblemAt = gameRef.worldToScreen(4.0, 0);
-    canvas.drawOval(
-       Rect.fromCenter(center: Offset(emblemAt.dx, size.y - (size.y - floorY) / 2), width: px * 4, height: px * 1.5),
-       Paint()
-         ..style = PaintingStyle.stroke
-         ..strokeWidth = 2.5
-         ..color = Cyber.magenta.withValues(alpha: 0.18)
-    );
+    final camLeft = gameRef._camX - size.x / 2 / px - 1;
+    final camRight = gameRef._camX + size.x / 2 / px + 1;
+    final vanishX = size.x * 0.52;
+    for (var wx = camLeft.floorToDouble(); wx <= camRight; wx += 0.62) {
+      final top = gameRef.worldToScreen(wx, 0);
+      final bottomX = vanishX + (top.dx - vanishX) * 1.22;
+      canvas.drawLine(
+        top,
+        Offset(bottomX, size.y),
+        _line(Cyber.line.withValues(alpha: 0.30), 1.2),
+      );
+    }
 
-    // Three-point strip: everything beyond the arc line glows faint gold.
     final arcAt = gameRef.worldToScreen(BasketballEngine.arcLineX, 0);
     canvas.drawRect(
-      Rect.fromLTWH(0, floorY, max(0, arcAt.dx), size.y - floorY),
-      Paint()..color = Cyber.gold.withValues(alpha: 0.05),
+      Rect.fromLTWH(0, floorY, max(0, arcAt.dx), floorDepth),
+      _solid(Cyber.gold.withValues(alpha: 0.045)),
     );
     canvas.drawLine(
       arcAt,
       Offset(arcAt.dx - px * 0.4, size.y),
-      Paint()
-        ..color = Cyber.gold.withValues(alpha: 0.6)
-        ..strokeWidth = 2.4,
+      _line(Cyber.gold.withValues(alpha: 0.62), 2.4),
     );
 
-    // Paint / restricted area near the rim.
     final paintFrom = gameRef.worldToScreen(kBbRimX - 2.6, 0);
     final paintTo = gameRef.worldToScreen(kBbBackboardX + 0.4, 0);
     canvas.drawRect(
       Rect.fromLTRB(paintFrom.dx, floorY, paintTo.dx, size.y),
-      Paint()..color = Cyber.cyan.withValues(alpha: 0.08),
+      _solid(Cyber.cyan.withValues(alpha: 0.075)),
     );
     canvas.drawLine(
       paintFrom,
       Offset(paintFrom.dx - px * 0.3, size.y),
-      Paint()
-        ..color = Cyber.cyan.withValues(alpha: 0.45)
-        ..strokeWidth = 2.0,
-    );
-    
-    // Restricted area glowing arc
-    final restrictedAt = gameRef.worldToScreen(kBbRimX - 1.0, 0);
-    canvas.drawArc(
-       Rect.fromCenter(center: Offset(restrictedAt.dx, size.y), width: px * 2, height: px * 1.2),
-       pi,
-       pi,
-       false,
-       Paint()
-         ..style = PaintingStyle.stroke
-         ..color = Cyber.cyan.withValues(alpha: 0.35)
-         ..strokeWidth = 1.5,
+      _line(Cyber.cyan.withValues(alpha: 0.48), 2),
     );
 
-    // Baseline + court edge light.
+    final restrictedAt = gameRef.worldToScreen(kBbRimX - 1.0, 0);
+    canvas.drawArc(
+      Rect.fromCenter(
+        center: Offset(restrictedAt.dx, size.y),
+        width: px * 2,
+        height: px * 1.2,
+      ),
+      pi,
+      pi,
+      false,
+      _outline(Cyber.cyan.withValues(alpha: 0.36), 1.5),
+    );
+
+    final labelY = floorY + min(floorDepth * 0.24, px * 0.58);
+    _goldCourtLabel.render(
+      canvas,
+      '3PT',
+      Vector2(arcAt.dx - px * 0.58, labelY),
+      anchor: Anchor.center,
+    );
+    _cyanCourtLabel.render(
+      canvas,
+      'PAINT',
+      Vector2((paintFrom.dx + paintTo.dx) / 2, labelY),
+      anchor: Anchor.center,
+    );
+
+    final emblemAt = gameRef.worldToScreen(
+      (kBbCourtMinX + kBbCourtMaxX) / 2,
+      0,
+    );
+    final emblemCenter = Offset(emblemAt.dx, floorY + floorDepth * 0.38);
+    final emblemRect = Rect.fromCenter(
+      center: emblemCenter,
+      width: px * 2.8,
+      height: px * 0.82,
+    );
+    canvas.drawOval(
+      emblemRect,
+      _outline(Cyber.cyan.withValues(alpha: 0.24), 1.5),
+    );
+    canvas.drawArc(
+      emblemRect.deflate(4),
+      pi * 0.1,
+      pi * 0.72,
+      false,
+      _outline(Cyber.gold.withValues(alpha: 0.34), 1.5),
+    );
+    _emblemStyle.render(
+      canvas,
+      'HOOP // DUEL',
+      Vector2(emblemCenter.dx, emblemCenter.dy),
+      anchor: Anchor.center,
+    );
+
+    final flash = gameRef.scoreFlashT > 0
+        ? gameRef.scoreFlashT / kBbScoreFlashSeconds
+        : 0.0;
+    if (flash > 0) {
+      final responseY = floorY + floorDepth * 0.72;
+      canvas.drawRect(
+        Rect.fromLTWH(0, responseY, size.x, max(2, floorDepth * 0.06)),
+        _solid(gameRef.scoreFlashColor.withValues(alpha: 0.08 * flash)),
+      );
+      canvas.drawLine(
+        Offset(0, responseY),
+        Offset(size.x, responseY),
+        _line(gameRef.scoreFlashColor.withValues(alpha: 0.42 * flash), 2),
+      );
+    }
+
+    // A calm near-edge bevel gives the roof deck physical thickness.
+    final bevelH = min(px * 0.24, floorDepth * 0.14);
+    final bevelTop = size.y - bevelH;
+    final bevel = Path()
+      ..moveTo(0, bevelTop + 4)
+      ..lineTo(px * 0.24, bevelTop)
+      ..lineTo(size.x, bevelTop)
+      ..lineTo(size.x, size.y)
+      ..lineTo(0, size.y)
+      ..close();
+    canvas.drawPath(bevel, _solid(Cyber.bg2.withValues(alpha: 0.92)));
+    canvas.drawLine(
+      Offset(px * 0.24, bevelTop),
+      Offset(size.x, bevelTop),
+      _line(Cyber.line.withValues(alpha: 0.42), 1.5),
+    );
+
     canvas.drawLine(
       Offset(0, floorY),
       Offset(size.x, floorY),
-      Paint()
-        ..color = Cyber.cyan.withValues(alpha: 0.25)
-        ..strokeWidth = 2,
+      _line(Cyber.cyan.withValues(alpha: 0.28), 2),
     );
   }
 
@@ -1288,6 +1839,17 @@ class _BallComponent extends PositionComponent
 class _LandingMarkerComponent extends PositionComponent
     with HasGameReference<BasketballGame> {
   double _time = 0;
+  final Paint _markerPaint = Paint()..style = PaintingStyle.stroke;
+  final Paint _fillPaint = Paint();
+
+  static final TextPaint _labelStyle = TextPaint(
+    style: Cyber.label(
+      7,
+      color: Cyber.gold.withValues(alpha: 0.82),
+      weight: FontWeight.w900,
+      letterSpacing: 1.2,
+    ),
+  );
 
   @override
   void update(double dt) {
@@ -1302,17 +1864,66 @@ class _LandingMarkerComponent extends PositionComponent
     if (prediction == null) return;
     final px = gameRef.pxPerUnit;
     final at = gameRef.worldToScreen(prediction.landX, 0);
-    final pulse = 0.75 + sin(_time * 9) * 0.25;
+    final pulse = gameRef.reducedMotion ? 1.0 : 0.88 + sin(_time * 9) * 0.12;
+    final outer = Rect.fromCenter(
+      center: at,
+      width: px * 1.02 * pulse,
+      height: px * 0.34 * pulse,
+    );
     canvas.drawOval(
+      outer,
+      _markerPaint
+        ..strokeWidth = 2
+        ..color = Cyber.gold.withValues(alpha: 0.78),
+    );
+    canvas.drawOval(
+      outer.deflate(px * 0.10),
+      _markerPaint
+        ..strokeWidth = 1
+        ..color = Cyber.gold.withValues(alpha: 0.34),
+    );
+
+    final tick = px * 0.15;
+    final tickPaint = _markerPaint
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.square
+      ..color = Cyber.cyan.withValues(alpha: 0.66);
+    canvas.drawLine(
+      Offset(at.dx - outer.width * 0.62, at.dy),
+      Offset(at.dx - outer.width * 0.62 + tick, at.dy),
+      tickPaint,
+    );
+    canvas.drawLine(
+      Offset(at.dx + outer.width * 0.62 - tick, at.dy),
+      Offset(at.dx + outer.width * 0.62, at.dy),
+      tickPaint,
+    );
+    canvas.drawRect(
       Rect.fromCenter(
         center: at,
-        width: px * 0.9 * pulse,
-        height: px * 0.28 * pulse,
+        width: max(3, px * 0.07),
+        height: max(2, px * 0.025),
       ),
-      Paint()
+      _fillPaint..color = Cyber.gold.withValues(alpha: 0.86),
+    );
+
+    final chevronY = at.dy - px * 0.38;
+    final chevron = Path()
+      ..moveTo(at.dx - px * 0.12, chevronY)
+      ..lineTo(at.dx, chevronY + px * 0.09)
+      ..lineTo(at.dx + px * 0.12, chevronY);
+    canvas.drawPath(
+      chevron,
+      _markerPaint
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2
-        ..color = Cyber.gold.withValues(alpha: 0.65),
+        ..color = Cyber.gold.withValues(alpha: 0.72),
+    );
+    _labelStyle.render(
+      canvas,
+      'REBOUND',
+      Vector2(at.dx, chevronY - px * 0.10),
+      anchor: Anchor.bottomCenter,
     );
   }
 }

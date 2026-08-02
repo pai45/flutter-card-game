@@ -9,8 +9,9 @@ import 'package:card_game/models/cards.dart';
 import 'package:card_game/models/deck.dart';
 import 'package:card_game/models/packs.dart';
 import 'package:card_game/models/progression.dart';
-import 'package:card_game/screens/game/widgets/match_phases.dart';
 import 'package:card_game/services/secure_storage_service.dart';
+import 'package:card_game/widgets/matchmaking/game_match_gate.dart';
+import 'package:card_game/widgets/matchmaking/game_matchmaking_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -218,7 +219,7 @@ void main() {
     expect(lineups.length, greaterThan(1));
   });
 
-  testWidgets('match intro searches, locks opponent, then counts down', (
+  testWidgets('match gate searches, locks opponent, then counts down', (
     tester,
   ) async {
     var completed = false;
@@ -226,41 +227,56 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: ThemeData.dark(),
-        home: MatchIntroPhase(
-          deckName: 'Starter XI',
-          opponentName: 'Maya Santos',
-          onComplete: () => completed = true,
+        home: GameMatchGate(
+          goLabel: 'KICK OFF!',
+          config: const GameMatchmakingConfig(
+            title: 'PITCH DUEL',
+            queueLabel: 'SCANNING GLOBAL PITCH QUEUE',
+            player: MatchmakingFighter(
+              name: 'PLAYER ONE',
+              avatarAsset: 'assets/avatar_options/adams.webp',
+              badge: 'LV 1',
+            ),
+            opponent: MatchmakingFighter(
+              name: 'Maya Santos',
+              avatarAsset: 'assets/avatar_options/bellingham.webp',
+              badge: 'LV 1',
+            ),
+          ),
+          onReady: () => completed = true,
+          onCancel: () {},
         ),
       ),
     );
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('CYBER REACT'), findsOneWidget);
-    expect(find.text('YOU'), findsOneWidget);
+    expect(find.text('PITCH DUEL'), findsOneWidget);
+    expect(find.text('PLAYER ONE'), findsOneWidget);
     expect(find.text('VS'), findsOneWidget);
-    expect(find.text('OPP'), findsOneWidget);
-    expect(find.text('SEARCHING...'), findsOneWidget);
-    expect(find.text('OPPONENT FOUND'), findsNothing);
+    expect(find.text('SEARCHING FOR\nOPPONENT...'), findsOneWidget);
     expect(find.text('MATCH STARTING IN'), findsNothing);
     expect(find.text('MAYA SANTOS'), findsNothing);
-    expect(find.text('CPU'), findsNothing);
     expect(completed, isFalse);
 
-    await tester.pump(const Duration(milliseconds: 4000));
+    // Search completes at 2600ms; rival banner switches in over 360ms.
+    await tester.pump(const Duration(milliseconds: 2700));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 360));
+    await tester.pump(const Duration(milliseconds: 1));
 
     expect(find.text('MAYA SANTOS'), findsOneWidget);
-    expect(find.text('OPPONENT FOUND'), findsOneWidget);
-    expect(find.text('SEARCHING...'), findsNothing);
+    expect(find.text('SEARCHING FOR\nOPPONENT...'), findsNothing);
     expect(find.text('MATCH STARTING IN'), findsNothing);
     expect(completed, isFalse);
 
-    await tester.pump(const Duration(milliseconds: 750));
+    // Found-hold (700ms) then gate swaps to the 3-2-1 countdown.
+    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pump();
 
     expect(find.text('MATCH STARTING IN'), findsOneWidget);
     expect(completed, isFalse);
 
-    await tester.pump(const Duration(milliseconds: 3800));
+    await tester.pump(const Duration(milliseconds: 4000));
 
     expect(completed, isTrue);
   });

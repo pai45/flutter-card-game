@@ -229,6 +229,28 @@ class PredictionCubit extends Cubit<PredictionState> {
     await _loadSportUnchecked(sport);
   }
 
+  /// Resolves configured fixture IDs without adding repository-only demo
+  /// fixtures to the shared sport feed.
+  Future<Map<String, SportMatch>> resolveCatalogFixtures(
+    Iterable<String> matchIds,
+  ) async {
+    final requestedIds = matchIds.toSet();
+    final resolved = <String, SportMatch>{
+      for (final fixture in state.fixtures)
+        if (requestedIds.contains(fixture.id)) fixture.id: fixture,
+    };
+    final repository = _repository;
+    if (repository is! PredictionCatalogLookup) return resolved;
+    final catalogLookup = repository as PredictionCatalogLookup;
+
+    for (final matchId in requestedIds) {
+      if (resolved.containsKey(matchId)) continue;
+      final fixture = await catalogLookup.fixtureById(matchId);
+      if (fixture != null) resolved[matchId] = fixture;
+    }
+    return resolved;
+  }
+
   /// Forces a fresh fetch/re-settlement for [sport] even if it was already
   /// loaded this session — used by [RollingWindowService] on a day-boundary
   /// resume, when yesterday's fixtures need re-settling and today's newly
@@ -570,10 +592,60 @@ class PredictionCubit extends Cubit<PredictionState> {
     );
   }
 
+  /// The in-match board, with the player's own row resolved against their real
+  /// prediction and the whole field re-ranked by points.
+  ///
+  /// Until results land the player is held out of the ranked field — an
+  /// invented provisional rank reads worse than an explicit "pending" — and
+  /// slots in on merit once settled. [_contestFinish] deliberately reads the
+  /// raw repository board instead, so coin payouts never depend on this.
   Future<List<MatchPredictionLeaderboardEntry>> matchLeaderboard(
     String matchId,
     String quizId,
-  ) => _repository.matchLeaderboard(matchId, quizId);
+  ) async {
+    final board = await _repository.matchLeaderboard(matchId, quizId);
+    final rivals = <MatchPredictionLeaderboardEntry>[];
+    MatchPredictionLeaderboardEntry? user;
+    for (final entry in board) {
+      if (entry.isUser) {
+        user ??= entry;
+      } else {
+        rivals.add(entry);
+      }
+    }
+
+    final prediction = state.predictionFor(matchId, quizId);
+    if (user == null || prediction?.status != PredictionStatus.settled) {
+      return _rankedBoard(rivals);
+    }
+
+    final quizzes = await _repository.quizzesFor(matchId);
+    var total = 0;
+    for (final quiz in quizzes) {
+      if (quiz.id == quizId) {
+        total = quiz.questions.length;
+        break;
+      }
+    }
+    final correct = prediction!.correctCount ?? 0;
+    final answered = prediction.answers.length;
+    // Scaled so a perfect card lands at the top of the rivals' 338-573 band.
+    final points =
+        (total == 0 ? 0 : (620 * correct / total).round()) + answered * 6;
+    return _rankedBoard([
+      ...rivals,
+      user.copyWith(points: points, correct: correct),
+    ]);
+  }
+
+  List<MatchPredictionLeaderboardEntry> _rankedBoard(
+    List<MatchPredictionLeaderboardEntry> entries,
+  ) {
+    final sorted = [...entries]..sort((a, b) => b.points.compareTo(a.points));
+    return [
+      for (var i = 0; i < sorted.length; i++) sorted[i].copyWith(rank: i + 1),
+    ];
+  }
 
   /// Creates or updates an editable prediction draft.
   ///
@@ -849,7 +921,7 @@ class PredictionCubit extends Cubit<PredictionState> {
     required int totalQuestions,
   }) async {
     final board = await _repository.matchLeaderboard(matchId, quizId);
-    final rivals = board.where((e) => e.name.toLowerCase() != 'you').toList();
+    final rivals = board.where((e) => !e.isUser).toList();
     if (rivals.isEmpty) return (1, scorelineContestPrizeFor(1), 1);
     final ahead = rivals
         .where((r) => r.correct.clamp(0, totalQuestions) > playerCorrect)

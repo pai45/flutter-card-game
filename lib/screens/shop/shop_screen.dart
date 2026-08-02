@@ -9,6 +9,7 @@ import '../../blocs/game/game_state.dart';
 import '../../config/enums.dart';
 import '../../config/sport_modules.dart';
 import '../../data/basketball_teams.dart';
+import '../../data/f1_team_codes.dart';
 import '../../data/final_over_kits.dart';
 import '../../data/grand_prix_liveries.dart';
 import '../../games/grand_prix/grand_prix_car_painter.dart';
@@ -103,8 +104,8 @@ String _shopSportCode(Sport sport) => switch (sport) {
   Sport.motorsport => 'RACING',
 };
 
-// shortName → countryCode, built once from the card catalogue, so the AVATAR
-// tab can filter player portraits by nation.
+// shortName → countryCode / F1 team code, built once from the card catalogue,
+// so the AVATAR tab can filter player portraits by nation or constructor.
 Sport _cardSport(PlayerCard card) {
   if (card.id.startsWith('cricket-') || card.icon == Icons.sports_cricket) {
     return Sport.cricket;
@@ -121,42 +122,59 @@ Sport _cardSport(PlayerCard card) {
   return Sport.football;
 }
 
-final Map<String, String> _avatarNationByShortName = {
-  for (final card in allPlayerCards) card.shortName: card.countryCode,
+bool _isShopAvatarCard(PlayerCard card) {
+  if (card.resolvedPortraitAsset == null) return false;
+  // Motorsport shop avatars are F1-only (constructor team chips).
+  if (_cardSport(card) == Sport.motorsport) {
+    return card.role == PlayerRole.f1Driver;
+  }
+  return true;
+}
+
+/// Filter chip key for an avatar: country / IPL / NBA code, or F1 team code.
+String _avatarFilterCode(PlayerCard card) {
+  if (_cardSport(card) == Sport.motorsport) {
+    return f1TeamCode(card.position);
+  }
+  return card.countryCode;
+}
+
+final Map<String, String> _avatarFilterByShortName = {
+  for (final card in allPlayerCards)
+    if (_isShopAvatarCard(card)) card.shortName: _avatarFilterCode(card),
 };
 
 final Map<String, Sport> _avatarSportByShortName = {
-  for (final card in allPlayerCards) card.shortName: _cardSport(card),
+  for (final card in allPlayerCards)
+    if (_isShopAvatarCard(card)) card.shortName: _cardSport(card),
 };
 
 final List<({String shortName, String imagePath, int price})>
 _playerAvatarItems = [
-  ...playerPortraitAssets.entries
-      .map((e) => (shortName: e.key, imagePath: e.value, price: 25)),
-  for (final card in racingPlayerCards)
-    (
-      shortName: card.shortName,
-      imagePath: card.portraitAsset!,
-      price: 25,
-    ),
+  for (final card in allPlayerCards)
+    if (_isShopAvatarCard(card))
+      (
+        shortName: card.shortName,
+        imagePath: card.resolvedPortraitAsset!,
+        price: 25,
+      ),
 ];
 
 final Map<String, PlayerCard> _racingAvatarCardByShortName = {
-  for (final card in racingPlayerCards) card.shortName: card,
+  for (final card in f1PlayerCards) card.shortName: card,
 };
 
-const _avatarSeriesFilters = ['ALL', 'F1', 'F2', 'NASCAR', 'INDYCAR'];
-
-final Map<String, String> _avatarSeriesByShortName = {
-  for (final card in racingPlayerCards)
-    card.shortName: switch (card.role) {
-      PlayerRole.f1Driver => 'F1',
-      PlayerRole.f2Driver => 'F2',
-      PlayerRole.nascarDriver => 'NASCAR',
-      PlayerRole.indycarDriver => 'INDYCAR',
-      _ => 'RACING',
-    },
-};
+/// Per-sport chip labels for the AVATAR tab (`ALL` + sorted filter codes).
+List<String> _avatarFiltersForSport(Sport sport) {
+  final seen = <String>{};
+  for (final item in _playerAvatarItems) {
+    if (_avatarSportByShortName[item.shortName] != sport) continue;
+    final code = _avatarFilterByShortName[item.shortName];
+    if (code != null && code.isNotEmpty) seen.add(code);
+  }
+  final sorted = seen.toList()..sort();
+  return ['ALL', ...sorted];
+}
 
 const List<
   ({
@@ -539,16 +557,7 @@ class _ShopSportsTabs extends StatelessWidget {
   }
 }
 
-// Nation chips for the AVATAR tab — ['ALL', …distinct country codes present].
-final List<String> _avatarNationFilters = () {
-  final seen = <String>{};
-  for (final item in _playerAvatarItems) {
-    final code = _avatarNationByShortName[item.shortName];
-    if (code != null && code.isNotEmpty) seen.add(code);
-  }
-  final sorted = seen.toList()..sort();
-  return ['ALL', ...sorted];
-}();
+// Per-sport filter chips live in [_avatarFiltersForSport].
 
 class AvatarsTab extends StatefulWidget {
   const AvatarsTab({required this.sport, required this.onAcquired, super.key});
@@ -561,46 +570,37 @@ class AvatarsTab extends StatefulWidget {
 }
 
 class _AvatarsTabState extends State<AvatarsTab> {
-  String _nation = 'ALL';
-  String _series = 'ALL';
+  String _filter = 'ALL';
+
+  @override
+  void didUpdateWidget(covariant AvatarsTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.sport != widget.sport) {
+      _filter = 'ALL';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isMotorsport = widget.sport == Sport.motorsport;
+    final filters = _avatarFiltersForSport(widget.sport);
+    // Keep selection valid when switching sports (chip set changes).
+    final selected = filters.contains(_filter) ? _filter : 'ALL';
     final sportItems = _playerAvatarItems
         .where((e) => _avatarSportByShortName[e.shortName] == widget.sport)
         .toList();
-    final items = isMotorsport
-        ? (_series == 'ALL'
-              ? sportItems
-              : sportItems
-                    .where(
-                      (e) => _avatarSeriesByShortName[e.shortName] == _series,
-                    )
-                    .toList())
-        : (_nation == 'ALL'
-              ? sportItems
-              : sportItems
-                    .where(
-                      (e) => _avatarNationByShortName[e.shortName] == _nation,
-                    )
-                    .toList());
+    final items = selected == 'ALL'
+        ? sportItems
+        : sportItems
+              .where((e) => _avatarFilterByShortName[e.shortName] == selected)
+              .toList();
     return Column(
       children: [
-        if (isMotorsport)
-          CyberFilterChips(
-            labels: _avatarSeriesFilters,
-            selected: _series,
-            accent: _cyan,
-            onSelect: (value) => setState(() => _series = value),
-          )
-        else
-          CyberFilterChips(
-            labels: _avatarNationFilters,
-            selected: _nation,
-            accent: _cyan,
-            onSelect: (value) => setState(() => _nation = value),
-          ),
+        CyberFilterChips(
+          labels: filters,
+          selected: selected,
+          accent: _cyan,
+          onSelect: (value) => setState(() => _filter = value),
+        ),
         Expanded(
           child: items.isEmpty
               ? _ShopEmptyFilter(sport: _shopSportCode(widget.sport))

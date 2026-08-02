@@ -9,10 +9,13 @@ import 'package:flutter/services.dart';
 
 import '../../config/enums.dart';
 import '../../config/theme.dart';
+import '../../models/avatar_frame_option.dart';
 import '../../models/cards.dart';
 import '../../utils/label_helpers.dart';
 import '../../utils/sound_effects.dart';
+import '../avatar_frame_ring.dart';
 import '../racing/racing_driver_portrait.dart';
+import '../team_logo.dart' show OctagonBorderPainter, OctagonClipper;
 import 'sport_signal_painters.dart';
 
 class CyberConfirmDialog extends StatelessWidget {
@@ -1318,6 +1321,244 @@ class CyberPanel extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Matchmaking identity banner: an octagonal avatar overlaps a long chamfered
+/// plate, with an optional detached progression badge. Mirror the composition
+/// for the away side so both identities face the central VS marker.
+///
+/// The plate is deliberately flat and never glows; matchmaking should reserve
+/// its single focal glow for the live VS/search signal.
+class CyberMatchmakingPlayerBanner extends StatelessWidget {
+  const CyberMatchmakingPlayerBanner({
+    required this.name,
+    required this.avatarAsset,
+    this.accent = Cyber.cyan,
+    this.frame,
+    this.badge,
+    this.mirrored = false,
+    super.key,
+  });
+
+  final String name;
+  final String avatarAsset;
+  final Color accent;
+  final AvatarFrameOption? frame;
+  final String? badge;
+  final bool mirrored;
+
+  static const _plateClipper = HudChamferClipper(bigCut: 22, smallCut: 8);
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: '${name.toUpperCase()} matchmaking identity',
+      child: SizedBox(
+        height: 124,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final avatarSize = (constraints.maxWidth * 0.30).clamp(92.0, 112.0);
+            final plateOverlap = avatarSize * 0.68;
+            final badgeWidth = max(58.0, avatarSize * 0.56);
+            final plateInsets = mirrored
+                ? EdgeInsets.only(right: plateOverlap)
+                : EdgeInsets.only(left: plateOverlap);
+            final namePadding = mirrored
+                ? EdgeInsets.fromLTRB(22, 0, avatarSize * 0.38, 0)
+                : EdgeInsets.fromLTRB(avatarSize * 0.38, 0, 22, 0);
+
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned(
+                  left: plateInsets.left,
+                  right: plateInsets.right,
+                  top: 22,
+                  height: 78,
+                  child: CustomPaint(
+                    foregroundPainter: _MatchmakingPlateBorderPainter(
+                      accent: accent,
+                      clipper: _plateClipper,
+                    ),
+                    child: ClipPath(
+                      clipper: _plateClipper,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          ColoredBox(
+                            color: Color.alphaBlend(
+                              accent.withValues(alpha: 0.14),
+                              Cyber.panel,
+                            ),
+                          ),
+                          Align(
+                            alignment: Alignment.topCenter,
+                            child: Container(
+                              height: 2,
+                              color: accent.withValues(alpha: 0.82),
+                            ),
+                          ),
+                          Padding(
+                            padding: namePadding,
+                            child: Center(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  name.toUpperCase(),
+                                  maxLines: 1,
+                                  style: Cyber.display(
+                                    22,
+                                    color: Colors.white,
+                                    letterSpacing: 1.8,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: mirrored ? null : 0,
+                  right: mirrored ? 0 : null,
+                  top: 0,
+                  width: avatarSize,
+                  height: avatarSize,
+                  child: _MatchmakingAvatar(
+                    avatarAsset: avatarAsset,
+                    accent: accent,
+                    frame: frame,
+                  ),
+                ),
+                if (badge != null)
+                  Positioned(
+                    left: mirrored ? null : 4,
+                    right: mirrored ? 4 : null,
+                    bottom: 0,
+                    width: badgeWidth,
+                    child: CustomPaint(
+                      foregroundPainter: _MatchmakingPlateBorderPainter(
+                        accent: accent,
+                        clipper: const HudChamferClipper(
+                          bigCut: 8,
+                          smallCut: 4,
+                        ),
+                      ),
+                      child: ClipPath(
+                        clipper: const HudChamferClipper(
+                          bigCut: 8,
+                          smallCut: 4,
+                        ),
+                        child: Container(
+                          height: 28,
+                          alignment: Alignment.center,
+                          color: Color.alphaBlend(
+                            accent.withValues(alpha: 0.18),
+                            Cyber.bg,
+                          ),
+                          child: Text(
+                            badge!.toUpperCase(),
+                            maxLines: 1,
+                            style: Cyber.label(
+                              9,
+                              color: accent,
+                              letterSpacing: 1.2,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _MatchmakingAvatar extends StatelessWidget {
+  const _MatchmakingAvatar({
+    required this.avatarAsset,
+    required this.accent,
+    required this.frame,
+  });
+
+  final String avatarAsset;
+  final Color accent;
+  final AvatarFrameOption? frame;
+
+  @override
+  Widget build(BuildContext context) {
+    final portrait = ClipPath(
+      clipper: const OctagonClipper(),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          const ColoredBox(color: Cyber.panel),
+          Image.asset(
+            avatarAsset,
+            fit: BoxFit.cover,
+            alignment: Alignment.topCenter,
+            errorBuilder: (_, _, _) => ColoredBox(
+              color: Cyber.panel,
+              child: Icon(
+                Icons.person,
+                color: accent.withValues(alpha: 0.82),
+                size: 44,
+              ),
+            ),
+          ),
+          if (frame == null)
+            CustomPaint(
+              painter: OctagonBorderPainter(
+                color: accent.withValues(alpha: 0.9),
+                strokeWidth: 2,
+              ),
+            ),
+        ],
+      ),
+    );
+
+    return AvatarFrameRing(
+      frame: frame,
+      shape: AvatarFrameShape.octagon,
+      child: portrait,
+    );
+  }
+}
+
+class _MatchmakingPlateBorderPainter extends CustomPainter {
+  const _MatchmakingPlateBorderPainter({
+    required this.accent,
+    required this.clipper,
+  });
+
+  final Color accent;
+  final HudChamferClipper clipper;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawPath(
+      clipper.buildPath(size),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.4
+        ..color = accent.withValues(alpha: 0.72),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _MatchmakingPlateBorderPainter oldDelegate) =>
+      oldDelegate.accent != accent ||
+      oldDelegate.clipper.bigCut != clipper.bigCut ||
+      oldDelegate.clipper.smallCut != clipper.smallCut;
 }
 
 /// Compact live-status telemetry shared by game lobbies.
@@ -3881,4 +4122,164 @@ class _CardBackEdgePainter extends CustomPainter {
   @override
   bool shouldRepaint(_CardBackEdgePainter old) =>
       old.color != color || old.silhouette != silhouette;
+}
+
+/// Cell footprints supported by [CyberBentoGrid].
+enum CyberBentoSpan { square, wide, tall }
+
+class CyberBentoTile {
+  const CyberBentoTile({required this.span, required this.child});
+
+  final CyberBentoSpan span;
+  final Widget child;
+}
+
+/// A dependency-free, dense two-column bento layout shared by the MATCH and
+/// GAMES Trending feeds.
+///
+/// `square` occupies 1x1, `wide` 2x1, and `tall` 1x2. Items are densely packed
+/// into the first available cells, while the source order remains the semantic
+/// traversal order. The grid stays phone-sized on wide screens so illustrated
+/// cards do not become oversized. [rowHeightFactor] can tighten a feature's
+/// cards without changing its column widths; the default preserves square cells.
+class CyberBentoGrid extends StatelessWidget {
+  const CyberBentoGrid({
+    required this.tiles,
+    this.gap = 12,
+    this.maxWidth = 440,
+    this.rowHeightFactor = 1,
+    this.minRowHeight = 0,
+    super.key,
+  }) : assert(rowHeightFactor > 0),
+       assert(minRowHeight >= 0);
+
+  final List<CyberBentoTile> tiles;
+  final double gap;
+  final double maxWidth;
+
+  /// Multiplier for each grid row relative to a column cell's width.
+  final double rowHeightFactor;
+
+  /// Keeps dense cards readable on narrow phones.
+  final double minRowHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    if (tiles.isEmpty) return const SizedBox.shrink();
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = min(constraints.maxWidth, maxWidth);
+        final unit = (width - gap) / 2;
+        final rowHeight = max(unit * rowHeightFactor, minRowHeight).toDouble();
+        final layout = _packBentoTiles(tiles);
+        final height =
+            layout.rowCount * rowHeight + max(0, layout.rowCount - 1) * gap;
+
+        return Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: width,
+            height: height,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                for (var index = 0; index < tiles.length; index++)
+                  Positioned(
+                    left: layout.cells[index].column * (unit + gap),
+                    top: layout.cells[index].row * (rowHeight + gap),
+                    width:
+                        layout.cells[index].columnSpan * unit +
+                        (layout.cells[index].columnSpan - 1) * gap,
+                    height:
+                        layout.cells[index].rowSpan * rowHeight +
+                        (layout.cells[index].rowSpan - 1) * gap,
+                    child: tiles[index].child,
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _CyberBentoCell {
+  const _CyberBentoCell({
+    required this.row,
+    required this.column,
+    required this.rowSpan,
+    required this.columnSpan,
+  });
+
+  final int row;
+  final int column;
+  final int rowSpan;
+  final int columnSpan;
+}
+
+class _CyberBentoLayout {
+  const _CyberBentoLayout({required this.cells, required this.rowCount});
+
+  final List<_CyberBentoCell> cells;
+  final int rowCount;
+}
+
+_CyberBentoLayout _packBentoTiles(List<CyberBentoTile> tiles) {
+  final occupied = <List<bool>>[];
+  final cells = <_CyberBentoCell>[];
+
+  void ensureRows(int count) {
+    while (occupied.length < count) {
+      occupied.add(<bool>[false, false]);
+    }
+  }
+
+  bool fits(int row, int column, int rowSpan, int columnSpan) {
+    if (column + columnSpan > 2) return false;
+    ensureRows(row + rowSpan);
+    for (var y = row; y < row + rowSpan; y++) {
+      for (var x = column; x < column + columnSpan; x++) {
+        if (occupied[y][x]) return false;
+      }
+    }
+    return true;
+  }
+
+  for (final tile in tiles) {
+    final (rowSpan, columnSpan) = switch (tile.span) {
+      CyberBentoSpan.square => (1, 1),
+      CyberBentoSpan.wide => (1, 2),
+      CyberBentoSpan.tall => (2, 1),
+    };
+    var row = 0;
+    var placed = false;
+    while (!placed) {
+      for (var column = 0; column < 2; column++) {
+        if (!fits(row, column, rowSpan, columnSpan)) continue;
+        for (var y = row; y < row + rowSpan; y++) {
+          for (var x = column; x < column + columnSpan; x++) {
+            occupied[y][x] = true;
+          }
+        }
+        cells.add(
+          _CyberBentoCell(
+            row: row,
+            column: column,
+            rowSpan: rowSpan,
+            columnSpan: columnSpan,
+          ),
+        );
+        placed = true;
+        break;
+      }
+      if (!placed) row++;
+    }
+  }
+
+  var rowCount = occupied.length;
+  while (rowCount > 0 && occupied[rowCount - 1].every((cell) => !cell)) {
+    rowCount--;
+  }
+  return _CyberBentoLayout(cells: cells, rowCount: rowCount);
 }

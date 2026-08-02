@@ -20,6 +20,7 @@ class LevelUpCelebration extends StatefulWidget {
     required this.progression,
     required this.xpEarned,
     required this.onDismissed,
+    this.trackLabel,
     super.key,
   });
 
@@ -27,6 +28,8 @@ class LevelUpCelebration extends StatefulWidget {
   final PlayerProgression progression;
   final int xpEarned;
   final VoidCallback onDismissed;
+  /// Optional mastery track name shown under the LEVEL UP headline.
+  final String? trackLabel;
 
   @override
   State<LevelUpCelebration> createState() => _LevelUpCelebrationState();
@@ -210,6 +213,7 @@ class _LevelUpCelebrationState extends State<LevelUpCelebration>
                     promotionCount: widget.levels.length,
                     progression: widget.progression,
                     xpEarned: widget.xpEarned,
+                    trackLabel: widget.trackLabel,
                     charge: charge,
                     impact: impact,
                     headline: headline,
@@ -244,6 +248,7 @@ class _PromotionLayout extends StatelessWidget {
     required this.settled,
     required this.reducedMotion,
     required this.onContinue,
+    this.trackLabel,
   });
 
   final int level;
@@ -251,6 +256,7 @@ class _PromotionLayout extends StatelessWidget {
   final int promotionCount;
   final PlayerProgression progression;
   final int xpEarned;
+  final String? trackLabel;
   final double charge;
   final double impact;
   final double headline;
@@ -300,6 +306,7 @@ class _PromotionLayout extends StatelessWidget {
                             headline: headline,
                             settled: settled,
                             compact: compact,
+                            trackLabel: trackLabel,
                           ),
                         ),
                       ),
@@ -414,6 +421,7 @@ class _PromotionHero extends StatelessWidget {
     required this.headline,
     required this.settled,
     required this.compact,
+    this.trackLabel,
   });
 
   final int level;
@@ -423,6 +431,7 @@ class _PromotionHero extends StatelessWidget {
   final double headline;
   final bool settled;
   final bool compact;
+  final String? trackLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -451,6 +460,17 @@ class _PromotionHero extends StatelessWidget {
             offset: Offset(0, 12 * (1 - headline)),
             child: Column(
               children: [
+                if (trackLabel != null && trackLabel!.isNotEmpty) ...[
+                  Text(
+                    trackLabel!,
+                    style: Cyber.label(
+                      11,
+                      color: Cyber.gold,
+                      letterSpacing: 2.2,
+                    ),
+                  ),
+                  SizedBox(height: compact ? 6 : 8),
+                ],
                 Text(
                   'LEVEL UP',
                   style:

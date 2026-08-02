@@ -81,6 +81,12 @@ enum BallPhase { held, shot, loose, dead }
 
 enum PlayPhase { awaiting, live, deadReset, finished }
 
+/// Presentation-only meaning of the player's contextual ACTION pad.
+///
+/// This is derived entirely from simulation state. It does not alter intent
+/// resolution; it only explains what the existing tap/hold/release will do.
+enum BasketballActionCue { shoot, finish, release, defend, block, rebound }
+
 /// The tap-hold intent 'hold' threshold that separates tap from shot gather.
 const double kBbTapThreshold = 0.12;
 
@@ -308,10 +314,7 @@ class BasketballEngine {
         BasketballTeamSim(config.cpuRoster, config.cpuStarterIndex),
       ] {
     bodies = [
-      BasketballAthleteBody(
-        config.playerRoster[config.playerStarterIndex],
-        0,
-      ),
+      BasketballAthleteBody(config.playerRoster[config.playerStarterIndex], 0),
       BasketballAthleteBody(config.cpuRoster[config.cpuStarterIndex], 1),
     ];
     _firstPossession = _rng.nextBool() ? 0 : 1;
@@ -358,6 +361,69 @@ class BasketballEngine {
 
   BasketballAthleteBody get playerBody => bodies[0];
   BasketballAthleteBody get cpuBody => bodies[1];
+
+  /// Current presentation cue for the human-controlled athlete.
+  BasketballActionCue get playerActionCue => actionCueFor(0);
+
+  /// Explains the contextual ACTION input for [team] without mutating state.
+  ///
+  /// The ordering mirrors the live resolution tables below: a rebound
+  /// opportunity supersedes offense/defense, an active shot asks for release,
+  /// and a valid shooter threat asks a defender to time a block.
+  BasketballActionCue actionCueFor(int team) {
+    assert(team == 0 || team == 1, 'Basketball teams are indexed 0 or 1.');
+    final body = bodies[team];
+    final opponent = bodies[1 - team];
+    final flight = ball.flight;
+
+    // The cue promises a visible landing marker, so it starts only once a
+    // loose-ball prediction is available—not while a made/missed shot is
+    // still hidden in flight.
+    final reboundAvailable =
+        ball.phase == BallPhase.loose && ball.prediction != null;
+    if (reboundAvailable && !body.locked && !body.airborne) {
+      return BasketballActionCue.rebound;
+    }
+
+    final onOffense = possession == team;
+    final holdingBall = ball.phase == BallPhase.held && ball.holder == team;
+    if (onOffense && holdingBall) {
+      final shotRunning =
+          body.body == BodyState.gather ||
+          (body.airborne && body.jumpPurpose == JumpPurpose.shot);
+      if (shotRunning) return BasketballActionCue.release;
+
+      final moving = body.body == BodyState.run || body.body == BodyState.drive;
+      final finishAvailable =
+          !body.airborne &&
+          body.d <= kBbLayupRange &&
+          (moving || body.putbackT > 0);
+      if (finishAvailable) return BasketballActionCue.finish;
+
+      return BasketballActionCue.shoot;
+    }
+
+    final shooterThreat =
+        opponent.body == BodyState.gather ||
+        opponent.body == BodyState.fake ||
+        (opponent.airborne &&
+            (opponent.jumpPurpose == JumpPurpose.shot ||
+                opponent.jumpPurpose == JumpPurpose.layup ||
+                opponent.jumpPurpose == JumpPurpose.dunk ||
+                opponent.jumpPurpose == JumpPurpose.putback)) ||
+        (ball.phase == BallPhase.shot &&
+            flight != null &&
+            flight.shooterTeam != team &&
+            flight.t <= kBbBlockSyncWindow);
+    if (shooterThreat &&
+        !body.locked &&
+        !body.airborne &&
+        body.stamina >= kBbDrainBlockJump) {
+      return BasketballActionCue.block;
+    }
+
+    return BasketballActionCue.defend;
+  }
 
   /// Court x of the three-point arc line (feet on/behind = a 3). Used to draw
   /// the arc and to decide 2 vs 3 at release.
@@ -471,7 +537,11 @@ class BasketballEngine {
     var half =
         kBbPerfectHalfWindow *
         (0.7 + 0.5 * ((rating - 50) / 50).clamp(0.0, 1.0)) *
-        _lerp(kBbTiredWindowFloor, 1.0, (body.stamina01 / 0.6).clamp(0.0, 1.0)) *
+        _lerp(
+          kBbTiredWindowFloor,
+          1.0,
+          (body.stamina01 / 0.6).clamp(0.0, 1.0),
+        ) *
         (1 - 0.25 * contest);
     if (teams[body.team].heatActive) half *= kBbHeatWindowMult;
     if (body.spec.trait == BasketballTrait.quickRelease) half *= 1.15;
@@ -578,14 +648,14 @@ class BasketballEngine {
         case BodyState.land:
           if (body.stateT >= 0.18) body.enter(BodyState.idle);
         case BodyState.gather:
-          final gatherDur =
-              body.spec.trait == BasketballTrait.quickRelease
+          final gatherDur = body.spec.trait == BasketballTrait.quickRelease
               ? kBbGatherQuickRelease
               : kBbGatherSeconds;
           if (body.stateT >= gatherDur) {
-            body.startJump(body.jumpPurpose ?? JumpPurpose.shot, _jumpDurFor(
+            body.startJump(
               body.jumpPurpose ?? JumpPurpose.shot,
-            ));
+              _jumpDurFor(body.jumpPurpose ?? JumpPurpose.shot),
+            );
           }
         case BodyState.jump:
           body.jumpT += dt;
@@ -611,8 +681,11 @@ class BasketballEngine {
         final rate = playPhase == PlayPhase.deadReset
             ? kBbRegenResetPerSec
             : kBbRegenCalmPerSec;
-        body.stamina = (body.stamina + rate * dt * (0.8 + body.spec.stamina / 250))
-            .clamp(0, 100);
+        body.stamina =
+            (body.stamina + rate * dt * (0.8 + body.spec.stamina / 250)).clamp(
+              0,
+              100,
+            );
       }
     }
 
@@ -764,8 +837,7 @@ class BasketballEngine {
         return;
       }
       // O4 — layup on the move near the rim.
-      final moving =
-          body.body == BodyState.run || body.body == BodyState.drive;
+      final moving = body.body == BodyState.run || body.body == BodyState.drive;
       if (moving && body.d <= kBbLayupRange && !body.airborne) {
         body.drain(kBbDrainJumpShot);
         body.startJump(JumpPurpose.layup, kBbLayupDuration);
@@ -816,7 +888,8 @@ class BasketballEngine {
       if (body.body != BodyState.stance && gap <= 1.8) {
         body.enter(BodyState.stance);
       }
-    } else if (body.body == BodyState.stance && !intent.actionDown &&
+    } else if (body.body == BodyState.stance &&
+        !intent.actionDown &&
         !intent.actionReleased) {
       body.enter(BodyState.idle);
     }
@@ -910,8 +983,7 @@ class BasketballEngine {
   ) {
     final exposed = handler.exposedT > 0 || handler.body == BodyState.crossover;
     final guarded = (handler.x - defender.x).abs() <= kBbGuardedGap;
-    final protected =
-        guarded && handler.body != BodyState.drive && !exposed;
+    final protected = guarded && handler.body != BodyState.drive && !exposed;
     var p =
         kBbStealBase +
         (defender.spec.steal - 70) * kBbStealRatingSlope +
@@ -924,9 +996,8 @@ class BasketballEngine {
       defender.enter(BodyState.idle);
       if (defender.team == 0) _steals++;
       if (handler.team == 0) _turnovers++;
-      teams[defender.team].heatMeter = (teams[defender.team].heatMeter +
-              kBbHeatPerStop)
-          .clamp(0.0, 1.0);
+      teams[defender.team].heatMeter =
+          (teams[defender.team].heatMeter + kBbHeatPerStop).clamp(0.0, 1.0);
       _maybeIgniteHeat(defender.team);
       _emit(BasketballEvent(BasketballEventType.steal, team: defender.team));
     }
@@ -1056,7 +1127,8 @@ class BasketballEngine {
       if (aDist < bDist - 0.1 && (b.x - a.x).sign == b.lastMoveDir.sign) {
         wa = 0.05;
         wb = 0.95;
-      } else if (bDist < aDist - 0.1 && (a.x - b.x).sign == a.lastMoveDir.sign) {
+      } else if (bDist < aDist - 0.1 &&
+          (a.x - b.x).sign == a.lastMoveDir.sign) {
         wa = 0.95;
         wb = 0.05;
       }
@@ -1163,9 +1235,7 @@ class BasketballEngine {
 
     final releasedBeforeBuzzer = overtime || halfClock > 0;
     final startH = body.spec.heightM + body.jumpHeight + 0.3;
-    final duration = isDunk
-        ? 0.22
-        : (0.42 + d.abs() * 0.055).clamp(0.3, 0.95);
+    final duration = isDunk ? 0.22 : (0.42 + d.abs() * 0.055).clamp(0.3, 0.95);
 
     ball.phase = BallPhase.shot;
     ball.holder = -1;
@@ -1195,7 +1265,8 @@ class BasketballEngine {
 
     if (blocked) {
       _resolveBlock(defender, body, onDunk: isDunk);
-    } else if (isDunk && defender.airborne &&
+    } else if (isDunk &&
+        defender.airborne &&
         defender.jumpPurpose == JumpPurpose.block) {
       // Beat a mistimed block jump at the rim: poster.
       _emit(BasketballEvent(BasketballEventType.poster, team: body.team));
@@ -1253,19 +1324,15 @@ class BasketballEngine {
       balance = min(balance, kBbBalanceStepback);
     }
 
-    final stamina = _lerp(
-      0.85,
-      1.0,
-      (body.stamina01 / 0.6).clamp(0.0, 1.0),
-    );
+    final stamina = _lerp(0.85, 1.0, (body.stamina01 / 0.6).clamp(0.0, 1.0));
     final heat = teams[body.team].heatActive ? kBbHeatShotBonus : 1.0;
     final repeat = pow(kBbRepeatPenalty, _repeatStacks[body.team]).toDouble();
 
-    final cap = grade == ReleaseGrade.perfect
-        ? kBbShotCapPerfect
-        : kBbShotCap;
-    return (base * timing * contest * balance * stamina * heat * repeat)
-        .clamp(kBbShotFloor, cap);
+    final cap = grade == ReleaseGrade.perfect ? kBbShotCapPerfect : kBbShotCap;
+    return (base * timing * contest * balance * stamina * heat * repeat).clamp(
+      kBbShotFloor,
+      cap,
+    );
   }
 
   bool _blockConnects(
@@ -1283,9 +1350,9 @@ class BasketballEngine {
         (defender.spec.heightM - 1.95) * 0.5;
     if (gap > reach) return false;
     if (shooter.jumpPurpose == JumpPurpose.dunk) {
-      final p = (kBbBlockDunkBase +
-              (defender.spec.block - shooter.spec.dunk) * 0.004)
-          .clamp(0.05, 0.75);
+      final p =
+          (kBbBlockDunkBase + (defender.spec.block - shooter.spec.dunk) * 0.004)
+              .clamp(0.05, 0.75);
       return _rng.nextDouble() < p;
     }
     return true;
@@ -1313,6 +1380,7 @@ class BasketballEngine {
         ball.vx = -(0.8 + _rng.nextDouble() * 0.8);
         ball.vh = 2.2;
     }
+    ball.prediction = _predictLanding();
     if (defender.team == 0) _blocks++;
     teams[defender.team].heatMeter =
         (teams[defender.team].heatMeter + kBbHeatPerStop).clamp(0.0, 1.0);
@@ -1353,7 +1421,9 @@ class BasketballEngine {
         flight.t += dt;
         final s = (flight.t / flight.duration).clamp(0.0, 1.0);
         // Quadratic arc from release to the rim with lift above both ends.
-        final lift = flight.dunk ? 0.25 : max(1.0, (kBbRimX - flight.startX).abs() * 0.22);
+        final lift = flight.dunk
+            ? 0.25
+            : max(1.0, (kBbRimX - flight.startX).abs() * 0.22);
         final peak = max(flight.startH, kBbRimHeight) + lift;
         ball.x = _lerp(flight.startX, kBbRimX, s);
         ball.h = _arcHeight(flight.startH, peak, kBbRimHeight, s);
@@ -1464,8 +1534,10 @@ class BasketballEngine {
     }
     // Repeat-shot penalty bookkeeping.
     if (_lastMakeZone[scorer] == flight.zone) {
-      _repeatStacks[scorer] =
-          min(kBbRepeatMaxStacks, _repeatStacks[scorer] + 1);
+      _repeatStacks[scorer] = min(
+        kBbRepeatMaxStacks,
+        _repeatStacks[scorer] + 1,
+      );
     } else {
       _repeatStacks[scorer] = 0;
     }
@@ -1536,7 +1608,9 @@ class BasketballEngine {
     if (contested) {
       final sa = _reboundScore(body);
       final sb = _reboundScore(other);
-      winner = sa == sb ? (_rng.nextBool() ? body : other) : (sa > sb ? body : other);
+      winner = sa == sb
+          ? (_rng.nextBool() ? body : other)
+          : (sa > sb ? body : other);
     }
     _grabBall(winner);
   }
@@ -1554,8 +1628,7 @@ class BasketballEngine {
     }
     // Box-out assist: was holding stance in contact just before the jump.
     final other = bodies[1 - body.team];
-    if ((other.x - body.x).abs() < kBbBodyGap + 0.15 &&
-        body.d < other.d) {
+    if ((other.x - body.x).abs() < kBbBodyGap + 0.15 && body.d < other.d) {
       score += kBbBoxOutBonus * 0.5;
     }
     score += (_rng.nextDouble() - 0.5) * 0.05;
@@ -1569,8 +1642,7 @@ class BasketballEngine {
       if (body.airborne || body.locked) continue;
       final gap = (ball.x - body.x).abs();
       if (gap <= kBbGroundPickupRange &&
-          (nearest == null ||
-              gap < (ball.x - nearest.x).abs())) {
+          (nearest == null || gap < (ball.x - nearest.x).abs())) {
         nearest = body;
       }
     }
@@ -1711,9 +1783,7 @@ class BasketballEngine {
     _buzzerPending = false;
     if (halfIndex == 0) {
       playPhase = PlayPhase.awaiting;
-      _emit(
-        const BasketballEvent(BasketballEventType.halfEnded, halfIndex: 0),
-      );
+      _emit(const BasketballEvent(BasketballEventType.halfEnded, halfIndex: 0));
       return;
     }
     // End of H2: decide or go to overtime.

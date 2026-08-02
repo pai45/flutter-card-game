@@ -12,11 +12,12 @@ final List<BasketballAthlete> basketballAthletes = [
   for (final seed in _basketballSeeds) _buildAthlete(seed),
 ];
 
+final Map<String, BasketballAthlete> _basketballAthletesById = {
+  for (final athlete in basketballAthletes) athlete.id: athlete,
+};
+
 BasketballAthlete basketballAthleteById(String id) =>
-    basketballAthletes.firstWhere(
-      (athlete) => athlete.id == id,
-      orElse: () => basketballAthletes.first,
-    );
+    _basketballAthletesById[id] ?? basketballAthletes.first;
 
 class _Seed {
   const _Seed(this.teamCode, this.name, this.position, this.role, this.ovr);
@@ -393,18 +394,43 @@ const Map<String, String> _teamNames = {
   'WAS': 'Washington Wizards',
 };
 
-/// On-court + card look for one athlete (content colors).
+/// Procedural hair silhouettes used by the on-court rig.
+enum BasketballHairStyle { closeCrop, fade, curls, highTop, twists }
+
+/// Render-only frame categories. These never affect reach or collisions.
+enum BasketballAthleteBuild { lean, athletic, power }
+
+/// One restrained, trait-linked accessory per athlete.
+enum BasketballAthleteGear { none, shootingSleeve, headband, kneeSleeve }
+
+/// On-court + card look for one athlete (content colors and render-only shape).
 class BasketballAthleteLook {
   const BasketballAthleteLook({
     required this.accent,
     required this.skin,
     required this.hair,
+    this.hairStyle = BasketballHairStyle.closeCrop,
+    this.hairScale = 1,
+    this.build = BasketballAthleteBuild.athletic,
+    this.buildScale = 1,
+    this.gear = BasketballAthleteGear.none,
   });
 
   /// Signature color used for the card trim and heat aura tint.
   final Color accent;
   final Color skin;
   final Color hair;
+
+  /// Stable silhouette choices derived from the athlete id.
+  final BasketballHairStyle hairStyle;
+  final double hairScale;
+
+  /// Width-only rendering variation. Height and gameplay geometry are intact.
+  final BasketballAthleteBuild build;
+  final double buildScale;
+
+  /// A single visual accessory selected from the athlete's gameplay trait.
+  final BasketballAthleteGear gear;
 }
 
 const Map<String, BasketballAthleteLook> _teamLooks = {
@@ -560,13 +586,51 @@ const Map<String, BasketballAthleteLook> _teamLooks = {
   ),
 };
 
-BasketballAthleteLook basketballLookFor(String id) {
-  final athlete = basketballAthletes.where((item) => item.id == id).firstOrNull;
-  return _teamLooks[athlete?.teamCode] ?? _teamLooks.values.first;
+final Map<String, BasketballAthleteLook> _athleteLooksById = {
+  for (final athlete in basketballAthletes)
+    athlete.id: _buildAthleteLook(athlete),
+};
+
+BasketballAthleteLook basketballLookFor(String id) =>
+    _athleteLooksById[id] ?? _athleteLooksById[basketballAthletes.first.id]!;
+
+BasketballAthleteLook _buildAthleteLook(BasketballAthlete athlete) {
+  final base = _teamLooks[athlete.teamCode] ?? _teamLooks.values.first;
+  final hash = _stableAthleteHash(athlete.id);
+  final build = switch (athlete.cardRole) {
+    BasketballCardRole.guard => BasketballAthleteBuild.lean,
+    BasketballCardRole.wing => BasketballAthleteBuild.athletic,
+    BasketballCardRole.big => BasketballAthleteBuild.power,
+  };
+  final buildScale = switch (athlete.cardRole) {
+    BasketballCardRole.guard => 0.88 + ((hash >> 3) % 4) * 0.012,
+    BasketballCardRole.wing => 0.97 + ((hash >> 3) % 4) * 0.012,
+    BasketballCardRole.big => 1.08 + ((hash >> 3) % 4) * 0.015,
+  };
+  final gear = switch (athlete.trait) {
+    BasketballTrait.quickRelease ||
+    BasketballTrait.deepRange => BasketballAthleteGear.shootingSleeve,
+    BasketballTrait.rimPressure => BasketballAthleteGear.headband,
+    BasketballTrait.glassCleaner => BasketballAthleteGear.kneeSleeve,
+  };
+
+  return BasketballAthleteLook(
+    accent: base.accent,
+    skin: base.skin,
+    hair: base.hair,
+    hairStyle: BasketballHairStyle
+        .values[(hash >> 7) % BasketballHairStyle.values.length],
+    hairScale: 0.9 + ((hash >> 11) % 5) * 0.04,
+    build: build,
+    buildScale: buildScale,
+    gear: gear,
+  );
 }
+
+int _stableAthleteHash(String id) =>
+    id.codeUnits.fold(0, (acc, unit) => (acc * 31 + unit) & 0x7fffffff);
 
 /// Stable jersey number derived from the athlete id (0–99). Uses an explicit
 /// fold hash, not [String.hashCode], so numbers never change across Dart
 /// versions or runs.
-int jerseyNumberFor(String id) =>
-    id.codeUnits.fold(0, (acc, unit) => (acc * 31 + unit) & 0x7fffffff) % 100;
+int jerseyNumberFor(String id) => _stableAthleteHash(id) % 100;

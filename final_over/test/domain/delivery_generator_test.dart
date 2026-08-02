@@ -26,7 +26,7 @@ void main() {
       physicalOrdinal: 3,
       legalBalls: 1,
       score: 2,
-      target: 14,
+      target: 48,
       history: const [],
       previousDeliveries: const [],
     );
@@ -48,7 +48,7 @@ void main() {
         physicalOrdinal: 1,
         legalBalls: 0,
         score: 0,
-        target: 14,
+        target: 48,
         history: const [],
         previousDeliveries: const [],
       );
@@ -64,16 +64,21 @@ void main() {
   test('extra caps are enforced', () {
     final history = [
       resultFor(ExtraType.noBall),
+      resultFor(ExtraType.noBall),
+      resultFor(ExtraType.noBall),
+      resultFor(ExtraType.wide),
+      resultFor(ExtraType.wide),
+      resultFor(ExtraType.wide),
       resultFor(ExtraType.wide),
       resultFor(ExtraType.wide),
     ];
     for (var seed = 0; seed < 2000; seed++) {
       final ball = generator.generate(
         matchSeed: seed,
-        physicalOrdinal: 5,
-        legalBalls: 2,
-        score: 4,
-        target: 14,
+        physicalOrdinal: 12,
+        legalBalls: 4,
+        score: 8,
+        target: 48,
         history: history,
         previousDeliveries: const [],
       );
@@ -102,7 +107,7 @@ void main() {
           physicalOrdinal: 3,
           legalBalls: 2,
           score: 0,
-          target: 14,
+          target: 48,
           history: const [],
           previousDeliveries: prior,
         );
@@ -115,10 +120,10 @@ void main() {
     for (var seed = 0; seed < 500; seed++) {
       final ball = generator.generate(
         matchSeed: seed,
-        physicalOrdinal: 7,
-        legalBalls: 5,
-        score: 8,
-        target: 14,
+        physicalOrdinal: 20,
+        legalBalls: 17,
+        score: 44,
+        target: 48,
         history: const [],
         previousDeliveries: const [],
       );
@@ -144,7 +149,7 @@ void main() {
         physicalOrdinal: 2,
         legalBalls: 1,
         score: 0,
-        target: 14,
+        target: 48,
         history: const [],
         previousDeliveries: const [],
       );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -13,17 +14,21 @@ import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
 import '../../models/streak.dart';
 import '../../utils/sound_effects.dart';
-import '../../widgets/cyber/cyber_underline_tabs.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/cyber/sport_signal_painters.dart';
+import '../../widgets/cyber/sport_underline_tabs.dart';
 import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/staggered_card_entrance.dart';
 import '../../widgets/stat_oz_top_bar.dart';
 import '../../widgets/streak_widgets.dart';
 import '../profile/widgets/profile_card.dart';
+import 'all_sports_screen.dart';
 import 'streak_calendar_screen.dart';
+import 'trending_hub_catalog.dart';
 import 'widgets/history_hud.dart';
 import 'widgets/match_prediction_card.dart';
+import 'widgets/motorsport_week_picker.dart';
+import 'widgets/trending_match_bento.dart';
 
 /// A compact sports prediction hub with StatOz styling.
 class PredictionHomeScreen extends StatefulWidget {
@@ -36,6 +41,7 @@ class PredictionHomeScreen extends StatefulWidget {
     required this.onGamesSportTabChanged,
     required this.onNavigate,
     required this.onOpenMatch,
+    required this.onOpenMarket,
     required this.onOpenLeague,
     required this.onOpenGame,
     required this.onOpenShootout,
@@ -63,6 +69,7 @@ class PredictionHomeScreen extends StatefulWidget {
   final ValueChanged<int> onGamesSportTabChanged;
   final ValueChanged<AppSection> onNavigate;
   final ValueChanged<SportMatch> onOpenMatch;
+  final ValueChanged<String> onOpenMarket;
   final ValueChanged<League> onOpenLeague;
   final VoidCallback onOpenGame;
   final VoidCallback onOpenShootout;
@@ -87,10 +94,10 @@ class PredictionHomeScreen extends StatefulWidget {
 class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
   final Set<int> _introPlayedTabs = <int>{};
 
-  Sport get _selectedMatchSport =>
-      _predictionSports[widget.activeMatchSportTab];
-  Sport get _selectedGamesSport =>
-      _predictionSports[widget.activeGamesSportTab];
+  Sport? get _selectedMatchSport =>
+      sportForHubIndex(widget.activeMatchSportTab);
+  Sport? get _selectedGamesSport =>
+      sportForHubIndex(widget.activeGamesSportTab);
 
   @override
   Widget build(BuildContext context) {
@@ -140,39 +147,103 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
 
   Widget _buildTab(int tab) {
     return switch (tab) {
-      0 => _MatchesTab(
-        selectedSport: _selectedMatchSport,
-        activeSportTab: widget.activeMatchSportTab,
-        onSportTabChanged: widget.onMatchSportTabChanged,
-        onOpenMatch: widget.onOpenMatch,
-        onOpenLeague: widget.onOpenLeague,
-        onOpenGame: widget.onOpenGame,
-        onOpenShootout: widget.onOpenShootout,
-        animateIntro: _shouldAnimateIntro(0),
-        onIntroPlayed: () => _markIntroPlayed(0),
-      ),
-      _ => _GamesTab(
-        selectedSport: _selectedGamesSport,
-        activeSportTab: widget.activeGamesSportTab,
-        onSportTabChanged: widget.onGamesSportTabChanged,
-        onOpenGame: widget.onOpenGame,
-        onOpenShootout: widget.onOpenShootout,
-        onOpenQuiz: widget.onOpenQuiz,
-        onOpenFootballBingo: widget.onOpenFootballBingo,
-        onOpenFootballChess: widget.onOpenFootballChess,
-        onOpenFinalOver: widget.onOpenFinalOver ?? () {},
-        onOpenGuessPlayer: widget.onOpenGuessPlayer,
-        onOpenBasketballGuessPlayer: widget.onOpenBasketballGuessPlayer,
-        onOpenCricketGuessPlayer: widget.onOpenCricketGuessPlayer,
-        onOpenGrandPrix: widget.onOpenGrandPrix,
-        onOpenF1GuessDriver: widget.onOpenF1GuessDriver,
-        onOpenTennisGuessWinner: widget.onOpenTennisGuessWinner,
-        onOpenBasketball: widget.onOpenBasketball,
-        onOpenTennisRally: widget.onOpenTennisRally ?? () {},
-        animateIntro: _shouldAnimateIntro(1),
-        onIntroPlayed: () => _markIntroPlayed(1),
-      ),
+      0 =>
+        _selectedMatchSport == null
+            ? _TrendingMatchesTab(
+                activeSportTab: widget.activeMatchSportTab,
+                onSportTabChanged: widget.onMatchSportTabChanged,
+                onMore: () => _openAllSports(
+                  mode: SportHubMode.matches,
+                  selectedIndex: widget.activeMatchSportTab,
+                  onChanged: widget.onMatchSportTabChanged,
+                ),
+                onOpenMatch: widget.onOpenMatch,
+                onOpenMarket: widget.onOpenMarket,
+                animateIntro: _shouldAnimateIntro(0),
+                onIntroPlayed: () => _markIntroPlayed(0),
+              )
+            : _MatchesTab(
+                selectedSport: _selectedMatchSport!,
+                activeSportTab: widget.activeMatchSportTab,
+                onSportTabChanged: widget.onMatchSportTabChanged,
+                onMore: () => _openAllSports(
+                  mode: SportHubMode.matches,
+                  selectedIndex: widget.activeMatchSportTab,
+                  onChanged: widget.onMatchSportTabChanged,
+                ),
+                onOpenMatch: widget.onOpenMatch,
+                onOpenLeague: widget.onOpenLeague,
+                onOpenGame: widget.onOpenGame,
+                onOpenShootout: widget.onOpenShootout,
+                animateIntro: _shouldAnimateIntro(0),
+                onIntroPlayed: () => _markIntroPlayed(0),
+              ),
+      _ =>
+        _selectedGamesSport == null
+            ? _TrendingGamesTab(
+                activeSportTab: widget.activeGamesSportTab,
+                onSportTabChanged: widget.onGamesSportTabChanged,
+                onMore: () => _openAllSports(
+                  mode: SportHubMode.games,
+                  selectedIndex: widget.activeGamesSportTab,
+                  onChanged: widget.onGamesSportTabChanged,
+                ),
+                onOpenGame: widget.onOpenGame,
+                onOpenShootout: widget.onOpenShootout,
+                onOpenQuiz: widget.onOpenQuiz,
+                onOpenFootballBingo: widget.onOpenFootballBingo,
+                onOpenFootballChess: widget.onOpenFootballChess,
+                onOpenGuessPlayer: widget.onOpenGuessPlayer,
+                onOpenFinalOver: widget.onOpenFinalOver ?? () {},
+                onOpenGrandPrix: widget.onOpenGrandPrix,
+                onOpenBasketball: widget.onOpenBasketball,
+                onOpenTennisRally: widget.onOpenTennisRally ?? () {},
+                animateIntro: _shouldAnimateIntro(1),
+                onIntroPlayed: () => _markIntroPlayed(1),
+              )
+            : _GamesTab(
+                selectedSport: _selectedGamesSport!,
+                activeSportTab: widget.activeGamesSportTab,
+                onSportTabChanged: widget.onGamesSportTabChanged,
+                onMore: () => _openAllSports(
+                  mode: SportHubMode.games,
+                  selectedIndex: widget.activeGamesSportTab,
+                  onChanged: widget.onGamesSportTabChanged,
+                ),
+                onOpenGame: widget.onOpenGame,
+                onOpenShootout: widget.onOpenShootout,
+                onOpenQuiz: widget.onOpenQuiz,
+                onOpenFootballBingo: widget.onOpenFootballBingo,
+                onOpenFootballChess: widget.onOpenFootballChess,
+                onOpenFinalOver: widget.onOpenFinalOver ?? () {},
+                onOpenGuessPlayer: widget.onOpenGuessPlayer,
+                onOpenBasketballGuessPlayer: widget.onOpenBasketballGuessPlayer,
+                onOpenCricketGuessPlayer: widget.onOpenCricketGuessPlayer,
+                onOpenGrandPrix: widget.onOpenGrandPrix,
+                onOpenF1GuessDriver: widget.onOpenF1GuessDriver,
+                onOpenTennisGuessWinner: widget.onOpenTennisGuessWinner,
+                onOpenBasketball: widget.onOpenBasketball,
+                onOpenTennisRally: widget.onOpenTennisRally ?? () {},
+                animateIntro: _shouldAnimateIntro(1),
+                onIntroPlayed: () => _markIntroPlayed(1),
+              ),
     };
+  }
+
+  void _openAllSports({
+    required SportHubMode mode,
+    required int selectedIndex,
+    required ValueChanged<int> onChanged,
+  }) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AllSportsScreen(
+          mode: mode,
+          selectedIndex: selectedIndex,
+          onSelect: onChanged,
+        ),
+      ),
+    );
   }
 
   bool _shouldAnimateIntro(int tab) => !_introPlayedTabs.contains(tab);
@@ -182,51 +253,53 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
   }
 }
 
-const _predictionSports = <Sport>[
-  Sport.football,
-  Sport.cricket,
-  Sport.basketball,
-  Sport.tennis,
-  Sport.motorsport,
-];
-
-final _predictionSportLabels = _predictionSports
-    .map((sport) => sportModuleFor(sport).label.toUpperCase())
-    .toList(growable: false);
-
-final _predictionSportIcons = _predictionSports
-    .map((sport) => sportModuleFor(sport).icon)
-    .toList(growable: false);
-
-class _PredictionSportsTabs extends StatelessWidget {
-  const _PredictionSportsTabs({
-    required this.activeIndex,
-    required this.selectedSport,
-    required this.onTap,
-  });
-
-  final int activeIndex;
-  final Sport selectedSport;
-  final ValueChanged<int> onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return CyberUnderlineTabs(
-      labels: _predictionSportLabels,
-      icons: _predictionSportIcons,
-      activeIndex: activeIndex,
-      accent: sportModuleFor(selectedSport).accent,
-      onTap: onTap,
-    );
-  }
-}
-
 class _PredictionBackground extends StatelessWidget {
   const _PredictionBackground();
 
   @override
   Widget build(BuildContext context) {
     return const CyberPlainBackground(child: SizedBox.expand());
+  }
+}
+
+class _TrendingMatchesTab extends StatelessWidget {
+  const _TrendingMatchesTab({
+    required this.activeSportTab,
+    required this.onSportTabChanged,
+    required this.onMore,
+    required this.onOpenMatch,
+    required this.onOpenMarket,
+    required this.animateIntro,
+    required this.onIntroPlayed,
+  });
+
+  final int activeSportTab;
+  final ValueChanged<int> onSportTabChanged;
+  final VoidCallback onMore;
+  final ValueChanged<SportMatch> onOpenMatch;
+  final ValueChanged<String> onOpenMarket;
+  final bool animateIntro;
+  final VoidCallback onIntroPlayed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SportHubTabs(
+          activeIndex: activeSportTab,
+          onTap: onSportTabChanged,
+          onMore: onMore,
+        ),
+        Expanded(
+          child: TrendingMatchesView(
+            onOpenMatch: onOpenMatch,
+            onOpenMarket: onOpenMarket,
+            animateIntro: animateIntro,
+            onIntroPlayed: onIntroPlayed,
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -262,6 +335,7 @@ class _MatchesTab extends StatefulWidget {
     required this.selectedSport,
     required this.activeSportTab,
     required this.onSportTabChanged,
+    required this.onMore,
     required this.onOpenMatch,
     required this.onOpenLeague,
     required this.onOpenGame,
@@ -273,6 +347,7 @@ class _MatchesTab extends StatefulWidget {
   final Sport selectedSport;
   final int activeSportTab;
   final ValueChanged<int> onSportTabChanged;
+  final VoidCallback onMore;
   final ValueChanged<SportMatch> onOpenMatch;
   final ValueChanged<League> onOpenLeague;
   final VoidCallback onOpenGame;
@@ -311,13 +386,25 @@ class _MatchesTabState extends State<_MatchesTab> {
     }
   }
 
+  bool get _isWeekMode => widget.selectedSport == Sport.motorsport;
+
   bool _hasDay(List<DateTime> days, DateTime day) {
     final normalized = _startOfDay(day);
     return days.any((candidate) => _sameDay(candidate, normalized));
   }
 
+  bool _hasWeek(List<DateTime> weeks, DateTime weekStart) {
+    final monday = mondayOf(weekStart);
+    return weeks.any((candidate) => _sameDay(candidate, monday));
+  }
+
   bool _canMoveDay(List<DateTime> days, int delta) =>
       _hasDay(days, _selectedDay.add(Duration(days: delta)));
+
+  bool _canMoveWeek(List<DateTime> weeks, int delta) {
+    final monday = mondayOf(_selectedDay);
+    return _hasWeek(weeks, monday.add(Duration(days: 7 * delta)));
+  }
 
   void _moveDay(List<DateTime> days, int delta) {
     final target = _selectedDay.add(Duration(days: delta));
@@ -325,6 +412,18 @@ class _MatchesTabState extends State<_MatchesTab> {
     playSound(SoundEffect.uiTap);
     setState(() {
       _selectedDay = _startOfDay(target);
+      _slideFromLeft = delta < 0;
+      _dayGeneration++;
+    });
+  }
+
+  void _moveWeek(List<DateTime> weeks, int delta) {
+    final monday = mondayOf(_selectedDay);
+    final target = monday.add(Duration(days: 7 * delta));
+    if (!_hasWeek(weeks, target)) return;
+    playSound(SoundEffect.uiTap);
+    setState(() {
+      _selectedDay = target;
       _slideFromLeft = delta < 0;
       _dayGeneration++;
     });
@@ -338,12 +437,21 @@ class _MatchesTabState extends State<_MatchesTab> {
     _daySwipeDelta += details.primaryDelta ?? 0;
   }
 
-  void _handleDaySwipeEnd(List<DateTime> days, DragEndDetails details) {
+  void _handleDaySwipeEnd(
+    List<DateTime> days,
+    List<DateTime> weeks,
+    DragEndDetails details,
+  ) {
     final velocity = details.primaryVelocity ?? 0;
     final gestureDelta = velocity.abs() >= 180 ? velocity : _daySwipeDelta;
     _daySwipeDelta = 0;
     if (gestureDelta.abs() < 80) return;
-    _moveDay(days, gestureDelta < 0 ? 1 : -1);
+    final step = gestureDelta < 0 ? 1 : -1;
+    if (_isWeekMode) {
+      _moveWeek(weeks, step);
+    } else {
+      _moveDay(days, step);
+    }
   }
 
   Future<void> _openCalendar(List<DateTime> days) async {
@@ -352,13 +460,26 @@ class _MatchesTabState extends State<_MatchesTab> {
     final lastDay = days.isEmpty
         ? today.add(const Duration(days: 4))
         : days.last;
+    final weeks = _isWeekMode ? calendarWeeks(days) : const <DateTime>[];
+    final initial = _isWeekMode ? mondayOf(_selectedDay) : _selectedDay;
+    final clampedInitial =
+        !initial.isBefore(firstDay) && !initial.isAfter(lastDay)
+        ? initial
+        : firstDay;
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDay,
+      initialDate: clampedInitial,
       firstDate: firstDay,
       lastDate: lastDay,
+      // Week mode still snaps the picked day to that Mon–Sun race week.
+      helpText: _isWeekMode ? 'Select race week' : null,
       selectableDayPredicate: (day) {
         final normalized = _startOfDay(day);
+        if (_isWeekMode) {
+          final monday = mondayOf(normalized);
+          return weeks.any((w) => _sameDay(w, monday));
+        }
         return days.any((d) => _sameDay(d, normalized));
       },
       builder: (context, child) {
@@ -376,9 +497,12 @@ class _MatchesTabState extends State<_MatchesTab> {
       },
     );
     if (picked == null) return;
+    final selected = _isWeekMode ? mondayOf(picked) : _startOfDay(picked);
     setState(() {
-      _slideFromLeft = !picked.isAfter(_selectedDay);
-      _selectedDay = _startOfDay(picked);
+      _slideFromLeft = !selected.isAfter(
+        _isWeekMode ? mondayOf(_selectedDay) : _selectedDay,
+      );
+      _selectedDay = selected;
       _dayGeneration++;
     });
   }
@@ -387,10 +511,10 @@ class _MatchesTabState extends State<_MatchesTab> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _PredictionSportsTabs(
+        SportHubTabs(
           activeIndex: widget.activeSportTab,
-          selectedSport: widget.selectedSport,
           onTap: widget.onSportTabChanged,
+          onMore: widget.onMore,
         ),
         Expanded(
           child: BlocBuilder<PredictionCubit, PredictionState>(
@@ -409,62 +533,148 @@ class _MatchesTabState extends State<_MatchesTab> {
                         validLeagueIds.contains(fixture.leagueId),
                   )
                   .toList();
-              // Motorsport (F1, IndyCar, NASCAR) browses day-to-day like every
-              // other sport — races from different series on the same day
-              // group under separate league headers via _groupByLeague below,
-              // the same way concurrent football competitions already do.
+              // Motorsport browses Mon–Sun race weeks; other sports stay
+              // day-to-day. Concurrent series still group under league headers
+              // via _groupByLeague below.
               final sportFixtures = allSportFixtures;
-              final days = _calendarDays(sportFixtures);
+              final days = _calendarDays(
+                sportFixtures,
+                weekAligned: widget.selectedSport == Sport.motorsport,
+              );
+              final weeks = calendarWeeks(days);
               final today = _startOfDay(DateTime.now());
+              final weekMode = widget.selectedSport == Sport.motorsport;
 
               if (!_hasAutoSelectedDay && sportFixtures.isNotEmpty) {
                 _hasAutoSelectedDay = true;
-                final todayHasMatches = sportFixtures.any(
-                  (f) => _sameDay(f.kickoff, today),
-                );
-                if (!todayHasMatches) {
-                  DateTime? closestDay;
-                  int minDiff = 999999;
-                  for (final f in sportFixtures) {
+                if (weekMode) {
+                  final thisMonday = mondayOf(today);
+                  final thisWeekHasRaces = sportFixtures.any((f) {
                     final d = _startOfDay(f.kickoff);
-                    final diff = (d.difference(today).inDays).abs();
-                    if (diff < minDiff) {
-                      minDiff = diff;
-                      closestDay = d;
-                    } else if (diff == minDiff && closestDay != null) {
-                      if (d.isBefore(closestDay)) {
+                    return !d.isBefore(thisMonday) &&
+                        !d.isAfter(sundayOf(thisMonday));
+                  });
+                  if (!thisWeekHasRaces) {
+                    DateTime? closestDay;
+                    var minDiff = 999999;
+                    for (final f in sportFixtures) {
+                      final d = _startOfDay(f.kickoff);
+                      final diff = (d.difference(today).inDays).abs();
+                      if (diff < minDiff) {
+                        minDiff = diff;
+                        closestDay = d;
+                      } else if (diff == minDiff &&
+                          closestDay != null &&
+                          d.isBefore(closestDay)) {
                         closestDay = d;
                       }
                     }
+                    if (closestDay != null) {
+                      _selectedDay = mondayOf(closestDay);
+                      _slideFromLeft = closestDay.isBefore(today);
+                    }
+                  } else {
+                    _selectedDay = thisMonday;
                   }
-                  if (closestDay != null) {
-                    _selectedDay = closestDay;
-                    _slideFromLeft = closestDay.isBefore(today);
+                } else {
+                  final todayHasMatches = sportFixtures.any(
+                    (f) => _sameDay(f.kickoff, today),
+                  );
+                  if (!todayHasMatches) {
+                    DateTime? closestDay;
+                    var minDiff = 999999;
+                    for (final f in sportFixtures) {
+                      final d = _startOfDay(f.kickoff);
+                      final diff = (d.difference(today).inDays).abs();
+                      if (diff < minDiff) {
+                        minDiff = diff;
+                        closestDay = d;
+                      } else if (diff == minDiff &&
+                          closestDay != null &&
+                          d.isBefore(closestDay)) {
+                        closestDay = d;
+                      }
+                    }
+                    if (closestDay != null) {
+                      _selectedDay = closestDay;
+                      _slideFromLeft = closestDay.isBefore(today);
+                    }
                   }
                 }
               }
 
-              if (!days.any((day) => _sameDay(day, _selectedDay)) &&
+              if (weekMode) {
+                final selectedMonday = mondayOf(_selectedDay);
+                if (!_hasWeek(weeks, selectedMonday)) {
+                  _selectedDay = weeks.any((w) => _sameDay(w, mondayOf(today)))
+                      ? mondayOf(today)
+                      : (weeks.isNotEmpty ? weeks.first : mondayOf(today));
+                } else {
+                  _selectedDay = selectedMonday;
+                }
+              } else if (!days.any((day) => _sameDay(day, _selectedDay)) &&
                   !_sameDay(_selectedDay, today)) {
                 _selectedDay = days.any((day) => _sameDay(day, today))
                     ? today
                     : (days.isNotEmpty ? days.first : today);
               }
-              final selectedFixtures = sportFixtures
-                  .where((fixture) => _sameDay(fixture.kickoff, _selectedDay))
-                  .toList();
-              final upcomingDays = days
-                  .where((d) => !d.isBefore(_selectedDay))
-                  .toList();
+
+              final DateTime navigatorAnchor;
+              final int matchCount;
+              final String dayLabel;
+              final bool canGoPrevious;
+              final bool canGoNext;
+              final VoidCallback onPrevious;
+              final VoidCallback onNext;
               final groupedByDay = <DateTime, Map<League, List<SportMatch>>>{};
-              for (final day in upcomingDays) {
-                final dayFixtures = sportFixtures
-                    .where((fixture) => _sameDay(fixture.kickoff, day))
-                    .toList();
-                if (dayFixtures.isNotEmpty) {
+
+              if (weekMode) {
+                final weekStart = mondayOf(_selectedDay);
+                final weekEnd = sundayOf(weekStart);
+                navigatorAnchor = weekStart;
+                dayLabel = weekHeading(weekStart);
+                final weekFixtures = sportFixtures.where((fixture) {
+                  final day = _startOfDay(fixture.kickoff);
+                  return !day.isBefore(weekStart) && !day.isAfter(weekEnd);
+                }).toList();
+                matchCount = weekFixtures.length;
+                canGoPrevious = _canMoveWeek(weeks, -1);
+                canGoNext = _canMoveWeek(weeks, 1);
+                onPrevious = () => _moveWeek(weeks, -1);
+                onNext = () => _moveWeek(weeks, 1);
+                for (final day in weekDays(weekStart)) {
+                  final dayFixtures = sportFixtures
+                      .where((fixture) => _sameDay(fixture.kickoff, day))
+                      .toList();
+                  if (dayFixtures.isEmpty) continue;
                   final grouped = _groupByLeague(state.leagues, dayFixtures);
                   if (grouped.isNotEmpty) {
                     groupedByDay[day] = grouped;
+                  }
+                }
+              } else {
+                navigatorAnchor = _selectedDay;
+                dayLabel = _dayHeading(_selectedDay);
+                final selectedFixtures = sportFixtures
+                    .where((fixture) => _sameDay(fixture.kickoff, _selectedDay))
+                    .toList();
+                matchCount = selectedFixtures.length;
+                canGoPrevious = _canMoveDay(days, -1);
+                canGoNext = _canMoveDay(days, 1);
+                onPrevious = () => _moveDay(days, -1);
+                onNext = () => _moveDay(days, 1);
+                final upcomingDays = days
+                    .where((d) => !d.isBefore(_selectedDay))
+                    .toList();
+                for (final day in upcomingDays) {
+                  final dayFixtures = sportFixtures
+                      .where((fixture) => _sameDay(fixture.kickoff, day))
+                      .toList();
+                  if (dayFixtures.isNotEmpty) {
+                    final grouped = _groupByLeague(state.leagues, dayFixtures);
+                    if (grouped.isNotEmpty) {
+                      groupedByDay[day] = grouped;
+                    }
                   }
                 }
               }
@@ -487,7 +697,7 @@ class _MatchesTabState extends State<_MatchesTab> {
                 onHorizontalDragStart: _handleDaySwipeStart,
                 onHorizontalDragUpdate: _handleDaySwipeUpdate,
                 onHorizontalDragEnd: (details) =>
-                    _handleDaySwipeEnd(days, details),
+                    _handleDaySwipeEnd(days, weeks, details),
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
                   children: [
@@ -507,12 +717,13 @@ class _MatchesTabState extends State<_MatchesTab> {
                       children: [
                         Expanded(
                           child: _MatchDayNavigator(
-                            dayLabel: _dayHeading(_selectedDay),
-                            matchCount: selectedFixtures.length,
-                            canGoPrevious: _canMoveDay(days, -1),
-                            canGoNext: _canMoveDay(days, 1),
-                            onPrevious: () => _moveDay(days, -1),
-                            onNext: () => _moveDay(days, 1),
+                            dayLabel: dayLabel,
+                            matchCount: matchCount,
+                            labelWidth: weekMode ? 248 : 200,
+                            canGoPrevious: canGoPrevious,
+                            canGoNext: canGoNext,
+                            onPrevious: onPrevious,
+                            onNext: onNext,
                             onCalendar: () {
                               playSound(SoundEffect.uiTap);
                               _openCalendar(days);
@@ -523,10 +734,10 @@ class _MatchesTabState extends State<_MatchesTab> {
                     ),
                     const SizedBox(height: 12),
                     if (groupedByDay.isEmpty)
-                      _EmptyMatchDay(day: _selectedDay)
+                      _EmptyMatchDay(day: navigatorAnchor, weekMode: weekMode)
                     else
                       for (final dayEntry in groupedByDay.entries) ...[
-                        if (!_sameDay(dayEntry.key, _selectedDay))
+                        if (weekMode || !_sameDay(dayEntry.key, _selectedDay))
                           _DayDividerRow(day: dayEntry.key),
                         for (final entry in dayEntry.value.entries) ...[
                           GestureDetector(
@@ -991,6 +1202,7 @@ class _MatchDayNavigator extends StatelessWidget {
     required this.onPrevious,
     required this.onNext,
     required this.onCalendar,
+    this.labelWidth = 200,
   });
 
   final String dayLabel;
@@ -1000,6 +1212,7 @@ class _MatchDayNavigator extends StatelessWidget {
   final VoidCallback onPrevious;
   final VoidCallback onNext;
   final VoidCallback onCalendar;
+  final double labelWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -1016,7 +1229,7 @@ class _MatchDayNavigator extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           SizedBox(
-            width: 200,
+            width: labelWidth,
             child: Row(
               key: const ValueKey('match-day-heading'),
               mainAxisAlignment: MainAxisAlignment.center,
@@ -1132,9 +1345,10 @@ class _DayDividerRow extends StatelessWidget {
 }
 
 class _EmptyMatchDay extends StatelessWidget {
-  const _EmptyMatchDay({required this.day});
+  const _EmptyMatchDay({required this.day, this.weekMode = false});
 
   final DateTime day;
+  final bool weekMode;
 
   @override
   Widget build(BuildContext context) {
@@ -1142,8 +1356,12 @@ class _EmptyMatchDay extends StatelessWidget {
       height: 360,
       child: CyberNoDataState(
         icon: Icons.event_busy_outlined,
-        title: 'No games on ${_monthDayLabel(day)}',
-        message: 'Pick another match day to find open predictions.',
+        title: weekMode
+            ? 'No races this week'
+            : 'No games on ${_monthDayLabel(day)}',
+        message: weekMode
+            ? 'Swipe to another race week to find open predictions.'
+            : 'Pick another match day to find open predictions.',
         accent: Cyber.cyan,
         spark: Icons.calendar_today_outlined,
       ),
@@ -1163,13 +1381,29 @@ Map<League, List<SportMatch>> _groupByLeague(
   return grouped;
 }
 
-List<DateTime> _calendarDays(List<SportMatch> fixtures) {
+List<DateTime> _calendarDays(
+  List<SportMatch> fixtures, {
+  bool weekAligned = false,
+}) {
   final today = _startOfDay(DateTime.now());
   final daysByEpoch = <int, DateTime>{};
 
-  for (var offset = -7; offset <= 4; offset++) {
-    final day = today.add(Duration(days: offset));
-    daysByEpoch[day.millisecondsSinceEpoch] = day;
+  if (weekAligned) {
+    final monday = mondayOf(today);
+    final from = monday.subtract(const Duration(days: 7));
+    final to = monday.add(const Duration(days: 13));
+    for (
+      var day = from;
+      !day.isAfter(to);
+      day = day.add(const Duration(days: 1))
+    ) {
+      daysByEpoch[day.millisecondsSinceEpoch] = day;
+    }
+  } else {
+    for (var offset = -7; offset <= 4; offset++) {
+      final day = today.add(Duration(days: offset));
+      daysByEpoch[day.millisecondsSinceEpoch] = day;
+    }
   }
 
   for (final fixture in fixtures) {
@@ -1216,11 +1450,274 @@ String _monthDayLabel(DateTime day) {
 }
 
 // Sport-specific games hub content.
+class _TrendingGamesTab extends StatefulWidget {
+  const _TrendingGamesTab({
+    required this.activeSportTab,
+    required this.onSportTabChanged,
+    required this.onMore,
+    required this.onOpenGame,
+    required this.onOpenShootout,
+    required this.onOpenQuiz,
+    required this.onOpenFootballBingo,
+    required this.onOpenFootballChess,
+    required this.onOpenGuessPlayer,
+    required this.onOpenFinalOver,
+    required this.onOpenGrandPrix,
+    required this.onOpenBasketball,
+    required this.onOpenTennisRally,
+    required this.animateIntro,
+    required this.onIntroPlayed,
+  });
+
+  final int activeSportTab;
+  final ValueChanged<int> onSportTabChanged;
+  final VoidCallback onMore;
+  final VoidCallback onOpenGame;
+  final VoidCallback onOpenShootout;
+  final ValueChanged<Sport> onOpenQuiz;
+  final VoidCallback onOpenFootballBingo;
+  final VoidCallback onOpenFootballChess;
+  final VoidCallback onOpenGuessPlayer;
+  final VoidCallback onOpenFinalOver;
+  final VoidCallback onOpenGrandPrix;
+  final VoidCallback onOpenBasketball;
+  final VoidCallback onOpenTennisRally;
+  final bool animateIntro;
+  final VoidCallback onIntroPlayed;
+
+  @override
+  State<_TrendingGamesTab> createState() => _TrendingGamesTabState();
+}
+
+class _TrendingGamesTabState extends State<_TrendingGamesTab> {
+  bool _introReported = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final streaks = context.select<GameBloc, ({int pitch, int penalty})>(
+      (bloc) => (
+        pitch: bloc.state.streak.current(StreakCategory.pitchDuel),
+        penalty: bloc.state.streak.current(StreakCategory.penaltyShootout),
+      ),
+    );
+    final catalog = gamesTrendingCatalog
+        .where((item) => item.enabled)
+        .toList(growable: false);
+    final animate = widget.animateIntro && !_introReported;
+    if (animate && catalog.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || _introReported) return;
+        _introReported = true;
+        widget.onIntroPlayed();
+      });
+    }
+
+    return Column(
+      children: [
+        SportHubTabs(
+          activeIndex: widget.activeSportTab,
+          onTap: widget.onSportTabChanged,
+          onMore: widget.onMore,
+        ),
+        Expanded(
+          child: ListView(
+            key: const ValueKey('games-trending-feed'),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            children: [
+              CyberBentoGrid(
+                tiles: [
+                  for (var index = 0; index < catalog.length; index++)
+                    CyberBentoTile(
+                      span: catalog[index].span,
+                      child: StaggeredCardEntrance(
+                        key: ValueKey(catalog[index].id),
+                        index: index,
+                        animate: animate,
+                        child: _buildGameTile(catalog[index], streaks),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGameTile(
+    TrendingTileConfig config,
+    ({int pitch, int penalty}) streaks,
+  ) {
+    return switch (config.sourceId) {
+      'pitch-duel' => _ArcadeHeroGameTile(
+        key: const ValueKey('trending-pitch-duel-card'),
+        title: 'PITCH DUEL',
+        subtitle: 'TACTICAL CARD GAME',
+        badgeLabel: 'FEATURED // TACTICAL',
+        ctaLabel: 'ENTER THE DUEL',
+        accent: Cyber.cyan,
+        streak: streaks.pitch,
+        layout: GameHeroLayout.portrait,
+        emphasis: true,
+        tightContent: true,
+        largeType: true,
+        background: const CustomPaint(painter: _PitchDuelMiniTacticsPainter()),
+        onTap: widget.onOpenGame,
+      ),
+      'penalty-shootout' => _ArcadeHeroGameTile(
+        key: const ValueKey('trending-penalty-card'),
+        title: 'PENALTY SHOOTOUT',
+        titleLines: const ['PENALTY', 'SHOOTOUT'],
+        subtitle: 'SUDDEN-DEATH SPOT KICKS',
+        badgeLabel: 'SUDDEN DEATH',
+        ctaLabel: 'TAKE THE SHOT',
+        accent: Cyber.lime,
+        streak: streaks.penalty,
+        layout: GameHeroLayout.portrait,
+        emphasis: false,
+        tightContent: true,
+        largeType: true,
+        background: const CustomPaint(
+          painter: _PenaltyShootoutMiniGoalPainter(),
+        ),
+        onTap: widget.onOpenShootout,
+      ),
+      'football-chess' => _ArcadeHeroGameTile(
+        key: const ValueKey('trending-football-chess-card'),
+        title: '5V5 FOOTBALL CHESS',
+        titleLines: const ['5V5 FOOTBALL', 'CHESS'],
+        subtitle: 'TACTICAL SQUAD DUEL',
+        badgeLabel: 'FEATURED // 5V5',
+        ctaLabel: 'MAKE YOUR MOVE',
+        accent: Cyber.gold,
+        layout: GameHeroLayout.portrait,
+        emphasis: false,
+        tightContent: true,
+        largeType: true,
+        background: const CustomPaint(
+          painter: _FootballChessMiniBoardPainter(),
+        ),
+        onTap: widget.onOpenFootballChess,
+      ),
+      'football-quiz' => _QuickGameTile(
+        title: 'FOOTBALL QUIZ',
+        subtitle: 'TRIVIA GAUNTLET',
+        icon: Icons.quiz_rounded,
+        accent: Cyber.violet,
+        emphasis: false,
+        tightContent: true,
+        largeType: true,
+        onTap: () => widget.onOpenQuiz(Sport.football),
+      ),
+      'football-bingo' => _QuickGameTile(
+        title: 'FOOTBALL BINGO',
+        subtitle: 'BUILD A WINNING GRID',
+        icon: Icons.grid_view_rounded,
+        accent: Cyber.cyan,
+        emphasis: false,
+        tightContent: true,
+        largeType: true,
+        onTap: widget.onOpenFootballBingo,
+      ),
+      'guess-player' => _QuickGameTile(
+        title: 'GUESS THE PLAYER',
+        subtitle: 'DAILY FOOTBALL MYSTERY',
+        icon: Icons.person_search_rounded,
+        accent: Cyber.lime,
+        emphasis: false,
+        tightContent: true,
+        largeType: true,
+        onTap: widget.onOpenGuessPlayer,
+      ),
+      'final-over' => _ArcadeHeroGameTile(
+        key: const ValueKey('trending-final-over-card'),
+        title: 'FINAL OVER',
+        subtitle: 'SIX-BALL CRICKET CHASE',
+        badgeLabel: 'FEATURED // SIX BALLS',
+        ctaLabel: 'START THE CHASE',
+        accent: Cyber.cyan,
+        emphasis: false,
+        tightContent: true,
+        largeType: true,
+        background: const CustomPaint(painter: _FinalOverMiniPitchPainter()),
+        onTap: widget.onOpenFinalOver,
+      ),
+      'hoop-duel' => _ArcadeHeroGameTile(
+        key: const ValueKey('trending-hoop-duel-card'),
+        title: 'HOOP DUEL',
+        subtitle: 'STREET 1-ON-1',
+        badgeLabel: 'FEATURED // STREET',
+        ctaLabel: 'HIT THE COURT',
+        accent: Cyber.gold,
+        emphasis: false,
+        tightContent: true,
+        largeType: true,
+        background: const CustomPaint(painter: _HoopDuelMiniCourtPainter()),
+        onTap: widget.onOpenBasketball,
+      ),
+      'grand-prix-dash' => _ArcadeHeroGameTile(
+        key: const ValueKey('trending-grand-prix-card'),
+        title: 'GRAND PRIX DASH',
+        titleLines: const ['GRAND PRIX', 'DASH'],
+        subtitle: 'ONE-LAP ARCADE RACER',
+        badgeLabel: 'FEATURED // RACE',
+        ctaLabel: 'RACE NOW',
+        accent: Cyber.f1Red,
+        emphasis: false,
+        tightContent: true,
+        largeType: true,
+        background: const CustomPaint(painter: F1MysterySignalPainter()),
+        onTap: widget.onOpenGrandPrix,
+      ),
+      'tennis-rally' => _ArcadeHeroGameTile(
+        key: const ValueKey('trending-tennis-rally-card'),
+        title: 'TENNIS RALLY',
+        subtitle: '2D ARCADE SETS // 5 MODES',
+        badgeLabel: 'FEATURED // NEW',
+        ctaLabel: 'STEP ON COURT',
+        accent: Cyber.lime,
+        emphasis: false,
+        tightContent: true,
+        largeType: true,
+        background: const CustomPaint(painter: TennisMysterySignalPainter()),
+        onTap: widget.onOpenTennisRally,
+      ),
+      _ => _TrendingGameUnavailable(id: config.sourceId),
+    };
+  }
+}
+
+class _TrendingGameUnavailable extends StatelessWidget {
+  const _TrendingGameUnavailable({required this.id});
+
+  final String id;
+
+  @override
+  Widget build(BuildContext context) {
+    return CyberPanel(
+      accent: Cyber.muted,
+      child: Center(
+        child: Text(
+          'MODE OFFLINE\n$id',
+          textAlign: TextAlign.center,
+          style: Cyber.label(
+            10,
+            color: Cyber.muted,
+            letterSpacing: 0.6,
+          ).copyWith(height: 1.3),
+        ),
+      ),
+    );
+  }
+}
+
 class _GamesTab extends StatefulWidget {
   const _GamesTab({
     required this.selectedSport,
     required this.activeSportTab,
     required this.onSportTabChanged,
+    required this.onMore,
     required this.onOpenGame,
     required this.onOpenShootout,
     required this.onOpenQuiz,
@@ -1242,6 +1739,7 @@ class _GamesTab extends StatefulWidget {
   final Sport selectedSport;
   final int activeSportTab;
   final ValueChanged<int> onSportTabChanged;
+  final VoidCallback onMore;
   final VoidCallback onOpenGame;
   final VoidCallback onOpenShootout;
   final ValueChanged<Sport> onOpenQuiz;
@@ -1284,10 +1782,10 @@ class _GamesTabState extends State<_GamesTab> {
     }
     return Column(
       children: [
-        _PredictionSportsTabs(
+        SportHubTabs(
           activeIndex: widget.activeSportTab,
-          selectedSport: widget.selectedSport,
           onTap: widget.onSportTabChanged,
+          onMore: widget.onMore,
         ),
         Expanded(
           child: AnimatedSwitcher(
@@ -1623,6 +2121,8 @@ class _TennisRallyGameTile extends StatelessWidget {
   }
 }
 
+enum GameHeroLayout { landscape, portrait }
+
 class _ArcadeHeroGameTile extends StatelessWidget {
   const _ArcadeHeroGameTile({
     required this.title,
@@ -1634,6 +2134,10 @@ class _ArcadeHeroGameTile extends StatelessWidget {
     required this.onTap,
     this.titleLines,
     this.streak = 0,
+    this.layout = GameHeroLayout.landscape,
+    this.emphasis = true,
+    this.tightContent = false,
+    this.largeType = false,
     super.key,
   });
 
@@ -1646,6 +2150,10 @@ class _ArcadeHeroGameTile extends StatelessWidget {
   final Widget background;
   final VoidCallback onTap;
   final int streak;
+  final GameHeroLayout layout;
+  final bool emphasis;
+  final bool tightContent;
+  final bool largeType;
 
   @override
   Widget build(BuildContext context) {
@@ -1654,61 +2162,187 @@ class _ArcadeHeroGameTile extends StatelessWidget {
       label: '$title, $ctaLabel',
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: onTap,
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
         child: CustomPaint(
           painter: _HudChamferCardPainter(
             bigCut: 14,
             smallCut: 4,
             fillColor: Cyber.panel,
             borderColor: accent.withValues(alpha: 0.86),
-            borderGlow: true,
+            borderGlow: emphasis,
           ),
           child: ClipPath(
             clipper: const HudChamferClipper(bigCut: 14, smallCut: 4),
-            child: SizedBox(
-              height: 174,
-              child: Stack(
-                fit: StackFit.expand,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final compact =
+                    layout == GameHeroLayout.landscape &&
+                    constraints.maxWidth < 165;
+                return SizedBox(
+                  height: 174,
+                  child: layout == GameHeroLayout.portrait
+                      ? _buildPortrait()
+                      : _buildLandscape(compact: compact),
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLandscape({bool compact = false}) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        background,
+        if (compact)
+          DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Cyber.bg.withValues(alpha: 0.2),
+                  Cyber.bg.withValues(alpha: 0.72),
+                ],
+              ),
+            ),
+          ),
+        Padding(
+          padding: EdgeInsets.all(compact ? 12 : 17),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _HeroBadge(
+                label: badgeLabel,
+                accent: accent,
+                largeType: largeType,
+              ),
+              if (tightContent) const SizedBox(height: 12) else const Spacer(),
+              _HeroTitle(
+                title: title,
+                titleLines: titleLines,
+                streak: streak,
+                square: compact,
+              ),
+              SizedBox(height: compact ? 3 : 5),
+              Text(
+                subtitle,
+                maxLines: compact ? 2 : 1,
+                overflow: TextOverflow.ellipsis,
+                style: Cyber.display(
+                  largeType
+                      ? 10
+                      : compact
+                      ? 6.5
+                      : 8,
+                  color: accent,
+                  letterSpacing: compact ? 0.3 : 0.5,
+                ).copyWith(height: 1.08),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPortrait() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Align(
+          alignment: Alignment.bottomCenter,
+          child: FractionallySizedBox(
+            widthFactor: 1,
+            heightFactor: 0.56,
+            child: background,
+          ),
+        ),
+        Align(
+          alignment: Alignment.topCenter,
+          child: FractionallySizedBox(
+            widthFactor: 1,
+            heightFactor: 0.5,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(13, 14, 13, 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  background,
-                  Padding(
-                    padding: const EdgeInsets.all(17),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 7,
-                            vertical: 4,
-                          ),
-                          color: accent.withValues(alpha: 0.16),
-                          child: Text(
-                            badgeLabel,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Cyber.display(7, color: accent),
-                          ),
-                        ),
-                        const Spacer(),
-                        _HeroTitle(
-                          title: title,
-                          titleLines: titleLines,
-                          streak: streak,
-                        ),
-                        const SizedBox(height: 5),
-                        Text(
-                          subtitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Cyber.display(8, color: accent),
-                        ),
-                      ],
-                    ),
+                  _HeroBadge(
+                    label: badgeLabel,
+                    accent: accent,
+                    largeType: largeType,
+                  ),
+                  SizedBox(height: tightContent ? 8 : 12),
+                  _HeroTitle(
+                    title: title,
+                    titleLines: titleLines,
+                    streak: streak,
+                    compact: true,
+                  ),
+                  SizedBox(height: tightContent ? 4 : 6),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Cyber.display(
+                      largeType ? 10 : 7,
+                      color: accent,
+                      letterSpacing: 0.4,
+                    ).copyWith(height: 1.15),
                   ),
                 ],
               ),
             ),
           ),
+        ),
+        Positioned(
+          left: 13,
+          bottom: 11,
+          child: Text(
+            'TAP // PLAY',
+            style: Cyber.label(
+              largeType ? 10 : 6.5,
+              color: accent.withValues(alpha: 0.84),
+              letterSpacing: 0.6,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HeroBadge extends StatelessWidget {
+  const _HeroBadge({
+    required this.label,
+    required this.accent,
+    required this.largeType,
+  });
+
+  final String label;
+  final Color accent;
+  final bool largeType;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+      color: accent.withValues(alpha: 0.16),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: Cyber.display(
+          largeType ? 10 : 7,
+          color: accent,
+          letterSpacing: largeType ? 0.3 : 0,
         ),
       ),
     );
@@ -1720,16 +2354,28 @@ class _HeroTitle extends StatelessWidget {
     required this.title,
     required this.titleLines,
     required this.streak,
+    this.compact = false,
+    this.square = false,
   });
 
   final String title;
   final List<String>? titleLines;
   final int streak;
+  final bool compact;
+  final bool square;
 
   TextStyle get _style => Cyber.display(
-    20,
+    square
+        ? 13
+        : compact
+        ? 15
+        : 20,
     color: Colors.white,
-    letterSpacing: 1,
+    letterSpacing: square
+        ? 0.35
+        : compact
+        ? 0.6
+        : 1,
   ).copyWith(height: 1.02);
 
   @override
@@ -1756,7 +2402,9 @@ class _HeroTitle extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final titleWidth = (constraints.maxWidth * 0.56).clamp(168.0, 214.0);
+        final titleWidth = compact || square
+            ? constraints.maxWidth
+            : (constraints.maxWidth * 0.56).clamp(168.0, 214.0);
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2307,6 +2955,9 @@ class _QuickGameTile extends StatelessWidget {
     required this.icon,
     required this.accent,
     required this.onTap,
+    this.emphasis = true,
+    this.tightContent = false,
+    this.largeType = false,
     super.key,
   });
 
@@ -2315,6 +2966,9 @@ class _QuickGameTile extends StatelessWidget {
   final IconData icon;
   final Color accent;
   final VoidCallback onTap;
+  final bool emphasis;
+  final bool tightContent;
+  final bool largeType;
 
   static const _bigCut = 12.0;
   static const _smallCut = 3.0;
@@ -2335,7 +2989,7 @@ class _QuickGameTile extends StatelessWidget {
               smallCut: _smallCut,
               fillColor: Color.lerp(Cyber.panel, accent, 0.055)!,
               borderColor: accent.withValues(alpha: 0.84),
-              borderGlow: true,
+              borderGlow: emphasis,
             ),
             child: ClipPath(
               clipper: const HudChamferClipper(
@@ -2401,9 +3055,9 @@ class _QuickGameTile extends StatelessWidget {
                                       Text(
                                         'FREE',
                                         style: Cyber.display(
-                                          7,
+                                          largeType ? 10 : 7,
                                           color: accent,
-                                          letterSpacing: 0.8,
+                                          letterSpacing: 0.4,
                                         ),
                                       ),
                                     ],
@@ -2411,7 +3065,10 @@ class _QuickGameTile extends StatelessWidget {
                                 ),
                               ],
                             ),
-                            const Spacer(),
+                            if (tightContent)
+                              const SizedBox(height: 12)
+                            else
+                              const Spacer(),
                             Text(
                               title,
                               maxLines: 2,
@@ -2428,9 +3085,13 @@ class _QuickGameTile extends StatelessWidget {
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: Cyber.label(
-                                compact ? 6.5 : 7.5,
+                                largeType
+                                    ? 10
+                                    : compact
+                                    ? 6.5
+                                    : 7.5,
                                 color: accent.withValues(alpha: 0.76),
-                                letterSpacing: compact ? 0.7 : 1,
+                                letterSpacing: compact ? 0.4 : 0.6,
                               ).copyWith(height: 1.2),
                             ),
                           ],

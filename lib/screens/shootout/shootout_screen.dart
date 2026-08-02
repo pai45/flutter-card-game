@@ -52,7 +52,7 @@ class _ShootoutScreenState extends State<ShootoutScreen> {
     final game = context.read<GameBloc>().state;
     // deckReady (the entry gate) guarantees a keeper; fall back defensively.
     final keeper = game.deckKeeper ?? goalkeepers.first;
-    final level = game.progression.playerLevel;
+    final level = game.progression.levelFor(ProgressTrack.shootout);
     final rng = Random();
     final opponentName = randomOpponentName(random: rng);
     final cpu = generateShootoutOpponent(

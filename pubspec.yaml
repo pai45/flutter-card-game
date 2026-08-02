@@ -113,6 +113,8 @@ flutter:
     - assets/player_images/gold/
     - assets/player_images/platinum/
     - assets/player_images/unranked/
+    - assets/basketball_player_images/
+    - assets/tennis_player_images/
     - assets/racing_driver_images/
     - assets/audio/
     - assets/packs/

@@ -5,9 +5,15 @@ import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_event.dart';
 import '../../blocs/game/game_state.dart';
 import '../../config/enums.dart';
+import '../../models/avatar_frame_option.dart';
+import '../../models/avatar_option.dart';
+import '../../models/progression.dart';
+import '../../services/secure_storage_service.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
+import '../../widgets/matchmaking/game_match_gate.dart';
+import '../../widgets/matchmaking/game_matchmaking_config.dart';
 import '../deck/all_cards_screen.dart';
 import '../deck/deck_builder_screen.dart';
 import '../home/widgets/starter_pack_onboarding.dart';
@@ -153,17 +159,31 @@ class MatchScreen extends StatefulWidget {
 
 class _MatchScreenState extends State<MatchScreen> {
   bool _introShown = false;
+  final SecureGameStorage _storage = SecureGameStorage();
+  String? _selectedAvatarId;
 
   @override
   void initState() {
     super.initState();
     AudioController.instance.enterScene(AudioScene.pitchDuel);
+    _loadAvatar();
+  }
+
+  Future<void> _loadAvatar() async {
+    final avatarId = await _storage.loadSelectedAvatarId();
+    if (!mounted) return;
+    setState(() => _selectedAvatarId = avatarId);
   }
 
   @override
   void dispose() {
     AudioController.instance.leaveScene(AudioScene.pitchDuel);
     super.dispose();
+  }
+
+  void _cancelIntro() {
+    context.read<GameBloc>().add(MatchReset());
+    widget.onNavigate(AppSection.home);
   }
 
   @override
@@ -178,20 +198,31 @@ class _MatchScreenState extends State<MatchScreen> {
       buildWhen: _matchStateChanged,
       builder: (context, state) {
         final showIntro = state.phase == MatchPhase.toss && !_introShown;
-        final deckName = state.deckSlots.isNotEmpty
-            ? state.deckSlots
-                  .firstWhere(
-                    (s) => s.id == state.activeDeckId,
-                    orElse: () => state.deckSlots.first,
-                  )
-                  .name
-            : 'Squad';
+        final opponentName = state.opponentName ?? 'Rival';
+        final playerAvatar = avatarOptionById(_selectedAvatarId);
+        final equippedFrame = avatarFrameOptionById(state.equippedAvatarFrameId);
+        final level = state.progression.levelFor(ProgressTrack.pitchDuel);
 
         final Widget phaseWidget = showIntro
-            ? MatchIntroPhase(
-                deckName: deckName,
-                opponentName: state.opponentName,
-                onComplete: () => setState(() => _introShown = true),
+            ? GameMatchGate(
+                goLabel: 'KICK OFF!',
+                config: GameMatchmakingConfig(
+                  title: 'PITCH DUEL',
+                  queueLabel: 'SCANNING GLOBAL PITCH QUEUE',
+                  player: MatchmakingFighter(
+                    name: 'PLAYER ONE',
+                    avatarAsset: playerAvatar.assetPath,
+                    frame: equippedFrame,
+                    badge: 'LV $level',
+                  ),
+                  opponent: MatchmakingFighter(
+                    name: opponentName,
+                    avatarAsset: avatarForName(opponentName).assetPath,
+                    badge: 'LV $level',
+                  ),
+                ),
+                onReady: () => setState(() => _introShown = true),
+                onCancel: _cancelIntro,
               )
             : switch (state.phase) {
                 MatchPhase.toss || MatchPhase.tossResult => CoinTossPhase(

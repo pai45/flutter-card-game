@@ -300,7 +300,9 @@ void main() {
 
   test('XP application records only the loss that can actually be applied', () {
     final result = applyXpTransaction(
-      progression: const PlayerProgression(totalXP: 3),
+      progression: PlayerProgression(
+        xpByTrack: {ProgressTrack.pitchDuel: 3},
+      ),
       ledger: const [],
       delta: -15,
       source: XpTransactionSource.match,
@@ -309,6 +311,7 @@ void main() {
     );
 
     expect(result.progression.totalXP, 0);
+    expect(result.progression.xpFor(ProgressTrack.pitchDuel), 0);
     expect(result.appliedDelta, -3);
     expect(result.ledger.single.delta, -3);
     expect(result.ledger.single.balanceAfter, 0);

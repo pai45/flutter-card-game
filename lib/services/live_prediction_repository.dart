@@ -6,8 +6,13 @@ import 'espn_service.dart';
 import 'live_score_service.dart';
 import 'prediction_repository.dart';
 
-class LivePredictionRepository implements PredictionRepository {
-  const LivePredictionRepository(this._inner, this._liveScoreService, this._espnService);
+class LivePredictionRepository
+    implements PredictionRepository, PredictionCatalogLookup {
+  const LivePredictionRepository(
+    this._inner,
+    this._liveScoreService,
+    this._espnService,
+  );
 
   final PredictionRepository _inner;
   final LiveScoreService _liveScoreService;
@@ -23,7 +28,19 @@ class LivePredictionRepository implements PredictionRepository {
   }
 
   @override
-  Future<List<SportMatch>> enrichFixturesForSport(List<SportMatch> fixtures, Sport sport) async {
+  Future<SportMatch?> fixtureById(String matchId) async {
+    final inner = _inner;
+    if (inner is PredictionCatalogLookup) {
+      return (inner as PredictionCatalogLookup).fixtureById(matchId);
+    }
+    return null;
+  }
+
+  @override
+  Future<List<SportMatch>> enrichFixturesForSport(
+    List<SportMatch> fixtures,
+    Sport sport,
+  ) async {
     final baseEnriched = await _inner.enrichFixturesForSport(fixtures, sport);
     final finalEnriched = <SportMatch>[];
     for (final match in baseEnriched) {

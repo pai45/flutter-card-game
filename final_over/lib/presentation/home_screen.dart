@@ -84,7 +84,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     const Text(
-                      'CHASE THE TARGET IN SIX LEGAL BALLS',
+                      'CHASE THE TARGET IN THREE OVERS',
                       textAlign: TextAlign.center,
                       style: TextStyle(letterSpacing: 1.3),
                     ),
@@ -198,7 +198,7 @@ class HowToPlayDialog extends StatelessWidget {
             number: '6',
             icon: Icons.sports_cricket_rounded,
             text:
-                'Reach the target before six legal balls or two wickets are used.',
+                'Reach the target across three overs before wickets run out.',
           ),
         ],
       ),

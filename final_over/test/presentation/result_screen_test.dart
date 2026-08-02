@@ -14,7 +14,7 @@ void main() {
     const summary = GameResultSummary(
       won: true,
       runs: 15,
-      target: 14,
+      target: 48,
       legalBalls: 5,
       wickets: 1,
       stars: 3,
@@ -57,7 +57,7 @@ void main() {
     const summary = GameResultSummary(
       won: false,
       runs: 9,
-      target: 14,
+      target: 48,
       legalBalls: 6,
       wickets: 1,
       stars: 1,

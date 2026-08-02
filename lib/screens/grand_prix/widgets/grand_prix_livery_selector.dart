@@ -40,7 +40,7 @@ class GrandPrixLiverySelector extends StatelessWidget {
 
     return CyberPanel(
       key: const ValueKey('grand-prix-livery-selector'),
-      accent: Cyber.magenta,
+      accent: Cyber.f1Red,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -51,7 +51,7 @@ class GrandPrixLiverySelector extends StatelessWidget {
               Container(
                 width: 5,
                 height: 5,
-                color: Cyber.magenta,
+                color: Cyber.f1Red,
                 margin: const EdgeInsets.only(right: 6),
               ),
               Flexible(
@@ -62,7 +62,7 @@ class GrandPrixLiverySelector extends StatelessWidget {
                   textAlign: TextAlign.end,
                   style: Cyber.label(
                     7.5,
-                    color: Cyber.magenta,
+                    color: Cyber.f1Red,
                     letterSpacing: 1.1,
                   ),
                 ),
@@ -105,7 +105,7 @@ class GrandPrixLiverySelector extends StatelessWidget {
                 ),
                 child: Text(
                   'BROWSE MORE LIVERIES IN SHOP',
-                  style: Cyber.label(8, color: Cyber.magenta, letterSpacing: 1.2),
+                  style: Cyber.label(8, color: Cyber.f1Red, letterSpacing: 1.2),
                 ),
               ),
             ),
@@ -190,10 +190,10 @@ class GrandPrixLiveryTile extends StatelessWidget {
             child: ChamferedActionSurface(
               clipper: clipper,
               borderColor: selected
-                  ? Cyber.magenta
+                  ? Cyber.f1Red
                   : Cyber.border.withValues(alpha: 0.72),
               borderWidth: selected ? 1.6 : 1,
-              glowColor: selected ? Cyber.magenta : null,
+              glowColor: selected ? Cyber.f1Red : null,
               glow: selected ? 0.85 : 0,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
@@ -212,7 +212,7 @@ class GrandPrixLiveryTile extends StatelessWidget {
                       bottom: 0,
                       width: 2,
                       child: ColoredBox(
-                        color: selected ? Cyber.magenta : spec.primary,
+                        color: selected ? Cyber.f1Red : spec.primary,
                       ),
                     ),
                     Positioned.fill(
@@ -230,7 +230,7 @@ class GrandPrixLiveryTile extends StatelessWidget {
                         '${index + 1}'.padLeft(2, '0'),
                         style: Cyber.label(
                           6.5,
-                          color: selected ? Cyber.magenta : Cyber.muted,
+                          color: selected ? Cyber.f1Red : Cyber.muted,
                           letterSpacing: 0.8,
                           fontFeatures: const [FontFeature.tabularFigures()],
                         ),

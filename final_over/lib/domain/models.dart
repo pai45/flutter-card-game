@@ -23,7 +23,7 @@ enum MatchPhase {
 
 enum Elevation { ground, loft }
 
-enum ShotDirection { offSide, straight, legSide }
+enum ShotDirection { offSide, straight, legSide, behind }
 
 enum TimingGrade { perfect, good, early, late, poor, miss }
 
@@ -58,6 +58,82 @@ enum FielderMotion {
 }
 
 enum MatchEndReason { targetReached, ballsExhausted, wicketsLost, quit }
+
+/// Opponent bowler for one over — look + light delivery bias.
+final class BowlerProfile {
+  const BowlerProfile({
+    required this.id,
+    required this.name,
+    required this.lookKey,
+    required this.jerseyNumber,
+    required this.lineWeights,
+    required this.lengthWeights,
+  });
+
+  final String id;
+  final String name;
+  final String lookKey;
+  final int jerseyNumber;
+  final Map<DeliveryLine, int> lineWeights;
+  final Map<DeliveryLength, int> lengthWeights;
+
+  /// Pace / seam / spin presets used when seeding a three-over attack.
+  static const pace = BowlerProfile(
+    id: 'fo-bowler-pace',
+    name: 'VOLT',
+    lookKey: 'fo-bowler-pace',
+    jerseyNumber: 7,
+    lineWeights: {
+      DeliveryLine.off: 34,
+      DeliveryLine.middle: 28,
+      DeliveryLine.leg: 24,
+    },
+    lengthWeights: {
+      DeliveryLength.yorker: 28,
+      DeliveryLength.full: 30,
+      DeliveryLength.good: 26,
+      DeliveryLength.short: 16,
+    },
+  );
+
+  static const seam = BowlerProfile(
+    id: 'fo-bowler-seam',
+    name: 'EDGE',
+    lookKey: 'fo-bowler-seam',
+    jerseyNumber: 11,
+    lineWeights: {
+      DeliveryLine.off: 28,
+      DeliveryLine.middle: 36,
+      DeliveryLine.leg: 22,
+    },
+    lengthWeights: {
+      DeliveryLength.yorker: 18,
+      DeliveryLength.full: 26,
+      DeliveryLength.good: 36,
+      DeliveryLength.short: 20,
+    },
+  );
+
+  static const spin = BowlerProfile(
+    id: 'fo-bowler-spin',
+    name: 'DRIFT',
+    lookKey: 'fo-bowler-spin',
+    jerseyNumber: 23,
+    lineWeights: {
+      DeliveryLine.off: 22,
+      DeliveryLine.middle: 30,
+      DeliveryLine.leg: 34,
+    },
+    lengthWeights: {
+      DeliveryLength.yorker: 12,
+      DeliveryLength.full: 30,
+      DeliveryLength.good: 28,
+      DeliveryLength.short: 30,
+    },
+  );
+
+  static const attack = <BowlerProfile>[pace, seam, spin];
+}
 
 /// A small immutable vector used by rules and the simulation.
 final class FieldVector {
@@ -329,6 +405,19 @@ final class FielderState {
   );
 }
 
+/// One named, immutable defensive shape for a delivery.
+final class FieldLayout {
+  FieldLayout({
+    required this.id,
+    required this.label,
+    required List<FielderState> fielders,
+  }) : fielders = List.unmodifiable(fielders);
+
+  final String id;
+  final String label;
+  final List<FielderState> fielders;
+}
+
 final class DeliveryLedger {
   const DeliveryLedger({
     this.extraRuns = 0,
@@ -477,12 +566,18 @@ final class MatchState {
     required this.pickupDecisionMicros,
     required this.throwArrivalMicros,
     this.endReason,
+    this.maximumLegalBalls = 18,
+    this.ballsPerOver = 6,
+    this.maximumOvers = 3,
+    this.bowlerIndex = 0,
+    List<BowlerProfile> bowlers = const [],
   }) : fielders = List.unmodifiable(fielders),
-       history = List.unmodifiable(history);
+       history = List.unmodifiable(history),
+       bowlers = List.unmodifiable(bowlers);
 
   factory MatchState.initial() => MatchState(
     matchSeed: 0,
-    target: 14,
+    target: 48,
     phase: MatchPhase.idle,
     committedScore: 0,
     legalBalls: 0,
@@ -515,6 +610,7 @@ final class MatchState {
     ballHeld: false,
     pickupDecisionMicros: 0,
     throwArrivalMicros: 0,
+    bowlers: BowlerProfile.attack,
   );
 
   final int matchSeed;
@@ -558,11 +654,34 @@ final class MatchState {
   final int pickupDecisionMicros;
   final int throwArrivalMicros;
   final MatchEndReason? endReason;
+  final int maximumLegalBalls;
+  final int ballsPerOver;
+  final int maximumOvers;
+  final int bowlerIndex;
+  final List<BowlerProfile> bowlers;
 
   int get score =>
       committedScore + pendingRuns + pendingExtras + pendingBatRuns;
   int get runsNeeded => math.max(0, target - score);
-  int get ballsRemaining => math.max(0, 6 - legalBalls);
+  int get ballsRemaining => math.max(0, maximumLegalBalls - legalBalls);
+
+  /// 0-based over index for the next / current delivery.
+  int get currentOver {
+    if (ballsPerOver <= 0) return 0;
+    final over = legalBalls ~/ ballsPerOver;
+    return math.min(over, math.max(0, maximumOvers - 1));
+  }
+
+  /// Legal ball within the current over (0–5).
+  int get ballInOver {
+    if (ballsPerOver <= 0) return 0;
+    return legalBalls % ballsPerOver;
+  }
+
+  BowlerProfile? get currentBowler {
+    if (bowlers.isEmpty) return null;
+    return bowlers[bowlerIndex.clamp(0, bowlers.length - 1)];
+  }
 
   /// How many more you can lose. Takes the limit because the wickets in hand
   /// are a difficulty knob (`GameplayTuning.maximumWickets`), not a constant.
@@ -620,6 +739,11 @@ final class MatchState {
     int? pickupDecisionMicros,
     int? throwArrivalMicros,
     Object? endReason = _unset,
+    int? maximumLegalBalls,
+    int? ballsPerOver,
+    int? maximumOvers,
+    int? bowlerIndex,
+    List<BowlerProfile>? bowlers,
   }) => MatchState(
     matchSeed: matchSeed ?? this.matchSeed,
     target: target ?? this.target,
@@ -675,5 +799,10 @@ final class MatchState {
     endReason: identical(endReason, _unset)
         ? this.endReason
         : endReason as MatchEndReason?,
+    maximumLegalBalls: maximumLegalBalls ?? this.maximumLegalBalls,
+    ballsPerOver: ballsPerOver ?? this.ballsPerOver,
+    maximumOvers: maximumOvers ?? this.maximumOvers,
+    bowlerIndex: bowlerIndex ?? this.bowlerIndex,
+    bowlers: bowlers ?? this.bowlers,
   );
 }

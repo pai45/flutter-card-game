@@ -12,21 +12,22 @@ import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../data/grand_prix_circuits.dart';
 import '../../data/grand_prix_liveries.dart';
-import '../../games/grand_prix/grand_prix_car_painter.dart';
-import '../../models/cards.dart';
 import '../../models/grand_prix.dart';
-import '../../models/progression.dart' show grandPrixXpMultiplier;
-import '../../utils/label_helpers.dart';
+import '../../models/progression.dart'
+    show ProgressTrack, grandPrixXpMultiplier;
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
 import '../../widgets/player_level_badge.dart';
+import '../match_history/match_history_pages.dart';
 import 'grand_prix_pit_deck_screen.dart';
 import 'grand_prix_race_screen.dart';
+import 'widgets/grand_prix_arena_background.dart';
 
-/// Grand Prix Dash lobby: lifetime record, circuit/distance pickers, pit crew
-/// summary, and START RACE. Livery and driver equip live in Pit Deck / Shop.
+/// Grand Prix Dash lobby: circuit/distance pickers and START RACE.
+/// Career record lives in Match History. Livery and driver equip live in
+/// Pit Deck / Shop.
 class GrandPrixLobbyScreen extends StatefulWidget {
   const GrandPrixLobbyScreen({
     required this.onNavigate,
@@ -60,7 +61,11 @@ class _GrandPrixLobbyScreenState extends State<GrandPrixLobbyScreen> {
 
   void _startRace() {
     final cubit = context.read<GrandPrixCubit>();
-    final level = context.read<GameBloc>().state.progression.playerLevel;
+    final level = context
+        .read<GameBloc>()
+        .state
+        .progression
+        .levelFor(ProgressTrack.grandPrix);
     cubit.buildRace(level);
     final navigator = Navigator.of(context);
     navigator.push(
@@ -90,7 +95,6 @@ class _GrandPrixLobbyScreenState extends State<GrandPrixLobbyScreen> {
         context.read<GrandPrixCubit>().ensureEquippedLiveryOwned(
           gameState.ownedGrandPrixLiveryIds,
         );
-        final signedDriver = gameState.deckRacingStarter;
         return BlocBuilder<GrandPrixCubit, GrandPrixState>(
           builder: (context, state) {
             final ready = gameState.grandPrixPitDeckReady(state.livery);
@@ -102,15 +106,18 @@ class _GrandPrixLobbyScreenState extends State<GrandPrixLobbyScreen> {
                 subtitle: '// LIGHTS OUT',
                 onBack: () => widget.onNavigate(AppSection.predictions),
                 showTitle: false,
-                rightSlot: PlayerLevelBadge(progression: gameState.progression),
+                rightSlot: PlayerLevelBadge(
+                  progression: gameState.progression,
+                  track: ProgressTrack.grandPrix,
+                ),
               ),
-              body: CyberBackground(
-                animated: true,
+              // Arena art stays full-bleed (same bed pattern as Hoop Duel).
+              body: GrandPrixArenaBackground(
                 child: SafeArea(
                   top: false,
                   child: state.loading
                       ? const Center(
-                          child: CircularProgressIndicator(color: Cyber.cyan),
+                          child: CircularProgressIndicator(color: Cyber.f1Red),
                         )
                       : LayoutBuilder(
                           builder: (context, constraints) {
@@ -139,24 +146,6 @@ class _GrandPrixLobbyScreenState extends State<GrandPrixLobbyScreen> {
                                     delay: const Duration(milliseconds: 80),
                                     offset: 24,
                                     child: _HeroRow(stats: state.stats),
-                                  ),
-                                  if (signedDriver != null) ...[
-                                    const SizedBox(height: 14),
-                                    CyberSlideUpFadeIn(
-                                      delay: const Duration(milliseconds: 120),
-                                      offset: 18,
-                                      child: _PitCrewPanel(
-                                        driver: signedDriver,
-                                        liverySpec: liverySpec,
-                                        onEdit: _openPitDeck,
-                                      ),
-                                    ),
-                                  ],
-                                  const SizedBox(height: 18),
-                                  CyberSlideUpFadeIn(
-                                    delay: const Duration(milliseconds: 160),
-                                    offset: 20,
-                                    child: _RecordPanel(stats: state.stats),
                                   ),
                                   const SizedBox(height: 20),
                                   const SectionLabel(label: 'CIRCUIT'),
@@ -201,7 +190,7 @@ class _GrandPrixLobbyScreenState extends State<GrandPrixLobbyScreen> {
                                     child: HudCtaButton(
                                       label: ready ? 'START RACE' : 'PIT DECK',
                                       icon: Icons.sports_motorsports,
-                                      accent: Cyber.magenta,
+                                      accent: Cyber.f1Red,
                                       tapSound: SoundEffect.playMatch,
                                       helper: ready
                                           ? '${grandPrixCircuit(state.circuitId).name} · '
@@ -215,13 +204,45 @@ class _GrandPrixLobbyScreenState extends State<GrandPrixLobbyScreen> {
                                   CyberSlideUpFadeIn(
                                     delay: const Duration(milliseconds: 420),
                                     offset: 18,
-                                    child: CyberDealtCard(
-                                      index: 0,
-                                      child: CyberCtaButton(
-                                        label: 'Pit Deck',
-                                        clip: false,
-                                        onPressed: _openPitDeck,
-                                      ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: CyberDealtCard(
+                                            index: 0,
+                                            child: CyberCtaButton(
+                                              label: 'Pit Deck',
+                                              clip: false,
+                                              onPressed: _openPitDeck,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: CyberDealtCard(
+                                            index: 1,
+                                            child: CyberCtaButton(
+                                              label: 'Match History',
+                                              clip: false,
+                                              onPressed: () =>
+                                                  showGameMatchHistory(
+                                                context,
+                                                gameLabel: 'Grand Prix',
+                                                history: context
+                                                    .read<GameBloc>()
+                                                    .state
+                                                    .matchHistory
+                                                    .where(
+                                                      (e) => e.isGrandPrix,
+                                                    )
+                                                    .toList(growable: false),
+                                                career: _RecordPanel(
+                                                  stats: state.stats,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
@@ -275,7 +296,7 @@ class _PitLaneStatusBar extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: Container(height: 1, color: Cyber.magenta.withValues(alpha: 0.16)),
+          child: Container(height: 1, color: Cyber.f1Red.withValues(alpha: 0.16)),
         ),
         const SizedBox(width: 10),
         const Text(
@@ -313,7 +334,7 @@ class _HeroRow extends StatelessWidget {
                 style: Cyber.display(21, letterSpacing: 1.2).copyWith(
                   shadows: [
                     Shadow(
-                      color: Cyber.magenta.withValues(alpha: 0.45),
+                      color: Cyber.f1Red.withValues(alpha: 0.45),
                       blurRadius: 14,
                     ),
                   ],
@@ -339,89 +360,13 @@ class _HeroRow extends StatelessWidget {
                       : stats.races > 0
                           ? '${stats.races} RACES IN'
                           : 'ROOKIE SEASON',
-                  color: stats.wins > 0 ? Cyber.gold : Cyber.magenta,
+                  color: stats.wins > 0 ? Cyber.gold : Cyber.f1Red,
                 ),
               ),
             ],
           ),
         ),
       ],
-    );
-  }
-}
-
-class _PitCrewPanel extends StatelessWidget {
-  const _PitCrewPanel({
-    required this.driver,
-    required this.liverySpec,
-    required this.onEdit,
-  });
-
-  final PlayerCard driver;
-  final GrandPrixLiverySpec liverySpec;
-  final VoidCallback onEdit;
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = tierColor(driver.tier);
-    return CyberPanel(
-      accent: Cyber.magenta,
-      child: Row(
-        children: [
-          SizedBox(
-            width: 72,
-            height: 52,
-            child: CustomPaint(
-              painter: GrandPrixCarPreviewPainter(liverySpec),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'PIT CREW',
-                  style: TextStyle(
-                    color: Cyber.muted,
-                    fontFamily: Cyber.displayFont,
-                    fontSize: 8,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 2,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  driver.name.toUpperCase(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Cyber.display(13, letterSpacing: 0.6),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${liverySpec.name} · ${driver.position}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Cyber.muted,
-                    fontFamily: Cyber.bodyFont,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          CyberChip(label: driver.tier.name.toUpperCase(), color: accent),
-          const SizedBox(width: 8),
-          IconButton(
-            onPressed: onEdit,
-            icon: Icon(Icons.tune, color: Cyber.magenta.withValues(alpha: 0.9)),
-            tooltip: 'Edit pit deck',
-          ),
-        ],
-      ),
     );
   }
 }
@@ -469,10 +414,10 @@ class _RaceEmblemState extends State<_RaceEmblem>
                   shape: BoxShape.circle,
                   color: Cyber.bg.withValues(alpha: 0.5),
                   border: Border.all(
-                    color: Cyber.magenta.withValues(alpha: 0.26 + pulse * 0.12),
+                    color: Cyber.f1Red.withValues(alpha: 0.26 + pulse * 0.12),
                   ),
                   boxShadow: Cyber.glow(
-                    Cyber.magenta,
+                    Cyber.f1Red,
                     alpha: 0.2 + pulse * 0.08,
                     blur: 18 + pulse * 4,
                     spread: -4,
@@ -482,10 +427,10 @@ class _RaceEmblemState extends State<_RaceEmblem>
               Icon(
                 Icons.sports_motorsports,
                 size: size * 0.46,
-                color: Cyber.magenta,
+                color: Cyber.f1Red,
                 shadows: [
                   Shadow(
-                    color: Cyber.magenta.withValues(alpha: 0.62),
+                    color: Cyber.f1Red.withValues(alpha: 0.62),
                     blurRadius: 16 + pulse * 4,
                   ),
                 ],
@@ -506,7 +451,7 @@ class _RecordPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CyberPanel(
-      accent: Cyber.magenta,
+      accent: Cyber.f1Red,
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       child: Row(
         children: [
@@ -640,13 +585,13 @@ class _CircuitPickerState extends State<_CircuitPicker> {
               decoration: BoxDecoration(
                 color: isSelected
                     ? Color.alphaBlend(
-                        Cyber.magenta.withValues(alpha: 0.1),
+                        Cyber.f1Red.withValues(alpha: 0.1),
                         Cyber.panel,
                       )
                     : Cyber.panel,
                 border: Border.all(
                   color: isSelected
-                      ? Cyber.magenta
+                      ? Cyber.f1Red
                       : Cyber.border.withValues(alpha: 0.6),
                   width: isSelected ? 1.6 : 1,
                 ),
@@ -663,7 +608,7 @@ class _CircuitPickerState extends State<_CircuitPicker> {
                           overflow: TextOverflow.ellipsis,
                           style: Cyber.display(
                             11,
-                            color: isSelected ? Cyber.magenta : Colors.white,
+                            color: isSelected ? Cyber.f1Red : Colors.white,
                             letterSpacing: 0.8,
                           ),
                         ),
@@ -675,7 +620,7 @@ class _CircuitPickerState extends State<_CircuitPicker> {
                     children: [
                       CyberChip(
                         label: circuit.character,
-                        color: isSelected ? Cyber.magenta : Cyber.muted,
+                        color: isSelected ? Cyber.f1Red : Cyber.muted,
                       ),
                     ],
                   ),
@@ -768,13 +713,13 @@ class _LapOption extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? Color.alphaBlend(
-                  Cyber.magenta.withValues(alpha: 0.1),
+                  Cyber.f1Red.withValues(alpha: 0.1),
                   Cyber.panel,
                 )
               : Cyber.panel,
           border: Border.all(
             color: isSelected
-                ? Cyber.magenta
+                ? Cyber.f1Red
                 : Cyber.border.withValues(alpha: 0.6),
             width: isSelected ? 1.6 : 1,
           ),
@@ -790,7 +735,7 @@ class _LapOption extends StatelessWidget {
                   '$laps',
                   style: Cyber.display(
                     22,
-                    color: isSelected ? Cyber.magenta : Colors.white,
+                    color: isSelected ? Cyber.f1Red : Colors.white,
                   ).copyWith(
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),

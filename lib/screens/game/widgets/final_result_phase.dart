@@ -8,6 +8,7 @@ import '../../../blocs/game/game_state.dart';
 import '../../../config/enums.dart';
 import '../../../config/theme.dart';
 import '../../../models/match.dart';
+import '../../../models/progression.dart';
 import '../../../utils/label_helpers.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
@@ -301,6 +302,7 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
               levels: widget.state.pendingLevelUps,
               progression: widget.state.progression,
               xpEarned: widget.state.lastMatchXP ?? 0,
+              trackLabel: widget.state.pendingLevelUpTrack?.displayLabel,
               onDismissed: () => setState(() => _showLevelUp = false),
             ),
         ],

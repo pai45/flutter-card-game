@@ -8,6 +8,7 @@ import '../../../blocs/shootout/shootout_state.dart';
 import '../../../config/enums.dart';
 import '../../../config/theme.dart';
 import '../../../models/match.dart';
+import '../../../models/progression.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../../widgets/game_scaffold.dart';
@@ -187,6 +188,7 @@ class _ShootoutResultPhaseState extends State<ShootoutResultPhase>
                   levels: game.pendingLevelUps,
                   progression: game.progression,
                   xpEarned: game.lastMatchXP ?? 0,
+                  trackLabel: game.pendingLevelUpTrack?.displayLabel,
                   onDismissed: () => setState(() => _showLevelUp = false),
                 ),
             ],

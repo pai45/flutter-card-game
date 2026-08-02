@@ -1,12 +1,37 @@
 # Pitch Duel Leveling System
 
-Pitch Duel uses a single XP total to drive player level, level progress UI, match rewards, pack rewards, and CPU difficulty scaling.
+Pitch Duel uses **per-track XP** for every game mode, Predictions, and Cards/Meta. Each track has its own level from the shared curve. Profile **total level** is derived from the **sum of all track XP** with that same curve — not by adding per-game levels together.
+
+```text
+trackLevel(g) = levelFromXp(xpFor(g))
+totalXP       = Σ xpFor(all tracks)
+totalLevel    = levelFromXp(totalXP)
+```
+
+Mode hubs and CPU difficulty use that mode's track level. Profile LevelChip / XP meter use `totalLevel` / `totalXP`.
 
 ## Source Of Truth
 
-The progression model lives in [`lib/models/progression.dart`](../../lib/models/progression.dart). The persisted value is `totalXP`; the visible level and progress numbers are derived from that total each time they are read.
+The progression model lives in [`lib/models/progression.dart`](../../lib/models/progression.dart). The persisted value is `xpByTrack` (map of track name → XP). `totalXP` and `playerLevel` are derived from that map.
 
-Progression is saved through [`SecureGameStorage`](../../lib/services/secure_storage_service.dart), which stores progression JSON containing `totalXP`.
+Progression is saved through [`SecureGameStorage`](../../lib/services/secure_storage_service.dart). Legacy `{totalXP}` blobs are migrated on load by folding the XP ledger by `XpTransactionSource` → `ProgressTrack` (or dumping into Cards/Meta when the ledger is empty).
+
+### Tracks
+
+| Track | XP sources |
+|-------|------------|
+| Pitch Duel | match |
+| Penalty Shootout | shootout |
+| Football Chess | footballChess |
+| Quiz | quiz |
+| Bingo | bingo (reserved) |
+| Guess Player | guessPlayer |
+| Final Over | finalOver, superOver |
+| Hoop Duel | basketball |
+| Grand Prix | grandPrix |
+| Tennis Rally | tennis |
+| Predictions | prediction |
+| Cards / Meta | pack, dailyDrop, cardUnlock, streakReward, openingBalance |
 
 ## Level Curve
 

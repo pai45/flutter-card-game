@@ -561,7 +561,8 @@ class Cyber {
   static const cyan = AppTheme.textPrimary;
   static const accentGlow = Color(0x405cdfff);
   static const magenta = AppTheme.matchesLabel;
-  static const f1Red = Color(0xFFFF3131);
+  /// Grand Prix Dash brand accent (racing red).
+  static const f1Red = Color(0xFFF42D29);
   static const lime = AppTheme.pickLabel;
   static const amber = AppTheme.gamesLabel;
   static const gold = AppTheme.yellowColor;

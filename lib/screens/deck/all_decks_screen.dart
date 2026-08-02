@@ -216,7 +216,7 @@ class _DeckLockerViewState extends State<_DeckLockerView> {
           'SET A THREE-BAT CHASE UNIT',
         ),
         meta:
-            '${game.deckFinalOverBatsmen.length}/3 BATTERS · KIT ${finalOverKitId.toUpperCase()}',
+            '${game.deckFinalOverBatsmen.length}/5 BATTERS · KIT ${finalOverKitId.toUpperCase()}',
       ),
       _DeckEntry(
         sport: Sport.basketball,
@@ -573,7 +573,7 @@ int _structuralReadyCount(StoredDeckSlot slot) => [
           slot.defenders.length == 2 &&
           slot.actions.length == 6 &&
           slot.keeper != null,
-      slot.finalOverBatsmen.length == 3,
+      slot.finalOverBatsmen.length == 5,
       slot.basketballPlayers.length == 3 &&
           slot.basketballStarter != null,
       slot.tennisPlayers.isNotEmpty && slot.tennisStarter != null,

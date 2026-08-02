@@ -18,6 +18,7 @@ class GuessDriverState {
     required this.archive,
     required this.todayKey,
     required this.unlockedDayKeys,
+    this.teamHintRevealed = false,
     String? activeDayKey,
     this.viewMode = DailyMysteryViewMode.home,
     this.loadStatus = DailyMysteryLoadStatus.loading,
@@ -34,6 +35,7 @@ class GuessDriverState {
   final String todayKey;
   final String activeDayKey;
   final List<String> unlockedDayKeys;
+  final bool teamHintRevealed;
   final DailyMysteryViewMode viewMode;
   final DailyMysteryLoadStatus loadStatus;
   final String? errorMessage;
@@ -49,6 +51,7 @@ class GuessDriverState {
     String? todayKey,
     String? activeDayKey,
     List<String>? unlockedDayKeys,
+    bool? teamHintRevealed,
     DailyMysteryViewMode? viewMode,
     DailyMysteryLoadStatus? loadStatus,
     String? errorMessage,
@@ -65,6 +68,7 @@ class GuessDriverState {
       todayKey: todayKey ?? this.todayKey,
       activeDayKey: activeDayKey ?? this.activeDayKey,
       unlockedDayKeys: unlockedDayKeys ?? this.unlockedDayKeys,
+      teamHintRevealed: teamHintRevealed ?? this.teamHintRevealed,
       viewMode: viewMode ?? this.viewMode,
       loadStatus: loadStatus ?? this.loadStatus,
       errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
@@ -86,9 +90,11 @@ class GuessDriverCubit extends Cubit<GuessDriverState> {
   final List<String> allDrivers;
   final SecureGameStorage storage;
   final DateTime Function() now;
+  bool _unlockingTeamHint = false;
 
   static const int maxHearts = 10;
   static const int archiveWindowDays = 30;
+  static const int teamHintCost = 25;
 
   static GuessDriverState _initialState(List<F1RaceCard> races, DateTime now) {
     final todayKey = dailyMysteryDayKey(now);
@@ -133,6 +139,7 @@ class GuessDriverCubit extends Cubit<GuessDriverState> {
           guesses: const [],
           hintsRevealed:
               maxHearts - (todayResult?.heartsRemaining ?? maxHearts),
+          teamHintRevealed: archive.hintedDayKeys.contains(todayKey),
           gameState: todayResult == null
               ? GuessDriverGameState.playing
               : todayResult.won
@@ -184,6 +191,9 @@ class GuessDriverCubit extends Cubit<GuessDriverState> {
         hintsRevealed: result == null && canResume
             ? state.hintsRevealed
             : maxHearts - (result?.heartsRemaining ?? maxHearts),
+        teamHintRevealed: state.archive.hintedDayKeys.contains(
+          state.todayKey,
+        ),
         gameState: result == null
             ? GuessDriverGameState.playing
             : result.won
@@ -212,6 +222,7 @@ class GuessDriverCubit extends Cubit<GuessDriverState> {
         remainingHearts: result.heartsRemaining,
         guesses: const [],
         hintsRevealed: maxHearts - result.heartsRemaining,
+        teamHintRevealed: state.archive.hintedDayKeys.contains(dayKey),
         gameState: result.won
             ? GuessDriverGameState.won
             : GuessDriverGameState.lost,
@@ -240,6 +251,38 @@ class GuessDriverCubit extends Cubit<GuessDriverState> {
         freshResult: false,
       ),
     );
+  }
+
+  /// Persists the team scan without spending a life. Coin settlement is owned
+  /// by [GameBloc], so the UI dispatches the wallet event after this succeeds.
+  Future<bool> unlockTeamHint() async {
+    if (_unlockingTeamHint ||
+        state.viewMode != DailyMysteryViewMode.play ||
+        state.gameState != GuessDriverGameState.playing ||
+        state.teamHintRevealed) {
+      return false;
+    }
+    _unlockingTeamHint = true;
+    final archive = GuessDriverArchive(
+      resultsByDay: state.archive.resultsByDay,
+      hintedDayKeys: {...state.archive.hintedDayKeys, state.activeDayKey},
+    );
+    try {
+      await storage.saveGuessDriverArchive(archive);
+      emit(
+        state.copyWith(
+          archive: archive,
+          teamHintRevealed: true,
+          clearError: true,
+        ),
+      );
+      return true;
+    } catch (error) {
+      emit(state.copyWith(errorMessage: 'Could not save the team hint. $error'));
+      return false;
+    } finally {
+      _unlockingTeamHint = false;
+    }
   }
 
   void skip() {
@@ -278,6 +321,7 @@ class GuessDriverCubit extends Cubit<GuessDriverState> {
         ...state.archive.resultsByDay,
         state.activeDayKey: newResult,
       },
+      hintedDayKeys: state.archive.hintedDayKeys,
     );
     final keys = {...state.unlockedDayKeys, state.activeDayKey}.toList()
       ..sort();

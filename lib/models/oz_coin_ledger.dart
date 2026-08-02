@@ -17,6 +17,7 @@ enum OzCoinTransactionSource {
   footballBingoLifeline,
   guessPlayerHint,
   guessPlayerExtraAttempt,
+  guessDriverHint,
   tennisReward,
   manual,
 }

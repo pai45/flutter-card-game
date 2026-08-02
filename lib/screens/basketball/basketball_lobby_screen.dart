@@ -12,6 +12,7 @@ import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../data/basketball_teams.dart';
 import '../../models/basketball.dart';
+import '../../models/progression.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
@@ -20,10 +21,11 @@ import '../../widgets/player_level_badge.dart';
 import '../how_to_play/how_to_play_hub_screen.dart';
 import '../match_history/match_history_pages.dart';
 import 'basketball_match_screen.dart';
+import 'widgets/basketball_arena_background.dart';
 
-/// Hoop Duel lobby: lifetime court record, the 3-of-4 roster picker with a
-/// starter tap, difficulty selector, HOW TO PLAY link and the TIP OFF CTA
-/// (the screen's one glow). Selections persist on [BasketballStats].
+/// Hoop Duel lobby: difficulty selector, HOW TO PLAY link and the TIP OFF CTA
+/// (the screen's one glow). Career record lives in Match History.
+/// Selections persist on [BasketballStats].
 class BasketballLobbyScreen extends StatelessWidget {
   const BasketballLobbyScreen({
     required this.onNavigate,
@@ -84,19 +86,25 @@ class BasketballLobbyScreen extends StatelessWidget {
                 subtitle: '// STREET 1-ON-1',
                 onBack: () => onNavigate(AppSection.predictions),
                 showTitle: false,
-                rightSlot: PlayerLevelBadge(progression: gameState.progression),
+                rightSlot: PlayerLevelBadge(
+                  progression: gameState.progression,
+                  track: ProgressTrack.hoopDuel,
+                ),
               ),
-              body: CyberBackground(
-                animated: true,
+              // Arena art stays full-bleed (same bed as Penalty Shootout);
+              // inset the scroll content above the gesture bar.
+              body: BasketballArenaBackground(
                 child: SafeArea(
                   top: false,
                   child: state.loading
                       ? const Center(
                           child: CircularProgressIndicator(color: Cyber.gold),
                         )
-                      : SingleChildScrollView(
-                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                          child: Center(
+                      // Match Penalty Shootout: Center > ScrollView so the
+                      // lobby block sits mid-viewport when content is short.
+                      : Center(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(maxWidth: 440),
                               child: Column(
@@ -112,12 +120,6 @@ class BasketballLobbyScreen extends StatelessWidget {
                                     child: _HeroRow(stats: state.stats),
                                   ),
                                   const SizedBox(height: 18),
-                                  CyberSlideUpFadeIn(
-                                    delay: const Duration(milliseconds: 160),
-                                    offset: 20,
-                                    child: _RecordPanel(stats: state.stats),
-                                  ),
-                                  const SizedBox(height: 20),
                                   const SectionLabel(label: 'DIFFICULTY'),
                                   const SizedBox(height: 10),
                                   CyberSlideUpFadeIn(
@@ -202,14 +204,21 @@ class BasketballLobbyScreen extends StatelessWidget {
                                             label: 'Match History',
                                             clip: false,
                                             onPressed: () =>
-                                                showMatchHistoryArchive(
+                                                showGameMatchHistory(
                                                   context,
-                                                  gameState.matchHistory
+                                                  gameLabel: 'Hoop Duel',
+                                                  history: gameState
+                                                      .matchHistory
                                                       .where(
                                                         (entry) =>
                                                             entry.isBasketball,
                                                       )
-                                                      .toList(),
+                                                      .toList(
+                                                        growable: false,
+                                                      ),
+                                                  career: _RecordPanel(
+                                                    stats: state.stats,
+                                                  ),
                                                 ),
                                           ),
                                         ),
@@ -223,7 +232,8 @@ class BasketballLobbyScreen extends StatelessWidget {
                                     offset: 14,
                                     child: Wrap(
                                       alignment: WrapAlignment.center,
-                                      crossAxisAlignment: WrapCrossAlignment.center,
+                                      crossAxisAlignment:
+                                          WrapCrossAlignment.center,
                                       spacing: 14,
                                       runSpacing: 6,
                                       children: [

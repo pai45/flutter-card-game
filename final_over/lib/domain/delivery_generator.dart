@@ -16,6 +16,7 @@ class DeliveryGenerator {
     required List<BallResult> history,
     required List<DeliverySpec> previousDeliveries,
     int expectedContactMicros = 0,
+    BowlerProfile? bowler,
   }) {
     if (physicalOrdinal < 1) {
       throw ArgumentError.value(physicalOrdinal, 'physicalOrdinal');
@@ -43,6 +44,20 @@ class DeliveryGenerator {
       }
     }
 
+    final lineWeights = bowler?.lineWeights ??
+        const {
+          DeliveryLine.off: 30,
+          DeliveryLine.middle: 34,
+          DeliveryLine.leg: 28,
+        };
+    final lengthWeights = bowler?.lengthWeights ??
+        const {
+          DeliveryLength.yorker: 22,
+          DeliveryLength.full: 28,
+          DeliveryLength.good: 32,
+          DeliveryLength.short: 18,
+        };
+
     final line = fairFinalBall
         ? random.choose(const [
             DeliveryLine.off,
@@ -51,20 +66,11 @@ class DeliveryGenerator {
           ])
         : extra == ExtraType.wide
         ? random.choose(const [DeliveryLine.wideOff, DeliveryLine.wideLeg])
-        : _weighted<DeliveryLine>(random, const {
-            DeliveryLine.off: 30,
-            DeliveryLine.middle: 34,
-            DeliveryLine.leg: 28,
-          });
+        : _weighted<DeliveryLine>(random, lineWeights);
 
     var length = fairFinalBall
         ? random.choose(const [DeliveryLength.full, DeliveryLength.good])
-        : _weighted<DeliveryLength>(random, const {
-            DeliveryLength.yorker: 22,
-            DeliveryLength.full: 28,
-            DeliveryLength.good: 32,
-            DeliveryLength.short: 18,
-          });
+        : _weighted<DeliveryLength>(random, lengthWeights);
     if (previousDeliveries.length >= 2) {
       final previous = previousDeliveries[previousDeliveries.length - 1].length;
       final beforePrevious =

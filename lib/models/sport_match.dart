@@ -105,8 +105,23 @@ class F1SessionResult {
     required this.name,
     required this.results,
   });
-  final String name; // e.g. "Practice 1", "Qualifying"
+  final String name; // e.g. "Practice 1", "Qualifying", ESPN abbr "QUAL"
   final List<String> results; // e.g. ["1. Verstappen", "2. Hamilton"]
+
+  /// True for Qualifying / QUAL / Q / Sprint Qualifying / SQ / Shootout.
+  /// ESPN scoreboard often stores the type abbreviation (`QUAL`), not the
+  /// full text name — match both so grid/settlement stay wired.
+  bool get isQualifying {
+    final n = name.toLowerCase().trim();
+    if (n.contains('qual') || n.contains('shootout')) return true;
+    return n == 'q' || n == 'sq';
+  }
+
+  bool get isSprintQualifying {
+    if (!isQualifying) return false;
+    final n = name.toLowerCase().trim();
+    return n.contains('sprint') || n == 'sq' || n.contains('shootout');
+  }
 }
 
 /// Sport governs how sport-specific surfaces lay out scores and modules.

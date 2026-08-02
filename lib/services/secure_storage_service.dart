@@ -927,9 +927,19 @@ class SecureGameStorage {
     try {
       final raw = await _storage.read(key: _progressionKey);
       if (raw == null || raw.isEmpty) return PlayerProgression.initial();
-      return PlayerProgression.fromJson(
-        Map<String, dynamic>.from(jsonDecode(raw) as Map),
+      final json = Map<String, dynamic>.from(jsonDecode(raw) as Map);
+      if (!PlayerProgression.jsonIsLegacy(json)) {
+        return PlayerProgression.fromJson(json);
+      }
+      // Legacy `{totalXP}` — split across tracks using the XP ledger when present.
+      final legacyTotal = json['totalXP'] as int? ?? 0;
+      final ledger = await loadXpLedger();
+      final migrated = migrateProgressionFromLegacy(
+        legacyTotalXp: legacyTotal,
+        ledger: ledger,
       );
+      await saveProgression(migrated);
+      return migrated;
     } catch (_) {
       return PlayerProgression.initial();
     }

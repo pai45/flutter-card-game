@@ -25,18 +25,78 @@ import '../../utils/label_helpers.dart';
 import 'game_event.dart';
 import 'game_state.dart';
 
-/// Probability that an attack with the given power advantage [diff]
-/// (attackPower - defensePower) results in a goal.
+/// Honest goal chance for Shot Meter given power advantage [diff]
+/// (attackPower - defensePower). Mirrors [resolveRoundDeterministic]: higher
+/// total always wins; exact ties are a coin flip (0.5).
 ///
-/// This is the single source of truth for the honest odds shown on the Shot
-/// Meter overlay. It MUST mirror the goal branches of [GameBloc._resolveRound];
-/// keep the two in lockstep if the resolution table ever changes.
+/// The former banded odds live in [goalChanceForDiffProbabilistic] for rollback.
 double goalChanceForDiff(double diff) {
+  if (diff > 0) return 1.0;
+  if (diff < 0) return 0.0;
+  return 0.5;
+}
+
+/// Former banded goal odds (unused). Swap [goalChanceForDiff] back to this to
+/// restore probabilistic Shot Meter / engine lockstep.
+double goalChanceForDiffProbabilistic(double diff) {
   if (diff > 15) return 0.80;
   if (diff > 5) return 0.65;
   if (diff > -5) return 0.45;
   if (diff > -15) return 0.10;
   return 0.05;
+}
+
+/// Higher-total duel resolve. Exact ties: [tieHeads] true → goal, false → blocked.
+/// Risky foul/red rolls are not part of the live path.
+RoundOutcome resolveRoundDeterministic(
+  double diff, {
+  required bool tieHeads,
+}) {
+  if (diff > 0) return RoundOutcome.goal;
+  if (diff < 0) return RoundOutcome.saved;
+  return tieHeads ? RoundOutcome.goal : RoundOutcome.blocked;
+}
+
+/// Former probabilistic resolve (unused). Includes 12% risky foul/red rolls and
+/// the banded GOAL/SAVED/BLOCKED/MISSED table. Kept for easy rollback.
+RoundOutcome resolveRoundProbabilistic(
+  double attackPower,
+  double defensePower,
+  ActionCard attackAction,
+  ActionCard defenseAction,
+  Random random,
+) {
+  if (defenseAction.risky && random.nextDouble() < 0.12) {
+    return RoundOutcome.redCard;
+  }
+  if (attackAction.risky && random.nextDouble() < 0.12) {
+    return RoundOutcome.foul;
+  }
+  final diff = attackPower - defensePower;
+  final roll = random.nextDouble();
+  if (diff > 15) {
+    if (roll < 0.80) return RoundOutcome.goal;
+    if (roll < 0.95) return RoundOutcome.saved;
+    return RoundOutcome.blocked;
+  }
+  if (diff > 5) {
+    if (roll < 0.65) return RoundOutcome.goal;
+    if (roll < 0.90) return RoundOutcome.saved;
+    return RoundOutcome.missed;
+  }
+  if (diff > -5) {
+    if (roll < 0.45) return RoundOutcome.goal;
+    if (roll < 0.80) return RoundOutcome.saved;
+    return random.nextBool() ? RoundOutcome.missed : RoundOutcome.blocked;
+  }
+  if (diff > -15) {
+    if (roll < 0.65) return RoundOutcome.saved;
+    if (roll < 0.90) return RoundOutcome.blocked;
+    return RoundOutcome.goal;
+  }
+  if (roll < 0.75) return RoundOutcome.saved;
+  if (roll < 0.95) return RoundOutcome.blocked;
+  return RoundOutcome.goal;
 }
 
 List<MatchHistoryEntry> _retainHistoryByMode(
@@ -296,7 +356,25 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       if (storedActiveDeckId != active.id) {
         await _storage.saveActiveDeckId(active.id);
       }
+
+      // Three-over format needs a 5-bat squad. Top up bronze batsmen for
+      // players who claimed the old 3-card cricket starter.
+      if (migratedCricketStarterClaimed) {
+        final migrated = _migrateFinalOverSquadToFive(
+          ownedPlayerIds: ownedPlayerIds,
+          slots: safeSlots,
+        );
+        ownedPlayerIds = migrated.ownedPlayerIds;
+        safeSlots = migrated.slots;
+      }
+
+      final activeAfterMigration = safeSlots
+              .where((slot) => slot.id == active.id)
+              .firstOrNull ??
+          safeSlots.first;
+
       await _storage.saveOwnedCards(ownedPlayerIds);
+      await _storage.saveDecks(safeSlots);
       await _storage.saveWallet(
         WalletSnapshot(
           coins: coins,
@@ -322,27 +400,28 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         state.copyWith(
           loading: false,
           deckSlots: safeSlots,
-          activeDeckId: active.id,
-          deckAttackers: cardsByIds(attackers, active.attackers),
-          deckDefenders: cardsByIds(defenders, active.defenders),
-          deckActions: actionCardsByIds(active.actions),
-          deckKeeper: _keeperOf(active),
-          deckFinalOverBatsmen: cardsByIds(batsmen, active.finalOverBatsmen),
+          activeDeckId: activeAfterMigration.id,
+          deckAttackers: cardsByIds(attackers, activeAfterMigration.attackers),
+          deckDefenders: cardsByIds(defenders, activeAfterMigration.defenders),
+          deckActions: actionCardsByIds(activeAfterMigration.actions),
+          deckKeeper: _keeperOf(activeAfterMigration),
+          deckFinalOverBatsmen:
+              cardsByIds(batsmen, activeAfterMigration.finalOverBatsmen),
           deckBasketballPlayers: cardsByIds(
             basketballPlayerCards,
-            active.basketballPlayers,
+            activeAfterMigration.basketballPlayers,
           ),
-          deckBasketballStarter: _basketballStarterOf(active),
+          deckBasketballStarter: _basketballStarterOf(activeAfterMigration),
           deckTennisPlayers: cardsByIds(
             tennisPlayerCards,
-            active.tennisPlayers,
+            activeAfterMigration.tennisPlayers,
           ),
-          deckTennisStarter: _tennisStarterOf(active),
+          deckTennisStarter: _tennisStarterOf(activeAfterMigration),
           deckRacingPlayers: cardsByIds(
             racingPlayerCards,
-            active.racingPlayers,
+            activeAfterMigration.racingPlayers,
           ),
-          deckRacingStarter: _racingStarterOf(active),
+          deckRacingStarter: _racingStarterOf(activeAfterMigration),
           coins: coins,
           coinLedger: coinLedger,
           xpLedger: xpLedger,
@@ -1248,6 +1327,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     List<int> levelsGained,
     List<XpLedgerEntry> ledger,
     int appliedDelta,
+    ProgressTrack track,
   })
   _nextXpSnapshot({
     required int delta,
@@ -1268,6 +1348,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       levelsGained: applied.levelsGained,
       ledger: applied.ledger,
       appliedDelta: applied.appliedDelta,
+      track: applied.track,
     );
   }
 
@@ -1276,7 +1357,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final opponentName =
         event.opponentName ?? randomOpponentName(random: _random);
     final opponent = generateOpponentDeck(
-      event.opponentLevel ?? state.progression.playerLevel,
+      event.opponentLevel ??
+          state.progression.levelFor(ProgressTrack.pitchDuel),
       attackers,
       defenders,
       actionCards,
@@ -1376,7 +1458,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     } else {
       oppPlayer = chooseOpponentPlayer(
         oppPlayers,
-        state.progression.playerLevel,
+        state.progression.levelFor(ProgressTrack.pitchDuel),
         random: _random,
       );
     }
@@ -1399,14 +1481,15 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final scenarioFavorsOpp = oppDefending
         ? scenario.defenseBonus > 8
         : scenario.attackBonus > 8;
+    final pitchLevel = state.progression.levelFor(ProgressTrack.pitchDuel);
     final ActionCard oppAction;
     if (scenarioFavorsOpp &&
-        _random.nextDouble() < cpuSmartness(state.progression.playerLevel)) {
+        _random.nextDouble() < cpuSmartness(pitchLevel)) {
       oppAction = actionPool.reduce((a, b) => a.power >= b.power ? a : b);
     } else {
       oppAction = chooseOpponentAction(
         actionPool,
-        state.progression.playerLevel,
+        pitchLevel,
         random: _random,
       );
     }
@@ -1463,12 +1546,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         defenseAction.power +
         scenario.defenseBonus +
         defenseSwing;
-    final outcome = _resolveRound(
-      attackPower,
-      defensePower,
-      attackAction,
-      defenseAction,
-    );
+    final outcome = _resolveRound(attackPower, defensePower);
 
     final opponentRedCarded = [...state.opponentRedCarded];
     final redCarded = [...state.redCardedCards];
@@ -1596,6 +1674,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         progression: xp.progression,
         previousProgression: state.progression,
         pendingLevelUps: xp.levelsGained,
+        pendingLevelUpTrack: xp.levelsGained.isEmpty ? null : xp.track,
         lastMatchXP: xp.appliedDelta,
         xpLedger: xp.ledger,
         streak: streak,
@@ -1663,6 +1742,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         progression: xp.progression,
         previousProgression: state.progression,
         pendingLevelUps: xp.levelsGained,
+        pendingLevelUpTrack: xp.levelsGained.isEmpty ? null : xp.track,
         lastMatchXP: xp.appliedDelta,
         xpLedger: xp.ledger,
         streak: streak,
@@ -1704,6 +1784,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         progression: xp.progression,
         previousProgression: state.progression,
         pendingLevelUps: xp.levelsGained,
+        pendingLevelUpTrack: xp.levelsGained.isEmpty ? null : xp.track,
         lastMatchXP: xp.appliedDelta,
         xpLedger: xp.ledger,
       ),
@@ -1743,6 +1824,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         progression: xp.progression,
         previousProgression: state.progression,
         pendingLevelUps: xp.levelsGained,
+        pendingLevelUpTrack: xp.levelsGained.isEmpty ? null : xp.track,
         lastMatchXP: xp.appliedDelta,
         xpLedger: xp.ledger,
       ),
@@ -1786,6 +1868,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         progression: xp.progression,
         previousProgression: state.progression,
         pendingLevelUps: xp.levelsGained,
+        pendingLevelUpTrack: xp.levelsGained.isEmpty ? null : xp.track,
         lastMatchXP: xp.appliedDelta,
         xpLedger: xp.ledger,
       ),
@@ -1841,6 +1924,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         progression: xp.progression,
         previousProgression: state.progression,
         pendingLevelUps: xp.levelsGained,
+        pendingLevelUpTrack: xp.levelsGained.isEmpty ? null : xp.track,
         lastMatchXP: xp.appliedDelta,
         xpLedger: xp.ledger,
       ),
@@ -1856,43 +1940,13 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     ]);
   }
 
-  RoundOutcome _resolveRound(
-    double attackPower,
-    double defensePower,
-    ActionCard attackAction,
-    ActionCard defenseAction,
-  ) {
-    if (defenseAction.risky && _random.nextDouble() < 0.12) {
-      return RoundOutcome.redCard;
-    }
-    if (attackAction.risky && _random.nextDouble() < 0.12) {
-      return RoundOutcome.foul;
-    }
-    final diff = attackPower - defensePower;
-    final roll = _random.nextDouble();
-    if (diff > 15) {
-      if (roll < 0.80) return RoundOutcome.goal;
-      if (roll < 0.95) return RoundOutcome.saved;
-      return RoundOutcome.blocked;
-    }
-    if (diff > 5) {
-      if (roll < 0.65) return RoundOutcome.goal;
-      if (roll < 0.90) return RoundOutcome.saved;
-      return RoundOutcome.missed;
-    }
-    if (diff > -5) {
-      if (roll < 0.45) return RoundOutcome.goal;
-      if (roll < 0.80) return RoundOutcome.saved;
-      return _random.nextBool() ? RoundOutcome.missed : RoundOutcome.blocked;
-    }
-    if (diff > -15) {
-      if (roll < 0.65) return RoundOutcome.saved;
-      if (roll < 0.90) return RoundOutcome.blocked;
-      return RoundOutcome.goal;
-    }
-    if (roll < 0.75) return RoundOutcome.saved;
-    if (roll < 0.95) return RoundOutcome.blocked;
-    return RoundOutcome.goal;
+  /// Live path: higher total wins. Exact ties coin-flip GOAL vs BLOCKED.
+  /// To restore odds + risky foul/red, call [resolveRoundProbabilistic] instead.
+  RoundOutcome _resolveRound(double attackPower, double defensePower) {
+    return resolveRoundDeterministic(
+      attackPower - defensePower,
+      tieHeads: _random.nextBool(),
+    );
   }
 
   Future<void> _purchaseDirectCard({
@@ -2047,6 +2101,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         progression: xp.progression,
         previousProgression: state.progression,
         pendingLevelUps: xp.levelsGained,
+        pendingLevelUpTrack: xp.levelsGained.isEmpty ? null : xp.track,
         lastMatchXP: xp.appliedDelta,
         xpLedger: xp.ledger,
       ),
@@ -2229,6 +2284,50 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     return _baseDeckSlot(id: id, name: name).copyWith(
       finalOverBatsmen: starterBatsmen,
     );
+  }
+
+  /// Grants bronze batsmen and pads deck slots so a claimed cricket starter
+  /// can field the five-bat three-over squad.
+  ({List<String> ownedPlayerIds, List<StoredDeckSlot> slots})
+  _migrateFinalOverSquadToFive({
+    required List<String> ownedPlayerIds,
+    required List<StoredDeckSlot> slots,
+  }) {
+    var owned = {...ownedPlayerIds};
+    final ownedBatsmanCount =
+        batsmen.where((card) => owned.contains(card.id)).length;
+    if (ownedBatsmanCount < cricketStarterCardCount) {
+      final need = cricketStarterCardCount - ownedBatsmanCount;
+      final pool = batsmen
+          .where(
+            (card) =>
+                card.tier == CardTier.bronze && !owned.contains(card.id),
+          )
+          .toList();
+      for (var i = 0; i < need && i < pool.length; i++) {
+        owned.add(pool[i].id);
+      }
+    }
+
+    final nextSlots = slots.map((slot) {
+      final fo = <String>[
+        for (final id in slot.finalOverBatsmen)
+          if (owned.contains(id) && batsmen.any((card) => card.id == id)) id,
+      ];
+      if (fo.length >= cricketStarterCardCount) {
+        return slot.copyWith(
+          finalOverBatsmen: fo.take(cricketStarterCardCount).toList(),
+        );
+      }
+      for (final card in batsmen) {
+        if (fo.length >= cricketStarterCardCount) break;
+        if (!owned.contains(card.id) || fo.contains(card.id)) continue;
+        fo.add(card.id);
+      }
+      return slot.copyWith(finalOverBatsmen: fo);
+    }).toList();
+
+    return (ownedPlayerIds: owned.toList(), slots: nextSlots);
   }
 
   StoredDeckSlot _basketballStarterDeckSlot(
@@ -2415,6 +2514,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       OzCoinTransactionSource.guessPlayerHint => 'CAREER INTEL HINT',
       OzCoinTransactionSource.guessPlayerExtraAttempt =>
         'GUESS PLAYER EXTRA ATTEMPT',
+      OzCoinTransactionSource.guessDriverHint => 'GUESS DRIVER TEAM HINT',
       OzCoinTransactionSource.openingBalance => 'OPENING BALANCE',
       OzCoinTransactionSource.manual =>
         positive ? 'COINS ADDED' : 'COINS SPENT',

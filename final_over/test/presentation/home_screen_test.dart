@@ -73,7 +73,7 @@ void main() {
     );
     expect(
       find.text(
-        'Reach the target before six legal balls or two wickets are used.',
+        'Reach the target across three overs before wickets run out.',
       ),
       findsOneWidget,
     );

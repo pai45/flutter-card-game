@@ -11,9 +11,11 @@ enum BatterPose {
   groundOff,
   groundStraight,
   groundLeg,
+  groundBack,
   loftOff,
   loftStraight,
   loftLeg,
+  loftBack,
   miss,
   bowled,
   running,
@@ -407,18 +409,22 @@ _BatterGeometry _batterGeometry(BatterPose pose, double progress) {
     case BatterPose.groundOff:
     case BatterPose.groundStraight:
     case BatterPose.groundLeg:
+    case BatterPose.groundBack:
     case BatterPose.loftOff:
     case BatterPose.loftStraight:
     case BatterPose.loftLeg:
+    case BatterPose.loftBack:
     case BatterPose.miss:
       final swing = Curves.easeInOutCubic.transform(progress);
       final (startAngle, finishAngle) = switch (pose) {
         BatterPose.groundOff => (-1.5, .18),
         BatterPose.groundStraight => (-1.45, .7),
         BatterPose.groundLeg => (-1.4, 1.18),
+        BatterPose.groundBack => (-1.42, 1.52),
         BatterPose.loftOff => (-1.55, -.18),
         BatterPose.loftStraight => (-1.48, -.62),
         BatterPose.loftLeg => (-1.38, -1.02),
+        BatterPose.loftBack => (-1.42, .38),
         BatterPose.miss => (-1.45, -.92),
         _ => (-1.4, .5),
       };

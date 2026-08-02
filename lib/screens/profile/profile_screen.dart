@@ -699,7 +699,7 @@ class _ProfileHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final level = progression.playerLevel;
     return SizedBox(
-      height: 352,
+      height: 420,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -717,7 +717,7 @@ class _ProfileHeroCard extends StatelessWidget {
             child: ProfileCard(
               padding: EdgeInsets.zero,
               child: SizedBox(
-                height: 228,
+                height: 296,
                 child: Stack(
                   children: [
                     Positioned(
@@ -750,7 +750,13 @@ class _ProfileHeroCard extends StatelessWidget {
                           ),
                           const SizedBox(height: 14),
                           XpMeter(progression: progression),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 12),
+                          MasteryStrip(
+                            progression: progression,
+                            onTrackTap: (track) =>
+                                showXpHistory(context, initialTrack: track),
+                          ),
+                          const SizedBox(height: 12),
                           Row(
                             children: [
                               const Flexible(child: _PlayerTagPill()),

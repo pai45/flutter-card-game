@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../blocs/game/game_bloc.dart';
 import '../../../config/theme.dart';
 import '../../../models/final_over.dart';
+import '../../../models/progression.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_cta_button.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
@@ -183,7 +184,7 @@ class _FinalOverResultOverlayState extends State<FinalOverResultOverlay> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const SectionLabel(label: 'THE OVER'),
+                                const SectionLabel(label: 'THE CHASE'),
                                 const SizedBox(height: 10),
                                 Wrap(
                                   spacing: 6,
@@ -267,6 +268,11 @@ class _FinalOverResultOverlayState extends State<FinalOverResultOverlay> {
                 levels: context.read<GameBloc>().state.pendingLevelUps,
                 progression: context.read<GameBloc>().state.progression,
                 xpEarned: context.read<GameBloc>().state.lastMatchXP ?? 0,
+                trackLabel: context
+                    .read<GameBloc>()
+                    .state
+                    .pendingLevelUpTrack
+                    ?.displayLabel,
                 onDismissed: () => setState(() => _showLevelUp = false),
               ),
           ],
@@ -281,7 +287,7 @@ class _FinalOverResultOverlayState extends State<FinalOverResultOverlay> {
       if (spare == 0) return 'Off the last ball.';
       return 'With $spare ${spare == 1 ? 'ball' : 'balls'} to spare.';
     }
-    if (s.wickets >= 2) return 'All out with the chase alive.';
+    if (s.wickets > 0) return 'Wickets gone with the chase alive.';
     final short = s.target - s.runs;
     return '$short ${short == 1 ? 'run' : 'runs'} short.';
   }

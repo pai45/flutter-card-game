@@ -9,11 +9,18 @@ import '../../blocs/game/game_bloc.dart';
 import '../../blocs/tennis/tennis_cubit.dart';
 import '../../blocs/tennis/tennis_state.dart';
 import '../../config/theme.dart';
+import '../../models/avatar_frame_option.dart';
+import '../../models/avatar_option.dart';
+import '../../models/progression.dart';
 import '../../models/tennis.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
+import '../../widgets/matchmaking/game_match_gate.dart';
+import '../../widgets/matchmaking/game_matchmaking_config.dart';
+import '../deck/tennis_deck_builder_screen.dart';
+import '../match_history/match_history_pages.dart';
 import 'tennis_match_screen.dart';
 
 class TennisRallyHub extends StatefulWidget {
@@ -67,13 +74,73 @@ class _TennisRallyHubState extends State<TennisRallyHub> {
   }
 
   void _launch() {
+    // Re-roll a random rival each queue entry (no opponent picker).
+    _cubit.prepareQuickMatchPreview();
     final config = _cubit.buildMatch(mode: TennisMode.quickMatch);
-    _pushMatch(config);
+    _pushMatchmakingThenMatch(config);
   }
 
   void _resume() {
     final config = _cubit.resumeMatch();
     _pushMatch(config);
+  }
+
+  void _pushMatchmakingThenMatch(TennisMatchConfig config) {
+    playSound(SoundEffect.playMatch);
+    final navigator = Navigator.of(context);
+    final player = tennisPlayerById(config.playerId);
+    final opponent = tennisPlayerById(config.opponentId);
+    final game = context.read<GameBloc>().state;
+    final level = game.progression.levelFor(ProgressTrack.tennis);
+    final frame = avatarFrameOptionById(game.equippedAvatarFrameId);
+
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => GameMatchGate(
+          goLabel: 'PLAY!',
+          config: GameMatchmakingConfig(
+            title: 'TENNIS RALLY',
+            queueLabel: 'SCANNING GLOBAL TENNIS QUEUE',
+            player: MatchmakingFighter(
+              name: player.name,
+              avatarAsset: avatarForName(player.name).assetPath,
+              frame: frame,
+              badge: 'LV $level',
+            ),
+            opponent: MatchmakingFighter(
+              name: opponent.name,
+              avatarAsset: avatarForName(opponent.name).assetPath,
+              badge: 'LV $level',
+            ),
+          ),
+          onCancel: () => navigator.pop(),
+          onReady: () {
+            navigator.pushReplacement(
+              MaterialPageRoute<void>(
+                builder: (_) => BlocProvider.value(
+                  value: _cubit,
+                  child: TennisMatchScreen(
+                    config: config,
+                    onExit: () {
+                      navigator.pop();
+                      _cubit.prepareQuickMatchPreview();
+                    },
+                    onRestart: () {
+                      navigator.pop();
+                      _cubit.prepareQuickMatchPreview();
+                    },
+                    onContinueTournament: () {
+                      navigator.pop();
+                      _cubit.prepareQuickMatchPreview();
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 
   void _pushMatch(TennisMatchConfig config) {
@@ -139,7 +206,6 @@ enum _TennisHubView {
   preview,
   training,
   tournament,
-  career,
   settings,
 }
 
@@ -177,16 +243,94 @@ class _TennisRallyV2HubState extends State<TennisRallyV2Hub> {
   }
 
   void _launch({TennisMode? mode, int? trainingLesson}) {
+    final selectedMode = mode ?? _cubit.state.selectedMode;
+    if (selectedMode == TennisMode.quickMatch) {
+      _cubit.prepareQuickMatchPreview();
+    }
     final config = _cubit.buildMatch(
       mode: mode,
       trainingLesson: trainingLesson,
     );
-    _pushMatch(config);
+    if (selectedMode == TennisMode.training) {
+      _pushMatch(config);
+    } else {
+      _pushMatchmakingThenMatch(config);
+    }
   }
 
   void _resume() {
     final config = _cubit.resumeMatch();
     _pushMatch(config);
+  }
+
+  void _pushMatchmakingThenMatch(TennisMatchConfig config) {
+    playSound(SoundEffect.playMatch);
+    final navigator = Navigator.of(context);
+    final player = tennisPlayerById(config.playerId);
+    final opponent = tennisPlayerById(config.opponentId);
+    final game = context.read<GameBloc>().state;
+    final level = game.progression.levelFor(ProgressTrack.tennis);
+    final frame = avatarFrameOptionById(game.equippedAvatarFrameId);
+
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => GameMatchGate(
+          goLabel: 'PLAY!',
+          config: GameMatchmakingConfig(
+            title: 'TENNIS RALLY',
+            queueLabel: 'SCANNING GLOBAL TENNIS QUEUE',
+            player: MatchmakingFighter(
+              name: player.name,
+              avatarAsset: avatarForName(player.name).assetPath,
+              frame: frame,
+              badge: 'LV $level',
+            ),
+            opponent: MatchmakingFighter(
+              name: opponent.name,
+              avatarAsset: avatarForName(opponent.name).assetPath,
+              badge: 'LV $level',
+            ),
+          ),
+          onCancel: () => navigator.pop(),
+          onReady: () {
+            navigator.pushReplacement(
+              MaterialPageRoute<void>(
+                builder: (_) => BlocProvider.value(
+                  value: _cubit,
+                  child: TennisMatchScreen(
+                    config: config,
+                    onExit: () {
+                      navigator.pop();
+                      _cubit.returnToHub();
+                      if (mounted) {
+                        setState(() => _view = _TennisHubView.landing);
+                      }
+                    },
+                    onRestart: () {
+                      navigator.pop();
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
+                        _launch(
+                          mode: config.mode,
+                          trainingLesson: config.trainingLesson,
+                        );
+                      });
+                    },
+                    onContinueTournament: () {
+                      navigator.pop();
+                      _cubit.returnToHub();
+                      if (mounted) {
+                        setState(() => _view = _TennisHubView.tournament);
+                      }
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 
   void _pushMatch(TennisMatchConfig config) {
@@ -240,7 +384,6 @@ class _TennisRallyV2HubState extends State<TennisRallyV2Hub> {
             onExit: widget.onExit,
             onOpenMode: _openMode,
             onResume: _resume,
-            onCareer: () => setState(() => _view = _TennisHubView.career),
             onSettings: () => setState(() => _view = _TennisHubView.settings),
           ),
           _TennisHubView.selection => _SelectionScreen(
@@ -269,10 +412,6 @@ class _TennisRallyV2HubState extends State<TennisRallyV2Hub> {
             onStart: () => _launch(mode: TennisMode.tournament),
             onNewDraw: () => _cubit.prepareTournament(),
           ),
-          _TennisHubView.career => _CareerScreen(
-            state: state,
-            onBack: () => setState(() => _view = _TennisHubView.landing),
-          ),
           _TennisHubView.settings => _HubSettingsScreen(
             settings: state.profile.settings,
             onBack: () => setState(() => _view = _TennisHubView.landing),
@@ -289,7 +428,6 @@ class _LandingScreen extends StatelessWidget {
     required this.onExit,
     required this.onOpenMode,
     required this.onResume,
-    required this.onCareer,
     required this.onSettings,
   });
 
@@ -297,7 +435,6 @@ class _LandingScreen extends StatelessWidget {
   final VoidCallback onExit;
   final ValueChanged<TennisMode> onOpenMode;
   final VoidCallback onResume;
-  final VoidCallback onCareer;
   final VoidCallback onSettings;
 
   @override
@@ -388,7 +525,10 @@ class _LandingScreen extends StatelessWidget {
                           },
                         ),
                         const SizedBox(height: 18),
-                        _CareerStrip(profile: profile, onTap: onCareer),
+                        _MatchHistoryStrip(
+                          profile: profile,
+                          onTap: () => _openTennisMatchHistory(context, state),
+                        ),
                         const SizedBox(height: 13),
                         _MasteryStrip(profile: profile),
                       ],
@@ -671,8 +811,23 @@ class _ModeCard extends StatelessWidget {
   }
 }
 
-class _CareerStrip extends StatelessWidget {
-  const _CareerStrip({required this.profile, required this.onTap});
+void _openTennisMatchHistory(BuildContext context, TennisState state) {
+  final history = context
+      .read<GameBloc>()
+      .state
+      .matchHistory
+      .where((e) => e.isTennis)
+      .toList(growable: false);
+  showGameMatchHistory(
+    context,
+    gameLabel: 'Tennis Rally',
+    history: history,
+    career: _TennisCareerBoard(profile: state.profile),
+  );
+}
+
+class _MatchHistoryStrip extends StatelessWidget {
+  const _MatchHistoryStrip({required this.profile, required this.onTap});
 
   final TennisProfile profile;
   final VoidCallback onTap;
@@ -685,12 +840,12 @@ class _CareerStrip extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: CyberPanel(
-        accent: Cyber.gold,
+        accent: Cyber.cyan,
         child: Row(
           children: [
             const Icon(
-              Icons.workspace_premium_outlined,
-              color: Cyber.gold,
+              Icons.history,
+              color: Cyber.cyan,
               size: 30,
             ),
             const SizedBox(width: 12),
@@ -699,18 +854,18 @@ class _CareerStrip extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'TENNIS CAREER',
+                    'MATCH HISTORY',
                     style: Cyber.display(12, color: Colors.white),
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    '${profile.setsWon} WINS // ${(rate * 100).round()}% RATE // ${profile.achievements.length}/10 ACHIEVEMENTS',
+                    '${profile.setsWon} WINS // ${(rate * 100).round()}% RATE // CAREER + RECENT SETS',
                     style: Cyber.display(8, color: Cyber.muted),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: Cyber.gold),
+            const Icon(Icons.chevron_right, color: Cyber.cyan),
           ],
         ),
       ),
@@ -834,24 +989,18 @@ class _SelectionScreen extends StatelessWidget {
                     const SectionLabel(label: 'DIFFICULTY'),
                     const SizedBox(height: 9),
                     _DifficultyPicker(selected: profile.difficulty),
-                    if (competitive) ...[
-                      const SizedBox(height: 18),
-                      const SectionLabel(label: 'RIVAL'),
-                      const SizedBox(height: 9),
-                      _OpponentPicker(
-                        playerId: selected.id,
-                        selectedId: profile.lastOpponentId,
-                      ),
-                    ],
                     const SizedBox(height: 20),
                     HudCtaButton(
-                      label: competitive ? 'SCOUT RIVAL' : 'SESSION PREVIEW',
+                      label: competitive
+                          ? 'FIND RIVAL'
+                          : 'SESSION PREVIEW',
                       icon: competitive
-                          ? Icons.visibility_outlined
+                          ? Icons.radar
                           : Icons.sports_tennis,
                       accent: Cyber.lime,
-                      helper:
-                          '${selected.name.toUpperCase()} // ${profile.difficulty.label}',
+                      helper: competitive
+                          ? 'RANDOM QUEUE // ${profile.difficulty.label}'
+                          : '${selected.name.toUpperCase()} // ${profile.difficulty.label}',
                       onTap: onPreview,
                     ),
                   ],
@@ -1108,73 +1257,6 @@ class _DifficultyPicker extends StatelessWidget {
   }
 }
 
-class _OpponentPicker extends StatelessWidget {
-  const _OpponentPicker({required this.playerId, required this.selectedId});
-
-  final String playerId;
-  final String selectedId;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 78,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: tennisPlayers
-            .where((player) => player.id != playerId)
-            .length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
-          final rivals = tennisPlayers
-              .where((player) => player.id != playerId)
-              .toList();
-          final rival = rivals[index];
-          final selected = rival.id == selectedId;
-          return InkWell(
-            onTap: () => context.read<TennisCubit>().selectOpponent(rival.id),
-            child: Container(
-              width: 145,
-              padding: const EdgeInsets.all(9),
-              decoration: BoxDecoration(
-                color: selected
-                    ? Cyber.amber.withValues(alpha: 0.15)
-                    : Cyber.panel,
-                border: Border.all(
-                  color: selected ? Cyber.amber : Cyber.border,
-                ),
-              ),
-              child: Row(
-                children: [
-                  _PlayerMonogram(player: rival, size: 38),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          rival.name.toUpperCase(),
-                          maxLines: 1,
-                          style: Cyber.display(8),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'OVR ${rival.ratings.overall}',
-                          style: Cyber.display(7, color: Cyber.muted),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
 class _PreviewScreen extends StatelessWidget {
   const _PreviewScreen({
     required this.state,
@@ -1186,10 +1268,25 @@ class _PreviewScreen extends StatelessWidget {
   final VoidCallback onBack;
   final VoidCallback onStart;
 
+  void _openDeckBuilder(BuildContext context) {
+    final navigator = Navigator.of(context);
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => TennisDeckBuilderScreen(
+          onBack: navigator.pop,
+          onSaved: navigator.pop,
+        ),
+      ),
+    );
+  }
+
+  void _openMatchHistory(BuildContext context) {
+    _openTennisMatchHistory(context, state);
+  }
+
   @override
   Widget build(BuildContext context) {
     final player = state.selectedPlayer;
-    final opponent = state.selectedOpponent;
     final profile = state.profile;
     return Scaffold(
       backgroundColor: Cyber.bg,
@@ -1356,17 +1453,55 @@ class _PreviewScreen extends StatelessWidget {
                                   },
                                 ),
                               ),
-                              const SizedBox(height: 20),
-                              const SectionLabel(label: 'NEXT MATCH'),
-                              const SizedBox(height: 10),
-                              CyberSlideUpFadeIn(
-                                delay: const Duration(milliseconds: 500),
-                                offset: 18,
-                                child: _VersusPanel(
-                                  player: player,
-                                  opponent: opponent,
-                                  difficulty: profile.difficulty,
-                                ),
+                              const SizedBox(height: 14),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: CyberDealtCard(
+                                      key: const ValueKey(
+                                        'tennis-lobby-action-deck',
+                                      ),
+                                      index: 0,
+                                      initialDelay: const Duration(
+                                        milliseconds: 470,
+                                      ),
+                                      staggerMs: 85,
+                                      flyDistance: 95,
+                                      duration: const Duration(
+                                        milliseconds: 500,
+                                      ),
+                                      child: CyberCtaButton(
+                                        label: 'Deck Builder',
+                                        clip: false,
+                                        onPressed: () =>
+                                            _openDeckBuilder(context),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: CyberDealtCard(
+                                      key: const ValueKey(
+                                        'tennis-lobby-action-history',
+                                      ),
+                                      index: 1,
+                                      initialDelay: const Duration(
+                                        milliseconds: 470,
+                                      ),
+                                      staggerMs: 85,
+                                      flyDistance: 95,
+                                      duration: const Duration(
+                                        milliseconds: 500,
+                                      ),
+                                      child: CyberCtaButton(
+                                        label: 'Match History',
+                                        clip: false,
+                                        onPressed: () =>
+                                            _openMatchHistory(context),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                               const SizedBox(height: 14),
                               CyberSlideUpFadeIn(
@@ -1491,85 +1626,6 @@ class _TennisLobbyCourtPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _VersusPanel extends StatelessWidget {
-  const _VersusPanel({
-    required this.player,
-    required this.opponent,
-    required this.difficulty,
-  });
-
-  final TennisPlayer player;
-  final TennisPlayer opponent;
-  final TennisDifficulty difficulty;
-
-  @override
-  Widget build(BuildContext context) {
-    return CyberPanel(
-      accent: Cyber.cyan,
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Text(
-                'SEEDED MATCH',
-                style: Cyber.display(8, color: Cyber.muted, letterSpacing: 1.6),
-              ),
-              const Spacer(),
-              CyberChip(label: difficulty.label, color: Cyber.gold),
-            ],
-          ),
-          const SizedBox(height: 14),
-          const HudLine(),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: _PreviewAthlete(player: player, side: 'YOU'),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 9),
-                child: Text('VS', style: Cyber.display(23, color: Cyber.lime)),
-              ),
-              Expanded(
-                child: _PreviewAthlete(player: opponent, side: 'RIVAL'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PreviewAthlete extends StatelessWidget {
-  const _PreviewAthlete({required this.player, required this.side});
-
-  final TennisPlayer player;
-  final String side;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _PlayerMonogram(player: player, size: 66),
-        const SizedBox(height: 9),
-        Text(
-          player.name.toUpperCase(),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
-          style: Cyber.display(10),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          '$side // OVR ${player.ratings.overall}',
-          style: Cyber.display(7, color: Cyber.muted),
-        ),
-      ],
-    );
-  }
 }
 
 class _ControlBrief extends StatelessWidget {
@@ -2010,60 +2066,42 @@ class _BracketRound extends StatelessWidget {
   }
 }
 
-class _CareerScreen extends StatelessWidget {
-  const _CareerScreen({required this.state, required this.onBack});
+/// Career board embedded in Tennis Match History (record + trophies + mastery).
+class _TennisCareerBoard extends StatelessWidget {
+  const _TennisCareerBoard({required this.profile});
 
-  final TennisState state;
-  final VoidCallback onBack;
+  final TennisProfile profile;
 
   @override
   Widget build(BuildContext context) {
-    final profile = state.profile;
-    return Scaffold(
-      backgroundColor: Cyber.bg,
-      appBar: ReactHeaderBar(
-        title: 'TENNIS CAREER',
-        subtitle: '// MASTERY & TROPHIES',
-        onBack: onBack,
-      ),
-      body: CyberBackground(
-        child: SafeArea(
-          top: false,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 680),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _CareerNumbers(profile: profile),
-                    const SizedBox(height: 14),
-                    _TrophyCabinet(profile: profile),
-                    const SizedBox(height: 14),
-                    const SectionLabel(label: 'ATHLETE MASTERY'),
-                    const SizedBox(height: 9),
-                    for (final player in tennisPlayers) ...[
-                      _MasteryRow(player: player, profile: profile),
-                      const SizedBox(height: 7),
-                    ],
-                    const SizedBox(height: 12),
-                    const SectionLabel(label: 'ACHIEVEMENTS'),
-                    const SizedBox(height: 9),
-                    for (final achievement in _tennisAchievements) ...[
-                      _AchievementRow(
-                        spec: achievement,
-                        unlocked: profile.achievements.contains(achievement.id),
-                      ),
-                      const SizedBox(height: 7),
-                    ],
-                  ],
-                ),
-              ),
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SectionLabel(label: 'CAREER'),
+        const SizedBox(height: 10),
+        _CareerNumbers(profile: profile),
+        const SizedBox(height: 14),
+        _TrophyCabinet(profile: profile),
+        const SizedBox(height: 14),
+        const SectionLabel(label: 'ATHLETE MASTERY'),
+        const SizedBox(height: 9),
+        for (final player in tennisPlayers) ...[
+          _MasteryRow(player: player, profile: profile),
+          const SizedBox(height: 7),
+        ],
+        const SizedBox(height: 12),
+        const SectionLabel(label: 'ACHIEVEMENTS'),
+        const SizedBox(height: 9),
+        for (final achievement in _tennisAchievements) ...[
+          _AchievementRow(
+            spec: achievement,
+            unlocked: profile.achievements.contains(achievement.id),
           ),
-        ),
-      ),
+          const SizedBox(height: 7),
+        ],
+        const SizedBox(height: 8),
+        const SectionLabel(label: 'RECENT MATCHES'),
+      ],
     );
   }
 }

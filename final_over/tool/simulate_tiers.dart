@@ -14,9 +14,9 @@ extension on _Tier {
   };
 
   List<int> get targets => switch (this) {
-    _Tier.rookie => const [8, 10],
-    _Tier.pro => const [10, 12, 14],
-    _Tier.elite => const [16, 18, 20],
+    _Tier.rookie => const [32, 36, 40],
+    _Tier.pro => const [44, 48, 52, 56],
+    _Tier.elite => const [58, 62, 66],
   };
 
   (double, double, double, double) get gates => switch (this) {

@@ -135,6 +135,23 @@ void main() {
       expect(outcome.type, ContactType.miss);
       expect(outcome.bowledThreat, isTrue);
     });
+
+    test('a behind shot travels toward the wicketkeeper end', () {
+      final outcome = resolver.resolve(
+        delivery: delivery(line: DeliveryLine.leg),
+        elevation: Elevation.ground,
+        direction: ShotDirection.behind,
+        timingErrorMs: 0,
+        hasInput: true,
+        powerShot: false,
+        random: DeterministicRandom(12),
+      );
+
+      expect(outcome.madeContact, isTrue);
+      expect(outcome.direction, ShotDirection.behind);
+      expect(outcome.velocity.y, greaterThan(0));
+      expect(outcome.velocity.x.abs(), lessThan(outcome.velocity.y));
+    });
   });
 
   group('physics and exact ties', () {
@@ -182,8 +199,8 @@ void main() {
     });
 
     test('risk labels use the documented margins', () {
-      expect(fielding.riskForMargin(0.301), RiskLevel.safe);
-      expect(fielding.riskForMargin(0.30), RiskLevel.close);
+      expect(fielding.riskForMargin(0.221), RiskLevel.safe);
+      expect(fielding.riskForMargin(0.22), RiskLevel.close);
       expect(fielding.riskForMargin(-0.15), RiskLevel.close);
       expect(fielding.riskForMargin(-0.151), RiskLevel.danger);
     });

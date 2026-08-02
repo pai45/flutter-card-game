@@ -204,6 +204,41 @@ void main() {
       },
     );
 
+    test('team hint persists without consuming a life or attempt', () async {
+      final storage = SecureGameStorage();
+      final cubit = GuessDriverCubit(
+        races: _races,
+        allDrivers: const ['Lando Norris', 'Charles Leclerc'],
+        storage: storage,
+        now: () => DateTime(2026, 7, 19, 12),
+      );
+      addTearDown(cubit.close);
+      await cubit.load();
+      await cubit.openToday();
+
+      expect(cubit.state.teamHintRevealed, isFalse);
+      final hearts = cubit.state.remainingHearts;
+      final guesses = cubit.state.guesses;
+      expect(await cubit.unlockTeamHint(), isTrue);
+      expect(cubit.state.teamHintRevealed, isTrue);
+      expect(cubit.state.remainingHearts, hearts);
+      expect(cubit.state.guesses, guesses);
+
+      expect(await cubit.unlockTeamHint(), isFalse);
+
+      final restored = GuessDriverCubit(
+        races: _races,
+        allDrivers: const ['Lando Norris', 'Charles Leclerc'],
+        storage: storage,
+        now: () => DateTime(2026, 7, 19, 12),
+      );
+      addTearDown(restored.close);
+      await restored.load();
+      await restored.openToday();
+      expect(restored.state.teamHintRevealed, isTrue);
+      expect(restored.state.targetRace.teamName, isNotEmpty);
+    });
+
     test('daily target selection is deterministic across cubits', () async {
       GuessDriverCubit build() => GuessDriverCubit(
         races: _races,
@@ -267,6 +302,15 @@ void main() {
         },
       },
     });
+
+    final hinted = GuessDriverArchive(
+      resultsByDay: const {},
+      hintedDayKeys: const {'2026-07-19'},
+    );
+    expect(
+      GuessDriverArchive.fromJson(hinted.toJson()).hintedDayKeys,
+      contains('2026-07-19'),
+    );
   });
 
   test('archive metrics derive streak, rate, and best lives', () {

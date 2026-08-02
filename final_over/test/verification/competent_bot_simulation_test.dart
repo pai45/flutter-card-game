@@ -9,7 +9,7 @@ void main() {
       final replay = await _replayRange(seedStart: 7000, matches: 32);
 
       expect(replay, first);
-      expect(first.maximumDurationMicros, lessThan(120000000));
+      expect(first.maximumDurationMicros, lessThan(240000000));
       expect(first.physicalDeliveries, greaterThanOrEqualTo(first.legalBalls));
     });
 
@@ -42,7 +42,7 @@ void main() {
           wicketPerLegalBallRate: 0.12,
           wideRate: 0.05,
           noBallRate: 0.02,
-          maximumDurationSeconds: 119,
+          maximumDurationSeconds: 239,
         ),
         isEmpty,
       );
@@ -53,7 +53,7 @@ void main() {
           wicketPerLegalBallRate: 0,
           wideRate: 0,
           noBallRate: 0,
-          maximumDurationSeconds: 120,
+          maximumDurationSeconds: 240,
         ),
         hasLength(6),
       );
@@ -102,11 +102,11 @@ Future<_ReplaySummary> _replayRange({
   for (var index = 0; index < matches; index++) {
     final controller = MatchController();
     try {
-      controller.startMatch(seed: seedStart + index, target: 14);
+      controller.startMatch(seed: seedStart + index, target: 48);
       controller.dispatch(const GameCommand.start());
       var plannedOrdinal = 0;
       while (!controller.state.isTerminal &&
-          controller.state.simulationMicros < 120000000) {
+          controller.state.simulationMicros < 240000000) {
         final state = controller.state;
         final delivery = state.currentDelivery;
         if (delivery != null && delivery.ordinal != plannedOrdinal) {
@@ -211,6 +211,6 @@ List<String> _gateFailures({
   check(wicketPerLegalBallRate, 0.07, 0.18, 'wicket/legal-ball rate');
   check(wideRate, 0.02, 0.08, 'wide rate');
   check(noBallRate, 0.005, 0.04, 'no-ball rate');
-  if (maximumDurationSeconds >= 120) failures.add('duration');
+  if (maximumDurationSeconds >= 240) failures.add('duration');
   return failures;
 }

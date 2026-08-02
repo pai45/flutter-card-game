@@ -71,6 +71,7 @@ void main() {
               onGamesSportTabChanged: (_) {},
               onNavigate: (_) {},
               onOpenMatch: (_) {},
+              onOpenMarket: (_) {},
               onOpenLeague: (_) {},
               onOpenGame: () => pitchDuelOpens++,
               onOpenShootout: () => penaltyShootoutOpens++,
@@ -100,7 +101,7 @@ void main() {
       expect(tester.takeException(), isNull);
     }
 
-    await pumpGamesTab(0);
+    await pumpGamesTab(1);
     expect(find.text('PITCH DUEL'), findsOneWidget);
     expect(find.text('TACTICAL CARD GAME'), findsOneWidget);
     expect(find.text('ENTER THE DUEL'), findsNothing);
@@ -170,7 +171,7 @@ void main() {
     expect(footballBingoOpens, 1);
     expect(footballGuessPlayerOpens, 1);
 
-    await pumpGamesTab(2);
+    await pumpGamesTab(3);
     expect(find.text('HOOP DUEL'), findsOneWidget);
     expect(find.text('STREET 1-ON-1 ARCADE HOOPS'), findsOneWidget);
     expect(find.text('HIT THE COURT'), findsNothing);
@@ -201,7 +202,7 @@ void main() {
     expect(basketballQuizOpens, 1);
     expect(basketballGuessPlayerOpens, 1);
 
-    await pumpGamesTab(1);
+    await pumpGamesTab(2);
     expect(find.text('FINAL OVER'), findsOneWidget);
     expect(find.text('SIX-BALL CRICKET CHASE'), findsOneWidget);
     expect(find.text('START THE CHASE'), findsNothing);
@@ -232,7 +233,7 @@ void main() {
     expect(cricketQuizOpens, 1);
     expect(cricketGuessPlayerOpens, 1);
 
-    await pumpGamesTab(4);
+    await pumpGamesTab(5);
     expect(find.text('GRAND PRIX DASH'), findsOneWidget);
     expect(find.text('ONE-LAP ARCADE RACER'), findsOneWidget);
     expect(find.text('RACE NOW'), findsNothing);
@@ -252,7 +253,7 @@ void main() {
     await tester.tap(f1QuizCard);
     expect(f1QuizOpens, 1);
 
-    await pumpGamesTab(3);
+    await pumpGamesTab(4);
     expect(find.text('TENNIS RALLY'), findsOneWidget);
     expect(find.text('2D ARCADE SETS // 5 MODES'), findsOneWidget);
     expect(find.text('STEP ON COURT'), findsNothing);

@@ -10,7 +10,7 @@ final class GameplayTuning {
     this.incomingToContactMicros = 650000,
     this.lateSwingGraceMicros = 276000,
     this.cameraTransitionMicros = 360000,
-    this.impactHoldMicros = 80000,
+    this.impactHoldMicros = 450000,
     this.deliveryResultMicros = 650000,
     this.betweenBallsMicros = 450000,
     this.pickupDecisionMicros = 500000,
@@ -49,10 +49,12 @@ final class GameplayTuning {
     this.safeMarginSeconds = 0.22,
     this.dangerMarginSeconds = -0.15,
     this.maximumRuns = 3,
-    this.maximumLegalBalls = 6,
+    this.maximumLegalBalls = 18,
+    this.maximumOvers = 3,
+    this.ballsPerOver = 6,
     this.maximumWickets = 2,
-    this.maximumNoBalls = 1,
-    this.maximumWides = 2,
+    this.maximumNoBalls = 3,
+    this.maximumWides = 5,
     this.noBallProbability = 0.02,
     this.wideProbability = 0.05,
     this.baseCatchChance = 0.82,
@@ -123,6 +125,8 @@ final class GameplayTuning {
   final double dangerMarginSeconds;
   final int maximumRuns;
   final int maximumLegalBalls;
+  final int maximumOvers;
+  final int ballsPerOver;
   final int maximumWickets;
   final int maximumNoBalls;
   final int maximumWides;
@@ -168,7 +172,7 @@ final class GameplayTuning {
     earlyLateWindowMs: 300,
     poorWindowMs: 400,
     lateSwingGraceMicros: 401000,
-    maximumWickets: 3,
+    maximumWickets: 4,
     baseCatchChance: 0.58,
     keeperCatchChance: 0.68,
     powerShotSegments: 4,
@@ -194,7 +198,7 @@ final class GameplayTuning {
     earlyLateWindowMs: 245,
     poorWindowMs: 330,
     lateSwingGraceMicros: 331000,
-    maximumWickets: 2,
+    maximumWickets: 3,
     baseCatchChance: 0.68,
     keeperCatchChance: 0.76,
     powerShotSegments: 5,
@@ -240,7 +244,11 @@ final class GameplayTuning {
     overswingEdgeBonus: 0.10,
   );
 
-  static const targetOptions = <int>[8, 10, 12, 14, 16, 18, 20];
+  /// Approved chase ladder for the three-over format (32–66).
+  static const targetOptions = <int>[32, 36, 40, 44, 48, 52, 56, 58, 62, 66];
+
+  static const targetMinimum = 32;
+  static const targetMaximum = 66;
 
   static const lineX = <DeliveryLine, double>{
     DeliveryLine.wideOff: -0.11,
@@ -250,67 +258,106 @@ final class GameplayTuning {
     DeliveryLine.wideLeg: 0.11,
   };
 
-  /// Eight outfield dots plus a wicketkeeper and bowler.
-  static const balancedField = <FielderState>[
-    FielderState(
-      id: 0,
-      role: FielderRole.outfielder,
-      homePosition: FieldVector(-0.78, -0.12),
-      position: FieldVector(-0.78, -0.12),
-    ),
-    FielderState(
-      id: 1,
-      role: FielderRole.outfielder,
-      homePosition: FieldVector(0.78, -0.12),
-      position: FieldVector(0.78, -0.12),
-    ),
-    FielderState(
-      id: 2,
-      role: FielderRole.outfielder,
-      homePosition: FieldVector(-0.45, -0.72),
-      position: FieldVector(-0.45, -0.72),
-    ),
-    FielderState(
-      id: 3,
-      role: FielderRole.outfielder,
-      homePosition: FieldVector(0.45, -0.72),
-      position: FieldVector(0.45, -0.72),
-    ),
-    FielderState(
-      id: 4,
-      role: FielderRole.outfielder,
-      homePosition: FieldVector(-0.72, 0.48),
-      position: FieldVector(-0.72, 0.48),
-    ),
-    FielderState(
-      id: 5,
-      role: FielderRole.outfielder,
-      homePosition: FieldVector(0.72, 0.48),
-      position: FieldVector(0.72, 0.48),
-    ),
-    FielderState(
-      id: 6,
-      role: FielderRole.outfielder,
-      homePosition: FieldVector(-0.18, -0.82),
-      position: FieldVector(-0.18, -0.82),
-    ),
-    FielderState(
-      id: 7,
-      role: FielderRole.outfielder,
-      homePosition: FieldVector(0.18, -0.82),
-      position: FieldVector(0.18, -0.82),
-    ),
-    FielderState(
-      id: 8,
-      role: FielderRole.wicketkeeper,
-      homePosition: FieldVector(0, 0.27),
-      position: FieldVector(0, 0.27),
-    ),
-    FielderState(
-      id: 9,
-      role: FielderRole.bowler,
-      homePosition: FieldVector(0, -0.05),
-      position: FieldVector(0, -0.05),
-    ),
-  ];
+  /// Five balanced shapes. The seed chooses the opening shape and every
+  /// physical delivery advances one slot, so wides and no-balls trigger the
+  /// same visible tactical reset as legal balls.
+  static final List<FieldLayout> fieldLayouts = List.unmodifiable([
+    _fieldLayout('balanced', 'BALANCED', const [
+      FieldVector(-0.78, -0.12),
+      FieldVector(0.78, -0.12),
+      FieldVector(-0.45, -0.72),
+      FieldVector(0.45, -0.72),
+      FieldVector(-0.72, 0.48),
+      FieldVector(0.72, 0.48),
+      FieldVector(-0.18, -0.82),
+      FieldVector(0.18, -0.82),
+    ]),
+    _fieldLayout('off-guard', 'OFF GUARD', const [
+      FieldVector(-0.82, -0.10),
+      FieldVector(-0.64, -0.50),
+      FieldVector(-0.42, -0.78),
+      FieldVector(-0.18, -0.88),
+      FieldVector(-0.58, 0.38),
+      FieldVector(0.64, -0.58),
+      FieldVector(0.80, 0.14),
+      FieldVector(0.42, 0.60),
+    ]),
+    _fieldLayout('leg-guard', 'LEG GUARD', const [
+      FieldVector(0.82, -0.10),
+      FieldVector(0.64, -0.50),
+      FieldVector(0.42, -0.78),
+      FieldVector(0.18, -0.88),
+      FieldVector(0.58, 0.38),
+      FieldVector(-0.64, -0.58),
+      FieldVector(-0.80, 0.14),
+      FieldVector(-0.42, 0.60),
+    ]),
+    _fieldLayout('straight-wall', 'STRAIGHT WALL', const [
+      FieldVector(-0.74, -0.30),
+      FieldVector(0.74, -0.30),
+      FieldVector(-0.52, -0.72),
+      FieldVector(0.52, -0.72),
+      FieldVector(-0.26, -0.91),
+      FieldVector(0.26, -0.91),
+      FieldVector(-0.66, 0.43),
+      FieldVector(0.66, 0.43),
+    ]),
+    _fieldLayout('close-attack', 'CLOSE ATTACK', const [
+      FieldVector(-0.40, -0.32),
+      FieldVector(0.40, -0.32),
+      FieldVector(-0.28, -0.54),
+      FieldVector(0.28, -0.54),
+      FieldVector(-0.62, -0.66),
+      FieldVector(0.62, -0.66),
+      FieldVector(-0.48, 0.44),
+      FieldVector(0.48, 0.44),
+    ]),
+  ]);
+
+  /// Backwards-compatible alias for simulations that explicitly request the
+  /// original neutral field.
+  static final List<FielderState> balancedField = fieldLayouts.first.fielders;
+
+  static FieldLayout fieldLayoutFor({
+    required int matchSeed,
+    required int physicalOrdinal,
+  }) {
+    final count = fieldLayouts.length;
+    final seededStart = ((matchSeed % count) + count) % count;
+    final deliveryOffset = physicalOrdinal <= 1 ? 0 : physicalOrdinal - 1;
+    return fieldLayouts[(seededStart + deliveryOffset) % count];
+  }
+
+  static FieldLayout _fieldLayout(
+    String id,
+    String label,
+    List<FieldVector> outfield,
+  ) {
+    assert(outfield.length == 8);
+    return FieldLayout(
+      id: id,
+      label: label,
+      fielders: [
+        for (var index = 0; index < outfield.length; index++)
+          FielderState(
+            id: index,
+            role: FielderRole.outfielder,
+            homePosition: outfield[index],
+            position: outfield[index],
+          ),
+        const FielderState(
+          id: 8,
+          role: FielderRole.wicketkeeper,
+          homePosition: FieldVector(0, 0.27),
+          position: FieldVector(0, 0.27),
+        ),
+        const FielderState(
+          id: 9,
+          role: FielderRole.bowler,
+          homePosition: FieldVector(0, -0.05),
+          position: FieldVector(0, -0.05),
+        ),
+      ],
+    );
+  }
 }

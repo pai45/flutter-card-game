@@ -71,6 +71,40 @@ const sportModules = <SportModule>[
   ),
 ];
 
+/// Tab order for the MATCH / GAMES / archive sport strip (Football → … → Motorsport).
+const sportTabOrder = <Sport>[
+  Sport.football,
+  Sport.cricket,
+  Sport.basketball,
+  Sport.tennis,
+  Sport.motorsport,
+];
+
+final sportTabLabels = sportTabOrder
+    .map((sport) => sportModuleFor(sport).label.toUpperCase())
+    .toList(growable: false);
+
+final sportTabIcons = sportTabOrder
+    .map((sport) => sportModuleFor(sport).icon)
+    .toList(growable: false);
+
+/// MATCH / GAMES hub index contract.
+///
+/// Trending is a real selectable destination. The trailing MORE action lives
+/// one slot after the sports, but is never persisted as the active index.
+const hubTrendingTabIndex = 0;
+final hubMoreTabIndex = sportTabOrder.length + 1;
+
+int hubIndexForSport(Sport sport) => sportTabOrder.indexOf(sport) + 1;
+
+Sport? sportForHubIndex(int index) {
+  final sportIndex = index - 1;
+  if (sportIndex < 0 || sportIndex >= sportTabOrder.length) return null;
+  return sportTabOrder[sportIndex];
+}
+
+enum SportHubMode { matches, games }
+
 SportModule sportModuleFor(Sport sport) {
   for (final module in sportModules) {
     if (module.sport == sport) return module;
