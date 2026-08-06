@@ -200,6 +200,52 @@ void main() {
     expect(spent.coinLedger.first.balanceAfter, 80);
   });
 
+  test(
+    'onboarding reward credits exactly 1000 coins once and persists',
+    () async {
+      final storage = SecureGameStorage();
+      final bloc = GameBloc(storage);
+      addTearDown(bloc.close);
+      await _load(bloc);
+
+      bloc.add(CoinsAdded(250));
+      await _nextWhere(bloc, (state) => state.coins == 250);
+
+      bloc.add(OnboardingRewardClaimed());
+      final rewarded = await _nextWhere(bloc, (state) => state.coins == 1250);
+      final rewardEntry = rewarded.coinLedger.firstWhere(
+        (entry) => entry.source == OzCoinTransactionSource.onboardingReward,
+      );
+
+      expect(rewardEntry.delta, 1000);
+      expect(rewardEntry.balanceAfter, 1250);
+      expect(rewardEntry.type, OzCoinTransactionType.earn);
+      expect(rewardEntry.title, 'WELCOME BONUS');
+      expect(rewardEntry.subtitle, 'ONBOARDING COMPLETE');
+
+      bloc.add(OnboardingRewardClaimed());
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(bloc.state.coins, 1250);
+      expect(
+        bloc.state.coinLedger.where(
+          (entry) => entry.source == OzCoinTransactionSource.onboardingReward,
+        ),
+        hasLength(1),
+      );
+
+      final restoredBloc = GameBloc(storage);
+      addTearDown(restoredBloc.close);
+      final restored = await _load(restoredBloc);
+      expect(restored.coins, 1250);
+      expect(
+        restored.coinLedger.where(
+          (entry) => entry.source == OzCoinTransactionSource.onboardingReward,
+        ),
+        hasLength(1),
+      );
+    },
+  );
+
   test('overspend leaves balance and ledger unchanged', () async {
     final bloc = GameBloc(SecureGameStorage());
     addTearDown(bloc.close);

@@ -71,6 +71,34 @@ const matchTrendingCatalog = <TrendingTileConfig>[
     sport: Sport.cricket,
     span: CyberBentoSpan.square,
   ),
+  TrendingTileConfig(
+    id: 'trend-ipl-sixes-pick',
+    kind: TrendingTileKind.pick,
+    sourceId: 'ipl_sixes_over_12_5',
+    sport: Sport.cricket,
+    span: CyberBentoSpan.square,
+  ),
+  TrendingTileConfig(
+    id: 'trend-wimbledon-predict',
+    kind: TrendingTileKind.predict,
+    sourceId: 'wimbledon_mens_final_26',
+    sport: Sport.tennis,
+    span: CyberBentoSpan.wide,
+  ),
+  TrendingTileConfig(
+    id: 'trend-man-utd-pick',
+    kind: TrendingTileKind.pick,
+    sourceId: 'epl_mu_over_1_5',
+    sport: Sport.football,
+    span: CyberBentoSpan.square,
+  ),
+  TrendingTileConfig(
+    id: 'trend-belgian-gp-future',
+    kind: TrendingTileKind.future,
+    sourceId: 'f1_belgian_gp_winner',
+    sport: Sport.motorsport,
+    span: CyberBentoSpan.square,
+  ),
 ];
 
 const gamesTrendingCatalog = <TrendingTileConfig>[

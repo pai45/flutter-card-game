@@ -1,4 +1,5 @@
 import '../../data/football_bingo_puzzles.dart';
+import '../../data/football_bingo_careers.dart';
 import '../../models/cards.dart';
 import '../../models/football_bingo.dart';
 
@@ -46,6 +47,8 @@ class FootballBingoState {
   Set<String> get solvedCellIds => progress.solvedCellIds.toSet();
   List<String> get unlockedDayKeys =>
       archive.progressByDay.keys.toList()..sort();
+  List<String> get campaignDayKeys =>
+      footballBingoCampaignDayKeys(archive.firstUnlockDayKey, DateTime.now());
   int get completedCount => archive.progressByDay.values
       .where((progress) => progress.completed)
       .length;
@@ -66,6 +69,8 @@ class FootballBingoState {
   PlayerCard? get currentPlayer {
     final cell = currentCell;
     if (cell == null) return null;
+    final careerPlayer = footballBingoCareerFor(cell.playerId);
+    if (careerPlayer != null) return careerPlayer.toPlayerCard();
     return footballPlayerCards
         .where((player) => player.id == cell.playerId)
         .firstOrNull;

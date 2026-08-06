@@ -776,12 +776,18 @@ class _MatchesTabState extends State<_MatchesTab> {
                                   ),
                                   const SizedBox(width: 10),
                                   Text(
-                                    'ALL GAMES',
+                                    'STANDING',
                                     style: Cyber.label(
                                       9,
                                       color: Cyber.muted,
                                       letterSpacing: 1.2,
                                     ),
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Icon(
+                                    Icons.chevron_right,
+                                    size: 13,
+                                    color: Cyber.cyan.withValues(alpha: 0.7),
                                   ),
                                 ],
                               ),

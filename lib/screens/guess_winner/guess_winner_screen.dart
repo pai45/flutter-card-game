@@ -6,6 +6,7 @@ import '../../blocs/guess_winner/guess_winner_cubit.dart';
 import '../../config/theme.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/daily_mystery_widgets.dart';
+import '../../widgets/cyber/sport_signal_painters.dart';
 
 class GuessWinnerScreen extends StatefulWidget {
   const GuessWinnerScreen({required this.onBack, super.key});
@@ -68,15 +69,16 @@ class _GuessWinnerScreenState extends State<GuessWinnerScreen> {
         final target = state.targetGrandSlam;
         return DailyMysteryPlayLayout(
           title: 'GUESS THE WINNER',
-          subtitle:
-              'ATTEMPT ${state.guesses.length + 1}/10 · ${state.remainingHearts} LIVES',
+          // Lives are owned by the action dock's meter — don't restate them here.
+          subtitle: 'ATTEMPT ${state.guesses.length + 1} / 10',
           accent: Cyber.lime,
           secondaryAccent: Cyber.cyan,
           icon: Icons.sports_tennis_rounded,
           dossierLabel: 'COURT INTEL // ENCRYPTED',
           dossierTitle: 'GRAND SLAM CHAMPION',
-          dossierDescription:
-              'Search the champion database and lock the winner for this final.',
+          targetName: target.winnerName,
+          caseCode: 'CASE ${state.activeDayKey}',
+          backdropPainter: const TennisMysterySignalPainter(),
           details: [
             DailyMysteryDetail(label: 'YEAR', value: target.year),
             DailyMysteryDetail(label: 'TOURNAMENT', value: target.tournament),

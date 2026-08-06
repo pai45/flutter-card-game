@@ -67,12 +67,15 @@ class _HudBorderPainter extends CustomPainter {
       smallCut: smallCut,
     ).buildPath(size);
 
-    final glowPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5
-      ..color = glowColor.withValues(alpha: 0.30 + 0.40 * glow)
-      ..maskFilter = MaskFilter.blur(BlurStyle.normal, 6 + 6 * glow);
-    canvas.drawPath(path, glowPaint);
+    // Soft halo only when intensity > 0 — glow:false CTAs stay crisp/flat.
+    if (glow > 0) {
+      final glowPaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5
+        ..color = glowColor.withValues(alpha: 0.30 + 0.40 * glow)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, 6 + 6 * glow);
+      canvas.drawPath(path, glowPaint);
+    }
 
     final borderPaint = Paint()
       ..style = PaintingStyle.stroke
@@ -129,8 +132,8 @@ class HudCtaButton extends StatefulWidget {
   final String? pressedHelper;
 
   /// When true (default) the button carries the pulsing neon halo. Set false
-  /// for a calmer, elevated treatment (crisp border + a plain drop shadow, no
-  /// neon glow) — e.g. on the profile-setup flow.
+  /// for a calmer flat treatment (crisp border, no neon glow, no drop shadow)
+  /// — e.g. on the hold-to-lock dock or profile-setup flow.
   final bool glow;
 
   const HudCtaButton({
@@ -255,6 +258,8 @@ class _HudCtaButtonState extends State<HudCtaButton>
                 height: widget.height,
                 width: double.infinity,
                 decoration: BoxDecoration(
+                  // Glow rule: halo only when [glow] is on. Flat otherwise —
+                  // crisp border only, no drop shadow.
                   boxShadow: widget.enabled && widget.glow
                       ? [
                           BoxShadow(
@@ -270,14 +275,7 @@ class _HudCtaButtonState extends State<HudCtaButton>
                             spreadRadius: 2,
                           ),
                         ]
-                      : const [
-                          // Elevation, not glow: a plain dark drop shadow.
-                          BoxShadow(
-                            color: Color(0x99000000),
-                            blurRadius: 18,
-                            offset: Offset(0, 9),
-                          ),
-                        ],
+                      : null,
                 ),
                 child: CustomPaint(
                   foregroundPainter: _HudBorderPainter(

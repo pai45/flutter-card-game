@@ -7,6 +7,7 @@ import 'package:card_game/models/league.dart';
 import 'package:card_game/models/sport_match.dart';
 import 'package:card_game/screens/predictions/all_sports_screen.dart';
 import 'package:card_game/screens/predictions/prediction_home_screen.dart';
+import 'package:card_game/screens/predictions/widgets/pick_status_style.dart';
 import 'package:card_game/services/pick_repository.dart';
 import 'package:card_game/services/prediction_repository.dart';
 import 'package:card_game/services/secure_storage_service.dart';
@@ -57,8 +58,26 @@ void main() {
     expect(find.text('TRENDING NOW'), findsNothing);
     expect(find.text('FUTURE'), findsAtLeastNWidgets(1));
     expect(find.text('PREDICT'), findsAtLeastNWidgets(1));
-    expect(find.text('PICK'), findsOneWidget);
+    expect(find.text('PICK'), findsAtLeastNWidgets(3));
     expect(find.textContaining('SIGNAL UNAVAILABLE'), findsNothing);
+    for (final entry in <ValueKey<String>, Sport>{
+      const ValueKey('trend-live-epl'): Sport.football,
+      const ValueKey('trend-world-cup-future'): Sport.football,
+      const ValueKey('trend-ipl-sixes-pick'): Sport.cricket,
+      const ValueKey('trend-wimbledon-predict'): Sport.tennis,
+      const ValueKey('trend-man-utd-pick'): Sport.football,
+      const ValueKey('trend-belgian-gp-future'): Sport.motorsport,
+    }.entries) {
+      final tile = find.byKey(entry.key);
+      expect(tile, findsOneWidget);
+      expect(
+        find.descendant(
+          of: tile,
+          matching: find.byIcon(sportModuleFor(entry.value).icon),
+        ),
+        findsOneWidget,
+      );
+    }
 
     final hubTabs = find.byType(SportHubTabs);
     expect(
@@ -84,11 +103,32 @@ void main() {
     expect(future.height, lessThan(future.width));
     expect(future.height, greaterThan(future.width * 0.75));
     expect(future.top, moreOrLessEquals(predict.top));
+    expect(future.top - wide.bottom, moreOrLessEquals(20));
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('trend-live-epl')),
         matching: find.text('CFC'),
       ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('trend-live-epl')),
+        matching: find.textContaining('POTENTIAL +'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('trend-live-epl')),
+        matching: find.text(
+          'VOL ${formatOzCompact(seededMatchVolumeOz('epl_cfc_new'))} OZ',
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('trending-match-footer-epl_cfc_new')),
       findsOneWidget,
     );
 

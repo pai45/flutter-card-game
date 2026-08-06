@@ -51,6 +51,10 @@ class CoinsAdded extends GameEvent {
   final String? subtitle;
 }
 
+/// Claims the fixed first-run welcome bonus. The bloc makes this idempotent so
+/// an interrupted onboarding flow can safely request it again on next launch.
+class OnboardingRewardClaimed extends GameEvent {}
+
 class CoinsSpent extends GameEvent {
   CoinsSpent(
     this.amount, {

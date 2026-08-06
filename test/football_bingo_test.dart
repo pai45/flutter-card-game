@@ -2,6 +2,7 @@ import 'package:card_game/blocs/football_bingo/football_bingo_cubit.dart';
 import 'package:card_game/blocs/game/game_bloc.dart';
 import 'package:card_game/blocs/game/game_event.dart';
 import 'package:card_game/data/football_bingo_puzzles.dart';
+import 'package:card_game/data/football_bingo_careers.dart';
 import 'package:card_game/models/cards.dart';
 import 'package:card_game/models/football_bingo.dart';
 import 'package:card_game/screens/football_bingo/football_bingo_home_screen.dart';
@@ -30,10 +31,20 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  test('seed puzzle is a valid 3x3 club-club grid', () {
+  test('50-day season contains valid, sourced career grids', () {
+    expect(footballBingoPuzzles, hasLength(kFootballBingoCampaignLength));
+    expect(footballBingoPuzzles.map((puzzle) => puzzle.id).toSet(), hasLength(50));
     for (final puzzle in footballBingoPuzzles) {
-      final errors = validateFootballBingoPuzzle(puzzle, allPlayerCards);
+      final errors = validateFootballBingoPuzzle(puzzle, [
+        ...allPlayerCards,
+        ...footballBingoCareerPlayers,
+      ]);
       expect(errors.map((e) => e.message), isEmpty);
+      expect(
+        validateFootballBingoCareerPuzzle(puzzle, footballBingoCareers)
+            .map((e) => e.message),
+        isEmpty,
+      );
     }
   });
 
@@ -60,7 +71,7 @@ void main() {
     },
   );
 
-  test('legacy single progress migrates into a daily archive', () async {
+  test('legacy single progress starts a clean fact-checked season', () async {
     final storage = SecureGameStorage();
     final legacyCell = footballBingoPuzzles.first.cells.first.id;
     final legacy = FootballBingoProgress.initial(
@@ -72,15 +83,9 @@ void main() {
     final cubit = await _loaded(now: DateTime(2026, 2, 5, 10));
     addTearDown(cubit.close);
 
-    expect(cubit.state.unlockedDayKeys, ['2026-02-04', '2026-02-05']);
-    expect(
-      cubit.state.archive.progressByDay['2026-02-04']!.solvedCellIds,
-      contains(legacyCell),
-    );
-    expect(
-      cubit.state.archive.progressByDay['2026-02-04']!.cellOrderIds,
-      hasLength(9),
-    );
+    expect(cubit.state.unlockedDayKeys, ['2026-02-05']);
+    expect(cubit.state.archive.contentVersion, kFootballBingoContentVersion);
+    expect(cubit.state.progress.solvedCellIds, isEmpty);
   });
 
   test('daily prompt order is shuffled and persists across reloads', () async {
@@ -115,6 +120,24 @@ void main() {
     expect(await cubit.selectCell(first.id), isTrue);
     expect(cubit.state.progress.solvedCellIds, contains(first.id));
     expect(cubit.state.currentCell!.id, isNot(first.id));
+  });
+
+  test('completed grids unlock at the next local midnight', () {
+    final progress = FootballBingoProgress.initial(
+      footballBingoPuzzles.first.id,
+      DateTime(2026, 8, 1),
+    ).copyWith(completed: true);
+
+    final beforeMidnight = footballBingoStatus(
+      progress,
+      DateTime(2026, 8, 1, 23, 59),
+    );
+    expect(beforeMidnight.ready, isFalse);
+    expect(beforeMidnight.remaining, const Duration(minutes: 1));
+    expect(
+      footballBingoStatus(progress, DateTime(2026, 8, 2)).ready,
+      isTrue,
+    );
   });
 
   test(
@@ -202,8 +225,8 @@ void main() {
     expect(find.byType(TeamLogo), findsNWidgets(6));
     await tester.drag(find.byType(ListView), const Offset(0, -260));
     await tester.pump();
-    expect(find.text(player.position), findsOneWidget);
-    expect(find.text(player.trait.toUpperCase()), findsOneWidget);
+    expect(find.text('POS ${player.position}'), findsOneWidget);
+    expect(find.text('TAG ${player.trait.toUpperCase()}'), findsOneWidget);
     expect(find.text(player.name), findsNothing);
     expect(find.text(player.countryCode), findsNothing);
     expect(find.byIcon(Icons.favorite), findsWidgets);
@@ -284,6 +307,11 @@ void main() {
     await tester.pump();
 
     expect(find.text('BINGO LOGS'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('JUL 2, 2026'),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
     expect(find.text('JUL 2, 2026'), findsOneWidget);
     expect(find.text('CLUB CONNECTIONS'), findsNothing);
     expect(find.text('COMPLETED'), findsOneWidget);

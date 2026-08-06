@@ -1,0 +1,2583 @@
+{
+  "new": [
+    {
+      "label": "Abdul_Samad",
+      "slug": "abdul_samad",
+      "asset_stem": "abdul_samad",
+      "card_id": "cricket-lsg-abdul-samad",
+      "card_name": "Abdul Samad",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Abdul_Samad-bfcff905-b010-4fdd-b7aa-197bec57626c.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\abdul_samad.webp",
+      "portraitAsset": "assets/cricketer_images/abdul_samad.webp"
+    },
+    {
+      "label": "Abishek_Porel",
+      "slug": "abishek_porel",
+      "asset_stem": "abishek_porel",
+      "card_id": "cricket-dc-abishek-porel",
+      "card_name": "Abishek Porel",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Abishek_Porel-d40daa12-5b5e-49d9-90d4-a462c88e6fa5.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\abishek_porel.webp",
+      "portraitAsset": "assets/cricketer_images/abishek_porel.webp"
+    },
+    {
+      "label": "Allah_Ghazanfar",
+      "slug": "allah_ghazanfar",
+      "asset_stem": "allah_ghazanfar",
+      "card_id": "cricket-mi-allah-ghazanfar",
+      "card_name": "Allah Ghazanfar",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Allah_Ghazanfar-1d3ce0f5-b7fb-4b7e-b54d-320b275e37ab.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\allah_ghazanfar.webp",
+      "portraitAsset": "assets/cricketer_images/allah_ghazanfar.webp"
+    },
+    {
+      "label": "Aman_Khan",
+      "slug": "aman_khan",
+      "asset_stem": "aman_khan",
+      "card_id": "cricket-csk-aman-khan",
+      "card_name": "Aman Khan",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Aman_Khan-58d5b41e-7cb9-4caa-84c5-53e88bdac649.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\aman_khan.webp",
+      "portraitAsset": "assets/cricketer_images/aman_khan.webp"
+    },
+    {
+      "label": "Aniket_Verma",
+      "slug": "aniket_verma",
+      "asset_stem": "aniket_verma",
+      "card_id": "cricket-srh-aniket-verma",
+      "card_name": "Aniket Verma",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Aniket_Verma-6108833e-27ac-4478-8569-910ca250d244.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\aniket_verma.webp",
+      "portraitAsset": "assets/cricketer_images/aniket_verma.webp"
+    },
+    {
+      "label": "Anshul_Kamboj",
+      "slug": "anshul_kamboj",
+      "asset_stem": "anshul_kamboj",
+      "card_id": "cricket-csk-anshul-kamboj",
+      "card_name": "Anshul Kamboj",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Anshul_Kamboj-2680e41f-a6a5-4dd1-bb68-c5712a1c7377.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\anshul_kamboj.webp",
+      "portraitAsset": "assets/cricketer_images/anshul_kamboj.webp"
+    },
+    {
+      "label": "Anuj_Rawat",
+      "slug": "anuj_rawat",
+      "asset_stem": "anuj_rawat",
+      "card_id": "cricket-gt-anuj-rawat",
+      "card_name": "Anuj Rawat",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Anuj_Rawat-a6025bf2-ff86-41e7-a13c-f8ed1a2c4d7c.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\anuj_rawat.webp",
+      "portraitAsset": "assets/cricketer_images/anuj_rawat.webp"
+    },
+    {
+      "label": "Anukul_Roy",
+      "slug": "anukul_roy",
+      "asset_stem": "anukul_roy",
+      "card_id": "cricket-kkr-anukul-roy",
+      "card_name": "Anukul Roy",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Anukul_Roy-15612fde-bbb5-42c8-af02-ddbf426a8271.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\anukul_roy.webp",
+      "portraitAsset": "assets/cricketer_images/anukul_roy.webp"
+    },
+    {
+      "label": "Arjun_Tendulkar",
+      "slug": "arjun_tendulkar",
+      "asset_stem": "arjun_tendulkar",
+      "card_id": "cricket-lsg-arjun-tendulkar",
+      "card_name": "Arjun Tendulkar",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Arjun_Tendulkar-60bb6b1f-650c-4743-8667-94d6fd1c71ff.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\arjun_tendulkar.webp",
+      "portraitAsset": "assets/cricketer_images/arjun_tendulkar.webp"
+    },
+    {
+      "label": "Arshad_Khan",
+      "slug": "arshad_khan",
+      "asset_stem": "arshad_khan",
+      "card_id": "cricket-gt-arshad-khan",
+      "card_name": "Arshad Khan",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Arshad_Khan-36b49733-4373-43cf-a42d-cba27b82ad51.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\arshad_khan.webp",
+      "portraitAsset": "assets/cricketer_images/arshad_khan.webp"
+    },
+    {
+      "label": "Arshin_Kulkarni",
+      "slug": "arshin_kulkarni",
+      "asset_stem": "arshin_kulkarni",
+      "card_id": "cricket-lsg-arshin-kulkarni",
+      "card_name": "Arshin Kulkarni",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Arshin_Kulkarni-e498fa4c-db14-4b4e-870c-321ec0b337a6.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\arshin_kulkarni.webp",
+      "portraitAsset": "assets/cricketer_images/arshin_kulkarni.webp"
+    },
+    {
+      "label": "Auqib_Nabi_Dar",
+      "slug": "auqib_nabi_dar",
+      "asset_stem": "auqib_nabi_dar",
+      "card_id": "cricket-dc-auqib-nabi-dar",
+      "card_name": "Auqib Nabi Dar",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Auqib_Nabi_Dar-3ac776ac-eb21-4a38-8998-fad667465fb4.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\auqib_nabi_dar.webp",
+      "portraitAsset": "assets/cricketer_images/auqib_nabi_dar.webp"
+    },
+    {
+      "label": "Ben_Dwarshuis",
+      "slug": "ben_dwarshuis",
+      "asset_stem": "ben_dwarshuis",
+      "card_id": "cricket-pbks-ben-dwarshuis",
+      "card_name": "Ben Dwarshuis",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Ben_Dwarshuis-86d8e0f2-4641-4995-bcd8-c1d3211bda20.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\ben_dwarshuis.webp",
+      "portraitAsset": "assets/cricketer_images/ben_dwarshuis.webp"
+    },
+    {
+      "label": "Cooper_Connolly",
+      "slug": "cooper_connolly",
+      "asset_stem": "cooper_connolly",
+      "card_id": "cricket-pbks-cooper-connolly",
+      "card_name": "Cooper Connolly",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Cooper_Connolly-1556784e-95c4-426c-be48-9410ede19148.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\cooper_connolly.webp",
+      "portraitAsset": "assets/cricketer_images/cooper_connolly.webp"
+    },
+    {
+      "label": "Corbin_Bosch",
+      "slug": "corbin_bosch",
+      "asset_stem": "corbin_bosch",
+      "card_id": "cricket-mi-corbin-bosch",
+      "card_name": "Corbin Bosch",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Corbin_Bosch-0851bc74-34a3-4aaf-af48-394948997be0.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\corbin_bosch.webp",
+      "portraitAsset": "assets/cricketer_images/corbin_bosch.webp"
+    },
+    {
+      "label": "Donovan_Ferreira",
+      "slug": "donovan_ferreira",
+      "asset_stem": "donovan_ferreira",
+      "card_id": "cricket-rr-donovan-ferreira",
+      "card_name": "Donovan Ferreira",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Donovan_Ferreira-924baf5a-860f-402d-8fcf-5c3c2de47014.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\donovan_ferreira.webp",
+      "portraitAsset": "assets/cricketer_images/donovan_ferreira.webp"
+    },
+    {
+      "label": "Eshan_Malinga",
+      "slug": "eshan_malinga",
+      "asset_stem": "eshan_malinga",
+      "card_id": "cricket-srh-eshan-malinga",
+      "card_name": "Eshan Malinga",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Eshan_Malinga-913dff61-bb8c-4d56-9539-8a9653f1cb1a.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\eshan_malinga.webp",
+      "portraitAsset": "assets/cricketer_images/eshan_malinga.webp"
+    },
+    {
+      "label": "Harsh_Dubey",
+      "slug": "harsh_dubey",
+      "asset_stem": "harsh_dubey",
+      "card_id": "cricket-srh-harsh-dubey",
+      "card_name": "Harsh Dubey",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Harsh_Dubey-84d027a7-6c5f-45e8-a44b-79e40fecad13.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\harsh_dubey.webp",
+      "portraitAsset": "assets/cricketer_images/harsh_dubey.webp"
+    },
+    {
+      "label": "Jack_Edwards",
+      "slug": "jack_edwards",
+      "asset_stem": "jack_edwards",
+      "card_id": "cricket-srh-jack-edwards",
+      "card_name": "Jack Edwards",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Jack_Edwards-13519bcc-0dd3-426b-a732-2e49471d81f2.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\jack_edwards.webp",
+      "portraitAsset": "assets/cricketer_images/jack_edwards.webp"
+    },
+    {
+      "label": "Jacob_Bethell",
+      "slug": "jacob_bethell",
+      "asset_stem": "jacob_bethell",
+      "card_id": "cricket-rcb-jacob-bethell",
+      "card_name": "Jacob Bethell",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Jacob_Bethell-63dd5d77-8d5f-4cce-b7c5-1c88fe5e9d40.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\jacob_bethell.webp",
+      "portraitAsset": "assets/cricketer_images/jacob_bethell.webp"
+    },
+    {
+      "label": "Jayant_Yadav",
+      "slug": "jayant_yadav",
+      "asset_stem": "jayant_yadav",
+      "card_id": "cricket-gt-jayant-yadav",
+      "card_name": "Jayant Yadav",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Jayant_Yadav-9e509e6e-a80a-443a-8d4a-5dad7b83be3a.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\jayant_yadav.webp",
+      "portraitAsset": "assets/cricketer_images/jayant_yadav.webp"
+    },
+    {
+      "label": "Jaydev_Unadkat",
+      "slug": "jaydev_unadkat",
+      "asset_stem": "jaydev_unadkat",
+      "card_id": "cricket-srh-jaydev-unadkat",
+      "card_name": "Jaydev Unadkat",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Jaydev_Unadkat-2ab79b5d-e7c8-4153-8a36-e3853b2b8413.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\jaydev_unadkat.webp",
+      "portraitAsset": "assets/cricketer_images/jaydev_unadkat.webp"
+    },
+    {
+      "label": "Jordan_Cox",
+      "slug": "jordan_cox",
+      "asset_stem": "jordan_cox",
+      "card_id": "cricket-rcb-jordan-cox",
+      "card_name": "Jordan Cox",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Jordan_Cox-e232f5fd-34f2-416a-9a06-fe806abbfa39.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\jordan_cox.webp",
+      "portraitAsset": "assets/cricketer_images/jordan_cox.webp"
+    },
+    {
+      "label": "Kartik_Sharma",
+      "slug": "kartik_sharma",
+      "asset_stem": "kartik_sharma",
+      "card_id": "cricket-csk-kartik-sharma",
+      "card_name": "Kartik Sharma",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Kartik_Sharma-49651e30-64b2-473d-ba63-ef8b46c206b1.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\kartik_sharma.webp",
+      "portraitAsset": "assets/cricketer_images/kartik_sharma.webp"
+    },
+    {
+      "label": "Kartik_Tyagi",
+      "slug": "kartik_tyagi",
+      "asset_stem": "kartik_tyagi",
+      "card_id": "cricket-kkr-kartik-tyagi",
+      "card_name": "Kartik Tyagi",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Kartik_Tyagi-5dfd066e-93ca-4499-a0f8-d690c58c9c53.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\kartik_tyagi.webp",
+      "portraitAsset": "assets/cricketer_images/kartik_tyagi.webp"
+    },
+    {
+      "label": "Kwena_Maphaka",
+      "slug": "kwena_maphaka",
+      "asset_stem": "kwena_maphaka",
+      "card_id": "cricket-rr-kwena-maphaka",
+      "card_name": "Kwena Maphaka",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Kwena_Maphaka-4bf38879-0637-4706-a4dc-8d73340000fa.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\kwena_maphaka.webp",
+      "portraitAsset": "assets/cricketer_images/kwena_maphaka.webp"
+    },
+    {
+      "label": "Kyle_Jamieson",
+      "slug": "kyle_jamieson",
+      "asset_stem": "kyle_jamieson",
+      "card_id": "cricket-dc-kyle-jamieson",
+      "card_name": "Kyle Jamieson",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Kyle_Jamieson-b38e6cee-d356-423b-9f06-cfa4af1d27e4.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\kyle_jamieson.webp",
+      "portraitAsset": "assets/cricketer_images/kyle_jamieson.webp"
+    },
+    {
+      "label": "Lhuan-dre_Pretorius",
+      "slug": "lhuan_dre_pretorius",
+      "asset_stem": "lhuan_dre_pretorius",
+      "card_id": "cricket-rr-lhuan-dre-pretorius",
+      "card_name": "Lhuan-dre Pretorius",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Lhuan-dre_Pretorius-f3d05f8c-c550-44ef-9abf-6eeb0fd152df.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\lhuan_dre_pretorius.webp",
+      "portraitAsset": "assets/cricketer_images/lhuan_dre_pretorius.webp"
+    },
+    {
+      "label": "Luke_Wood",
+      "slug": "luke_wood",
+      "asset_stem": "luke_wood",
+      "card_id": "cricket-gt-luke-wood",
+      "card_name": "Luke Wood",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Luke_Wood-c664d898-3352-4bfa-8abf-fa04fd8b7735.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\luke_wood.webp",
+      "portraitAsset": "assets/cricketer_images/luke_wood.webp"
+    },
+    {
+      "label": "Manimaran_Siddharth",
+      "slug": "manimaran_siddharth",
+      "asset_stem": "manimaran_siddharth",
+      "card_id": "cricket-lsg-manimaran-siddharth",
+      "card_name": "Manimaran Siddharth",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Manimaran_Siddharth-1571f5e4-06e0-4b7b-b0d1-84bd272c17e2.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\manimaran_siddharth.webp",
+      "portraitAsset": "assets/cricketer_images/manimaran_siddharth.webp"
+    },
+    {
+      "label": "Manish_Pandey",
+      "slug": "manish_pandey",
+      "asset_stem": "manish_pandey",
+      "card_id": "cricket-kkr-manish-pandey",
+      "card_name": "Manish Pandey",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Manish_Pandey-d6afe166-6f8d-4d12-9deb-f7e2b1632b59.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\manish_pandey.webp",
+      "portraitAsset": "assets/cricketer_images/manish_pandey.webp"
+    },
+    {
+      "label": "Matthew_Breetzke",
+      "slug": "matthew_breetzke",
+      "asset_stem": "matthew_breetzke",
+      "card_id": "cricket-lsg-matthew-breetzke",
+      "card_name": "Matthew Breetzke",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Matthew_Breetzke-90a05f8a-881d-4ee1-be0d-cd42992d9356.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\matthew_breetzke.webp",
+      "portraitAsset": "assets/cricketer_images/matthew_breetzke.webp"
+    },
+    {
+      "label": "Mayank_Markande",
+      "slug": "mayank_markande",
+      "asset_stem": "mayank_markande",
+      "card_id": "cricket-mi-mayank-markande",
+      "card_name": "Mayank Markande",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Mayank_Markande-f8273ff8-3411-4b1c-997b-16f2fff1a48e.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\mayank_markande.webp",
+      "portraitAsset": "assets/cricketer_images/mayank_markande.webp"
+    },
+    {
+      "label": "Mukesh_Choudhary",
+      "slug": "mukesh_choudhary",
+      "asset_stem": "mukesh_choudhary",
+      "card_id": "cricket-csk-mukesh-choudhary",
+      "card_name": "Mukesh Choudhary",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Mukesh_Choudhary-e5fa7887-49b6-40f8-9007-2383f2e09eab.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\mukesh_choudhary.webp",
+      "portraitAsset": "assets/cricketer_images/mukesh_choudhary.webp"
+    },
+    {
+      "label": "Musheer_Khan",
+      "slug": "musheer_khan",
+      "asset_stem": "musheer_khan",
+      "card_id": "cricket-pbks-musheer-khan",
+      "card_name": "Musheer Khan",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Musheer_Khan-9271bd56-f518-4017-9a2d-c5462649e554.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\musheer_khan.webp",
+      "portraitAsset": "assets/cricketer_images/musheer_khan.webp"
+    },
+    {
+      "label": "Naman_Dhir",
+      "slug": "naman_dhir",
+      "asset_stem": "naman_dhir",
+      "card_id": "cricket-mi-naman-dhir",
+      "card_name": "Naman Dhir",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Naman_Dhir-c647e90e-fff2-42ac-8ada-49fb662c55ad.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\naman_dhir.webp",
+      "portraitAsset": "assets/cricketer_images/naman_dhir.webp"
+    },
+    {
+      "label": "R_Smaran",
+      "slug": "r_smaran",
+      "asset_stem": "r_smaran",
+      "card_id": "cricket-srh-r-smaran",
+      "card_name": "R. Smaran",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_R_Smaran-76d1aa8e-46a4-4bd1-85f5-d02d3acddb4e.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\r_smaran.webp",
+      "portraitAsset": "assets/cricketer_images/r_smaran.webp"
+    },
+    {
+      "label": "Raj_Angad_Bawa",
+      "slug": "raj_angad_bawa",
+      "asset_stem": "raj_angad_bawa",
+      "card_id": "cricket-mi-raj-angad-bawa",
+      "card_name": "Raj Angad Bawa",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Raj_Angad_Bawa-f6996227-7a91-4b82-baf3-463687e4106f.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\raj_angad_bawa.webp",
+      "portraitAsset": "assets/cricketer_images/raj_angad_bawa.webp"
+    },
+    {
+      "label": "Rasikh_Salam",
+      "slug": "rasikh_salam",
+      "asset_stem": "rasikh_salam",
+      "card_id": "cricket-rcb-rasikh-salam",
+      "card_name": "Rasikh Salam",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Rasikh_Salam-cd6b6def-2def-4832-b54c-438bfd699ac8.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\rasikh_salam.webp",
+      "portraitAsset": "assets/cricketer_images/rasikh_salam.webp"
+    },
+    {
+      "label": "Robin_Minz",
+      "slug": "robin_minz",
+      "asset_stem": "robin_minz",
+      "card_id": "cricket-mi-robin-minz",
+      "card_name": "Robin Minz",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Robin_Minz-18a325db-3185-4877-ba96-868acfcca37b.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\robin_minz.webp",
+      "portraitAsset": "assets/cricketer_images/robin_minz.webp"
+    },
+    {
+      "label": "Sameer_Rizvi",
+      "slug": "sameer_rizvi",
+      "asset_stem": "sameer_rizvi",
+      "card_id": "cricket-dc-sameer-rizvi",
+      "card_name": "Sameer Rizvi",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Sameer_Rizvi-4f6799d0-1b8a-4461-984b-a090f77ca261.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\sameer_rizvi.webp",
+      "portraitAsset": "assets/cricketer_images/sameer_rizvi.webp"
+    },
+    {
+      "label": "Sarfaraz_Khan",
+      "slug": "sarfaraz_khan",
+      "asset_stem": "sarfaraz_khan",
+      "card_id": "cricket-csk-sarfaraz-khan",
+      "card_name": "Sarfaraz Khan",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Sarfaraz_Khan-646f8de4-a908-4966-8a33-e465b9dbfdec.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\sarfaraz_khan.webp",
+      "portraitAsset": "assets/cricketer_images/sarfaraz_khan.webp"
+    },
+    {
+      "label": "Shreyas_Gopal",
+      "slug": "shreyas_gopal",
+      "asset_stem": "shreyas_gopal",
+      "card_id": "cricket-csk-shreyas-gopal",
+      "card_name": "Shreyas Gopal",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Shreyas_Gopal-5be914bc-ff36-48ec-a5eb-0f8dd4869671.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\shreyas_gopal.webp",
+      "portraitAsset": "assets/cricketer_images/shreyas_gopal.webp"
+    },
+    {
+      "label": "Shubham_Dubey",
+      "slug": "shubham_dubey",
+      "asset_stem": "shubham_dubey",
+      "card_id": "cricket-rr-shubham-dubey",
+      "card_name": "Shubham Dubey",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Shubham_Dubey-a2382024-d9c3-46d7-a32d-ba9eeebc24bb.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\shubham_dubey.webp",
+      "portraitAsset": "assets/cricketer_images/shubham_dubey.webp"
+    },
+    {
+      "label": "Swapnil_Singh",
+      "slug": "swapnil_singh",
+      "asset_stem": "swapnil_singh",
+      "card_id": "cricket-rcb-swapnil-singh",
+      "card_name": "Swapnil Singh",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Swapnil_Singh-2ad17497-d25c-442f-96c6-8572fd118d67.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\swapnil_singh.webp",
+      "portraitAsset": "assets/cricketer_images/swapnil_singh.webp"
+    },
+    {
+      "label": "Tim_Seifert",
+      "slug": "tim_seifert",
+      "asset_stem": "tim_seifert",
+      "card_id": "cricket-kkr-tim-seifert",
+      "card_name": "Tim Seifert",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Tim_Seifert-13dc80e8-2707-4e07-a086-ced382a4101a.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\tim_seifert.webp",
+      "portraitAsset": "assets/cricketer_images/tim_seifert.webp"
+    },
+    {
+      "label": "Vishnu_Vinod",
+      "slug": "vishnu_vinod",
+      "asset_stem": "vishnu_vinod",
+      "card_id": "cricket-pbks-vishnu-vinod",
+      "card_name": "Vishnu Vinod",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Vishnu_Vinod-37f67880-d0c8-43c7-b882-50ed8a3dd792.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\vishnu_vinod.webp",
+      "portraitAsset": "assets/cricketer_images/vishnu_vinod.webp"
+    },
+    {
+      "label": "Vyshak_Vijaykumar",
+      "slug": "vyshak_vijaykumar",
+      "asset_stem": "vyshak_vijaykumar",
+      "card_id": "cricket-pbks-vyshak-vijaykumar",
+      "card_name": "Vyshak Vijaykumar",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Vyshak_Vijaykumar-2017f325-4816-4950-9274-60b6214b6f9f.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\vyshak_vijaykumar.webp",
+      "portraitAsset": "assets/cricketer_images/vyshak_vijaykumar.webp"
+    },
+    {
+      "label": "Yudhvir_Singh",
+      "slug": "yudhvir_singh",
+      "asset_stem": "yudhvir_singh",
+      "card_id": "cricket-rr-yudhvir-singh",
+      "card_name": "Yudhvir Singh",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Yudhvir_Singh-1d7c5204-5588-4362-aaf6-c0210eeb2420.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\yudhvir_singh.webp",
+      "portraitAsset": "assets/cricketer_images/yudhvir_singh.webp"
+    },
+    {
+      "label": "Zeeshan_Ansari",
+      "slug": "zeeshan_ansari",
+      "asset_stem": "zeeshan_ansari",
+      "card_id": "cricket-srh-zeeshan-ansari",
+      "card_name": "Zeeshan Ansari",
+      "had_portrait": false,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Zeeshan_Ansari-c711218a-ae07-4489-8cc2-7da2997e871d.png",
+      "existing_asset": null,
+      "dest": "assets\\cricketer_images\\zeeshan_ansari.webp",
+      "portraitAsset": "assets/cricketer_images/zeeshan_ansari.webp"
+    }
+  ],
+  "existing": [
+    {
+      "label": "Harshal_Patel",
+      "slug": "harshal_patel",
+      "asset_stem": "harshal_patel",
+      "card_id": "cricket-srh-harshal-patel",
+      "card_name": "Harshal Patel",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_01_Harshal_Patel-83c92b53-5081-491a-83e7-94f1835a5e37.png",
+      "existing_asset": "assets/cricketer_images/01_Harshal_Patel.webp"
+    },
+    {
+      "label": "Shimron_Hetmyer",
+      "slug": "shimron_hetmyer",
+      "asset_stem": "shimron_hetmyer",
+      "card_id": "cricket-rr-shimron-hetmyer",
+      "card_name": "Shimron Hetmyer",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_02_Shimron_Hetmyer-fc1a3693-c19d-4cf6-9ddf-58869d180f2f.png",
+      "existing_asset": "assets/cricketer_images/02_Shimron_Hetmyer.webp"
+    },
+    {
+      "label": "Sandeep_Sharma",
+      "slug": "sandeep_sharma",
+      "asset_stem": "sandeep_sharma",
+      "card_id": "cricket-rr-sandeep-sharma",
+      "card_name": "Sandeep Sharma",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_03_Sandeep_Sharma-363e8ea1-c717-4b9a-8e19-3d890956cdb0.png",
+      "existing_asset": "assets/cricketer_images/03_Sandeep_Sharma.webp"
+    },
+    {
+      "label": "Pathum_Nissanka",
+      "slug": "pathum_nissanka",
+      "asset_stem": "pathum_nissanka",
+      "card_id": "cricket-dc-pathum-nissanka",
+      "card_name": "Pathum Nissanka",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_04_Pathum_Nissanka-6059e8e0-5793-4349-ac6d-080bc92367bc.png",
+      "existing_asset": "assets/cricketer_images/04_Pathum_Nissanka.webp"
+    },
+    {
+      "label": "Avesh_Khan",
+      "slug": "avesh_khan",
+      "asset_stem": "avesh_khan",
+      "card_id": "cricket-lsg-avesh-khan",
+      "card_name": "Avesh Khan",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_05_Avesh_Khan-ad1bf8d9-acd8-4af5-89ce-2479399c3bfb.png",
+      "existing_asset": "assets/cricketer_images/05_Avesh_Khan.webp"
+    },
+    {
+      "label": "Anrich_Nortje",
+      "slug": "anrich_nortje",
+      "asset_stem": "anrich_nortje",
+      "card_id": "cricket-lsg-anrich-nortje",
+      "card_name": "Anrich Nortje",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_06_Anrich_Nortje-e2afdc34-a65a-4df1-a5fb-a9228bc811f3.png",
+      "existing_asset": "assets/cricketer_images/06_Anrich_Nortje.webp"
+    },
+    {
+      "label": "Rahul_Tewatia",
+      "slug": "rahul_tewatia",
+      "asset_stem": "rahul_tewatia",
+      "card_id": "cricket-gt-rahul-tewatia",
+      "card_name": "Rahul Tewatia",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_07_Rahul_Tewatia-47041168-2d14-4f40-a451-b67f2915901b.png",
+      "existing_asset": "assets/cricketer_images/07_Rahul_Tewatia.webp"
+    },
+    {
+      "label": "Noor_Ahmad",
+      "slug": "noor_ahmad",
+      "asset_stem": "noor_ahmad",
+      "card_id": "cricket-csk-noor-ahmad",
+      "card_name": "Noor Ahmad",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_08_Noor_Ahmad-8d0ec628-2600-49fe-9971-96942b89a02a.png",
+      "existing_asset": "assets/cricketer_images/08_Noor_Ahmad.webp"
+    },
+    {
+      "label": "Deepak_Chahar",
+      "slug": "deepak_chahar",
+      "asset_stem": "deepak_chahar",
+      "card_id": "cricket-mi-deepak-chahar",
+      "card_name": "Deepak Chahar",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_09_Deepak_Chahar-6dc27547-b4d9-42fb-a573-4cca2d5c31b2.png",
+      "existing_asset": "assets/cricketer_images/09_Deepak_Chahar.webp"
+    },
+    {
+      "label": "Tim_David",
+      "slug": "tim_david",
+      "asset_stem": "tim_david",
+      "card_id": "cricket-rcb-tim-david",
+      "card_name": "Tim David",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_10_Tim_David-e9e2efe3-d2f5-460c-9e6a-cbb99a967cbd.png",
+      "existing_asset": "assets/cricketer_images/10_Tim_David.webp"
+    },
+    {
+      "label": "abhishek_sharma",
+      "slug": "abhishek_sharma",
+      "asset_stem": "abhishek_sharma",
+      "card_id": "cricket-srh-abhishek-sharma",
+      "card_name": "Abhishek Sharma",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_abhishek_sharma-e023a36e-d2d3-455e-8ea8-1b507e9fcdd6.png",
+      "existing_asset": "assets/cricketer_images/abhishek_sharma.webp"
+    },
+    {
+      "label": "aiden_markram",
+      "slug": "aiden_markram",
+      "asset_stem": "aiden_markram",
+      "card_id": "cricket-lsg-aiden-markram",
+      "card_name": "Aiden Markram",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_aiden_markram-a9479fe2-0c11-4c20-86d2-8a247d7e911e.png",
+      "existing_asset": "assets/cricketer_images/aiden_markram.webp"
+    },
+    {
+      "label": "arshdeep_singh",
+      "slug": "arshdeep_singh",
+      "asset_stem": "arshdeep_singh",
+      "card_id": "cricket-pbks-arshdeep-singh",
+      "card_name": "Arshdeep Singh",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_arshdeep_singh-02541ded-f4ad-44f0-8dd9-8976d1619087.png",
+      "existing_asset": "assets/cricketer_images/arshdeep_singh.webp"
+    },
+    {
+      "label": "axar_patel",
+      "slug": "axar_patel",
+      "asset_stem": "axar_patel",
+      "card_id": "cricket-dc-axar-patel",
+      "card_name": "Axar Patel",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_axar_patel-e8c8b64d-22ec-4a2e-be76-ea743743e265.png",
+      "existing_asset": "assets/cricketer_images/axar_patel.webp"
+    },
+    {
+      "label": "Bhuvneshwar_Kumar",
+      "slug": "bhuvneshwar_kumar",
+      "asset_stem": "bhuvneshwar_kumar",
+      "card_id": "cricket-rcb-bhuvneshwar-kumar",
+      "card_name": "Bhuvneshwar Kumar",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Bhuvneshwar_Kumar-e5829dd4-2140-4b03-85bc-b27df9535c33.png",
+      "existing_asset": "assets/cricketer_images/Bhuvneshwar_Kumar.webp"
+    },
+    {
+      "label": "cameron_green",
+      "slug": "cameron_green",
+      "asset_stem": "cameron_green",
+      "card_id": "cricket-kkr-cameron-green",
+      "card_name": "Cameron Green",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_cameron_green-cf08ca03-246b-4957-bb3d-e34500a83af9.png",
+      "existing_asset": "assets/cricketer_images/cameron_green.webp"
+    },
+    {
+      "label": "David_Miller",
+      "slug": "david_miller",
+      "asset_stem": "david_miller",
+      "card_id": "cricket-dc-david-miller",
+      "card_name": "David Miller",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_David_Miller-907af76a-aa73-4d1a-a452-12cfe5740dcf.png",
+      "existing_asset": "assets/cricketer_images/David_Miller.webp"
+    },
+    {
+      "label": "hardik_pandya",
+      "slug": "hardik_pandya",
+      "asset_stem": "hardik_pandya",
+      "card_id": "cricket-mi-hardik-pandya",
+      "card_name": "Hardik Pandya",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_hardik_pandya-0c0bc74a-3eca-4682-a120-a0974264bc6c.png",
+      "existing_asset": "assets/cricketer_images/hardik_pandya.webp"
+    },
+    {
+      "label": "heinrich_klaasen",
+      "slug": "heinrich_klaasen",
+      "asset_stem": "heinrich_klaasen",
+      "card_id": "cricket-srh-heinrich-klaasen",
+      "card_name": "Heinrich Klaasen",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_heinrich_klaasen-4b852f01-d30a-4948-857d-79c034910a7c.png",
+      "existing_asset": "assets/cricketer_images/heinrich_klaasen.webp"
+    },
+    {
+      "label": "Ishan_Kishan",
+      "slug": "ishan_kishan",
+      "asset_stem": "ishan_kishan",
+      "card_id": "cricket-srh-ishan-kishan",
+      "card_name": "Ishan Kishan",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Ishan_Kishan-8a07a1ae-930a-463c-9224-444af171f6c7.png",
+      "existing_asset": "assets/cricketer_images/Ishan_Kishan.webp"
+    },
+    {
+      "label": "jasprit_bumrah",
+      "slug": "jasprit_bumrah",
+      "asset_stem": "jasprit_bumrah",
+      "card_id": "cricket-mi-jasprit-bumrah",
+      "card_name": "Jasprit Bumrah",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_jasprit_bumrah-62d0787e-3d44-4f97-9b02-a7db799aa9d4.png",
+      "existing_asset": "assets/cricketer_images/jasprit_bumrah.webp"
+    },
+    {
+      "label": "jofra_archer",
+      "slug": "jofra_archer",
+      "asset_stem": "jofra_archer",
+      "card_id": "cricket-rr-jofra-archer",
+      "card_name": "Jofra Archer",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_jofra_archer-c4dd443d-9ae6-4612-aa14-a1d7315f2506.png",
+      "existing_asset": "assets/cricketer_images/jofra_archer.webp"
+    },
+    {
+      "label": "jos_buttler",
+      "slug": "jos_buttler",
+      "asset_stem": "jos_buttler",
+      "card_id": "cricket-gt-jos-buttler",
+      "card_name": "Jos Buttler",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_jos_buttler-101f1075-5b00-4ad2-9d29-435dd56420bd.png",
+      "existing_asset": "assets/cricketer_images/jos_buttler.webp"
+    },
+    {
+      "label": "josh_hazlewood",
+      "slug": "josh_hazlewood",
+      "asset_stem": "josh_hazlewood",
+      "card_id": "cricket-rcb-josh-hazlewood",
+      "card_name": "Josh Hazlewood",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_josh_hazlewood-354390fe-dcf0-4c26-87ef-fd2caf5b842a.png",
+      "existing_asset": "assets/cricketer_images/josh_hazlewood.webp"
+    },
+    {
+      "label": "khaleel_ahmed",
+      "slug": "khaleel_ahmed",
+      "asset_stem": "khaleel_ahmed",
+      "card_id": "cricket-csk-khaleel-ahmed",
+      "card_name": "Khaleel Ahmed",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_khaleel_ahmed-3c0d4d82-9d63-48e1-972c-067a13e3dac6.png",
+      "existing_asset": "assets/cricketer_images/khaleel_ahmed.webp"
+    },
+    {
+      "label": "kl_rahul",
+      "slug": "kl_rahul",
+      "asset_stem": "kl_rahul",
+      "card_id": "cricket-dc-kl-rahul",
+      "card_name": "KL Rahul",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_kl_rahul-3c0f109a-430c-4dbf-b40d-469a2a11c298.png",
+      "existing_asset": "assets/cricketer_images/kl_rahul.webp"
+    },
+    {
+      "label": "kuldeep_yadav",
+      "slug": "kuldeep_yadav",
+      "asset_stem": "kuldeep_yadav",
+      "card_id": "cricket-dc-kuldeep-yadav",
+      "card_name": "Kuldeep Yadav",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_kuldeep_yadav-7fe0170f-889e-469f-b9be-99008ed731ae.png",
+      "existing_asset": "assets/cricketer_images/kuldeep_yadav.webp"
+    },
+    {
+      "label": "Liam_Livingstone",
+      "slug": "liam_livingstone",
+      "asset_stem": "liam_livingstone",
+      "card_id": "cricket-srh-liam-livingstone",
+      "card_name": "Liam Livingstone",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Liam_Livingstone-48b55062-3267-48d6-88f1-aaa8a5c97260.png",
+      "existing_asset": "assets/cricketer_images/Liam_Livingstone.webp"
+    },
+    {
+      "label": "Marcus_Stoinis",
+      "slug": "marcus_stoinis",
+      "asset_stem": "marcus_stoinis",
+      "card_id": "cricket-pbks-marcus-stoinis",
+      "card_name": "Marcus Stoinis",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Marcus_Stoinis-9cbf10ed-20ce-4d77-998c-943f45530aff.png",
+      "existing_asset": "assets/cricketer_images/Marcus_Stoinis.webp"
+    },
+    {
+      "label": "matheesha_pathirana",
+      "slug": "matheesha_pathirana",
+      "asset_stem": "matheesha_pathirana",
+      "card_id": "cricket-kkr-matheesha-pathirana",
+      "card_name": "Matheesha Pathirana",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_matheesha_pathirana-51916dd1-e73c-46bc-ab33-018505f53f36.png",
+      "existing_asset": "assets/cricketer_images/matheesha_pathirana.webp"
+    },
+    {
+      "label": "Mayank_Yadav",
+      "slug": "mayank_yadav",
+      "asset_stem": "mayank_yadav",
+      "card_id": "cricket-lsg-mayank-yadav",
+      "card_name": "Mayank Yadav",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Mayank_Yadav-1b44f823-b025-4565-836c-c3c47347cd62.png",
+      "existing_asset": "assets/cricketer_images/Mayank_Yadav.webp"
+    },
+    {
+      "label": "mitchell_marsh",
+      "slug": "mitchell_marsh",
+      "asset_stem": "mitchell_marsh",
+      "card_id": "cricket-lsg-mitchell-marsh",
+      "card_name": "Mitchell Marsh",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_mitchell_marsh-e1b5951a-222a-4d64-9693-704bdce1933c.png",
+      "existing_asset": "assets/cricketer_images/mitchell_marsh.webp"
+    },
+    {
+      "label": "mitchell_starc",
+      "slug": "mitchell_starc",
+      "asset_stem": "mitchell_starc",
+      "card_id": "cricket-dc-mitchell-starc",
+      "card_name": "Mitchell Starc",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_mitchell_starc-d16299f4-0f84-42cb-bd72-3a9854f299eb.png",
+      "existing_asset": "assets/cricketer_images/mitchell_starc.webp"
+    },
+    {
+      "label": "mohammed_shami",
+      "slug": "mohammed_shami",
+      "asset_stem": "mohammed_shami",
+      "card_id": "cricket-lsg-mohammed-shami",
+      "card_name": "Mohammed Shami",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_mohammed_shami-3bbbabf9-82d7-4c6a-bb17-f3b7ba9ff312.png",
+      "existing_asset": "assets/cricketer_images/mohammed_shami.webp"
+    },
+    {
+      "label": "mohammed_siraj",
+      "slug": "mohammed_siraj",
+      "asset_stem": "mohammed_siraj",
+      "card_id": "cricket-gt-mohammed-siraj",
+      "card_name": "Mohammed Siraj",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_mohammed_siraj-4c45e1f4-4b38-4807-a641-c4b7978afa9d.png",
+      "existing_asset": "assets/cricketer_images/mohammed_siraj.webp"
+    },
+    {
+      "label": "nicholas_pooran",
+      "slug": "nicholas_pooran",
+      "asset_stem": "nicholas_pooran",
+      "card_id": "cricket-lsg-nicholas-pooran",
+      "card_name": "Nicholas Pooran",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_nicholas_pooran-acabf73a-6130-4beb-9a12-50cec48eab5d.png",
+      "existing_asset": "assets/cricketer_images/nicholas_pooran.webp"
+    },
+    {
+      "label": "nitish_kumar_reddy",
+      "slug": "nitish_kumar_reddy",
+      "asset_stem": "nitish_kumar_reddy",
+      "card_id": "cricket-srh-nitish-kumar-reddy",
+      "card_name": "Nitish Kumar Reddy",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_nitish_kumar_reddy-c9b00818-730c-4382-9129-910e82d78051.png",
+      "existing_asset": "assets/cricketer_images/nitish_kumar_reddy.webp"
+    },
+    {
+      "label": "pat_cummins",
+      "slug": "pat_cummins",
+      "asset_stem": "pat_cummins",
+      "card_id": "cricket-srh-pat-cummins",
+      "card_name": "Pat Cummins",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_pat_cummins-29bf0de5-249d-4537-b7d5-a14b5b08c780.png",
+      "existing_asset": "assets/cricketer_images/pat_cummins.webp"
+    },
+    {
+      "label": "phil_salt",
+      "slug": "phil_salt",
+      "asset_stem": "phil_salt",
+      "card_id": "cricket-rcb-phil-salt",
+      "card_name": "Phil Salt",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_phil_salt-8980797f-fd24-445a-8b6c-47dfeb5ceb3c.png",
+      "existing_asset": "assets/cricketer_images/phil_salt.webp"
+    },
+    {
+      "label": "quinton_de_kock",
+      "slug": "quinton_de_kock",
+      "asset_stem": "quinton_de_kock",
+      "card_id": "cricket-mi-quinton-de-kock",
+      "card_name": "Quinton de Kock",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_quinton_de_kock-75d0ea1e-e483-4861-a894-7a1d3a0fc55f.png",
+      "existing_asset": "assets/cricketer_images/quinton_de_kock.webp"
+    },
+    {
+      "label": "rachin_ravindra",
+      "slug": "rachin_ravindra",
+      "asset_stem": "rachin_ravindra",
+      "card_id": "cricket-kkr-rachin-ravindra",
+      "card_name": "Rachin Ravindra",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_rachin_ravindra-f3718786-39ac-4cc8-8535-724339697154.png",
+      "existing_asset": "assets/cricketer_images/rachin_ravindra.webp"
+    },
+    {
+      "label": "rajat_patidar",
+      "slug": "rajat_patidar",
+      "asset_stem": "rajat_patidar",
+      "card_id": "cricket-rcb-rajat-patidar",
+      "card_name": "Rajat Patidar",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_rajat_patidar-8fc9a730-ab56-4f2e-8040-3015a5212fc9.png",
+      "existing_asset": "assets/cricketer_images/rajat_patidar.webp"
+    },
+    {
+      "label": "rashid_khan",
+      "slug": "rashid_khan",
+      "asset_stem": "rashid_khan",
+      "card_id": "cricket-gt-rashid-khan",
+      "card_name": "Rashid Khan",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_rashid_khan-eeafecd5-766d-449d-a4c8-0a9f7e0711a5.png",
+      "existing_asset": "assets/cricketer_images/rashid_khan.webp"
+    },
+    {
+      "label": "ravindra_jadeja",
+      "slug": "ravindra_jadeja",
+      "asset_stem": "ravindra_jadeja",
+      "card_id": "cricket-rr-ravindra-jadeja",
+      "card_name": "Ravindra Jadeja",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_ravindra_jadeja-200604cf-7577-4546-9e31-39d82b8ede0b.png",
+      "existing_asset": "assets/cricketer_images/ravindra_jadeja.webp"
+    },
+    {
+      "label": "rinku_singh",
+      "slug": "rinku_singh",
+      "asset_stem": "rinku_singh",
+      "card_id": "cricket-kkr-rinku-singh",
+      "card_name": "Rinku Singh",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_rinku_singh-fd7c8d37-0c73-4749-97c8-cd484dedcb69.png",
+      "existing_asset": "assets/cricketer_images/rinku_singh.webp"
+    },
+    {
+      "label": "rishabh_pant",
+      "slug": "rishabh_pant",
+      "asset_stem": "rishabh_pant",
+      "card_id": "cricket-lsg-rishabh-pant",
+      "card_name": "Rishabh Pant",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_rishabh_pant-3762e955-8c54-4d06-bb6f-f724784e681c.png",
+      "existing_asset": "assets/cricketer_images/rishabh_pant.webp"
+    },
+    {
+      "label": "riyan_parag",
+      "slug": "riyan_parag",
+      "asset_stem": "riyan_parag",
+      "card_id": "cricket-rr-riyan-parag",
+      "card_name": "Riyan Parag",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_riyan_parag-e48c3cff-334a-4eea-8410-a2b6bb9e0992.png",
+      "existing_asset": "assets/cricketer_images/riyan_parag.webp"
+    },
+    {
+      "label": "rohit_sharma",
+      "slug": "rohit_sharma",
+      "asset_stem": "rohit_sharma",
+      "card_id": "cricket-mi-rohit-sharma",
+      "card_name": "Rohit Sharma",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_rohit_sharma-a78e763f-d894-4ab3-afaa-86d69b3a639f.png",
+      "existing_asset": "assets/cricketer_images/rohit_sharma.webp"
+    },
+    {
+      "label": "ruturaj_gaikwad",
+      "slug": "ruturaj_gaikwad",
+      "asset_stem": "ruturaj_gaikwad",
+      "card_id": "cricket-csk-ruturaj-gaikwad",
+      "card_name": "Ruturaj Gaikwad",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_ruturaj_gaikwad-48632b25-e759-4798-a1e0-c3a36d03c026.png",
+      "existing_asset": "assets/cricketer_images/ruturaj_gaikwad.webp"
+    },
+    {
+      "label": "Sai_Sudharsan",
+      "slug": "sai_sudharsan",
+      "asset_stem": "sai_sudharsan",
+      "card_id": "cricket-gt-sai-sudharsan",
+      "card_name": "Sai Sudharsan",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Sai_Sudharsan-6b66525b-0106-4080-9886-78c7d6dec2fa.png",
+      "existing_asset": "assets/cricketer_images/Sai_Sudharsan.webp"
+    },
+    {
+      "label": "sam_curran",
+      "slug": "sam_curran",
+      "asset_stem": "sam_curran",
+      "card_id": "cricket-rr-sam-curran",
+      "card_name": "Sam Curran",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_sam_curran-628f3238-edf0-47d1-ad13-7e8d710b04d1.png",
+      "existing_asset": "assets/cricketer_images/sam_curran.webp"
+    },
+    {
+      "label": "shivam_dube",
+      "slug": "shivam_dube",
+      "asset_stem": "shivam_dube",
+      "card_id": "cricket-csk-shivam-dube",
+      "card_name": "Shivam Dube",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_shivam_dube-e6b188f8-a8f5-4325-b29f-49ab2c380bee.png",
+      "existing_asset": "assets/cricketer_images/shivam_dube.webp"
+    },
+    {
+      "label": "shreyas_iyer",
+      "slug": "shreyas_iyer",
+      "asset_stem": "shreyas_iyer",
+      "card_id": "cricket-pbks-shreyas-iyer",
+      "card_name": "Shreyas Iyer",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_shreyas_iyer-e2be5b76-f182-49f7-9a51-3a40139ffc8b.png",
+      "existing_asset": "assets/cricketer_images/shreyas_iyer.webp"
+    },
+    {
+      "label": "shubman_gill",
+      "slug": "shubman_gill",
+      "asset_stem": "shubman_gill",
+      "card_id": "cricket-gt-shubman-gill",
+      "card_name": "Shubman Gill",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_shubman_gill-3bc57b28-0a0c-4e60-949d-89e3378cd415.png",
+      "existing_asset": "assets/cricketer_images/shubman_gill.webp"
+    },
+    {
+      "label": "sunil_narine",
+      "slug": "sunil_narine",
+      "asset_stem": "sunil_narine",
+      "card_id": "cricket-kkr-sunil-narine",
+      "card_name": "Sunil Narine",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_sunil_narine-a9ffde63-e50a-4a26-bdd8-1de3095b6965.png",
+      "existing_asset": "assets/cricketer_images/sunil_narine.webp"
+    },
+    {
+      "label": "suryakumar_yadav",
+      "slug": "suryakumar_yadav",
+      "asset_stem": "suryakumar_yadav",
+      "card_id": "cricket-mi-suryakumar-yadav",
+      "card_name": "Suryakumar Yadav",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_suryakumar_yadav-00ea4002-c7d8-44eb-adbb-08063fe8766f.png",
+      "existing_asset": "assets/cricketer_images/suryakumar_yadav.webp"
+    },
+    {
+      "label": "t_natarajan",
+      "slug": "t_natarajan",
+      "asset_stem": "t_natarajan",
+      "card_id": "cricket-dc-t-natarajan",
+      "card_name": "T. Natarajan",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_t_natarajan-b52f45ac-bd4e-4550-b48a-9488fbeb6595.png",
+      "existing_asset": "assets/cricketer_images/t_natarajan.webp"
+    },
+    {
+      "label": "Tilak_Varma",
+      "slug": "tilak_varma",
+      "asset_stem": "tilak_varma",
+      "card_id": "cricket-mi-tilak-varma",
+      "card_name": "Tilak Varma",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Tilak_Varma-b6750f85-e847-47ec-bb19-eb70ad2e9ff9.png",
+      "existing_asset": "assets/cricketer_images/Tilak_Varma.webp"
+    },
+    {
+      "label": "tristan_stubbs",
+      "slug": "tristan_stubbs",
+      "asset_stem": "tristan_stubbs",
+      "card_id": "cricket-dc-tristan-stubbs",
+      "card_name": "Tristan Stubbs",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_tristan_stubbs-3ca2825e-374f-4924-9fbc-832bbd52dace.png",
+      "existing_asset": "assets/cricketer_images/tristan_stubbs.webp"
+    },
+    {
+      "label": "Varun_Chakaravarthy",
+      "slug": "varun_chakaravarthy",
+      "asset_stem": "varun_chakaravarthy",
+      "card_id": "cricket-kkr-varun-chakaravarthy",
+      "card_name": "Varun Chakaravarthy",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Varun_Chakaravarthy-d185e47f-c3b3-4bf6-8f06-1710470a7361.png",
+      "existing_asset": "assets/cricketer_images/Varun_Chakaravarthy.webp"
+    },
+    {
+      "label": "venkatesh_iyer",
+      "slug": "venkatesh_iyer",
+      "asset_stem": "venkatesh_iyer",
+      "card_id": "cricket-rcb-venkatesh-iyer",
+      "card_name": "Venkatesh Iyer",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_venkatesh_iyer-661dc73c-4e4f-4ecd-9046-392c6cb88eff.png",
+      "existing_asset": "assets/cricketer_images/venkatesh_iyer.webp"
+    },
+    {
+      "label": "virat_kohli",
+      "slug": "virat_kohli",
+      "asset_stem": "virat_kohli",
+      "card_id": "cricket-rcb-virat-kohli",
+      "card_name": "Virat Kohli",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_virat_kohli-109592ca-f720-432e-857b-b48ec1b05fe6.png",
+      "existing_asset": "assets/cricketer_images/virat_kohli.webp"
+    },
+    {
+      "label": "Wanindu_Hasaranga",
+      "slug": "wanindu_hasaranga",
+      "asset_stem": "wanindu_hasaranga",
+      "card_id": "cricket-lsg-wanindu-hasaranga",
+      "card_name": "Wanindu Hasaranga",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_Wanindu_Hasaranga-d29fcd4f-33dd-4104-8da7-83a99daf05fa.png",
+      "existing_asset": "assets/cricketer_images/Wanindu_Hasaranga.webp"
+    },
+    {
+      "label": "will_jacks",
+      "slug": "will_jacks",
+      "asset_stem": "will_jacks",
+      "card_id": "cricket-mi-will-jacks",
+      "card_name": "Will Jacks",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_will_jacks-db5b4ec6-b653-43e5-906c-240a87397568.png",
+      "existing_asset": "assets/cricketer_images/will_jacks.webp"
+    },
+    {
+      "label": "yuzvendra_chahal",
+      "slug": "yuzvendra_chahal",
+      "asset_stem": "yuzvendra_chahal",
+      "card_id": "cricket-pbks-yuzvendra-chahal",
+      "card_name": "Yuzvendra Chahal",
+      "had_portrait": true,
+      "src": "C:\\Users\\priya\\.cursor\\projects\\c-Users-priya-OneDrive-Desktop-flutter-projects-card-game\\assets\\c__Users_priya_AppData_Roaming_Cursor_User_workspaceStorage_empty-window_images_yuzvendra_chahal-5bc45901-b5e4-4e1a-8a36-88321a1a52f1.png",
+      "existing_asset": "assets/cricketer_images/yuzvendra_chahal.webp"
+    }
+  ],
+  "unmatched": [
+    [
+      "haas_f1_team",
+      "haas_f1_team"
+    ],
+    [
+      "audi",
+      "audi"
+    ],
+    [
+      "Franco_Colapinto_Alpine_Theme",
+      "franco_colapinto_alpine_theme"
+    ],
+    [
+      "Oliver_Bearman_Haas_Theme",
+      "oliver_bearman_haas_theme"
+    ],
+    [
+      "Carlos_Sainz_Williams_Theme",
+      "carlos_sainz_williams_theme"
+    ],
+    [
+      "Alexander_Albon_Williams_Theme",
+      "alexander_albon_williams_theme"
+    ],
+    [
+      "Esteban_Ocon_Haas_Theme",
+      "esteban_ocon_haas_theme"
+    ],
+    [
+      "Fernando_Alonso_Aston_Martin_Theme",
+      "fernando_alonso_aston_martin_theme"
+    ],
+    [
+      "Lance_Stroll_Aston_Martin_Theme",
+      "lance_stroll_aston_martin_theme"
+    ],
+    [
+      "Sergio_Perez_Cadillac_Theme",
+      "sergio_perez_cadillac_theme"
+    ],
+    [
+      "Valtteri_Bottas_Cadillac_Theme",
+      "valtteri_bottas_cadillac_theme"
+    ],
+    [
+      "Nico_Hulkenberg_Audi_Theme",
+      "nico_hulkenberg_audi_theme"
+    ],
+    [
+      "Gabriel_Bortoleto_Audi_Theme",
+      "gabriel_bortoleto_audi_theme"
+    ],
+    [
+      "banner_1",
+      "banner_1"
+    ],
+    [
+      "cadillac_f1_team_banner",
+      "cadillac_f1_team_banner"
+    ],
+    [
+      "cbec2196-4119-4e71-9ddc-9e88c654375a",
+      "cbec2196_4119_4e71_9ddc_9e88c654375a"
+    ],
+    [
+      "ChatGPT_Image_Jun_24__2026__01_29_38_PM__2_",
+      "chatgpt_image_jun_24_2026_01_29_38_pm_2"
+    ],
+    [
+      "ChatGPT_Image_Jun_24__2026__01_29_40_PM__3_",
+      "chatgpt_image_jun_24_2026_01_29_40_pm_3"
+    ],
+    [
+      "ChatGPT_Image_Jun_24__2026__01_29_40_PM__4_",
+      "chatgpt_image_jun_24_2026_01_29_40_pm_4"
+    ],
+    [
+      "ChatGPT_Image_Jun_24__2026__01_49_03_PM",
+      "chatgpt_image_jun_24_2026_01_49_03_pm"
+    ],
+    [
+      "f4092069-29f1-43ef-b6d4-84fa79993c7e",
+      "f4092069_29f1_43ef_b6d4_84fa79993c7e"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "image",
+      "image"
+    ],
+    [
+      "question_1",
+      "question_1"
+    ],
+    [
+      "question_2",
+      "question_2"
+    ],
+    [
+      "question_3",
+      "question_3"
+    ],
+    [
+      "question_4",
+      "question_4"
+    ]
+  ],
+  "still_missing": [
+    {
+      "id": "cricket-gt-kagiso-rabada",
+      "name": "Kagiso Rabada",
+      "shortName": "K Rabada",
+      "role": "bowler",
+      "country": "Gujarat Titans",
+      "countryCode": "GT",
+      "position": "BOWL",
+      "rating": 90,
+      "trait": "Bowler",
+      "tier": "platinum",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-srh-travis-head",
+      "name": "Travis Head",
+      "shortName": "T Head",
+      "role": "batsman",
+      "country": "Sunrisers Hyderabad",
+      "countryCode": "SRH",
+      "position": "BAT",
+      "rating": 90,
+      "trait": "Batsman",
+      "tier": "platinum",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-csk-ms-dhoni",
+      "name": "MS Dhoni",
+      "shortName": "MSD",
+      "role": "batsman",
+      "country": "Chennai Super Kings",
+      "countryCode": "CSK",
+      "position": "WK",
+      "rating": 89,
+      "trait": "Wicket-keeper",
+      "tier": "gold",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-csk-sanju-samson",
+      "name": "Sanju Samson",
+      "shortName": "S Samson",
+      "role": "batsman",
+      "country": "Chennai Super Kings",
+      "countryCode": "CSK",
+      "position": "WK",
+      "rating": 89,
+      "trait": "Wicket-keeper",
+      "tier": "gold",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-mi-trent-boult",
+      "name": "Trent Boult",
+      "shortName": "T Boult",
+      "role": "bowler",
+      "country": "Mumbai Indians",
+      "countryCode": "MI",
+      "position": "BOWL",
+      "rating": 89,
+      "trait": "Bowler",
+      "tier": "gold",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-rr-yashasvi-jaiswal",
+      "name": "Yashasvi Jaiswal",
+      "shortName": "Y Jaiswal",
+      "role": "batsman",
+      "country": "Rajasthan Royals",
+      "countryCode": "RR",
+      "position": "BAT",
+      "rating": 89,
+      "trait": "Batsman",
+      "tier": "gold",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-rr-jonny-bairstow",
+      "name": "Jonny Bairstow",
+      "shortName": "J Bairstow",
+      "role": "batsman",
+      "country": "Rajasthan Royals",
+      "countryCode": "RR",
+      "position": "WK",
+      "rating": 85,
+      "trait": "Wicket-keeper",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-lsg-josh-inglis",
+      "name": "Josh Inglis",
+      "shortName": "J Inglis",
+      "role": "batsman",
+      "country": "Lucknow Super Giants",
+      "countryCode": "LSG",
+      "position": "WK",
+      "rating": 85,
+      "trait": "Wicket-keeper",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-pbks-azmatullah-omarzai",
+      "name": "Azmatullah Omarzai",
+      "shortName": "A Omarzai",
+      "role": "batsman",
+      "country": "Punjab Kings",
+      "countryCode": "PBKS",
+      "position": "AR",
+      "rating": 84,
+      "trait": "All-rounder",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-dc-ben-duckett",
+      "name": "Ben Duckett",
+      "shortName": "B Duckett",
+      "role": "batsman",
+      "country": "Delhi Capitals",
+      "countryCode": "DC",
+      "position": "BAT",
+      "rating": 84,
+      "trait": "Batsman",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-rr-dhruv-jurel",
+      "name": "Dhruv Jurel",
+      "shortName": "D Jurel",
+      "role": "batsman",
+      "country": "Rajasthan Royals",
+      "countryCode": "RR",
+      "position": "WK",
+      "rating": 84,
+      "trait": "Wicket-keeper",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-gt-glenn-phillips",
+      "name": "Glenn Phillips",
+      "shortName": "G Phillips",
+      "role": "batsman",
+      "country": "Gujarat Titans",
+      "countryCode": "GT",
+      "position": "BAT",
+      "rating": 84,
+      "trait": "Batsman",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-kkr-harshit-rana",
+      "name": "Harshit Rana",
+      "shortName": "H Rana",
+      "role": "bowler",
+      "country": "Kolkata Knight Riders",
+      "countryCode": "KKR",
+      "position": "BOWL",
+      "rating": 84,
+      "trait": "Bowler",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-gt-jason-holder",
+      "name": "Jason Holder",
+      "shortName": "J Holder",
+      "role": "batsman",
+      "country": "Gujarat Titans",
+      "countryCode": "GT",
+      "position": "AR",
+      "rating": 84,
+      "trait": "All-rounder",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-rcb-jitesh-sharma",
+      "name": "Jitesh Sharma",
+      "shortName": "J Sharma",
+      "role": "batsman",
+      "country": "Royal Challengers Bengaluru",
+      "countryCode": "RCB",
+      "position": "WK",
+      "rating": 84,
+      "trait": "Wicket-keeper",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-srh-kamindu-mendis",
+      "name": "Kamindu Mendis",
+      "shortName": "K Mendis",
+      "role": "batsman",
+      "country": "Sunrisers Hyderabad",
+      "countryCode": "SRH",
+      "position": "AR",
+      "rating": 84,
+      "trait": "All-rounder",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-pbks-lockie-ferguson",
+      "name": "Lockie Ferguson",
+      "shortName": "L Ferguson",
+      "role": "bowler",
+      "country": "Punjab Kings",
+      "countryCode": "PBKS",
+      "position": "BOWL",
+      "rating": 84,
+      "trait": "Bowler",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-dc-lungisani-ngidi",
+      "name": "Lungisani Ngidi",
+      "shortName": "L Ngidi",
+      "role": "bowler",
+      "country": "Delhi Capitals",
+      "countryCode": "DC",
+      "position": "BOWL",
+      "rating": 84,
+      "trait": "Bowler",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-csk-matt-henry",
+      "name": "Matt Henry",
+      "shortName": "M Henry",
+      "role": "bowler",
+      "country": "Chennai Super Kings",
+      "countryCode": "CSK",
+      "position": "BOWL",
+      "rating": 84,
+      "trait": "Bowler",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-lsg-mohsin-khan",
+      "name": "Mohsin Khan",
+      "shortName": "M Khan",
+      "role": "bowler",
+      "country": "Lucknow Super Giants",
+      "countryCode": "LSG",
+      "position": "BOWL",
+      "rating": 84,
+      "trait": "Bowler",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-dc-mukesh-kumar",
+      "name": "Mukesh Kumar",
+      "shortName": "M Kumar",
+      "role": "bowler",
+      "country": "Delhi Capitals",
+      "countryCode": "DC",
+      "position": "BOWL",
+      "rating": 84,
+      "trait": "Bowler",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-gt-prasidh-krishna",
+      "name": "Prasidh Krishna",
+      "shortName": "P Krishna",
+      "role": "bowler",
+      "country": "Gujarat Titans",
+      "countryCode": "GT",
+      "position": "BOWL",
+      "rating": 84,
+      "trait": "Bowler",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-kkr-rovman-powell",
+      "name": "Rovman Powell",
+      "shortName": "R Powell",
+      "role": "batsman",
+      "country": "Kolkata Knight Riders",
+      "countryCode": "KKR",
+      "position": "BAT",
+      "rating": 84,
+      "trait": "Batsman",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-pbks-shashank-singh",
+      "name": "Shashank Singh",
+      "shortName": "S Singh",
+      "role": "batsman",
+      "country": "Punjab Kings",
+      "countryCode": "PBKS",
+      "position": "BAT",
+      "rating": 84,
+      "trait": "Batsman",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-rr-vaibhav-sooryavanshi",
+      "name": "Vaibhav Sooryavanshi",
+      "shortName": "V Sooryavanshi",
+      "role": "batsman",
+      "country": "Rajasthan Royals",
+      "countryCode": "RR",
+      "position": "BAT",
+      "rating": 84,
+      "trait": "Batsman",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-csk-akeal-hosein",
+      "name": "Akeal Hosein",
+      "shortName": "A Hosein",
+      "role": "bowler",
+      "country": "Chennai Super Kings",
+      "countryCode": "CSK",
+      "position": "BOWL",
+      "rating": 83,
+      "trait": "Bowler",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-lsg-ayush-badoni",
+      "name": "Ayush Badoni",
+      "shortName": "A Badoni",
+      "role": "batsman",
+      "country": "Lucknow Super Giants",
+      "countryCode": "LSG",
+      "position": "BAT",
+      "rating": 83,
+      "trait": "Batsman",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-kkr-finn-allen",
+      "name": "Finn Allen",
+      "shortName": "F Allen",
+      "role": "batsman",
+      "country": "Kolkata Knight Riders",
+      "countryCode": "KKR",
+      "position": "WK",
+      "rating": 83,
+      "trait": "Wicket-keeper",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-rcb-krunal-pandya",
+      "name": "Krunal Pandya",
+      "shortName": "K Pandya",
+      "role": "batsman",
+      "country": "Royal Challengers Bengaluru",
+      "countryCode": "RCB",
+      "position": "AR",
+      "rating": 83,
+      "trait": "All-rounder",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-pbks-marco-jansen",
+      "name": "Marco Jansen",
+      "shortName": "M Jansen",
+      "role": "batsman",
+      "country": "Punjab Kings",
+      "countryCode": "PBKS",
+      "position": "AR",
+      "rating": 83,
+      "trait": "All-rounder",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-csk-matthew-short",
+      "name": "Matthew Short",
+      "shortName": "M Short",
+      "role": "batsman",
+      "country": "Chennai Super Kings",
+      "countryCode": "CSK",
+      "position": "AR",
+      "rating": 83,
+      "trait": "All-rounder",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-mi-mitchell-santner",
+      "name": "Mitchell Santner",
+      "shortName": "M Santner",
+      "role": "batsman",
+      "country": "Mumbai Indians",
+      "countryCode": "MI",
+      "position": "AR",
+      "rating": 83,
+      "trait": "All-rounder",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-rr-nandre-burger",
+      "name": "Nandre Burger",
+      "shortName": "N Burger",
+      "role": "bowler",
+      "country": "Rajasthan Royals",
+      "countryCode": "RR",
+      "position": "BOWL",
+      "rating": 83,
+      "trait": "Bowler",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-dc-nitish-rana",
+      "name": "Nitish Rana",
+      "shortName": "N Rana",
+      "role": "batsman",
+      "country": "Delhi Capitals",
+      "countryCode": "DC",
+      "position": "BAT",
+      "rating": 83,
+      "trait": "Batsman",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-kkr-rahul-tripathi",
+      "name": "Rahul Tripathi",
+      "shortName": "R Tripathi",
+      "role": "batsman",
+      "country": "Kolkata Knight Riders",
+      "countryCode": "KKR",
+      "position": "BAT",
+      "rating": 83,
+      "trait": "Batsman",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-csk-spencer-johnson",
+      "name": "Spencer Johnson",
+      "shortName": "S Johnson",
+      "role": "bowler",
+      "country": "Chennai Super Kings",
+      "countryCode": "CSK",
+      "position": "BOWL",
+      "rating": 83,
+      "trait": "Bowler",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-gt-tom-banton",
+      "name": "Tom Banton",
+      "shortName": "T Banton",
+      "role": "batsman",
+      "country": "Gujarat Titans",
+      "countryCode": "GT",
+      "position": "WK",
+      "rating": 83,
+      "trait": "Wicket-keeper",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-gt-washington-sundar",
+      "name": "Washington Sundar",
+      "shortName": "W Sundar",
+      "role": "batsman",
+      "country": "Gujarat Titans",
+      "countryCode": "GT",
+      "position": "AR",
+      "rating": 83,
+      "trait": "All-rounder",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-pbks-xavier-bartlett",
+      "name": "Xavier Bartlett",
+      "shortName": "X Bartlett",
+      "role": "bowler",
+      "country": "Punjab Kings",
+      "countryCode": "PBKS",
+      "position": "BOWL",
+      "rating": 83,
+      "trait": "Bowler",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-rcb-yash-dayal",
+      "name": "Yash Dayal",
+      "shortName": "Y Dayal",
+      "role": "bowler",
+      "country": "Royal Challengers Bengaluru",
+      "countryCode": "RCB",
+      "position": "BOWL",
+      "rating": 83,
+      "trait": "Bowler",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-kkr-ajinkya-rahane",
+      "name": "Ajinkya Rahane",
+      "shortName": "A Rahane",
+      "role": "batsman",
+      "country": "Kolkata Knight Riders",
+      "countryCode": "KKR",
+      "position": "BAT",
+      "rating": 82,
+      "trait": "Batsman",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-rr-akash-deep",
+      "name": "Akash Deep",
+      "shortName": "A Deep",
+      "role": "bowler",
+      "country": "Rajasthan Royals",
+      "countryCode": "RR",
+      "position": "BOWL",
+      "rating": 82,
+      "trait": "Bowler",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-dc-ashutosh-sharma",
+      "name": "Ashutosh Sharma",
+      "shortName": "A Sharma",
+      "role": "batsman",
+      "country": "Delhi Capitals",
+      "countryCode": "DC",
+      "position": "BAT",
+      "rating": 82,
+      "trait": "Batsman",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-srh-brydon-carse",
+      "name": "Brydon Carse",
+      "shortName": "B Carse",
+      "role": "bowler",
+      "country": "Sunrisers Hyderabad",
+      "countryCode": "SRH",
+      "position": "BOWL",
+      "rating": 82,
+      "trait": "Bowler",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-rcb-devdutt-padikkal",
+      "name": "Devdutt Padikkal",
+      "shortName": "D Padikkal",
+      "role": "batsman",
+      "country": "Royal Challengers Bengaluru",
+      "countryCode": "RCB",
+      "position": "BAT",
+      "rating": 82,
+      "trait": "Batsman",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-dc-dushmantha-chameera",
+      "name": "Dushmantha Chameera",
+      "shortName": "D Chameera",
+      "role": "bowler",
+      "country": "Delhi Capitals",
+      "countryCode": "DC",
+      "position": "BOWL",
+      "rating": 82,
+      "trait": "Bowler",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-pbks-harpreet-brar",
+      "name": "Harpreet Brar",
+      "shortName": "H Brar",
+      "role": "batsman",
+      "country": "Punjab Kings",
+      "countryCode": "PBKS",
+      "position": "AR",
+      "rating": 82,
+      "trait": "All-rounder",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-gt-ishant-sharma",
+      "name": "Ishant Sharma",
+      "shortName": "I Sharma",
+      "role": "bowler",
+      "country": "Gujarat Titans",
+      "countryCode": "GT",
+      "position": "BOWL",
+      "rating": 82,
+      "trait": "Bowler",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-csk-jamie-overton",
+      "name": "Jamie Overton",
+      "shortName": "J Overton",
+      "role": "batsman",
+      "country": "Chennai Super Kings",
+      "countryCode": "CSK",
+      "position": "AR",
+      "rating": 82,
+      "trait": "All-rounder",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-pbks-nehal-wadhera",
+      "name": "Nehal Wadhera",
+      "shortName": "N Wadhera",
+      "role": "batsman",
+      "country": "Punjab Kings",
+      "countryCode": "PBKS",
+      "position": "BAT",
+      "rating": 82,
+      "trait": "Batsman",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-rcb-nuwan-thushara",
+      "name": "Nuwan Thushara",
+      "shortName": "N Thushara",
+      "role": "bowler",
+      "country": "Royal Challengers Bengaluru",
+      "countryCode": "RCB",
+      "position": "BOWL",
+      "rating": 82,
+      "trait": "Bowler",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-pbks-prabhsimran-singh",
+      "name": "Prabhsimran Singh",
+      "shortName": "P Singh",
+      "role": "batsman",
+      "country": "Punjab Kings",
+      "countryCode": "PBKS",
+      "position": "WK",
+      "rating": 82,
+      "trait": "Wicket-keeper",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-rcb-romario-shepherd",
+      "name": "Romario Shepherd",
+      "shortName": "R Shepherd",
+      "role": "batsman",
+      "country": "Royal Challengers Bengaluru",
+      "countryCode": "RCB",
+      "position": "AR",
+      "rating": 82,
+      "trait": "All-rounder",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-lsg-shahbaz-ahmed",
+      "name": "Shahbaz Ahmed",
+      "shortName": "S Ahmed",
+      "role": "batsman",
+      "country": "Lucknow Super Giants",
+      "countryCode": "LSG",
+      "position": "AR",
+      "rating": 82,
+      "trait": "All-rounder",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-gt-shahrukh-khan",
+      "name": "Shahrukh Khan",
+      "shortName": "S Khan",
+      "role": "batsman",
+      "country": "Gujarat Titans",
+      "countryCode": "GT",
+      "position": "BAT",
+      "rating": 82,
+      "trait": "Batsman",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-mi-shardul-thakur",
+      "name": "Shardul Thakur",
+      "shortName": "S Thakur",
+      "role": "batsman",
+      "country": "Mumbai Indians",
+      "countryCode": "MI",
+      "position": "AR",
+      "rating": 82,
+      "trait": "All-rounder",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-rr-tushar-deshpande",
+      "name": "Tushar Deshpande",
+      "shortName": "T Deshpande",
+      "role": "bowler",
+      "country": "Rajasthan Royals",
+      "countryCode": "RR",
+      "position": "BOWL",
+      "rating": 82,
+      "trait": "Bowler",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-pbks-yash-thakur",
+      "name": "Yash Thakur",
+      "shortName": "Y Thakur",
+      "role": "bowler",
+      "country": "Punjab Kings",
+      "countryCode": "PBKS",
+      "position": "BOWL",
+      "rating": 82,
+      "trait": "Bowler",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-kkr-angkrish-raghuvanshi",
+      "name": "Angkrish Raghuvanshi",
+      "shortName": "A Raghuvanshi",
+      "role": "batsman",
+      "country": "Kolkata Knight Riders",
+      "countryCode": "KKR",
+      "position": "BAT",
+      "rating": 81,
+      "trait": "Batsman",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-csk-dewald-brevis",
+      "name": "Dewald Brevis",
+      "shortName": "D Brevis",
+      "role": "batsman",
+      "country": "Chennai Super Kings",
+      "countryCode": "CSK",
+      "position": "BAT",
+      "rating": 81,
+      "trait": "Batsman",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-kkr-ramandeep-singh",
+      "name": "Ramandeep Singh",
+      "shortName": "R Singh",
+      "role": "batsman",
+      "country": "Kolkata Knight Riders",
+      "countryCode": "KKR",
+      "position": "AR",
+      "rating": 81,
+      "trait": "All-rounder",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-mi-ryan-rickelton",
+      "name": "Ryan Rickelton",
+      "shortName": "R Rickelton",
+      "role": "batsman",
+      "country": "Mumbai Indians",
+      "countryCode": "MI",
+      "position": "WK",
+      "rating": 81,
+      "trait": "Wicket-keeper",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-srh-shivam-mavi",
+      "name": "Shivam Mavi",
+      "shortName": "S Mavi",
+      "role": "bowler",
+      "country": "Sunrisers Hyderabad",
+      "countryCode": "SRH",
+      "position": "BOWL",
+      "rating": 81,
+      "trait": "Bowler",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-rcb-suyash-sharma",
+      "name": "Suyash Sharma",
+      "shortName": "S Sharma",
+      "role": "bowler",
+      "country": "Royal Challengers Bengaluru",
+      "countryCode": "RCB",
+      "position": "BOWL",
+      "rating": 81,
+      "trait": "Bowler",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    },
+    {
+      "id": "cricket-kkr-vaibhav-arora",
+      "name": "Vaibhav Arora",
+      "shortName": "V Arora",
+      "role": "bowler",
+      "country": "Kolkata Knight Riders",
+      "countryCode": "KKR",
+      "position": "BOWL",
+      "rating": 81,
+      "trait": "Bowler",
+      "tier": "silver",
+      "portraitAsset": null,
+      "hasPortrait": false,
+      "sport": "cricket"
+    }
+  ]
+}

@@ -20,6 +20,12 @@ import '../../../widgets/team_logo.dart';
 import '../trending_hub_catalog.dart';
 import 'pick_status_style.dart';
 
+/// The primary title on every MATCH / PREDICT / PICK / FUTURE tile.
+///
+/// Supporting telemetry remains deliberately compact, but the tappable subject
+/// of a tile must stay readable at the app's 15px minimum.
+const double _kTrendingTileHeadingSize = 15;
+
 class TrendingMatchesView extends StatefulWidget {
   const TrendingMatchesView({
     required this.onOpenMatch,
@@ -99,6 +105,7 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
               children: [
                 CyberBentoGrid(
+                  rowGap: 20,
                   rowHeightFactor: 0.86,
                   minRowHeight: 136,
                   tiles: [
@@ -145,11 +152,16 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
               : _TrendingUnavailable(kind: config.kind);
         }
         if (config.kind == TrendingTileKind.match) {
+          final quiz = predictionState.quizzes.values
+              .where((quiz) => quiz.matchId == match.id)
+              .firstOrNull;
           return _TrendingMatchCard(
             match: match,
             leagueLabel:
                 predictionState.leagueFor(match.leagueId)?.shortCode ??
                 match.leagueId.toUpperCase(),
+            potentialXp: quiz?.maxReward ?? match.rewardXp,
+            volumeOz: seededMatchVolumeOz(match.id),
             onTap: () => widget.onOpenMatch(match),
           );
         }
@@ -174,6 +186,7 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
         return _TrendingMarketCard(
           market: market,
           kind: config.kind,
+          sport: config.sport ?? Sport.football,
           tall: config.span == CyberBentoSpan.tall,
           onTap: () => widget.onOpenMarket(market.id),
         );
@@ -187,11 +200,15 @@ class _TrendingMatchCard extends StatelessWidget {
   const _TrendingMatchCard({
     required this.match,
     required this.leagueLabel,
+    required this.potentialXp,
+    required this.volumeOz,
     required this.onTap,
   });
 
   final SportMatch match;
   final String leagueLabel;
+  final int potentialXp;
+  final int volumeOz;
   final VoidCallback onTap;
 
   @override
@@ -220,83 +237,167 @@ class _TrendingMatchCard extends StatelessWidget {
           ? 'RESULT'
           : 'MATCH',
       live: live,
+      hardElevated: true,
       onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 38, 14, 12),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Text(
-                  module.shortLabel,
-                  style: Cyber.label(
-                    10,
-                    color: module.accent,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-                const SizedBox(width: 7),
-                Container(width: 1, height: 9, color: Cyber.line),
-                const SizedBox(width: 7),
-                Expanded(
-                  child: Text(
-                    leagueLabel,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Cyber.label(
-                      10,
-                      color: Cyber.muted,
-                      letterSpacing: 0.7,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                _TeamLockup(team: match.home, sport: match.sport),
-                Expanded(
-                  child: Column(
+      child: Column(
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 34, 14, 4),
+              child: Column(
+                children: [
+                  Row(
                     children: [
+                      Icon(module.icon, size: 13, color: module.accent),
+                      const SizedBox(width: 6),
                       Text(
-                        centerLabel,
-                        maxLines: 1,
-                        style:
-                            Cyber.display(
-                              live ? 17 : 16,
-                              color: live ? Cyber.success : Colors.white,
-                              letterSpacing: 0.3,
-                            ).copyWith(
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ),
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        detail,
-                        style: Cyber.body(
+                        module.shortLabel,
+                        style: Cyber.label(
                           10,
-                          color: Cyber.muted,
-                          weight: FontWeight.w600,
-                          letterSpacing: 0.2,
-                          height: 1,
-                          fontFeatures: const [FontFeature.tabularFigures()],
+                          color: module.accent,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                      const SizedBox(width: 7),
+                      Container(width: 1, height: 9, color: Cyber.line),
+                      const SizedBox(width: 7),
+                      Expanded(
+                        child: Text(
+                          leagueLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Cyber.label(
+                            10,
+                            color: Cyber.muted,
+                            letterSpacing: 0.7,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
-                _TeamLockup(
-                  team: match.away,
-                  sport: match.sport,
-                  alignEnd: true,
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      _TeamLockup(team: match.home, sport: match.sport),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            Text(
+                              centerLabel,
+                              maxLines: 1,
+                              style:
+                                  Cyber.display(
+                                    live ? 17 : 16,
+                                    color: live ? Cyber.success : Colors.white,
+                                    letterSpacing: 0.3,
+                                  ).copyWith(
+                                    fontFeatures: const [
+                                      FontFeature.tabularFigures(),
+                                    ],
+                                  ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              detail,
+                              style: Cyber.body(
+                                10,
+                                color: Cyber.muted,
+                                weight: FontWeight.w600,
+                                letterSpacing: 0.2,
+                                height: 1,
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      _TeamLockup(
+                        team: match.away,
+                        sport: match.sport,
+                        alignEnd: true,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ],
+          ),
+          _TrendingMatchFooter(
+            matchId: match.id,
+            potentialXp: potentialXp > 0 ? potentialXp : 50,
+            volumeOz: volumeOz,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TrendingMatchFooter extends StatelessWidget {
+  const _TrendingMatchFooter({
+    required this.matchId,
+    required this.potentialXp,
+    required this.volumeOz,
+  });
+
+  final String matchId;
+  final int potentialXp;
+  final int volumeOz;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: ValueKey('trending-match-footer-$matchId'),
+      height: 32,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: Cyber.bg2,
+        border: Border(
+          top: BorderSide(color: Colors.white.withValues(alpha: 0.06)),
         ),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 320;
+          return Row(
+            children: [
+              const Icon(
+                Icons.trending_up_rounded,
+                size: 13,
+                color: Cyber.success,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  compact ? '+$potentialXp XP' : 'POTENTIAL +$potentialXp XP',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Cyber.body(
+                    10,
+                    color: Cyber.success,
+                    weight: FontWeight.w800,
+                    letterSpacing: 0.2,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'VOL ${formatOzCompact(volumeOz)} OZ',
+                maxLines: 1,
+                style: Cyber.body(
+                  10,
+                  color: Cyber.muted,
+                  weight: FontWeight.w600,
+                  letterSpacing: 0.2,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -322,13 +423,13 @@ class _TeamLockup extends StatelessWidget {
             ? CrossAxisAlignment.end
             : CrossAxisAlignment.start,
         children: [
-          TeamLogo(team: team, width: 38, height: 38, sport: sport),
-          const SizedBox(height: 6),
+          TeamLogo(team: team, width: 34, height: 34, sport: sport),
+          const SizedBox(height: 4),
           Text(
             team.shortName,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.display(10, letterSpacing: 0.5),
+            style: Cyber.display(_kTrendingTileHeadingSize, letterSpacing: 0.3),
           ),
         ],
       ),
@@ -404,7 +505,10 @@ class _TrendingPredictCard extends StatelessWidget {
               '${match.home.shortName} // ${match.away.shortName}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.display(10, letterSpacing: 0.3),
+              style: Cyber.display(
+                _kTrendingTileHeadingSize,
+                letterSpacing: 0.2,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
@@ -430,12 +534,14 @@ class _TrendingMarketCard extends StatelessWidget {
   const _TrendingMarketCard({
     required this.market,
     required this.kind,
+    required this.sport,
     required this.tall,
     required this.onTap,
   });
 
   final PickMarket market;
   final TrendingTileKind kind;
+  final Sport sport;
   final bool tall;
   final VoidCallback onTap;
 
@@ -443,6 +549,7 @@ class _TrendingMarketCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final future = kind == TrendingTileKind.future;
     final accent = future ? Cyber.gold : Cyber.lime;
+    final module = sportModuleFor(sport);
     final leader = market.leadingOutcome;
     final delta = market.latestDeltaFor(leader.id);
     return _TrendSignalShell(
@@ -460,11 +567,23 @@ class _TrendingMarketCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  market.leagueLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Cyber.label(10, color: accent, letterSpacing: 0.7),
+                Row(
+                  children: [
+                    Icon(module.icon, size: 13, color: module.accent),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        market.leagueLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Cyber.label(
+                          10,
+                          color: accent,
+                          letterSpacing: 0.7,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 SizedBox(height: compact ? 4 : 8),
                 Text(
@@ -476,11 +595,7 @@ class _TrendingMarketCard extends StatelessWidget {
                       : 3,
                   overflow: TextOverflow.ellipsis,
                   style: Cyber.body(
-                    tall
-                        ? 14
-                        : compact
-                        ? 11
-                        : 12,
+                    _kTrendingTileHeadingSize,
                     weight: FontWeight.w800,
                     height: 1.12,
                   ),
@@ -627,6 +742,7 @@ class _TrendSignalShell extends StatelessWidget {
     required this.onTap,
     required this.child,
     this.live = false,
+    this.hardElevated = true,
   });
 
   final String semanticsLabel;
@@ -635,6 +751,7 @@ class _TrendSignalShell extends StatelessWidget {
   final VoidCallback onTap;
   final Widget child;
   final bool live;
+  final bool hardElevated;
 
   @override
   Widget build(BuildContext context) {
@@ -648,7 +765,10 @@ class _TrendSignalShell extends StatelessWidget {
           onTap();
         },
         child: CustomPaint(
-          painter: _TrendSignalPainter(accent: accent),
+          painter: _TrendSignalPainter(
+            accent: accent,
+            hardElevated: hardElevated,
+          ),
           child: ClipPath(
             clipper: const _TrendSignalClipper(),
             child: Stack(
@@ -736,35 +856,41 @@ class _TrendingSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipPath(
-      clipper: const _TrendSignalClipper(),
-      child: ColoredBox(
-        color: Cyber.panel,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 72,
-                height: 7,
-                color: Cyber.line.withValues(alpha: 0.65),
-              ),
-              const Spacer(),
-              Container(
-                width: double.infinity,
-                height: 10,
-                color: Cyber.line.withValues(alpha: 0.48),
-              ),
-              const SizedBox(height: 8),
-              FractionallySizedBox(
-                widthFactor: span == CyberBentoSpan.wide ? 0.42 : 0.72,
-                child: Container(
-                  height: 8,
-                  color: Cyber.line.withValues(alpha: 0.34),
+    return CustomPaint(
+      painter: const _TrendSignalPainter(
+        accent: Cyber.line,
+        hardElevated: true,
+      ),
+      child: ClipPath(
+        clipper: const _TrendSignalClipper(),
+        child: ColoredBox(
+          color: Cyber.panel,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 72,
+                  height: 7,
+                  color: Cyber.line.withValues(alpha: 0.65),
                 ),
-              ),
-            ],
+                const Spacer(),
+                Container(
+                  width: double.infinity,
+                  height: 10,
+                  color: Cyber.line.withValues(alpha: 0.48),
+                ),
+                const SizedBox(height: 8),
+                FractionallySizedBox(
+                  widthFactor: span == CyberBentoSpan.wide ? 0.42 : 0.72,
+                  child: Container(
+                    height: 8,
+                    color: Cyber.line.withValues(alpha: 0.34),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -817,13 +943,20 @@ class _TrendSignalClipper extends CustomClipper<Path> {
 }
 
 class _TrendSignalPainter extends CustomPainter {
-  const _TrendSignalPainter({required this.accent});
+  const _TrendSignalPainter({required this.accent, required this.hardElevated});
 
   final Color accent;
+  final bool hardElevated;
 
   @override
   void paint(Canvas canvas, Size size) {
     final path = _trendSignalPath(size);
+    if (hardElevated) {
+      canvas.drawPath(
+        path.shift(const Offset(0, 6)),
+        Paint()..color = accent.withValues(alpha: 0.22),
+      );
+    }
     canvas.drawPath(
       path,
       Paint()
@@ -835,7 +968,7 @@ class _TrendSignalPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _TrendSignalPainter oldDelegate) =>
-      oldDelegate.accent != accent;
+      oldDelegate.accent != accent || oldDelegate.hardElevated != hardElevated;
 }
 
 Path _trendSignalPath(Size size) {

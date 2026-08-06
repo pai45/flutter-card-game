@@ -12,14 +12,14 @@ import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../predictions/widgets/settlement_reveal.dart'
     show SettlementQuestionResult;
 
-/// Answer-all-then-settle reveal for a finished Football Quiz run. Mirrors the
-/// prediction [SettlementRevealOverlay] beats — header → verdict flips with an
-/// XP ticker → summary with a level line — but is framed for the standalone
-/// quiz (no fixture) and adds a "MODE CLEARED / UNLOCKED" capstone when a tier
-/// is beaten for the first time.
+/// End-of-run summary for a Knowledge Arena set.
 ///
-/// Reuses the generic [SettlementQuestionResult] data class. Rewards are
-/// credited by the caller before this shows, so skipping changes nothing.
+/// Every answer was already judged in-play by the SIGNAL LOCK cinematic, so
+/// this is a payoff rather than a settlement: the mastery stars stamp in one at
+/// a time, the XP total counts up, and the level bar catches up.
+///
+/// There is no fail state — finishing a set always clears it and always pays
+/// XP for what you got right. Stars are the reason to come back.
 class QuizRevealOverlay extends StatefulWidget {
   const QuizRevealOverlay({
     required this.mode,
@@ -28,8 +28,10 @@ class QuizRevealOverlay extends StatefulWidget {
     required this.totalXp,
     required this.xpBefore,
     required this.newlyCleared,
-    required this.unlocked,
-    required this.passed,
+    required this.stars,
+    required this.starsGained,
+    required this.bestBefore,
+    required this.bestStreak,
     required this.onRetry,
     required this.onDone,
     super.key,
@@ -41,12 +43,18 @@ class QuizRevealOverlay extends StatefulWidget {
   final int totalXp;
   final int xpBefore;
 
-  /// True when this run cleared [mode] for the first time.
+  /// True when this run completed the set for the first time.
   final bool newlyCleared;
 
-  /// The mode this run just unlocked (gated directly on [mode]), if any.
-  final QuizMode? unlocked;
-  final bool passed;
+  /// Mastery stars held for this set after the run (0–3).
+  final int stars;
+
+  /// Stars added by this run on top of the previous best.
+  final int starsGained;
+
+  /// Best correct-answer count before this run, for the NEW BEST chip.
+  final int bestBefore;
+  final int bestStreak;
   final VoidCallback onRetry;
   final VoidCallback onDone;
 
@@ -55,401 +63,330 @@ class QuizRevealOverlay extends StatefulWidget {
 }
 
 class _QuizRevealOverlayState extends State<QuizRevealOverlay> {
-  /// 0 = header beat, 1..n = that many verdicts stamped, n+1 = summary.
-  int _stage = 0;
+  int _starsShown = 0;
   int _run = 0;
   bool _started = false;
 
   Color get _accent => widget.mode.accent;
-  int get _summaryStage => widget.results.length + 1;
-  bool get _onSummary => _stage >= _summaryStage;
-
-  int get _revealedXp {
-    if (_onSummary) return widget.totalXp;
-    var sum = 0;
-    for (var i = 0; i < _stage - 1 && i < widget.results.length; i++) {
-      sum += widget.results[i].earnedXp;
-    }
-    return sum;
-  }
-
   int get _correctCount =>
       widget.results.where((result) => result.correct).length;
-  bool get _perfect =>
-      widget.results.isNotEmpty && _correctCount == widget.results.length;
+  bool get _perfect => widget.stars >= 3;
+  bool get _newBest => _correctCount > widget.bestBefore;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_started) return;
     _started = true;
-    if (widget.passed) {
-      if (MediaQuery.disableAnimationsOf(context)) {
-        _stage = _summaryStage;
-      } else {
-        _play();
-      }
-    } else {
-      _stage = _summaryStage;
-      playSound(SoundEffect.quizFail);
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _starsShown = widget.stars;
+      playSound(_perfect ? SoundEffect.quizPerfect : SoundEffect.quizPass);
+      return;
     }
+    _play();
   }
 
   Future<void> _play() async {
     final run = ++_run;
     playSound(SoundEffect.whoosh);
     await Future<void>.delayed(const Duration(milliseconds: 420));
-    for (var i = 0; i < widget.results.length; i++) {
+    for (var i = 0; i < widget.stars; i++) {
       if (!mounted || run != _run) return;
       playSound(
-        widget.results[i].correct
-            ? SoundEffect.quizCorrect
-            : SoundEffect.quizWrong,
+        i == 2 ? SoundEffect.quizPerfect : SoundEffect.quizCorrect,
       );
-      setState(() => _stage = i + 1);
-      await Future<void>.delayed(const Duration(milliseconds: 240));
+      setState(() => _starsShown = i + 1);
+      await Future<void>.delayed(const Duration(milliseconds: 260));
     }
     if (!mounted || run != _run) return;
-    _enterSummary();
-  }
-
-  void _enterSummary() {
-    _run++;
-    playSound(_perfect ? SoundEffect.quizPerfect : SoundEffect.quizPass);
-    if (widget.unlocked != null) playSound(SoundEffect.quizUnlock);
-    setState(() => _stage = _summaryStage);
-  }
-
-  void _skipToSummary() {
-    if (_onSummary) return;
-    _enterSummary();
+    if (!_perfect) playSound(SoundEffect.quizPass);
+    if (widget.newlyCleared) playSound(SoundEffect.quizUnlock);
   }
 
   @override
   Widget build(BuildContext context) {
-    final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    return ColoredBox(
-      color: Cyber.bg.withValues(alpha: 0.98),
-      child: SafeArea(
-        child: AnimatedSwitcher(
-          duration: reduceMotion
-              ? Duration.zero
-              : const Duration(milliseconds: 260),
-          switchInCurve: Curves.easeOutCubic,
-          switchOutCurve: Curves.easeInCubic,
-          child: _onSummary
-              ? (widget.passed ? _summary() : _failSummary())
-              : _flips(),
-        ),
-      ),
-    );
-  }
-
-  // ── Beats 1–2: header + verdict flips ───────────────────────────────────────
-  Widget _flips() {
-    return Column(
-      key: const ValueKey('quiz-flips'),
-      children: [
-        const SizedBox(height: 26),
-        _RevealIn(
-          child: Text(
-            'RESULTS ARE IN',
-            style: Cyber.display(20, color: Colors.white, letterSpacing: 2.4)
-                .copyWith(
-                  shadows: [
-                    Shadow(
-                      color: _accent.withValues(alpha: 0.6),
-                      blurRadius: 18,
-                    ),
-                  ],
-                ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        _RevealIn(
-          delayFactor: 0.35,
-          child: Text(
-            '${widget.mode.label} QUIZ',
-            style: Cyber.label(12, color: _accent, letterSpacing: 2.2),
-          ),
-        ),
-        const SizedBox(height: 18),
-        _RevealIn(
-          delayFactor: 0.6,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'SCORING ${widget.results.length} ANSWERS',
-                style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1.4),
-              ),
-              const SizedBox(width: 12),
-              _XpTicker(value: _revealedXp, accent: _accent),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
-        Expanded(
-          child: ListView.separated(
-            physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-            itemCount: _stage.clamp(0, widget.results.length),
-            separatorBuilder: (_, _) => const SizedBox(height: 10),
-            itemBuilder: (context, i) => _VerdictRow(
-              index: i + 1,
-              result: widget.results[i],
-              accent: _accent,
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 14),
-          child: TextButton.icon(
-            key: const ValueKey('quiz-skip-results'),
-            onPressed: _skipToSummary,
-            icon: const Icon(Icons.fast_forward, size: 16),
-            label: Text(
-              'SKIP RESULTS',
-              style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.4),
-            ),
-            style: TextButton.styleFrom(foregroundColor: Cyber.muted),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ── Beat 3: summary ─────────────────────────────────────────────────────────
-  Widget _summary() {
     final progressBefore = levelProgress(widget.xpBefore);
     final progressAfter = levelProgress(widget.xpBefore + widget.totalXp);
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    return Stack(
-      key: const ValueKey('quiz-summary'),
-      alignment: Alignment.center,
-      children: [
-        if (_perfect && !reduceMotion)
-          const Positioned.fill(
-            child: PackRevealBackground(rarity: 'platinum', pulseOpacity: 0.12),
-          ),
-        if (_perfect && !reduceMotion) const Center(child: PackBurst()),
-        ListView(
-          padding: const EdgeInsets.fromLTRB(20, 28, 20, 28),
+
+    return ColoredBox(
+      color: Cyber.bg.withValues(alpha: 0.98),
+      child: SafeArea(
+        child: Stack(
+          key: const ValueKey('quiz-summary'),
+          alignment: Alignment.center,
           children: [
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 430),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _RevealIn(
-                      child: Text(
-                        _perfect ? 'PERFECT SET' : 'SET CLEARED',
-                        textAlign: TextAlign.center,
-                        style:
-                            Cyber.display(
-                              25,
-                              color: _perfect ? Cyber.gold : Cyber.success,
-                              letterSpacing: 2.2,
-                            ).copyWith(
-                              shadows: reduceMotion
-                                  ? null
-                                  : [
-                                      Shadow(
-                                        color:
-                                            (_perfect
-                                                    ? Cyber.gold
-                                                    : Cyber.success)
-                                                .withValues(alpha: 0.55),
-                                        blurRadius: 20,
-                                      ),
-                                    ],
-                            ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _RevealIn(
-                      delayFactor: 0.2,
-                      child: Text(
-                        '$_correctCount / ${widget.results.length} CORRECT',
-                        textAlign: TextAlign.center,
-                        style:
-                            Cyber.label(
-                              12,
-                              color: Cyber.muted,
-                              letterSpacing: 1.6,
-                            ).copyWith(
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    _RevealIn(
-                      delayFactor: 0.35,
-                      child: _XpTotal(xp: widget.totalXp),
-                    ),
-                    if (widget.newlyCleared) ...[
-                      const SizedBox(height: 18),
-                      _RevealIn(
-                        delayFactor: 0.5,
-                        child: _ClearBanner(
-                          mode: widget.mode,
-                          setNumber: widget.setNumber,
-                          unlocked: widget.unlocked,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 24),
-                    _RevealIn(
-                      delayFactor: 0.65,
-                      child: _LevelLine(
-                        before: progressBefore,
-                        after: progressAfter,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    _RevealIn(
-                      delayFactor: 0.75,
-                      child: _AnswerReview(
-                        results: widget.results,
-                        accent: _accent,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    _RevealIn(
-                      delayFactor: 0.85,
-                      child: HudCtaButton(
-                        label: 'CONTINUE TO SETS',
-                        icon: Icons.arrow_forward,
-                        accent: _accent,
-                        onTap: widget.onDone,
-                        tapSound: SoundEffect.uiTap,
-                      ),
-                    ),
-                  ],
+            if (_perfect && !reduceMotion)
+              const Positioned.fill(
+                child: PackRevealBackground(
+                  rarity: 'platinum',
+                  pulseOpacity: 0.12,
                 ),
               ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _failSummary() {
-    final wrong = widget.results.length - _correctCount;
-    return ListView(
-      key: const ValueKey('quiz-failed-summary'),
-      padding: const EdgeInsets.fromLTRB(20, 32, 20, 28),
-      children: [
-        Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 430),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+            if (_perfect && !reduceMotion) const Center(child: PackBurst()),
+            ListView(
+              padding: const EdgeInsets.fromLTRB(20, 28, 20, 28),
               children: [
-                _RevealIn(
-                  child: Text(
-                    'SET NOT CLEARED',
-                    textAlign: TextAlign.center,
-                    style:
-                        Cyber.display(
-                          24,
-                          color: Cyber.danger,
-                          letterSpacing: 2.2,
-                        ).copyWith(
-                          shadows: [
-                            Shadow(
-                              color: Cyber.danger.withValues(alpha: 0.55),
-                              blurRadius: 22,
-                            ),
-                          ],
-                        ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _RevealIn(
-                  delayFactor: 0.2,
-                  child: Text(
-                    '$_correctCount / ${widget.results.length} CORRECT · $wrong WRONG',
-                    textAlign: TextAlign.center,
-                    style:
-                        Cyber.label(
-                          12,
-                          color: Cyber.muted,
-                          letterSpacing: 1.4,
-                        ).copyWith(
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                _RevealIn(
-                  delayFactor: 0.35,
-                  child: Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Cyber.danger.withValues(alpha: 0.08),
-                      border: Border.all(
-                        color: Cyber.danger.withValues(alpha: 0.42),
-                      ),
-                    ),
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 430),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Icon(
-                          Icons.lock_outline,
-                          color: Cyber.danger,
-                          size: 24,
-                        ),
-                        const SizedBox(height: 9),
-                        Text(
-                          'PASS SCORE · 5 / ${widget.results.length}',
-                          style: Cyber.display(12, color: Cyber.danger),
+                        _RevealIn(
+                          child: Text(
+                            _perfect ? 'FLAWLESS SET' : 'SET CLEARED',
+                            textAlign: TextAlign.center,
+                            style:
+                                Cyber.display(
+                                  25,
+                                  color: _perfect ? Cyber.gold : Cyber.success,
+                                  letterSpacing: 2.2,
+                                ).copyWith(
+                                  shadows: reduceMotion
+                                      ? null
+                                      : [
+                                          Shadow(
+                                            color:
+                                                (_perfect
+                                                        ? Cyber.gold
+                                                        : Cyber.success)
+                                                    .withValues(alpha: 0.55),
+                                            blurRadius: 20,
+                                          ),
+                                        ],
+                                ),
+                          ),
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          'Correct answers stay hidden until this set is cleared.',
-                          textAlign: TextAlign.center,
-                          style: Cyber.body(13, color: Cyber.muted),
+                        _RevealIn(
+                          delayFactor: 0.2,
+                          child: _ScoreLine(
+                            correct: _correctCount,
+                            total: widget.results.length,
+                            bestStreak: widget.bestStreak,
+                            newBest: _newBest,
+                          ),
                         ),
+                        const SizedBox(height: 22),
+                        _StarAward(
+                          shown: _starsShown,
+                          gained: widget.starsGained,
+                        ),
+                        const SizedBox(height: 24),
+                        _RevealIn(
+                          delayFactor: 0.35,
+                          child: _XpTotal(xp: widget.totalXp),
+                        ),
+                        if (widget.newlyCleared) ...[
+                          const SizedBox(height: 18),
+                          _RevealIn(
+                            delayFactor: 0.5,
+                            child: _ClearBanner(
+                              mode: widget.mode,
+                              setNumber: widget.setNumber,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 24),
+                        _RevealIn(
+                          delayFactor: 0.65,
+                          child: _LevelLine(
+                            before: progressBefore,
+                            after: progressAfter,
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        _RevealIn(
+                          delayFactor: 0.75,
+                          child: _AnswerReview(
+                            results: widget.results,
+                            accent: _accent,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        _RevealIn(
+                          delayFactor: 0.85,
+                          child: HudCtaButton(
+                            label: 'CONTINUE TO SETS',
+                            icon: Icons.arrow_forward,
+                            accent: _accent,
+                            onTap: widget.onDone,
+                            tapSound: SoundEffect.uiTap,
+                          ),
+                        ),
+                        if (!_perfect) ...[
+                          const SizedBox(height: 10),
+                          _RevealIn(
+                            delayFactor: 0.95,
+                            child: HudPagerButton(
+                              key: const ValueKey('quiz-replay'),
+                              label:
+                                  'REPLAY FOR 3 STARS · $kQuizEntryCost COINS',
+                              leadingIcon: Icons.replay,
+                              focal: false,
+                              enabled: true,
+                              onTap: widget.onRetry,
+                            ),
+                          ),
+                        ],
                       ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 28),
-                _RevealIn(
-                  delayFactor: 0.55,
-                  child: HudCtaButton(
-                    label: 'RETRY · 25 COINS',
-                    icon: Icons.replay,
-                    accent: _accent,
-                    onTap: widget.onRetry,
-                    tapSound: SoundEffect.uiTap,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _RevealIn(
-                  delayFactor: 0.75,
-                  child: TextButton(
-                    onPressed: widget.onDone,
-                    style: TextButton.styleFrom(foregroundColor: Cyber.muted),
-                    child: Text(
-                      'BACK TO SETS',
-                      style: Cyber.label(
-                        10,
-                        color: Cyber.muted,
-                        letterSpacing: 1.4,
-                      ),
                     ),
                   ),
                 ),
               ],
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Score, best streak and a NEW BEST flag on one tabular line.
+class _ScoreLine extends StatelessWidget {
+  const _ScoreLine({
+    required this.correct,
+    required this.total,
+    required this.bestStreak,
+    required this.newBest,
+  });
+
+  final int correct;
+  final int total;
+  final int bestStreak;
+  final bool newBest;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      alignment: WrapAlignment.center,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 10,
+      runSpacing: 6,
+      children: [
+        Text(
+          '$correct / $total CORRECT',
+          style: Cyber.label(12, color: Cyber.muted, letterSpacing: 1.6)
+              .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+        ),
+        if (bestStreak >= 2)
+          Text(
+            'BEST STREAK ×$bestStreak',
+            style:
+                Cyber.label(
+                  12,
+                  color: bestStreak >= 5 ? Cyber.gold : Cyber.amber,
+                  letterSpacing: 1.6,
+                ).copyWith(
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+          ),
+        if (newBest)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+            decoration: BoxDecoration(
+              color: Cyber.gold.withValues(alpha: 0.13),
+              border: Border.all(color: Cyber.gold.withValues(alpha: 0.6)),
+            ),
+            child: Text(
+              'NEW BEST',
+              style: Cyber.label(9, color: Cyber.gold, letterSpacing: 1.3),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// The mastery beat: three chamfered plates, each stamping down as it is
+/// awarded. Only earned plates light, and only a full sweep glows.
+class _StarAward extends StatelessWidget {
+  const _StarAward({required this.shown, required this.gained});
+
+  final int shown;
+  final int gained;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (var i = 0; i < 3; i++) ...[
+              if (i > 0) const SizedBox(width: 12),
+              _StarPlate(earned: i < shown, complete: shown >= 3),
+            ],
+          ],
+        ),
+        const SizedBox(height: 10),
+        Text(
+          gained > 0
+              ? '+$gained ${gained == 1 ? 'STAR' : 'STARS'} EARNED'
+              : shown == 0
+              ? 'NO STARS YET · REPLAY TO EARN'
+              : 'SET RECORD HELD',
+          style: Cyber.label(
+            9.5,
+            color: gained > 0 ? Cyber.gold : Cyber.muted,
+            letterSpacing: 1.6,
           ),
         ),
       ],
+    );
+  }
+}
+
+class _StarPlate extends StatelessWidget {
+  const _StarPlate({required this.earned, required this.complete});
+
+  final bool earned;
+  final bool complete;
+
+  @override
+  Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: earned ? 1 : 0),
+      duration: reduceMotion
+          ? Duration.zero
+          : const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+      builder: (context, t, child) => Transform.scale(
+        // Stamps down from oversized onto the plate.
+        scale: earned && !reduceMotion ? 1 + 1.1 * (1 - t) : 1,
+        child: child,
+      ),
+      child: ClipPath(
+        clipper: const HudChamferClipper(bigCut: 9, smallCut: 3),
+        child: Container(
+          width: 62,
+          height: 56,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: earned
+                ? Color.alphaBlend(
+                    Cyber.gold.withValues(alpha: 0.14),
+                    Cyber.panel,
+                  )
+                : Cyber.panel,
+            border: Border.all(
+              color: earned
+                  ? Cyber.gold.withValues(alpha: 0.75)
+                  : Cyber.borderMuted,
+            ),
+            boxShadow: earned && complete
+                ? Cyber.glow(Cyber.gold, alpha: 0.3, blur: 16)
+                : null,
+          ),
+          child: Icon(
+            earned ? Icons.star_rounded : Icons.star_outline_rounded,
+            size: 30,
+            color: earned ? Cyber.gold : Cyber.border,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -482,193 +419,6 @@ class _RevealIn extends StatelessWidget {
         ),
       ),
       child: child,
-    );
-  }
-}
-
-/// Running XP counter shown while verdicts flip; retargets as each correct
-/// answer lands.
-class _XpTicker extends StatelessWidget {
-  const _XpTicker({required this.value, required this.accent});
-
-  final int value;
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 26,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [Cyber.violet, accent]),
-        boxShadow: Cyber.glow(accent, alpha: 0.4, blur: 10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: value.toDouble()),
-            duration: MediaQuery.disableAnimationsOf(context)
-                ? Duration.zero
-                : const Duration(milliseconds: 420),
-            curve: Curves.easeOutCubic,
-            builder: (context, v, _) => Text(
-              '+${v.round()}',
-              style: Cyber.display(
-                12,
-                color: Colors.white,
-              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-            ),
-          ),
-          const SizedBox(width: 4),
-          Text(
-            'xp',
-            style: Cyber.label(9, color: Colors.white, letterSpacing: 0.5),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// One scored question stamping correct/wrong: row slides in, then the stamp
-/// scales down onto it.
-class _VerdictRow extends StatelessWidget {
-  const _VerdictRow({
-    required this.index,
-    required this.result,
-    required this.accent,
-  });
-
-  final int index;
-  final SettlementQuestionResult result;
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    final stampAccent = result.correct ? Cyber.success : Cyber.danger;
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: MediaQuery.disableAnimationsOf(context)
-          ? Duration.zero
-          : const Duration(milliseconds: 420),
-      curve: Curves.easeOutCubic,
-      builder: (context, t, _) {
-        final enter = (t / 0.45).clamp(0.0, 1.0);
-        final stamp = ((t - 0.45) / 0.55).clamp(0.0, 1.0);
-        final stamped = stamp > 0;
-        return Opacity(
-          opacity: enter,
-          child: Transform.translate(
-            offset: Offset(0, 16 * (1 - enter)),
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
-              decoration: BoxDecoration(
-                color: stamped
-                    ? stampAccent.withValues(alpha: 0.07 * stamp)
-                    : const Color(0xff121b2c),
-                border: Border.all(
-                  color: stamped
-                      ? Color.lerp(const Color(0xff2a3550), stampAccent, stamp)!
-                      : const Color(0xff2a3550),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 26,
-                    height: 26,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: accent.withValues(alpha: 0.14),
-                      border: Border.all(color: Cyber.border),
-                    ),
-                    child: Text(
-                      'Q$index',
-                      style: Cyber.label(9, color: accent),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          result.text,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Cyber.display(
-                            11.5,
-                            color: Colors.white,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          result.correct
-                              ? result.pickedLabel.toUpperCase()
-                              : '${result.pickedLabel} · ANS ${result.correctLabel}'
-                                    .toUpperCase(),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Cyber.body(
-                            11,
-                            color: result.correct ? Cyber.success : Cyber.muted,
-                            weight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  if (result.correct)
-                    Transform.scale(
-                      scale: stamped ? 1 + 0.8 * (1 - stamp) : 0,
-                      child: _XpStamp(earned: result.earnedXp, accent: accent),
-                    ),
-                  const SizedBox(width: 8),
-                  Transform.scale(
-                    scale: stamped ? 1 + 1.1 * (1 - stamp) : 0,
-                    child: Opacity(
-                      opacity: stamp,
-                      child: Icon(
-                        result.correct ? Icons.check_circle : Icons.cancel,
-                        color: stampAccent,
-                        size: 22,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _XpStamp extends StatelessWidget {
-  const _XpStamp({required this.earned, required this.accent});
-
-  final int earned;
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.12),
-        border: Border.all(color: accent.withValues(alpha: 0.7)),
-      ),
-      child: Text(
-        '+$earned XP',
-        style: Cyber.display(
-          10,
-          color: accent,
-        ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-      ),
     );
   }
 }
@@ -796,21 +546,15 @@ class _XpTotal extends StatelessWidget {
   }
 }
 
-/// "MODE CLEARED" capstone, naming the tier this run just opened (if any).
+/// Capstone naming the set this run just opened.
 class _ClearBanner extends StatelessWidget {
-  const _ClearBanner({
-    required this.mode,
-    required this.setNumber,
-    required this.unlocked,
-  });
+  const _ClearBanner({required this.mode, required this.setNumber});
 
   final QuizMode mode;
   final int setNumber;
-  final QuizMode? unlocked;
 
   @override
   Widget build(BuildContext context) {
-    final unlocked = this.unlocked;
     final accent = mode.accent;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
@@ -819,38 +563,25 @@ class _ClearBanner extends StatelessWidget {
         border: Border.all(color: accent.withValues(alpha: 0.6)),
         boxShadow: Cyber.glow(accent, alpha: 0.28, blur: 14),
       ),
-      child: Column(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                setNumber < kQuizSetCount
-                    ? Icons.lock_open
-                    : Icons.workspace_premium,
-                color: accent,
-                size: 16,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                setNumber < kQuizSetCount
-                    ? 'SET ${setNumber + 1} UNLOCKED'
-                    : '${mode.label} LADDER COMPLETE',
-                style: Cyber.display(13, color: accent, letterSpacing: 1.6),
-              ),
-            ],
+          Icon(
+            setNumber < kQuizSetCount
+                ? Icons.lock_open
+                : Icons.workspace_premium,
+            color: accent,
+            size: 16,
           ),
-          if (unlocked != null) ...[
-            const SizedBox(height: 6),
-            Text(
-              '${unlocked.label} MODE UNLOCKED',
-              style: Cyber.label(
-                10,
-                color: unlocked.accent,
-                letterSpacing: 1.6,
-              ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              setNumber < kQuizSetCount
+                  ? 'SET ${setNumber + 1} UNLOCKED'
+                  : '${mode.label} LADDER COMPLETE',
+              style: Cyber.display(13, color: accent, letterSpacing: 1.6),
             ),
-          ],
+          ),
         ],
       ),
     );

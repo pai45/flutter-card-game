@@ -2,7 +2,6 @@ import 'dart:math';
 
 import '../../models/cards.dart';
 import '../../models/football_chess.dart';
-import '../../models/progression.dart';
 import 'football_chess_board.dart';
 
 /// One chosen action: who acts, and the destination (move/dribble) or target
@@ -38,13 +37,39 @@ class ActionResult {
   final CardType card;
 }
 
+/// Match information that lets the CPU manage risk and counter the player's
+/// recent habits without seeing any hidden information.
+class CpuDecisionContext {
+  const CpuDecisionContext({
+    required this.playerScore,
+    required this.opponentScore,
+    required this.clockRemaining,
+    this.recentPlayerActions = const [],
+  });
+
+  final int playerScore;
+  final int opponentScore;
+  final double clockRemaining;
+  final List<BoardActionType> recentPlayerActions;
+}
+
+class _ExpectedOutcome {
+  const _ExpectedOutcome(this.probability, this.result);
+
+  final double probability;
+  final ActionResult result;
+}
+
 /// Pure rules engine for grid Football Chess. All randomness flows through an
 /// injectable [Random]; the probability helpers are pure so they can be asserted
 /// directly in tests.
 class FootballChessEngine {
-  FootballChessEngine({Random? random}) : _random = random ?? Random();
+  FootballChessEngine({Random? random, Random? decisionRandom})
+    : _random = random ?? Random(),
+      _decisionRandom = decisionRandom ?? Random();
 
   final Random _random;
+  final Random _decisionRandom;
 
   // ---- Setup -------------------------------------------------------------
 
@@ -549,99 +574,359 @@ class FootballChessEngine {
 
   // ---- CPU ---------------------------------------------------------------
 
-  /// Pick the opponent's action. A low-level CPU plays loosely (random legal
-  /// move); a smart one advances, shoots in range, and presses to win the ball.
-  ChessAction? cpuChooseAction(BoardState s, int level) {
+  /// Pick the opponent's strongest tactical action. Every candidate is scored
+  /// across its probability-weighted outcomes and the player's best immediate
+  /// reply. Only exactly equivalent choices use the separate decision RNG, so
+  /// thinking never changes gameplay rolls.
+  ChessAction? cpuChooseAction(BoardState s, CpuDecisionContext context) {
     final actions = allActions(s, Side.opponent);
     if (actions.isEmpty) return null;
-    if (_random.nextDouble() > cpuSmartness(level)) {
-      return actions[_random.nextInt(actions.length)];
-    }
-    ChessAction? best;
-    var bestScore = -1e9;
+
+    var bestScore = double.negativeInfinity;
+    final best = <ChessAction>[];
     for (final a in actions) {
-      final score = _scoreCpuAction(s, a);
-      if (score > bestScore) {
+      final score = _scoreCpuAction(s, a, context);
+      if (score > bestScore + 0.001) {
         bestScore = score;
-        best = a;
+        best
+          ..clear()
+          ..add(a);
+      } else if ((score - bestScore).abs() <= 0.001) {
+        best.add(a);
       }
     }
-    return best ?? actions[_random.nextInt(actions.length)];
+    return best[_decisionRandom.nextInt(best.length)];
   }
 
-  double _scoreCpuAction(BoardState s, ChessAction a) {
-    final piece = s.pieceById(a.pieceId)!;
-    final carrier = s.carrier;
-    
-    switch (a.type) {
-      case BoardActionType.shoot:
-        // Scale purely by probability. A 10% shot is 15, an 80% shot is 120.
-        // Prevents mindless shooting from terrible positions.
-        return shotGoalProbability(s, piece) * 150.0;
-        
-      case BoardActionType.tackle:
-        final adj = _adjacentDefenders(s, Side.opponent, carrier!.cell);
-        final win = tackleWinProbability(piece, carrier, adjacentCount: adj);
-        // Increased desperation if the player is closer to the CPU goal (row 3).
-        final danger = carrier.cell.row * 10.0;
-        return 40.0 + danger + win * 50.0;
-        
-      case BoardActionType.slide:
-        final win = slideWinProbability(piece, carrier!);
-        final danger = carrier.cell.row * 15.0; // Higher desperation modifier
-        // High reward, but discount the risk of missing.
-        return 30.0 + danger + win * 50.0 - (1.0 - win) * 35.0;
-        
-      case BoardActionType.press:
-        final step = _pressStep(s, piece, carrier!);
-        if (step == null) return 0.0; // Failsafe
-        final before = piece.cell.distanceTo(carrier.cell);
-        final after = step.distanceTo(carrier.cell);
-        final progress = (before - after).toDouble();
-        // Bonus for getting between the carrier and the goal.
-        final blockingBonus = (step.row > carrier.cell.row) ? 10.0 : 0.0;
-        return 20.0 + progress * 15.0 + carrier.cell.row * 5.0 + blockingBonus;
-        
-      case BoardActionType.pass:
-        final t = s.pieceById(a.targetId!)!;
-        final advance = (s.ballCell.row - t.cell.row).toDouble();
-        
-        // Evaluate if the target is open
-        int pressure = 0;
-        for (final n in t.cell.neighbors8()) {
-          final opp = s.outfieldAt(n);
-          if (opp != null && opp.side == Side.player) pressure++;
-        }
-        return 35.0 + advance * 15.0 - pressure * 12.0;
-        
-      case BoardActionType.dribble:
-        final defender = s.pieceById(a.targetId!)!;
-        final win = dribbleWinProbability(piece, defender);
-        final advance = (s.ballCell.row - defender.cell.row).toDouble();
-        return 25.0 + win * 40.0 + advance * 15.0;
-        
-      case BoardActionType.move:
-        if (carrier != null && carrier.side == Side.player) {
-          // Defending move (not pressing, just repositioning)
-          final before = piece.cell.distanceTo(carrier.cell);
-          final after = a.cell!.distanceTo(carrier.cell);
-          final progress = (before - after).toDouble();
-          return 10.0 + progress * 10.0;
-        }
-        
-        if (carrier != null && carrier.side == Side.opponent) {
-          if (carrier.id == piece.id) {
-            // Carrier moving into space
-            final advance = (piece.cell.row - a.cell!.row).toDouble();
-            return 25.0 + advance * 20.0;
-          } else {
-            // Off-ball attacker making a run
-            final advance = (piece.cell.row - a.cell!.row).toDouble();
-            final spread = (a.cell!.col - carrier.cell.col).abs().toDouble();
-            return 15.0 + advance * 12.0 + spread * 5.0;
-          }
-        }
-        return 5.0;
+  double _scoreCpuAction(
+    BoardState s,
+    ChessAction action,
+    CpuDecisionContext context,
+  ) {
+    var value = 0.0;
+    for (final outcome in _expectedOutcomes(s, action)) {
+      value +=
+          outcome.probability * _valueAfterCpuOutcome(outcome.result, context);
     }
+    return value + _contextualActionBias(s, action, context);
+  }
+
+  double _valueAfterCpuOutcome(
+    ActionResult outcome,
+    CpuDecisionContext context,
+  ) {
+    if (outcome.event == BoardEvent.goal) {
+      return outcome.scorer == Side.opponent ? 1200 : -1200;
+    }
+
+    final afterCpu = _boardUtility(outcome.state, context);
+    final replies = allActions(outcome.state, Side.player);
+    if (replies.isEmpty) return afterCpu;
+
+    var strongestReply = double.infinity;
+    for (final reply in replies) {
+      var replyValue = 0.0;
+      for (final response in _expectedOutcomes(outcome.state, reply)) {
+        final result = response.result;
+        final value = result.event == BoardEvent.goal
+            ? (result.scorer == Side.player ? -1200.0 : 1200.0)
+            : _boardUtility(result.state, context);
+        replyValue += response.probability * value;
+      }
+      strongestReply = min(strongestReply, replyValue);
+    }
+
+    // Keep some value on the position the CPU creates, but make the player's
+    // strongest counter the dominant part of the decision.
+    return afterCpu * 0.35 + strongestReply * 0.65;
+  }
+
+  double _boardUtility(BoardState s, CpuDecisionContext context) {
+    final carrier = s.carrier;
+    var value = s.possession == Side.opponent ? 150.0 : -165.0;
+
+    if (carrier != null && !carrier.isKeeper) {
+      if (carrier.side == Side.opponent) {
+        final progress = (kBoardRows - 1 - carrier.cell.row).toDouble();
+        value += progress * 44;
+        value += passTargets(s, carrier).length * 11;
+        if (carrier.cell.isShootingHalfFor(Side.opponent)) {
+          value += shotGoalProbability(s, carrier) * 290;
+        }
+        final pressure = _adjacentDefenders(s, Side.player, carrier.cell);
+        value -= pressure * 28;
+      } else {
+        final danger = carrier.cell.row.toDouble();
+        value -= danger * 52;
+        value -= passTargets(s, carrier).length * 12;
+        if (carrier.cell.isShootingHalfFor(Side.player)) {
+          value -= shotGoalProbability(s, carrier) * 340;
+          value += _shotBlockers(s, carrier) * 42;
+        }
+
+        final counters = context.recentPlayerActions;
+        final dribbles = _frequency(counters, BoardActionType.dribble);
+        final passes = _frequency(counters, BoardActionType.pass);
+        final shoots = _frequency(counters, BoardActionType.shoot);
+        final carries = _frequency(counters, BoardActionType.move);
+        final crowd = _adjacentDefenders(s, Side.opponent, carrier.cell);
+        value += crowd * dribbles * 18;
+        value -= passTargets(s, carrier).length * passes * 7;
+        value -= shotGoalProbability(s, carrier) * shoots * 42;
+        value -= danger * carries * 5;
+      }
+    }
+
+    for (final piece in s.pieces) {
+      final sign = piece.side == Side.opponent ? 1.0 : -1.0;
+      if (piece.benched) value += sign * -145;
+      if (piece.yellow) value += sign * -24;
+      value +=
+          sign *
+          -(piece.tackleCooldownTurns * 4 + piece.slideCooldownTurns * 3);
+      if (!piece.isKeeper && piece.cell.col == 1) value += sign * 5;
+    }
+
+    final late = context.clockRemaining <= 30;
+    final cpuLeading = context.opponentScore > context.playerScore;
+    final cpuTrailing = context.opponentScore < context.playerScore;
+    if (late && cpuLeading) {
+      value += s.possession == Side.opponent ? 95 : -65;
+    } else if (late && cpuTrailing) {
+      if (carrier != null && carrier.side == Side.opponent) {
+        value += (kBoardRows - 1 - carrier.cell.row) * 18;
+        if (carrier.cell.isShootingHalfFor(Side.opponent)) {
+          value += shotGoalProbability(s, carrier) * 100;
+        }
+      }
+    }
+
+    return value;
+  }
+
+  int _frequency(List<BoardActionType> actions, BoardActionType action) =>
+      actions.where((candidate) => candidate == action).length;
+
+  double _contextualActionBias(
+    BoardState s,
+    ChessAction action,
+    CpuDecisionContext context,
+  ) {
+    final piece = s.pieceById(action.pieceId)!;
+    final carrier = s.carrier;
+    var bias = 0.0;
+
+    final late = context.clockRemaining <= 30;
+    final cpuLeading = context.opponentScore > context.playerScore;
+    final cpuTrailing = context.opponentScore < context.playerScore;
+    if (late && cpuLeading && s.possession == Side.opponent) {
+      if (action.type == BoardActionType.pass) bias += 48;
+      if (action.type == BoardActionType.shoot) {
+        final chance = shotGoalProbability(s, piece);
+        bias -= (1 - chance) * 105;
+      }
+      if (action.type == BoardActionType.dribble) {
+        final defender = s.pieceById(action.targetId!)!;
+        bias -= (1 - dribbleWinProbability(piece, defender)) * 75;
+      }
+    }
+    if (late && cpuTrailing) {
+      if (action.type == BoardActionType.shoot) {
+        bias += shotGoalProbability(s, piece) * 250;
+        if (context.clockRemaining <= 10) bias += 350;
+      }
+      if (action.type == BoardActionType.pass) bias += 16;
+    }
+
+    final recent = context.recentPlayerActions;
+    final shoots = _frequency(recent, BoardActionType.shoot);
+    final dribbles = _frequency(recent, BoardActionType.dribble);
+    final passes = _frequency(recent, BoardActionType.pass);
+    if (carrier != null && carrier.side == Side.player) {
+      if (action.type == BoardActionType.tackle) {
+        bias += shoots * 12 + dribbles * 14;
+      }
+      if (action.type == BoardActionType.press) {
+        bias += shoots * 10 + passes * 8;
+      }
+      if (action.type == BoardActionType.slide) {
+        final chance = slideWinProbability(piece, carrier);
+        bias -= (1 - chance) * (55 + (piece.yellow ? 90 : 0));
+      }
+    }
+
+    switch (action.type) {
+      case BoardActionType.shoot:
+        final chance = shotGoalProbability(s, piece);
+        bias += chance * 80 - (1 - chance) * 24;
+      case BoardActionType.tackle:
+        final adjacent = _adjacentDefenders(s, Side.opponent, carrier!.cell);
+        bias +=
+            tackleWinProbability(piece, carrier, adjacentCount: adjacent) * 34 +
+            carrier.cell.row * 8;
+      case BoardActionType.slide:
+        final chance = slideWinProbability(piece, carrier!);
+        bias += chance * 24 - (1 - chance) * 58;
+        if (piece.yellow) bias -= 70;
+      case BoardActionType.press:
+        bias += 22 + carrier!.cell.row * 6;
+      case BoardActionType.pass:
+        final target = s.pieceById(action.targetId!)!;
+        final advance = (s.ballCell.row - target.cell.row).toDouble();
+        final pressure = target.cell
+            .neighbors8()
+            .map(s.outfieldAt)
+            .where((p) => p != null && p.side == Side.player)
+            .length;
+        bias += advance * 18 - pressure * 24;
+      case BoardActionType.dribble:
+        final defender = s.pieceById(action.targetId!)!;
+        final chance = dribbleWinProbability(piece, defender);
+        final advance = (s.ballCell.row - defender.cell.row).toDouble();
+        bias += chance * 38 + advance * 16 - (1 - chance) * 34;
+      case BoardActionType.move:
+        if (carrier != null &&
+            carrier.side == Side.player &&
+            action.cell != null) {
+          final before = piece.cell.distanceTo(carrier.cell);
+          final after = action.cell!.distanceTo(carrier.cell);
+          bias += (before - after) * 12;
+        }
+    }
+    return bias;
+  }
+
+  List<_ExpectedOutcome> _expectedOutcomes(BoardState s, ChessAction action) {
+    switch (action.type) {
+      case BoardActionType.move:
+        return [_ExpectedOutcome(1, _move(s, action.pieceId, action.cell!))];
+      case BoardActionType.pass:
+        return [_ExpectedOutcome(1, _pass(s, action.targetId!))];
+      case BoardActionType.press:
+        return [_ExpectedOutcome(1, _press(s, action.pieceId))];
+      case BoardActionType.dribble:
+        final carrier = s.carrier!;
+        final defender = s.pieceById(action.targetId!)!;
+        final chance = dribbleWinProbability(carrier, defender);
+        final success = s
+            .withPieceAt(carrier.id, defender.cell)
+            .withPieceAt(defender.id, carrier.cell)
+            .copyWith(ballCell: defender.cell);
+        final failure = s.copyWith(
+          ballCell: defender.cell,
+          possession: defender.side,
+        );
+        return [
+          _ExpectedOutcome(
+            chance,
+            ActionResult(state: success, event: BoardEvent.advanced),
+          ),
+          _ExpectedOutcome(
+            1 - chance,
+            ActionResult(state: failure, event: BoardEvent.turnover),
+          ),
+        ];
+      case BoardActionType.shoot:
+        final shooter = s.carrier!;
+        final chance = shotGoalProbability(s, shooter);
+        return [
+          _ExpectedOutcome(
+            chance,
+            ActionResult(
+              state: s,
+              event: BoardEvent.goal,
+              scorer: shooter.side,
+            ),
+          ),
+          _ExpectedOutcome(1 - chance, _missedShotOutcome(s, shooter)),
+        ];
+      case BoardActionType.tackle:
+        final tackler = s.pieceById(action.pieceId)!;
+        final carrier = s.carrier!;
+        final adjacent = _adjacentDefenders(s, tackler.side, carrier.cell);
+        final chance = tackleWinProbability(
+          tackler,
+          carrier,
+          adjacentCount: adjacent,
+        );
+        final base = s.withPieceAt(
+          tackler.id,
+          tackler.cell,
+          tackleCooldownTurns: 2,
+        );
+        return [
+          _ExpectedOutcome(
+            chance,
+            ActionResult(
+              state: base.copyWith(
+                ballCell: tackler.cell,
+                possession: tackler.side,
+              ),
+              event: BoardEvent.turnover,
+            ),
+          ),
+          _ExpectedOutcome(
+            1 - chance,
+            ActionResult(state: base, event: BoardEvent.none),
+          ),
+        ];
+      case BoardActionType.slide:
+        final slider = s.pieceById(action.pieceId)!;
+        final carrier = s.carrier!;
+        final chance = slideWinProbability(slider, carrier);
+        final base = s.withPieceAt(
+          slider.id,
+          slider.cell,
+          slideCooldownTurns: 3,
+        );
+        final landing = _slideLanding(base, slider, carrier) ?? slider.cell;
+        final success = base
+            .withPieceAt(slider.id, landing, slideCooldownTurns: 3)
+            .copyWith(ballCell: landing, possession: slider.side);
+        final red = slider.yellow;
+        final card = red ? CardType.red : CardType.yellow;
+        final booked = base.copyWith(
+          pieces: [
+            for (final piece in base.pieces)
+              if (piece.id == slider.id)
+                piece.copyWith(
+                  yellow: true,
+                  benchedTurns: red ? kBenchTurns : piece.benchedTurns,
+                )
+              else
+                piece,
+          ],
+        );
+        final miss = 1 - chance;
+        return [
+          _ExpectedOutcome(
+            chance,
+            ActionResult(state: success, event: BoardEvent.turnover),
+          ),
+          _ExpectedOutcome(
+            miss * (1 - _foulChance),
+            ActionResult(state: base, event: BoardEvent.none),
+          ),
+          _ExpectedOutcome(
+            miss * _foulChance,
+            ActionResult(state: booked, event: BoardEvent.none, card: card),
+          ),
+        ];
+    }
+  }
+
+  ActionResult _missedShotOutcome(BoardState s, BoardPiece shooter) {
+    final defending = shooter.side.opposite;
+    final blocked = _shotBlockers(s, shooter) > 0;
+    final nextState = blocked
+        ? _distributeTo(s, defending)
+        : s.copyWith(
+            ballCell: s.keeperOf(defending).cell,
+            possession: defending,
+          );
+    return ActionResult(
+      state: nextState,
+      event: blocked ? BoardEvent.blocked : BoardEvent.save,
+    );
   }
 }

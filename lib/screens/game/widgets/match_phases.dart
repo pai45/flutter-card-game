@@ -14,15 +14,9 @@ import '../../../models/cards.dart';
 import '../../../utils/label_helpers.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_cta_button.dart';
+import '../../../widgets/cyber/cyber_toss_coin.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
-import '../../../widgets/match_widgets.dart';
 import '../../../widgets/spotlight_walkthrough.dart';
-
-// ── Toss-phase local colour constants ────────────────────────────────────────
-const Color _kTossCyan = Color(0xFF5CDFFF);
-const Color _kTossRed = Color(0xFFFF4D4D);
-const Color _kTossBg = Color(0xFF0D111A);
-const Color _kTossMuted = Color(0xFF8FA3B8);
 
 String _opponentName(GameState state) => state.opponentName ?? 'Opponent';
 
@@ -48,31 +42,13 @@ class _CoinTossPhaseState extends State<CoinTossPhase>
   static const _cpuDecisionDuration = Duration(milliseconds: 3600);
 
   final _flipKey = GlobalKey();
-
-  // Entrance stagger for the idle state (coin pops in, then the flip CTA).
-  late final AnimationController _entry;
-  late final Animation<double> _coinEntry;
-  late final Animation<double> _ctaEntry;
-
-  // Bottom result panel reveal + the CPU "deciding" meter (player lost the toss).
-  late final AnimationController _reveal;
   late final AnimationController _cpuDecision;
 
-  bool _landed = false;
   bool _cpuStarted = false;
   bool _cpuFinalized = false;
   bool _advanced = false;
 
-  bool get _resolved => widget.state.tossResult != null;
   bool get _won => widget.state.playerWonToss == true;
-
-  String get _resultCaption {
-    final landed = (widget.state.tossResult ?? '').toUpperCase();
-    final call = widget.state.tossChoice?.toUpperCase();
-    return call == null
-        ? 'IT LANDED $landed'
-        : 'YOU CALLED $call · IT LANDED $landed';
-  }
 
   List<SpotlightStep> get _tossSpotlightSteps => [
     SpotlightStep(
@@ -82,31 +58,13 @@ class _CoinTossPhaseState extends State<CoinTossPhase>
           'Pick HEADS or TAILS to flip the coin. Match the landed face to win '
           'the toss and choose your role.',
       icon: Icons.toll,
-      accent: _kTossCyan,
+      accent: Cyber.cyan,
     ),
   ];
 
   @override
   void initState() {
     super.initState();
-    _entry = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
-    );
-    _coinEntry = CurvedAnimation(
-      parent: _entry,
-      curve: const Interval(0.0, 0.72, curve: Curves.easeOutBack),
-    );
-    _ctaEntry = CurvedAnimation(
-      parent: _entry,
-      curve: const Interval(0.45, 1.0, curve: Curves.easeOut),
-    );
-    _entry.forward();
-
-    _reveal = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 620),
-    );
     _cpuDecision = AnimationController(
       vsync: this,
       duration: _cpuDecisionDuration,
@@ -115,23 +73,13 @@ class _CoinTossPhaseState extends State<CoinTossPhase>
 
   @override
   void dispose() {
-    _entry.dispose();
-    _reveal.dispose();
     _cpuDecision.dispose();
     super.dispose();
   }
 
-  // Fired by the shared coin once its spin settles on a face.
   void _onCoinLanded() {
-    if (_landed || !mounted) return;
-    setState(() => _landed = true);
-    final reduce = MediaQuery.of(context).disableAnimations;
-    playSound(SoundEffect.whoosh);
-    if (reduce) {
-      _reveal.value = 1;
-    } else {
-      _reveal.forward();
-    }
+    if (!mounted) return;
+    final reduce = MediaQuery.disableAnimationsOf(context);
     if (!_won && !_cpuStarted) {
       _cpuStarted = true;
       if (!reduce) playSound(SoundEffect.riser);
@@ -155,166 +103,24 @@ class _CoinTossPhaseState extends State<CoinTossPhase>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _kTossBg,
-      body: Stack(
-        children: [
-          const Positioned.fill(child: StadiumBackground()),
-          SafeArea(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _TossTopBar(label: 'COIN TOSS', onQuit: widget.onQuit),
-                Expanded(
-                  child: Center(
-                    child: AnimatedBuilder(
-                      animation: _entry,
-                      builder: (context, child) => Transform.scale(
-                        scale: _coinEntry.value.clamp(0.0, 1.05),
-                        child: child,
-                      ),
-                      child: _TossCoin(
-                        result: widget.state.tossResult,
-                        won: widget.state.playerWonToss,
-                        onLanded: _onCoinLanded,
-                      ),
-                    ),
-                  ),
-                ),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 280),
-                  child: _buildBottom(context),
-                ),
-              ],
-            ),
-          ),
-          if (!_resolved)
-            SpotlightTutorial(
+    return CyberCoinTossPhase(
+      result: widget.state.tossResult,
+      won: widget.state.playerWonToss,
+      call: widget.state.tossChoice,
+      onQuit: widget.onQuit,
+      onCall: (call) => context.read<GameBloc>().add(TossResolved(call)),
+      onLanded: _onCoinLanded,
+      callTargetKey: _flipKey,
+      overlay: widget.state.tossResult == null
+          ? SpotlightTutorial(
               keyName: 'toss',
               steps: _tossSpotlightSteps,
               startDelay: const Duration(milliseconds: 900),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBottom(BuildContext context) {
-    if (!_resolved) {
-      return _buildFlipControls(context);
-    }
-    if (!_landed) {
-      return Padding(
-        key: const ValueKey('flipping'),
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 36),
-        child: Text(
-          'FLIPPING…',
-          textAlign: TextAlign.center,
-          style: Cyber.label(12, color: _kTossMuted, letterSpacing: 3),
-        ),
-      );
-    }
-    return KeyedSubtree(
-      key: const ValueKey('result'),
-      child: _buildResultPanel(context),
-    );
-  }
-
-  void _callToss(BuildContext context, String call) {
-    if (_resolved) return;
-    context.read<GameBloc>().add(TossResolved(call));
-  }
-
-  Widget _buildFlipControls(BuildContext context) {
-    return Padding(
-      key: const ValueKey('flip'),
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
-      child: AnimatedBuilder(
-        animation: _entry,
-        builder: (context, child) => Opacity(
-          opacity: _ctaEntry.value.clamp(0.0, 1.0),
-          child: Transform.translate(
-            offset: Offset(0, 16 * (1 - _ctaEntry.value)),
-            child: child,
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'CALL THE TOSS TO SEE WHO ATTACKS',
-              textAlign: TextAlign.center,
-              style: Cyber.body(11, color: _kTossMuted),
-            ),
-            const SizedBox(height: 12),
-            SpotlightTarget(
-              spotlightKey: _flipKey,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _CallChoiceButton(
-                      face: 'H',
-                      label: 'HEADS',
-                      accent: _kTossCyan,
-                      onTap: () => _callToss(context, 'heads'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _CallChoiceButton(
-                      face: 'T',
-                      label: 'TAILS',
-                      accent: const Color(0xFFC084FC),
-                      onTap: () => _callToss(context, 'tails'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildResultPanel(BuildContext context) {
-    return AnimatedBuilder(
-      animation: Listenable.merge([_reveal, _cpuDecision]),
-      builder: (context, _) {
-        final t = Curves.easeOutCubic.transform(_reveal.value.clamp(0.0, 1.0));
-        final panelT = Curves.easeOutBack.transform(
-          _reveal.value.clamp(0.0, 1.0),
-        );
-        return Opacity(
-          opacity: t,
-          child: Transform.translate(
-            offset: Offset(0, 26 * (1 - t)),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  _resultCaption,
-                  textAlign: TextAlign.center,
-                  style: Cyber.label(13, color: _kTossMuted, letterSpacing: 2),
-                ),
-                const SizedBox(height: 14),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                  child: Transform.translate(
-                    offset: Offset(0, 46 * (1 - panelT)),
-                    child: Opacity(
-                      opacity: t,
-                      child: _won
-                          ? _buildWinnerPanel(context)
-                          : _buildCpuDecisionPanel(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+            )
+          : null,
+      resolvedContent: _won
+          ? _buildWinnerPanel(context)
+          : _buildCpuDecisionPanel(),
     );
   }
 
@@ -325,11 +131,11 @@ class _CoinTossPhaseState extends State<CoinTossPhase>
         Text(
           'YOU WON THE TOSS',
           textAlign: TextAlign.center,
-          style: Cyber.display(26, color: _kTossCyan, letterSpacing: 2)
+          style: Cyber.display(26, color: Cyber.cyan, letterSpacing: 2)
               .copyWith(
                 shadows: [
                   Shadow(
-                    color: _kTossCyan.withValues(alpha: 0.6),
+                    color: Cyber.cyan.withValues(alpha: 0.6),
                     blurRadius: 18,
                   ),
                 ],
@@ -339,7 +145,7 @@ class _CoinTossPhaseState extends State<CoinTossPhase>
         Text(
           'CHOOSE YOUR ROLE FOR ROUND $round',
           textAlign: TextAlign.center,
-          style: Cyber.body(12, color: _kTossMuted),
+          style: Cyber.body(12, color: Cyber.muted),
         ),
         const SizedBox(height: 16),
         Row(
@@ -359,7 +165,7 @@ class _CoinTossPhaseState extends State<CoinTossPhase>
                 icon: Icons.shield,
                 label: 'DEFEND',
                 sub: 'SHUT THEM OUT',
-                accent: const Color(0xFFC084FC),
+                accent: Cyber.violet,
                 onTap: () => context.read<GameBloc>().add(RoleChosen(false)),
               ),
             ),
@@ -370,389 +176,34 @@ class _CoinTossPhaseState extends State<CoinTossPhase>
   }
 
   Widget _buildCpuDecisionPanel() {
-    final progress = _cpuDecision.value.clamp(0.0, 1.0);
     final opponent = _opponentName(widget.state).toUpperCase();
-    return Column(
-      children: [
-        Text(
-          '$opponent WON THE TOSS',
-          textAlign: TextAlign.center,
-          style: Cyber.display(26, color: _kTossRed, letterSpacing: 2),
-        ),
-        const SizedBox(height: 4),
-        AnimatedSwitcher(
-          duration: const Duration(milliseconds: 220),
-          child: Text(
-            _cpuFinalized
-                ? '$opponent HAS DECIDED'
-                : '$opponent IS DECIDING TO ATTACK OR DEFEND',
-            key: ValueKey(_cpuFinalized),
-            textAlign: TextAlign.center,
-            style: Cyber.body(12, color: _kTossMuted),
-          ),
-        ),
-        const SizedBox(height: 16),
-        _CpuDecisionMeter(progress: progress, finalized: _cpuFinalized),
-      ],
-    );
-  }
-}
-
-// _TossTopBar: slim caption + close button (replaces the old big header
-// and the old [P1] YOU / RD x/4 / VS / ATTACKING / CPU [E1] score bar).
-class _TossTopBar extends StatelessWidget {
-  const _TossTopBar({required this.label, required this.onQuit});
-  final String label;
-  final VoidCallback onQuit;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: onQuit,
-            icon: const Icon(Icons.close, color: _kTossCyan, size: 24),
-          ),
-          Expanded(
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              style: Cyber.label(
-                11,
-                color: _kTossCyan.withValues(alpha: 0.75),
-                letterSpacing: 2,
-              ),
-            ),
-          ),
-          // Balances the close button so the caption stays centred.
-          const SizedBox(width: 48),
-        ],
-      ),
-    );
-  }
-}
-
-// _TossCoin: ONE coin for the whole toss. It idles (float + radar rings), then
-// the SAME coin runs the 3-D flip and lands on the result face. Pass [result]
-// = null to idle, 'heads'/'tails' to flip & land. The win/lose accent ([won]:
-// cyan = player, red = CPU) is applied only AFTER the flip settles — during
-// the spin the coin stays neutral so the outcome isn't telegraphed.
-class _TossCoin extends StatefulWidget {
-  const _TossCoin({required this.result, required this.won, this.onLanded});
-  final String? result;
-  final bool? won;
-  final VoidCallback? onLanded;
-
-  @override
-  State<_TossCoin> createState() => _TossCoinState();
-}
-
-class _TossCoinState extends State<_TossCoin> with TickerProviderStateMixin {
-  static const double _coinSize = 122;
-
-  // Idle motion.
-  late final AnimationController _float;
-  late final AnimationController _ring;
-  late final Animation<double> _floatAnim;
-  late final Animation<double> _ringAnim;
-
-  // Flip + landing burst.
-  late final AnimationController _flip;
-  late final AnimationController _glow;
-  late final Animation<double> _angle;
-  late final Animation<double> _settle;
-  late final Animation<double> _glowPulse;
-
-  bool _flipStarted = false;
-  bool _showFlash = false;
-  // True once the flip has settled — gates the win/lose colour reveal.
-  bool _revealed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _float = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 3000),
-    );
-    _floatAnim = Tween<double>(
-      begin: -4,
-      end: 4,
-    ).animate(CurvedAnimation(parent: _float, curve: Curves.easeInOut));
-    _ring = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 20000),
-    );
-    _ringAnim = Tween<double>(begin: 0, end: 2 * pi).animate(_ring);
-
-    _flip = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    );
-    _angle = Tween<double>(
-      begin: 0,
-      end: pi * 6,
-    ).animate(CurvedAnimation(parent: _flip, curve: Curves.easeOut));
-    _settle = Tween<double>(begin: 0.70, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _flip,
-        curve: const Interval(0.6, 1.0, curve: Curves.easeOutBack),
-      ),
-    );
-    _glow = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-    _glowPulse = Tween<double>(
-      begin: 0.4,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _glow, curve: Curves.easeOut));
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (widget.result != null) {
-      _startFlip();
-      return;
-    }
-    if (!MediaQuery.of(context).disableAnimations) {
-      if (!_float.isAnimating) _float.repeat(reverse: true);
-      if (!_ring.isAnimating) _ring.repeat();
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant _TossCoin old) {
-    super.didUpdateWidget(old);
-    if (old.result == null && widget.result != null) _startFlip();
-  }
-
-  void _startFlip() {
-    if (_flipStarted) return;
-    _flipStarted = true;
-    _float.stop();
-    _ring.stop();
-
-    if (MediaQuery.of(context).disableAnimations) {
-      _flip.value = 1;
-      _glow.value = 1;
-      _revealed = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) widget.onLanded?.call();
-      });
-      return;
-    }
-
-    playSound(SoundEffect.coinFlip);
-    _flip.forward().then((_) {
-      if (!mounted) return;
-      playSound(SoundEffect.coinLand);
-      HapticFeedback.lightImpact();
-      setState(() {
-        _showFlash = true;
-        _revealed = true;
-      });
-      _glow.forward();
-      Future.delayed(const Duration(milliseconds: 180), () {
-        if (mounted) setState(() => _showFlash = false);
-      });
-      widget.onLanded?.call();
-    });
-  }
-
-  @override
-  void dispose() {
-    _float.dispose();
-    _ring.dispose();
-    _flip.dispose();
-    _glow.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final flipping = widget.result != null;
-    // Neutral cyan until the coin settles; only then the outcome accent shows
-    // (cyan = player won the call, red = CPU).
-    final faceColor = _revealed && widget.won == false ? _kTossRed : _kTossCyan;
     return AnimatedBuilder(
-      animation: Listenable.merge([_float, _ring, _flip, _glow]),
-      builder: (context, _) {
-        final ringOpacity = flipping ? (1 - _flip.value).clamp(0.0, 1.0) : 1.0;
-        return SizedBox(
-          width: 240,
-          height: 240,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Soft radial background glow.
-              Container(
-                width: 240,
-                height: 240,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      faceColor.withValues(alpha: 0.10),
-                      faceColor.withValues(alpha: 0.04),
-                      Colors.transparent,
-                    ],
-                    stops: const [0, 0.5, 1],
-                  ),
-                ),
-              ),
-              // Radar rings — fade out as the flip takes over.
-              if (ringOpacity > 0) ...[
-                Opacity(
-                  opacity: ringOpacity,
-                  child: Transform.rotate(
-                    angle: _ringAnim.value,
-                    child: const CustomPaint(
-                      size: Size(220, 220),
-                      painter: _RadarRingPainter(outer: true),
-                    ),
-                  ),
-                ),
-                Opacity(
-                  opacity: ringOpacity,
-                  child: Transform.rotate(
-                    angle: -_ringAnim.value * 0.5,
-                    child: const CustomPaint(
-                      size: Size(168, 168),
-                      painter: _RadarRingPainter(outer: false),
-                    ),
-                  ),
-                ),
-              ],
-              if (_showFlash)
-                Container(
-                  width: 180,
-                  height: 180,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.22),
-                  ),
-                ),
-              flipping ? _buildFlipCoin(faceColor) : _buildIdleCoin(),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildIdleCoin() {
-    return Transform.translate(
-      offset: Offset(0, _floatAnim.value),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      animation: _cpuDecision,
+      builder: (context, _) => Column(
         children: [
-          Container(
-            width: _coinSize,
-            height: _coinSize,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const RadialGradient(
-                colors: [Color(0xff1a3040), _kTossBg],
-              ),
-              border: Border.all(color: _kTossCyan, width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: _kTossCyan.withValues(alpha: 0.35),
-                  blurRadius: 20,
-                  spreadRadius: 1,
-                ),
-                BoxShadow(
-                  color: _kTossCyan.withValues(alpha: 0.12),
-                  blurRadius: 6,
-                  spreadRadius: -2,
-                ),
-              ],
-            ),
-            child: const CustomPaint(painter: _CoinFacePainter()),
+          Text(
+            '$opponent WON THE TOSS',
+            textAlign: TextAlign.center,
+            style: Cyber.display(26, color: Cyber.danger, letterSpacing: 2),
           ),
-          Container(
-            width: 2,
-            height: 14,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  _kTossCyan.withValues(alpha: 0.55),
-                  Colors.transparent,
-                ],
-              ),
+          const SizedBox(height: 4),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            child: Text(
+              _cpuFinalized
+                  ? '$opponent HAS DECIDED'
+                  : '$opponent IS DECIDING TO ATTACK OR DEFEND',
+              key: ValueKey(_cpuFinalized),
+              textAlign: TextAlign.center,
+              style: Cyber.body(12, color: Cyber.muted),
             ),
           ),
-          Container(
-            width: 72,
-            height: 8,
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                colors: [
-                  _kTossCyan.withValues(alpha: 0.28),
-                  _kTossCyan.withValues(alpha: 0.10),
-                  Colors.transparent,
-                ],
-              ),
-            ),
+          const SizedBox(height: 16),
+          _CpuDecisionMeter(
+            progress: _cpuDecision.value.clamp(0.0, 1.0),
+            finalized: _cpuFinalized,
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFlipCoin(Color faceColor) {
-    // While spinning, the visible face alternates every half-turn so the
-    // outcome stays hidden; _angle ends on a whole number of turns, so the
-    // coin settles showing the front face — which carries the actual result.
-    final frontVisible = (((_angle.value + pi / 2) / pi).floor() % 2) == 0;
-    final headsUp = frontVisible == (widget.result == 'heads');
-    final glowBlur = 24.0 + _glowPulse.value * 40.0;
-    final glowAlpha = 0.35 + _glowPulse.value * 0.45;
-    return Transform.scale(
-      scale: _settle.value.clamp(0.0, 1.10),
-      child: Transform(
-        alignment: Alignment.center,
-        transform: Matrix4.identity()
-          ..setEntry(3, 2, 0.001)
-          ..rotateY(_angle.value),
-        child: Container(
-          width: _coinSize,
-          height: _coinSize,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: const RadialGradient(
-              colors: [Color(0xff1a3545), _kTossBg],
-            ),
-            border: Border.all(color: faceColor, width: 2.5),
-            boxShadow: [
-              BoxShadow(
-                color: faceColor.withValues(alpha: glowAlpha),
-                blurRadius: glowBlur,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: Center(
-            // The back face renders mirrored under the coin's Y-rotation;
-            // counter-rotate it so the letter always reads the right way.
-            child: Transform(
-              alignment: Alignment.center,
-              transform: frontVisible
-                  ? Matrix4.identity()
-                  : (Matrix4.identity()..rotateY(pi)),
-              child: Text(
-                headsUp ? 'H' : 'T',
-                style: Cyber.display(50, color: faceColor),
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -769,7 +220,7 @@ class _CpuDecisionMeter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = finalized ? Cyber.success : _kTossCyan;
+    final accent = finalized ? Cyber.success : Cyber.cyan;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
@@ -779,7 +230,7 @@ class _CpuDecisionMeter extends StatelessWidget {
                 ? 'NEXT: SCENARIO BRIEFING'
                 : 'OPPONENT DECISION PROTOCOL',
             textAlign: TextAlign.center,
-            style: Cyber.label(10, color: _kTossMuted, letterSpacing: 2),
+            style: Cyber.label(10, color: Cyber.muted, letterSpacing: 2),
           ),
           const SizedBox(height: 10),
           SizedBox(
@@ -883,7 +334,7 @@ class _RoleChoiceButtonState extends State<_RoleChoiceButton>
                 const SizedBox(height: 4),
                 Text(
                   widget.sub,
-                  style: Cyber.label(9, color: _kTossMuted, letterSpacing: 1.5),
+                  style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.5),
                 ),
               ],
             ),
@@ -892,214 +343,6 @@ class _RoleChoiceButtonState extends State<_RoleChoiceButton>
       ),
     );
   }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Heads/Tails call card for the idle toss — same silhouette as the role-choice
-// card, but the glyph is a ringed coin face (H/T) echoing the coin above.
-// ─────────────────────────────────────────────────────────────────────────────
-class _CallChoiceButton extends StatefulWidget {
-  const _CallChoiceButton({
-    required this.face,
-    required this.label,
-    required this.accent,
-    required this.onTap,
-  });
-  final String face;
-  final String label;
-  final Color accent;
-  final VoidCallback onTap;
-
-  @override
-  State<_CallChoiceButton> createState() => _CallChoiceButtonState();
-}
-
-class _CallChoiceButtonState extends State<_CallChoiceButton>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _press;
-  late final Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _press = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 130),
-    );
-    _scale = Tween<double>(
-      begin: 1.0,
-      end: 0.96,
-    ).animate(CurvedAnimation(parent: _press, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _press.dispose();
-    super.dispose();
-  }
-
-  void _onTap() {
-    _press.forward().then((_) {
-      _press.reverse();
-      widget.onTap();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = widget.accent;
-    return AnimatedBuilder(
-      animation: _press,
-      builder: (_, _) => Transform.scale(
-        scale: _scale.value,
-        child: GestureDetector(
-          onTap: _onTap,
-          child: Container(
-            height: 96,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.08),
-              border: Border.all(
-                color: accent.withValues(alpha: 0.55),
-                width: 1.4,
-              ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 34,
-                  height: 34,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: accent.withValues(alpha: 0.7),
-                      width: 1.4,
-                    ),
-                  ),
-                  child: Text(
-                    widget.face,
-                    style: Cyber.display(15, color: accent),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  widget.label,
-                  style: Cyber.display(17, color: accent, letterSpacing: 2),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// Painters & clippers
-// ══════════════════════════════════════════════════════════════════════════════
-
-class _RadarRingPainter extends CustomPainter {
-  const _RadarRingPainter({required this.outer});
-  final bool outer;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
-
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..color = _kTossCyan.withValues(alpha: outer ? 0.20 : 0.30)
-        ..strokeWidth = outer ? 1.0 : 1.5
-        ..style = PaintingStyle.stroke,
-    );
-
-    final tickPaint = Paint()
-      ..color = _kTossCyan.withValues(alpha: outer ? 0.35 : 0.55)
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-    final count = outer ? 36 : 8;
-    for (int i = 0; i < count; i++) {
-      final angle = (i / count) * 2 * pi;
-      final tickLen = outer ? (i % 4 == 0 ? 8.0 : 4.0) : 10.0;
-      canvas.drawLine(
-        Offset(
-          center.dx + cos(angle) * (radius - tickLen),
-          center.dy + sin(angle) * (radius - tickLen),
-        ),
-        Offset(
-          center.dx + cos(angle) * radius,
-          center.dy + sin(angle) * radius,
-        ),
-        tickPaint,
-      );
-    }
-
-    if (!outer) {
-      // Cardinal bracket marks at N / E / S / W
-      final bp = Paint()
-        ..color = _kTossCyan.withValues(alpha: 0.60)
-        ..strokeWidth = 2.0
-        ..style = PaintingStyle.stroke;
-      for (int i = 0; i < 4; i++) {
-        final a = i * (pi / 2);
-        final bx = center.dx + cos(a) * (radius + 5);
-        final by = center.dy + sin(a) * (radius + 5);
-        canvas.drawLine(
-          Offset(bx - sin(a) * 8, by + cos(a) * 8),
-          Offset(bx + sin(a) * 8, by - cos(a) * 8),
-          bp,
-        );
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(_RadarRingPainter old) => old.outer != outer;
-}
-
-class _CoinFacePainter extends CustomPainter {
-  const _CoinFacePainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 * 0.58;
-    final stroke = Paint()
-      ..color = _kTossCyan.withValues(alpha: 0.70)
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      pi,
-      pi,
-      true,
-      Paint()
-        ..color = _kTossCyan.withValues(alpha: 0.22)
-        ..style = PaintingStyle.fill,
-    );
-    canvas.drawLine(
-      Offset(center.dx - radius, center.dy),
-      Offset(center.dx + radius, center.dy),
-      stroke,
-    );
-    canvas.drawCircle(center, radius, stroke);
-    canvas.drawCircle(
-      center,
-      3,
-      Paint()
-        ..color = _kTossCyan.withValues(alpha: 0.90)
-        ..style = PaintingStyle.fill,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_CoinFacePainter _) => false;
 }
 
 Color _roleAccent(bool attacking) => roleAccent(attacking);

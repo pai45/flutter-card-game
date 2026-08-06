@@ -17,7 +17,7 @@ The Games tab currently includes:
 - **Pitch Duel**: four-round tactical card match.
 - **Penalty Shootout**: standalone spot kicks.
 - **Football Quiz**: trivia set ladder.
-- **Football Bingo**: daily country-by-club grid puzzle.
+- **Football Bingo**: daily club-by-club career grid puzzle.
 - **Guess the Player**: daily career-timeline mystery.
 - **5v5 Football Chess**: tactical squad duel.
 
@@ -25,22 +25,22 @@ Opening Football Bingo launches a full-screen hub backed by `FootballBingoCubit`
 
 ## Puzzle Format
 
-Each Football Bingo puzzle is a 3x3 grid:
+Each Football Bingo puzzle is a 3x3 club-by-club grid:
 
 | Element | Behavior |
 |---------|----------|
 | Rows | Club axes shown on the left side of the grid. |
 | Columns | Club axes shown across the top of the grid. |
-| Cells | Each cell maps to one player who matches that row/column intersection. |
+| Cells | Each cell maps to one player with verified senior appearances for both clubs at that intersection. |
 | Active player | The next player the user must place into the correct cell. |
 
-The cell order is shuffled per puzzle/day with a stable seed, so the active-player sequence is consistent for that saved daily puzzle.
+The cell order is shuffled per puzzle/day with a stable seed, so the active-player sequence is consistent for that saved daily puzzle. After a player is placed correctly, their senior club route can be opened from the solved cell; it is never shown before placement.
 
 ## Daily Unlocks And Archive
 
 Football Bingo uses local day keys in `yyyy-mm-dd` format.
 
-On first load, the current day becomes the first unlocked day. Each later local day unlocks another puzzle in sequence. The archive keeps progress by day, so users can view prior unlocked days and review completed grids.
+On first load, the current day becomes the first unlocked day of a 50-day season. Daily Logs previews that season: played days are available, while later dates are visibly locked. Day 51 begins a fresh season that reuses the authored order with new date-specific progress.
 
 Past days are read-only when opened from the archive.
 
@@ -54,7 +54,7 @@ Past days are read-only when opened from the archive.
 6. A wrong tap spends one lifeline.
 7. If lifelines reach zero, the board blocks further placement until the user buys a lifeline.
 8. Completing all 9 cells shows the grid-complete overlay.
-9. After completion, the user returns to the Bingo home/log flow and the next grid unlocks on the next local day.
+9. After completion, the user returns to the Bingo home/log flow. The Play CTA is locked until the next local midnight and shows a live countdown.
 
 ## Lifelines
 
@@ -107,6 +107,10 @@ For each unlocked day, the archive stores:
 - stable cell order ids
 
 The cubit also supports migration from the older single-progress storage shape into the archive shape.
+
+## Career Verification
+
+Every Bingo player has a curated senior-club timeline. Academy/reserve-only spells are excluded; senior loan spells count. Each record retains career-source URLs and puzzle validation rejects any row/column intersection not present in the player history.
 
 ## Implementation Reference
 

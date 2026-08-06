@@ -1,9 +1,13 @@
 import 'cards.dart';
+import 'package:flutter/material.dart';
+import '../config/enums.dart';
 
 const int kFootballBingoGridSize = 3;
 const int kFootballBingoStartingLifelines = 5;
 const int kFootballBingoLifelineCost = 25;
 const Duration kFootballBingoCooldown = Duration(hours: 24);
+const int kFootballBingoCampaignLength = 50;
+const int kFootballBingoContentVersion = 2;
 
 DateTime footballBingoDateOnly(DateTime value) {
   final local = value.toLocal();
@@ -46,6 +50,59 @@ List<String> footballBingoUnlockedDayKeys(
     for (var offset = 0; offset <= count; offset++)
       footballBingoDayKey(first.add(Duration(days: offset))),
   ];
+}
+
+List<String> footballBingoCampaignDayKeys(String firstUnlockDayKey, DateTime now) {
+  final first = parseFootballBingoDayKey(firstUnlockDayKey) ??
+      footballBingoDateOnly(now);
+  final today = footballBingoDateOnly(now);
+  final dayIndex = today.difference(first).inDays.clamp(0, 100000);
+  final seasonStart = (dayIndex ~/ kFootballBingoCampaignLength) *
+      kFootballBingoCampaignLength;
+  return [
+    for (var offset = 0; offset < kFootballBingoCampaignLength; offset++)
+      footballBingoDayKey(first.add(Duration(days: seasonStart + offset))),
+  ];
+}
+
+class FootballBingoClubSpell {
+  const FootballBingoClubSpell({required this.clubId, required this.label});
+
+  final String clubId;
+  final String label;
+}
+
+class FootballBingoCareer {
+  const FootballBingoCareer({
+    required this.playerId,
+    required this.name,
+    required this.shortName,
+    required this.clubHistory,
+    required this.sourceUrls,
+  });
+
+  final String playerId;
+  final String name;
+  final String shortName;
+  final List<FootballBingoClubSpell> clubHistory;
+  final List<String> sourceUrls;
+
+  bool playedFor(String clubId) =>
+      clubHistory.any((spell) => spell.clubId == clubId);
+
+  PlayerCard toPlayerCard() => PlayerCard(
+    id: playerId,
+    name: name,
+    shortName: shortName,
+    country: 'International',
+    countryCode: 'INT',
+    position: 'PLAYER',
+    role: PlayerRole.attacker,
+    rating: 85,
+    trait: 'Career Route',
+    tier: CardTier.gold,
+    icon: Icons.sports_soccer,
+  );
 }
 
 class FootballBingoAxis {
@@ -190,6 +247,7 @@ class FootballBingoProgress {
 
 class FootballBingoArchive {
   const FootballBingoArchive({
+    this.contentVersion = kFootballBingoContentVersion,
     required this.firstUnlockDayKey,
     required this.progressByDay,
   });
@@ -197,6 +255,7 @@ class FootballBingoArchive {
   factory FootballBingoArchive.initial(DateTime now) {
     final dayKey = footballBingoDayKey(now);
     return FootballBingoArchive(
+      contentVersion: kFootballBingoContentVersion,
       firstUnlockDayKey: dayKey,
       progressByDay: {
         dayKey: FootballBingoProgress.initial('', footballBingoDateOnly(now)),
@@ -209,6 +268,7 @@ class FootballBingoArchive {
       json['progressByDay'] as Map? ?? const {},
     );
     return FootballBingoArchive(
+      contentVersion: json['contentVersion'] as int? ?? 1,
       firstUnlockDayKey: json['firstUnlockDayKey'] as String? ?? '',
       progressByDay: {
         for (final entry in rawProgress.entries)
@@ -220,9 +280,11 @@ class FootballBingoArchive {
   }
 
   final String firstUnlockDayKey;
+  final int contentVersion;
   final Map<String, FootballBingoProgress> progressByDay;
 
   Map<String, dynamic> toJson() => {
+    'contentVersion': contentVersion,
     'firstUnlockDayKey': firstUnlockDayKey,
     'progressByDay': {
       for (final entry in progressByDay.entries)
@@ -231,9 +293,11 @@ class FootballBingoArchive {
   };
 
   FootballBingoArchive copyWith({
+    int? contentVersion,
     String? firstUnlockDayKey,
     Map<String, FootballBingoProgress>? progressByDay,
   }) => FootballBingoArchive(
+    contentVersion: contentVersion ?? this.contentVersion,
     firstUnlockDayKey: firstUnlockDayKey ?? this.firstUnlockDayKey,
     progressByDay: progressByDay ?? this.progressByDay,
   );
@@ -307,6 +371,25 @@ List<FootballBingoValidationError> validateFootballBingoPuzzle(
   return errors;
 }
 
+List<FootballBingoValidationError> validateFootballBingoCareerPuzzle(
+  FootballBingoPuzzle puzzle,
+  Iterable<FootballBingoCareer> careers,
+) {
+  final byPlayer = {for (final career in careers) career.playerId: career};
+  final errors = <FootballBingoValidationError>[];
+  for (final cell in puzzle.cells) {
+    final career = byPlayer[cell.playerId];
+    if (career == null) {
+      errors.add(FootballBingoValidationError('Missing career for ${cell.playerId}'));
+    } else if (career.sourceUrls.isEmpty ||
+        !career.playedFor(cell.rowId) ||
+        !career.playedFor(cell.columnId)) {
+      errors.add(FootballBingoValidationError('Invalid career record for ${cell.playerId}'));
+    }
+  }
+  return errors;
+}
+
 class FootballBingoStatus {
   const FootballBingoStatus(this.ready, this.remaining);
 
@@ -318,13 +401,15 @@ FootballBingoStatus footballBingoStatus(
   FootballBingoProgress progress, [
   DateTime? now,
 ]) {
+  if (!progress.completed) return const FootballBingoStatus(true, Duration.zero);
   final currentTime = now ?? DateTime.now();
-  final tomorrowMidnight = DateTime(
-    currentTime.year,
-    currentTime.month,
-    currentTime.day + 1,
+  final completedDay = footballBingoDateOnly(progress.startedAt);
+  final unlockAt = DateTime(
+    completedDay.year,
+    completedDay.month,
+    completedDay.day + 1,
   );
-  final remaining = tomorrowMidnight.difference(currentTime);
+  final remaining = unlockAt.difference(currentTime);
   if (remaining <= Duration.zero) {
     return const FootballBingoStatus(true, Duration.zero);
   }

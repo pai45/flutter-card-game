@@ -10,6 +10,7 @@ import '../../models/oz_coin_ledger.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/cyber/daily_mystery_widgets.dart';
+import '../../widgets/cyber/sport_signal_painters.dart';
 
 class GuessDriverScreen extends StatefulWidget {
   const GuessDriverScreen({required this.onBack, super.key});
@@ -113,15 +114,16 @@ class _GuessDriverScreenState extends State<GuessDriverScreen> {
         final coins = context.select<GameBloc, int>((bloc) => bloc.state.coins);
         return DailyMysteryPlayLayout(
           title: 'GUESS THE DRIVER',
-          subtitle:
-              'ATTEMPT ${state.guesses.length + 1}/10 · ${state.remainingHearts} LIVES',
+          // Lives are owned by the action dock's meter — don't restate them here.
+          subtitle: 'ATTEMPT ${state.guesses.length + 1} / 10',
           accent: Cyber.pink,
           secondaryAccent: Cyber.cyan,
           icon: Icons.sports_motorsports_rounded,
           dossierLabel: 'PIT WALL // ENCRYPTED',
           dossierTitle: 'GRAND PRIX WINNER',
-          dossierDescription:
-              'Search the driver database and lock the winner for this race.',
+          targetName: target.driverName,
+          caseCode: 'CASE ${state.activeDayKey}',
+          backdropPainter: const F1MysterySignalPainter(accent: Cyber.pink),
           details: [
             DailyMysteryDetail(label: 'YEAR', value: target.year),
             DailyMysteryDetail(label: 'TRACK', value: target.trackName),

@@ -1,6 +1,6 @@
 # Cricket Quiz
 
-Cricket Quiz is StatOz's trivia ladder mode. It gives the Games tab a knowledge-first loop: choose a category, pay a small Oz Coin entry fee, answer a 10-question set, and earn XP when the set is passed.
+Cricket Quiz is StatOz's trivia ladder mode. It gives the Games tab a knowledge-first loop: choose a category, pay a small Oz Coin entry fee, answer a 10-question set, and earn XP for every correct answer.
 
 ## Product Purpose
 
@@ -29,14 +29,14 @@ Cricket Quiz has four categories:
 
 | Category | Theme | XP per correct answer |
 |----------|-------|-----------------------|
-| Easy | Cricket basics | 5 XP |
-| Medium | Domestic and leagues | 10 XP |
-| Hard | Deep-cut trivia | 20 XP |
-| Global | International cricket | 30 XP |
+| Easy | Cricket basics | 1 XP |
+| Medium | Teams and tournaments | 2 XP |
+| Hard | Deep-cut trivia | 4 XP |
+| Global | World cricket | 5 XP |
 
 All categories are currently open from the start. Progression is gated inside each category by numbered sets.
 
-Each category contains 50 sets. Set 1 is unlocked by default, and each next set unlocks after the previous set is passed.
+Each category contains 50 sets. Set 1 is unlocked by default, and each next set unlocks once the previous set is finished.
 
 ## Entry Cost
 
@@ -56,7 +56,7 @@ Retrying the same set from the reveal screen also costs 25 Oz Coins.
 6. User answers 10 multiple-choice questions.
 7. The bottom dock lets the user move backward, move forward, and submit once all questions are answered.
 8. On submit, the reveal overlay flips through question results.
-9. If the set is passed, correct answers pay XP into the shared progression track.
+9. Correct answers pay XP into the shared progression track.
 10. The result is saved into category/set progress.
 11. User can retry the set or return to the set ladder.
 
@@ -75,19 +75,56 @@ Each question contains:
 
 The play screen shows one question at a time. The header tracks the current question number, answered state, and the visible XP pot based on answered questions.
 
-## Pass Rule
+## Mastery Stars
 
-A set has 10 questions. The user passes when they finish with 5 or fewer wrong answers.
+A set has 10 questions. There is no pass gate: finishing all 10 always clears the
+set and unlocks the next one, whatever the score.
 
-That means a set is passed with at least 5 correct answers out of 10.
+The score decides mastery stars instead, which is the reason to replay a set:
 
-If the user does not pass, the result is still saved as an attempt and best-correct count can improve, but no XP is awarded.
+| Best score | Stars |
+|------------|-------|
+| 10 / 10 | 3 |
+| 7 - 9 | 2 |
+| 1 - 6 | 1 |
+| 0 | 0 |
+
+Quitting mid-run banks the XP already earned but does not record a result, so a
+set only clears on a full run.
+
+## Difficulty Bands
+
+Each category's 50 sets are split into five bands of 10 sets, and the questions
+get harder as you climb. The set-ladder chapter selector doubles as the band
+picker.
+
+| Band | Sets | Name |
+|------|------|------|
+| 1 | 1 - 10 | FOUNDATION |
+| 2 | 11 - 20 | PROSPECT |
+| 3 | 21 - 30 | CONTENDER |
+| 4 | 31 - 40 | SPECIALIST |
+| 5 | 41 - 50 | LEGEND |
+
+The category sets the subject breadth; the band sets the depth within it. Band 5
+of Easy is still easier than band 1 of Medium.
+
+## Question Data
+
+Questions are authored data, not code. Each sport and category has one file at
+`assets/quiz/<sport>_<mode>.json` holding five bands of 100 questions, loaded on
+demand by `lib/services/quiz_bank.dart`. Run
+`dart run tool/verify_quiz_bank.dart` to validate counts, option lengths,
+duplicate prompts and answer-position balance, and to print a coverage table.
+
+Sets past the authored range render as SOON in the ladder rather than falling
+back to placeholder questions.
 
 ## Rewards And Progression
 
 Cricket Quiz is XP-only. It does not award coins.
 
-XP is credited only when the set is passed:
+Every correct answer pays, whatever the final score:
 
 ```dart
 totalXp = correctAnswers * mode.reward
@@ -103,7 +140,7 @@ Cricket Quiz persists personal progress through `SecureGameStorage`.
 
 For each category, the app stores progress by set number:
 
-- whether the set has been passed
+- whether the set has been completed
 - best correct count
 - attempt count
 

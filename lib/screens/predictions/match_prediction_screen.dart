@@ -3672,13 +3672,15 @@ class _PredictionLockDockState extends State<_PredictionLockDock>
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-        child: CyberPanel(
-          accent: Cyber.cyan,
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+    // Full-bleed bottom dock (edge-to-edge), matching landing nav chrome:
+    // panel fill extends under the home-indicator; content sits in SafeArea.
+    return CyberPanel(
+      accent: Cyber.cyan,
+      padding: EdgeInsets.zero,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -3767,6 +3769,7 @@ class _PredictionLockDockState extends State<_PredictionLockDock>
                               ? Icons.lock
                               : Icons.lock_outline,
                           enabled: !widget.locking,
+                          glow: false,
                           onTap: null,
                           tapSound: SoundEffect.uiTap,
                         ),

@@ -15,7 +15,10 @@
       "Bash(curl -s \"http://127.0.0.1:62122/KO7Es6DQIAA=/callServiceExtension?method=ext.flutter.reassemble&isolateId=isolates%2F8990888901353923\")",
       "PowerShell(python --version 2>&1)",
       "PowerShell(dart --version 2>&1)",
-      "Bash(dart run *)"
+      "Bash(dart run *)",
+      "PowerShell(flutter analyze lib/blocs/game/game_bloc.dart lib/blocs/game/game_state.dart lib/screens/game/game_screen.dart lib/screens/game/widgets/duel_board_phase.dart)",
+      "Skill(run)",
+      "Skill(run:*)"
     ]
   }
 }

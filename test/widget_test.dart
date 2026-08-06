@@ -16,7 +16,7 @@ void main() {
       'pd_starter_pack_claimed_v1': 'true',
       'pd_selected_avatar_v1': 'adams',
       'pd_onboarding_complete_v1': 'true',
-      'pd_demo_reward_settlement_seen_v1': 'true',
+      'pd_onboarding_reward_status_v1': 'seen',
       'pd_deck_slots_v1': jsonEncode([slot.toJson()]),
       'pd_pick_positions_v1': '[]',
     });
