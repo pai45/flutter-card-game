@@ -139,14 +139,26 @@ void main() {
       expect(outcome.newlyCleared, isTrue);
       expect(outcome.starsGained, 2);
       expect(cubit.isSetUnlocked(Sport.football, QuizMode.easy, 2), isTrue);
-      expect(cubit.setProgressFor(Sport.football, QuizMode.easy, 1).bestCorrect, 8);
+      expect(
+        cubit.setProgressFor(Sport.football, QuizMode.easy, 1).bestCorrect,
+        8,
+      );
 
       final reloaded = await _loaded();
       addTearDown(reloaded.close);
       expect(reloaded.isSetUnlocked(Sport.football, QuizMode.easy, 2), isTrue);
-      expect(reloaded.setProgressFor(Sport.football, QuizMode.easy, 1).completed, isTrue);
-      expect(reloaded.setProgressFor(Sport.football, QuizMode.easy, 1).stars, 2);
-      expect(reloaded.setProgressFor(Sport.football, QuizMode.easy, 1).bestCorrect, 8);
+      expect(
+        reloaded.setProgressFor(Sport.football, QuizMode.easy, 1).completed,
+        isTrue,
+      );
+      expect(
+        reloaded.setProgressFor(Sport.football, QuizMode.easy, 1).stars,
+        2,
+      );
+      expect(
+        reloaded.setProgressFor(Sport.football, QuizMode.easy, 1).bestCorrect,
+        8,
+      );
     });
   });
 
@@ -155,8 +167,10 @@ void main() {
     // synchronous set builders can read it.
     setUp(() async {
       QuizBank.debugReset();
-      for (final mode in QuizMode.values) {
-        await QuizBank.ensureLoaded(Sport.football, mode);
+      for (final sport in [Sport.football, Sport.cricket]) {
+        for (final mode in QuizMode.values) {
+          await QuizBank.ensureLoaded(sport, mode);
+        }
       }
     });
 
@@ -172,15 +186,17 @@ void main() {
     });
 
     test('buildQuizSet returns deterministic answer-keyed sets', () {
-      for (final mode in QuizMode.values) {
-        final first = buildQuizSet(Sport.football, mode, 12);
-        final second = buildQuizSet(Sport.football, mode, 12);
-        expect(first, hasLength(kQuizQuestionsPerSet));
-        expect(first.map((q) => q.id), second.map((q) => q.id));
-        for (final q in first) {
-          expect(q.mode, mode);
-          expect(q.correctIndex, inInclusiveRange(0, q.options.length - 1));
-          expect(q.id, contains('${mode.name}_q'));
+      for (final sport in [Sport.football, Sport.cricket]) {
+        for (final mode in QuizMode.values) {
+          final first = buildQuizSet(sport, mode, 12);
+          final second = buildQuizSet(sport, mode, 12);
+          expect(first, hasLength(kQuizQuestionsPerSet));
+          expect(first.map((q) => q.id), second.map((q) => q.id));
+          for (final q in first) {
+            expect(q.mode, mode);
+            expect(q.correctIndex, inInclusiveRange(0, q.options.length - 1));
+            expect(q.id, contains('${mode.name}_q'));
+          }
         }
       }
     });
@@ -188,42 +204,61 @@ void main() {
     test(
       'legacy random session still draws from the 500-question mode pool',
       () {
-        final session = buildQuizSession(Sport.football, QuizMode.hard, count: 14, seed: 42);
+        final session = buildQuizSession(
+          Sport.football,
+          QuizMode.hard,
+          count: 14,
+          seed: 42,
+        );
         expect(session, hasLength(14));
-        expect(quizPoolSize(Sport.football, QuizMode.hard), kQuizQuestionPoolPerMode);
+        expect(
+          quizPoolSize(Sport.football, QuizMode.hard),
+          kQuizQuestionPoolPerMode,
+        );
         expect(session.every((q) => q.mode == QuizMode.hard), isTrue);
       },
     );
 
-    test('every football mode authors the full 50-set ladder', () {
-      for (final mode in QuizMode.values) {
-        expect(
-          QuizBank.authoredSetCount(Sport.football, mode),
-          kQuizSetCount,
-          reason: 'football ${mode.name} should reach set $kQuizSetCount',
-        );
+    test('football and cricket author the full 50-set ladders', () {
+      for (final sport in [Sport.football, Sport.cricket]) {
+        for (final mode in QuizMode.values) {
+          expect(
+            QuizBank.authoredSetCount(sport, mode),
+            kQuizSetCount,
+            reason:
+                '${sport.name} ${mode.name} should reach set $kQuizSetCount',
+          );
+        }
       }
     });
 
     test('sets are dealt in band order so difficulty climbs', () {
       // Band k owns sets 10(k-1)+1..10k, so the first question of set 11 is
       // pool entry 101 — the start of band 2.
-      final pool = QuizBank.pool(Sport.football, QuizMode.easy);
-      expect(pool, hasLength(kQuizQuestionPoolPerMode));
-      expect(buildQuizSet(Sport.football, QuizMode.easy, 1).first.id, pool[0].id);
-      expect(buildQuizSet(Sport.football, QuizMode.easy, 11).first.id, pool[100].id);
-      expect(buildQuizSet(Sport.football, QuizMode.easy, 50).last.id, pool[499].id);
+      for (final sport in [Sport.football, Sport.cricket]) {
+        final pool = QuizBank.pool(sport, QuizMode.easy);
+        expect(pool, hasLength(kQuizQuestionPoolPerMode));
+        expect(buildQuizSet(sport, QuizMode.easy, 1).first.id, pool[0].id);
+        expect(buildQuizSet(sport, QuizMode.easy, 11).first.id, pool[100].id);
+        expect(buildQuizSet(sport, QuizMode.easy, 50).last.id, pool[499].id);
+      }
     });
 
     test('every authored question is well formed', () {
-      for (final mode in QuizMode.values) {
-        final pool = QuizBank.pool(Sport.football, mode);
+      for (final sport in [Sport.football, Sport.cricket]) {
         final prompts = <String>{};
-        for (final q in pool) {
-          expect(q.options, hasLength(4), reason: q.prompt);
-          expect(q.correctIndex, inInclusiveRange(0, 3), reason: q.prompt);
-          expect(q.options.toSet(), hasLength(4), reason: q.prompt);
-          expect(prompts.add(q.prompt), isTrue, reason: 'duplicate: ${q.prompt}');
+        for (final mode in QuizMode.values) {
+          final pool = QuizBank.pool(sport, mode);
+          for (final q in pool) {
+            expect(q.options, hasLength(4), reason: q.prompt);
+            expect(q.correctIndex, inInclusiveRange(0, 3), reason: q.prompt);
+            expect(q.options.toSet(), hasLength(4), reason: q.prompt);
+            expect(
+              prompts.add(q.prompt),
+              isTrue,
+              reason: 'duplicate: ${q.prompt}',
+            );
+          }
         }
       }
     });
@@ -231,9 +266,9 @@ void main() {
     test('an unauthored pool degrades to no playable sets', () async {
       // Sports whose ladders are not written yet must not crash or serve
       // filler — they simply have nothing to play.
-      await QuizBank.ensureLoaded(Sport.cricket, QuizMode.easy);
-      expect(QuizBank.authoredSetCount(Sport.cricket, QuizMode.easy), 0);
-      expect(buildQuizSet(Sport.cricket, QuizMode.easy, 1), isEmpty);
+      await QuizBank.ensureLoaded(Sport.tennis, QuizMode.easy);
+      expect(QuizBank.authoredSetCount(Sport.tennis, QuizMode.easy), 0);
+      expect(buildQuizSet(Sport.tennis, QuizMode.easy, 1), isEmpty);
     });
   });
 }

@@ -120,6 +120,34 @@ duplicate prompts and answer-position balance, and to print a coverage table.
 Sets past the authored range render as SOON in the ladder rather than falling
 back to placeholder questions.
 
+### Cricket Content Policy
+
+The cricket ladder is fully authored through all 50 sets in each mode (2,000
+questions total). It focuses on international cricket plus the men's IPL:
+
+| Mode | Men's internationals | Women's internationals | IPL |
+|------|----------------------|------------------------|-----|
+| Easy | 425 | 0 | 75 |
+| Medium | 300 | 75 | 125 |
+| Hard | 325 | 100 | 75 |
+| Global | 325 | 150 | 25 |
+
+Women's international coverage therefore increases with difficulty while the
+bank remains predominantly men's cricket. Domestic leagues other than the IPL
+only appear when they provide necessary context for an international fact.
+
+Facts are frozen at **9 August 2026**. Tournament and record questions name the
+relevant edition or date rather than relying on words such as "current" or
+"latest". The effective MCC Laws, ICC playing conditions, official ICC
+tournament archives and official IPL records are the preferred sources.
+
+The development-only ledger at `tool/quiz_audit/cricket.json` stores each
+question's canonical answer, unique fact key, scope, ladder position and source
+references. `tool/verify_quiz_bank.dart` checks that every ledger answer exactly
+matches the option selected by the runtime `correctIndex`, that all 2,000 facts
+have audit coverage, and that each 100-question band uses every answer position
+exactly 25 times.
+
 ## Rewards And Progression
 
 Cricket Quiz is XP-only. It does not award coins.

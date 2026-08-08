@@ -30,6 +30,15 @@ const maxOptionChars = 34;
 const minAnswerShare = 0.20;
 const maxAnswerShare = 0.30;
 
+const cricketAuditPath = 'tool/quiz_audit/cricket.json';
+const cricketCutoff = '2026-08-09';
+const expectedCricketScopes = <String, Map<String, int>>{
+  'easy': {'mens_international': 425, 'womens_international': 0, 'ipl': 75},
+  'medium': {'mens_international': 300, 'womens_international': 75, 'ipl': 125},
+  'hard': {'mens_international': 325, 'womens_international': 100, 'ipl': 75},
+  'global': {'mens_international': 325, 'womens_international': 150, 'ipl': 25},
+};
+
 const bandNames = [
   'FOUNDATION',
   'PROSPECT',
@@ -123,6 +132,8 @@ void main() {
       coverage[sport]![mode] = authored;
     }
   }
+
+  _checkCricketAudit();
 
   _printCoverage(coverage, totalQuestions);
 
@@ -269,10 +280,190 @@ void _printCoverage(Map<String, Map<String, int>> coverage, int total) {
   stdout.writeln(
     '  bands: ${List.generate(bandCount, (i) => '${i + 1} ${bandNames[i]}').join(' · ')}',
   );
-  stdout.writeln('  (1 band = $bandSize questions = $setsPerBand sets '
-      'of $questionsPerSet)');
+  stdout.writeln(
+    '  (1 band = $bandSize questions = $setsPerBand sets '
+    'of $questionsPerSet)',
+  );
   stdout.writeln('');
 }
 
-String _bar(int bands) =>
-    '${'#' * bands}${'.' * (bandCount - bands)}';
+String _bar(int bands) => '${'#' * bands}${'.' * (bandCount - bands)}';
+
+void _checkCricketAudit() {
+  final relativePath = cricketAuditPath;
+  final file = File('$repoRoot/$relativePath');
+  if (!file.existsSync()) {
+    errors.add('$relativePath — required cricket audit ledger is missing');
+    return;
+  }
+
+  Map<String, dynamic> audit;
+  try {
+    audit = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
+  } catch (e) {
+    errors.add('$relativePath — will not parse: $e');
+    return;
+  }
+
+  if (audit['sport'] != 'cricket') {
+    errors.add('$relativePath — "sport" must be cricket');
+  }
+  if (audit['factualCutoff'] != cricketCutoff) {
+    errors.add(
+      '$relativePath — factualCutoff is ${audit['factualCutoff']}, '
+      'expected $cricketCutoff',
+    );
+  }
+  final sources = audit['sources'];
+  final questions = audit['questions'];
+  if (sources is! Map) {
+    errors.add('$relativePath — missing "sources" object');
+    return;
+  }
+  if (questions is! Map) {
+    errors.add('$relativePath — missing "questions" object');
+    return;
+  }
+
+  for (final entry in sources.entries) {
+    final value = entry.value;
+    if (value is! Map || value['title'] is! String || value['url'] is! String) {
+      errors.add('$relativePath — source ${entry.key} is malformed');
+      continue;
+    }
+    final uri = Uri.tryParse(value['url'] as String);
+    if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
+      errors.add(
+        '$relativePath — source ${entry.key} must use a valid HTTPS URL',
+      );
+    }
+  }
+
+  final expectedIds = <String>{};
+  final factKeys = <String, String>{};
+  final scopeCounts = <String, Map<String, int>>{
+    for (final mode in modes)
+      mode: {'mens_international': 0, 'womens_international': 0, 'ipl': 0},
+  };
+
+  for (final mode in modes) {
+    final bank = File(bankPath('cricket', mode));
+    if (!bank.existsSync()) continue;
+    final json = jsonDecode(bank.readAsStringSync()) as Map<String, dynamic>;
+    final bands = json['bands'] as Map;
+    var number = 0;
+    for (var band = 1; band <= bandCount; band++) {
+      final entries = bands['$band'];
+      if (entries is! List || entries.length != bandSize) continue;
+      final answerCounts = List<int>.filled(optionCount, 0);
+      for (var index = 0; index < entries.length; index++) {
+        number++;
+        final id = 'cricket_${mode}_q${number.toString().padLeft(3, '0')}';
+        expectedIds.add(id);
+        final where = '$relativePath $id';
+        final authored = entries[index];
+        final record = questions[id];
+        if (authored is! Map || record is! Map) {
+          errors.add('$where — missing authored question or audit entry');
+          continue;
+        }
+
+        final options = authored['o'];
+        final answerIndex = authored['a'];
+        if (options is! List ||
+            answerIndex is! int ||
+            answerIndex < 0 ||
+            answerIndex >= options.length) {
+          errors.add('$where — authored answer cannot be resolved');
+          continue;
+        }
+        answerCounts[answerIndex]++;
+        final mappedAnswer = options[answerIndex];
+        if (record['answer'] != mappedAnswer) {
+          errors.add(
+            '$where — canonical answer "${record['answer']}" does not match '
+            'o[a] "$mappedAnswer"',
+          );
+        }
+        if (record['cutoff'] != cricketCutoff) {
+          errors.add('$where — cutoff must be $cricketCutoff');
+        }
+
+        final factKey = record['factKey'];
+        if (factKey is! String || factKey.isEmpty) {
+          errors.add('$where — factKey must be a non-empty string');
+        } else {
+          final previous = factKeys[factKey];
+          if (previous != null) {
+            errors.add(
+              '$where — factKey "$factKey" is already used by $previous',
+            );
+          } else {
+            factKeys[factKey] = id;
+          }
+        }
+
+        final scope = record['scope'];
+        if (scope is! String || !scopeCounts[mode]!.containsKey(scope)) {
+          errors.add('$where — unknown content scope "$scope"');
+        } else {
+          scopeCounts[mode]![scope] = scopeCounts[mode]![scope]! + 1;
+        }
+
+        final difficulty = record['difficulty'];
+        final expectedSet = ((number - 1) ~/ questionsPerSet) + 1;
+        if (difficulty is! Map ||
+            difficulty['mode'] != mode ||
+            difficulty['band'] != band ||
+            difficulty['set'] != expectedSet) {
+          errors.add(
+            '$where — difficulty must be $mode/band $band/set $expectedSet',
+          );
+        }
+
+        final refs = record['sources'];
+        if (refs is! List || refs.length < 2) {
+          errors.add('$where — at least two source references are required');
+        } else {
+          for (final ref in refs) {
+            if (ref is! String || !sources.containsKey(ref)) {
+              errors.add('$where — unknown source reference "$ref"');
+            }
+          }
+        }
+      }
+      for (var answerIndex = 0; answerIndex < optionCount; answerIndex++) {
+        if (answerCounts[answerIndex] != bandSize ~/ optionCount) {
+          errors.add(
+            'assets/quiz/cricket_$mode.json band $band — answer index '
+            '$answerIndex occurs ${answerCounts[answerIndex]} times, expected 25',
+          );
+        }
+      }
+    }
+  }
+
+  if (questions.length != expectedIds.length) {
+    errors.add(
+      '$relativePath — has ${questions.length} entries, '
+      'expected ${expectedIds.length}',
+    );
+  }
+  for (final id in questions.keys) {
+    if (!expectedIds.contains(id)) {
+      errors.add('$relativePath — unexpected audit entry $id');
+    }
+  }
+  for (final mode in modes) {
+    final expected = expectedCricketScopes[mode]!;
+    final actual = scopeCounts[mode]!;
+    for (final scope in expected.keys) {
+      if (actual[scope] != expected[scope]) {
+        errors.add(
+          '$relativePath — $mode/$scope has ${actual[scope]}, '
+          'expected ${expected[scope]}',
+        );
+      }
+    }
+  }
+}

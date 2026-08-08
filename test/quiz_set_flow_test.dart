@@ -105,8 +105,10 @@ void main() {
     // Questions are asset data; the lobby preloads them in the app, so the
     // widget tests have to do the same before pumping a play screen.
     QuizBank.debugReset();
-    for (final mode in QuizMode.values) {
-      await QuizBank.ensureLoaded(Sport.football, mode);
+    for (final sport in [Sport.football, Sport.cricket]) {
+      for (final mode in QuizMode.values) {
+        await QuizBank.ensureLoaded(sport, mode);
+      }
     }
   });
 
@@ -279,16 +281,42 @@ void main() {
       _wrap(
         gameBloc: gameBloc,
         quizCubit: quizCubit,
-        child: const QuizPlayScreen(sport: Sport.cricket, mode: QuizMode.easy),
+        child: const QuizPlayScreen(sport: Sport.tennis, mode: QuizMode.easy),
       ),
     );
     await tester.pumpAndSettle();
 
     // No filler questions, no crash — the sport's chrome plus an honest
     // "not written yet" state.
-    expect(find.text('CRICKET QUIZ'), findsOneWidget);
+    expect(find.text('TENNIS QUIZ'), findsOneWidget);
     expect(find.text('SET NOT WRITTEN YET'), findsOneWidget);
     expect(find.byKey(const ValueKey('quiz-option-0')), findsNothing);
+  });
+
+  testWidgets('cricket renders authored questions through the final set', (
+    tester,
+  ) async {
+    final gameBloc = await _loadedGameBloc();
+    final quizCubit = await _loadedQuizCubit();
+    addTearDown(gameBloc.close);
+    addTearDown(quizCubit.close);
+
+    await tester.pumpWidget(
+      _wrap(
+        gameBloc: gameBloc,
+        quizCubit: quizCubit,
+        child: const QuizPlayScreen(
+          sport: Sport.cricket,
+          mode: QuizMode.global,
+          setNumber: 50,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('CRICKET QUIZ'), findsOneWidget);
+    expect(find.text('GLOBAL · SET 50'), findsOneWidget);
+    expect(find.byKey(const ValueKey('quiz-option-0')), findsOneWidget);
   });
 
   testWidgets('locking an answer reveals the verdict before advancing', (
@@ -544,7 +572,10 @@ void main() {
 
     // MEDIUM pays 2 XP per correct answer; two correct were banked.
     expect(gameBloc.state.progression.totalXP, 4);
-    expect(quizCubit.isSetUnlocked(Sport.football, QuizMode.medium, 2), isFalse);
+    expect(
+      quizCubit.isSetUnlocked(Sport.football, QuizMode.medium, 2),
+      isFalse,
+    );
     expect(
       quizCubit.setProgressFor(Sport.football, QuizMode.medium, 1).attempts,
       0,
