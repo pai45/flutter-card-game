@@ -1,5 +1,9 @@
 # Pitch Duel Card Game
 
+> **Status:** BUILT
+> **Last verified:** 2026-08-09
+> **Scope:** Starter pack, collection/deck gate, four-round card match, shootout, settlement, and progression
+
 Pitch Duel is StatOz's football card game. It turns the user's collection into a playable tactical match: build a squad, choose cards round by round, resolve football scenarios, and earn XP/coins from the result.
 
 ## Product Purpose
@@ -156,8 +160,7 @@ A playable deck requires:
 
 The active deck is used when starting a match. If a deck is incomplete or contains unowned cards, the match start is blocked with a deck-required state.
 
-## Match Structure
-
+## Mechanics and Rules
 A Pitch Duel match has four regular rounds.
 
 The match flow is:
@@ -284,7 +287,7 @@ Risky actions can create fouls or red cards, so high-power choices can carry dow
 | Round build + power calculation | `lib/blocs/game/game_bloc.dart` → `_onMovePlayed` |
 | Outcome resolution table | `lib/blocs/game/game_bloc.dart` → `_resolveRound` |
 | Shot Meter honest odds | `lib/blocs/game/game_bloc.dart` → `goalChanceForDiff` |
-| Full mechanics reference | `docs/round-resolution.md` |
+| Full mechanics reference | [`docs/technical/round-resolution.md`](../../technical/round-resolution.md) |
 
 Odds-table parity between the engine and the Shot Meter is guarded by `test/shot_meter_odds_test.dart`.
 
@@ -311,10 +314,9 @@ Rewards connect the match to the broader product economy:
 
 Match results are saved to history with the deck name, score, penalty score if any, round summary, and XP earned.
 
-For the full XP curve, pack XP formulas, level progress fields, de-leveling nuance, and CPU difficulty scaling, see [Pitch Duel Leveling System](pitch-duel-leveling.md).
+For the full XP curve, pack XP formulas, level progress fields, de-leveling nuance, and CPU difficulty scaling, see [Progression and Leveling](../systems/progression-and-leveling.md).
 
-## Product Loop
-
+## Player Flow
 1. Claim or buy packs.
 2. Add cards to collection.
 3. Build a legal deck.
@@ -329,3 +331,47 @@ For the full XP curve, pack XP formulas, level progress fields, de-leveling nuan
 - Opponent strength scales with player level.
 - Match history keeps the latest saved entries rather than an unlimited archive, including standalone Penalty Shootout entries.
 - The game uses persistent local product state for decks, owned cards, wallet, progression, starter pack, daily drop, tutorials, and match history.
+
+## Rewards and Progression
+Match settlement credits the Pitch Duel XP track and Oz Coins through typed
+ledgers. A regulation draw awards **+4 XP**. Wins/losses, penalty outcomes,
+round/score context, and CPU level scaling use the formulas documented in
+[Progression and Leveling](../systems/progression-and-leveling.md).
+
+## Gratification and Feedback
+
+Starter-pack opening, card selection, shot timing, multi-beat round resolution,
+score-impact ticks, shootout pressure, final settlement, XP/coin count-ups, and
+level-up celebrations create the core reward rhythm.
+
+## Visible States
+
+Starter-pack required/claimed, invalid/valid deck, matchmaking, round setup,
+card locked, shot meter, resolving, round result, shootout, final result,
+reward settlement, and level-up states are represented.
+
+## Persistence
+
+Owned cards, decks, progression tracks, wallet, XP/coin ledgers, starter pack,
+daily drop, tutorial state, and bounded match history persist through shared
+secure storage. An in-progress Pitch Duel match is not a cross-session resume contract.
+
+## Planned Scope and Current Limitations
+
+- **BUILT:** Single-player CPU match, collection/deck loop, four regulation
+  rounds, shootout tiebreaker, rewards, history, streaks, and progression.
+- **PLANNED:** Network multiplayer and server-authoritative competition are not
+  implemented; existing opponent behavior is local CPU play.
+
+## Implementation References
+
+- [`lib/blocs/game/game_bloc.dart`](../../../lib/blocs/game/game_bloc.dart)
+- [`lib/models/progression.dart`](../../../lib/models/progression.dart)
+- [`lib/screens/game/game_screen.dart`](../../../lib/screens/game/game_screen.dart)
+- [Round resolution and match settlement](../../technical/round-resolution.md)
+
+## Tests
+
+- [`test/round_result_overflow_test.dart`](../../../test/round_result_overflow_test.dart)
+- [`test/progression_economy_test.dart`](../../../test/progression_economy_test.dart)
+- [`test/progression_tracks_test.dart`](../../../test/progression_tracks_test.dart)

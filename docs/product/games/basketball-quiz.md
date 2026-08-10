@@ -1,38 +1,41 @@
-# Football Quiz
+# Basketball Quiz
 
-Football Quiz is StatOz's trivia ladder mode. It gives the Games tab a knowledge-first loop: choose a category, pay a small Oz Coin entry fee, answer a 10-question set, and earn XP for every correct answer.
+> **Status:** BUILT
+> **Last verified:** 2026-08-09
+> **Scope:** Basketball trivia categories, set ladder, answer feedback, entry cost, persistence, and XP
+
+Basketball Quiz is StatOz's trivia ladder mode. It gives the Games tab a knowledge-first loop: choose a category, pay a small Oz Coin entry fee, answer a 10-question set, and earn XP for every correct answer.
 
 ## Product Purpose
 
-Football Quiz gives users a fast non-card game mode that rewards football knowledge without requiring a deck, squad, or opponent.
+Basketball Quiz gives users a fast non-card game mode that rewards basketball knowledge without requiring a deck, squad, or opponent.
 
 It uses the shared wallet for entry costs and the shared progression track for XP rewards. It does not award coins, write match-history entries, or require starter-pack ownership.
 
 ## Where It Lives
 
-Football Quiz is opened from the **GAMES** tab in the Predictions area.
+Basketball Quiz is opened from the **GAMES** tab in the Predictions area.
 
 The Games tab currently includes:
 
 - **Pitch Duel**: four-round tactical card match.
 - **Penalty Shootout**: standalone spot kicks.
-- **Football Quiz**: trivia set ladder.
-- **Football Bingo**: daily country-by-club grid puzzle.
+- **Basketball Quiz**: trivia set ladder.
+- **Basketball Bingo**: daily country-by-club grid puzzle.
 - **Guess the Player**: daily career-timeline mystery.
-- **5v5 Football Chess**: tactical squad duel.
+- **5v5 Basketball Chess**: tactical squad duel.
 
-Opening Football Quiz launches a full-screen lobby owned by `QuizCubit`. The lobby shows overall set progress and lets the user choose a trivia category.
+Opening Basketball Quiz launches a full-screen lobby owned by `QuizCubit`. The lobby shows overall set progress and lets the user choose a trivia category.
 
-## Categories And Sets
-
-Football Quiz has four categories:
+## Mechanics and Rules
+Basketball Quiz has four categories:
 
 | Category | Theme | XP per correct answer |
 |----------|-------|-----------------------|
-| Easy | Football basics | 1 XP |
-| Medium | Clubs and cups | 2 XP |
+| Easy | Basketball basics | 1 XP |
+| Medium | Teams and titles | 2 XP |
 | Hard | Deep-cut trivia | 4 XP |
-| Global | World football | 5 XP |
+| Global | World basketball | 5 XP |
 
 All categories are currently open from the start. Progression is gated inside each category by numbered sets.
 
@@ -46,9 +49,8 @@ The entry cost is charged before the play screen opens. If the user does not hav
 
 Retrying the same set from the reveal screen also costs 25 Oz Coins.
 
-## User Flow
-
-1. User opens **Predictions -> Games -> Football Quiz**.
+## Player Flow
+1. User opens **Predictions -> Games -> Basketball Quiz**.
 2. Lobby loads persisted quiz progress.
 3. User chooses a category: Easy, Medium, Hard, or Global.
 4. User chooses an unlocked set.
@@ -120,9 +122,8 @@ duplicate prompts and answer-position balance, and to print a coverage table.
 Sets past the authored range render as SOON in the ladder rather than falling
 back to placeholder questions.
 
-## Rewards And Progression
-
-Football Quiz is XP-only. It does not award coins.
+## Rewards and Progression
+Basketball Quiz is XP-only. It does not award coins.
 
 Every correct answer pays, whatever the final score:
 
@@ -130,13 +131,13 @@ Every correct answer pays, whatever the final score:
 totalXp = correctAnswers * mode.reward
 ```
 
-The XP ledger entry uses source `quiz`, title `FOOTBALL QUIZ REWARD`, and details like `EASY SET 1`.
+The XP ledger entry uses source `quiz`, title `BASKETBALL QUIZ REWARD`, and details like `EASY SET 1`.
 
 The reveal credits XP before the cinematic finishes, so skipping or leaving the reveal does not change the reward outcome.
 
 ## Persistence
 
-Football Quiz persists personal progress through `SecureGameStorage`.
+Basketball Quiz persists personal progress through `SecureGameStorage`.
 
 For each category, the app stores progress by set number:
 
@@ -152,21 +153,37 @@ Current limitations:
 - No coin reward is paid.
 - Category unlocks are no longer gated; all four categories are open, while set unlocks remain sequential.
 
-## Implementation Reference
-
+## Implementation References
 | Concern | Source |
 |---------|--------|
-| Quiz constants, category metadata, set progress model | [`lib/models/quiz_trivia.dart`](../../lib/models/quiz_trivia.dart) |
-| Trivia question bank and deterministic set building | [`lib/services/quiz_trivia_bank.dart`](../../lib/services/quiz_trivia_bank.dart) |
-| Quiz progress loading and result persistence | [`lib/blocs/quiz/quiz_cubit.dart`](../../lib/blocs/quiz/quiz_cubit.dart) |
-| Quiz state fields and derived getters | [`lib/blocs/quiz/quiz_state.dart`](../../lib/blocs/quiz/quiz_state.dart) |
-| Football Quiz shell | [`lib/screens/quiz/quiz_hub.dart`](../../lib/screens/quiz/quiz_hub.dart) |
-| Lobby, category list, set ladder, entry cost handling | [`lib/screens/quiz/quiz_lobby_screen.dart`](../../lib/screens/quiz/quiz_lobby_screen.dart) |
-| Live question flow, submit, retry, and XP dispatch | [`lib/screens/quiz/quiz_play_screen.dart`](../../lib/screens/quiz/quiz_play_screen.dart) |
-| Quiz reveal overlay | [`lib/screens/quiz/widgets/quiz_reveal.dart`](../../lib/screens/quiz/widgets/quiz_reveal.dart) |
-| Quiz progress storage | [`lib/services/secure_storage_service.dart`](../../lib/services/secure_storage_service.dart) |
+| Quiz constants, category metadata, set progress model | [`lib/models/quiz_trivia.dart`](../../../lib/models/quiz_trivia.dart) |
+| Trivia question bank and deterministic set building | [`lib/services/quiz_trivia_bank.dart`](../../../lib/services/quiz_trivia_bank.dart) |
+| Quiz progress loading and result persistence | [`lib/blocs/quiz/quiz_cubit.dart`](../../../lib/blocs/quiz/quiz_cubit.dart) |
+| Quiz state fields and derived getters | [`lib/blocs/quiz/quiz_state.dart`](../../../lib/blocs/quiz/quiz_state.dart) |
+| Basketball Quiz shell | [`lib/screens/quiz/quiz_hub.dart`](../../../lib/screens/quiz/quiz_hub.dart) |
+| Lobby, category list, set ladder, entry cost handling | [`lib/screens/quiz/quiz_lobby_screen.dart`](../../../lib/screens/quiz/quiz_lobby_screen.dart) |
+| Live question flow, submit, retry, and XP dispatch | [`lib/screens/quiz/quiz_play_screen.dart`](../../../lib/screens/quiz/quiz_play_screen.dart) |
+| Quiz reveal overlay | [`lib/screens/quiz/widgets/quiz_reveal.dart`](../../../lib/screens/quiz/widgets/quiz_reveal.dart) |
+| Quiz progress storage | [`lib/services/secure_storage_service.dart`](../../../lib/services/secure_storage_service.dart) |
 
-Relevant tests:
+## Tests
 
-- [`test/quiz_cubit_test.dart`](../../test/quiz_cubit_test.dart)
-- [`test/quiz_set_flow_test.dart`](../../test/quiz_set_flow_test.dart)
+- [`test/quiz_cubit_test.dart`](../../../test/quiz_cubit_test.dart)
+- [`test/quiz_set_flow_test.dart`](../../../test/quiz_set_flow_test.dart)
+
+## Gratification and Feedback
+
+Answer locks, correct/wrong reveals, the visible XP pot, mastery stars, the set
+result cinematic, new-best treatment, and level progress give every run a clear payoff.
+
+## Visible States
+
+Loading, locked/unlocked set, affordable/unaffordable entry, unanswered/locked
+answer, correct/wrong reveal, incomplete exit, and completed set states are represented.
+
+## Planned Scope and Current Limitations
+
+- **BUILT:** Basketball content on the shared quiz ladder with a 25-coin entry,
+  persisted stars/best scores, and Quiz-track XP.
+- **PLANNED:** Any additional categories or live question service require
+  explicit scope; current questions ship locally.

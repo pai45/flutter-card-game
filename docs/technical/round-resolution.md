@@ -4,13 +4,13 @@ How a single round of Pitch Duel is settled: the inputs, the power formula, and
 the probability table that turns two cards into one of six outcomes
 (**goal / saved / blocked / missed / foul / red card**).
 
-> **Source of truth:** [`lib/blocs/game/game_bloc.dart`](../lib/blocs/game/game_bloc.dart)
+> **Source of truth:** [`lib/blocs/game/game_bloc.dart`](../../lib/blocs/game/game_bloc.dart)
 > — specifically `GameBloc._onMovePlayed` (builds the round) and
 > `GameBloc._resolveRound` (decides the outcome). The honest goal odds are also
 > exported as `goalChanceForDiff` near the top of that file. The outcome enum,
 > labels and colours live in
-> [`lib/utils/label_helpers.dart`](../lib/utils/label_helpers.dart) and the
-> `RoundOutcome` enum in [`lib/config/enums.dart`](../lib/config/enums.dart).
+> [`lib/utils/label_helpers.dart`](../../lib/utils/label_helpers.dart) and the
+> `RoundOutcome` enum in [`lib/config/enums.dart`](../../lib/config/enums.dart).
 >
 > Line numbers below are accurate at time of writing but may drift — search by
 > function name if they don't match.
@@ -55,7 +55,7 @@ When `MovePlayed` fires, the bloc has:
 The CPU's action choice is mildly strategic: when the scenario favours the CPU's
 role it may (gated by a smartness roll tied to your level) pick its
 highest-power action instead of a random one — see `_onMovePlayed`
-([game_bloc.dart:649-662](../lib/blocs/game/game_bloc.dart#L649-L662)).
+([game_bloc.dart:649-662](../../lib/blocs/game/game_bloc.dart#L649-L662)).
 
 Roles are assigned so the *player's* swing always lands on the side the player is
 playing:
@@ -69,7 +69,7 @@ defenseSwing = playerAttacking ? oppSwing    : playerSwing;
 
 ## 3. Power calculation
 
-[game_bloc.dart:675-684](../lib/blocs/game/game_bloc.dart#L675-L684)
+[game_bloc.dart:675-684](../../lib/blocs/game/game_bloc.dart#L675-L684)
 
 ```
 attackPower  = attackerCard.rating + attackAction.power + scenario.attackBonus  + attackSwing
@@ -94,7 +94,7 @@ diff = attackPower − defensePower
 ## 4. Settlement algorithm
 
 `GameBloc._resolveRound(attackPower, defensePower, attackAction, defenseAction)`
-([game_bloc.dart:901-938](../lib/blocs/game/game_bloc.dart#L901-L938)).
+([game_bloc.dart:901-938](../../lib/blocs/game/game_bloc.dart#L901-L938)).
 
 It resolves in two stages — **risky-card overrides first**, then the **power
 table**. Each `_random.nextDouble()` is an independent draw.
@@ -130,7 +130,7 @@ A single uniform `roll ∈ [0,1)` is bucketed by the `diff` band:
 ## 5. Goal-odds reference (Shot Meter)
 
 The goal column above is mirrored by `goalChanceForDiff(diff)`
-([game_bloc.dart:25-31](../lib/blocs/game/game_bloc.dart#L25-L31)), which the
+([game_bloc.dart:25-31](../../lib/blocs/game/game_bloc.dart#L25-L31)), which the
 Shot Meter overlay uses to show **honest odds** before you shoot:
 
 ```dart
@@ -151,7 +151,7 @@ double goalChanceForDiff(double diff) {
 
 ## 6. Applying the outcome to state
 
-[game_bloc.dart:692-728](../lib/blocs/game/game_bloc.dart#L692-L728)
+[game_bloc.dart:692-728](../../lib/blocs/game/game_bloc.dart#L692-L728)
 
 - **Goal** → the **attacking side's score increments by 1**
   (`playerScore` or `opponentScore`). This is the only outcome that changes the
@@ -180,7 +180,7 @@ Everything except a goal shows as **HELD** on the score banner.
 
 ## 7. Role alternation across the 4 rounds
 
-`_onRoundAdvanced` ([game_bloc.dart:731-745](../lib/blocs/game/game_bloc.dart#L731-L745)):
+`_onRoundAdvanced` ([game_bloc.dart:731-745](../../lib/blocs/game/game_bloc.dart#L731-L745)):
 
 ```dart
 playerAttacking: nextRound.isOdd ? initialAttack : !initialAttack

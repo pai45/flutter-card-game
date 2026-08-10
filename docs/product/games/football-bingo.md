@@ -1,5 +1,9 @@
 # Football Bingo
 
+> **Status:** BUILT
+> **Last verified:** 2026-08-09
+> **Scope:** Daily football grid, player validation, lifelines, archive, and career verification
+
 Football Bingo is StatOz's daily grid puzzle. It gives the Games tab a compact football-knowledge challenge: place the active player into the matching club-intersection cell, protect the run with lifelines, and complete a 3x3 grid before moving on to the next daily puzzle.
 
 ## Product Purpose
@@ -23,8 +27,7 @@ The Games tab currently includes:
 
 Opening Football Bingo launches a full-screen hub backed by `FootballBingoCubit`. The mode can open today's puzzle or archived unlocked days.
 
-## Puzzle Format
-
+## Mechanics and Rules
 Each Football Bingo puzzle is a 3x3 club-by-club grid:
 
 | Element | Behavior |
@@ -44,8 +47,7 @@ On first load, the current day becomes the first unlocked day of a 50-day season
 
 Past days are read-only when opened from the archive.
 
-## User Flow
-
+## Player Flow
 1. User opens **Predictions -> Games -> Football Bingo**.
 2. The mode loads the daily archive and opens today's puzzle.
 3. The screen shows the 3x3 grid, club axes, active player, solved count, and lifelines.
@@ -79,8 +81,7 @@ Completion triggers:
 
 Completed grids can still be reviewed, but active placement stops once all cells are solved.
 
-## Rewards And Progression
-
+## Rewards and Progression
 Football Bingo currently has no completion XP reward and no completion coin reward.
 
 The only wallet interaction is optional lifeline spending. This keeps the mode as a daily knowledge puzzle rather than a progression-farming source.
@@ -112,18 +113,34 @@ The cubit also supports migration from the older single-progress storage shape i
 
 Every Bingo player has a curated senior-club timeline. Academy/reserve-only spells are excluded; senior loan spells count. Each record retains career-source URLs and puzzle validation rejects any row/column intersection not present in the player history.
 
-## Implementation Reference
-
+## Implementation References
 | Concern | Source |
 |---------|--------|
-| Grid constants, day keys, progress/archive model, validation | [`lib/models/football_bingo.dart`](../../lib/models/football_bingo.dart) |
-| Puzzle definitions | [`lib/data/football_bingo_puzzles.dart`](../../lib/data/football_bingo_puzzles.dart) |
-| Daily archive loading, cell selection, lifeline purchase state | [`lib/blocs/football_bingo/football_bingo_cubit.dart`](../../lib/blocs/football_bingo/football_bingo_cubit.dart) |
-| Bingo state fields and derived getters | [`lib/blocs/football_bingo/football_bingo_state.dart`](../../lib/blocs/football_bingo/football_bingo_state.dart) |
-| Football Bingo full-screen hub | [`lib/screens/football_bingo/football_bingo_hub.dart`](../../lib/screens/football_bingo/football_bingo_hub.dart) |
-| Grid UI, active-player panel, lifeline dock, completion overlay | [`lib/screens/football_bingo/football_bingo_screen.dart`](../../lib/screens/football_bingo/football_bingo_screen.dart) |
-| Bingo archive and legacy progress storage | [`lib/services/secure_storage_service.dart`](../../lib/services/secure_storage_service.dart) |
+| Grid constants, day keys, progress/archive model, validation | [`lib/models/football_bingo.dart`](../../../lib/models/football_bingo.dart) |
+| Puzzle definitions | [`lib/data/football_bingo_puzzles.dart`](../../../lib/data/football_bingo_puzzles.dart) |
+| Daily archive loading, cell selection, lifeline purchase state | [`lib/blocs/football_bingo/football_bingo_cubit.dart`](../../../lib/blocs/football_bingo/football_bingo_cubit.dart) |
+| Bingo state fields and derived getters | [`lib/blocs/football_bingo/football_bingo_state.dart`](../../../lib/blocs/football_bingo/football_bingo_state.dart) |
+| Football Bingo full-screen hub | [`lib/screens/football_bingo/football_bingo_hub.dart`](../../../lib/screens/football_bingo/football_bingo_hub.dart) |
+| Grid UI, active-player panel, lifeline dock, completion overlay | [`lib/screens/football_bingo/football_bingo_screen.dart`](../../../lib/screens/football_bingo/football_bingo_screen.dart) |
+| Bingo archive and legacy progress storage | [`lib/services/secure_storage_service.dart`](../../../lib/services/secure_storage_service.dart) |
 
-Relevant tests:
+## Tests
 
-- [`test/football_bingo_test.dart`](../../test/football_bingo_test.dart)
+- [`test/football_bingo_test.dart`](../../../test/football_bingo_test.dart)
+
+## Gratification and Feedback
+
+Validated cell fills, rejected-player feedback, daily completion overlay, grid
+progress, archive totals, and lifeline confirmation make knowledge progress visible.
+
+## Visible States
+
+Daily available/in-progress/completed, selected cell, valid/invalid player,
+lifeline available/unaffordable, and archived-day states are represented.
+
+## Planned Scope and Current Limitations
+
+- **BUILT:** Deterministic daily puzzle, verified player intersections,
+  persistent archive, and 25-coin lifelines.
+- **PLANNED:** Bingo completion currently awards no XP or coins and does not
+  write match history; any reward addition needs a documented settlement source.

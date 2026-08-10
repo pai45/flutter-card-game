@@ -1,5 +1,9 @@
 # F1 Quiz
 
+> **Status:** BUILT
+> **Last verified:** 2026-08-09
+> **Scope:** Formula 1 trivia categories, set ladder, answer feedback, entry cost, persistence, and XP
+
 F1 Quiz is StatOz's trivia ladder mode. It gives the Games tab a knowledge-first loop: choose a category, pay a small Oz Coin entry fee, answer a 10-question set, and earn XP for every correct answer.
 
 ## Product Purpose
@@ -23,8 +27,7 @@ The Games tab currently includes:
 
 Opening F1 Quiz launches a full-screen lobby owned by `QuizCubit`. The lobby shows overall set progress and lets the user choose a trivia category.
 
-## Categories And Sets
-
+## Mechanics and Rules
 F1 Quiz has four categories:
 
 | Category | Theme | XP per correct answer |
@@ -46,8 +49,7 @@ The entry cost is charged before the play screen opens. If the user does not hav
 
 Retrying the same set from the reveal screen also costs 25 Oz Coins.
 
-## User Flow
-
+## Player Flow
 1. User opens **Predictions -> Games -> F1 Quiz**.
 2. Lobby loads persisted quiz progress.
 3. User chooses a category: Easy, Medium, Hard, or Global.
@@ -120,8 +122,7 @@ duplicate prompts and answer-position balance, and to print a coverage table.
 Sets past the authored range render as SOON in the ladder rather than falling
 back to placeholder questions.
 
-## Rewards And Progression
-
+## Rewards and Progression
 F1 Quiz is XP-only. It does not award coins.
 
 Every correct answer pays, whatever the final score:
@@ -152,21 +153,37 @@ Current limitations:
 - No coin reward is paid.
 - Category unlocks are no longer gated; all four categories are open, while set unlocks remain sequential.
 
-## Implementation Reference
-
+## Implementation References
 | Concern | Source |
 |---------|--------|
-| Quiz constants, category metadata, set progress model | [`lib/models/quiz_trivia.dart`](../../lib/models/quiz_trivia.dart) |
-| Trivia question bank and deterministic set building | [`lib/services/quiz_trivia_bank.dart`](../../lib/services/quiz_trivia_bank.dart) |
-| Quiz progress loading and result persistence | [`lib/blocs/quiz/quiz_cubit.dart`](../../lib/blocs/quiz/quiz_cubit.dart) |
-| Quiz state fields and derived getters | [`lib/blocs/quiz/quiz_state.dart`](../../lib/blocs/quiz/quiz_state.dart) |
-| F1 Quiz shell | [`lib/screens/quiz/quiz_hub.dart`](../../lib/screens/quiz/quiz_hub.dart) |
-| Lobby, category list, set ladder, entry cost handling | [`lib/screens/quiz/quiz_lobby_screen.dart`](../../lib/screens/quiz/quiz_lobby_screen.dart) |
-| Live question flow, submit, retry, and XP dispatch | [`lib/screens/quiz/quiz_play_screen.dart`](../../lib/screens/quiz/quiz_play_screen.dart) |
-| Quiz reveal overlay | [`lib/screens/quiz/widgets/quiz_reveal.dart`](../../lib/screens/quiz/widgets/quiz_reveal.dart) |
-| Quiz progress storage | [`lib/services/secure_storage_service.dart`](../../lib/services/secure_storage_service.dart) |
+| Quiz constants, category metadata, set progress model | [`lib/models/quiz_trivia.dart`](../../../lib/models/quiz_trivia.dart) |
+| Trivia question bank and deterministic set building | [`lib/services/quiz_trivia_bank.dart`](../../../lib/services/quiz_trivia_bank.dart) |
+| Quiz progress loading and result persistence | [`lib/blocs/quiz/quiz_cubit.dart`](../../../lib/blocs/quiz/quiz_cubit.dart) |
+| Quiz state fields and derived getters | [`lib/blocs/quiz/quiz_state.dart`](../../../lib/blocs/quiz/quiz_state.dart) |
+| F1 Quiz shell | [`lib/screens/quiz/quiz_hub.dart`](../../../lib/screens/quiz/quiz_hub.dart) |
+| Lobby, category list, set ladder, entry cost handling | [`lib/screens/quiz/quiz_lobby_screen.dart`](../../../lib/screens/quiz/quiz_lobby_screen.dart) |
+| Live question flow, submit, retry, and XP dispatch | [`lib/screens/quiz/quiz_play_screen.dart`](../../../lib/screens/quiz/quiz_play_screen.dart) |
+| Quiz reveal overlay | [`lib/screens/quiz/widgets/quiz_reveal.dart`](../../../lib/screens/quiz/widgets/quiz_reveal.dart) |
+| Quiz progress storage | [`lib/services/secure_storage_service.dart`](../../../lib/services/secure_storage_service.dart) |
 
-Relevant tests:
+## Tests
 
-- [`test/quiz_cubit_test.dart`](../../test/quiz_cubit_test.dart)
-- [`test/quiz_set_flow_test.dart`](../../test/quiz_set_flow_test.dart)
+- [`test/quiz_cubit_test.dart`](../../../test/quiz_cubit_test.dart)
+- [`test/quiz_set_flow_test.dart`](../../../test/quiz_set_flow_test.dart)
+
+## Gratification and Feedback
+
+Answer locks, correct/wrong reveals, the visible XP pot, mastery stars, the set
+result cinematic, new-best treatment, and level progress give every run a clear payoff.
+
+## Visible States
+
+Loading, locked/unlocked set, affordable/unaffordable entry, unanswered/locked
+answer, correct/wrong reveal, incomplete exit, and completed set states are represented.
+
+## Planned Scope and Current Limitations
+
+- **BUILT:** F1 content on the shared quiz ladder with a 25-coin entry,
+  persisted stars/best scores, and Quiz-track XP.
+- **PLANNED:** Any additional categories or live question service require
+  explicit scope; current questions ship locally.

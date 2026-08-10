@@ -1,5 +1,9 @@
 # Grand Prix Dash
 
+> **Status:** BUILT
+> **Last verified:** 2026-08-09
+> **Scope:** Racing starter pack, pit deck, circuits, launch, race engine, rewards, and career
+
 Grand Prix Dash is StatOz's one-lap top-down F1-style arcade racer. The user chooses a circuit and livery, launches from the grid, races through a 20-car field, manages speed through corners, uses slipstream on straights, and earns XP based on finishing position.
 
 ## Product Purpose
@@ -27,8 +31,7 @@ Grand Prix Dash has no deck requirement and no starter-pack gate.
 
 The user can start immediately once the lobby stats have loaded. The current player level is read when a race is built so CPU smartness can scale with progression.
 
-## End-To-End User Flow
-
+## Player Flow
 1. User opens **Games -> F1 -> Grand Prix Dash**.
 2. Lobby loads persisted racing stats.
 3. User chooses a circuit and team livery, or keeps the last-used choices.
@@ -47,8 +50,7 @@ The user can start immediately once the lobby stats have loaded. The current pla
 
 Leaving during grid, lights, or racing abandons the attempt. Abandoned races do not save stats and do not award XP.
 
-## Race Format
-
+## Mechanics and Rules
 | Rule | Value |
 |------|-------|
 | Race length | 1 lap |
@@ -394,8 +396,7 @@ Working behavior:
 - **RACE AGAIN** pops the current race route and immediately builds a new race from lobby state
 - result overlay reads `GameBloc` progression after XP dispatch
 
-## Rewards And Progression
-
+## Rewards and Progression
 Grand Prix Dash awards XP only. It never subtracts XP and never pays coins.
 
 | Finish Position | XP |
@@ -441,28 +442,45 @@ Personal bests are tracked per circuit by `GrandPrixCircuitId.name`. A DNF has n
 - The result records local racing stats and shared XP, but no separate race-history archive is currently documented.
 - Reduced-motion users bypass the reaction test and receive a good launch.
 
-## Implementation Reference
-
+## Implementation References
 | Concern | Source |
 |---------|--------|
-| Domain enums, circuits, results, persisted stats | [`lib/models/grand_prix.dart`](../../lib/models/grand_prix.dart) |
-| Circuit catalog | [`lib/data/grand_prix_circuits.dart`](../../lib/data/grand_prix_circuits.dart) |
-| Livery catalog | [`lib/data/grand_prix_liveries.dart`](../../lib/data/grand_prix_liveries.dart) |
-| CPU driver name generation | [`lib/data/grand_prix_drivers.dart`](../../lib/data/grand_prix_drivers.dart) |
-| Pure race engine and physics | [`lib/games/grand_prix/grand_prix_engine.dart`](../../lib/games/grand_prix/grand_prix_engine.dart) |
-| Flame renderer and live loop | [`lib/games/grand_prix/grand_prix_game.dart`](../../lib/games/grand_prix/grand_prix_game.dart) |
-| Cubit lifecycle and persistence | [`lib/blocs/grand_prix/grand_prix_cubit.dart`](../../lib/blocs/grand_prix/grand_prix_cubit.dart) |
-| Grand Prix state | [`lib/blocs/grand_prix/grand_prix_state.dart`](../../lib/blocs/grand_prix/grand_prix_state.dart) |
-| Hub/tab entry | [`lib/screens/grand_prix/grand_prix_hub.dart`](../../lib/screens/grand_prix/grand_prix_hub.dart) |
-| Lobby UI | [`lib/screens/grand_prix/grand_prix_lobby_screen.dart`](../../lib/screens/grand_prix/grand_prix_lobby_screen.dart) |
-| Race screen, lights, HUD, finish bridge | [`lib/screens/grand_prix/grand_prix_race_screen.dart`](../../lib/screens/grand_prix/grand_prix_race_screen.dart) |
-| Control pad | [`lib/screens/grand_prix/widgets/grand_prix_controls.dart`](../../lib/screens/grand_prix/widgets/grand_prix_controls.dart) |
-| Result overlay | [`lib/screens/grand_prix/widgets/grand_prix_result.dart`](../../lib/screens/grand_prix/widgets/grand_prix_result.dart) |
-| XP formula | [`lib/models/progression.dart`](../../lib/models/progression.dart) |
+| Domain enums, circuits, results, persisted stats | [`lib/models/grand_prix.dart`](../../../lib/models/grand_prix.dart) |
+| Circuit catalog | [`lib/data/grand_prix_circuits.dart`](../../../lib/data/grand_prix_circuits.dart) |
+| Livery catalog | [`lib/data/grand_prix_liveries.dart`](../../../lib/data/grand_prix_liveries.dart) |
+| CPU driver name generation | [`lib/data/grand_prix_drivers.dart`](../../../lib/data/grand_prix_drivers.dart) |
+| Pure race engine and physics | [`lib/games/grand_prix/grand_prix_engine.dart`](../../../lib/games/grand_prix/grand_prix_engine.dart) |
+| Flame renderer and live loop | [`lib/games/grand_prix/grand_prix_game.dart`](../../../lib/games/grand_prix/grand_prix_game.dart) |
+| Cubit lifecycle and persistence | [`lib/blocs/grand_prix/grand_prix_cubit.dart`](../../../lib/blocs/grand_prix/grand_prix_cubit.dart) |
+| Grand Prix state | [`lib/blocs/grand_prix/grand_prix_state.dart`](../../../lib/blocs/grand_prix/grand_prix_state.dart) |
+| Hub/tab entry | [`lib/screens/grand_prix/grand_prix_hub.dart`](../../../lib/screens/grand_prix/grand_prix_hub.dart) |
+| Lobby UI | [`lib/screens/grand_prix/grand_prix_lobby_screen.dart`](../../../lib/screens/grand_prix/grand_prix_lobby_screen.dart) |
+| Race screen, lights, HUD, finish bridge | [`lib/screens/grand_prix/grand_prix_race_screen.dart`](../../../lib/screens/grand_prix/grand_prix_race_screen.dart) |
+| Control pad | [`lib/screens/grand_prix/widgets/grand_prix_controls.dart`](../../../lib/screens/grand_prix/widgets/grand_prix_controls.dart) |
+| Result overlay | [`lib/screens/grand_prix/widgets/grand_prix_result.dart`](../../../lib/screens/grand_prix/widgets/grand_prix_result.dart) |
+| XP formula | [`lib/models/progression.dart`](../../../lib/models/progression.dart) |
 
-Relevant tests:
+## Tests
 
-- [`test/grand_prix_engine_test.dart`](../../test/grand_prix_engine_test.dart)
-- [`test/grand_prix_cubit_test.dart`](../../test/grand_prix_cubit_test.dart)
-- [`test/grand_prix_stats_test.dart`](../../test/grand_prix_stats_test.dart)
-- [`test/progression_economy_test.dart`](../../test/progression_economy_test.dart)
+- [`test/grand_prix_engine_test.dart`](../../../test/grand_prix_engine_test.dart)
+- [`test/grand_prix_cubit_test.dart`](../../../test/grand_prix_cubit_test.dart)
+- [`test/grand_prix_stats_test.dart`](../../../test/grand_prix_stats_test.dart)
+- [`test/progression_economy_test.dart`](../../../test/progression_economy_test.dart)
+
+## Gratification and Feedback
+
+Starter-pack and livery reveals, five-light tension, launch grades, speed/corner
+feedback, finish beat, podium/result treatment, XP count-up, and level progress
+form the race's payoff arc.
+
+## Visible States
+
+Starter/deck gate, circuit/livery selection, grid, lights, racing, contact,
+retirement, finish, result, personal-best, and career states are represented.
+
+## Planned Scope and Current Limitations
+
+- **BUILT:** Local race engine, three circuits, CPU rivals, pit deck/livery
+  progression, race rewards, and persisted career.
+- **PLANNED:** Online races and server leaderboards are not implemented. Current
+  CPU competition and career state are local.

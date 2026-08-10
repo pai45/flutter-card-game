@@ -3,33 +3,15 @@
 A Flutter card-duel and sports-prediction app with a cyber-styled match hub,
 deck building, match history, picks, wallet coins, and player progression.
 
-## Feature Notes
+## Product Documentation
 
-- The Matches top bar shows the current win streak beside the coin balance.
-- Tapping the streak opens a calendar-style streak screen inspired by the
-  match/history UI: a flame hero, monthly event grid, and day-specific tabs for
-  `MY MATCHES` and `MY PICKS`.
-- The streak screen uses `assets/animations/streak_animation.json`, a cleaned
-  Lottie asset with the exported Jitter watermark composition removed.
-- Calendar days light up when a duel match or prediction pick exists on that
-  date. Match cards open the existing match-history detail screen; pick cards
-  open the prediction detail flow.
-- Prediction Matches use an animated first-time quiz reveal, then reopen
-  submitted predictions as an editable review list before kickoff and a
-  read-only vote/result review once matches are live or finished.
-- Prediction quizzes include one `2x` and one `1.5x` booster that can be moved
-  between answered questions until the fixture locks.
-- First-time users complete Profile Setup before entering the app: choose an
-  avatar, choose a banner, optionally follow leagues, and optionally pick a
-  favorite team for each followed league. Avatar, banner, followed league,
-  favorite team, and onboarding completion preferences are saved through
-  `SecureGameStorage`.
-- Profile and leaderboard avatars use the same avatar option set. Leaderboard
-  players are assigned a stable pseudo-random avatar from their player name, so
-  each row, podium card, and the user's sticky rank bar share the same portrait
-  mapping.
-- The Shop avatar tab now displays player portrait assets from
-  `assets/player_images/` instead of generated placeholder avatar drawings.
+The canonical product source of truth is
+**[`docs/product/README.md`](docs/product/README.md)**. It links every playable
+game, shared product system, design rule, documentation template, and the
+append-only documentation change ledger.
+
+Feature behavior and roadmap status belong in that hierarchy rather than in
+this repository overview.
 
 ## Getting Started
 

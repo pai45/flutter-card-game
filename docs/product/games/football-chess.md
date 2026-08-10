@@ -1,5 +1,9 @@
 # 5v5 Football Chess
 
+> **Status:** BUILT
+> **Last verified:** 2026-08-09
+> **Scope:** Squad gate, formation, board engine, CPU duel, XP, result, and local career record
+
 5v5 Football Chess is StatOz's tactical grid-football mode. It turns the user's active squad into a short chess-like match: choose a formation, take one board action per turn, win duels through position and ratings, and score before the two-minute clock expires.
 
 ## Product Purpose
@@ -34,8 +38,7 @@ The live Football Chess squad uses only the active deck's five player cards:
 
 Action cards are not used in Football Chess. The lobby blocks kickoff until the active deck has the required five-player shape.
 
-## End-To-End User Flow
-
+## Player Flow
 1. User opens **Predictions -> Games -> 5v5 Football Chess**.
 2. If needed, the starter-pack flow runs first, then the Football Chess lobby opens.
 3. Lobby loads the user's persisted Football Chess stats: wins, losses, draws, and current streak.
@@ -54,8 +57,7 @@ Action cards are not used in Football Chess. The lobby blocks kickoff until the 
 
 Leaving an unfinished match stops the match clocks and discards that in-progress board state.
 
-## Match Format
-
+## Mechanics and Rules
 Football Chess is a two-minute match:
 
 | Rule | Value |
@@ -173,8 +175,7 @@ cpuSmartness(level) = min(1.0, level / 12)
 
 On low-smartness rolls, the CPU chooses a random legal action. On smart rolls, it scores legal actions and prefers high-value plays such as shooting, safe tackles, useful pressure, forward passes, and productive dribbles.
 
-## Rewards And Progression
-
+## Rewards and Progression
 Football Chess is XP-only. It does not award Oz Coins.
 
 | Result | XP |
@@ -223,26 +224,42 @@ At full time, the result overlay shows:
 
 MVP is chosen from the user's goal scorers by highest goal count.
 
-## Implementation Reference
-
+## Implementation References
 | Concern | Source |
 |---------|--------|
-| Domain enums, formations, goals, stats | [`lib/models/football_chess.dart`](../../lib/models/football_chess.dart) |
-| Board cells, pieces, possession, keeper model | [`lib/games/football_chess/football_chess_board.dart`](../../lib/games/football_chess/football_chess_board.dart) |
-| Legal actions, probabilities, action resolution, CPU choice | [`lib/games/football_chess/football_chess_engine.dart`](../../lib/games/football_chess/football_chess_engine.dart) |
-| Match state machine, clock, toss, turns, goals, stats persistence | [`lib/blocs/football_chess/football_chess_cubit.dart`](../../lib/blocs/football_chess/football_chess_cubit.dart) |
-| Match state fields and derived getters | [`lib/blocs/football_chess/football_chess_state.dart`](../../lib/blocs/football_chess/football_chess_state.dart) |
-| Football Chess full-screen shell | [`lib/screens/football_chess/football_chess_hub.dart`](../../lib/screens/football_chess/football_chess_hub.dart) |
-| Lobby, formation picker, deck gate, opponent creation | [`lib/screens/football_chess/football_chess_lobby_screen.dart`](../../lib/screens/football_chess/football_chess_lobby_screen.dart) |
-| Matchmaking and squad faceoff | [`lib/screens/football_chess/football_chess_matchmaking_screen.dart`](../../lib/screens/football_chess/football_chess_matchmaking_screen.dart) |
-| Live match screen, toss overlay, full-time XP dispatch | [`lib/screens/football_chess/football_chess_match_screen.dart`](../../lib/screens/football_chess/football_chess_match_screen.dart) |
-| Live HUD, action bar, decision timer, momentum, move log | [`lib/screens/football_chess/widgets/football_chess_overlays.dart`](../../lib/screens/football_chess/widgets/football_chess_overlays.dart) |
-| Full-time result overlay | [`lib/screens/football_chess/widgets/football_chess_result.dart`](../../lib/screens/football_chess/widgets/football_chess_result.dart) |
-| Flame board renderer and tap handling | [`lib/games/football_chess/football_chess_game.dart`](../../lib/games/football_chess/football_chess_game.dart) |
-| XP rewards, CPU smartness, opponent generation | [`lib/models/progression.dart`](../../lib/models/progression.dart) |
-| Football Chess stat storage | [`lib/services/secure_storage_service.dart`](../../lib/services/secure_storage_service.dart) |
+| Domain enums, formations, goals, stats | [`lib/models/football_chess.dart`](../../../lib/models/football_chess.dart) |
+| Board cells, pieces, possession, keeper model | [`lib/games/football_chess/football_chess_board.dart`](../../../lib/games/football_chess/football_chess_board.dart) |
+| Legal actions, probabilities, action resolution, CPU choice | [`lib/games/football_chess/football_chess_engine.dart`](../../../lib/games/football_chess/football_chess_engine.dart) |
+| Match state machine, clock, toss, turns, goals, stats persistence | [`lib/blocs/football_chess/football_chess_cubit.dart`](../../../lib/blocs/football_chess/football_chess_cubit.dart) |
+| Match state fields and derived getters | [`lib/blocs/football_chess/football_chess_state.dart`](../../../lib/blocs/football_chess/football_chess_state.dart) |
+| Football Chess full-screen shell | [`lib/screens/football_chess/football_chess_hub.dart`](../../../lib/screens/football_chess/football_chess_hub.dart) |
+| Lobby, formation picker, deck gate, opponent creation | [`lib/screens/football_chess/football_chess_lobby_screen.dart`](../../../lib/screens/football_chess/football_chess_lobby_screen.dart) |
+| Matchmaking and squad faceoff | [`lib/widgets/cyber/squad_faceoff.dart`](../../../lib/widgets/cyber/squad_faceoff.dart) |
+| Live match screen, toss overlay, full-time XP dispatch | [`lib/screens/football_chess/football_chess_match_screen.dart`](../../../lib/screens/football_chess/football_chess_match_screen.dart) |
+| Live HUD, action bar, decision timer, momentum, move log | [`lib/screens/football_chess/widgets/football_chess_overlays.dart`](../../../lib/screens/football_chess/widgets/football_chess_overlays.dart) |
+| Full-time result overlay | [`lib/screens/football_chess/widgets/football_chess_result.dart`](../../../lib/screens/football_chess/widgets/football_chess_result.dart) |
+| Flame board renderer and tap handling | [`lib/games/football_chess/football_chess_game.dart`](../../../lib/games/football_chess/football_chess_game.dart) |
+| XP rewards, CPU smartness, opponent generation | [`lib/models/progression.dart`](../../../lib/models/progression.dart) |
+| Football Chess stat storage | [`lib/services/secure_storage_service.dart`](../../../lib/services/secure_storage_service.dart) |
 
-Relevant tests:
+## Tests
 
-- [`test/football_chess_engine_test.dart`](../../test/football_chess_engine_test.dart)
-- [`test/progression_economy_test.dart`](../../test/progression_economy_test.dart)
+- [`test/football_chess_engine_test.dart`](../../../test/football_chess_engine_test.dart)
+- [`test/progression_economy_test.dart`](../../../test/progression_economy_test.dart)
+
+## Gratification and Feedback
+
+The squad faceoff, toss, legal-action highlights, duel/shot resolution, momentum
+meter, goal log, full-time verdict, MVP, and XP count-up stage tactical cause and effect.
+
+## Visible States
+
+Deck-gated, formation selection, faceoff, toss, player/CPU turn, action pending,
+goal, full time, win/draw/loss, and persisted career-summary states are represented.
+
+## Planned Scope and Current Limitations
+
+- **BUILT:** Local 5v5 board match against a CPU with mode XP and persisted
+  wins/losses/draws/streak.
+- **PLANNED:** In-progress matches are not resumed; no coins, shared match-history
+  record, real-time opponent, or network matchmaking is currently implemented.

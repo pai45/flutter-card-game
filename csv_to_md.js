@@ -1,5 +1,7 @@
 const fs = require('fs');
 
+const outputPath = 'docs/data/ipl_players.md';
+
 const csvContent = fs.readFileSync('ipl_players.csv', 'utf8');
 const lines = csvContent.trim().split('\n');
 
@@ -15,5 +17,6 @@ for (let i = 1; i < lines.length; i++) {
   }
 }
 
-fs.writeFileSync('ipl_players.md', mdContent);
-console.log('Successfully created ipl_players.md');
+fs.mkdirSync('docs/data', { recursive: true });
+fs.writeFileSync(outputPath, mdContent);
+console.log(`Successfully created ${outputPath}`);

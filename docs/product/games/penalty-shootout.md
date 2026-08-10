@@ -1,5 +1,9 @@
 # Penalty Shootout
 
+> **Status:** BUILT
+> **Last verified:** 2026-08-09
+> **Scope:** Standalone direction duel, CPU scaling, sudden death, XP/coins, history, and streaks
+
 Penalty Shootout is StatOz's standalone spot-kick game mode. It gives users a faster football game loop than a full Pitch Duel match: use the active squad, trade penalties with a CPU opponent, and earn smaller XP and coin rewards from the result.
 
 ## Product Purpose
@@ -31,8 +35,7 @@ Penalty Shootout reuses Pitch Duel's active deck readiness gate. The deck must b
 
 The action-card portion of the deck is not used during penalties. The actual shootout takers are the five players: two attackers, two defenders, and the goalkeeper.
 
-## User Flow
-
+## Player Flow
 1. User opens **Predict -> Games -> Penalty Shootout**.
 2. Lobby shows level, total XP, shootout wins, squad readiness, Deck Builder, and Match History.
 3. User taps **PLAY SHOOTOUT**.
@@ -63,8 +66,7 @@ targetRatingForLevel(level) = min(95, 66 + level * 2)
 
 The goalkeeper also takes the fifth kick. If the shootout reaches sudden death and the lineup runs past five kicks per side, the same order cycles again.
 
-## Shootout Format
-
+## Mechanics and Rules
 Penalty Shootout uses a five-kicks-each format:
 
 - The player takes the first kick.
@@ -137,8 +139,7 @@ When the CPU reads the user and has a clear pattern:
 
 If there is no prior data or the pattern is tied, the CPU chooses randomly.
 
-## Rewards And Progression
-
+## Rewards and Progression
 Penalty Shootout has smaller stakes than a full Pitch Duel match.
 
 XP rewards:
@@ -175,24 +176,40 @@ When a shootout finishes, the game records:
 
 Match History identifies standalone shootouts separately from Pitch Duel matches. The shootout lobby's win count reads from history entries where `mode == 'shootout'` and the player score is higher than the opponent score.
 
-## Implementation Reference
-
+## Implementation References
 | Concern | Source |
 |---------|--------|
-| Shootout state machine and resolution | [`lib/blocs/shootout/shootout_bloc.dart`](../../lib/blocs/shootout/shootout_bloc.dart) |
-| Shootout state fields and derived getters | [`lib/blocs/shootout/shootout_state.dart`](../../lib/blocs/shootout/shootout_state.dart) |
-| Standalone shootout screen shell | [`lib/screens/shootout/shootout_screen.dart`](../../lib/screens/shootout/shootout_screen.dart) |
-| Lobby and shared deck entry gate | [`lib/screens/shootout/shootout_home_screen.dart`](../../lib/screens/shootout/shootout_home_screen.dart) |
-| Kick-loop UI | [`lib/screens/shootout/widgets/shootout_phase.dart`](../../lib/screens/shootout/widgets/shootout_phase.dart) |
-| Summary UI | [`lib/screens/shootout/widgets/shootout_result_phase.dart`](../../lib/screens/shootout/widgets/shootout_result_phase.dart) |
-| XP, coins, CPU scaling, opponent generation | [`lib/models/progression.dart`](../../lib/models/progression.dart) |
-| Reward, history, ledger, and streak application | [`lib/blocs/game/game_bloc.dart`](../../lib/blocs/game/game_bloc.dart) |
-| History model | [`lib/models/match.dart`](../../lib/models/match.dart) |
+| Shootout state machine and resolution | [`lib/blocs/shootout/shootout_bloc.dart`](../../../lib/blocs/shootout/shootout_bloc.dart) |
+| Shootout state fields and derived getters | [`lib/blocs/shootout/shootout_state.dart`](../../../lib/blocs/shootout/shootout_state.dart) |
+| Standalone shootout screen shell | [`lib/screens/shootout/shootout_screen.dart`](../../../lib/screens/shootout/shootout_screen.dart) |
+| Lobby and shared deck entry gate | [`lib/screens/shootout/shootout_home_screen.dart`](../../../lib/screens/shootout/shootout_home_screen.dart) |
+| Kick-loop UI | [`lib/screens/shootout/widgets/shootout_phase.dart`](../../../lib/screens/shootout/widgets/shootout_phase.dart) |
+| Summary UI | [`lib/screens/shootout/widgets/shootout_result_phase.dart`](../../../lib/screens/shootout/widgets/shootout_result_phase.dart) |
+| XP, coins, CPU scaling, opponent generation | [`lib/models/progression.dart`](../../../lib/models/progression.dart) |
+| Reward, history, ledger, and streak application | [`lib/blocs/game/game_bloc.dart`](../../../lib/blocs/game/game_bloc.dart) |
+| History model | [`lib/models/match.dart`](../../../lib/models/match.dart) |
 
-Relevant tests:
+## Tests
 
-- [`test/shootout_bloc_test.dart`](../../test/shootout_bloc_test.dart)
-- [`test/shootout_phase_test.dart`](../../test/shootout_phase_test.dart)
-- [`test/shootout_opponent_generation_test.dart`](../../test/shootout_opponent_generation_test.dart)
-- [`test/shootout_opponent_reveal_test.dart`](../../test/shootout_opponent_reveal_test.dart)
-- [`test/progression_economy_test.dart`](../../test/progression_economy_test.dart)
+- [`test/shootout_bloc_test.dart`](../../../test/shootout_bloc_test.dart)
+- [`test/shootout_phase_test.dart`](../../../test/shootout_phase_test.dart)
+- [`test/shootout_opponent_generation_test.dart`](../../../test/shootout_opponent_generation_test.dart)
+- [`test/shootout_opponent_reveal_test.dart`](../../../test/shootout_opponent_reveal_test.dart)
+- [`test/progression_economy_test.dart`](../../../test/progression_economy_test.dart)
+
+## Gratification and Feedback
+
+Opponent reveal, kick suspense, save/goal impact, score ticks, early-win logic,
+sudden-death pressure, final verdict, reward count-up, and streak recording make
+the short session feel decisive.
+
+## Visible States
+
+Deck-gated lobby, opponent reveal, aiming, kicking/saving, resolved kick,
+early finish, sudden death, win/loss, reward, and history states are represented.
+
+## Planned Scope and Current Limitations
+
+- **BUILT:** Standalone CPU shootout with five-kick regulation, early-out,
+  sudden death, XP/coins, shared history, ledgers, and streak activity.
+- **PLANNED:** No online opponent or competitive server ranking is implemented.
