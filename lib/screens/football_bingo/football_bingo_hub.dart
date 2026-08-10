@@ -32,6 +32,12 @@ class _FootballBingoTabContentState extends State<FootballBingoTabContent> {
     });
   }
 
+  Future<void> _openToday(BuildContext context) async {
+    final cubit = context.read<FootballBingoCubit>();
+    await cubit.load();
+    await _openDay(context, cubit.state.todayKey);
+  }
+
   void _backHome() => setState(() => _showGrid = false);
   void _openLogs() => setState(() => _showLogs = true);
   void _closeLogs() => setState(() => _showLogs = false);
@@ -58,7 +64,7 @@ class _FootballBingoTabContentState extends State<FootballBingoTabContent> {
           return FootballBingoHomeScreen(
             state: state,
             onBack: () => widget.onNavigate(AppSection.predictions),
-            onOpenDay: (dayKey) => _openDay(context, dayKey),
+            onOpenDay: (_) => _openToday(context),
             onOpenLogs: _openLogs,
           );
         },

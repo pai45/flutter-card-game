@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../blocs/football_bingo/football_bingo_state.dart';
 import '../../config/theme.dart';
+import '../../models/football_bingo.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
@@ -25,11 +26,6 @@ class FootballBingoHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final today = state.todayKey;
     final progress = state.archive.progressByDay[today] ?? state.progress;
-    final ctaLabel = progress.completed
-        ? 'REVIEW GRID'
-        : progress.solvedCellIds.isNotEmpty
-        ? 'RESUME GRID'
-        : 'PLAY TODAY\'S GRID';
 
     return Scaffold(
       backgroundColor: Cyber.bg,
@@ -63,16 +59,41 @@ class FootballBingoHomeScreen extends StatelessWidget {
                             unlockedCount: state.unlockedDayKeys.length,
                           ),
                           const SizedBox(height: 20),
-                          CyberSlideUpFadeIn(
-                            delay: const Duration(milliseconds: 390),
-                            offset: 22,
-                            child: HudCtaButton(
-                              label: ctaLabel,
-                              icon: Icons.play_arrow,
-                              accent: Cyber.amber,
-                              tapSound: SoundEffect.playMatch,
-                              onTap: () => onOpenDay(today),
+                          StreamBuilder<DateTime>(
+                            stream: Stream<DateTime>.periodic(
+                              const Duration(seconds: 1),
+                              (_) => DateTime.now(),
                             ),
+                            initialData: DateTime.now(),
+                            builder: (context, snapshot) {
+                              final status = footballBingoStatus(
+                                progress,
+                                snapshot.data,
+                              );
+                              final coolingDown = progress.completed && !status.ready;
+                              final ctaLabel = coolingDown
+                                  ? 'NEXT GRID IN ${formatFootballBingoCountdown(status.remaining)}'
+                                  : progress.completed
+                                  ? 'PLAY TODAY\'S GRID'
+                                  : progress.solvedCellIds.isNotEmpty
+                                  ? 'RESUME GRID'
+                                  : 'PLAY TODAY\'S GRID';
+                              return CyberSlideUpFadeIn(
+                                delay: const Duration(milliseconds: 390),
+                                offset: 22,
+                                child: HudCtaButton(
+                                  key: const ValueKey('bingo-home-cta'),
+                                  label: ctaLabel,
+                                  helper: coolingDown ? 'UNLOCKS AT LOCAL MIDNIGHT' : null,
+                                  icon: coolingDown ? Icons.lock_clock : Icons.play_arrow,
+                                  accent: Cyber.amber,
+                                  glow: !coolingDown,
+                                  enabled: !coolingDown,
+                                  tapSound: SoundEffect.playMatch,
+                                  onTap: coolingDown ? null : () => onOpenDay(today),
+                                ),
+                              );
+                            },
                           ),
                           const SizedBox(height: 14),
                           CyberSlideUpFadeIn(

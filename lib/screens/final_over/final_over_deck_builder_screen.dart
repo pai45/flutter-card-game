@@ -242,7 +242,7 @@ class _BattingOrderPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CyberPanel(
-      accent: Cyber.lime,
+      accent: Cyber.cyan,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -255,7 +255,7 @@ class _BattingOrderPanel extends StatelessWidget {
                     Text(
                       'CHASE SQUAD',
                       style: TextStyle(
-                        color: Cyber.lime.withValues(alpha: 0.75),
+                        color: Cyber.cyan.withValues(alpha: 0.75),
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 2,
@@ -276,7 +276,7 @@ class _BattingOrderPanel extends StatelessWidget {
               ),
               CyberChip(
                 label: valid ? 'Ready' : 'Build',
-                color: valid ? Cyber.lime : Cyber.amber,
+                color: valid ? Cyber.cyan : Cyber.amber,
               ),
             ],
           ),
@@ -357,7 +357,7 @@ class _CricketTelemetry extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(10, 8, 10, 9),
       decoration: BoxDecoration(
         color: Cyber.bg.withValues(alpha: 0.50),
-        border: Border.all(color: Cyber.lime.withValues(alpha: 0.25)),
+        border: Border.all(color: Cyber.cyan.withValues(alpha: 0.25)),
       ),
       child: card == null
           ? Text(
@@ -371,7 +371,7 @@ class _CricketTelemetry extends StatelessWidget {
                   '${card.trait.toUpperCase()} // CREASE TELEMETRY',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.label(8, color: Cyber.lime, letterSpacing: 1),
+                  style: Cyber.label(8, color: Cyber.cyan, letterSpacing: 1),
                 ),
                 const SizedBox(height: 7),
                 Row(
@@ -382,7 +382,7 @@ class _CricketTelemetry extends StatelessWidget {
                           children: [
                             Text(
                               '${stat.$2}',
-                              style: Cyber.display(13, color: Cyber.lime),
+                              style: Cyber.display(13, color: Cyber.cyan),
                             ),
                             Text(
                               stat.$1,
@@ -422,10 +422,10 @@ class _BatsmanSlot extends StatelessWidget {
         padding: const EdgeInsets.all(7),
         decoration: BoxDecoration(
           color: selected
-              ? Cyber.lime.withValues(alpha: 0.14)
+              ? Cyber.cyan.withValues(alpha: 0.14)
               : Cyber.bg.withValues(alpha: 0.42),
           border: Border.all(
-            color: selected ? Cyber.lime : Cyber.line,
+            color: selected ? Cyber.cyan : Cyber.line,
             width: selected ? 1.5 : 1,
           ),
         ),
@@ -435,7 +435,7 @@ class _BatsmanSlot extends StatelessWidget {
               'BAT ${index + 1}',
               style: Cyber.label(
                 9,
-                color: selected ? Cyber.lime : Cyber.muted,
+                color: selected ? Cyber.cyan : Cyber.muted,
                 letterSpacing: 1.2,
               ),
             ),

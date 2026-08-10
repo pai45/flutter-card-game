@@ -10,15 +10,26 @@ import '../../models/oz_coin_ledger.dart';
 import '../../models/quiz_trivia.dart';
 import '../../models/sport_match.dart';
 import '../../models/xp_ledger.dart';
+import '../../services/quiz_bank.dart';
 import '../../services/quiz_trivia_bank.dart';
 import '../../utils/sound_effects.dart';
-import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../predictions/widgets/settlement_reveal.dart'
     show SettlementQuestionResult;
+import 'widgets/answer_verdict.dart';
 import 'widgets/quiz_reveal.dart';
 
-enum _QuizPlayStage { answering, review }
+/// Where the current question sits in the lock → verdict → advance loop.
+enum _QuestionPhase {
+  /// An option can still be picked or changed.
+  picking,
+
+  /// The scan beat is running; the verdict is not shown yet.
+  resolving,
+
+  /// The verdict has landed and the answer is final.
+  resolved,
+}
 
 class QuizPlayScreen extends StatefulWidget {
   const QuizPlayScreen({
@@ -36,11 +47,25 @@ class QuizPlayScreen extends StatefulWidget {
   State<QuizPlayScreen> createState() => _QuizPlayScreenState();
 }
 
-class _QuizPlayScreenState extends State<QuizPlayScreen> {
+class _QuizPlayScreenState extends State<QuizPlayScreen>
+    with TickerProviderStateMixin {
   late List<TriviaQuestion> _questions;
+  late final AnimationController _verdict;
+
+  /// Drives the NEXT button's charge fill. When it tops up the next question is
+  /// dealt automatically, so this doubles as the auto-advance timer.
+  late final AnimationController _charge;
+
   final Map<int, int> _answers = {};
   int _index = 0;
-  _QuizPlayStage _stage = _QuizPlayStage.answering;
+  _QuestionPhase _phase = _QuestionPhase.picking;
+
+  int _streak = 0;
+  int _bestStreak = 0;
+  int _earnedXp = 0;
+  bool _xpBanked = false;
+
+  int _verdictRun = 0;
   bool _submitting = false;
   bool _retrying = false;
 
@@ -48,61 +73,139 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
   int _revealXp = 0;
   int _revealXpBefore = 0;
   bool _revealNewlyCleared = false;
-  bool _revealPassed = false;
-  QuizMode? _revealUnlocked;
+  int _revealStars = 0;
+  int _revealStarsGained = 0;
+  int _revealBestBefore = 0;
 
   QuizMode get _mode => widget.mode;
   Sport get _sport => widget.sport;
   int get _setNumber => widget.setNumber;
   bool get _isLast => _index >= _questions.length - 1;
   bool get _currentAnswered => _answers.containsKey(_index);
-  bool get _allAnswered => _answers.length == _questions.length;
   int get _potentialXp => _questions.length * _mode.reward;
+
+  /// null until a question has been locked in.
+  bool? _verdictFor(int index) {
+    final picked = _answers[index];
+    if (picked == null) return null;
+    if (index == _index && _phase != _QuestionPhase.resolved) return null;
+    return picked == _questions[index].correctIndex;
+  }
 
   @override
   void initState() {
     super.initState();
     _questions = buildQuizSet(_sport, _mode, _setNumber);
+    // The lobby preloads the bank before pushing here, so this is normally a
+    // cache hit. Recover anyway (deep link, hot restart) rather than render an
+    // empty quiz.
+    if (_questions.isEmpty) _loadQuestions();
+    _verdict = AnimationController(vsync: this, duration: kVerdictDuration);
+    _charge = AnimationController(vsync: this, duration: kAutoAdvanceDelay)
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) _advance();
+      });
     AudioController.instance.enterScene(AudioScene.quiz);
+  }
+
+  Future<void> _loadQuestions() async {
+    await QuizBank.ensureLoaded(_sport, _mode);
+    if (!mounted) return;
+    setState(() => _questions = buildQuizSet(_sport, _mode, _setNumber));
   }
 
   @override
   void dispose() {
+    _verdict.dispose();
+    _charge.dispose();
     AudioController.instance.leaveScene(AudioScene.quiz);
     super.dispose();
   }
 
   void _select(int option) {
-    if (_submitting) return;
+    if (_phase != _QuestionPhase.picking || _submitting) return;
     playSound(SoundEffect.cardSelect);
     HapticFeedback.selectionClick();
     setState(() => _answers[_index] = option);
   }
 
-  void _previous() {
-    if (_index <= 0) return;
-    playSound(SoundEffect.uiTap);
-    setState(() => _index--);
-  }
+  /// Locks the pick and runs the SIGNAL LOCK cinematic. The scan beat plays
+  /// first and gives nothing away; the verdict only lands once it completes.
+  Future<void> _lockAnswer() async {
+    if (_phase != _QuestionPhase.picking || !_currentAnswered) return;
+    final correct = _answers[_index] == _questions[_index].correctIndex;
+    final run = ++_verdictRun;
 
-  void _next() {
-    if (_isLast || !_currentAnswered) return;
-    playSound(SoundEffect.uiTap);
-    setState(() => _index++);
-  }
+    // Streak and XP deliberately stay put until the verdict lands — updating
+    // them here would leak the answer through the HUD during the scan beat.
+    setState(() => _phase = _QuestionPhase.resolving);
 
-  void _showReview() {
-    if (!_allAnswered) return;
-    playSound(SoundEffect.uiTap);
+    playSound(SoundEffect.countdownTick);
     HapticFeedback.selectionClick();
-    setState(() => _stage = _QuizPlayStage.review);
+
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _verdict.value = 1;
+      _landVerdict(correct);
+      return;
+    }
+
+    _verdict.forward(from: 0);
+    await Future<void>.delayed(
+      Duration(
+        milliseconds:
+            (kVerdictDuration.inMilliseconds * kVerdictScanEnd).round(),
+      ),
+    );
+    if (!mounted || run != _verdictRun) return;
+    _landVerdict(correct);
+
+    if (!correct) {
+      // The real answer boots up after the tear settles.
+      await Future<void>.delayed(
+        Duration(
+          milliseconds:
+              (kVerdictDuration.inMilliseconds *
+                      (kVerdictImpactEnd - kVerdictScanEnd))
+                  .round(),
+        ),
+      );
+      if (!mounted || run != _verdictRun) return;
+      playSound(SoundEffect.uiConfirm);
+    }
   }
 
-  void _openQuestion(int index) {
+  void _landVerdict(bool correct) {
+    if (correct) {
+      _streak++;
+      if (_streak > _bestStreak) _bestStreak = _streak;
+      _earnedXp += _mode.reward;
+      playSound(SoundEffect.quizCorrect);
+      HapticFeedback.mediumImpact();
+      if (_streak >= 5) playSound(SoundEffect.quizPerfect);
+    } else {
+      _streak = 0;
+      playSound(SoundEffect.quizWrong);
+      HapticFeedback.heavyImpact();
+    }
+    setState(() => _phase = _QuestionPhase.resolved);
+    // The last question never auto-advances — walking into the summary is the
+    // player's call, not a timer's.
+    if (!_isLast) _charge.forward(from: 0);
+  }
+
+  void _advance() {
+    if (_phase != _QuestionPhase.resolved || _submitting) return;
+    _charge.stop();
+    if (_isLast) {
+      _finish();
+      return;
+    }
     playSound(SoundEffect.uiTap);
+    _verdict.value = 0;
+    _charge.value = 0;
     setState(() {
-      _index = index;
-      _stage = _QuizPlayStage.answering;
+      _index++;
+      _phase = _QuestionPhase.picking;
     });
   }
 
@@ -111,6 +214,9 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
       if (mounted) Navigator.of(context).maybePop();
       return;
     }
+    // Don't let the next question get dealt behind the dialog.
+    _charge.stop();
+    final banked = _earnedXp;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -121,7 +227,9 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
           style: Cyber.display(17, color: Colors.white),
         ),
         content: Text(
-          'Your answers will be lost and the $kQuizEntryCost coin entry fee will not be refunded.',
+          banked > 0
+              ? 'Your +$banked XP is banked, but SET $_setNumber will not clear and the $kQuizEntryCost coin entry fee will not be refunded.'
+              : 'SET $_setNumber will not clear and the $kQuizEntryCost coin entry fee will not be refunded.',
           style: Cyber.body(13, color: Cyber.muted),
         ),
         actions: [
@@ -141,11 +249,31 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
         ],
       ),
     );
-    if (confirmed == true && mounted) Navigator.of(context).pop();
+    if (confirmed == true && mounted) {
+      _bankEarnedXp(partial: true);
+      Navigator.of(context).pop();
+    }
   }
 
-  Future<void> _submit() async {
-    if (!_allAnswered || _submitting) return;
+  /// Credits everything earned so far. A partial run pays out but never records
+  /// a result, so the set only clears once all questions are answered.
+  void _bankEarnedXp({required bool partial}) {
+    if (_xpBanked || _earnedXp <= 0) return;
+    _xpBanked = true;
+    context.read<GameBloc>().add(
+      PredictionXpAdded(
+        _earnedXp,
+        source: XpTransactionSource.quiz,
+        title: '${_sport.name.toUpperCase()} QUIZ REWARD',
+        details: partial
+            ? '${_mode.label} SET $_setNumber · PARTIAL RUN'
+            : '${_mode.label} SET $_setNumber',
+      ),
+    );
+  }
+
+  Future<void> _finish() async {
+    if (_submitting) return;
     setState(() => _submitting = true);
     playSound(SoundEffect.quizSubmit);
     HapticFeedback.mediumImpact();
@@ -156,7 +284,6 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
       final q = _questions[i];
       final picked = _answers[i];
       final isCorrect = picked == q.correctIndex;
-      final earned = isCorrect ? _mode.reward : 0;
       if (isCorrect) correct++;
       results.add(
         SettlementQuestionResult(
@@ -164,25 +291,20 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
           pickedLabel: q.labelFor(picked),
           correctLabel: q.correctLabel,
           correct: isCorrect,
-          earnedXp: earned,
+          earnedXp: isCorrect ? _mode.reward : 0,
         ),
       );
     }
 
-    final passed = quizSetPassed(correct: correct, total: _questions.length);
-    final totalXp = passed ? correct * _mode.reward : 0;
+    final quiz = context.read<QuizCubit>();
+    final bestBefore = quiz
+        .setProgressFor(_sport, _mode, _setNumber)
+        .bestCorrect;
     final xpBefore = context.read<GameBloc>().state.progression.totalXP;
-    if (totalXp > 0) {
-      context.read<GameBloc>().add(
-        PredictionXpAdded(
-          totalXp,
-          source: XpTransactionSource.quiz,
-          title: '${_sport.name.toUpperCase()} QUIZ REWARD',
-          details: '${_mode.label} SET $_setNumber',
-        ),
-      );
-    }
-    final outcome = await context.read<QuizCubit>().recordResult(
+    final totalXp = _earnedXp;
+    _bankEarnedXp(partial: false);
+
+    final outcome = await quiz.recordResult(
       _sport,
       _mode,
       setNumber: _setNumber,
@@ -196,8 +318,9 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
       _revealXp = totalXp;
       _revealXpBefore = xpBefore;
       _revealNewlyCleared = outcome.newlyCleared;
-      _revealPassed = passed;
-      _revealUnlocked = outcome.unlocked;
+      _revealStarsGained = outcome.starsGained;
+      _revealBestBefore = bestBefore;
+      _revealStars = outcome.stars;
     });
   }
 
@@ -205,7 +328,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
     if (_retrying) return;
     final game = context.read<GameBloc>();
     if (game.state.coins < kQuizEntryCost) {
-      _showMessage('Need $kQuizEntryCost coins to retry this quiz set.');
+      _showMessage('Need $kQuizEntryCost coins to replay this quiz set.');
       return;
     }
     setState(() => _retrying = true);
@@ -214,26 +337,34 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
         kQuizEntryCost,
         source: OzCoinTransactionSource.quizEntry,
         title: '${_sport.name.toUpperCase()} QUIZ ENTRY',
-        subtitle: '${_mode.label} SET $_setNumber RETRY',
+        subtitle: '${_mode.label} SET $_setNumber REPLAY',
       ),
     );
     playSound(SoundEffect.coinSpend);
     await Future<void>.delayed(const Duration(milliseconds: 120));
     if (!mounted) return;
     playSound(SoundEffect.playMatch);
+    _verdictRun++;
+    _verdict.value = 0;
+    _charge.value = 0;
     setState(() {
       _questions = buildQuizSet(_sport, _mode, _setNumber);
       _index = 0;
       _answers.clear();
-      _stage = _QuizPlayStage.answering;
+      _phase = _QuestionPhase.picking;
+      _streak = 0;
+      _bestStreak = 0;
+      _earnedXp = 0;
+      _xpBanked = false;
       _submitting = false;
       _retrying = false;
       _revealResults = null;
       _revealXp = 0;
       _revealXpBefore = 0;
       _revealNewlyCleared = false;
-      _revealPassed = false;
-      _revealUnlocked = null;
+      _revealStars = 0;
+      _revealStarsGained = 0;
+      _revealBestBefore = 0;
     });
   }
 
@@ -251,9 +382,15 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // The pool is still loading, or this set is past the authored range. Either
+    // way there is nothing to deal — show the holding screen rather than index
+    // into an empty list.
+    if (_questions.isEmpty) return _buildAwaitingQuestions(context);
+
     final question = _questions[_index];
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
     final canPop = _answers.isEmpty || _revealResults != null;
+    final verdict = _verdictFor(_index);
 
     return PopScope<void>(
       canPop: canPop,
@@ -274,17 +411,16 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
                     sport: _sport,
                     mode: _mode,
                     setNumber: _setNumber,
-                    reviewing: _stage == _QuizPlayStage.review,
                     onBack: _requestExit,
                   ),
                   const SizedBox(height: 8),
                   _QuizHeader(
+                    sport: _sport,
                     mode: _mode,
                     index: _index,
                     total: _questions.length,
-                    answered: _answers.length,
-                    potential: _potentialXp,
-                    reviewing: _stage == _QuizPlayStage.review,
+                    streak: _streak,
+                    earnedXp: _earnedXp,
                   ),
                   Expanded(
                     child: AnimatedSwitcher(
@@ -304,57 +440,58 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
                           child: SlideTransition(position: slide, child: child),
                         );
                       },
-                      child: _stage == _QuizPlayStage.review
-                          ? _QuizReviewPanel(
-                              key: const ValueKey('quiz-review-stage'),
-                              mode: _mode,
-                              questions: _questions,
-                              answers: _answers,
-                              onOpenQuestion: _openQuestion,
-                            )
-                          : SingleChildScrollView(
-                              key: ValueKey(question.id),
-                              padding: const EdgeInsets.fromLTRB(
-                                16,
-                                16,
-                                16,
-                                12,
-                              ),
-                              child: Center(
-                                child: ConstrainedBox(
-                                  constraints: const BoxConstraints(
-                                    maxWidth: 430,
-                                  ),
-                                  child: _QuestionPanel(
-                                    number: _index + 1,
-                                    mode: _mode,
-                                    question: question,
-                                    selected: _answers[_index],
-                                    onSelect: _select,
-                                  ),
-                                ),
+                      child: SingleChildScrollView(
+                        key: ValueKey(question.id),
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 430),
+                            child: AnimatedBuilder(
+                              animation: _verdict,
+                              builder: (context, _) => _QuestionPanel(
+                                number: _index + 1,
+                                mode: _mode,
+                                question: question,
+                                selected: _answers[_index],
+                                phase: _phase,
+                                verdict: verdict,
+                                streak: _streak,
+                                progress: _verdict.value,
+                                onSelect: _select,
                               ),
                             ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                  if (_stage == _QuizPlayStage.review)
-                    _ReviewDock(
-                      submitting: _submitting,
-                      onBack: () => _openQuestion(_questions.length - 1),
-                      onSubmit: _submit,
-                    )
-                  else
-                    _BottomDock(
-                      total: _questions.length,
-                      index: _index,
-                      answeredIndices: _answers.keys.toSet(),
-                      canGoPrevious: _index > 0,
-                      onPrevious: _previous,
-                      isLast: _isLast,
-                      primaryEnabled: _currentAnswered,
-                      onPrimary: _isLast ? _showReview : _next,
-                      helper: _helperText(),
-                    ),
+                  _BottomDock(
+                    total: _questions.length,
+                    index: _index,
+                    charge: _charge,
+                    answeredIndices: _answers.keys.toSet(),
+                    verdicts: {
+                      for (var i = 0; i < _questions.length; i++)
+                        if (_verdictFor(i) != null) i: _verdictFor(i)!,
+                    },
+                    phase: _phase,
+                    isLast: _isLast,
+                    primaryEnabled: _phase == _QuestionPhase.picking
+                        ? _currentAnswered
+                        : _phase == _QuestionPhase.resolved && !_submitting,
+                    onPrimary: _phase == _QuestionPhase.picking
+                        ? _lockAnswer
+                        : _advance,
+                    helper: _helperText(),
+                    debrief: verdict == null
+                        ? null
+                        : VerdictDebriefStrip(
+                            correct: verdict,
+                            xp: _mode.reward,
+                            streak: _streak,
+                            correctLabel: question.correctLabel,
+                          ),
+                  ),
                 ],
               ),
             ),
@@ -367,8 +504,10 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
                   totalXp: _revealXp,
                   xpBefore: _revealXpBefore,
                   newlyCleared: _revealNewlyCleared,
-                  unlocked: _revealUnlocked,
-                  passed: _revealPassed,
+                  stars: _revealStars,
+                  starsGained: _revealStarsGained,
+                  bestBefore: _revealBestBefore,
+                  bestStreak: _bestStreak,
                   onRetry: _retry,
                   onDone: () => Navigator.of(context).maybePop(),
                 ),
@@ -379,12 +518,79 @@ class _QuizPlayScreenState extends State<QuizPlayScreen> {
     );
   }
 
+  /// Shown while the pool loads, and as the terminal state for a set the
+  /// question database doesn't reach yet. Keeps the quiz chrome so the screen
+  /// still reads as the quiz, not an error page.
+  Widget _buildAwaitingQuestions(BuildContext context) {
+    final loading = !QuizBank.isLoaded(_sport, _mode);
+    return Scaffold(
+      backgroundColor: Cyber.bg,
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: CyberPlainBackground(child: SizedBox.expand()),
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                _TopBar(
+                  sport: _sport,
+                  mode: _mode,
+                  setNumber: _setNumber,
+                  onBack: () => Navigator.of(context).maybePop(),
+                ),
+                Expanded(
+                  child: Center(
+                    child: loading
+                        ? const CircularProgressIndicator(
+                            color: AppTheme.textPrimary,
+                          )
+                        : Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 32),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.hourglass_empty,
+                                  color: Cyber.muted,
+                                  size: 34,
+                                ),
+                                const SizedBox(height: 14),
+                                Text(
+                                  'SET NOT WRITTEN YET',
+                                  textAlign: TextAlign.center,
+                                  style: Cyber.label(
+                                    11,
+                                    color: Cyber.muted,
+                                    letterSpacing: 1.6,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'This ladder is still being built. '
+                                  'Pick another set or sport.',
+                                  textAlign: TextAlign.center,
+                                  style: Cyber.body(12, color: Cyber.muted),
+                                ),
+                              ],
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _helperText() {
-    if (_isLast && _currentAnswered) {
-      return 'All ${_questions.length} answered · review before locking in';
-    }
     final left = _questions.length - _answers.length;
-    return '$left of ${_questions.length} unanswered · earn +${_mode.reward} XP per correct after passing';
+    if (_streak >= 2) {
+      return 'Streak ×$_streak · $left of ${_questions.length} left · +${_mode.reward} XP per correct';
+    }
+    return '$left of ${_questions.length} left · +${_mode.reward} XP per correct · max $_potentialXp XP';
   }
 }
 
@@ -393,14 +599,12 @@ class _TopBar extends StatelessWidget {
     required this.sport,
     required this.mode,
     required this.setNumber,
-    required this.reviewing,
     required this.onBack,
   });
 
   final Sport sport;
   final QuizMode mode;
   final int setNumber;
-  final bool reviewing;
   final VoidCallback onBack;
 
   @override
@@ -440,7 +644,7 @@ class _TopBar extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           CyberChip(
-            label: reviewing ? 'REVIEW' : '${mode.label} · SET $setNumber',
+            label: '${mode.label} · SET $setNumber',
             color: mode.accent,
           ),
         ],
@@ -451,27 +655,27 @@ class _TopBar extends StatelessWidget {
 
 class _QuizHeader extends StatelessWidget {
   const _QuizHeader({
+    required this.sport,
     required this.mode,
     required this.index,
     required this.total,
-    required this.answered,
-    required this.potential,
-    required this.reviewing,
+    required this.streak,
+    required this.earnedXp,
   });
 
+  final Sport sport;
   final QuizMode mode;
   final int index;
   final int total;
-  final int answered;
-  final int potential;
-  final bool reviewing;
+  final int streak;
+  final int earnedXp;
 
   @override
   Widget build(BuildContext context) {
+    final streakAccent = streak >= 2 ? verdictStreakAccent(streak) : Cyber.muted;
     return Semantics(
-      label: reviewing
-          ? 'Review answers, $answered of $total answered, maximum reward $potential XP'
-          : 'Question ${index + 1} of $total, $answered answered, maximum reward $potential XP',
+      label:
+          'Question ${index + 1} of $total, streak $streak, $earnedXp XP earned',
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: CustomPaint(
@@ -482,33 +686,83 @@ class _QuizHeader extends StatelessWidget {
               children: [
                 Expanded(
                   child: _HudMetric(
-                    label: reviewing ? 'STAGE' : 'QUESTION',
-                    value: reviewing ? 'REVIEW' : '${index + 1}/$total',
-                    icon: mode.icon,
+                    label: 'QUESTION',
+                    value: '${index + 1}/$total',
+                    icon: mode.iconFor(sport),
                     color: mode.accent,
                   ),
                 ),
                 const _MetricDivider(),
                 Expanded(
                   child: _HudMetric(
-                    label: 'ANSWERED',
-                    value: '$answered/$total',
-                    icon: Icons.check_circle_outline,
-                    color: answered == total ? Cyber.success : Cyber.cyan,
+                    label: 'STREAK',
+                    value: streak > 0 ? '×$streak' : '—',
+                    icon: Icons.bolt_outlined,
+                    color: streakAccent,
                   ),
                 ),
                 const _MetricDivider(),
                 Expanded(
-                  child: _HudMetric(
-                    label: 'MAX REWARD',
-                    value: '$potential XP',
-                    icon: Icons.bolt,
-                    color: Cyber.gold,
-                  ),
+                  child: _XpEarnedMetric(value: earnedXp),
                 ),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// XP counter that ticks to its new value and pops when it grows — the payoff
+/// beat for a correct answer lands here as well as on the tile.
+class _XpEarnedMetric extends StatefulWidget {
+  const _XpEarnedMetric({required this.value});
+
+  final int value;
+
+  @override
+  State<_XpEarnedMetric> createState() => _XpEarnedMetricState();
+}
+
+class _XpEarnedMetricState extends State<_XpEarnedMetric>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pop = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 160),
+    reverseDuration: const Duration(milliseconds: 320),
+  );
+
+  @override
+  void didUpdateWidget(covariant _XpEarnedMetric old) {
+    super.didUpdateWidget(old);
+    if (widget.value > old.value && !MediaQuery.disableAnimationsOf(context)) {
+      _pop.forward().then((_) {
+        if (mounted) _pop.reverse();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _pop.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: Tween<double>(begin: 1, end: 1.16).animate(
+        CurvedAnimation(parent: _pop, curve: Curves.easeOutBack),
+      ),
+      child: TweenAnimationBuilder<int>(
+        tween: IntTween(begin: widget.value, end: widget.value),
+        duration: const Duration(milliseconds: 260),
+        builder: (context, value, _) => _HudMetric(
+          label: 'XP EARNED',
+          value: '$value XP',
+          icon: Icons.bolt,
+          color: Cyber.gold,
         ),
       ),
     );
@@ -552,7 +806,9 @@ class _HudMetric extends StatelessWidget {
         Text(
           value,
           maxLines: 1,
-          style: Cyber.display(11.5, color: color, letterSpacing: 0.5),
+          style: Cyber.display(11.5, color: color, letterSpacing: 0.5).copyWith(
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
         ),
       ],
     );
@@ -600,6 +856,10 @@ class _QuestionPanel extends StatelessWidget {
     required this.mode,
     required this.question,
     required this.selected,
+    required this.phase,
+    required this.verdict,
+    required this.streak,
+    required this.progress,
     required this.onSelect,
   });
 
@@ -607,11 +867,21 @@ class _QuestionPanel extends StatelessWidget {
   final QuizMode mode;
   final TriviaQuestion question;
   final int? selected;
+  final _QuestionPhase phase;
+  final bool? verdict;
+  final int streak;
+  final double progress;
   final ValueChanged<int> onSelect;
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
+    final scanning = phase == _QuestionPhase.resolving;
+    final resolved = phase == _QuestionPhase.resolved;
+    final wrong = resolved && verdict == false;
+    // The correct answer only powers on after the tear has played out.
+    final showKey = wrong && progress >= kVerdictImpactEnd;
+
+    final panel = Stack(
       clipBehavior: Clip.none,
       children: [
         Container(
@@ -630,8 +900,16 @@ class _QuestionPanel extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'SELECT ONE ANSWER',
-                style: Cyber.label(8.5, color: mode.accent, letterSpacing: 1.4),
+                resolved
+                    ? 'ANSWER LOCKED'
+                    : scanning
+                    ? 'VERIFYING SIGNAL...'
+                    : 'SELECT ONE ANSWER',
+                style: Cyber.label(
+                  8.5,
+                  color: scanning ? Cyber.cyan : mode.accent,
+                  letterSpacing: 1.4,
+                ),
               ),
               const SizedBox(height: 10),
               Text(
@@ -653,6 +931,13 @@ class _QuestionPanel extends StatelessWidget {
                     label: question.options[i],
                     selected: selected == i,
                     accent: mode.accent,
+                    // Only the picked tile carries the verdict; the answer key
+                    // lights up separately when the player got it wrong.
+                    verdict: resolved && selected == i ? verdict : null,
+                    isAnswerKey: showKey && i == question.correctIndex,
+                    dimmed: scanning && selected != i,
+                    streak: streak,
+                    progress: progress,
                     onTap: () => onSelect(i),
                   ),
                 ),
@@ -677,8 +962,12 @@ class _QuestionPanel extends StatelessWidget {
             ),
           ),
         ),
+        if (scanning)
+          Positioned.fill(child: VerdictScanline(progress: progress)),
       ],
     );
+
+    return GlitchTear(progress: progress, active: wrong, child: panel);
   }
 }
 
@@ -690,6 +979,11 @@ class _OptionTile extends StatefulWidget {
     required this.selected,
     required this.accent,
     required this.onTap,
+    this.verdict,
+    this.isAnswerKey = false,
+    this.dimmed = false,
+    this.streak = 0,
+    this.progress = 0,
   });
 
   final String letter;
@@ -697,6 +991,15 @@ class _OptionTile extends StatefulWidget {
   final bool selected;
   final Color accent;
   final VoidCallback onTap;
+
+  /// null while the question is still open; true/false once locked.
+  final bool? verdict;
+
+  /// True for the right answer on a question the player got wrong.
+  final bool isAnswerKey;
+  final bool dimmed;
+  final int streak;
+  final double progress;
 
   @override
   State<_OptionTile> createState() => _OptionTileState();
@@ -709,15 +1012,133 @@ class _OptionTileState extends State<_OptionTile> {
   @override
   Widget build(BuildContext context) {
     final selected = widget.selected;
+    final verdict = widget.verdict;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    final border = selected || _focused
-        ? widget.accent
+    final locked = verdict != null || widget.isAnswerKey;
+
+    // Glow rule: exactly one live element. Before the lock that's the picked
+    // tile; after it, the verdict tile (or the answer key on a miss).
+    final Color accent = verdict == true
+        ? verdictStreakAccent(widget.streak)
+        : verdict == false
+        ? Cyber.danger
+        : widget.isAnswerKey
+        ? Cyber.success
+        : widget.accent;
+
+    final border = locked || selected || _focused
+        ? accent
         : const Color(0xff304058);
+
+    // Broken-neon flicker on the wrong pick.
+    final flicker = verdict == false && !reduceMotion
+        ? 0.55 +
+              0.45 *
+                  (1 -
+                      verdictBeat(
+                        widget.progress,
+                        kVerdictScanEnd,
+                        kVerdictImpactEnd,
+                      )).clamp(0.0, 1.0) *
+                  ((widget.progress * 34).floor().isEven ? 0.0 : 1.0)
+        : 1.0;
+
+    final tile = AnimatedContainer(
+      duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 160),
+      constraints: const BoxConstraints(minHeight: 58),
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
+      decoration: BoxDecoration(
+        color: verdict != null
+            ? accent.withValues(alpha: 0.16)
+            : widget.isAnswerKey
+            ? accent.withValues(alpha: 0.1)
+            : selected
+            ? accent.withValues(alpha: 0.15)
+            : _focused
+            ? accent.withValues(alpha: 0.07)
+            : const Color(0xff0d1725),
+        border: Border.all(
+          color: border.withValues(alpha: flicker),
+          width: locked || selected ? 1.6 : 1,
+        ),
+        boxShadow: verdict == true
+            ? Cyber.glow(accent, alpha: 0.28, blur: 18)
+            : selected && verdict == null && !widget.isAnswerKey
+            ? Cyber.glow(accent, alpha: 0.18, blur: 12)
+            : null,
+      ),
+      child: Row(
+        children: [
+          AnimatedContainer(
+            duration: reduceMotion
+                ? Duration.zero
+                : const Duration(milliseconds: 160),
+            width: 30,
+            height: 30,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: locked || selected
+                  ? accent.withValues(alpha: 0.22)
+                  : Colors.white.withValues(alpha: 0.04),
+              border: Border.all(color: border),
+            ),
+            child: verdict == null
+                ? Text(
+                    widget.letter,
+                    style: Cyber.display(
+                      12,
+                      color: selected || widget.isAnswerKey
+                          ? accent
+                          : Cyber.muted,
+                    ),
+                  )
+                : Icon(
+                    verdict ? Icons.check : Icons.close,
+                    size: 17,
+                    color: accent,
+                  ),
+          ),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Text(
+              widget.label,
+              style: Cyber.body(
+                14.5,
+                color: locked || selected
+                    ? Colors.white
+                    : const Color(0xffc8d3e2),
+                weight: locked || selected ? FontWeight.w700 : FontWeight.w600,
+              ),
+            ),
+          ),
+          if (widget.isAnswerKey) ...[
+            const SizedBox(width: 8),
+            Text(
+              '// CORRECT',
+              style: Cyber.label(8, color: accent, letterSpacing: 1.2),
+            ),
+          ] else ...[
+            const SizedBox(width: 8),
+            Icon(
+              verdict != null
+                  ? (verdict ? Icons.verified : Icons.cancel)
+                  : selected
+                  ? Icons.check_circle
+                  : Icons.circle_outlined,
+              color: locked || selected ? accent : Cyber.border,
+              size: 20,
+            ),
+          ],
+        ],
+      ),
+    );
 
     return Semantics(
       button: true,
       selected: selected,
-      label: 'Answer ${widget.letter}: ${widget.label}',
+      label: verdict == null
+          ? 'Answer ${widget.letter}: ${widget.label}'
+          : 'Answer ${widget.letter}: ${widget.label}, ${verdict ? 'correct' : 'wrong'}',
       child: FocusableActionDetector(
         onShowFocusHighlight: (value) => setState(() => _focused = value),
         child: GestureDetector(
@@ -726,235 +1147,32 @@ class _OptionTileState extends State<_OptionTile> {
           onTapCancel: () => setState(() => _pressed = false),
           onTapUp: (_) => setState(() => _pressed = false),
           onTap: widget.onTap,
-          child: AnimatedScale(
-            scale: reduceMotion || !_pressed ? 1 : 0.985,
+          child: AnimatedOpacity(
+            opacity: widget.dimmed ? 0.55 : 1,
             duration: reduceMotion
                 ? Duration.zero
-                : const Duration(milliseconds: 100),
-            child: AnimatedContainer(
+                : const Duration(milliseconds: 140),
+            child: AnimatedScale(
+              scale: reduceMotion || !_pressed ? 1 : 0.985,
               duration: reduceMotion
                   ? Duration.zero
-                  : const Duration(milliseconds: 160),
-              constraints: const BoxConstraints(minHeight: 58),
-              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
-              decoration: BoxDecoration(
-                color: selected
-                    ? widget.accent.withValues(alpha: 0.15)
-                    : _focused
-                    ? widget.accent.withValues(alpha: 0.07)
-                    : const Color(0xff0d1725),
-                border: Border.all(color: border, width: selected ? 1.6 : 1),
-                boxShadow: selected
-                    ? Cyber.glow(widget.accent, alpha: 0.18, blur: 12)
-                    : null,
-              ),
-              child: Row(
-                children: [
-                  AnimatedContainer(
-                    duration: reduceMotion
-                        ? Duration.zero
-                        : const Duration(milliseconds: 160),
-                    width: 30,
-                    height: 30,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? widget.accent.withValues(alpha: 0.22)
-                          : Colors.white.withValues(alpha: 0.04),
-                      border: Border.all(color: border),
-                    ),
-                    child: Text(
-                      widget.letter,
-                      style: Cyber.display(
-                        12,
-                        color: selected ? widget.accent : Cyber.muted,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 13),
-                  Expanded(
-                    child: Text(
-                      widget.label,
-                      style: Cyber.body(
-                        14.5,
-                        color: selected
-                            ? Colors.white
-                            : const Color(0xffc8d3e2),
-                        weight: selected ? FontWeight.w700 : FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    selected ? Icons.check_circle : Icons.circle_outlined,
-                    color: selected ? widget.accent : Cyber.border,
-                    size: 20,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _QuizReviewPanel extends StatelessWidget {
-  const _QuizReviewPanel({
-    super.key,
-    required this.mode,
-    required this.questions,
-    required this.answers,
-    required this.onOpenQuestion,
-  });
-
-  final QuizMode mode;
-  final List<TriviaQuestion> questions;
-  final Map<int, int> answers;
-  final ValueChanged<int> onOpenQuestion;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-      children: [
-        Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 430),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                CyberPanel(
-                  accent: mode.accent,
-                  glow: true,
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.fact_check_outlined,
-                        color: mode.accent,
-                        size: 26,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'REVIEW YOUR ANSWERS',
-                              style: Cyber.display(16),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Nothing is scored until you lock in the full set.',
-                              style: Cyber.body(12, color: Cyber.muted),
-                            ),
-                          ],
+                  : const Duration(milliseconds: 100),
+              child: verdict == true && !reduceMotion
+                  ? Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        tile,
+                        Positioned.fill(
+                          child: SignalLockFx(
+                            progress: widget.progress,
+                            accent: accent,
+                            chevrons: widget.streak >= 3 ? 5 : 3,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 14),
-                for (var i = 0; i < questions.length; i++) ...[
-                  _ReviewRow(
-                    key: ValueKey('quiz-review-$i'),
-                    number: i + 1,
-                    question: questions[i],
-                    selected: answers[i],
-                    accent: mode.accent,
-                    onTap: () => onOpenQuestion(i),
-                  ),
-                  if (i != questions.length - 1) const SizedBox(height: 8),
-                ],
-              ],
+                      ],
+                    )
+                  : tile,
             ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ReviewRow extends StatelessWidget {
-  const _ReviewRow({
-    super.key,
-    required this.number,
-    required this.question,
-    required this.selected,
-    required this.accent,
-    required this.onTap,
-  });
-
-  final int number;
-  final TriviaQuestion question;
-  final int? selected;
-  final Color accent;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final answered = selected != null;
-    return Semantics(
-      button: true,
-      label:
-          'Question $number, ${answered ? 'selected ${question.labelFor(selected)}' : 'unanswered'}, edit answer',
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Container(
-          constraints: const BoxConstraints(minHeight: 64),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: Cyber.panel2,
-            border: Border.all(
-              color: answered ? accent.withValues(alpha: 0.42) : Cyber.danger,
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.12),
-                  border: Border.all(color: accent.withValues(alpha: 0.55)),
-                ),
-                child: Text(
-                  number.toString().padLeft(2, '0'),
-                  style: Cyber.display(11, color: accent),
-                ),
-              ),
-              const SizedBox(width: 11),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      question.prompt,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Cyber.body(12, weight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      answered
-                          ? 'ANSWER · ${question.labelFor(selected)}'
-                          : 'UNANSWERED',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Cyber.label(
-                        8,
-                        color: answered ? Cyber.muted : Cyber.danger,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Icon(Icons.edit_outlined, color: accent, size: 18),
-            ],
           ),
         ),
       ),
@@ -966,27 +1184,39 @@ class _BottomDock extends StatelessWidget {
   const _BottomDock({
     required this.total,
     required this.index,
+    required this.charge,
     required this.answeredIndices,
-    required this.canGoPrevious,
-    required this.onPrevious,
+    required this.verdicts,
+    required this.phase,
     required this.isLast,
     required this.primaryEnabled,
     required this.onPrimary,
     required this.helper,
+    required this.debrief,
   });
 
   final int total;
   final int index;
+  final Animation<double> charge;
   final Set<int> answeredIndices;
-  final bool canGoPrevious;
-  final VoidCallback onPrevious;
+  final Map<int, bool> verdicts;
+  final _QuestionPhase phase;
   final bool isLast;
   final bool primaryEnabled;
   final VoidCallback onPrimary;
   final String helper;
+  final Widget? debrief;
 
   @override
   Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
+    final resolved = phase == _QuestionPhase.resolved;
+    final label = !resolved
+        ? 'LOCK IN'
+        : isLast
+        ? 'SEE RESULTS'
+        : 'NEXT';
+
     return SafeArea(
       top: false,
       child: Container(
@@ -1008,7 +1238,9 @@ class _BottomDock extends StatelessWidget {
                       Expanded(
                         child: Semantics(
                           label:
-                              'Question ${i + 1}, ${i == index
+                              'Question ${i + 1}, ${verdicts.containsKey(i)
+                                  ? (verdicts[i]! ? 'correct' : 'wrong')
+                                  : i == index
                                   ? 'current'
                                   : answeredIndices.contains(i)
                                   ? 'answered'
@@ -1016,6 +1248,7 @@ class _BottomDock extends StatelessWidget {
                           child: HudProgressSegment(
                             answered: answeredIndices.contains(i),
                             current: i == index,
+                            verdict: verdicts[i],
                           ),
                         ),
                       ),
@@ -1023,33 +1256,60 @@ class _BottomDock extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  children: [
-                    if (canGoPrevious) ...[
-                      Expanded(
-                        child: HudPagerButton(
-                          label: 'PREVIOUS',
-                          leadingIcon: Icons.arrow_back,
-                          focal: false,
-                          enabled: true,
-                          onTap: onPrevious,
+                AnimatedSwitcher(
+                  duration: reduceMotion
+                      ? Duration.zero
+                      : const Duration(milliseconds: 220),
+                  switchInCurve: Curves.easeOutCubic,
+                  transitionBuilder: (child, animation) {
+                    if (reduceMotion) return child;
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SizeTransition(
+                        sizeFactor: animation,
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: debrief == null
+                      ? const SizedBox(
+                          key: ValueKey('quiz-no-debrief'),
+                          width: double.infinity,
+                        )
+                      : Padding(
+                          key: const ValueKey('quiz-debrief'),
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: debrief,
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                    ],
-                    Expanded(
-                      child: HudPagerButton(
-                        label: isLast ? 'REVIEW ANSWERS' : 'NEXT',
-                        trailingIcon: isLast
-                            ? Icons.fact_check_outlined
-                            : Icons.arrow_forward,
-                        focal: primaryEnabled,
-                        enabled: primaryEnabled,
-                        onTap: primaryEnabled ? onPrimary : null,
-                      ),
-                    ),
-                  ],
                 ),
+                if (resolved && !isLast && !reduceMotion)
+                  // Charging cell: tops up over 3s, then deals the next
+                  // question on its own. Tapping skips the wait.
+                  AnimatedBuilder(
+                    animation: charge,
+                    builder: (context, _) => ChargingHudButton(
+                      key: const ValueKey('quiz-advance'),
+                      label: label,
+                      icon: Icons.arrow_forward,
+                      fill: charge.value,
+                      onTap: onPrimary,
+                    ),
+                  )
+                else
+                  HudPagerButton(
+                    key: ValueKey(
+                      resolved ? 'quiz-advance' : 'quiz-lock-answer',
+                    ),
+                    label: label,
+                    trailingIcon: !resolved
+                        ? Icons.lock_outline
+                        : isLast
+                        ? Icons.fact_check_outlined
+                        : Icons.arrow_forward,
+                    focal: primaryEnabled,
+                    enabled: primaryEnabled,
+                    onTap: primaryEnabled ? onPrimary : null,
+                  ),
                 const SizedBox(height: 9),
                 Text(
                   helper,
@@ -1057,59 +1317,6 @@ class _BottomDock extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: Cyber.body(11, color: const Color(0xFF90A1B9)),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ReviewDock extends StatelessWidget {
-  const _ReviewDock({
-    required this.submitting,
-    required this.onBack,
-    required this.onSubmit,
-  });
-
-  final bool submitting;
-  final VoidCallback onBack;
-  final VoidCallback onSubmit;
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Cyber.bg.withValues(alpha: 0.97),
-          border: const Border(top: BorderSide(color: Cyber.borderMuted)),
-        ),
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 18),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 430),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                HudCtaButton(
-                  key: const ValueKey('quiz-lock-answers'),
-                  label: submitting ? 'SCORING...' : 'LOCK IN ANSWERS',
-                  helper: 'FINAL SUBMISSION · ANSWERS CANNOT CHANGE',
-                  icon: Icons.lock_outline,
-                  height: 64,
-                  enabled: !submitting,
-                  onTap: submitting ? null : onSubmit,
-                ),
-                const SizedBox(height: 7),
-                TextButton.icon(
-                  onPressed: onBack,
-                  icon: const Icon(Icons.arrow_back, size: 16),
-                  label: const Text('BACK TO QUESTIONS'),
-                  style: TextButton.styleFrom(foregroundColor: Cyber.muted),
                 ),
               ],
             ),

@@ -28,6 +28,8 @@ import '../data/final_over_kits.dart';
 import '../data/grand_prix_liveries.dart';
 import '../data/rival_roster.dart' show randomPlayerTag;
 
+enum OnboardingRewardStatus { pending, seen }
+
 /// Maps a legacy `border_*` avatar-frame id to the renamed `frame_*` form so a
 /// player's pre-rename owned/equipped frames keep resolving after the migration.
 String _migrateFrameId(String id) =>
@@ -171,8 +173,7 @@ class SecureGameStorage {
   static const _followedLeaguesKey = 'pd_followed_leagues_v1';
   static const _favoriteTeamsKey = 'pd_favorite_teams_v1';
   static const _onboardingCompleteKey = 'pd_onboarding_complete_v1';
-  static const _demoRewardSettlementSeenKey =
-      'pd_demo_reward_settlement_seen_v1';
+  static const _onboardingRewardStatusKey = 'pd_onboarding_reward_status_v1';
   static const _celebratedAchievementsKey = 'pd_celebrated_achievements_v1';
   static const _streakKey = 'pd_daily_streak_v1';
   static const _friendsKey = 'pd_friends_v1';
@@ -857,21 +858,18 @@ class SecureGameStorage {
     );
   }
 
-  Future<bool> loadDemoRewardSettlementSeen() async {
+  Future<OnboardingRewardStatus?> loadOnboardingRewardStatus() async {
     try {
-      final raw = await _storage.read(key: _demoRewardSettlementSeenKey);
-      return raw == 'true';
+      final raw = await _storage.read(key: _onboardingRewardStatusKey);
+      if (raw == null || raw.isEmpty) return null;
+      return OnboardingRewardStatus.values.byName(raw);
     } catch (_) {
-      return false;
+      return null;
     }
   }
 
-  Future<void> saveDemoRewardSettlementSeen() async {
-    await _storage.write(key: _demoRewardSettlementSeenKey, value: 'true');
-  }
-
-  Future<void> resetDemoRewardSettlementSeen() async {
-    await _storage.delete(key: _demoRewardSettlementSeenKey);
+  Future<void> saveOnboardingRewardStatus(OnboardingRewardStatus status) async {
+    await _storage.write(key: _onboardingRewardStatusKey, value: status.name);
   }
 
   Future<void> resetProfileSetup() async {
@@ -882,7 +880,6 @@ class SecureGameStorage {
       _storage.delete(key: _selectedTimeZoneKey),
       _storage.delete(key: _followedLeaguesKey),
       _storage.delete(key: _favoriteTeamsKey),
-      resetDemoRewardSettlementSeen(),
       _storage.write(key: _onboardingCompleteKey, value: 'false'),
     ]);
   }

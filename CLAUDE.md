@@ -68,3 +68,26 @@ call it out and propose a gamified alternative before planning the literal ask.
 - For visual changes, confirm in the running app (`/run`), not just analyze.
 - Project history and feature context live in the memory index
   (`.claude/projects/.../memory/MEMORY.md`).
+
+## Product documentation maintenance (mandatory)
+
+[`docs/product/README.md`](docs/product/README.md) is the canonical product
+source of truth. Any task that changes a game, feature, navigation, economy,
+progression, design system, gratification/feedback, persistence, or planned
+scope MUST update documentation in the same change:
+
+Every request that updates product documentation, including a documentation-only
+request, MUST append the ledger row described below.
+
+1. Update the relevant page under `docs/product/games/`, `systems/`, or `design/`.
+2. Update the main product index/coverage matrix when navigation, coverage,
+   status, naming, or cross-feature relationships change.
+3. Append one dated row to
+   `docs/product/DOCUMENTATION_LEDGER.md` describing the request, affected pages,
+   and code/tests used for verification. Never rewrite or remove older rows.
+4. Start new product pages from `docs/product/DOCUMENT_TEMPLATE.md`, use the
+   `BUILT`, `PROTOTYPE`, `PLANNED`, and `DEPRECATED` tags, and keep planned
+   behavior explicitly separated from shipped behavior.
+
+Code and tests are authoritative when documentation disagrees. A feature change
+is incomplete until its page, index when applicable, and ledger are current.

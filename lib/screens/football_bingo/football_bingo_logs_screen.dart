@@ -20,7 +20,7 @@ class FootballBingoLogsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = state.unlockedDayKeys.reversed.toList();
+    final items = state.campaignDayKeys.reversed.toList();
     final completed = items
         .where(
           (dayKey) => state.archive.progressByDay[dayKey]?.completed ?? false,
@@ -152,11 +152,13 @@ class FootballBingoLogsScreen extends StatelessWidget {
                         itemCount: items.length,
                         itemBuilder: (context, index) {
                           final dayKey = items[index];
-                          final progress = state.archive.progressByDay[dayKey]!;
+                          final progress = state.archive.progressByDay[dayKey];
+                          final locked = dayKey.compareTo(state.todayKey) > 0;
                           return _BingoLogTile(
                             dayKey: dayKey,
                             progress: progress,
-                            onTap: () => onOpenDay(dayKey),
+                            locked: locked,
+                            onTap: locked ? null : () => onOpenDay(dayKey),
                           );
                         },
                       ),
@@ -201,12 +203,14 @@ class _BingoLogTile extends StatelessWidget {
   const _BingoLogTile({
     required this.dayKey,
     required this.progress,
+    required this.locked,
     required this.onTap,
   });
 
   final String dayKey;
-  final FootballBingoProgress progress;
-  final VoidCallback onTap;
+  final FootballBingoProgress? progress;
+  final bool locked;
+  final VoidCallback? onTap;
 
   String _formatDate(String key) {
     final date = parseFootballBingoDayKey(key);
@@ -230,8 +234,8 @@ class _BingoLogTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final done = progress.completed;
-    final accent = done ? Cyber.lime : Cyber.cyan;
+    final done = progress?.completed ?? false;
+    final accent = locked ? Cyber.muted : done ? Cyber.lime : Cyber.cyan;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
@@ -253,13 +257,17 @@ class _BingoLogTile extends StatelessWidget {
                     Row(
                       children: [
                         Icon(
-                          done ? Icons.verified_rounded : Icons.grid_view,
+                          locked
+                              ? Icons.lock_outline
+                              : done
+                              ? Icons.verified_rounded
+                              : Icons.grid_view,
                           color: accent,
                           size: 18,
                         ),
                         const Spacer(),
                         Text(
-                          done ? 'DONE' : 'OPEN',
+                          locked ? 'LOCKED' : done ? 'DONE' : 'OPEN',
                           style: Cyber.label(8.5, color: accent),
                         ),
                       ],
@@ -273,7 +281,11 @@ class _BingoLogTile extends StatelessWidget {
                     ),
                     const Spacer(),
                     Text(
-                      done ? 'COMPLETED' : '${progress.lifelines} LIVES LEFT',
+                      locked
+                          ? 'UNLOCKS ON THIS DAY'
+                          : done
+                          ? 'COMPLETED'
+                          : '${progress?.lifelines ?? kFootballBingoStartingLifelines} LIVES LEFT',
                       style: Cyber.label(
                         8.5,
                         color: Cyber.muted,
@@ -290,7 +302,7 @@ class _BingoLogTile extends StatelessWidget {
               alignment: Alignment.center,
               padding: const EdgeInsets.symmetric(horizontal: 6),
               child: Text(
-                done ? 'CHECK ANSWER' : 'PLAY GRID',
+                locked ? 'LOCKED' : done ? 'CHECK ANSWER' : 'PLAY GRID',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Cyber.label(9, color: accent, letterSpacing: 0.55),

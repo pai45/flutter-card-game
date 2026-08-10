@@ -8,6 +8,7 @@ import '../../blocs/football_bingo/football_bingo_cubit.dart';
 import '../../blocs/football_bingo/football_bingo_state.dart';
 import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_event.dart';
+import '../../data/football_bingo_careers.dart';
 import '../../config/theme.dart';
 import '../../models/cards.dart';
 import '../../models/football_bingo.dart';
@@ -121,6 +122,48 @@ class _FootballBingoScreenState extends State<FootballBingoScreen>
       playSound(SoundEffect.bingoWrong);
       HapticFeedback.heavyImpact();
     }
+  }
+
+  void _showCareerForCell(FootballBingoCell cell) {
+    final career = footballBingoCareerFor(cell.playerId);
+    if (career == null) return;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: CyberPanel(
+            accent: Cyber.amber,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('ROUTE UNLOCKED', style: Cyber.label(10, color: Cyber.amber)),
+                const SizedBox(height: 6),
+                Text(career.name, style: Cyber.display(20, color: Colors.white)),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final spell in career.clubHistory)
+                      CyberChip(
+                        label: spell.label.toUpperCase(),
+                        color: spell.clubId == cell.rowId || spell.clubId == cell.columnId
+                            ? Cyber.amber
+                            : Cyber.muted,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Text('VERIFIED SENIOR CLUB ROUTE', style: Cyber.label(9, color: Cyber.muted)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   bool _completedLineAt(String cellId) {
@@ -248,6 +291,7 @@ class _FootballBingoScreenState extends State<FootballBingoScreen>
                               settlingCellIds: _settlingCellIds,
                               cellKeyFor: _cellKey,
                               onCellTap: _selectCell,
+                              onSolvedTap: _showCareerForCell,
                             ),
                             const SizedBox(height: 18),
                             _PlayerPanel(
@@ -428,12 +472,14 @@ class _BingoGrid extends StatelessWidget {
     required this.settlingCellIds,
     required this.cellKeyFor,
     required this.onCellTap,
+    required this.onSolvedTap,
   });
 
   final FootballBingoState state;
   final Set<String> settlingCellIds;
   final GlobalKey Function(String cellId) cellKeyFor;
   final ValueChanged<String> onCellTap;
+  final ValueChanged<FootballBingoCell> onSolvedTap;
 
   @override
   Widget build(BuildContext context) {
@@ -503,6 +549,7 @@ class _BingoGrid extends StatelessWidget {
                                       state.puzzle.cellAt(row, column).id,
                               disabled: state.completed || state.needsLifeline,
                               onTap: onCellTap,
+                              onSolvedTap: onSolvedTap,
                             ),
                           ),
                           const SizedBox(width: gap),
@@ -555,6 +602,7 @@ class _GridCell extends StatelessWidget {
     required this.wrong,
     required this.disabled,
     required this.onTap,
+    required this.onSolvedTap,
   });
 
   final FootballBingoCell cell;
@@ -565,6 +613,7 @@ class _GridCell extends StatelessWidget {
   final bool wrong;
   final bool disabled;
   final ValueChanged<String> onTap;
+  final ValueChanged<FootballBingoCell> onSolvedTap;
 
   @override
   Widget build(BuildContext context) {
@@ -585,7 +634,7 @@ class _GridCell extends StatelessWidget {
     return GestureDetector(
       key: ValueKey('bingo-cell-${cell.id}'),
       behavior: HitTestBehavior.opaque,
-      onTap: disabled || solved || revealAnswer ? null : () => onTap(cell.id),
+      onTap: solved ? () => onSolvedTap(cell) : disabled || revealAnswer ? null : () => onTap(cell.id),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
         width: size,
@@ -782,17 +831,21 @@ class _PlayerPanel extends StatelessWidget {
               ? Icon(player.icon, size: 46, color: Cyber.amber)
               : Image.asset(portrait, fit: BoxFit.cover),
         ),
-        const SizedBox(height: 10),
-        Text(
-          player.position,
-          textAlign: TextAlign.center,
-          style: Cyber.display(15, color: Colors.white),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          player.trait.toUpperCase(),
-          textAlign: TextAlign.center,
-          style: Cyber.label(10, color: Cyber.muted),
+        const SizedBox(height: 12),
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            CyberChip(
+              label: 'POS ${player.position}',
+              color: Cyber.cyan,
+            ),
+            CyberChip(
+              label: 'TAG ${player.trait.toUpperCase()}',
+              color: Cyber.amber,
+            ),
+          ],
         ),
       ],
     );

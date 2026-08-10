@@ -1,0 +1,669 @@
+﻿
+C:\Users\priya\.gemini\antigravity\brain\81231322-7b70-49d6-a65b-059078359d18\.system_generated\logs\transcript_full.js
+onl:9:{"step_index":8,"source":"MODEL","type":"VIEW_FILE","status":"DONE","created_at":"2026-07-10T22:12:44Z","content"
+:"Created At: 2026-07-10T22:12:44Z\nCompleted At: 2026-07-10T22:12:44Z\nFile Path: `file:///c:/Users/priya/OneDrive/Des
+ktop/flutter_projects/card_game/lib/screens/leaderboard/leaderboard_screen.dart`\nTotal Lines: 1986\nTotal Bytes: 
+62430\nShowing lines 1 to 800\nThe following code has been modified to include a line number before every line, in the 
+format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the 
+line number, colon, and leading space.\n1: import 'package:flutter/material.dart';\r\n2: import 
+'package:flutter/services.dart';\r\n3: import 'package:flutter_bloc/flutter_bloc.dart';\r\n4: \r\n5: import 
+'../../blocs/game/game_bloc.dart';\r\n6: import '../../config/enums.dart';\r\n7: import 
+'../../config/sport_modules.dart';\r\n8: import '../../config/theme.dart';\r\n9: import 
+'../../data/rival_roster.dart';\r\n10: import '../../models/avatar_frame_option.dart';\r\n11: import 
+'../../models/sport_match.dart';\r\n12: import '../../utils/sound_effects.dart';\r\n13: import 
+'../../widgets/cyber/cyber_underline_tabs.dart';\r\n14: import '../../widgets/cyber/cyber_widgets.dart';\r\n15: import 
+'../../widgets/landing_bottom_navigation.dart';\r\n16: import '../../widgets/stat_oz_top_bar.dart';\r\n17: import 
+'../../widgets/staggered_card_entrance.dart';\r\n18: import '../profile/rival_profile_screen.dart';\r\n19: import 
+'widgets/rank_widgets.dart';\r\n20: \r\n21: // ─── Domain 
+──────────────────────────────────────────────────────────────────\r\n22: \r\n23: enum LeaderboardType { matchDay, 
+tournament, games }\r\n24: \r\n25: // Matches shop tab styling (_ShopTabs / _TabItem).\r\n26: const Color _tabBarBg = 
+Cyber.bg;\r\n27: const Color _tabSecondary = AppTheme.slate400;\r\n28: \r\n29: const List<LeaderboardType> 
+_typeTabOrder = [\r\n30:   LeaderboardType.matchDay,\r\n31:   LeaderboardType.tournament,\r\n32:   
+LeaderboardType.games,\r\n33: ];\r\n34: \r\n35: const List<Sport> _leaderboardSports = [\r\n36:   
+Sport.football,\r\n37:   Sport.cricket,\r\n38:   Sport.basketball,\r\n39:   Sport.tennis,\r\n40:   Sport.f1,\r\n41: 
+];\r\n42: \r\n43: final _leaderboardSportLabels = _leaderboardSports\r\n44:     .map((sport) => 
+sportModuleFor(sport).label.toUpperCase())\r\n45:     .toList(growable: false);\r\n46: \r\n47: final 
+_leaderboardSportIcons = _leaderboardSports\r\n48:     .map((sport) => sportModuleFor(sport).icon)\r\n49:     
+.toList(growable: false);\r\n50: \r\n51: enum TournamentBoard { players, teams }\r\n52: \r\n53: enum TournamentScope { 
+weekly, season, allTime }\r\n54: \r\n55: enum GameMode { quiz, cardDuel, streaks, accuracy }\r\n56: \r\n57: class 
+LeaderboardEntry {\r\n58:   const LeaderboardEntry({\r\n59:     required this.rank,\r\n60:     required 
+this.name,\r\n61:     required this.score,\r\n62:     required this.movement,\r\n63:     this.isNew = false,\r\n64:    
+ this.badge,\r\n65:     this.isUser = false,\r\n66:     this.team,\r\n67:     this.xp = 0,\r\n68:   });\r\n69: \r\n70: 
+  /// >0 climbed, <0 dropped, 0 held.\r\n71:   final int rank;\r\n72:   final String name;\r\n73:   final int 
+score;\r\n74:   final int movement;\r\n75:   final bool isNew;\r\n76:   final String? badge;\r\n77:   final bool 
+isUser;\r\n78:   final SportTeam? team;\r\n79: \r\n80:   /// The player's canonical XP (their `_Seed.base`), 
+independent of the active\r\n81:   /// board type/scope — drives the rival dossier's level and XP meter.\r\n82:   
+final int xp;\r\n83: }\r\n84: \r\n85: class _TeamSeed {\r\n86:   const _TeamSeed({\r\n87:     required 
+this.team,\r\n88:     required this.score,\r\n89:     required this.movement,\r\n90:     this.isUser = false,\r\n91:   
+});\r\n92: \r\n93:   final SportTeam team;\r\n94:   final int score;\r\n95:   final int movement;\r\n96:   final bool 
+isUser;\r\n97: }\r\n98: \r\n99: const List<_TeamSeed> _teams = [\r\n100:   _TeamSeed(\r\n101:     team: 
+SportTeam(\r\n102:       id: 'fra',\r\n103:       name: 'France',\r\n104:       shortName: 'FRA',\r\n105:       color: 
+Color(0xff1b4fd7),\r\n106:     ),\r\n107:     score: 1877,\r\n108:     movement: 2,\r\n109:   ),\r\n110:   
+_TeamSeed(\r\n111:     team: SportTeam(\r\n112:       id: 'esp',\r\n113:       name: 'Spain',\r\n114:       shortName: 
+'ESP',\r\n115:       color: Color(0xffd71920),\r\n116:     ),\r\n117:     score: 1876,\r\n118:     movement: 
+-1,\r\n119:   ),\r\n120:   _TeamSeed(\r\n121:     team: SportTeam(\r\n122:       id: 'arg',\r\n123:       name: 
+'Argentina',\r\n124:       shortName: 'ARG',\r\n125:       color: Color(0xff74acdf),\r\n126:     ),\r\n127:     score: 
+1875,\r\n128:     movement: -1,\r\n129:     isUser: true,\r\n130:   ),\r\n131:   _TeamSeed(\r\n132:     team: 
+SportTeam(\r\n133:       id: 'eng',\r\n134:       name: 'England',\r\n135:       shortName: 'ENG',\r\n136:       
+color: Color(0xfff5f5f5),\r\n137:     ),\r\n138:     score: 1813,\r\n139:     movement: 0,\r\n140:   ),\r\n141:   
+_TeamSeed(\r\n142:     team: SportTeam(\r\n143:       id: 'por',\r\n144:       name: 'Portugal',\r\n145:       
+shortName: 'POR',\r\n146:       color: Color(0xff006600),\r\n147:     ),\r\n148:     score: 1764,\r\n149:     
+movement: 1,\r\n150:   ),\r\n151:   _TeamSeed(\r\n152:     team: SportTeam(\r\n153:       id: 'bra',\r\n154:       
+name: 'Brazil',\r\n155:       shortName: 'BRA',\r\n156:       color: Color(0xffffdf00),\r\n157:     ),\r\n158:     
+score: 1761,\r\n159:     movement: -1,\r\n160:   ),\r\n161:   _TeamSeed(\r\n162:     team: SportTeam(\r\n163:       
+id: 'ned',\r\n164:       name: 'Netherlands',\r\n165:       shortName: 'NED',\r\n166:       color: 
+Color(0xffff7f00),\r\n167:     ),\r\n168:     score: 1756,\r\n169:     movement: 0,\r\n170:   ),\r\n171:   
+_TeamSeed(\r\n172:     team: SportTeam(\r\n173:       id: 'mar',\r\n174:       name: 'Morocco',\r\n175:       
+shortName: 'MAR',\r\n176:       color: Color(0xffc1272d),\r\n177:     ),\r\n178:     score: 1738,\r\n179:     
+movement: 1,\r\n180:   ),\r\n181:   _TeamSeed(\r\n182:     team: SportTeam(\r\n183:       id: 'bel',\r\n184:       
+name: 'Belgium',\r\n185:       shortName: 'BEL',\r\n186:       color: Color(0xfffdda24),\r\n187:     ),\r\n188:     
+score: 1735,\r\n189:     movement: 0,\r\n190:   ),\r\n191:   _TeamSeed(\r\n192:     team: SportTeam(\r\n193:       id: 
+'ger',\r\n194:       name: 'Germany',\r\n195:       shortName: 'GER',\r\n196:       color: Color(0xff111111),\r\n197:  
+   ),\r\n198:     score: 1730,\r\n199:     movement: 0,\r\n200:   ),\r\n201:   _TeamSeed(\r\n202:     team: 
+SportTeam(\r\n203:       id: 'cro',\r\n204:       name: 'Croatia',\r\n205:       shortName: 'CRO',\r\n206:       
+color: Color(0xffe31b23),\r\n207:     ),\r\n208:     score: 1717,\r\n209:     movement: 1,\r\n210:   ),\r\n211:   
+_TeamSeed(\r\n212:     team: SportTeam(\r\n213:       id: 'mex',\r\n214:       name: 'Mexico',\r\n215:       
+shortName: 'MEX',\r\n216:       color: Color(0xff006847),\r\n217:     ),\r\n218:     score: 1706,\r\n219:     
+movement: 1,\r\n220:   ),\r\n221:   _TeamSeed(\r\n222:     team: SportTeam(\r\n223:       id: 'usa',\r\n224:       
+name: 'United States',\r\n225:       shortName: 'USA',\r\n226:       color: Color(0xff3c3b6e),\r\n227:     ),\r\n228:  
+   score: 1698,\r\n229:     movement: 2,\r\n230:   ),\r\n231:   _TeamSeed(\r\n232:     team: SportTeam(\r\n233:       
+id: 'uru',\r\n234:       name: 'Uruguay',\r\n235:       shortName: 'URU',\r\n236:       color: 
+Color(0xff7bb9e8),\r\n237:     ),\r\n238:     score: 1687,\r\n239:     movement: -1,\r\n240:   ),\r\n241:   
+_TeamSeed(\r\n242:     team: SportTeam(\r\n243:       id: 'col',\r\n244:       name: 'Colombia',\r\n245:       
+shortName: 'COL',\r\n246:       color: Color(0xffffd100),\r\n247:     ),\r\n248:     score: 1684,\r\n249:     
+movement: 1,\r\n250:   ),\r\n251:   _TeamSeed(\r\n252:     team: SportTeam(\r\n253:       id: 'jpn',\r\n254:       
+name: 'Japan',\r\n255:       shortName: 'JPN',\r\n256:       color: Color(0xff0033a0),\r\n257:     ),\r\n258:     
+score: 1672,\r\n259:     movement: 0,\r\n260:   ),\r\n261: ];\r\n262: \r\n263: typedef ScoreMeta = ({String 
+unit});\r\n264: \r\n265: ScoreMeta _scoreMeta(LeaderboardType type) => switch (type) {\r\n266:   
+LeaderboardType.matchDay => (unit: 'XP'),\r\n267:   LeaderboardType.tournament => (unit: 'XP'),\r\n268:   
+LeaderboardType.games => (unit: 'W'),\r\n269: };\r\n270: \r\n271: int _scoreFor(\r\n272:   LeaderboardType 
+type,\r\n273:   int base,\r\n274:   TournamentScope scope,\r\n275:   GameMode mode,\r\n276: ) {\r\n277:   switch 
+(type) {\r\n278:     case LeaderboardType.matchDay:\r\n279:       return base;\r\n280:     case 
+LeaderboardType.tournament:\r\n281:       return switch (scope) {\r\n282:         TournamentScope.weekly => 
+base,\r\n283:         TournamentScope.season => base * 6,\r\n284:         TournamentScope.allTime => base * 
+27,\r\n285:       };\r\n286:     case LeaderboardType.games:\r\n287:       return (base / 55).round() + 
+mode.index;\r\n288:   }\r\n289: }\r\n290: \r\n291: List<LeaderboardEntry> _entriesFor(\r\n292:   LeaderboardType 
+type,\r\n293:   TournamentScope scope,\r\n294:   GameMode mode,\r\n295: ) {\r\n296:   return [\r\n297:     for (var i 
+= 0; i < kRivalRoster.length; i++)\r\n298:       LeaderboardEntry(\r\n299:         rank: i + 1,\r\n300:         name: 
+kRivalRoster[i].name,\r\n301:         score: _scoreFor(type, kRivalRoster[i].base, scope, mode),\r\n302:         
+movement: kRivalRoster[i].movement,\r\n303:         isNew: kRivalRoster[i].isNew,\r\n304:         badge: 
+kRivalRoster[i].badge,\r\n305:         isUser: kRivalRoster[i].isUser,\r\n306:         xp: 
+kRivalRoster[i].base,\r\n307:       ),\r\n308:   ];\r\n309: }\r\n310: \r\n311: List<LeaderboardEntry> 
+_teamEntriesFor() {\r\n312:   return [\r\n313:     for (var i = 0; i < _teams.length; i++)\r\n314:       
+LeaderboardEntry(\r\n315:         rank: i + 1,\r\n316:         name: _teams[i].team.name,\r\n317:         score: 
+_teams[i].score,\r\n318:         movement: _teams[i].movement,\r\n319:         isNew: false,\r\n320:         badge: 
+_teams[i].team.shortName,\r\n321:         isUser: _teams[i].isUser,\r\n322:         team: _teams[i].team,\r\n323:      
+ ),\r\n324:   ];\r\n325: }\r\n326: \r\n327: LeaderboardEntry _userEntry(List<LeaderboardEntry> entries) =>\r\n328:     
+entries.firstWhere((e) => e.isUser, orElse: () => entries.last);\r\n329: \r\n330: /// Pushes the cinematic dossier for 
+a known leaderboard rival [name]. Reused by\r\n331: /// the leaderboard rows/podium and the profile friends roster; a 
+no-op for an\r\n332: /// unknown name. [onChallenge] enables the dossier's CHALLENGE action (null\r\n333: /// hides it 
+— e.g. when opened from the profile roster).\r\n334: void showRivalDossier(\r\n335:   BuildContext context,\r\n336:   
+String name, {\r\n337:   void Function(String opponentName, int opponentLevel)? onChallenge,\r\n338: }) {\r\n339:   
+final index = kRivalRoster.indexWhere((s) => s.name == name);\r\n340:   if (index < 0) return;\r\n341:   final seed = 
+kRivalRoster[index];\r\n342:   final userIndex = kRivalRoster.indexWhere((s) => s.isUser);\r\n343:   
+Navigator.of(context).push(\r\n344:     PageRouteBuilder<void>(\r\n345:       transitionDuration: const 
+Duration(milliseconds: 360),\r\n346:       reverseTransitionDuration: const Duration(milliseconds: 240),\r\n347:       
+pageBuilder: (_, _, _) => RivalProfileScreen(\r\n348:         name: seed.name,\r\n349:         rank: index + 
+1,\r\n350:         xp: seed.base,\r\n351:         pro: seed.badge == 'PRO',\r\n352:         userRank: userIndex < 0 ? 
+index + 1 : userIndex + 1,\r\n353:         onChallenge: onChallenge,\r\n354:       ),\r\n355:       
+transitionsBuilder: (_, animation, _, child) {\r\n356:         final curved = CurvedAnimation(\r\n357:           
+parent: animation,\r\n358:           curve: Curves.easeOutCubic,\r\n359:         );\r\n360:         return 
+FadeTransition(\r\n361:           opacity: curved,\r\n362:           child: ScaleTransition(\r\n363:             
+scale: Tween<double>(begin: 0.94, end: 1).animate(curved),\r\n364:             child: child,\r\n365:           
+),\r\n366:         );\r\n367:       },\r\n368:     ),\r\n369:   );\r\n370: }\r\n371: \r\n372: String _formatInt(int 
+value) {\r\n373:   final digits = value.abs().toString();\r\n374:   final buffer = StringBuffer();\r\n375:   for (var 
+i = 0; i < digits.length; i++) {\r\n376:     if (i > 0 && (digits.length - i) % 3 == 0) buffer.write(',');\r\n377:     
+buffer.write(digits[i]);\r\n378:   }\r\n379:   return '${value < 0 ? '-' : ''}$buffer';\r\n380: }\r\n381: \r\n382: // 
+─── Screen ──────────────────────────────────────────────────────────────────\r\n383: \r\n384: class LeaderboardScreen 
+extends StatefulWidget {\r\n385:   const LeaderboardScreen({\r\n386:     required this.onNavigate,\r\n387:     
+this.onAddCoins,\r\n388:     this.onChallenge,\r\n389:     super.key,\r\n390:   });\r\n391: \r\n392:   final 
+ValueChanged<AppSection> onNavigate;\r\n393:   final VoidCallback? onAddCoins;\r\n394: \r\n395:   /// Launches a card 
+match against a CPU themed as the given rival\r\n396:   /// (name, level). Null when challenge isn't available (e.g. 
+the in-game\r\n397:   /// leaderboard), in which case the dossier hides its CHALLENGE action.\r\n398:   final void 
+Function(String opponentName, int opponentLevel)? onChallenge;\r\n399: \r\n400:   @override\r\n401:   
+State<LeaderboardScreen> createState() => _LeaderboardScreenState();\r\n402: }\r\n403: \r\n404: class 
+_LeaderboardScreenState extends State<LeaderboardScreen>\r\n405:     with TickerProviderStateMixin {\r\n406:   
+LeaderboardType _type = LeaderboardType.matchDay;\r\n407:   TournamentBoard _tournamentBoard = 
+TournamentBoard.teams;\r\n408:   Sport _sport = Sport.football;\r\n409:   TournamentScope _scope = 
+TournamentScope.weekly;\r\n410:   GameMode _mode = GameMode.quiz;\r\n411: \r\n412:   late final AnimationController 
+_typeTabIndicatorController;\r\n413:   late Animation<double> _typeTabIndicatorAnimation;\r\n414:   int 
+_previousTypeTab = 0;\r\n415: \r\n416:   @override\r\n417:   void initState() {\r\n418:     super.initState();\r\n419: 
+    _typeTabIndicatorController = AnimationController(\r\n420:       vsync: this,\r\n421:       duration: const 
+Duration(milliseconds: 300),\r\n422:       value: 0,\r\n423:     );\r\n424:     _typeTabIndicatorAnimation = 
+AlwaysStoppedAnimation<double>(\r\n425:       _typeTabOrder.indexOf(_type).toDouble(),\r\n426:     );\r\n427:   
+}\r\n428: \r\n429:   @override\r\n430:   void dispose() {\r\n431:     _typeTabIndicatorController.dispose();\r\n432:   
+  super.dispose();\r\n433:   }\r\n434: \r\n435:   void _setTypeTab(int index) {\r\n436:     final type = 
+_typeTabOrder[index];\r\n437:     if (type == _type) return;\r\n438:     _previousTypeTab = 
+_typeTabOrder.indexOf(_type);\r\n439:     _typeTabIndicatorAnimation =\r\n440:         Tween<double>(\r\n441:          
+ begin: _previousTypeTab.toDouble(),\r\n442:           end: index.toDouble(),\r\n443:         ).animate(\r\n444:       
+    CurvedAnimation(\r\n445:             parent: _typeTabIndicatorController,\r\n446:             curve: 
+Curves.easeOutCubic,\r\n447:           ),\r\n448:         );\r\n449:     _typeTabIndicatorController.forward(from: 
+0);\r\n450:     setState(() => _type = type);\r\n451:   }\r\n452: \r\n453:   /// Open a rival's dossier (or jump to 
+your own profile if it's you). Team\r\n454:   /// rows have no player profile, so they're inert.\r\n455:   void 
+_openRival(LeaderboardEntry entry) {\r\n456:     if (entry.team != null) return;\r\n457:     if (entry.isUser) 
+{\r\n458:       playSound(SoundEffect.uiTap);\r\n459:       HapticFeedback.selectionClick();\r\n460:       
+widget.onNavigate(AppSection.profile);\r\n461:       return;\r\n462:     }\r\n463:     showRivalDossier(context, 
+entry.name, onChallenge: widget.onChallenge);\r\n464:   }\r\n465: \r\n466:   @override\r\n467:   Widget 
+build(BuildContext context) {\r\n468:     final accent = sportModuleFor(_sport).accent;\r\n469:     final 
+isTeamTournament =\r\n470:         _type == LeaderboardType.tournament &&\r\n471:         _tournamentBoard == 
+TournamentBoard.teams;\r\n472:     final allEntries = isTeamTournament\r\n473:         ? _teamEntriesFor()\r\n474:     
+    : _entriesFor(_type, _scope, _mode);\r\n475:     final user = _userEntry(allEntries);\r\n476:     final entries = 
+allEntries;\r\n477: \r\n478:     return Scaffold(\r\n479:       backgroundColor: Cyber.bg,\r\n480:       body: 
+Stack(\r\n481:         children: [\r\n482:           const Positioned.fill(child: ColoredBox(color: 
+Cyber.bg)),\r\n483:           const Positioned.fill(child: CyberTextureOverlay()),\r\n484:           SafeArea(\r\n485: 
+            top: false,\r\n486:             bottom: false,\r\n487:             child: LayoutBuilder(\r\n488:           
+    builder: (context, constraints) {\r\n489:                 final compact = constraints.maxHeight < 640;\r\n490:     
+            final filters = _FilterBar(\r\n491:                   type: _type,\r\n492:                   
+selectedSport: _sport,\r\n493:                   onSport: (sport) => setState(() => _sport = sport),\r\n494:           
+        scope: _scope,\r\n495:                   onScope: (scope) => setState(() => _scope = scope),\r\n496:           
+        tournamentBoard: _tournamentBoard,\r\n497:                   onTournamentBoard: (board) =>\r\n498:             
+          setState(() => _tournamentBoard = board),\r\n499:                   mode: _mode,\r\n500:                   
+onMode: (mode) => setState(() => _mode = mode),\r\n501:                   accent: accent,\r\n502:                   
+compact: compact,\r\n503:                 );\r\n504: \r\n505:                 return Column(\r\n506:                   
+children: [\r\n507:                     StatOzTopBar(\r\n508:                       title: 'Leaderboard',\r\n509:      
+                 accent: accent,\r\n510:                       onAddCoins:\r\n511:                           
+widget.onAddCoins ??\r\n512:                           () => widget.onNavigate(AppSection.shop),\r\n513:               
+      ),\r\n514:                     _LeaderboardTabs(\r\n515:                       activeTab: 
+_typeTabOrder.indexOf(_type),\r\n516:                       indicatorAnimation: _typeTabIndicatorAnimation,\r\n517:    
+                   accent: accent,\r\n518:                       onTap: _setTypeTab,\r\n519:                     
+),\r\n520:                     Expanded(\r\n521:                       child: AnimatedSwitcher(\r\n522:                
+         duration: const Duration(milliseconds: 280),\r\n523:                         switchInCurve: 
+Curves.easeOutCubic,\r\n524:                         transitionBuilder: (child, animation) => FadeTransition(\r\n525:  
+                         opacity: animation,\r\n526:                           child: SlideTransition(\r\n527:         
+                    position: Tween<Offset>(\r\n528:                               begin: const Offset(0, 
+0.025),\r\n529:                               end: Offset.zero,\r\n530:                             
+).animate(animation),\r\n531:                             child: child,\r\n532:                           ),\r\n533:   
+                      ),\r\n534:                         child: entries.isEmpty\r\n535:                             ? 
+_EmptyState(\r\n536:                                 key: ValueKey('empty-${_type.name}'),\r\n537:                     
+            filters: filters,\r\n538:                                 type: _type,\r\n539:                             
+    accent: accent,\r\n540:                                 onAction: widget.onNavigate,\r\n541:                       
+        )\r\n542:                             : _Body(\r\n543:                                 key: ValueKey(\r\n544:  
+                                 
+'${_type.name}-${_sport.name}-${_tournamentBoard.name}-${_scope.name}-${_mode.name}',\r\n545:                          
+       ),\r\n546:                                 filters: filters,\r\n547:                                 entries: 
+entries,\r\n548:                                 type: _type,\r\n549:                                 accent: 
+accent,\r\n550:                                 compact: compact,\r\n551:                                 onTapEntry: 
+isTeamTournament\r\n552:                                     ? null\r\n553:                                     : 
+_openRival,\r\n554:                               ),\r\n555:                       ),\r\n556:                     
+),\r\n557:                     if (entries.isNotEmpty)\r\n558:                       _UserRankBar(user: user, type: 
+_type, accent: accent),\r\n559:                   ],\r\n560:                 );\r\n561:               },\r\n562:       
+      ),\r\n563:           ),\r\n564:         ],\r\n565:       ),\r\n566:       bottomNavigationBar: 
+LandingBottomNavigation(\r\n567:         selectedIndex: 2,\r\n568:         onNavigate: widget.onNavigate,\r\n569:      
+   includeShop: false,\r\n570:       ),\r\n571:     );\r\n572:   }\r\n573: }\r\n574: \r\n575: // ─── Type tabs 
+(matches shop _ShopTabs) ──────────────────────────────────────\r\n576: \r\n577: class _LeaderboardTabs extends 
+StatelessWidget {\r\n578:   const _LeaderboardTabs({\r\n579:     required this.activeTab,\r\n580:     required 
+this.indicatorAnimation,\r\n581:     required this.accent,\r\n582:     required this.onTap,\r\n583:   });\r\n584: 
+\r\n585:   final int activeTab;\r\n586:   final Animation<double> indicatorAnimation;\r\n587:   final Color 
+accent;\r\n588:   final ValueChanged<int> onTap;\r\n589: \r\n590:   static const List<String> _items = ['MATCH DAY', 
+'TOURNEY', 'GAMES'];\r\n591: \r\n592:   @override\r\n593:   Widget build(BuildContext context) {\r\n594:     return 
+Container(\r\n595:       height: 50,\r\n596:       decoration: BoxDecoration(\r\n597:         color: 
+_tabBarBg.withValues(alpha: 0.4),\r\n598:         border: Border(\r\n599:           bottom: BorderSide(color: 
+accent.withValues(alpha: 0.22)),\r\n600:         ),\r\n601:       ),\r\n602:       child: LayoutBuilder(\r\n603:       
+  builder: (BuildContext context, BoxConstraints constraints) {\r\n604:           final double tabWidth = 
+constraints.maxWidth / _items.length;\r\n605:           return Stack(\r\n606:             children: [\r\n607:          
+     Row(\r\n608:                 children: [\r\n609:                   for (int index = 0; index < _items.length; 
+index++)\r\n610:                     Expanded(\r\n611:                       child: _Pressable(\r\n612:                
+         accent: accent,\r\n613:                         onTap: () => onTap(index),\r\n614:                         
+child: _LeaderboardTabItem(\r\n615:                           label: _items[index],\r\n616:                           
+active: activeTab == index,\r\n617:                           accent: accent,\r\n618:                         
+),\r\n619:                       ),\r\n620:                     ),\r\n621:                 ],\r\n622:               
+),\r\n623:               AnimatedBuilder(\r\n624:                 animation: indicatorAnimation,\r\n625:               
+  builder: (BuildContext context, Widget? child) {\r\n626:                   return Positioned(\r\n627:                
+     left: tabWidth * indicatorAnimation.value + tabWidth * 0.18,\r\n628:                     bottom: 0,\r\n629:       
+              width: tabWidth * 0.64,\r\n630:                     height: 3,\r\n631:                     child: 
+child!,\r\n632:                   );\r\n633:                 },\r\n634:                 child: Container(\r\n635:      
+             decoration: BoxDecoration(\r\n636:                     color: accent,\r\n637:                     
+boxShadow: [\r\n638:                       BoxShadow(\r\n639:                         color: accent.withValues(alpha: 
+0.7),\r\n640:                         blurRadius: 10,\r\n641:                       ),\r\n642:                     
+],\r\n643:                   ),\r\n644:                 ),\r\n645:               ),\r\n646:             ],\r\n647:     
+      );\r\n648:         },\r\n649:       ),\r\n650:     );\r\n651:   }\r\n652: }\r\n653: \r\n654: class 
+_LeaderboardTabItem extends StatelessWidget {\r\n655:   const _LeaderboardTabItem({\r\n656:     required 
+this.label,\r\n657:     required this.active,\r\n658:     required this.accent,\r\n659:   });\r\n660: \r\n661:   final 
+String label;\r\n662:   final bool active;\r\n663:   final Color accent;\r\n664: \r\n665:   @override\r\n666:   Widget 
+build(BuildContext context) {\r\n667:     final Color color = active ? accent : _tabSecondary;\r\n668:     return 
+AnimatedContainer(\r\n669:       duration: const Duration(milliseconds: 220),\r\n670:       decoration: 
+BoxDecoration(\r\n671:         color: active ? accent.withValues(alpha: 0.07) : Colors.transparent,\r\n672:       
+),\r\n673:       child: Center(\r\n674:         child: FittedBox(\r\n675:           fit: BoxFit.scaleDown,\r\n676:     
+      child: Text(\r\n677:             label,\r\n678:             maxLines: 1,\r\n679:             style: 
+Cyber.label(\r\n680:               10,\r\n681:               color: color,\r\n682:               weight: 
+FontWeight.w900,\r\n683:               letterSpacing: 1.2,\r\n684:             ),\r\n685:           ),\r\n686:         
+),\r\n687:       ),\r\n688:     );\r\n689:   }\r\n690: }\r\n691: \r\n692: class _Pressable extends StatefulWidget 
+{\r\n693:   const _Pressable({\r\n694:     required this.child,\r\n695:     required this.onTap,\r\n696:     required 
+this.accent,\r\n697:   });\r\n698: \r\n699:   final Widget child;\r\n700:   final VoidCallback onTap;\r\n701:   final 
+Color accent;\r\n702: \r\n703:   @override\r\n704:   State<_Pressable> createState() => _PressableState();\r\n705: 
+}\r\n706: \r\n707: class _PressableState extends State<_Pressable> {\r\n708:   bool _pressed = false;\r\n709:   bool 
+_hovered = false;\r\n710: \r\n711:   @override\r\n712:   Widget build(BuildContext context) {\r\n713:     return 
+MouseRegion(\r\n714:       onEnter: (_) => setState(() => _hovered = true),\r\n715:       onExit: (_) => setState(() 
+=> _hovered = false),\r\n716:       child: GestureDetector(\r\n717:         behavior: HitTestBehavior.opaque,\r\n718:  
+       onTapDown: (_) => setState(() => _pressed = true),\r\n719:         onTapCancel: () => setState(() => _pressed = 
+false),\r\n720:         onTapUp: (_) => setState(() => _pressed = false),\r\n721:         onTap: widget.onTap,\r\n722: 
+        child: AnimatedScale(\r\n723:           duration: const Duration(milliseconds: 150),\r\n724:           scale: 
+_pressed ? 0.97 : 1,\r\n725:           child: AnimatedContainer(\r\n726:             duration: const 
+Duration(milliseconds: 150),\r\n727:             decoration: BoxDecoration(\r\n728:               borderRadius: 
+BorderRadius.zero,\r\n729:               boxShadow: _hovered\r\n730:                   ? [\r\n731:                     
+  BoxShadow(\r\n732:                         color: widget.accent.withValues(alpha: 0.25),\r\n733:                     
+    blurRadius: 16,\r\n734:                       ),\r\n735:                     ]\r\n736:                   : 
+null,\r\n737:             ),\r\n738:             child: widget.child,\r\n739:           ),\r\n740:         ),\r\n741:  
+     ),\r\n742:     );\r\n743:   }\r\n744: }\r\n745: \r\n746: // ─── Filter bar (sport tabs + contextual control) 
+────────────────────────────\n747: \r\n748: class _LeaderboardSportsTabs extends StatelessWidget {\r\n749:   const 
+_LeaderboardSportsTabs({\r\n750:     required this.activeIndex,\r\n751:     required this.selectedSport,\r\n752:     
+required this.onTap,\r\n753:   });\r\n754: \r\n755:   final int activeIndex;\r\n756:   final Sport 
+selectedSport;\r\n757:   final ValueChanged<int> onTap;\r\n758: \r\n759:   @override\r\n760:   Widget 
+build(BuildContext context) {\r\n761:     return CyberUnderlineTabs(\r\n762:       labels: 
+_leaderboardSportLabels,\r\n763:       icons: _leaderboardSportIcons,\r\n764:       activeIndex: activeIndex,\r\n765:  
+     accent: sportModuleFor(selectedSport).accent,\r\n766:       onTap: onTap,\r\n767:     );\r\n768:   }\r\n769: 
+}\r\n770: \r\n771: class _FilterBar extends StatelessWidget {\r\n772:   const _FilterBar({\r\n773:     required 
+this.type,\r\n774:     required this.selectedSport,\r\n775:     required this.onSport,\r\n776:     required 
+this.scope,\r\n777:     required this.onScope,\r\n778:     required this.tournamentBoard,\r\n779:     required 
+this.onTournamentBoard,\r\n780:     required this.mode,\r\n781:     required this.onMode,\r\n782:     required 
+this.accent,\r\n783:     required this.compact,\r\n784:   });\r\n785: \r\n786:   final LeaderboardType type;\r\n787:   
+final Sport selectedSport;\r\n788:   final ValueChanged<Sport> onSport;\r\n789:   final TournamentScope scope;\r\n790: 
+  final ValueChanged<TournamentScope> onScope;\r\n791:   final TournamentBoard tournamentBoard;\r\n792:   final 
+ValueChanged<TournamentBoard> onTournamentBoard;\r\n793:   final GameMode mode;\r\n794:   final ValueChanged<GameMode> 
+onMode;\r\n795:   final Color accent;\r\n796:   final bool compact;\r\n797: \r\n798:   @override\r\n799:   Widget 
+build(BuildContext context) {\r\n800:     final activeSportIndex = _leaderboardSports.indexOf(selectedSport);\r\nThe 
+above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown 
+to complete your task, call this tool again to view those lines.\n"}
+C:\Users\priya\.gemini\antigravity\brain\81231322-7b70-49d6-a65b-059078359d18\.system_generated\logs\transcript_full.js
+onl:12:{"step_index":11,"source":"MODEL","type":"VIEW_FILE","status":"DONE","created_at":"2026-07-10T22:12:50Z","conten
+t":"Created At: 2026-07-10T22:12:50Z\nCompleted At: 2026-07-10T22:12:50Z\nFile Path: `file:///c:/Users/priya/OneDrive/D
+esktop/flutter_projects/card_game/lib/screens/leaderboard/leaderboard_screen.dart`\nTotal Lines: 1986\nTotal Bytes: 
+62430\nShowing lines 790 to 1000\nThe following code has been modified to include a line number before every line, in 
+the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the 
+line number, colon, and leading space.\n790:   final ValueChanged<TournamentScope> onScope;\r\n791:   final 
+TournamentBoard tournamentBoard;\r\n792:   final ValueChanged<TournamentBoard> onTournamentBoard;\r\n793:   final 
+GameMode mode;\r\n794:   final ValueChanged<GameMode> onMode;\r\n795:   final Color accent;\r\n796:   final bool 
+compact;\r\n797: \r\n798:   @override\r\n799:   Widget build(BuildContext context) {\r\n800:     final 
+activeSportIndex = _leaderboardSports.indexOf(selectedSport);\r\n801:     final showCountdown = type == 
+LeaderboardType.matchDay && !compact;\r\n802: \r\n803:     return Column(\r\n804:       crossAxisAlignment: 
+CrossAxisAlignment.start,\r\n805:       children: [\r\n806:         _LeaderboardSportsTabs(\r\n807:           
+activeIndex: activeSportIndex < 0 ? 0 : activeSportIndex,\r\n808:           selectedSport: selectedSport,\r\n809:      
+     onTap: (index) => onSport(_leaderboardSports[index]),\r\n810:         ),\r\n811:         if 
+(showCountdown)\r\n812:           const Padding(\r\n813:             padding: EdgeInsets.fromLTRB(16, 8, 16, 
+0),\r\n814:             child: Align(\r\n815:               alignment: Alignment.centerRight,\r\n816:               
+child: _CountdownCard(remaining: '04h 12m'),\r\n817:             ),\r\n818:           ),\r\n819:         if (type == 
+LeaderboardType.tournament) ...[\r\n820:           _TournamentBoardTabs(\r\n821:             active: 
+tournamentBoard,\r\n822:             onSelect: onTournamentBoard,\r\n823:             accent: accent,\r\n824:          
+ ),\r\n825:           if (tournamentBoard == TournamentBoard.players)\r\n826:             _ScopeToggle(\r\n827:        
+       scope: scope,\r\n828:               onScope: onScope,\r\n829:               accent: accent,\r\n830:             
+  compact: compact,\r\n831:             ),\r\n832:         ],\r\n833:         if (type == 
+LeaderboardType.games)\r\n834:           _ModeTabs(mode: mode, onMode: onMode, accent: accent),\r\n835:       
+],\r\n836:     );\r\n837:   }\r\n838: }\r\n839: \r\n840: class _CountdownCard extends StatelessWidget {\r\n841:   
+const _CountdownCard({required this.remaining});\r\n842: \r\n843:   final String remaining;\r\n844: \r\n845:   
+@override\r\n846:   Widget build(BuildContext context) {\r\n847:     return Container(\r\n848:       padding: const 
+EdgeInsets.symmetric(horizontal: 10, vertical: 6),\r\n849:       decoration: cutCornerDecoration(\r\n850:         
+color: Cyber.amber.withValues(alpha: 0.14),\r\n851:         borderColor: Cyber.amber.withValues(alpha: 0.55),\r\n852:  
+       cut: 8,\r\n853:       ),\r\n854:       child: Row(\r\n855:         mainAxisSize: MainAxisSize.min,\r\n856:      
+   children: [\r\n857:           const Icon(Icons.timer_outlined, color: Cyber.amber, size: 13),\r\n858:           
+const SizedBox(width: 5),\r\n859:           Text(\r\n860:             remaining,\r\n861:             style: const 
+TextStyle(\r\n862:               color: Cyber.amber,\r\n863:               fontFamily: Cyber.displayFont,\r\n864:      
+         fontSize: 10,\r\n865:               fontWeight: FontWeight.w900,\r\n866:               letterSpacing: 
+0.5,\r\n867:               fontFeatures: [FontFeature.tabularFigures()],\r\n868:             ),\r\n869:           
+),\r\n870:         ],\r\n871:       ),\r\n872:     );\r\n873:   }\r\n874: }\r\n875: \r\n876: class 
+_TournamentBoardTabs extends StatelessWidget {\r\n877:   const _TournamentBoardTabs({\r\n878:     required 
+this.active,\r\n879:     required this.onSelect,\r\n880:     required this.accent,\r\n881:   });\r\n882: \r\n883:   
+final TournamentBoard active;\r\n884:   final ValueChanged<TournamentBoard> onSelect;\r\n885:   final Color 
+accent;\r\n886: \r\n887:   static const List<({TournamentBoard board, String label})> _items = [\r\n888:     (board: 
+TournamentBoard.teams, label: 'TEAMS'),\r\n889:     (board: TournamentBoard.players, label: 'PLAYERS'),\r\n890:   
+];\r\n891: \r\n892:   @override\r\n893:   Widget build(BuildContext context) {\r\n894:     return Padding(\r\n895:     
+  padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),\r\n896:       child: Row(\r\n897:         children: [\r\n898:     
+      for (final item in _items)\r\n899:             Expanded(\r\n900:               child: GestureDetector(\r\n901:   
+              behavior: HitTestBehavior.opaque,\r\n902:                 onTap: () => onSelect(item.board),\r\n903:     
+            child: Container(\r\n904:                   margin: const EdgeInsets.only(right: 6),\r\n905:               
+    padding: const EdgeInsets.symmetric(vertical: 7),\r\n906:                   alignment: Alignment.center,\r\n907:   
+                decoration: cutCornerDecoration(\r\n908:                     color: active == item.board\r\n909:       
+                  ? accent.withValues(alpha: 0.14)\r\n910:                         : Cyber.panel.withValues(alpha: 
+0.5),\r\n911:                     borderColor: active == item.board\r\n912:                         ? accent\r\n913:   
+                      : Cyber.line.withValues(alpha: 0.35),\r\n914:                     cut: 8,\r\n915:                
+   ),\r\n916:                   child: Text(\r\n917:                     item.label,\r\n918:                     
+maxLines: 1,\r\n919:                     overflow: TextOverflow.ellipsis,\r\n920:                     style: 
+TextStyle(\r\n921:                       color: active == item.board ? accent : Cyber.muted,\r\n922:                   
+    fontFamily: Cyber.displayFont,\r\n923:                       fontSize: 10,\r\n924:                       
+fontWeight: FontWeight.w900,\r\n925:                       letterSpacing: 0.8,\r\n926:                     ),\r\n927:  
+                 ),\r\n928:                 ),\r\n929:               ),\r\n930:             ),\r\n931:         
+],\r\n932:       ),\r\n933:     );\r\n934:   }\r\n935: }\r\n936: \r\n937: class _ScopeToggle extends StatelessWidget 
+{\r\n938:   const _ScopeToggle({\r\n939:     required this.scope,\r\n940:     required this.onScope,\r\n941:     
+required this.accent,\r\n942:     required this.compact,\r\n943:   });\r\n944: \r\n945:   final TournamentScope 
+scope;\r\n946:   final ValueChanged<TournamentScope> onScope;\r\n947:   final Color accent;\r\n948:   final bool 
+compact;\r\n949: \r\n950:   static const List<({TournamentScope scope, String label})> _items = [\r\n951:     (scope: 
+TournamentScope.weekly, label: 'WEEKLY'),\r\n952:     (scope: TournamentScope.season, label: 'SEASON'),\r\n953:     
+(scope: TournamentScope.allTime, label: 'ALL-TIME'),\r\n954:   ];\r\n955: \r\n956:   @override\r\n957:   Widget 
+build(BuildContext context) {\r\n958:     return Padding(\r\n959:       padding: EdgeInsets.fromLTRB(16, compact ? 6 : 
+10, 16, 0),\r\n960:       child: Row(\r\n961:         children: [\r\n962:           for (final item in _items)\r\n963: 
+            Expanded(\r\n964:               child: GestureDetector(\r\n965:                 behavior: 
+HitTestBehavior.opaque,\r\n966:                 onTap: () => onScope(item.scope),\r\n967:                 child: 
+Container(\r\n968:                   margin: const EdgeInsets.only(right: 6),\r\n969:                   padding: const 
+EdgeInsets.symmetric(vertical: 7),\r\n970:                   alignment: Alignment.center,\r\n971:                   
+decoration: cutCornerDecoration(\r\n972:                     color: scope == item.scope\r\n973:                        
+ ? accent.withValues(alpha: 0.14)\r\n974:                         : Cyber.panel.withValues(alpha: 0.5),\r\n975:        
+             borderColor: scope == item.scope\r\n976:                         ? accent\r\n977:                         
+: Cyber.line.withValues(alpha: 0.35),\r\n978:                     cut: 8,\r\n979:                   ),\r\n980:         
+          child: FittedBox(\r\n981:                     fit: BoxFit.scaleDown,\r\n982:                     child: 
+Text(\r\n983:                       item.label,\r\n984:                       maxLines: 1,\r\n985:                     
+  style: TextStyle(\r\n986:                         color: scope == item.scope ? accent : Cyber.muted,\r\n987:         
+                fontFamily: Cyber.displayFont,\r\n988:                         fontSize: 10,\r\n989:                   
+      fontWeight: FontWeight.w900,\r\n990:                         letterSpacing: 0.8,\r\n991:                       
+),\r\n992:                     ),\r\n993:                   ),\r\n994:                 ),\r\n995:               
+),\r\n996:             ),\r\n997:         ],\r\n998:       ),\r\n999:     );\r\n1000:   }\r\nThe above content does 
+NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your 
+task, call this tool again to view those lines.\n"}
+C:\Users\priya\.gemini\antigravity\brain\81231322-7b70-49d6-a65b-059078359d18\.system_generated\logs\transcript_full.js
+onl:15:{"step_index":14,"source":"MODEL","type":"VIEW_FILE","status":"DONE","created_at":"2026-07-10T22:12:57Z","conten
+t":"Created At: 2026-07-10T22:12:57Z\nCompleted At: 2026-07-10T22:12:57Z\nFile Path: `file:///c:/Users/priya/OneDrive/D
+esktop/flutter_projects/card_game/lib/screens/leaderboard/leaderboard_screen.dart`\nTotal Lines: 1986\nTotal Bytes: 
+62430\nShowing lines 1000 to 1200\nThe following code has been modified to include a line number before every line, in 
+the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the 
+line number, colon, and leading space.\n1000:   }\r\n1001: }\r\n1002: \r\n1003: class _ModeTabs extends 
+StatelessWidget {\r\n1004:   const _ModeTabs({\r\n1005:     required this.mode,\r\n1006:     required 
+this.onMode,\r\n1007:     required this.accent,\r\n1008:   });\r\n1009: \r\n1010:   final GameMode mode;\r\n1011:   
+final ValueChanged<GameMode> onMode;\r\n1012:   final Color accent;\r\n1013: \r\n1014:   static const List<({GameMode 
+mode, String label})> _items = [\r\n1015:     (mode: GameMode.quiz, label: 'QUIZ'),\r\n1016:     (mode: 
+GameMode.cardDuel, label: 'CARD DUEL'),\r\n1017:     (mode: GameMode.streaks, label: 'STREAKS'),\r\n1018:     (mode: 
+GameMode.accuracy, label: 'ACCURACY'),\r\n1019:   ];\r\n1020: \r\n1021:   @override\r\n1022:   Widget 
+build(BuildContext context) {\r\n1023:     return SizedBox(\r\n1024:       height: 40,\r\n1025:       child: 
+ListView(\r\n1026:         scrollDirection: Axis.horizontal,\r\n1027:         padding: const EdgeInsets.fromLTRB(16, 
+10, 16, 0),\r\n1028:         children: [\r\n1029:           for (final item in _items)\r\n1030:             
+Padding(\r\n1031:               padding: const EdgeInsets.only(right: 7),\r\n1032:               child: 
+GestureDetector(\r\n1033:                 behavior: HitTestBehavior.opaque,\r\n1034:                 onTap: () => 
+onMode(item.mode),\r\n1035:                 child: Container(\r\n1036:                   padding: const 
+EdgeInsets.symmetric(horizontal: 12),\r\n1037:                   alignment: Alignment.center,\r\n1038:                 
+  decoration: cutCornerDecoration(\r\n1039:                     color: mode == item.mode\r\n1040:                      
+   ? accent.withValues(alpha: 0.16)\r\n1041:                         : Colors.transparent,\r\n1042:                    
+ borderColor: mode == item.mode\r\n1043:                         ? accent\r\n1044:                         : 
+Cyber.line.withValues(alpha: 0.4),\r\n1045:                     cut: 8,\r\n1046:                   ),\r\n1047:         
+          child: Text(\r\n1048:                     item.label,\r\n1049:                     style: 
+TextStyle(\r\n1050:                       color: mode == item.mode ? accent : Cyber.muted,\r\n1051:                    
+   fontFamily: Cyber.displayFont,\r\n1052:                       fontSize: 10,\r\n1053:                       
+fontWeight: FontWeight.w900,\r\n1054:                       letterSpacing: 0.8,\r\n1055:                     
+),\r\n1056:                   ),\r\n1057:                 ),\r\n1058:               ),\r\n1059:             
+),\r\n1060:         ],\r\n1061:       ),\r\n1062:     );\r\n1063:   }\r\n1064: }\r\n1065: \r\n1066: // ─── Scrollable 
+body ─────────────────────────────────────────────────────────\r\n1067: \r\n1068: class _Body extends StatelessWidget 
+{\r\n1069:   const _Body({\r\n1070:     required this.filters,\r\n1071:     required this.entries,\r\n1072:     
+required this.type,\r\n1073:     required this.accent,\r\n1074:     required this.compact,\r\n1075:     
+this.onTapEntry,\r\n1076:     super.key,\r\n1077:   });\r\n1078: \r\n1079:   final Widget filters;\r\n1080:   final 
+List<LeaderboardEntry> entries;\r\n1081:   final LeaderboardType type;\r\n1082:   final Color accent;\r\n1083:   final 
+bool compact;\r\n1084:   final ValueChanged<LeaderboardEntry>? onTapEntry;\r\n1085: \r\n1086:   @override\r\n1087:   
+Widget build(BuildContext context) {\r\n1088:     final meta = entries.isNotEmpty && entries.first.team != 
+null\r\n1089:         ? (unit: 'PTS')\r\n1090:         : _scoreMeta(type);\r\n1091:     // A short FRIENDS board (< 3) 
+skips the podium and lists everyone as rows.\r\n1092:     final usePodium = entries.length >= 3;\r\n1093:     final 
+List<LeaderboardEntry> podium = usePodium\r\n1094:         ? entries.take(3).toList()\r\n1095:         : const 
+[];\r\n1096:     final List<LeaderboardEntry> remaining = usePodium\r\n1097:         ? 
+entries.skip(3).toList()\r\n1098:         : entries;\r\n1099: \r\n1100:     return SingleChildScrollView(\r\n1101:     
+  child: Column(\r\n1102:         crossAxisAlignment: CrossAxisAlignment.stretch,\r\n1103:         children: 
+[\r\n1104:           filters,\r\n1105:           Padding(\r\n1106:             padding: EdgeInsets.fromLTRB(16, 
+compact ? 12 : 18, 16, 14),\r\n1107:             child: Column(\r\n1108:               crossAxisAlignment: 
+CrossAxisAlignment.stretch,\r\n1109:               children: [\r\n1110:                 _Podium(\r\n1111:              
+     entries: podium,\r\n1112:                   meta: meta,\r\n1113:                   accent: accent,\r\n1114:       
+            animateCards: true,\r\n1115:                   onTapEntry: onTapEntry,\r\n1116:                 
+),\r\n1117:                 if (remaining.isNotEmpty) ...[\r\n1118:                   SizedBox(height: compact ? 18 : 
+24),\r\n1119:                   for (var i = 0; i < remaining.length; i++)\r\n1120:                     
+Padding(\r\n1121:                       padding: const EdgeInsets.only(bottom: 10),\r\n1122:                       
+child: StaggeredCardEntrance(\r\n1123:                         index: i + podium.length,\r\n1124:                      
+   animate: true,\r\n1125:                         maxAnimatedIndex: entries.length,\r\n1126:                         
+child: _LeaderboardRow(\r\n1127:                           entry: remaining[i],\r\n1128:                           
+accent: accent,\r\n1129:                           meta: meta,\r\n1130:                           onTap: onTapEntry == 
+null\r\n1131:                               ? null\r\n1132:                               : () => 
+onTapEntry!(remaining[i]),\r\n1133:                         ),\r\n1134:                       ),\r\n1135:              
+       ),\r\n1136:                 ],\r\n1137:               ],\r\n1138:             ),\r\n1139:           ),\r\n1140: 
+        ],\r\n1141:       ),\r\n1142:     );\r\n1143:   }\r\n1144: }\r\n1145: \r\n1146: // ─── Pinned user rank bar 
+────────────────────────────────────────────────────\r\n1147: \r\n1148: class _UserRankBar extends StatelessWidget 
+{\r\n1149:   const _UserRankBar({\r\n1150:     required this.user,\r\n1151:     required this.type,\r\n1152:     
+required this.accent,\r\n1153:   });\r\n1154: \r\n1155:   final LeaderboardEntry user;\r\n1156:   final 
+LeaderboardType type;\r\n1157:   final Color accent;\r\n1158: \r\n1159:   @override\r\n1160:   Widget 
+build(BuildContext context) {\r\n1161:     final meta = user.team != null ? (unit: 'PTS') : _scoreMeta(type);\r\n1162: 
+\r\n1163:     return Container(\r\n1164:       width: double.infinity,\r\n1165:       padding: const 
+EdgeInsets.fromLTRB(16, 10, 16, 12),\r\n1166:       decoration: BoxDecoration(\r\n1167:         color: 
+Cyber.bg,\r\n1168:         border: Border(\r\n1169:           top: BorderSide(color: Cyber.line.withValues(alpha: 
+0.32)),\r\n1170:         ),\r\n1171:       ),\r\n1172:       child: Container(\r\n1173:         padding: const 
+EdgeInsets.symmetric(horizontal: 14, vertical: 12),\r\n1174:         decoration: cutCornerDecoration(\r\n1175:         
+  color: accent.withValues(alpha: 0.1),\r\n1176:           borderColor: accent.withValues(alpha: 0.34),\r\n1177:       
+    cut: 18,\r\n1178:         ),\r\n1179:         child: Row(\r\n1180:           children: [\r\n1181:             
+RivalAvatar(\r\n1182:               name: user.name,\r\n1183:               size: 54,\r\n1184:               
+highlight: true,\r\n1185:               team: user.team,\r\n1186:             ),\r\n1187:             const 
+SizedBox(width: 12),\r\n1188:             Expanded(\r\n1189:               child: Column(\r\n1190:                 
+crossAxisAlignment: CrossAxisAlignment.start,\r\n1191:                 children: [\r\n1192:                   
+Row(\r\n1193:                     children: [\r\n1194:                       Text(\r\n1195:                         
+'Your rank',\r\n1196:                         style: TextStyle(\r\n1197:                           color: 
+accent.withValues(alpha: 0.85),\r\n1198:                           fontFamily: Cyber.displayFont,\r\n1199:             
+              fontSize: 11,\r\n1200:                           fontWeight: FontWeight.w800,\r\nThe above content does 
+NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your 
+task, call this tool again to view those lines.\n"}
+C:\Users\priya\.gemini\antigravity\brain\81231322-7b70-49d6-a65b-059078359d18\.system_generated\logs\transcript_full.js
+onl:21:{"step_index":20,"source":"MODEL","type":"VIEW_FILE","status":"DONE","created_at":"2026-07-10T22:13:46Z","conten
+t":"Created At: 2026-07-10T22:13:46Z\nCompleted At: 2026-07-10T22:13:46Z\nFile Path: `file:///c:/Users/priya/OneDrive/D
+esktop/flutter_projects/card_game/lib/screens/leaderboard/leaderboard_screen.dart`\nTotal Lines: 2126\nTotal Bytes: 
+66919\nShowing lines 720 to 850\nThe following code has been modified to include a line number before every line, in 
+the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the 
+line number, colon, and leading space.\n720:                       child: AnimatedSwitcher(\n721:                      
+   duration: const Duration(milliseconds: 280),\n722:                         switchInCurve: 
+Curves.easeOutCubic,\n723:                         transitionBuilder: (child, animation) => FadeTransition(\n724:      
+                     opacity: animation,\n725:                           child: SlideTransition(\n726:                 
+            position: Tween<Offset>(\n727:                               begin: const Offset(0, 0.025),\n728:          
+                     end: Offset.zero,\n729:                             ).animate(animation),\n730:                   
+          child: child,\n731:                           ),\n732:                         ),\n733:                      
+   child: entries.isEmpty\n734:                             ? _EmptyState(\n735:                                 key: 
+ValueKey('empty-${_type.name}'),\n736:                                 filters: filters,\n737:                         
+        type: _type,\n738:                                 accent: accent,\n739:                                 
+onAction: widget.onNavigate,\n740:                               )\n741:                             : _Body(\n742:    
+                             key: ValueKey(\n743:                                   
+'${_type.name}-${_sport.name}-${_tournamentBoard.name}-${_scope.name}-${_mode.name}',\n744:                            
+     ),\n745:                                 filters: filters,\n746:                                 entries: 
+entries,\n747:                                 type: _type,\n748:                                 accent: 
+accent,\n749:                                 compact: compact,\n750:                                 onTapEntry: 
+isTeamTournament\n751:                                     ? null\n752:                                     : 
+_openRival,\n753:                               ),\n754:                       ),\n755:                     ),\n756:   
+                  if (entries.isNotEmpty)\n757:                       _UserRankBar(user: user, type: _type, accent: 
+accent),\n758:                   ],\n759:                 );\n760:               },\n761:             ),\n762:         
+  ),\n763:         ],\n764:       ),\n765:       bottomNavigationBar: LandingBottomNavigation(\n766:         
+selectedIndex: 2,\n767:         onNavigate: widget.onNavigate,\n768:         includeShop: false,\n769:       ),\n770:  
+   );\n771:   }\n772: }\n773: \n774: // ─── Type tabs (matches shop _ShopTabs) 
+──────────────────────────────────────\n775: \n776: class _LeaderboardTabs extends StatelessWidget {\n777:   const 
+_LeaderboardTabs({\n778:     required this.activeTab,\n779:     required this.indicatorAnimation,\n780:     required 
+this.accent,\n781:     required this.onTap,\n782:   });\n783: \n784:   final int activeTab;\n785:   final 
+Animation<double> indicatorAnimation;\n786:   final Color accent;\n787:   final ValueChanged<int> onTap;\n788: \n789:  
+ static const List<String> _items = ['MATCH DAY', 'TOURNEY', 'GAMES'];\n790: \n791:   @override\n792:   Widget 
+build(BuildContext context) {\n793:     return Container(\n794:       height: 50,\n795:       decoration: 
+BoxDecoration(\n796:         color: _tabBarBg.withValues(alpha: 0.4),\n797:         border: Border(\n798:           
+bottom: BorderSide(color: accent.withValues(alpha: 0.22)),\n799:         ),\n800:       ),\n801:       child: 
+LayoutBuilder(\n802:         builder: (BuildContext context, BoxConstraints constraints) {\n803:           final 
+double tabWidth = constraints.maxWidth / _items.length;\n804:           return Stack(\n805:             children: 
+[\n806:               Row(\n807:                 children: [\n808:                   for (int index = 0; index < 
+_items.length; index++)\n809:                     Expanded(\n810:                       child: _Pressable(\n811:       
+                  accent: accent,\n812:                         onTap: () => onTap(index),\n813:                       
+  child: _LeaderboardTabItem(\n814:                           label: _items[index],\n815:                           
+active: activeTab == index,\n816:                           accent: accent,\n817:                         ),\n818:     
+                  ),\n819:                     ),\n820:                 ],\n821:               ),\n822:               
+AnimatedBuilder(\n823:                 animation: indicatorAnimation,\n824:                 builder: (BuildContext 
+context, Widget? child) {\n825:                   return Positioned(\n826:                     left: tabWidth * 
+indicatorAnimation.value + tabWidth * 0.18,\n827:                     bottom: 0,\n828:                     width: 
+tabWidth * 0.64,\n829:                     height: 3,\n830:                     child: child!,\n831:                   
+);\n832:                 },\n833:                 child: Container(\n834:                   decoration: 
+BoxDecoration(\n835:                     color: accent,\n836:                     boxShadow: [\n837:                   
+    BoxShadow(\n838:                         color: accent.withValues(alpha: 0.7),\n839:                         
+blurRadius: 10,\n840:                       ),\n841:                     ],\n842:                   ),\n843:           
+      ),\n844:               ),\n845:             ],\n846:           );\n847:         },\n848:       ),\n849:     
+);\n850:   }\nThe above content does NOT show the entire file contents. If you need to view any lines of the file 
+which were not shown to complete your task, call this tool again to view those lines.\n"}
+C:\Users\priya\.gemini\antigravity\brain\81231322-7b70-49d6-a65b-059078359d18\.system_generated\logs\transcript_full.js
+onl:24:{"step_index":23,"source":"MODEL","type":"VIEW_FILE","status":"DONE","created_at":"2026-07-10T22:13:52Z","conten
+t":"Created At: 2026-07-10T22:13:52Z\nCompleted At: 2026-07-10T22:13:52Z\nFile Path: `file:///c:/Users/priya/OneDrive/D
+esktop/flutter_projects/card_game/lib/screens/leaderboard/leaderboard_screen.dart`\nTotal Lines: 2126\nTotal Bytes: 
+66919\nShowing lines 850 to 1000\nThe following code has been modified to include a line number before every line, in 
+the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the 
+line number, colon, and leading space.\n850:   }\n851: }\n852: \n853: class _LeaderboardTabItem extends 
+StatelessWidget {\n854:   const _LeaderboardTabItem({\n855:     required this.label,\n856:     required 
+this.active,\n857:     required this.accent,\n858:   });\n859: \n860:   final String label;\n861:   final bool 
+active;\n862:   final Color accent;\n863: \n864:   @override\n865:   Widget build(BuildContext context) {\n866:     
+final Color color = active ? accent : _tabSecondary;\n867:     return AnimatedContainer(\n868:       duration: const 
+Duration(milliseconds: 220),\n869:       decoration: BoxDecoration(\n870:         color: active ? 
+accent.withValues(alpha: 0.07) : Colors.transparent,\n871:       ),\n872:       child: Center(\n873:         child: 
+FittedBox(\n874:           fit: BoxFit.scaleDown,\n875:           child: Text(\n876:             label,\n877:          
+   maxLines: 1,\n878:             style: Cyber.label(\n879:               10,\n880:               color: color,\n881:  
+             weight: FontWeight.w900,\n882:               letterSpacing: 1.2,\n883:             ),\n884:           
+),\n885:         ),\n886:       ),\n887:     );\n888:   }\n889: }\n890: \n891: class _Pressable extends StatefulWidget 
+{\n892:   const _Pressable({\n893:     required this.child,\n894:     required this.onTap,\n895:     required 
+this.accent,\n896:   });\n897: \n898:   final Widget child;\n899:   final VoidCallback onTap;\n900:   final Color 
+accent;\n901: \n902:   @override\n903:   State<_Pressable> createState() => _PressableState();\n904: }\n905: \n906: 
+class _PressableState extends State<_Pressable> {\n907:   bool _pressed = false;\n908:   bool _hovered = false;\n909: 
+\n910:   @override\n911:   Widget build(BuildContext context) {\n912:     return MouseRegion(\n913:       onEnter: (_) 
+=> setState(() => _hovered = true),\n914:       onExit: (_) => setState(() => _hovered = false),\n915:       child: 
+GestureDetector(\n916:         behavior: HitTestBehavior.opaque,\n917:         onTapDown: (_) => setState(() => 
+_pressed = true),\n918:         onTapCancel: () => setState(() => _pressed = false),\n919:         onTapUp: (_) => 
+setState(() => _pressed = false),\n920:         onTap: widget.onTap,\n921:         child: AnimatedScale(\n922:         
+  duration: const Duration(milliseconds: 150),\n923:           scale: _pressed ? 0.97 : 1,\n924:           child: 
+AnimatedContainer(\n925:             duration: const Duration(milliseconds: 150),\n926:             decoration: 
+BoxDecoration(\n927:               borderRadius: BorderRadius.zero,\n928:               boxShadow: _hovered\n929:      
+             ? [\n930:                       BoxShadow(\n931:                         color: 
+widget.accent.withValues(alpha: 0.25),\n932:                         blurRadius: 16,\n933:                       
+),\n934:                     ]\n935:                   : null,\n936:             ),\n937:             child: 
+widget.child,\n938:           ),\n939:         ),\n940:       ),\n941:     );\n942:   }\n943: }\n944: \n945: // ─── 
+Filter bar (sport tabs + contextual control) ────────────────────────────\n946:         
+_LeaderboardSportsTabs(\r\n947:           activeIndex: activeSportIndex < 0 ? 0 : activeSportIndex,\r\n948:           
+selectedSport: selectedSport,\r\n949:           onTap: (index) => onSport(_leaderboardSports[index]),\r\n950:         
+),\r\n951:         if (showCountdown)\r\n952:           const Padding(\r\n953:             padding: 
+EdgeInsets.fromLTRB(16, 8, 16, 0),\r\n954:             child: Align(\r\n955:               alignment: 
+Alignment.centerRight,\r\n956:               child: _CountdownCard(remaining: '04h 12m'),\r\n957:             
+),\r\n958:           ),\r\n959:         if (type == LeaderboardType.tournament) ...[\r\n960:           
+_TournamentBoardTabs(\r\n961:             active: tournamentBoard,\r\n962:             onSelect: 
+onTournamentBoard,\r\n963:             accent: accent,\r\n964:           ),\r\n965:           if (tournamentBoard == 
+TournamentBoard.players)\r\n966:             _ScopeToggle(\r\n967:               scope: scope,\r\n968:               
+onScope: onScope,\r\n969:               accent: accent,\r\n970:               compact: compact,\r\n971:             
+),\r\n972:         ],\r\n973:         if (type == LeaderboardType.games)\r\n974:           _ModeTabs(mode: mode, 
+onMode: onMode, accent: accent),\r\n975:       ],\r\n976:     );\r\n977:   }\r\n978: }\r\n979: \r\n980: class 
+_CountdownCard extends StatelessWidget {\r\n981:   const _CountdownCard({required this.remaining});\r\n982: \r\n983:   
+final String remaining;\r\n984: \r\n985:   @override\r\n986:   Widget build(BuildContext context) {\r\n987:     return 
+Container(\r\n988:       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),\r\n989:       decoration: 
+cutCornerDecoration(\r\n990:         color: Cyber.amber.withValues(alpha: 0.14),\r\n991:         borderColor: 
+Cyber.amber.withValues(alpha: 0.55),\r\n992:         cut: 8,\r\n993:       ),\r\n994:       child: Row(\r\n995:        
+ mainAxisSize: MainAxisSize.min,\r\n996:         children: [\r\n997:           const Icon(Icons.timer_outlined, color: 
+Cyber.amber, size: 13),\r\n998:           const SizedBox(width: 5),\r\n999:           Text(\r\n1000:             
+remaining,\r\nThe above content does NOT show the entire file contents. If you need to view any lines of the file 
+which were not shown to complete your task, call this tool again to view those lines.\n"}
+C:\Users\priya\.gemini\antigravity\brain\81231322-7b70-49d6-a65b-059078359d18\.system_generated\logs\transcript_full.js
+onl:33:{"step_index":32,"source":"MODEL","type":"VIEW_FILE","status":"DONE","created_at":"2026-07-10T22:14:11Z","conten
+t":"Created At: 2026-07-10T22:14:11Z\nCompleted At: 2026-07-10T22:14:11Z\nFile Path: `file:///c:/Users/priya/OneDrive/D
+esktop/flutter_projects/card_game/lib/screens/leaderboard/leaderboard_screen.dart`\nTotal Lines: 2049\nTotal Bytes: 
+65034\nShowing lines 772 to 838\nThe following code has been modified to include a line number before every line, in 
+the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the 
+line number, colon, and leading space.\n772:                       scrollDirection: Axis.horizontal,\r\n773:           
+            child: Row(\r\n774:                         children: [\r\n775:                           for (final sport 
+in sports)\r\n776:                             Padding(\r\n777:                               padding: const 
+EdgeInsets.only(right: 7),\r\n778:                               child: _SportChip(\r\n779:                            
+     label: sport,\r\n780:                                 active: sport == selectedSport,\r\n781:                     
+            live:\r\n782:                                     type == LeaderboardType.matchDay &&\r\n783:              
+                       sport == selectedSport,\r\n784:                                 accent: accent,\r\n785:         
+                        onTap: () => onSport(sport),\r\n786:                               ),\r\n787:                  
+           ),\r\n788:                         ],\r\n789:                       ),\r\n790:                     
+),\r\n791:                   ),\r\n792:                   if (showCountdownInline)\r\n793:                     const 
+_CountdownCard(remaining: '04h 12m'),\r\n794:                 ],\r\n795:               ),\r\n796:             
+),\r\n797:             if (showCountdownBelow)\r\n798:               const Padding(\r\n799:                 padding: 
+EdgeInsets.fromLTRB(16, 8, 16, 0),\r\n800:                 child: Align(\r\n801:                   alignment: 
+Alignment.centerRight,\r\n802:                   child: _CountdownCard(remaining: '04h 12m'),\r\n803:                 
+),\r\n804:               ),\r\n805:             if (type == LeaderboardType.tournament) ...[\r\n806:               
+_TournamentBoardTabs(\r\n807:                 active: tournamentBoard,\r\n808:                 onSelect: 
+onTournamentBoard,\r\n809:                 accent: accent,\r\n810:               ),\r\n811:               if 
+(tournamentBoard == TournamentBoard.players)\r\n812:                 _ScopeToggle(\r\n813:                   scope: 
+scope,\r\n814:                   onScope: onScope,\r\n815:                   accent: accent,\r\n816:                   
+compact: compact,\r\n817:                 ),\r\n818:             ],\r\n819:             if (type == 
+LeaderboardType.games)\r\n820:               _ModeTabs(mode: mode, onMode: onMode, accent: accent),\r\n821:           
+],\r\n822:         );\r\n823:       },\r\n824:     );\r\n825:   }\r\n826: }\r\n827: \r\n828: class _SportChip extends 
+StatelessWidget {\r\n829:   const _SportChip({\r\n830:     required this.label,\r\n831:     required 
+this.active,\r\n832:     required this.live,\r\n833:     required this.accent,\r\n834:     required 
+this.onTap,\r\n835:   });\r\n836: \r\n837:   final String label;\r\n838:   final bool active;\r\nThe above content 
+does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete 
+your task, call this tool again to view those lines.\n"}
+C:\Users\priya\.gemini\antigravity\brain\81231322-7b70-49d6-a65b-059078359d18\.system_generated\logs\transcript_full.js
+onl:39:{"step_index":38,"source":"MODEL","type":"VIEW_FILE","status":"DONE","created_at":"2026-07-10T22:14:23Z","conten
+t":"Created At: 2026-07-10T22:14:23Z\nCompleted At: 2026-07-10T22:14:23Z\nFile Path: `file:///c:/Users/priya/OneDrive/D
+esktop/flutter_projects/card_game/lib/screens/leaderboard/leaderboard_screen.dart`\nTotal Lines: 2049\nTotal Bytes: 
+65034\nShowing lines 740 to 800\nThe following code has been modified to include a line number before every line, in 
+the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the 
+line number, colon, and leading space.\n740:   final List<String> sports;\r\n741:   final String 
+selectedSport;\r\n742:   final ValueChanged<String> onSport;\r\n743:   final TournamentScope scope;\r\n744:   final 
+ValueChanged<TournamentScope> onScope;\r\n745:   final TournamentBoard tournamentBoard;\r\n746:   final 
+ValueChanged<TournamentBoard> onTournamentBoard;\r\n747:   final GameMode mode;\r\n748:   final ValueChanged<GameMode> 
+onMode;\r\n749:   final Color accent;\r\n750:   final bool compact;\r\n751: \r\n752:   @override\r\n753:   Widget 
+build(BuildContext context) {\r\n754:     return LayoutBuilder(\r\n755:       builder: (context, constraints) 
+{\r\n756:         final showCountdownInline =\r\n757:             type == LeaderboardType.matchDay && 
+constraints.maxWidth >= 360;\r\n758:         final showCountdownBelow =\r\n759:             type == 
+LeaderboardType.matchDay &&\r\n760:             !showCountdownInline &&\r\n761:             !compact;\r\n762: \r\n763: 
+        return Column(\r\n764:           crossAxisAlignment: CrossAxisAlignment.start,\r\n765:           children: 
+[\r\n766:             Padding(\r\n767:               padding: EdgeInsets.fromLTRB(16, compact ? 6 : 10, 12, 
+0),\r\n768:               child: Row(\r\n769:                 children: [\r\n770:                   Expanded(\r\n771:  
+                   child: SingleChildScrollView(\r\n772:                       scrollDirection: 
+Axis.horizontal,\r\n773:                       child: Row(\r\n774:                         children: [\r\n775:         
+                  for (final sport in sports)\r\n776:                             Padding(\r\n777:                     
+          padding: const EdgeInsets.only(right: 7),\r\n778:                               child: _SportChip(\r\n779:   
+                              label: sport,\r\n780:                                 active: sport == 
+selectedSport,\r\n781:                                 live:\r\n782:                                     type == 
+LeaderboardType.matchDay &&\r\n783:                                     sport == selectedSport,\r\n784:                
+                 accent: accent,\r\n785:                                 onTap: () => onSport(sport),\r\n786:          
+                     ),\r\n787:                             ),\r\n788:                         ],\r\n789:              
+         ),\r\n790:                     ),\r\n791:                   ),\r\n792:                   if 
+(showCountdownInline)\r\n793:                     const _CountdownCard(remaining: '04h 12m'),\r\n794:                 
+],\r\n795:               ),\r\n796:             ),\r\n797:             if (showCountdownBelow)\r\n798:               
+const Padding(\r\n799:                 padding: EdgeInsets.fromLTRB(16, 8, 16, 0),\r\n800:                 child: 
+Align(\r\nThe above content does NOT show the entire file contents. If you need to view any lines of the file which 
+were not shown to complete your task, call this tool again to view those lines.\n"}
+C:\Users\priya\.gemini\antigravity\brain\81231322-7b70-49d6-a65b-059078359d18\.system_generated\logs\transcript_full.js
+onl:45:{"step_index":44,"source":"MODEL","type":"VIEW_FILE","status":"DONE","created_at":"2026-07-10T22:14:46Z","conten
+t":"Created At: 2026-07-10T22:14:46Z\nCompleted At: 2026-07-10T22:14:46Z\nFile Path: `file:///c:/Users/priya/OneDrive/D
+esktop/flutter_projects/card_game/lib/screens/leaderboard/leaderboard_screen.dart`\nTotal Lines: 2049\nTotal Bytes: 
+65034\nShowing lines 730 to 830\nThe following code has been modified to include a line number before every line, in 
+the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the 
+line number, colon, and leading space.\n730:     required this.onScope,\r\n731:     required 
+this.tournamentBoard,\r\n732:     required this.onTournamentBoard,\r\n733:     required this.mode,\r\n734:     
+required this.onMode,\r\n735:     required this.accent,\r\n736:     required this.compact,\r\n737:   });\r\n738: 
+\r\n739:   final LeaderboardType type;\r\n740:   final List<String> sports;\r\n741:   final String 
+selectedSport;\r\n742:   final ValueChanged<String> onSport;\r\n743:   final TournamentScope scope;\r\n744:   final 
+ValueChanged<TournamentScope> onScope;\r\n745:   final TournamentBoard tournamentBoard;\r\n746:   final 
+ValueChanged<TournamentBoard> onTournamentBoard;\r\n747:   final GameMode mode;\r\n748:   final ValueChanged<GameMode> 
+onMode;\r\n749:   final Color accent;\r\n750:   final bool compact;\r\n751: \r\n752:   @override\r\n753:   Widget 
+build(BuildContext context) {\r\n754:     return LayoutBuilder(\r\n755:       builder: (context, constraints) 
+{\r\n756:         final showCountdownInline =\r\n757:             type == LeaderboardType.matchDay && 
+constraints.maxWidth >= 360;\r\n758:         final showCountdownBelow =\r\n759:             type == 
+LeaderboardType.matchDay &&\r\n760:             !showCountdownInline &&\r\n761:             !compact;\r\n762: \r\n763: 
+        return Column(\r\n764:           crossAxisAlignment: CrossAxisAlignment.start,\r\n765:           children: 
+[\r\n766:             Padding(\r\n767:               padding: EdgeInsets.fromLTRB(16, compact ? 6 : 10, 12, 
+0),\r\n768:               child: Row(\r\n769:                 children: [\r\n770:                   Expanded(\r\n771:  
+                   child: SingleChildScrollView(\r\n772:                       scrollDirection: 
+Axis.horizontal,\r\n773:                       child: Row(\r\n774:                         children: [\r\n775:         
+                  for (final sport in sports)\r\n776:                             Padding(\r\n777:                     
+          padding: const EdgeInsets.only(right: 7),\r\n778:                               child: _SportChip(\r\n779:   
+                              label: sport,\r\n780:                                 active: sport == 
+selectedSport,\r\n781:                                 live:\r\n782:                                     type == 
+LeaderboardType.matchDay &&\r\n783:                                     sport == selectedSport,\r\n784:                
+                 accent: accent,\r\n785:                                 onTap: () => onSport(sport),\r\n786:          
+                     ),\r\n787:                             ),\r\n788:                         ],\r\n789:              
+         ),\r\n790:                     ),\r\n791:                   ),\r\n792:                   if 
+(showCountdownInline)\r\n793:                     const _CountdownCard(remaining: '04h 12m'),\r\n794:                 
+],\r\n795:               ),\r\n796:             ),\r\n797:             if (showCountdownBelow)\r\n798:               
+const Padding(\r\n799:                 padding: EdgeInsets.fromLTRB(16, 8, 16, 0),\r\n800:                 child: 
+Align(\r\n801:                   alignment: Alignment.centerRight,\r\n802:                   child: 
+_CountdownCard(remaining: '04h 12m'),\r\n803:                 ),\r\n804:               ),\r\n805:             if (type 
+== LeaderboardType.tournament) ...[\r\n806:               _TournamentBoardTabs(\r\n807:                 active: 
+tournamentBoard,\r\n808:                 onSelect: onTournamentBoard,\r\n809:                 accent: accent,\r\n810:  
+             ),\r\n811:               if (tournamentBoard == TournamentBoard.players)\r\n812:                 
+_ScopeToggle(\r\n813:                   scope: scope,\r\n814:                   onScope: onScope,\r\n815:              
+     accent: accent,\r\n816:                   compact: compact,\r\n817:                 ),\r\n818:             
+],\r\n819:             if (type == LeaderboardType.games)\r\n820:               _ModeTabs(mode: mode, onMode: onMode, 
+accent: accent),\r\n821:           ],\r\n822:         );\r\n823:       },\r\n824:     );\r\n825:   }\r\n826: }\r\n827: 
+\r\n828: class _SportChip extends StatelessWidget {\r\n829:   const _SportChip({\r\n830:     required 
+this.label,\r\nThe above content does NOT show the entire file contents. If you need to view any lines of the file 
+which were not shown to complete your task, call this tool again to view those lines.\n"}
+C:\Users\priya\.gemini\antigravity\brain\81231322-7b70-49d6-a65b-059078359d18\.system_generated\logs\transcript_full.js
+onl:70:{"step_index":69,"source":"MODEL","type":"PLANNER_RESPONSE","status":"DONE","created_at":"2026-07-10T22:15:41Z",
+"thinking":"**Prioritizing Tool Usage**\n\nI'm now focusing on tool selection, emphasizing specific tools over general 
+ones where possible. The goal is to optimize efficiency by leveraging tools like 'view_file' directly, rather than 
+resorting to broader, less direct methods. I'm aiming for targeted actions.\n\n\n**Refining Tool Strategies**\n\nI'm 
+now revising my tool usage guidelines. I will avoid `cat` for file manipulation, prioritizing `grep_search` over 
+in-line `grep` and specific tools over general ones. I need to list potential tools before making calls. I'm also now 
+analyzing the structure of the transcript, focusing on `tool_calls` and responses in `transcript.jsonl`. I might use 
+`Select-String` instead of `grep`, if I need to 
+search.\n\n\n","tool_calls":[{"name":"run_command","args":{"CommandLine":"Select-String -Path \"C:\\Users\\priya\\.gemi
+ni\\antigravity\\brain\\81231322-7b70-49d6-a65b-059078359d18\\.system_generated\\logs\\transcript_full.jsonl\" 
+-Pattern \"The following code has been modified\" | Out-File -FilePath transcript_views.txt -Encoding utf8","Cwd":"c:\\
+Users\\priya\\OneDrive\\Desktop\\flutter_projects\\card_game","WaitMsBeforeAsync":2000,"toolAction":"Running 
+command","toolSummary":"Extract view_file using Select-String"}}]}
+
+

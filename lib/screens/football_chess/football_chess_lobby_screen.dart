@@ -11,17 +11,21 @@ import '../../blocs/game/game_state.dart';
 import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../data/random_opponent_names.dart';
+import '../../models/avatar_frame_option.dart';
+import '../../models/avatar_option.dart';
 import '../../models/cards.dart';
 import '../../models/football_chess.dart';
 import '../../models/progression.dart';
+import '../../services/secure_storage_service.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
+import '../../widgets/matchmaking/game_match_gate.dart';
+import '../../widgets/matchmaking/game_matchmaking_config.dart';
 import '../../widgets/player_level_badge.dart';
 import '../how_to_play/how_to_play_hub_screen.dart';
 import 'football_chess_match_screen.dart';
-import 'football_chess_matchmaking_screen.dart';
 
 /// Pre-match lobby — Pitch Duel-style hero hub with animated emblem, stat row,
 /// active-formation strip, and FIND MATCH CTA. Formation is now configured in
@@ -38,6 +42,20 @@ class FootballChessLobbyScreen extends StatefulWidget {
 
 class _FootballChessLobbyScreenState extends State<FootballChessLobbyScreen> {
   final _rng = math.Random();
+  final SecureGameStorage _storage = SecureGameStorage();
+  String? _selectedAvatarId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAvatar();
+  }
+
+  Future<void> _loadAvatar() async {
+    final avatarId = await _storage.loadSelectedAvatarId();
+    if (!mounted) return;
+    setState(() => _selectedAvatarId = avatarId);
+  }
 
   ChessFormation _activeFormation(GameState s) {
     if (s.deckSlots.isEmpty) return ChessFormation.box;
@@ -81,6 +99,8 @@ class _FootballChessLobbyScreenState extends State<FootballChessLobbyScreen> {
       defenders,
       goalkeepers,
     );
+    final playerAvatar = avatarOptionById(_selectedAvatarId);
+    final equippedFrame = avatarFrameOptionById(game.equippedAvatarFrameId);
 
     final cubit = context.read<FootballChessCubit>();
     final match = cubit.buildMatch(
@@ -94,14 +114,25 @@ class _FootballChessLobbyScreenState extends State<FootballChessLobbyScreen> {
     final navigator = Navigator.of(context);
     navigator.push(
       MaterialPageRoute<void>(
-        builder: (_) => FootballChessMatchmakingScreen(
-          playerLevel: level,
-          playerSquad: squad,
-          opponentName: opponentName,
-          opponentLevel: opponentLevel,
-          opponentSquad: opponent.shooters,
-          onCancel: navigator.pop,
-          onKickoff: () {
+        builder: (_) => GameMatchGate(
+          goLabel: 'KICK OFF!',
+          config: GameMatchmakingConfig(
+            title: '5V5 FOOTBALL CHESS',
+            queueLabel: 'SCANNING GLOBAL CHESS QUEUE',
+            player: MatchmakingFighter(
+              name: 'PLAYER ONE',
+              avatarAsset: playerAvatar.assetPath,
+              frame: equippedFrame,
+              badge: 'LV $level',
+            ),
+            opponent: MatchmakingFighter(
+              name: opponentName,
+              avatarAsset: avatarForName(opponentName).assetPath,
+              badge: 'LV $opponentLevel',
+            ),
+          ),
+          onCancel: () => navigator.pop(),
+          onReady: () {
             cubit.startMatch(match);
             navigator.pushReplacement(
               MaterialPageRoute<void>(
@@ -378,7 +409,8 @@ class _FootballChessLobbyScreenState extends State<FootballChessLobbyScreen> {
                                           offset: 14,
                                           child: Wrap(
                                             alignment: WrapAlignment.center,
-                                            crossAxisAlignment: WrapCrossAlignment.center,
+                                            crossAxisAlignment:
+                                                WrapCrossAlignment.center,
                                             spacing: 14,
                                             runSpacing: 6,
                                             children: [
@@ -651,11 +683,9 @@ class _HudStat extends StatelessWidget {
     );
   }
 }
+
 class _HudLink extends StatelessWidget {
-  const _HudLink({
-    required this.label,
-    required this.onTap,
-  });
+  const _HudLink({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;

@@ -1,0 +1,746 @@
+sport,id,name,shortName,role,country,countryCode,position,rating,tier,trait,hasPortrait,portraitAsset
+football,fra-kylian-mbappe,Kylian Mbappé,MBAPPE,attacker,France,FRA,ST/LW,94,platinum,Clinical Finisher,yes,assets/player_images/MBAPPE.webp
+football,esp-rodri,Rodri,RODRI,defender,Spain,ESP,CDM,93,platinum,Tempo Controller,yes,assets/player_images/RODRI.webp
+football,bra-vinicius-junior,Vinícius Júnior,VINICIUS JR,attacker,Brazil,BRA,LW,93,platinum,Explosive Winger,yes,assets/player_images/VINICIUS JR.webp
+football,eng-harry-kane,Harry Kane,KANE,attacker,England,ENG,ST,92,platinum,Clinical Finisher,yes,assets/player_images/KANE.webp
+football,eng-jude-bellingham,Jude Bellingham,BELLINGHAM,attacker,England,ENG,CAM/CM,92,platinum,Box-to-Box Star,yes,assets/player_images/BELLINGHAM.webp
+football,arg-lionel-messi,Lionel Messi,LEO 10,attacker,Argentina,ARG,RW/CAM,92,platinum,Creator Finisher,yes,assets/player_images/LEO 10.webp
+football,ned-virgil-van-dijk,Virgil van Dijk,VAN DIJK,defender,Netherlands,NED,CB,92,platinum,Leader CB,yes,assets/player_images/VAN DIJK.webp
+football,uru-federico-valverde,Federico Valverde,VALVERDE,attacker,Uruguay,URU,CM/RW,91,platinum,Engine Midfielder,yes,assets/player_images/VALVERDE.webp
+football,bel-kevin-de-bruyne,Kevin De Bruyne,DE BRUYNE,attacker,Belgium,BEL,CAM/CM,91,platinum,Master Creator,yes,assets/player_images/DE BRUYNE.webp
+football,por-cristiano-ronaldo,Cristiano Ronaldo,RONALDO,attacker,Portugal,POR,ST,90,platinum,Iconic Finisher,yes,assets/player_images/RONALDO.webp
+football,cro-luka-modric,Luka Modrić,MODRIC,attacker,Croatia,CRO,CM,90,platinum,Tempo Maestro,yes,assets/player_images/MODRIC.webp
+football,bra-neymar,Neymar,NEYMAR,attacker,Brazil,BRA,LW/SS,90,platinum,Flair Forward,yes,assets/player_images/NEYMAR.webp
+football,kor-son-heung-min,Son Heung-min,SON,attacker,South Korea,KOR,LW/ST,90,platinum,Captain Finisher,yes,assets/player_images/SON.webp
+football,bra-alisson-becker,Alisson Becker,ALISSON,goalkeeper,Brazil,BRA,GK,89,gold,Sweeper Keeper,yes,assets/player_images/ALISSON.webp
+football,eng-bukayo-saka,Bukayo Saka,SAKA,attacker,England,ENG,RW,89,gold,Wide Creator,yes,assets/player_images/SAKA.webp
+football,eng-declan-rice,Declan Rice,RICE,defender,England,ENG,CDM/CM,89,gold,Shield Midfielder,yes,assets/player_images/RICE.webp
+football,arg-emiliano-martinez,Emiliano Martínez,EMI,goalkeeper,Argentina,ARG,GK,89,gold,Penalty Wall,yes,assets/player_images/EMI.webp
+football,ger-florian-wirtz,Florian Wirtz,WIRTZ,attacker,Germany,GER,CAM,89,gold,Chance Creator,yes,assets/player_images/WIRTZ.webp
+football,esp-lamine-yamal,Lamine Yamal,YAMAL,attacker,Spain,ESP,RW,89,gold,Explosive Winger,yes,assets/player_images/YAMAL.webp
+football,fra-ousmane-dembele,Ousmane Dembélé,DEMBELE,attacker,France,FRA,RW,89,gold,Explosive Winger,yes,assets/player_images/DEMBELE.webp
+football,esp-pedri-gonzalez,Pedri González,PEDRI,attacker,Spain,ESP,CM/CAM,89,gold,Playmaker,yes,assets/player_images/PEDRI.webp
+football,bra-raphinha,Raphinha,RAPHINHA,attacker,Brazil,BRA,RW,89,gold,Direct Runner,yes,assets/player_images/RAPHINHA.webp
+football,por-ruben-dias,Rúben Dias,DIAS,defender,Portugal,POR,CB,89,gold,Leader CB,yes,assets/player_images/DIAS.webp
+football,bel-thibaut-courtois,Thibaut Courtois,COURTOIS,goalkeeper,Belgium,BEL,GK,89,gold,Penalty Wall,yes,assets/player_images/COURTOIS.webp
+football,fra-william-saliba,William Saliba,SALIBA,defender,France,FRA,CB,89,gold,Ball-Playing CB,yes,assets/player_images/SALIBA.webp
+football,can-alphonso-davies,Alphonso Davies,DAVIES,defender,Canada,CAN,LB/LW,88,gold,Explosive Fullback,yes,assets/player_images/DAVIES.webp
+football,ger-antonio-rudiger,Antonio Rüdiger,RUDIGER,defender,Germany,GER,CB,88,gold,Aggressive Stopper,yes,assets/player_images/RUDIGER.webp
+football,fra-aurelien-tchouameni,Aurélien Tchouaméni,TCHOUAMENI,defender,France,FRA,CDM,88,gold,Ball Winner,yes,assets/player_images/TCHOUAMENI.webp
+football,por-bernardo-silva,Bernardo Silva,B. SILVA,attacker,Portugal,POR,RW/CAM,88,gold,Technical Playmaker,yes,assets/player_images/B. SILVA.webp
+football,por-bruno-fernandes,Bruno Fernandes,B. FERNANDES,attacker,Portugal,POR,CAM,88,gold,Chance Creator,yes,assets/player_images/B. FERNANDES.webp
+football,arg-cristian-romero,Cristian Romero,ROMERO,defender,Argentina,ARG,CB,88,gold,Aggressive Stopper,yes,assets/player_images/ROMERO.webp
+football,ger-jamal-musiala,Jamal Musiala,MUSIALA,attacker,Germany,GER,CAM/LW,88,gold,Agile Playmaker,yes,assets/player_images/MUSIALA.webp
+football,ger-joshua-kimmich,Joshua Kimmich,KIMMICH,defender,Germany,GER,CDM/RB,88,gold,Tempo Controller,yes,assets/player_images/KIMMICH.webp
+football,cro-josko-gvardiol,Joško Gvardiol,GVARDIOL,defender,Croatia,CRO,CB/LB,88,gold,Ball-Playing CB,yes,assets/player_images/GVARDIOL.webp
+football,arg-julian-alvarez,Julián Álvarez,ALVAREZ,attacker,Argentina,ARG,ST/SS,88,gold,Pressing Forward,yes,assets/player_images/ALVAREZ.webp
+football,arg-lautaro-martinez,Lautaro Martínez,LAUTARO,attacker,Argentina,ARG,ST,88,gold,Box Striker,yes,assets/player_images/LAUTARO.webp
+football,col-luis-diaz,Luis Díaz,LUIS DIAZ,attacker,Colombia,COL,LW,88,gold,Explosive Winger,yes,assets/player_images/LUIS DIAZ.webp
+football,bra-marquinhos,Marquinhos,MARQUINHOS,defender,Brazil,BRA,CB,88,gold,Leader CB,yes,assets/player_images/MARQUINHOS.webp
+football,fra-michael-olise,Michael Olise,OLISE,attacker,France,FRA,CAM/RW,88,gold,Chance Creator,yes,assets/player_images/OLISE.webp
+football,fra-mike-maignan,Mike Maignan,MAIGNAN,goalkeeper,France,FRA,GK,88,gold,Shot Stopper,yes,assets/player_images/MAIGNAN.webp
+football,por-nuno-mendes,Nuno Mendes,N. MENDES,defender,Portugal,POR,LB,88,gold,Attacking Fullback,yes,assets/player_images/N. MENDES.webp
+football,eng-phil-foden,Phil Foden,FODEN,attacker,England,ENG,CAM/LW,88,gold,Chance Creator,yes,assets/player_images/FODEN.webp
+football,bra-bruno-guimaraes,Bruno Guimarães,BRUNO G.,attacker,Brazil,BRA,CM,87,gold,Press Breaker,yes,assets/player_images/BRUNO G..webp
+football,bra-casemiro,Casemiro,CASEMIRO,defender,Brazil,BRA,CDM,87,gold,Shield Midfielder,yes,assets/player_images/CASEMIRO.webp
+football,usa-christian-pulisic,Christian Pulisic,PULISIC,attacker,USA,USA,LW/RW,87,gold,Captain Creator,yes,assets/player_images/PULISIC.webp
+football,ned-cody-gakpo,Cody Gakpo,GAKPO,attacker,Netherlands,NED,LW/ST,87,gold,Inside Forward,yes,assets/player_images/GAKPO.webp
+football,ned-frenkie-de-jong,Frenkie de Jong,F. DE JONG,attacker,Netherlands,NED,CM,87,gold,Tempo Controller,yes,assets/player_images/F. DE JONG.webp
+football,can-jonathan-david,Jonathan David,J. DAVID,attacker,Canada,CAN,ST,87,gold,Clinical Finisher,yes,assets/player_images/J. DAVID.webp
+football,jpn-kaoru-mitoma,Kaoru Mitoma,MITOMA,attacker,Japan,JPN,LW,87,gold,Explosive Winger,yes,assets/player_images/MITOMA.webp
+football,kor-kim-min-jae,Kim Min-jae,KIM MJ,defender,South Korea,KOR,CB,87,gold,Leader CB,yes,assets/player_images/KIM MJ.webp
+football,esp-nico-williams,Nico Williams,NICO,attacker,Spain,ESP,LW,87,gold,Explosive Winger,yes,assets/player_images/NICO.webp
+football,por-rafael-leao,Rafael Leão,LEAO,attacker,Portugal,POR,LW,87,gold,Explosive Winger,yes,assets/player_images/LEAO.webp
+football,uru-ronald-araujo,Ronald Araújo,ARAUJO,defender,Uruguay,URU,CB/RB,87,gold,Recovery Defender,yes,assets/player_images/ARAUJO.webp
+football,uru-darwin-nunez,Darwin Núñez,NUNEZ,attacker,Uruguay,URU,ST,86,gold,Power Forward,yes,assets/player_images/NUNEZ.webp
+football,col-james-rodriguez,James Rodríguez,JAMES,attacker,Colombia,COL,CAM,86,gold,Master Creator,yes,assets/player_images/JAMES.webp
+football,kor-lee-kang-in,Lee Kang-in,KANG-IN,attacker,South Korea,KOR,CAM/RW,86,gold,Creative Playmaker,yes,assets/player_images/KANG-IN.webp
+football,bel-romelu-lukaku,Romelu Lukaku,LUKAKU,attacker,Belgium,BEL,ST,86,gold,Power Striker,yes,assets/player_images/LUKAKU.webp
+football,jpn-takefusa-kubo,Takefusa Kubo,KUBO,attacker,Japan,JPN,RW/CAM,86,gold,Technical Creator,yes,assets/player_images/KUBO.webp
+football,arg-alexis-mac-allister,Alexis Mac Allister,ALEXIS,attacker,Argentina,ARG,CM,85,silver,Chance Creator,yes,assets/player_images/ALEXIS.webp
+football,eng-cole-palmer,Cole Palmer,PALMER,attacker,England,ENG,CAM/RW,85,silver,Technical Creator,yes,assets/player_images/PALMER.webp
+football,bra-ederson-moraes,Ederson Moraes,EDERSON,goalkeeper,Brazil,BRA,GK,85,silver,Sweeper Keeper,yes,assets/player_images/EDERSON.webp
+football,bra-gabriel-magalhaes,Gabriel Magalhães,GABRIEL,defender,Brazil,BRA,CB,85,silver,Aerial Defender,yes,assets/player_images/GABRIEL.webp
+football,por-joao-neves,João Neves,J. NEVES,defender,Portugal,POR,CM/CDM,85,silver,Press Breaker,yes,assets/player_images/J. NEVES.webp
+football,arg-lisandro-martinez,Lisandro Martínez,LISANDRO,defender,Argentina,ARG,CB,85,silver,Ball-Winning CB,yes,assets/player_images/LISANDRO.webp
+football,esp-dani-carvajal,Dani Carvajal,CARVAJAL,defender,Spain,ESP,RB,84,silver,Overlap Runner,yes,assets/player_images/CARVAJAL.webp
+football,fra-dayot-upamecano,Dayot Upamecano,UPAMECANO,defender,France,FRA,CB,84,silver,Power Stopper,yes,assets/player_images/UPAMECANO.webp
+football,por-diogo-costa,Diogo Costa,D. COSTA,goalkeeper,Portugal,POR,GK,84,silver,Shot Stopper,yes,assets/player_images/D. COSTA.webp
+football,arg-enzo-fernandez,Enzo Fernández,ENZO,attacker,Argentina,ARG,CM,84,silver,Tempo Controller,yes,assets/player_images/ENZO.webp
+football,eng-john-stones,John Stones,STONES,defender,England,ENG,CB,84,silver,Ball-Playing CB,yes,assets/player_images/STONES.webp
+football,eng-jordan-pickford,Jordan Pickford,PICKFORD,goalkeeper,England,ENG,GK,84,silver,Shot Stopper,yes,assets/player_images/PICKFORD.webp
+football,fra-jules-kounde,Jules Koundé,KOUNDE,defender,France,FRA,RB/CB,84,silver,Recovery Defender,yes,assets/player_images/KOUNDE.webp
+football,ger-kai-havertz,Kai Havertz,HAVERTZ,attacker,Germany,GER,ST/CAM,84,silver,Link-Up Forward,yes,assets/player_images/HAVERTZ.webp
+football,ger-leroy-sane,Leroy Sané,SANE,attacker,Germany,GER,RW/LW,84,silver,Explosive Winger,yes,assets/player_images/SANE.webp
+football,eng-marcus-rashford,Marcus Rashford,RASHFORD,attacker,England,ENG,LW/ST,84,silver,Inside Forward,yes,assets/player_images/RASHFORD.webp
+football,esp-martin-zubimendi,Martin Zubimendi,ZUBIMENDI,defender,Spain,ESP,CDM,84,silver,Ball Winner,yes,assets/player_images/ZUBIMENDI.webp
+football,bra-matheus-cunha,Matheus Cunha,CUNHA,attacker,Brazil,BRA,ST/SS,84,silver,Link-Up Forward,yes,assets/player_images/CUNHA.webp
+football,ned-micky-van-de-ven,Micky van de Ven,VAN DE VEN,defender,Netherlands,NED,CB/LB,84,silver,Recovery Defender,yes,assets/player_images/VAN DE VEN.webp
+football,fra-n-golo-kante,N'Golo Kanté,KANTE,defender,France,FRA,CDM,84,silver,Shield Midfielder,yes,assets/player_images/KANTE.webp
+football,ned-ryan-gravenberch,Ryan Gravenberch,GRAVENBERCH,attacker,Netherlands,NED,CM,84,silver,Press Breaker,yes,assets/player_images/GRAVENBERCH.webp
+football,fra-theo-hernandez,Theo Hernández,THEO,defender,France,FRA,LB,84,silver,Overlap Runner,yes,assets/player_images/THEO.webp
+football,por-vitinha,Vitinha,VITINHA,attacker,Portugal,POR,CM,84,silver,Tempo Controller,yes,assets/player_images/VITINHA.webp
+football,ned-xavi-simons,Xavi Simons,SIMONS,attacker,Netherlands,NED,CAM/RW,84,silver,Flair Playmaker,yes,assets/player_images/SIMONS.webp
+football,bel-amadou-onana,Amadou Onana,ONANA,defender,Belgium,BEL,CDM,83,silver,Shield Midfielder,yes,assets/player_images/ONANA.webp
+football,usa-antonee-robinson,Antonee Robinson,A. ROBINSON,defender,USA,USA,LB,83,silver,Overlap Runner,yes,assets/player_images/A. ROBINSON.webp
+football,esp-dean-huijsen,Dean Huijsen,HUIJSEN,defender,Spain,ESP,CB,83,silver,Ball-Playing CB,yes,assets/player_images/HUIJSEN.webp
+football,ned-denzel-dumfries,Denzel Dumfries,DUMFRIES,defender,Netherlands,NED,RB/RWB,83,silver,Power Fullback,yes,assets/player_images/DUMFRIES.webp
+football,ger-jonathan-tah,Jonathan Tah,TAH,defender,Germany,GER,CB,83,silver,Aerial Defender,yes,assets/player_images/TAH.webp
+football,uru-jose-maria-gimenez,José María Giménez,GIMENEZ,defender,Uruguay,URU,CB,83,silver,Aggressive Stopper,yes,assets/player_images/GIMENEZ.webp
+football,por-joao-cancelo,João Cancelo,CANCELO,defender,Portugal,POR,RB/LB,83,silver,Attacking Fullback,yes,assets/player_images/CANCELO.webp
+football,bel-jeremy-doku,Jérémy Doku,DOKU,attacker,Belgium,BEL,LW/RW,83,silver,Explosive Winger,yes,assets/player_images/DOKU.webp
+football,cro-marcelo-brozovic,Marcelo Brozović,BROZOVIC,defender,Croatia,CRO,CDM,83,silver,Shield Midfielder,yes,assets/player_images/BROZOVIC.webp
+football,cro-mateo-kovacic,Mateo Kovačić,KOVACIC,attacker,Croatia,CRO,CM,83,silver,Press Breaker,yes,assets/player_images/KOVACIC.webp
+football,esp-mikel-oyarzabal,Mikel Oyarzabal,OYARZABAL,attacker,Spain,ESP,ST/SS,83,silver,Support Striker,yes,assets/player_images/OYARZABAL.webp
+football,eng-reece-james,Reece James,R. JAMES,defender,England,ENG,RB,83,silver,Overlap Runner,yes,assets/player_images/R. JAMES.webp
+football,arg-rodrigo-de-paul,Rodrigo De Paul,DE PAUL,attacker,Argentina,ARG,CM,83,silver,Engine Midfielder,yes,assets/player_images/DE PAUL.webp
+football,mex-santiago-gimenez,Santiago Giménez,SANTI,attacker,Mexico,MEX,ST,83,silver,Clinical Striker,yes,assets/player_images/SANTI.webp
+football,ned-tijjani-reijnders,Tijjani Reijnders,REIJNDERS,attacker,Netherlands,NED,CM/CAM,83,silver,Late Runner,yes,assets/player_images/REIJNDERS.webp
+football,esp-unai-simon,Unai Simón,SIMON,goalkeeper,Spain,ESP,GK,83,silver,Shot Stopper,yes,assets/player_images/SIMON.webp
+football,jpn-daichi-kamada,Daichi Kamada,KAMADA,attacker,Japan,JPN,CAM,82,silver,Final Pass Specialist,yes,assets/player_images/KAMADA.webp
+football,col-daniel-munoz,Daniel Muñoz,D. MUNOZ,defender,Colombia,COL,RB,82,silver,Attacking Fullback,yes,assets/player_images/D. MUNOZ.webp
+football,cro-dominik-livakovic,Dominik Livaković,LIVAKOVIC,goalkeeper,Croatia,CRO,GK,82,silver,Penalty Keeper,yes,assets/player_images/LIVAKOVIC.webp
+football,mex-edson-alvarez,Edson Álvarez,EDSON,defender,Mexico,MEX,CDM/CB,82,silver,Shield Midfielder,yes,assets/player_images/EDSON.webp
+football,usa-folarin-balogun,Folarin Balogun,BALOGUN,attacker,USA,USA,ST,82,silver,Clinical Forward,yes,assets/player_images/BALOGUN.webp
+football,uru-giorgian-de-arrascaeta,Giorgian De Arrascaeta,ARRASCAETA,attacker,Uruguay,URU,CAM,82,silver,Final Pass Specialist,yes,assets/player_images/ARRASCAETA.webp
+football,mex-hirving-lozano,Hirving Lozano,LOZANO,attacker,Mexico,MEX,LW/RW,82,silver,Explosive Winger,yes,assets/player_images/LOZANO.webp
+football,kor-hwang-hee-chan,Hwang Hee-chan,HWANG,attacker,South Korea,KOR,ST/LW,82,silver,Direct Forward,yes,assets/player_images/HWANG.webp
+football,col-jhon-duran,Jhon Durán,DURAN,attacker,Colombia,COL,ST,82,silver,Power Striker,yes,assets/player_images/DURAN.webp
+football,cro-josip-stanisic,Josip Stanišić,STANISIC,defender,Croatia,CRO,RB/CB,82,silver,Flexible Defender,yes,assets/player_images/STANISIC.webp
+football,bel-leandro-trossard,Leandro Trossard,TROSSARD,attacker,Belgium,BEL,LW/SS,82,silver,Technical Forward,yes,assets/player_images/TROSSARD.webp
+football,ger-leon-goretzka,Leon Goretzka,GORETZKA,defender,Germany,GER,CM,82,silver,Box-to-Box Enforcer,yes,assets/player_images/GORETZKA.webp
+football,uru-manuel-ugarte,Manuel Ugarte,UGARTE,defender,Uruguay,URU,CDM,82,silver,Ball Winner,yes,assets/player_images/UGARTE.webp
+football,ned-memphis-depay,Memphis Depay,DEPAY,attacker,Netherlands,NED,ST/SS,82,silver,Creator Finisher,yes,assets/player_images/DEPAY.webp
+football,jpn-ritsu-doan,Ritsu Doan,DOAN,attacker,Japan,JPN,RW,82,silver,Cut-In Winger,yes,assets/player_images/DOAN.webp
+football,uru-rodrigo-bentancur,Rodrigo Bentancur,BENTANCUR,attacker,Uruguay,URU,CM,82,silver,Tempo Controller,yes,assets/player_images/BENTANCUR.webp
+football,jpn-takehiro-tomiyasu,Takehiro Tomiyasu,TOMIYASU,defender,Japan,JPN,CB/RB,82,silver,Flexible Defender,yes,assets/player_images/TOMIYASU.webp
+football,usa-tyler-adams,Tyler Adams,ADAMS,defender,USA,USA,CDM,82,silver,Ball Winner,yes,assets/player_images/ADAMS.webp
+football,jpn-wataru-endo,Wataru Endo,ENDO,defender,Japan,JPN,CDM,82,silver,Captain Shield,yes,assets/player_images/ENDO.webp
+football,usa-weston-mckennie,Weston McKennie,MCKENNIE,attacker,USA,USA,CM,82,silver,Box-to-Box,yes,assets/player_images/MCKENNIE.webp
+football,bel-youri-tielemans,Youri Tielemans,TIELEMANS,attacker,Belgium,BEL,CM,82,silver,Tempo Controller,yes,assets/player_images/TIELEMANS.webp
+football,col-davinson-sanchez,Davinson Sánchez,DAVINSON,defender,Colombia,COL,CB,81,silver,Aerial Defender,yes,assets/player_images/DAVINSON.webp
+football,kor-hwang-in-beom,Hwang In-beom,IN-BEOM,attacker,South Korea,KOR,CM,81,silver,Tempo Controller,yes,assets/player_images/IN-BEOM.webp
+football,cro-ivan-perisic,Ivan Perišić,PERISIC,attacker,Croatia,CRO,LW/LWB,81,silver,Big-Game Winger,yes,assets/player_images/PERISIC.webp
+football,col-jefferson-lerma,Jefferson Lerma,LERMA,defender,Colombia,COL,CDM,81,silver,Shield Midfielder,yes,assets/player_images/LERMA.webp
+football,col-jhon-arias,Jhon Arias,ARIAS,attacker,Colombia,COL,RW/CAM,81,silver,Wide Creator,yes,assets/player_images/ARIAS.webp
+football,jpn-ko-itakura,Ko Itakura,ITAKURA,defender,Japan,JPN,CB,81,silver,Ball-Playing CB,yes,assets/player_images/ITAKURA.webp
+football,col-luis-sinisterra,Luis Sinisterra,SINISTERRA,attacker,Colombia,COL,LW,81,silver,Inside Forward,yes,assets/player_images/SINISTERRA.webp
+football,aus-mathew-ryan,Mathew Ryan,RYAN,goalkeeper,Australia,AUS,GK,81,silver,Veteran Keeper,yes,assets/player_images/RYAN.webp
+football,can-stephen-eustaquio,Stephen Eustáquio,EUSTAQUIO,defender,Canada,CAN,CM/CDM,81,silver,Tempo Controller,yes,assets/player_images/EUSTAQUIO.webp
+football,can-tajon-buchanan,Tajon Buchanan,BUCHANAN,attacker,Canada,CAN,RW/RWB,81,silver,Direct Runner,yes,assets/player_images/BUCHANAN.webp
+football,jpn-takumi-minamino,Takumi Minamino,MINAMINO,attacker,Japan,JPN,CAM/LW,81,silver,Support Forward,yes,assets/player_images/MINAMINO.webp
+football,cro-andrej-kramaric,Andrej Kramarić,KRAMARIC,attacker,Croatia,CRO,ST/SS,80,silver,Support Striker,yes,assets/player_images/KRAMARIC.webp
+football,can-cyle-larin,Cyle Larin,LARIN,attacker,Canada,CAN,ST,80,silver,Box Striker,yes,assets/player_images/LARIN.webp
+football,aus-harry-souttar,Harry Souttar,SOUTTAR,defender,Australia,AUS,CB,80,silver,Aerial Defender,yes,assets/player_images/SOUTTAR.webp
+football,can-ismael-kone,Ismaël Koné,KONE,attacker,Canada,CAN,CM,80,silver,Ball Carrier,yes,assets/player_images/KONE.webp
+football,aus-jackson-irvine,Jackson Irvine,IRVINE,defender,Australia,AUS,CM,80,silver,Engine Midfielder,yes,assets/player_images/IRVINE.webp
+football,mex-raul-jimenez,Raúl Jiménez,RAUL,attacker,Mexico,MEX,ST,80,silver,Target Forward,yes,assets/player_images/RAUL.webp
+football,ned-bart-verbruggen,Bart Verbruggen,VERBRUGGEN,goalkeeper,Netherlands,NED,GK,79,bronze,Shot Stopper,yes,assets/player_images/VERBRUGGEN.webp
+football,arg-nahuel-molina,Nahuel Molina,MOLINA,defender,Argentina,ARG,RB,79,bronze,Overlap Runner,yes,assets/player_images/MOLINA.webp
+football,esp-pau-cubarsi,Pau Cubarsí,CUBARSI,defender,Spain,ESP,CB,79,bronze,Ball-Playing CB,yes,assets/player_images/CUBARSI.webp
+football,usa-chris-richards,Chris Richards,RICHARDS,defender,USA,USA,CB,78,bronze,Ball-Playing CB,yes,assets/player_images/RICHARDS.webp
+football,ger-david-raum,David Raum,RAUM,defender,Germany,GER,LB,78,bronze,Overlap Runner,yes,assets/player_images/RAUM.webp
+football,jpn-hidemasa-morita,Hidemasa Morita,MORITA,defender,Japan,JPN,CM,78,bronze,Tempo Controller,yes,assets/player_images/MORITA.webp
+football,cro-lovro-majer,Lovro Majer,MAJER,attacker,Croatia,CRO,CAM,78,bronze,Creative Playmaker,yes,assets/player_images/MAJER.webp
+football,ger-oliver-baumann,Oliver Baumann,BAUMANN,goalkeeper,Germany,GER,GK,78,bronze,Shot Stopper,yes,assets/player_images/BAUMANN.webp
+football,col-richard-rios,Richard Ríos,RIOS,attacker,Colombia,COL,CM,78,bronze,Press Breaker,yes,assets/player_images/RIOS.webp
+football,jpn-zion-suzuki,Zion Suzuki,ZION,goalkeeper,Japan,JPN,GK,78,bronze,Reflex Keeper,yes,assets/player_images/ZION.webp
+football,aus-alessandro-circati,Alessandro Circati,CIRCATI,defender,Australia,AUS,CB,77,bronze,Recovery Defender,yes,assets/player_images/CIRCATI.webp
+football,can-alistair-johnston,Alistair Johnston,JOHNSTON,defender,Canada,CAN,RB,77,bronze,Wide Defender,yes,assets/player_images/JOHNSTON.webp
+football,cro-ante-budimir,Ante Budimir,BUDIMIR,attacker,Croatia,CRO,ST,77,bronze,Box Striker,yes,assets/player_images/BUDIMIR.webp
+football,bel-arthur-theate,Arthur Theate,THEATE,defender,Belgium,BEL,CB/LB,77,bronze,Flexible Defender,yes,assets/player_images/THEATE.webp
+football,col-camilo-vargas,Camilo Vargas,VARGAS,goalkeeper,Colombia,COL,GK,77,bronze,Shot Stopper,yes,assets/player_images/VARGAS.webp
+football,mex-cesar-montes,César Montes,MONTES,defender,Mexico,MEX,CB,77,bronze,Aerial Defender,yes,assets/player_images/MONTES.webp
+football,uru-facundo-pellistri,Facundo Pellistri,PELLISTRI,attacker,Uruguay,URU,RW,77,bronze,Direct Runner,yes,assets/player_images/PELLISTRI.webp
+football,usa-gio-reyna,Gio Reyna,REYNA,attacker,USA,USA,CAM/RW,77,bronze,Flair Playmaker,yes,assets/player_images/REYNA.webp
+football,mex-johan-vasquez,Johan Vásquez,VASQUEZ,defender,Mexico,MEX,CB,77,bronze,Ball-Playing CB,yes,assets/player_images/VASQUEZ.webp
+football,kor-kim-seung-gyu,Kim Seung-gyu,KIM SG,goalkeeper,South Korea,KOR,GK,77,bronze,Shot Stopper,yes,assets/player_images/KIM SG.webp
+football,kor-lee-jae-sung,Lee Jae-sung,JAE-SUNG,attacker,South Korea,KOR,CAM,77,bronze,Link-Up Creator,yes,assets/player_images/JAE-SUNG.webp
+football,mex-luis-malagon,Luis Malagón,MALAGON,goalkeeper,Mexico,MEX,GK,77,bronze,Shot Stopper,yes,assets/player_images/MALAGON.webp
+football,usa-matt-turner,Matt Turner,TURNER,goalkeeper,USA,USA,GK,77,bronze,Shot Stopper,yes,assets/player_images/TURNER.webp
+football,can-moise-bombito,Moïse Bombito,BOMBITO,defender,Canada,CAN,CB,77,bronze,Recovery Defender,yes,assets/player_images/BOMBITO.webp
+football,kor-oh-hyeon-gyu,Oh Hyeon-gyu,OH,attacker,South Korea,KOR,ST,77,bronze,Box Striker,yes,assets/player_images/OH.webp
+football,uru-sergio-rochet,Sergio Rochet,ROCHET,goalkeeper,Uruguay,URU,GK,77,bronze,Shot Stopper,yes,assets/player_images/ROCHET.webp
+football,usa-tim-weah,Tim Weah,WEAH,attacker,USA,USA,RW/RWB,77,bronze,Direct Runner,yes,assets/player_images/WEAH.webp
+football,bel-timothy-castagne,Timothy Castagne,CASTAGNE,defender,Belgium,BEL,RB/LB,77,bronze,Wide Defender,yes,assets/player_images/CASTAGNE.webp
+football,usa-yunus-musah,Yunus Musah,MUSAH,attacker,USA,USA,CM,77,bronze,Press Breaker,yes,assets/player_images/MUSAH.webp
+football,bel-axel-witsel,Axel Witsel,WITSEL,defender,Belgium,BEL,CDM/CB,76,bronze,Veteran Shield,yes,assets/player_images/WITSEL.webp
+football,aus-aziz-behich,Aziz Behich,BEHICH,defender,Australia,AUS,LB/LWB,76,bronze,Wide Defender,yes,assets/player_images/BEHICH.webp
+football,can-dayne-st-clair,Dayne St. Clair,ST. CLAIR,goalkeeper,Canada,CAN,GK,76,bronze,Shot Stopper,yes,assets/player_images/ST. CLAIR.webp
+football,can-derek-cornelius,Derek Cornelius,CORNELIUS,defender,Canada,CAN,CB,76,bronze,Aerial Defender,yes,assets/player_images/CORNELIUS.webp
+football,mex-jesus-gallardo,Jesús Gallardo,GALLARDO,defender,Mexico,MEX,LB,76,bronze,Overlap Runner,yes,assets/player_images/GALLARDO.webp
+football,mex-jorge-sanchez,Jorge Sánchez,J. SANCHEZ,defender,Mexico,MEX,RB,76,bronze,Wide Defender,yes,assets/player_images/J. SANCHEZ.webp
+football,mex-luis-chavez,Luis Chávez,CHAVEZ,attacker,Mexico,MEX,CM,76,bronze,Set-Piece Creator,yes,assets/player_images/CHAVEZ.webp
+football,aus-martin-boyle,Martin Boyle,BOYLE,attacker,Australia,AUS,RW,76,bronze,Direct Runner,yes,assets/player_images/BOYLE.webp
+football,uru-maximiliano-araujo,Maximiliano Araújo,M. ARAUJO,attacker,Uruguay,URU,LW/LB,76,bronze,Wide Runner,yes,assets/player_images/M. ARAUJO.webp
+football,aus-nestory-irankunda,Nestory Irankunda,IRANKUNDA,attacker,Australia,AUS,RW,76,bronze,Explosive Prospect,yes,assets/player_images/IRANKUNDA.webp
+football,kor-paik-seung-ho,Paik Seung-ho,PAIK,defender,South Korea,KOR,CM/CDM,76,bronze,Ball Winner,yes,assets/player_images/PAIK.webp
+football,aus-riley-mcgree,Riley McGree,MCGREE,attacker,Australia,AUS,CAM/LW,76,bronze,Chance Creator,yes,assets/player_images/MCGREE.webp
+football,kor-seol-young-woo,Seol Young-woo,SEOL,defender,South Korea,KOR,RB/LB,76,bronze,Wide Defender,yes,assets/player_images/SEOL.webp
+football,aus-lewis-miller,Lewis Miller,MILLER,defender,Australia,AUS,RB/RWB,75,bronze,Overlap Runner,yes,assets/player_images/MILLER.webp
+football,aus-mitchell-duke,Mitchell Duke,DUKE,attacker,Australia,AUS,ST,75,bronze,Target Forward,yes,assets/player_images/DUKE.webp
+cricket,cricket-mi-jasprit-bumrah,Jasprit Bumrah,J Bumrah,bowler,Mumbai Indians,MI,BOWL,94,platinum,Bowler,yes,assets/cricketer_images/jasprit_bumrah.webp
+cricket,cricket-rcb-virat-kohli,Virat Kohli,V Kohli,batsman,Royal Challengers Bengaluru,RCB,BAT,94,platinum,Batsman,yes,assets/cricketer_images/virat_kohli.webp
+cricket,cricket-gt-rashid-khan,Rashid Khan,R Khan,bowler,Gujarat Titans,GT,BOWL,93,platinum,Bowler,yes,assets/cricketer_images/rashid_khan.webp
+cricket,cricket-mi-suryakumar-yadav,Suryakumar Yadav,SKY,batsman,Mumbai Indians,MI,BAT,93,platinum,Batsman,yes,assets/cricketer_images/suryakumar_yadav.webp
+cricket,cricket-srh-heinrich-klaasen,Heinrich Klaasen,H Klaasen,batsman,Sunrisers Hyderabad,SRH,WK,92,platinum,Wicket-keeper,yes,assets/cricketer_images/heinrich_klaasen.webp
+cricket,cricket-gt-shubman-gill,Shubman Gill,S Gill,batsman,Gujarat Titans,GT,BAT,92,platinum,Batsman,yes,assets/cricketer_images/shubman_gill.webp
+cricket,cricket-gt-jos-buttler,Jos Buttler,J Buttler,batsman,Gujarat Titans,GT,WK,91,platinum,Wicket-keeper,yes,assets/cricketer_images/jos_buttler.webp
+cricket,cricket-srh-pat-cummins,Pat Cummins,P Cummins,bowler,Sunrisers Hyderabad,SRH,BOWL,91,platinum,Bowler,yes,assets/cricketer_images/pat_cummins.webp
+cricket,cricket-rr-ravindra-jadeja,Ravindra Jadeja,R Jadeja,batsman,Rajasthan Royals,RR,AR,91,platinum,All-rounder,yes,assets/cricketer_images/ravindra_jadeja.webp
+cricket,cricket-lsg-rishabh-pant,Rishabh Pant,R Pant,batsman,Lucknow Super Giants,LSG,WK,91,platinum,Wicket-keeper,yes,assets/cricketer_images/rishabh_pant.webp
+cricket,cricket-mi-rohit-sharma,Rohit Sharma,R Sharma,batsman,Mumbai Indians,MI,BAT,91,platinum,Batsman,yes,assets/cricketer_images/rohit_sharma.webp
+cricket,cricket-kkr-sunil-narine,Sunil Narine,S Narine,batsman,Kolkata Knight Riders,KKR,AR,91,platinum,All-rounder,yes,assets/cricketer_images/sunil_narine.webp
+cricket,cricket-mi-hardik-pandya,Hardik Pandya,H Pandya,batsman,Mumbai Indians,MI,AR,90,platinum,All-rounder,yes,assets/cricketer_images/hardik_pandya.webp
+cricket,cricket-gt-kagiso-rabada,Kagiso Rabada,K Rabada,bowler,Gujarat Titans,GT,BOWL,90,platinum,Bowler,no,
+cricket,cricket-lsg-nicholas-pooran,Nicholas Pooran,N Pooran,batsman,Lucknow Super Giants,LSG,WK,90,platinum,Wicket-keeper,yes,assets/cricketer_images/nicholas_pooran.webp
+cricket,cricket-srh-travis-head,Travis Head,T Head,batsman,Sunrisers Hyderabad,SRH,BAT,90,platinum,Batsman,no,
+cricket,cricket-pbks-arshdeep-singh,Arshdeep Singh,A Singh,bowler,Punjab Kings,PBKS,BOWL,89,gold,Bowler,yes,assets/cricketer_images/arshdeep_singh.webp
+cricket,cricket-dc-kl-rahul,KL Rahul,KL Rahul,batsman,Delhi Capitals,DC,WK,89,gold,Wicket-keeper,yes,assets/cricketer_images/kl_rahul.webp
+cricket,cricket-dc-kuldeep-yadav,Kuldeep Yadav,K Yadav,bowler,Delhi Capitals,DC,BOWL,89,gold,Bowler,yes,assets/cricketer_images/kuldeep_yadav.webp
+cricket,cricket-csk-ms-dhoni,MS Dhoni,MSD,batsman,Chennai Super Kings,CSK,WK,89,gold,Wicket-keeper,no,
+cricket,cricket-lsg-mohammed-shami,Mohammed Shami,M Shami,bowler,Lucknow Super Giants,LSG,BOWL,89,gold,Bowler,yes,assets/cricketer_images/mohammed_shami.webp
+cricket,cricket-csk-sanju-samson,Sanju Samson,S Samson,batsman,Chennai Super Kings,CSK,WK,89,gold,Wicket-keeper,no,
+cricket,cricket-mi-trent-boult,Trent Boult,T Boult,bowler,Mumbai Indians,MI,BOWL,89,gold,Bowler,no,
+cricket,cricket-rr-yashasvi-jaiswal,Yashasvi Jaiswal,Y Jaiswal,batsman,Rajasthan Royals,RR,BAT,89,gold,Batsman,no,
+cricket,cricket-srh-abhishek-sharma,Abhishek Sharma,A Sharma,batsman,Sunrisers Hyderabad,SRH,AR,88,gold,All-rounder,yes,assets/cricketer_images/abhishek_sharma.webp
+cricket,cricket-dc-axar-patel,Axar Patel,A Patel,batsman,Delhi Capitals,DC,AR,88,gold,All-rounder,yes,assets/cricketer_images/axar_patel.webp
+cricket,cricket-rcb-josh-hazlewood,Josh Hazlewood,J Hazlewood,bowler,Royal Challengers Bengaluru,RCB,BOWL,88,gold,Bowler,yes,assets/cricketer_images/josh_hazlewood.webp
+cricket,cricket-kkr-matheesha-pathirana,Matheesha Pathirana,M Pathirana,bowler,Kolkata Knight Riders,KKR,BOWL,88,gold,Bowler,yes,assets/cricketer_images/matheesha_pathirana.webp
+cricket,cricket-dc-mitchell-starc,Mitchell Starc,M Starc,bowler,Delhi Capitals,DC,BOWL,88,gold,Bowler,yes,assets/cricketer_images/mitchell_starc.webp
+cricket,cricket-gt-mohammed-siraj,Mohammed Siraj,M Siraj,bowler,Gujarat Titans,GT,BOWL,88,gold,Bowler,yes,assets/cricketer_images/mohammed_siraj.webp
+cricket,cricket-mi-quinton-de-kock,Quinton de Kock,Q de Kock,batsman,Mumbai Indians,MI,WK,88,gold,Wicket-keeper,yes,assets/cricketer_images/quinton_de_kock.webp
+cricket,cricket-kkr-rinku-singh,Rinku Singh,R Singh,batsman,Kolkata Knight Riders,KKR,BAT,88,gold,Batsman,yes,assets/cricketer_images/rinku_singh.webp
+cricket,cricket-csk-ruturaj-gaikwad,Ruturaj Gaikwad,R Gaikwad,batsman,Chennai Super Kings,CSK,BAT,88,gold,Batsman,yes,assets/cricketer_images/ruturaj_gaikwad.webp
+cricket,cricket-rr-sam-curran,Sam Curran,S Curran,batsman,Rajasthan Royals,RR,AR,88,gold,All-rounder,yes,assets/cricketer_images/sam_curran.webp
+cricket,cricket-pbks-shreyas-iyer,Shreyas Iyer,S Iyer,batsman,Punjab Kings,PBKS,BAT,88,gold,Batsman,yes,assets/cricketer_images/shreyas_iyer.webp
+cricket,cricket-pbks-yuzvendra-chahal,Yuzvendra Chahal,Y Chahal,bowler,Punjab Kings,PBKS,BOWL,88,gold,Bowler,yes,assets/cricketer_images/yuzvendra_chahal.webp
+cricket,cricket-kkr-cameron-green,Cameron Green,C Green,batsman,Kolkata Knight Riders,KKR,AR,87,gold,All-rounder,yes,assets/cricketer_images/cameron_green.webp
+cricket,cricket-dc-david-miller,David Miller,D Miller,batsman,Delhi Capitals,DC,BAT,87,gold,Batsman,yes,assets/cricketer_images/David_Miller.webp
+cricket,cricket-rr-jofra-archer,Jofra Archer,J Archer,bowler,Rajasthan Royals,RR,BOWL,87,gold,Bowler,yes,assets/cricketer_images/jofra_archer.webp
+cricket,cricket-pbks-marcus-stoinis,Marcus Stoinis,M Stoinis,batsman,Punjab Kings,PBKS,AR,87,gold,All-rounder,yes,assets/cricketer_images/Marcus_Stoinis.webp
+cricket,cricket-lsg-mayank-yadav,Mayank Yadav,M Yadav,bowler,Lucknow Super Giants,LSG,BOWL,87,gold,Bowler,yes,assets/cricketer_images/Mayank_Yadav.webp
+cricket,cricket-rcb-phil-salt,Phil Salt,P Salt,batsman,Royal Challengers Bengaluru,RCB,WK,87,gold,Wicket-keeper,yes,assets/cricketer_images/phil_salt.webp
+cricket,cricket-rr-riyan-parag,Riyan Parag,R Parag,batsman,Rajasthan Royals,RR,AR,87,gold,All-rounder,yes,assets/cricketer_images/riyan_parag.webp
+cricket,cricket-gt-sai-sudharsan,Sai Sudharsan,S Sudharsan,batsman,Gujarat Titans,GT,BAT,87,gold,Batsman,yes,assets/cricketer_images/Sai_Sudharsan.webp
+cricket,cricket-csk-shivam-dube,Shivam Dube,S Dube,batsman,Chennai Super Kings,CSK,AR,87,gold,All-rounder,yes,assets/cricketer_images/shivam_dube.webp
+cricket,cricket-lsg-wanindu-hasaranga,Wanindu Hasaranga,W Hasaranga,batsman,Lucknow Super Giants,LSG,AR,87,gold,All-rounder,yes,assets/cricketer_images/Wanindu_Hasaranga.webp
+cricket,cricket-lsg-aiden-markram,Aiden Markram,A Markram,batsman,Lucknow Super Giants,LSG,BAT,86,gold,Batsman,yes,assets/cricketer_images/aiden_markram.webp
+cricket,cricket-rcb-bhuvneshwar-kumar,Bhuvneshwar Kumar,B Kumar,bowler,Royal Challengers Bengaluru,RCB,BOWL,86,gold,Bowler,yes,assets/cricketer_images/Bhuvneshwar_Kumar.webp
+cricket,cricket-srh-ishan-kishan,Ishan Kishan,I Kishan,batsman,Sunrisers Hyderabad,SRH,WK,86,gold,Wicket-keeper,yes,assets/cricketer_images/Ishan_Kishan.webp
+cricket,cricket-srh-liam-livingstone,Liam Livingstone,L Livingstone,batsman,Sunrisers Hyderabad,SRH,AR,86,gold,All-rounder,yes,assets/cricketer_images/Liam_Livingstone.webp
+cricket,cricket-lsg-mitchell-marsh,Mitchell Marsh,M Marsh,batsman,Lucknow Super Giants,LSG,AR,86,gold,All-rounder,yes,assets/cricketer_images/mitchell_marsh.webp
+cricket,cricket-dc-t-natarajan,T. Natarajan,T Natarajan,bowler,Delhi Capitals,DC,BOWL,86,gold,Bowler,yes,assets/cricketer_images/t_natarajan.webp
+cricket,cricket-mi-tilak-varma,Tilak Varma,T Varma,batsman,Mumbai Indians,MI,BAT,86,gold,Batsman,yes,assets/cricketer_images/Tilak_Varma.webp
+cricket,cricket-dc-tristan-stubbs,Tristan Stubbs,T Stubbs,batsman,Delhi Capitals,DC,WK,86,gold,Wicket-keeper,yes,assets/cricketer_images/tristan_stubbs.webp
+cricket,cricket-kkr-varun-chakaravarthy,Varun Chakaravarthy,V Chakaravarthy,bowler,Kolkata Knight Riders,KKR,BOWL,86,gold,Bowler,yes,assets/cricketer_images/Varun_Chakaravarthy.webp
+cricket,cricket-lsg-anrich-nortje,Anrich Nortje,A Nortje,bowler,Lucknow Super Giants,LSG,BOWL,85,silver,Bowler,yes,assets/cricketer_images/06_Anrich_Nortje.webp
+cricket,cricket-lsg-avesh-khan,Avesh Khan,A Khan,bowler,Lucknow Super Giants,LSG,BOWL,85,silver,Bowler,yes,assets/cricketer_images/05_Avesh_Khan.webp
+cricket,cricket-srh-harshal-patel,Harshal Patel,H Patel,bowler,Sunrisers Hyderabad,SRH,BOWL,85,silver,Bowler,yes,assets/cricketer_images/01_Harshal_Patel.webp
+cricket,cricket-rr-jonny-bairstow,Jonny Bairstow,J Bairstow,batsman,Rajasthan Royals,RR,WK,85,silver,Wicket-keeper,no,
+cricket,cricket-lsg-josh-inglis,Josh Inglis,J Inglis,batsman,Lucknow Super Giants,LSG,WK,85,silver,Wicket-keeper,no,
+cricket,cricket-csk-khaleel-ahmed,Khaleel Ahmed,K Ahmed,bowler,Chennai Super Kings,CSK,BOWL,85,silver,Bowler,yes,assets/cricketer_images/khaleel_ahmed.webp
+cricket,cricket-srh-nitish-kumar-reddy,Nitish Kumar Reddy,N Reddy,batsman,Sunrisers Hyderabad,SRH,AR,85,silver,All-rounder,yes,assets/cricketer_images/nitish_kumar_reddy.webp
+cricket,cricket-dc-pathum-nissanka,Pathum Nissanka,P Nissanka,batsman,Delhi Capitals,DC,BAT,85,silver,Batsman,yes,assets/cricketer_images/04_Pathum_Nissanka.webp
+cricket,cricket-kkr-rachin-ravindra,Rachin Ravindra,R Ravindra,batsman,Kolkata Knight Riders,KKR,AR,85,silver,All-rounder,yes,assets/cricketer_images/rachin_ravindra.webp
+cricket,cricket-gt-rahul-tewatia,Rahul Tewatia,R Tewatia,batsman,Gujarat Titans,GT,AR,85,silver,All-rounder,yes,assets/cricketer_images/07_Rahul_Tewatia.webp
+cricket,cricket-rcb-rajat-patidar,Rajat Patidar,R Patidar,batsman,Royal Challengers Bengaluru,RCB,BAT,85,silver,Batsman,yes,assets/cricketer_images/rajat_patidar.webp
+cricket,cricket-rr-sandeep-sharma,Sandeep Sharma,S Sharma,bowler,Rajasthan Royals,RR,BOWL,85,silver,Bowler,yes,assets/cricketer_images/03_Sandeep_Sharma.webp
+cricket,cricket-rr-shimron-hetmyer,Shimron Hetmyer,S Hetmyer,batsman,Rajasthan Royals,RR,BAT,85,silver,Batsman,yes,assets/cricketer_images/02_Shimron_Hetmyer.webp
+cricket,cricket-rcb-venkatesh-iyer,Venkatesh Iyer,V Iyer,batsman,Royal Challengers Bengaluru,RCB,AR,85,silver,All-rounder,yes,assets/cricketer_images/venkatesh_iyer.webp
+cricket,cricket-mi-will-jacks,Will Jacks,W Jacks,batsman,Mumbai Indians,MI,AR,85,silver,All-rounder,yes,assets/cricketer_images/will_jacks.webp
+cricket,cricket-pbks-azmatullah-omarzai,Azmatullah Omarzai,A Omarzai,batsman,Punjab Kings,PBKS,AR,84,silver,All-rounder,no,
+cricket,cricket-dc-ben-duckett,Ben Duckett,B Duckett,batsman,Delhi Capitals,DC,BAT,84,silver,Batsman,no,
+cricket,cricket-mi-deepak-chahar,Deepak Chahar,D Chahar,bowler,Mumbai Indians,MI,BOWL,84,silver,Bowler,yes,assets/cricketer_images/09_Deepak_Chahar.webp
+cricket,cricket-rr-dhruv-jurel,Dhruv Jurel,D Jurel,batsman,Rajasthan Royals,RR,WK,84,silver,Wicket-keeper,no,
+cricket,cricket-gt-glenn-phillips,Glenn Phillips,G Phillips,batsman,Gujarat Titans,GT,BAT,84,silver,Batsman,no,
+cricket,cricket-kkr-harshit-rana,Harshit Rana,H Rana,bowler,Kolkata Knight Riders,KKR,BOWL,84,silver,Bowler,no,
+cricket,cricket-gt-jason-holder,Jason Holder,J Holder,batsman,Gujarat Titans,GT,AR,84,silver,All-rounder,no,
+cricket,cricket-rcb-jitesh-sharma,Jitesh Sharma,J Sharma,batsman,Royal Challengers Bengaluru,RCB,WK,84,silver,Wicket-keeper,no,
+cricket,cricket-srh-kamindu-mendis,Kamindu Mendis,K Mendis,batsman,Sunrisers Hyderabad,SRH,AR,84,silver,All-rounder,no,
+cricket,cricket-pbks-lockie-ferguson,Lockie Ferguson,L Ferguson,bowler,Punjab Kings,PBKS,BOWL,84,silver,Bowler,no,
+cricket,cricket-dc-lungisani-ngidi,Lungisani Ngidi,L Ngidi,bowler,Delhi Capitals,DC,BOWL,84,silver,Bowler,no,
+cricket,cricket-csk-matt-henry,Matt Henry,M Henry,bowler,Chennai Super Kings,CSK,BOWL,84,silver,Bowler,no,
+cricket,cricket-lsg-mohsin-khan,Mohsin Khan,M Khan,bowler,Lucknow Super Giants,LSG,BOWL,84,silver,Bowler,no,
+cricket,cricket-dc-mukesh-kumar,Mukesh Kumar,M Kumar,bowler,Delhi Capitals,DC,BOWL,84,silver,Bowler,no,
+cricket,cricket-csk-noor-ahmad,Noor Ahmad,N Ahmad,bowler,Chennai Super Kings,CSK,BOWL,84,silver,Bowler,yes,assets/cricketer_images/08_Noor_Ahmad.webp
+cricket,cricket-gt-prasidh-krishna,Prasidh Krishna,P Krishna,bowler,Gujarat Titans,GT,BOWL,84,silver,Bowler,no,
+cricket,cricket-kkr-rovman-powell,Rovman Powell,R Powell,batsman,Kolkata Knight Riders,KKR,BAT,84,silver,Batsman,no,
+cricket,cricket-pbks-shashank-singh,Shashank Singh,S Singh,batsman,Punjab Kings,PBKS,BAT,84,silver,Batsman,no,
+cricket,cricket-rcb-tim-david,Tim David,T David,batsman,Royal Challengers Bengaluru,RCB,BAT,84,silver,Batsman,yes,assets/cricketer_images/10_Tim_David.webp
+cricket,cricket-rr-vaibhav-sooryavanshi,Vaibhav Sooryavanshi,V Sooryavanshi,batsman,Rajasthan Royals,RR,BAT,84,silver,Batsman,no,
+cricket,cricket-csk-akeal-hosein,Akeal Hosein,A Hosein,bowler,Chennai Super Kings,CSK,BOWL,83,silver,Bowler,no,
+cricket,cricket-lsg-ayush-badoni,Ayush Badoni,A Badoni,batsman,Lucknow Super Giants,LSG,BAT,83,silver,Batsman,no,
+cricket,cricket-kkr-finn-allen,Finn Allen,F Allen,batsman,Kolkata Knight Riders,KKR,WK,83,silver,Wicket-keeper,no,
+cricket,cricket-rcb-krunal-pandya,Krunal Pandya,K Pandya,batsman,Royal Challengers Bengaluru,RCB,AR,83,silver,All-rounder,no,
+cricket,cricket-pbks-marco-jansen,Marco Jansen,M Jansen,batsman,Punjab Kings,PBKS,AR,83,silver,All-rounder,no,
+cricket,cricket-csk-matthew-short,Matthew Short,M Short,batsman,Chennai Super Kings,CSK,AR,83,silver,All-rounder,no,
+cricket,cricket-mi-mitchell-santner,Mitchell Santner,M Santner,batsman,Mumbai Indians,MI,AR,83,silver,All-rounder,no,
+cricket,cricket-rr-nandre-burger,Nandre Burger,N Burger,bowler,Rajasthan Royals,RR,BOWL,83,silver,Bowler,no,
+cricket,cricket-dc-nitish-rana,Nitish Rana,N Rana,batsman,Delhi Capitals,DC,BAT,83,silver,Batsman,no,
+cricket,cricket-kkr-rahul-tripathi,Rahul Tripathi,R Tripathi,batsman,Kolkata Knight Riders,KKR,BAT,83,silver,Batsman,no,
+cricket,cricket-csk-spencer-johnson,Spencer Johnson,S Johnson,bowler,Chennai Super Kings,CSK,BOWL,83,silver,Bowler,no,
+cricket,cricket-gt-tom-banton,Tom Banton,T Banton,batsman,Gujarat Titans,GT,WK,83,silver,Wicket-keeper,no,
+cricket,cricket-gt-washington-sundar,Washington Sundar,W Sundar,batsman,Gujarat Titans,GT,AR,83,silver,All-rounder,no,
+cricket,cricket-pbks-xavier-bartlett,Xavier Bartlett,X Bartlett,bowler,Punjab Kings,PBKS,BOWL,83,silver,Bowler,no,
+cricket,cricket-rcb-yash-dayal,Yash Dayal,Y Dayal,bowler,Royal Challengers Bengaluru,RCB,BOWL,83,silver,Bowler,no,
+cricket,cricket-kkr-ajinkya-rahane,Ajinkya Rahane,A Rahane,batsman,Kolkata Knight Riders,KKR,BAT,82,silver,Batsman,no,
+cricket,cricket-rr-akash-deep,Akash Deep,A Deep,bowler,Rajasthan Royals,RR,BOWL,82,silver,Bowler,no,
+cricket,cricket-dc-ashutosh-sharma,Ashutosh Sharma,A Sharma,batsman,Delhi Capitals,DC,BAT,82,silver,Batsman,no,
+cricket,cricket-srh-brydon-carse,Brydon Carse,B Carse,bowler,Sunrisers Hyderabad,SRH,BOWL,82,silver,Bowler,no,
+cricket,cricket-rcb-devdutt-padikkal,Devdutt Padikkal,D Padikkal,batsman,Royal Challengers Bengaluru,RCB,BAT,82,silver,Batsman,no,
+cricket,cricket-dc-dushmantha-chameera,Dushmantha Chameera,D Chameera,bowler,Delhi Capitals,DC,BOWL,82,silver,Bowler,no,
+cricket,cricket-pbks-harpreet-brar,Harpreet Brar,H Brar,batsman,Punjab Kings,PBKS,AR,82,silver,All-rounder,no,
+cricket,cricket-gt-ishant-sharma,Ishant Sharma,I Sharma,bowler,Gujarat Titans,GT,BOWL,82,silver,Bowler,no,
+cricket,cricket-csk-jamie-overton,Jamie Overton,J Overton,batsman,Chennai Super Kings,CSK,AR,82,silver,All-rounder,no,
+cricket,cricket-pbks-nehal-wadhera,Nehal Wadhera,N Wadhera,batsman,Punjab Kings,PBKS,BAT,82,silver,Batsman,no,
+cricket,cricket-rcb-nuwan-thushara,Nuwan Thushara,N Thushara,bowler,Royal Challengers Bengaluru,RCB,BOWL,82,silver,Bowler,no,
+cricket,cricket-pbks-prabhsimran-singh,Prabhsimran Singh,P Singh,batsman,Punjab Kings,PBKS,WK,82,silver,Wicket-keeper,no,
+cricket,cricket-rcb-romario-shepherd,Romario Shepherd,R Shepherd,batsman,Royal Challengers Bengaluru,RCB,AR,82,silver,All-rounder,no,
+cricket,cricket-lsg-shahbaz-ahmed,Shahbaz Ahmed,S Ahmed,batsman,Lucknow Super Giants,LSG,AR,82,silver,All-rounder,no,
+cricket,cricket-gt-shahrukh-khan,Shahrukh Khan,S Khan,batsman,Gujarat Titans,GT,BAT,82,silver,Batsman,no,
+cricket,cricket-mi-shardul-thakur,Shardul Thakur,S Thakur,batsman,Mumbai Indians,MI,AR,82,silver,All-rounder,no,
+cricket,cricket-rr-tushar-deshpande,Tushar Deshpande,T Deshpande,bowler,Rajasthan Royals,RR,BOWL,82,silver,Bowler,no,
+cricket,cricket-pbks-yash-thakur,Yash Thakur,Y Thakur,bowler,Punjab Kings,PBKS,BOWL,82,silver,Bowler,no,
+cricket,cricket-lsg-abdul-samad,Abdul Samad,A Samad,batsman,Lucknow Super Giants,LSG,AR,81,silver,All-rounder,yes,assets/cricketer_images/abdul_samad.webp
+cricket,cricket-dc-abishek-porel,Abishek Porel,A Porel,batsman,Delhi Capitals,DC,WK,81,silver,Wicket-keeper,yes,assets/cricketer_images/abishek_porel.webp
+cricket,cricket-kkr-angkrish-raghuvanshi,Angkrish Raghuvanshi,A Raghuvanshi,batsman,Kolkata Knight Riders,KKR,BAT,81,silver,Batsman,no,
+cricket,cricket-pbks-ben-dwarshuis,Ben Dwarshuis,B Dwarshuis,bowler,Punjab Kings,PBKS,BOWL,81,silver,Bowler,yes,assets/cricketer_images/ben_dwarshuis.webp
+cricket,cricket-csk-dewald-brevis,Dewald Brevis,D Brevis,batsman,Chennai Super Kings,CSK,BAT,81,silver,Batsman,no,
+cricket,cricket-rr-kwena-maphaka,Kwena Maphaka,K Maphaka,bowler,Rajasthan Royals,RR,BOWL,81,silver,Bowler,yes,assets/cricketer_images/kwena_maphaka.webp
+cricket,cricket-dc-kyle-jamieson,Kyle Jamieson,K Jamieson,bowler,Delhi Capitals,DC,BOWL,81,silver,Bowler,yes,assets/cricketer_images/kyle_jamieson.webp
+cricket,cricket-gt-luke-wood,Luke Wood,L Wood,bowler,Gujarat Titans,GT,BOWL,81,silver,Bowler,yes,assets/cricketer_images/luke_wood.webp
+cricket,cricket-kkr-ramandeep-singh,Ramandeep Singh,R Singh,batsman,Kolkata Knight Riders,KKR,AR,81,silver,All-rounder,no,
+cricket,cricket-mi-ryan-rickelton,Ryan Rickelton,R Rickelton,batsman,Mumbai Indians,MI,WK,81,silver,Wicket-keeper,no,
+cricket,cricket-srh-shivam-mavi,Shivam Mavi,S Mavi,bowler,Sunrisers Hyderabad,SRH,BOWL,81,silver,Bowler,no,
+cricket,cricket-rcb-suyash-sharma,Suyash Sharma,S Sharma,bowler,Royal Challengers Bengaluru,RCB,BOWL,81,silver,Bowler,no,
+cricket,cricket-kkr-vaibhav-arora,Vaibhav Arora,V Arora,bowler,Kolkata Knight Riders,KKR,BOWL,81,silver,Bowler,no,
+cricket,cricket-rr-donovan-ferreira,Donovan Ferreira,D Ferreira,batsman,Rajasthan Royals,RR,AR,80,silver,All-rounder,yes,assets/cricketer_images/donovan_ferreira.webp
+cricket,cricket-gt-jayant-yadav,Jayant Yadav,J Yadav,bowler,Gujarat Titans,GT,BOWL,80,silver,Bowler,yes,assets/cricketer_images/jayant_yadav.webp
+cricket,cricket-srh-jaydev-unadkat,Jaydev Unadkat,J Unadkat,bowler,Sunrisers Hyderabad,SRH,BOWL,80,silver,Bowler,yes,assets/cricketer_images/jaydev_unadkat.webp
+cricket,cricket-kkr-kartik-tyagi,Kartik Tyagi,K Tyagi,bowler,Kolkata Knight Riders,KKR,BOWL,80,silver,Bowler,yes,assets/cricketer_images/kartik_tyagi.webp
+cricket,cricket-kkr-manish-pandey,Manish Pandey,M Pandey,batsman,Kolkata Knight Riders,KKR,BAT,80,silver,Batsman,yes,assets/cricketer_images/manish_pandey.webp
+cricket,cricket-lsg-matthew-breetzke,Matthew Breetzke,M Breetzke,batsman,Lucknow Super Giants,LSG,BAT,80,silver,Batsman,yes,assets/cricketer_images/matthew_breetzke.webp
+cricket,cricket-mi-mayank-markande,Mayank Markande,M Markande,bowler,Mumbai Indians,MI,BOWL,80,silver,Bowler,yes,assets/cricketer_images/mayank_markande.webp
+cricket,cricket-csk-mukesh-choudhary,Mukesh Choudhary,M Choudhary,bowler,Chennai Super Kings,CSK,BOWL,80,silver,Bowler,yes,assets/cricketer_images/mukesh_choudhary.webp
+cricket,cricket-pbks-musheer-khan,Musheer Khan,M Khan,batsman,Punjab Kings,PBKS,AR,80,silver,All-rounder,yes,assets/cricketer_images/musheer_khan.webp
+cricket,cricket-rcb-rasikh-salam,Rasikh Salam,R Salam,bowler,Royal Challengers Bengaluru,RCB,BOWL,80,silver,Bowler,yes,assets/cricketer_images/rasikh_salam.webp
+cricket,cricket-csk-sarfaraz-khan,Sarfaraz Khan,S Khan,batsman,Chennai Super Kings,CSK,BAT,80,silver,Batsman,yes,assets/cricketer_images/sarfaraz_khan.webp
+cricket,cricket-csk-shreyas-gopal,Shreyas Gopal,S Gopal,bowler,Chennai Super Kings,CSK,BOWL,80,silver,Bowler,yes,assets/cricketer_images/shreyas_gopal.webp
+cricket,cricket-kkr-tim-seifert,Tim Seifert,T Seifert,batsman,Kolkata Knight Riders,KKR,WK,80,silver,Wicket-keeper,yes,assets/cricketer_images/tim_seifert.webp
+cricket,cricket-pbks-vyshak-vijaykumar,Vyshak Vijaykumar,V Vijaykumar,bowler,Punjab Kings,PBKS,BOWL,80,silver,Bowler,yes,assets/cricketer_images/vyshak_vijaykumar.webp
+cricket,cricket-mi-allah-ghazanfar,Allah Ghazanfar,A Ghazanfar,bowler,Mumbai Indians,MI,BOWL,79,bronze,Bowler,yes,assets/cricketer_images/allah_ghazanfar.webp
+cricket,cricket-csk-anshul-kamboj,Anshul Kamboj,A Kamboj,bowler,Chennai Super Kings,CSK,BOWL,79,bronze,Bowler,yes,assets/cricketer_images/anshul_kamboj.webp
+cricket,cricket-gt-anuj-rawat,Anuj Rawat,A Rawat,batsman,Gujarat Titans,GT,WK,79,bronze,Wicket-keeper,yes,assets/cricketer_images/anuj_rawat.webp
+cricket,cricket-gt-arshad-khan,Arshad Khan,A Khan,batsman,Gujarat Titans,GT,AR,79,bronze,All-rounder,yes,assets/cricketer_images/arshad_khan.webp
+cricket,cricket-lsg-arshin-kulkarni,Arshin Kulkarni,A Kulkarni,batsman,Lucknow Super Giants,LSG,AR,79,bronze,All-rounder,yes,assets/cricketer_images/arshin_kulkarni.webp
+cricket,cricket-pbks-cooper-connolly,Cooper Connolly,C Connolly,batsman,Punjab Kings,PBKS,AR,79,bronze,All-rounder,yes,assets/cricketer_images/cooper_connolly.webp
+cricket,cricket-srh-jack-edwards,Jack Edwards,J Edwards,batsman,Sunrisers Hyderabad,SRH,AR,79,bronze,All-rounder,yes,assets/cricketer_images/jack_edwards.webp
+cricket,cricket-rcb-jordan-cox,Jordan Cox,J Cox,batsman,Royal Challengers Bengaluru,RCB,WK,79,bronze,Wicket-keeper,yes,assets/cricketer_images/jordan_cox.webp
+cricket,cricket-lsg-manimaran-siddharth,Manimaran Siddharth,M Siddharth,bowler,Lucknow Super Giants,LSG,BOWL,79,bronze,Bowler,yes,assets/cricketer_images/manimaran_siddharth.webp
+cricket,cricket-mi-naman-dhir,Naman Dhir,N Dhir,batsman,Mumbai Indians,MI,BAT,79,bronze,Batsman,yes,assets/cricketer_images/naman_dhir.webp
+cricket,cricket-dc-sameer-rizvi,Sameer Rizvi,S Rizvi,batsman,Delhi Capitals,DC,AR,79,bronze,All-rounder,yes,assets/cricketer_images/sameer_rizvi.webp
+cricket,cricket-rr-yudhvir-singh,Yudhvir Singh,Y Singh,bowler,Rajasthan Royals,RR,BOWL,79,bronze,Bowler,yes,assets/cricketer_images/yudhvir_singh.webp
+cricket,cricket-csk-aman-khan,Aman Khan,A Khan,batsman,Chennai Super Kings,CSK,AR,78,bronze,All-rounder,yes,assets/cricketer_images/aman_khan.webp
+cricket,cricket-kkr-anukul-roy,Anukul Roy,A Roy,batsman,Kolkata Knight Riders,KKR,AR,78,bronze,All-rounder,yes,assets/cricketer_images/anukul_roy.webp
+cricket,cricket-mi-corbin-bosch,Corbin Bosch,C Bosch,batsman,Mumbai Indians,MI,AR,78,bronze,All-rounder,yes,assets/cricketer_images/corbin_bosch.webp
+cricket,cricket-rcb-jacob-bethell,Jacob Bethell,J Bethell,batsman,Royal Challengers Bengaluru,RCB,AR,78,bronze,All-rounder,yes,assets/cricketer_images/jacob_bethell.webp
+cricket,cricket-rr-lhuan-dre-pretorius,Lhuan-dre Pretorius,L Pretorius,batsman,Rajasthan Royals,RR,WK,78,bronze,Wicket-keeper,yes,assets/cricketer_images/lhuan_dre_pretorius.webp
+cricket,cricket-srh-r-smaran,R. Smaran,R Smaran,batsman,Sunrisers Hyderabad,SRH,BAT,78,bronze,Batsman,yes,assets/cricketer_images/r_smaran.webp
+cricket,cricket-mi-robin-minz,Robin Minz,R Minz,batsman,Mumbai Indians,MI,WK,78,bronze,Wicket-keeper,yes,assets/cricketer_images/robin_minz.webp
+cricket,cricket-rr-shubham-dubey,Shubham Dubey,S Dubey,batsman,Rajasthan Royals,RR,BAT,78,bronze,Batsman,yes,assets/cricketer_images/shubham_dubey.webp
+cricket,cricket-rcb-swapnil-singh,Swapnil Singh,S Singh,batsman,Royal Challengers Bengaluru,RCB,AR,78,bronze,All-rounder,yes,assets/cricketer_images/swapnil_singh.webp
+cricket,cricket-pbks-vishnu-vinod,Vishnu Vinod,V Vinod,batsman,Punjab Kings,PBKS,WK,78,bronze,Wicket-keeper,yes,assets/cricketer_images/vishnu_vinod.webp
+cricket,cricket-lsg-arjun-tendulkar,Arjun Tendulkar,A Tendulkar,batsman,Lucknow Super Giants,LSG,AR,77,bronze,All-rounder,yes,assets/cricketer_images/arjun_tendulkar.webp
+cricket,cricket-dc-auqib-nabi-dar,Auqib Nabi Dar,A Dar,batsman,Delhi Capitals,DC,AR,77,bronze,All-rounder,yes,assets/cricketer_images/auqib_nabi_dar.webp
+cricket,cricket-srh-eshan-malinga,Eshan Malinga,E Malinga,bowler,Sunrisers Hyderabad,SRH,BOWL,77,bronze,Bowler,yes,assets/cricketer_images/eshan_malinga.webp
+cricket,cricket-srh-harsh-dubey,Harsh Dubey,H Dubey,batsman,Sunrisers Hyderabad,SRH,AR,77,bronze,All-rounder,yes,assets/cricketer_images/harsh_dubey.webp
+cricket,cricket-csk-kartik-sharma,Kartik Sharma,K Sharma,batsman,Chennai Super Kings,CSK,BAT,77,bronze,Batsman,yes,assets/cricketer_images/kartik_sharma.webp
+cricket,cricket-mi-raj-angad-bawa,Raj Angad Bawa,R Bawa,batsman,Mumbai Indians,MI,AR,77,bronze,All-rounder,yes,assets/cricketer_images/raj_angad_bawa.webp
+cricket,cricket-srh-aniket-verma,Aniket Verma,A Verma,batsman,Sunrisers Hyderabad,SRH,BAT,76,bronze,Batsman,yes,assets/cricketer_images/aniket_verma.webp
+cricket,cricket-srh-zeeshan-ansari,Zeeshan Ansari,Z Ansari,bowler,Sunrisers Hyderabad,SRH,BOWL,76,bronze,Bowler,yes,assets/cricketer_images/zeeshan_ansari.webp
+basketball,den-nikola-jokic,Nikola Jokic,N JOKIC,basketballBig,Denver Nuggets,DEN,C,97,platinum,,no,
+basketball,okc-shai-gilgeous-alexander,Shai Gilgeous-Alexander,S GILGEOUS-ALEXANDER,basketballGuard,Oklahoma City Thunder,OKC,PG,97,platinum,,no,
+basketball,lal-luka-doncic,Luka Doncic,L DONCIC,basketballGuard,Los Angeles Lakers,LAL,PG,96,platinum,,no,
+basketball,sas-victor-wembanyama,Victor Wembanyama,V WEMBANYAMA,basketballBig,San Antonio Spurs,SAS,C,96,platinum,,no,
+basketball,mia-giannis-antetokounmpo,Giannis Antetokounmpo,G ANTETOKOUNMPO,basketballWing,Miami Heat,MIA,PF,95,platinum,,no,
+basketball,bos-jayson-tatum,Jayson Tatum,J TATUM,basketballWing,Boston Celtics,BOS,SF/PF,94,platinum,,no,
+basketball,min-anthony-edwards,Anthony Edwards,A EDWARDS,basketballGuard,Minnesota Timberwolves,MIN,SG,93,platinum,,no,
+basketball,hou-kevin-durant,Kevin Durant,K DURANT,basketballWing,Houston Rockets,HOU,PF,93,platinum,,no,
+basketball,gsw-stephen-curry,Stephen Curry,S CURRY,basketballGuard,Golden State Warriors,GSW,PG,93,platinum,,no,
+basketball,cle-donovan-mitchell,Donovan Mitchell,D MITCHELL,basketballGuard,Cleveland Cavaliers,CLE,SG,92,platinum,,no,
+basketball,nyk-jalen-brunson,Jalen Brunson,J BRUNSON,basketballGuard,New York Knicks,NYK,PG,92,platinum,,no,
+basketball,phi-joel-embiid,Joel Embiid,J EMBIID,basketballBig,Philadelphia 76ers,PHI,C,92,platinum,,no,
+basketball,was-anthony-davis,Anthony Davis,A DAVIS,basketballBig,Washington Wizards,WAS,C/PF,91,gold,,no,
+basketball,det-cade-cunningham,Cade Cunningham,C CUNNINGHAM,basketballGuard,Detroit Pistons,DET,PG,91,gold,,no,
+basketball,phx-devin-booker,Devin Booker,D BOOKER,basketballGuard,Phoenix Suns,PHX,SG,91,gold,,no,
+basketball,cle-evan-mobley,Evan Mobley,E MOBLEY,basketballBig,Cleveland Cavaliers,CLE,PF/C,91,gold,,no,
+basketball,lal-lebron-james,LeBron James,L JAMES,basketballWing,Los Angeles Lakers,LAL,SF/PF,91,gold,,no,
+basketball,orl-paolo-banchero,Paolo Banchero,P BANCHERO,basketballWing,Orlando Magic,ORL,PF,91,gold,,no,
+basketball,tor-scottie-barnes,Scottie Barnes,S BARNES,basketballWing,Toronto Raptors,TOR,F,91,gold,,no,
+basketball,atl-trae-young,Trae Young,T YOUNG,basketballGuard,Atlanta Hawks,ATL,PG,91,gold,,no,
+basketball,hou-alperen-sengun,Alperen Sengun,A SENGUN,basketballBig,Houston Rockets,HOU,C,90,gold,,no,
+basketball,mia-bam-adebayo,Bam Adebayo,B ADEBAYO,basketballBig,Miami Heat,MIA,C,90,gold,,no,
+basketball,okc-chet-holmgren,Chet Holmgren,C HOLMGREN,basketballBig,Oklahoma City Thunder,OKC,C,90,gold,,no,
+basketball,okc-jalen-williams,Jalen Williams,J WILLIAMS,basketballWing,Oklahoma City Thunder,OKC,G/F,90,gold,,no,
+basketball,bos-jaylen-brown,Jaylen Brown,J BROWN,basketballWing,Boston Celtics,BOS,SG/SF,90,gold,,no,
+basketball,nyk-karl-anthony-towns,Karl-Anthony Towns,K TOWNS,basketballBig,New York Knicks,NYK,C,90,gold,,no,
+basketball,dal-kyrie-irving,Kyrie Irving,K IRVING,basketballGuard,Dallas Mavericks,DAL,PG,90,gold,,no,
+basketball,ind-tyrese-haliburton,Tyrese Haliburton,T HALIBURTON,basketballGuard,Indiana Pacers,IND,PG,90,gold,,no,
+basketball,phi-tyrese-maxey,Tyrese Maxey,T MAXEY,basketballGuard,Philadelphia 76ers,PHI,PG,90,gold,,no,
+basketball,sas-deaaron-fox,DeAaron Fox,D FOX,basketballGuard,San Antonio Spurs,SAS,PG,89,gold,,no,
+basketball,sac-domantas-sabonis,Domantas Sabonis,D SABONIS,basketballBig,Sacramento Kings,SAC,C,89,gold,,no,
+basketball,mem-ja-morant,Ja Morant,J MORANT,basketballGuard,Memphis Grizzlies,MEM,PG,89,gold,,no,
+basketball,gsw-jimmy-butler,Jimmy Butler,J BUTLER,basketballWing,Golden State Warriors,GSW,SF,89,gold,,no,
+basketball,lac-kawhi-leonard,Kawhi Leonard,K LEONARD,basketballWing,LA Clippers,LAC,SF,89,gold,,no,
+basketball,orl-franz-wagner,Franz Wagner,F WAGNER,basketballWing,Orlando Magic,ORL,SF,88,gold,,no,
+basketball,atl-jalen-johnson,Jalen Johnson,J JOHNSON,basketballWing,Atlanta Hawks,ATL,PF,88,gold,,no,
+basketball,den-jamal-murray,Jamal Murray,J MURRAY,basketballGuard,Denver Nuggets,DEN,PG,88,gold,,no,
+basketball,mem-jaren-jackson-jr,Jaren Jackson Jr.,J JR,basketballBig,Memphis Grizzlies,MEM,PF/C,88,gold,,no,
+basketball,cha-lamelo-ball,LaMelo Ball,L BALL,basketballGuard,Charlotte Hornets,CHA,PG,88,gold,,no,
+basketball,ind-pascal-siakam,Pascal Siakam,P SIAKAM,basketballWing,Indiana Pacers,IND,PF,88,gold,,no,
+basketball,tor-brandon-ingram,Brandon Ingram,B INGRAM,basketballWing,Toronto Raptors,TOR,SF,87,gold,,no,
+basketball,cle-darius-garland,Darius Garland,D GARLAND,basketballGuard,Cleveland Cavaliers,CLE,PG,87,gold,,no,
+basketball,orl-desmond-bane,Desmond Bane,D BANE,basketballGuard,Orlando Magic,ORL,SG,87,gold,,no,
+basketball,lac-james-harden,James Harden,J HARDEN,basketballGuard,LA Clippers,LAC,PG,87,gold,,no,
+basketball,min-julius-randle,Julius Randle,J RANDLE,basketballWing,Minnesota Timberwolves,MIN,PF,87,gold,,no,
+basketball,uta-lauri-markkanen,Lauri Markkanen,L MARKKANEN,basketballWing,Utah Jazz,UTA,F,87,gold,,no,
+basketball,mia-tyler-herro,Tyler Herro,T HERRO,basketballGuard,Miami Heat,MIA,SG,87,gold,,no,
+basketball,nop-zion-williamson,Zion Williamson,Z WILLIAMSON,basketballBig,New Orleans Pelicans,NOP,PF,87,gold,,no,
+basketball,hou-amen-thompson,Amen Thompson,A THOMPSON,basketballGuard,Houston Rockets,HOU,G/F,86,silver,,no,
+basketball,cha-brandon-miller,Brandon Miller,B MILLER,basketballWing,Charlotte Hornets,CHA,SF,86,silver,,no,
+basketball,nop-dejounte-murray,Dejounte Murray,D MURRAY,basketballGuard,New Orleans Pelicans,NOP,PG,86,silver,,no,
+basketball,bos-derrick-white,Derrick White,D WHITE,basketballGuard,Boston Celtics,BOS,G,86,silver,,no,
+basketball,cle-jarrett-allen,Jarrett Allen,J ALLEN,basketballBig,Cleveland Cavaliers,CLE,C,86,silver,,no,
+basketball,bkn-michael-porter-jr,Michael Porter Jr.,M JR,basketballWing,Brooklyn Nets,BKN,SF,86,silver,,no,
+basketball,nyk-mikal-bridges,Mikal Bridges,M BRIDGES,basketballWing,New York Knicks,NYK,SF,86,silver,,no,
+basketball,phi-paul-george,Paul George,P GEORGE,basketballWing,Philadelphia 76ers,PHI,SF,86,silver,,no,
+basketball,min-rudy-gobert,Rudy Gobert,R GOBERT,basketballBig,Minnesota Timberwolves,MIN,C,86,silver,,no,
+basketball,sac-zach-lavine,Zach LaVine,Z LAVINE,basketballGuard,Sacramento Kings,SAC,SG,86,silver,,no,
+basketball,sac-demar-derozan,DeMar DeRozan,D DEROZAN,basketballWing,Sacramento Kings,SAC,SF,85,silver,,no,
+basketball,nyk-og-anunoby,OG Anunoby,O ANUNOBY,basketballWing,New York Knicks,NYK,F,85,silver,,no,
+basketball,den-aaron-gordon,Aaron Gordon,A GORDON,basketballWing,Denver Nuggets,DEN,PF,84,silver,,no,
+basketball,lac-bradley-beal,Bradley Beal,B BEAL,basketballGuard,LA Clippers,LAC,SG,84,silver,,no,
+basketball,bkn-cam-thomas,Cam Thomas,C THOMAS,basketballGuard,Brooklyn Nets,BKN,SG,84,silver,,no,
+basketball,chi-coby-white,Coby White,C WHITE,basketballGuard,Chicago Bulls,CHI,PG,84,silver,,no,
+basketball,dal-cooper-flagg,Cooper Flagg,C FLAGG,basketballWing,Dallas Mavericks,DAL,F,84,silver,,no,
+basketball,was-deandre-ayton,Deandre Ayton,D AYTON,basketballBig,Washington Wizards,WAS,C,84,silver,,no,
+basketball,por-deni-avdija,Deni Avdija,D AVDIJA,basketballWing,Portland Trail Blazers,POR,F,84,silver,,no,
+basketball,det-jaden-ivey,Jaden Ivey,J IVEY,basketballGuard,Detroit Pistons,DET,SG,84,silver,,no,
+basketball,phx-jalen-green,Jalen Green,J GREEN,basketballGuard,Phoenix Suns,PHX,G,84,silver,,no,
+basketball,chi-josh-giddey,Josh Giddey,J GIDDEY,basketballGuard,Chicago Bulls,CHI,G/F,84,silver,,no,
+basketball,atl-kristaps-porzingis,Kristaps Porzingis,K PORZINGIS,basketballBig,Atlanta Hawks,ATL,C,84,silver,,no,
+basketball,tor-rj-barrett,RJ Barrett,R BARRETT,basketballWing,Toronto Raptors,TOR,G/F,84,silver,,no,
+basketball,nop-trey-murphy-iii,Trey Murphy III,T III,basketballWing,New Orleans Pelicans,NOP,SF,84,silver,,no,
+basketball,lal-austin-reaves,Austin Reaves,A REAVES,basketballGuard,Los Angeles Lakers,LAL,G,83,silver,,no,
+basketball,gsw-draymond-green,Draymond Green,D GREEN,basketballBig,Golden State Warriors,GSW,PF/C,83,silver,,no,
+basketball,sas-stephon-castle,Stephon Castle,S CASTLE,basketballGuard,San Antonio Spurs,SAS,G,83,silver,,no,
+basketball,uta-ace-bailey,Ace Bailey,A BAILEY,basketballWing,Utah Jazz,UTA,F,82,silver,,no,
+basketball,okc-alex-caruso,Alex Caruso,A CARUSO,basketballGuard,Oklahoma City Thunder,OKC,G,82,silver,,no,
+basketball,mem-cameron-boozer,Cameron Boozer,C BOOZER,basketballWing,Memphis Grizzlies,MEM,F,82,silver,,no,
+basketball,sas-devin-vassell,Devin Vassell,D VASSELL,basketballWing,San Antonio Spurs,SAS,G/F,82,silver,,no,
+basketball,tor-immanuel-quickley,Immanuel Quickley,I QUICKLEY,basketballGuard,Toronto Raptors,TOR,PG,82,silver,,no,
+basketball,lac-ivica-zubac,Ivica Zubac,I ZUBAC,basketballBig,LA Clippers,LAC,C,82,silver,,no,
+basketball,orl-jalen-suggs,Jalen Suggs,J SUGGS,basketballGuard,Orlando Magic,ORL,G,82,silver,,no,
+basketball,gsw-jonathan-kuminga,Jonathan Kuminga,J KUMINGA,basketballWing,Golden State Warriors,GSW,F,82,silver,,no,
+basketball,nyk-josh-hart,Josh Hart,J HART,basketballWing,New York Knicks,NYK,G/F,82,silver,,no,
+basketball,dal-klay-thompson,Klay Thompson,K THOMPSON,basketballGuard,Dallas Mavericks,DAL,SG,82,silver,,no,
+basketball,cha-miles-bridges,Miles Bridges,M BRIDGES,basketballWing,Charlotte Hornets,CHA,SF/PF,82,silver,,no,
+basketball,mil-nate-ament,Nate Ament,N AMENT,basketballWing,Milwaukee Bucks,MIL,F,82,silver,,no,
+basketball,min-naz-reid,Naz Reid,N REID,basketballBig,Minnesota Timberwolves,MIN,C/F,82,silver,,no,
+basketball,bkn-nic-claxton,Nic Claxton,N CLAXTON,basketballBig,Brooklyn Nets,BKN,C,82,silver,,no,
+basketball,chi-nikola-vucevic,Nikola Vucevic,N VUCEVIC,basketballBig,Chicago Bulls,CHI,C,82,silver,,no,
+basketball,bos-payton-pritchard,Payton Pritchard,P PRITCHARD,basketballGuard,Boston Celtics,BOS,PG,82,silver,,no,
+basketball,por-scoot-henderson,Scoot Henderson,S HENDERSON,basketballGuard,Portland Trail Blazers,POR,PG,82,silver,,no,
+basketball,ind-andrew-nembhard,Andrew Nembhard,A NEMBHARD,basketballGuard,Indiana Pacers,IND,G,81,silver,,no,
+basketball,det-ausar-thompson,Ausar Thompson,A THOMPSON,basketballWing,Detroit Pistons,DET,SF,81,silver,,no,
+basketball,den-cam-johnson,Cam Johnson,C JOHNSON,basketballWing,Denver Nuggets,DEN,SF,81,silver,,no,
+basketball,min-jaden-mcdaniels,Jaden McDaniels,J MCDANIELS,basketballWing,Minnesota Timberwolves,MIN,SF,81,silver,,no,
+basketball,sac-keegan-murray,Keegan Murray,K MURRAY,basketballWing,Sacramento Kings,SAC,F,81,silver,,no,
+basketball,mil-kyle-kuzma,Kyle Kuzma,K KUZMA,basketballWing,Milwaukee Bucks,MIL,F,81,silver,,no,
+basketball,por-shaedon-sharpe,Shaedon Sharpe,S SHARPE,basketballGuard,Portland Trail Blazers,POR,G,81,silver,,no,
+basketball,det-tobias-harris,Tobias Harris,T HARRIS,basketballWing,Detroit Pistons,DET,PF,81,silver,,no,
+basketball,was-bilal-coulibaly,Bilal Coulibaly,B COULIBALY,basketballWing,Washington Wizards,WAS,F,80,silver,,no,
+basketball,phx-dillon-brooks,Dillon Brooks,D BROOKS,basketballWing,Phoenix Suns,PHX,SF,80,silver,,no,
+basketball,tor-jakob-poeltl,Jakob Poeltl,J POELTL,basketballBig,Toronto Raptors,TOR,C,80,silver,,no,
+basketball,phi-jared-mccain,Jared McCain,J MCCAIN,basketballGuard,Philadelphia 76ers,PHI,G,80,silver,,no,
+basketball,por-jerami-grant,Jerami Grant,J GRANT,basketballWing,Portland Trail Blazers,POR,F,80,silver,,no,
+basketball,uta-keyonte-george,Keyonte George,K GEORGE,basketballGuard,Utah Jazz,UTA,G,80,silver,,no,
+basketball,mem-zach-edey,Zach Edey,Z EDEY,basketballBig,Memphis Grizzlies,MEM,C,80,silver,,no,
+basketball,ind-aaron-nesmith,Aaron Nesmith,A NESMITH,basketballWing,Indiana Pacers,IND,SF,79,bronze,,no,
+basketball,was-alex-sarr,Alex Sarr,A SARR,basketballWing,Washington Wizards,WAS,F/C,79,bronze,,no,
+basketball,orl-anthony-black,Anthony Black,A BLACK,basketballGuard,Orlando Magic,ORL,G,79,bronze,,no,
+basketball,ind-bennedict-mathurin,Bennedict Mathurin,B MATHURIN,basketballGuard,Indiana Pacers,IND,G/F,79,bronze,,no,
+basketball,mil-bobby-portis,Bobby Portis,B PORTIS,basketballBig,Milwaukee Bucks,MIL,PF/C,79,bronze,,no,
+basketball,lac-bogdan-bogdanovic,Bogdan Bogdanovic,B BOGDANOVIC,basketballGuard,LA Clippers,LAC,G,79,bronze,,no,
+basketball,den-christian-braun,Christian Braun,C BRAUN,basketballGuard,Denver Nuggets,DEN,G/F,79,bronze,,no,
+basketball,dal-daniel-gafford,Daniel Gafford,D GAFFORD,basketballBig,Dallas Mavericks,DAL,C,79,bronze,,no,
+basketball,cle-deandre-hunter,DeAndre Hunter,D HUNTER,basketballWing,Cleveland Cavaliers,CLE,SF,79,bronze,,no,
+basketball,phx-grayson-allen,Grayson Allen,G ALLEN,basketballGuard,Phoenix Suns,PHX,G,79,bronze,,no,
+basketball,nop-herb-jones,Herb Jones,H JONES,basketballWing,New Orleans Pelicans,NOP,SF,79,bronze,,no,
+basketball,hou-jabari-smith-jr,Jabari Smith Jr.,J JR,basketballWing,Houston Rockets,HOU,PF,79,bronze,,no,
+basketball,det-jalen-duren,Jalen Duren,J DUREN,basketballBig,Detroit Pistons,DET,C,79,bronze,,no,
+basketball,mia-kelel-ware,Kelel Ware,K WARE,basketballBig,Miami Heat,MIA,C,79,bronze,,no,
+basketball,okc-lu-dort,Lu Dort,L DORT,basketballWing,Oklahoma City Thunder,OKC,G/F,79,bronze,,no,
+basketball,chi-matas-buzelis,Matas Buzelis,M BUZELIS,basketballWing,Chicago Bulls,CHI,F,79,bronze,,no,
+basketball,atl-nickeil-alexander-walker,Nickeil Alexander-Walker,N ALEXANDER-WALKER,basketballGuard,Atlanta Hawks,ATL,SG,79,bronze,,no,
+basketball,atl-onyeka-okongwu,Onyeka Okongwu,O OKONGWU,basketballBig,Atlanta Hawks,ATL,C,79,bronze,,no,
+basketball,dal-pj-washington,PJ Washington,P WASHINGTON,basketballWing,Dallas Mavericks,DAL,PF,79,bronze,,no,
+basketball,lal-rui-hachimura,Rui Hachimura,R HACHIMURA,basketballWing,Los Angeles Lakers,LAL,F,79,bronze,,no,
+basketball,mem-santi-aldama,Santi Aldama,S ALDAMA,basketballWing,Memphis Grizzlies,MEM,F/C,79,bronze,,no,
+basketball,bkn-terance-mann,Terance Mann,T MANN,basketballGuard,Brooklyn Nets,BKN,G,79,bronze,,no,
+basketball,uta-walker-kessler,Walker Kessler,W KESSLER,basketballBig,Utah Jazz,UTA,C,79,bronze,,no,
+basketball,chi-ayo-dosunmu,Ayo Dosunmu,A DOSUNMU,basketballGuard,Chicago Bulls,CHI,G,78,bronze,,no,
+basketball,gsw-brandin-podziemski,Brandin Podziemski,B PODZIEMSKI,basketballGuard,Golden State Warriors,GSW,G,78,bronze,,no,
+basketball,dal-dereck-lively-ii,Dereck Lively II,D II,basketballBig,Dallas Mavericks,DAL,C,78,bronze,,no,
+basketball,por-donovan-clingan,Donovan Clingan,D CLINGAN,basketballBig,Portland Trail Blazers,POR,C,78,bronze,,no,
+basketball,orl-goga-bitadze,Goga Bitadze,G BITADZE,basketballBig,Orlando Magic,ORL,C,78,bronze,,no,
+basketball,sas-harrison-barnes,Harrison Barnes,H BARNES,basketballWing,San Antonio Spurs,SAS,F,78,bronze,,no,
+basketball,mia-jaime-jaquez-jr,Jaime Jaquez Jr.,J JR,basketballWing,Miami Heat,MIA,F,78,bronze,,no,
+basketball,mil-kevin-porter-jr,Kevin Porter Jr.,K JR,basketballGuard,Milwaukee Bucks,MIL,G,78,bronze,,no,
+basketball,cha-kon-knueppel,Kon Knueppel,K KNUEPPEL,basketballGuard,Charlotte Hornets,CHA,G/F,78,bronze,,no,
+basketball,lal-marcus-smart,Marcus Smart,M SMART,basketballGuard,Los Angeles Lakers,LAL,G,78,bronze,,no,
+basketball,cle-max-strus,Max Strus,M STRUS,basketballWing,Cleveland Cavaliers,CLE,G/F,78,bronze,,no,
+basketball,ind-obi-toppin,Obi Toppin,O TOPPIN,basketballBig,Indiana Pacers,IND,PF,78,bronze,,no,
+basketball,sac-precious-achiuwa,Precious Achiuwa,P ACHIUWA,basketballBig,Sacramento Kings,SAC,F/C,78,bronze,,no,
+basketball,was-tre-johnson,Tre Johnson,T JOHNSON,basketballGuard,Washington Wizards,WAS,G,78,bronze,,no,
+basketball,nop-yves-missi,Yves Missi,Y MISSI,basketballBig,New Orleans Pelicans,NOP,C,78,bronze,,no,
+basketball,atl-zaccharie-risacher,Zaccharie Risacher,Z RISACHER,basketballWing,Atlanta Hawks,ATL,SF,78,bronze,,no,
+basketball,nyk-jose-alvarado,Jose Alvarado,J ALVARADO,basketballGuard,New York Knicks,NYK,G,77,bronze,,no,
+basketball,gsw-moses-moody,Moses Moody,M MOODY,basketballWing,Golden State Warriors,GSW,G/F,77,bronze,,no,
+basketball,bos-neemias-queta,Neemias Queta,N QUETA,basketballBig,Boston Celtics,BOS,C,77,bronze,,no,
+basketball,bkn-noah-clowney,Noah Clowney,N CLOWNEY,basketballWing,Brooklyn Nets,BKN,F,77,bronze,,no,
+basketball,det-ron-holland,Ron Holland,R HOLLAND,basketballWing,Detroit Pistons,DET,F,77,bronze,,no,
+basketball,phx-ryan-dunn,Ryan Dunn,R DUNN,basketballWing,Phoenix Suns,PHX,F,77,bronze,,no,
+basketball,phi-adem-bona,Adem Bona,A BONA,basketballBig,Philadelphia 76ers,PHI,F/C,76,bronze,,no,
+basketball,was-bub-carrington,Bub Carrington,B CARRINGTON,basketballGuard,Washington Wizards,WAS,G,76,bronze,,no,
+basketball,mil-cole-anthony,Cole Anthony,C ANTHONY,basketballGuard,Milwaukee Bucks,MIL,G,76,bronze,,no,
+basketball,mia-davion-mitchell,Davion Mitchell,D MITCHELL,basketballGuard,Miami Heat,MIA,G,76,bronze,,no,
+basketball,nop-jordan-hawkins,Jordan Hawkins,J HAWKINS,basketballGuard,New Orleans Pelicans,NOP,G,76,bronze,,no,
+basketball,den-julian-strawther,Julian Strawther,J STRAWTHER,basketballGuard,Denver Nuggets,DEN,G/F,76,bronze,,no,
+basketball,hou-reed-sheppard,Reed Sheppard,R SHEPPARD,basketballGuard,Houston Rockets,HOU,G,76,bronze,,no,
+basketball,por-robert-williams-iii,Robert Williams III,R III,basketballBig,Portland Trail Blazers,POR,C,76,bronze,,no,
+basketball,bos-baylor-scheierman,Baylor Scheierman,B SCHEIERMAN,basketballWing,Boston Celtics,BOS,G/F,75,bronze,,no,
+basketball,lac-nicolas-batum,Nicolas Batum,N BATUM,basketballWing,LA Clippers,LAC,G/F,75,bronze,,no,
+basketball,mem-scotty-pippen-jr,Scotty Pippen Jr.,S JR,basketballGuard,Memphis Grizzlies,MEM,G,75,bronze,,no,
+basketball,hou-steven-adams,Steven Adams,S ADAMS,basketballBig,Houston Rockets,HOU,C,75,bronze,,no,
+basketball,phi-dominick-barlow,Dominick Barlow,D BARLOW,basketballWing,Philadelphia 76ers,PHI,F,74,bronze,,no,
+basketball,tor-gradey-dick,Gradey Dick,G DICK,basketballGuard,Toronto Raptors,TOR,G/F,74,bronze,,no,
+basketball,lal-jaxson-hayes,Jaxson Hayes,J HAYES,basketballBig,Los Angeles Lakers,LAL,C,74,bronze,,no,
+basketball,cha-moussa-diabate,Moussa Diabate,M DIABATE,basketballBig,Charlotte Hornets,CHA,C,74,bronze,,no,
+basketball,phx-oso-ighodaro,Oso Ighodaro,O IGHODARO,basketballBig,Phoenix Suns,PHX,F/C,74,bronze,,no,
+basketball,sac-darius-acuff-jr,Darius Acuff Jr.,D JR,basketballGuard,Sacramento Kings,SAC,G,73,bronze,,no,
+basketball,uta-trey-alexander,Trey Alexander,T ALEXANDER,basketballGuard,Utah Jazz,UTA,G,73,bronze,,no,
+basketball,sas-bismack-biyombo,Bismack Biyombo,B BIYOMBO,basketballBig,San Antonio Spurs,SAS,C,72,bronze,,no,
+basketball,okc-brooks-barnhizer,Brooks Barnhizer,B BARNHIZER,basketballGuard,Oklahoma City Thunder,OKC,G,72,bronze,,no,
+basketball,cha-kylan-boswell,Kylan Boswell,K BOSWELL,basketballGuard,Charlotte Hornets,CHA,G,72,bronze,,no,
+basketball,min-rob-dillingham,Rob Dillingham,R DILLINGHAM,basketballGuard,Minnesota Timberwolves,MIN,G,72,bronze,,no,
+basketball,chi-tobe-awaka,Tobe Awaka,T AWAKA,basketballWing,Chicago Bulls,CHI,F/C,72,bronze,,no,
+basketball,bkn-tyler-bilodeau,Tyler Bilodeau,T BILODEAU,basketballBig,Brooklyn Nets,BKN,F/C,72,bronze,,no,
+basketball,mil-alex-antetokounmpo,Alex Antetokounmpo,A ANTETOKOUNMPO,basketballBig,Milwaukee Bucks,MIL,F,70,bronze,,no,
+basketball,uta-tamar-bates,Tamar Bates,T BATES,basketballGuard,Utah Jazz,UTA,G,70,bronze,,no,
+tennis,aryna-sabalenka,Aryna Sabalenka,A SABALENKA,tennisSingles,INT,INT,powerBaseliner,96,platinum,Ends points early with raw power,no,
+tennis,jannik-sinner,Jannik Sinner,J SINNER,tennisSingles,INT,INT,allCourtRival,96,platinum,Complete all-court pressure without a weak zone,no,
+tennis,alexander-zverev,Alexander Zverev,A ZVEREV,tennisSingles,INT,INT,powerBaseliner,94,platinum,Big serve into an immediate forehand,no,
+tennis,carlos-alcaraz,Carlos Alcaraz,C ALCARAZ,tennisSingles,INT,INT,allCourtRival,94,platinum,Raises another level in the big moments,no,
+tennis,elena-rybakina,Elena Rybakina,E RYBAKINA,tennisSingles,INT,INT,powerBaseliner,94,platinum,Flattens the ball and takes time away,no,
+tennis,jessica-pegula,Jessica Pegula,J PEGULA,tennisSingles,INT,INT,allRounder,94,platinum,Solid from everywhere with no clear hole,no,
+tennis,alex-de-minaur,Alex de Minaur,A MINAUR,tennisSingles,INT,INT,speedDefender,92,platinum,Relentless legs deep behind the baseline,no,
+tennis,coco-gauff,Coco Gauff,C GAUFF,tennisSingles,INT,INT,speedDefender,92,platinum,Turns defence into offence in one step,no,
+tennis,felix-auger-aliassime,Félix Auger-Aliassime,F AUGER-ALIASSIME,tennisSingles,INT,INT,serveAndVolley,92,platinum,Fast serve followed by decisive net pressure,no,
+tennis,mirra-andreeva,Mirra Andreeva,M ANDREEVA,tennisSingles,INT,INT,allCourtRival,92,platinum,Elite in every phase of the point,no,
+tennis,amanda-anisimova,Amanda Anisimova,A ANISIMOVA,tennisSingles,INT,INT,powerBaseliner,89,gold,Big serve into an immediate forehand,no,
+tennis,ben-shelton,Ben Shelton,B SHELTON,tennisSingles,INT,INT,powerBaseliner,89,gold,Ends points early with raw power,no,
+tennis,daniil-medvedev,Daniil Medvedev,D MEDVEDEV,tennisSingles,INT,INT,speedDefender,89,gold,Absorbs pace and resets the point,no,
+tennis,elina-svitolina,Elina Svitolina,E SVITOLINA,tennisSingles,INT,INT,speedDefender,89,gold,Turns defence into offence in one step,no,
+tennis,flavio-cobolli,Flavio Cobolli,F COBOLLI,tennisSingles,INT,INT,allRounder,89,gold,Solid from everywhere with no clear hole,no,
+tennis,iga-swiatek,Iga Swiatek,I SWIATEK,tennisSingles,INT,INT,spinSpecialist,89,gold,Sharp angles and disruptive changes of pace,no,
+tennis,karolina-muchova,Karolina Muchova,K MUCHOVA,tennisSingles,INT,INT,serveAndVolley,89,gold,Cuts the rally short with soft touch,no,
+tennis,linda-noskova,Linda Noskova,L NOSKOVA,tennisSingles,INT,INT,powerBaseliner,89,gold,Ends points early with raw power,no,
+tennis,novak-djokovic,Novak Djokovic,N DJOKOVIC,tennisSingles,INT,INT,allCourtRival,89,gold,Complete all-court pressure without a weak zone,no,
+tennis,taylor-fritz,Taylor Fritz,T FRITZ,tennisSingles,INT,INT,powerBaseliner,89,gold,Flattens the ball and takes time away,no,
+tennis,alejandro-davidovich-fokina,Alejandro Davidovich Fokina,A FOKINA,tennisSingles,INT,INT,speedDefender,85,silver,Absorbs pace and resets the point,no,
+tennis,alexander-bublik,Alexander Bublik,A BUBLIK,tennisSingles,INT,INT,serveAndVolley,85,silver,Chips and charges at every opening,no,
+tennis,andrey-rublev,Andrey Rublev,A RUBLEV,tennisSingles,INT,INT,powerBaseliner,85,silver,Ends points early with raw power,no,
+tennis,anna-kalinskaya,Anna Kalinskaya,A KALINSKAYA,tennisSingles,INT,INT,allRounder,85,silver,Clean fundamentals under pressure,no,
+tennis,belinda-bencic,Belinda Bencic,B BENCIC,tennisSingles,INT,INT,allRounder,85,silver,Solid from everywhere with no clear hole,no,
+tennis,casper-ruud,Casper Ruud,C RUUD,tennisSingles,INT,INT,spinSpecialist,85,silver,Heavy topspin that climbs off the bounce,no,
+tennis,diana-shnaider,Diana Shnaider,D SHNAIDER,tennisSingles,INT,INT,powerBaseliner,85,silver,Heavy first strike from the baseline,no,
+tennis,ekaterina-alexandrova,Ekaterina Alexandrova,E ALEXANDROVA,tennisSingles,INT,INT,powerBaseliner,85,silver,Flattens the ball and takes time away,no,
+tennis,frances-tiafoe,Frances Tiafoe,F TIAFOE,tennisSingles,INT,INT,allRounder,85,silver,Balanced timing and reliable recovery,no,
+tennis,iva-jovic,Iva Jovic,I JOVIC,tennisSingles,INT,INT,allRounder,85,silver,Steady rhythm that wears opponents down,no,
+tennis,jakub-mensik,Jakub Menšík,J MENŠÍK,tennisSingles,INT,INT,powerBaseliner,85,silver,Big serve into an immediate forehand,no,
+tennis,jasmine-paolini,Jasmine Paolini,J PAOLINI,tennisSingles,INT,INT,speedDefender,85,silver,Turns defence into offence in one step,no,
+tennis,jiri-lehecka,Jiří Lehečka,J LEHEČKA,tennisSingles,INT,INT,powerBaseliner,85,silver,Big serve into an immediate forehand,no,
+tennis,learner-tien,Learner Tien,L TIEN,tennisSingles,INT,INT,speedDefender,85,silver,Covers the court and outlasts the rally,no,
+tennis,lorenzo-musetti,Lorenzo Musetti,L MUSETTI,tennisSingles,INT,INT,spinSpecialist,85,silver,Heavy topspin that climbs off the bounce,no,
+tennis,luciano-darderi,Luciano Darderi,L DARDERI,tennisSingles,INT,INT,spinSpecialist,85,silver,Never gives the same ball twice,no,
+tennis,marta-kostyuk,Marta Kostyuk,M KOSTYUK,tennisSingles,INT,INT,allRounder,85,silver,Adapts the plan as the match turns,no,
+tennis,naomi-osaka,Naomi Osaka,N OSAKA,tennisSingles,INT,INT,powerBaseliner,85,silver,Ends points early with raw power,no,
+tennis,sorana-cirstea,Sorana Cirstea,S CIRSTEA,tennisSingles,INT,INT,powerBaseliner,85,silver,Flattens the ball and takes time away,no,
+tennis,victoria-mboko,Victoria Mboko,V MBOKO,tennisSingles,INT,INT,powerBaseliner,85,silver,Flattens the ball and takes time away,no,
+tennis,alejandro-tabilo,Alejandro Tabilo,A TABILO,tennisSingles,INT,INT,allRounder,81,silver,Steady rhythm that wears opponents down,no,
+tennis,ann-li,Ann Li,A LI,tennisSingles,INT,INT,allRounder,81,silver,Balanced timing and reliable recovery,no,
+tennis,arthur-fils,Arthur Fils,A FILS,tennisSingles,INT,INT,powerBaseliner,81,silver,Big serve into an immediate forehand,no,
+tennis,arthur-rinderknech,Arthur Rinderknech,A RINDERKNECH,tennisSingles,INT,INT,serveAndVolley,81,silver,Wins the short points with clean hands,no,
+tennis,barbora-krejcikova,Barbora Krejcikova,B KREJCIKOVA,tennisSingles,INT,INT,serveAndVolley,81,silver,Cuts the rally short with soft touch,no,
+tennis,brandon-nakashima,Brandon Nakashima,B NAKASHIMA,tennisSingles,INT,INT,allRounder,81,silver,Solid from everywhere with no clear hole,no,
+tennis,clara-tauson,Clara Tauson,C TAUSON,tennisSingles,INT,INT,powerBaseliner,81,silver,Flattens the ball and takes time away,no,
+tennis,cristina-bucsa,Cristina Bucsa,C BUCSA,tennisSingles,INT,INT,spinSpecialist,81,silver,Carves the court open with shape and slice,no,
+tennis,donna-vekic,Donna Vekic,D VEKIC,tennisSingles,INT,INT,powerBaseliner,81,silver,Overwhelming pace off both wings,no,
+tennis,emma-raducanu,Emma Raducanu,E RADUCANU,tennisSingles,INT,INT,allRounder,81,silver,Adapts the plan as the match turns,no,
+tennis,francisco-cerundolo,Francisco Cerundolo,F CERUNDOLO,tennisSingles,INT,INT,spinSpecialist,81,silver,Never gives the same ball twice,no,
+tennis,hailey-baptiste,Hailey Baptiste,H BAPTISTE,tennisSingles,INT,INT,allRounder,81,silver,Solid from everywhere with no clear hole,no,
+tennis,ignacio-buse,Ignacio Buse,I BUSE,tennisSingles,INT,INT,spinSpecialist,81,silver,Heavy topspin that climbs off the bounce,no,
+tennis,janice-tjen,Janice Tjen,J TJEN,tennisSingles,INT,INT,allRounder,81,silver,Solid from everywhere with no clear hole,no,
+tennis,jaqueline-cristian,Jaqueline Cristian,J CRISTIAN,tennisSingles,INT,INT,speedDefender,81,silver,Relentless legs deep behind the baseline,no,
+tennis,jelena-ostapenko,Jelena Ostapenko,J OSTAPENKO,tennisSingles,INT,INT,powerBaseliner,81,silver,Overwhelming pace off both wings,no,
+tennis,joao-fonseca,Joao Fonseca,J FONSECA,tennisSingles,INT,INT,powerBaseliner,81,silver,Heavy first strike from the baseline,no,
+tennis,karen-khachanov,Karen Khachanov,K KHACHANOV,tennisSingles,INT,INT,powerBaseliner,81,silver,Flattens the ball and takes time away,no,
+tennis,katerina-siniakova,Katerina Siniakova,K SINIAKOVA,tennisSingles,INT,INT,serveAndVolley,81,silver,Wins the short points with clean hands,no,
+tennis,maja-chwalinska,Maja Chwalinska,M CHWALINSKA,tennisSingles,INT,INT,spinSpecialist,81,silver,Sharp angles and disruptive changes of pace,no,
+tennis,maria-sakkari,Maria Sakkari,M SAKKARI,tennisSingles,INT,INT,speedDefender,81,silver,Relentless legs deep behind the baseline,no,
+tennis,marie-bouzkova,Marie Bouzkova,M BOUZKOVA,tennisSingles,INT,INT,speedDefender,81,silver,Covers the court and outlasts the rally,no,
+tennis,matteo-arnaldi,Matteo Arnaldi,M ARNALDI,tennisSingles,INT,INT,allRounder,81,silver,Solid from everywhere with no clear hole,no,
+tennis,rafael-jodar,Rafael Jodar,R JODAR,tennisSingles,INT,INT,allRounder,81,silver,Adapts the plan as the match turns,no,
+tennis,tomas-martin-etcheverry,Tomas Martin Etcheverry,T ETCHEVERRY,tennisSingles,INT,INT,spinSpecialist,81,silver,Never gives the same ball twice,no,
+tennis,tommy-paul,Tommy Paul,T PAUL,tennisSingles,INT,INT,speedDefender,81,silver,Elite retrieval and counterattack speed,no,
+tennis,ugo-humbert,Ugo Humbert,U HUMBERT,tennisSingles,INT,INT,serveAndVolley,81,silver,Fast serve followed by decisive net pressure,no,
+tennis,valentin-vacherot,Valentin Vacherot,V VACHEROT,tennisSingles,INT,INT,allRounder,81,silver,Balanced timing and reliable recovery,no,
+tennis,wang-xinyu,Wang Xinyu,W XINYU,tennisSingles,INT,INT,powerBaseliner,81,silver,Big serve into an immediate forehand,no,
+tennis,zizou-bergs,Zizou Bergs,Z BERGS,tennisSingles,INT,INT,powerBaseliner,81,silver,Overwhelming pace off both wings,no,
+tennis,adrian-mannarino,Adrian Mannarino,A MANNARINO,tennisSingles,INT,INT,speedDefender,78,bronze,Turns defence into offence in one step,no,
+tennis,alex-michelsen,Alex Michelsen,A MICHELSEN,tennisSingles,INT,INT,allRounder,78,bronze,Clean fundamentals under pressure,no,
+tennis,alexander-blockx,Alexander Blockx,A BLOCKX,tennisSingles,INT,INT,allRounder,78,bronze,Solid from everywhere with no clear hole,no,
+tennis,anhelina-kalinina,Anhelina Kalinina,A KALININA,tennisSingles,INT,INT,speedDefender,78,bronze,Turns defence into offence in one step,no,
+tennis,antonia-ruzic,Antonia Ruzic,A RUZIC,tennisSingles,INT,INT,spinSpecialist,78,bronze,Never gives the same ball twice,no,
+tennis,arthur-fery,Arthur Fery,A FERY,tennisSingles,INT,INT,allRounder,78,bronze,Balanced timing and reliable recovery,no,
+tennis,cameron-norrie,Cameron Norrie,C NORRIE,tennisSingles,INT,INT,speedDefender,78,bronze,Turns defence into offence in one step,no,
+tennis,caty-mcnally,Caty McNally,C MCNALLY,tennisSingles,INT,INT,serveAndVolley,78,bronze,Fast serve followed by decisive net pressure,no,
+tennis,corentin-moutet,Corentin Moutet,C MOUTET,tennisSingles,INT,INT,speedDefender,78,bronze,Turns defence into offence in one step,no,
+tennis,denis-shapovalov,Denis Shapovalov,D SHAPOVALOV,tennisSingles,INT,INT,powerBaseliner,78,bronze,Big serve into an immediate forehand,no,
+tennis,ethan-quinn,Ethan Quinn,E QUINN,tennisSingles,INT,INT,powerBaseliner,78,bronze,Overwhelming pace off both wings,no,
+tennis,jan-lennard-struff,Jan-Lennard Struff,J STRUFF,tennisSingles,INT,INT,serveAndVolley,78,bronze,Cuts the rally short with soft touch,no,
+tennis,jaume-munar,Jaume Munar,J MUNAR,tennisSingles,INT,INT,speedDefender,78,bronze,Covers the court and outlasts the rally,no,
+tennis,juan-manuel-cerundolo,Juan Manuel Cerundolo,J CERUNDOLO,tennisSingles,INT,INT,spinSpecialist,78,bronze,Never gives the same ball twice,no,
+tennis,leylah-fernandez,Leylah Fernandez,L FERNANDEZ,tennisSingles,INT,INT,speedDefender,78,bronze,Turns defence into offence in one step,no,
+tennis,magdalena-frech,Magdalena Frech,M FRECH,tennisSingles,INT,INT,speedDefender,78,bronze,Covers the court and outlasts the rally,no,
+tennis,mariano-navone,Mariano Navone,M NAVONE,tennisSingles,INT,INT,spinSpecialist,78,bronze,Sharp angles and disruptive changes of pace,no,
+tennis,matteo-berrettini,Matteo Berrettini,M BERRETTINI,tennisSingles,INT,INT,powerBaseliner,78,bronze,Heavy first strike from the baseline,no,
+tennis,mccartney-kessler,McCartney Kessler,M KESSLER,tennisSingles,INT,INT,allRounder,78,bronze,Adapts the plan as the match turns,no,
+tennis,nikola-bartunkova,Nikola Bartunkova,N BARTUNKOVA,tennisSingles,INT,INT,allRounder,78,bronze,Clean fundamentals under pressure,no,
+tennis,paula-badosa,Paula Badosa,P BADOSA,tennisSingles,INT,INT,powerBaseliner,78,bronze,Ends points early with raw power,no,
+tennis,petra-marcinko,Petra Marcinko,P MARCINKO,tennisSingles,INT,INT,allRounder,78,bronze,Adapts the plan as the match turns,no,
+tennis,peyton-stearns,Peyton Stearns,P STEARNS,tennisSingles,INT,INT,powerBaseliner,78,bronze,Ends points early with raw power,no,
+tennis,raphael-collignon,Raphael Collignon,R COLLIGNON,tennisSingles,INT,INT,allRounder,78,bronze,Clean fundamentals under pressure,no,
+tennis,sara-bejlek,Sara Bejlek,S BEJLEK,tennisSingles,INT,INT,powerBaseliner,78,bronze,Ends points early with raw power,no,
+tennis,talia-gibson,Talia Gibson,T GIBSON,tennisSingles,INT,INT,allRounder,78,bronze,Balanced timing and reliable recovery,no,
+tennis,terence-atmane,Terence Atmane,T ATMANE,tennisSingles,INT,INT,serveAndVolley,78,bronze,Wins the short points with clean hands,no,
+tennis,tereza-valentova,Tereza Valentova,T VALENTOVA,tennisSingles,INT,INT,allRounder,78,bronze,Adapts the plan as the match turns,no,
+tennis,viktorija-golubic,Viktorija Golubic,V GOLUBIC,tennisSingles,INT,INT,speedDefender,78,bronze,Elite retrieval and counterattack speed,no,
+tennis,zeynep-sonmez,Zeynep Sonmez,Z SONMEZ,tennisSingles,INT,INT,spinSpecialist,78,bronze,Sharp angles and disruptive changes of pace,no,
+racing,lando-norris,Lando Norris,L NORRIS,f1Driver,United Kingdom,GBR,McLaren,97,platinum,Champion poise with a razor-sharp final sector,yes,assets/racing_driver_images/lando-norris.png
+racing,max-verstappen,Max Verstappen,M VERSTAPPEN,f1Driver,Netherlands,NED,Red Bull Racing,97,platinum,"Relentless in a fight, ruthless at the apex",yes,assets/racing_driver_images/max-verstappen.png
+racing,alex-palou,Álex Palou,Á PALOU,indycarDriver,Spain,ESP,Chip Ganassi Racing,96,platinum,"The sport's most complete racer, title after title",no,assets/racing_driver_images/alex-palou.png
+racing,kyle-larson,Kyle Larson,K LARSON,nascarDriver,United States,USA,Hendrick Motorsports,95,platinum,The most versatile wheelman in the Cup garage,no,assets/racing_driver_images/kyle-larson.png
+racing,oscar-piastri,Oscar Piastri,O PIASTRI,f1Driver,Australia,AUS,McLaren,95,platinum,Ice-cold execution under title pressure,yes,assets/racing_driver_images/oscar-piastri.png
+racing,charles-leclerc,Charles Leclerc,C LECLERC,f1Driver,Monaco,MON,Ferrari,93,platinum,Pole-lap magic married to Monaco precision,yes,assets/racing_driver_images/charles-leclerc.png
+racing,denny-hamlin,Denny Hamlin,D HAMLIN,nascarDriver,United States,USA,Joe Gibbs Racing,92,platinum,"Championship-calibre racecraft, still hungry",no,assets/racing_driver_images/denny-hamlin.png
+racing,george-russell,George Russell,G RUSSELL,f1Driver,United Kingdom,GBR,Mercedes,92,platinum,Metronomic pace with sharp tyre reads,yes,assets/racing_driver_images/george-russell.png
+racing,scott-dixon,Scott Dixon,S DIXON,indycarDriver,New Zealand,NZL,Chip Ganassi Racing,92,platinum,Ice-cool legend who never wastes a strategy call,no,assets/racing_driver_images/scott-dixon.png
+racing,christopher-bell,Christopher Bell,C BELL,nascarDriver,United States,USA,Joe Gibbs Racing,91,platinum,Dirt-honed car control on the biggest ovals,no,assets/racing_driver_images/christopher-bell.png
+racing,pato-oward,Pato O'Ward,P O'WARD,indycarDriver,Mexico,MEX,Arrow McLaren,91,platinum,Fearless overtaker who lives for the last lap,no,assets/racing_driver_images/pato-oward.png
+racing,josef-newgarden,Josef Newgarden,J NEWGARDEN,indycarDriver,United States,USA,Team Penske,90,platinum,Championship racecraft with a killer restart,no,assets/racing_driver_images/josef-newgarden.png
+racing,lewis-hamilton,Lewis Hamilton,L HAMILTON,f1Driver,United Kingdom,GBR,Ferrari,90,platinum,Championship-grade racecraft in Ferrari red,yes,assets/racing_driver_images/lewis-hamilton.png
+racing,william-byron,William Byron,W BYRON,nascarDriver,United States,USA,Hendrick Motorsports,90,platinum,"Smooth, fast, and building a dynasty at Hendrick",no,assets/racing_driver_images/william-byron.png
+racing,chase-elliott,Chase Elliott,C ELLIOTT,nascarDriver,United States,USA,Hendrick Motorsports,89,gold,Fan-favorite racecraft with a takes-no-prisoners edge,no,assets/racing_driver_images/chase-elliott.png
+racing,ryan-blaney,Ryan Blaney,R BLANEY,nascarDriver,United States,USA,Team Penske,89,gold,Restart artist with a nose for the front,no,assets/racing_driver_images/ryan-blaney.png
+racing,tyler-reddick,Tyler Reddick,T REDDICK,nascarDriver,United States,USA,23XI Racing,89,gold,Aggressive closer who thrives late in stages,no,assets/racing_driver_images/tyler-reddick.png
+racing,will-power,Will Power,W POWER,indycarDriver,Australia,AUS,Andretti Global,89,gold,Pole-position master with unmatched raw pace,no,assets/racing_driver_images/will-power.png
+racing,carlos-sainz,Carlos Sainz,C SAINZ,f1Driver,Spain,ESP,Williams,88,gold,"Smooth, calculated, rarely puts a wheel wrong",yes,assets/racing_driver_images/carlos-sainz.png
+racing,fernando-alonso,Fernando Alonso,F ALONSO,f1Driver,Spain,ESP,Aston Martin,88,gold,Two decades of guile still finds the gap,yes,assets/racing_driver_images/fernando-alonso.png
+racing,joey-logano,Joey Logano,J LOGANO,nascarDriver,United States,USA,Team Penske,88,gold,"Championship pedigree, ice in the closing laps",no,assets/racing_driver_images/joey-logano.png
+racing,scott-mclaughlin,Scott McLaughlin,S MCLAUGHLIN,indycarDriver,New Zealand,NZL,Team Penske,88,gold,Supercars ace translating speed into IndyCar poles,no,assets/racing_driver_images/scott-mclaughlin.png
+racing,kimi-antonelli,Kimi Antonelli,K ANTONELLI,f1Driver,Italy,ITA,Mercedes,87,gold,Prodigy pace maturing race by race,yes,assets/racing_driver_images/kimi-antonelli.png
+racing,kyle-kirkwood,Kyle Kirkwood,K KIRKWOOD,indycarDriver,United States,USA,Andretti Global,87,gold,Rising winner with a fearless overtaking streak,no,assets/racing_driver_images/kyle-kirkwood.png
+racing,sergio-perez,Sergio Pérez,S PÉREZ,f1Driver,Mexico,MEX,Cadillac,87,gold,Comeback specialist chasing a fresh podium run,yes,assets/racing_driver_images/sergio-perez.png
+racing,alexander-albon,Alexander Albon,A ALBON,f1Driver,Thailand,THA,Williams,86,gold,Squeezes podium pace from a midfield car,yes,assets/racing_driver_images/alexander-albon.png
+racing,chris-buescher,Chris Buescher,C BUESCHER,nascarDriver,United States,USA,RFK Racing,86,gold,Tyre-smart strategy wins from a lean pit box,no,assets/racing_driver_images/chris-buescher.png
+racing,alex-dunne,Alex Dunne,A DUNNE,f2Driver,Ireland,IRL,Rodin Motorsport,85,silver,McLaren junior with title-winning pace,no,assets/racing_driver_images/alex-dunne.png
+racing,christian-lundgaard,Christian Lundgaard,C LUNDGAARD,indycarDriver,Denmark,DEN,Arrow McLaren,85,silver,Smooth European precision finding its IndyCar footing,no,assets/racing_driver_images/christian-lundgaard.png
+racing,kyle-busch,Kyle Busch,K BUSCH,nascarDriver,United States,USA,Richard Childress Racing,85,silver,Two-time champion racecraft still finds victory lane,no,assets/racing_driver_images/kyle-busch.png
+racing,nico-hulkenberg,Nico Hülkenberg,N HÜLKENBERG,f1Driver,Germany,GER,Audi,85,silver,"Veteran qualifying spike, cool under contact",yes,assets/racing_driver_images/nico-hulkenberg.png
+racing,pierre-gasly,Pierre Gasly,P GASLY,f1Driver,France,FRA,Alpine,85,silver,Scrappy overtakes from a car that shouldn't allow them,yes,assets/racing_driver_images/pierre-gasly.png
+racing,ross-chastain,Ross Chastain,R CHASTAIN,nascarDriver,United States,USA,Trackhouse Racing,85,silver,"Fence-rubbing aggression, unafraid of the wall",no,assets/racing_driver_images/ross-chastain.png
+racing,alexander-rossi,Alexander Rossi,A ROSSI,indycarDriver,United States,USA,Ed Carpenter Racing,84,silver,Former winner still chasing another statement drive,no,assets/racing_driver_images/alexander-rossi.png
+racing,austin-cindric,Austin Cindric,A CINDRIC,nascarDriver,United States,USA,Team Penske,84,silver,Qualifying speed backed by playoff nerve,no,assets/racing_driver_images/austin-cindric.png
+racing,bubba-wallace,Bubba Wallace,B WALLACE,nascarDriver,United States,USA,23XI Racing,84,silver,"Explosive short-run speed, racecraft still sharpening",no,assets/racing_driver_images/bubba-wallace.png
+racing,chase-briscoe,Chase Briscoe,C BRISCOE,nascarDriver,United States,USA,Joe Gibbs Racing,84,silver,Hard-charging short-tracker settling into Cup,no,assets/racing_driver_images/chase-briscoe.png
+racing,esteban-ocon,Esteban Ocon,E OCON,f1Driver,France,FRA,Haas,84,silver,"Combative wheel-to-wheel, never backs down",yes,assets/racing_driver_images/esteban-ocon.png
+racing,isack-hadjar,Isack Hadjar,I HADJAR,f1Driver,France,FRA,Red Bull Racing,84,silver,Fearless rookie promoted straight into the fight,yes,assets/racing_driver_images/isack-hadjar.png
+racing,marcus-ericsson,Marcus Ericsson,M ERICSSON,indycarDriver,Sweden,SWE,Andretti Global,84,silver,Indy 500 winner's composure under lights,no,assets/racing_driver_images/marcus-ericsson.png
+racing,shane-van-gisbergen,Shane van Gisbergen,S GISBERGEN,nascarDriver,New Zealand,NZL,Trackhouse Racing,84,silver,Road-course wizardry translating to ovals fast,no,assets/racing_driver_images/shane-van-gisbergen.png
+racing,valtteri-bottas,Valtteri Bottas,V BOTTAS,f1Driver,Finland,FIN,Cadillac,84,silver,Steady hands rebuilding on a new grid,yes,assets/racing_driver_images/valtteri-bottas.png
+racing,alex-bowman,Alex Bowman,A BOWMAN,nascarDriver,United States,USA,Hendrick Motorsports,83,silver,"Quiet consistency, dangerous on the superspeedways",no,assets/racing_driver_images/alex-bowman.png
+racing,carson-hocevar,Carson Hocevar,C HOCEVAR,nascarDriver,United States,USA,Spire Motorsports,83,silver,"Fearless charger, wheels it harder than anyone",no,assets/racing_driver_images/carson-hocevar.png
+racing,colton-herta,Colton Herta,C HERTA,f2Driver,United States,USA,Hitech,83,silver,"American crossover speed, wise beyond his F2 mileage",no,assets/racing_driver_images/colton-herta.png
+racing,felix-rosenqvist,Felix Rosenqvist,F ROSENQVIST,indycarDriver,Sweden,SWE,Meyer Shank Racing,83,silver,Qualifying speed searching for a signature win,no,assets/racing_driver_images/felix-rosenqvist.png
+racing,graham-rahal,Graham Rahal,G RAHAL,indycarDriver,United States,USA,Rahal Letterman Lanigan Racing,83,silver,"Veteran team owner-driver, sharp on street courses",no,assets/racing_driver_images/graham-rahal.png
+racing,oliver-bearman,Oliver Bearman,O BEARMAN,f1Driver,United Kingdom,GBR,Haas,83,silver,"Cool head, quick out of the blocks",yes,assets/racing_driver_images/oliver-bearman.png
+racing,sebastian-montoya,Sebastián Montoya,S MONTOYA,f2Driver,Colombia,COL,Prema Racing,83,silver,"Racing bloodline, smooth and fast out of the box",no,assets/racing_driver_images/sebastian-montoya.png
+racing,ty-gibbs,Ty Gibbs,T GIBBS,nascarDriver,United States,USA,Joe Gibbs Racing,83,silver,Aggressive young gun with title-team backing,no,assets/racing_driver_images/ty-gibbs.png
+racing,brad-keselowski,Brad Keselowski,B KESELOWSKI,nascarDriver,United States,USA,RFK Racing,82,silver,"Former champion craft, still a stage-win threat",no,assets/racing_driver_images/brad-keselowski.png
+racing,connor-zilisch,Connor Zilisch,C ZILISCH,nascarDriver,United States,USA,Trackhouse Racing,82,silver,Record-breaking rookie sensation straight off an Xfinity title,no,assets/racing_driver_images/connor-zilisch.png
+racing,daniel-suarez,Daniel Suárez,D SUÁREZ,nascarDriver,Mexico,MEX,Spire Motorsports,82,silver,Steady hands rebuilding at a new address,no,assets/racing_driver_images/daniel-suarez.png
+racing,dino-beganovic,Dino Beganovic,D BEGANOVIC,f2Driver,Sweden,SWE,DAMS Lucas Oil,82,silver,Ferrari academy poise on a Saturday lap,no,assets/racing_driver_images/dino-beganovic.png
+racing,gabriel-bortoleto,Gabriel Bortoleto,G BORTOLETO,f1Driver,Brazil,BRA,Audi,82,silver,Rookie composure beyond his experience,yes,assets/racing_driver_images/gabriel-bortoleto.png
+racing,liam-lawson,Liam Lawson,L LAWSON,f1Driver,New Zealand,NZL,Racing Bulls,82,silver,Aggressive overtaker still sharpening the edges,yes,assets/racing_driver_images/liam-lawson.png
+racing,santino-ferrucci,Santino Ferrucci,S FERRUCCI,indycarDriver,United States,USA,A. J. Foyt Enterprises,82,silver,"Combative racecraft, always in the mix",no,assets/racing_driver_images/santino-ferrucci.png
+racing,franco-colapinto,Franco Colapinto,F COLAPINTO,f1Driver,Argentina,ARG,Alpine,81,silver,"Fearless late-braking, learning the limit",yes,assets/racing_driver_images/franco-colapinto.png
+racing,gabriele-mini,Gabriele Minì,G MINÌ,f2Driver,Italy,ITA,MP Motorsport,81,silver,"Aggressive, opportunistic, always in the fight",no,assets/racing_driver_images/gabriele-mini.png
+racing,rinus-veekay,Rinus VeeKay,R VEEKAY,indycarDriver,Netherlands,NED,Juncos Hollinger Racing,81,silver,Fearless qualifier chasing his second win,no,assets/racing_driver_images/rinus-veekay.png
+racing,romain-grosjean,Romain Grosjean,R GROSJEAN,indycarDriver,France,FRA,Dale Coyne Racing,81,silver,F1 pedigree still finds a race-winning lap,no,assets/racing_driver_images/romain-grosjean.png
+racing,josh-berry,Josh Berry,J BERRY,nascarDriver,United States,USA,Wood Brothers Racing,80,silver,Short-track toughness now racing full-time Cup,no,assets/racing_driver_images/josh-berry.png
+racing,kush-maini,Kush Maini,K MAINI,f2Driver,India,IND,ART Grand Prix,80,silver,"F2's elder statesman, steady and experienced",no,assets/racing_driver_images/kush-maini.png
+racing,marcus-armstrong,Marcus Armstrong,M ARMSTRONG,indycarDriver,New Zealand,NZL,Meyer Shank Racing,80,silver,Consistent points racer building toward a win,no,assets/racing_driver_images/marcus-armstrong.png
+racing,michael-mcdowell,Michael McDowell,M MCDOWELL,nascarDriver,United States,USA,Spire Motorsports,80,silver,Patient tyre management steals unlikely results,no,assets/racing_driver_images/michael-mcdowell.png
+racing,nikola-tsolov,Nikola Tsolov,N TSOLOV,f2Driver,Bulgaria,BUL,Campos Racing,80,silver,Alpine junior banking pole positions,no,assets/racing_driver_images/nikola-tsolov.png
+racing,noah-gragson,Noah Gragson,N GRAGSON,nascarDriver,United States,USA,Front Row Motorsports,80,silver,Aggressive short-track racer chasing his big break,no,assets/racing_driver_images/noah-gragson.png
+racing,aj-allmendinger,A. J. Allmendinger,A ALLMENDINGER,nascarDriver,United States,USA,Kaulig Racing,79,bronze,"Road-course specialist, veteran calm everywhere else",no,assets/racing_driver_images/aj-allmendinger.png
+racing,austin-dillon,Austin Dillon,A DILLON,nascarDriver,United States,USA,Richard Childress Racing,79,bronze,Championship pedigree still chasing the next win,no,assets/racing_driver_images/austin-dillon.png
+racing,david-malukas,David Malukas,D MALUKAS,indycarDriver,United States,USA,Team Penske,79,bronze,Talented returner rebuilding momentum at Penske,no,assets/racing_driver_images/david-malukas.png
+racing,lance-stroll,Lance Stroll,L STROLL,f1Driver,Canada,CAN,Aston Martin,79,bronze,Patient racer banking points in traffic,yes,assets/racing_driver_images/lance-stroll.png
+racing,mari-boya,Mari Boya,M BOYA,f2Driver,Spain,ESP,Prema Racing,79,bronze,Calculated racecraft building toward the top,no,assets/racing_driver_images/mari-boya.png
+racing,mick-schumacher,Mick Schumacher,M SCHUMACHER,indycarDriver,Germany,GER,Rahal Letterman Lanigan Racing,79,bronze,Famous name learning the ovals fast,no,assets/racing_driver_images/mick-schumacher.png
+racing,rafael-camara,Rafael Câmara,R CÂMARA,f2Driver,Brazil,BRA,Invicta Racing,79,bronze,Brazilian rookie with a big turn of speed,no,assets/racing_driver_images/rafael-camara.png
+racing,ricky-stenhouse-jr,Ricky Stenhouse Jr.,R JR.,nascarDriver,United States,USA,Hyak Motorsports,79,bronze,Restrictor-plate racer who lives for the big one,no,assets/racing_driver_images/ricky-stenhouse-jr.png
+racing,todd-gilliland,Todd Gilliland,T GILLILAND,nascarDriver,United States,USA,Front Row Motorsports,79,bronze,Steady improvement lap after lap,no,assets/racing_driver_images/todd-gilliland.png
+racing,arvid-lindblad,Arvid Lindblad,A LINDBLAD,f1Driver,United Kingdom,GBR,Racing Bulls,78,bronze,"The grid's only true rookie, thrown straight in",yes,assets/racing_driver_images/arvid-lindblad.png
+racing,christian-rasmussen,Christian Rasmussen,C RASMUSSEN,indycarDriver,Denmark,DEN,Ed Carpenter Racing,78,bronze,Aggressive rookie-turned-racer chasing his breakthrough,no,assets/racing_driver_images/christian-rasmussen.png
+racing,erik-jones,Erik Jones,E JONES,nascarDriver,United States,USA,Legacy Motor Club,78,bronze,Former winner steadying a rebuilding team,no,assets/racing_driver_images/erik-jones.png
+racing,john-hunter-nemechek,John Hunter Nemechek,J NEMECHEK,nascarDriver,United States,USA,Legacy Motor Club,78,bronze,"Short-track sharp, building a Cup résumé",no,assets/racing_driver_images/john-hunter-nemechek.png
+racing,kyffin-simpson,Kyffin Simpson,K SIMPSON,indycarDriver,Cayman Islands,CAY,Chip Ganassi Racing,78,bronze,Young talent gaining experience at Ganassi,no,assets/racing_driver_images/kyffin-simpson.png
+racing,martinius-stenshorne,Martinius Stenshorne,M STENSHORNE,f2Driver,Norway,NOR,Rodin Motorsport,78,bronze,Confident overtaker learning the feeder ropes,no,assets/racing_driver_images/martinius-stenshorne.png
+racing,oliver-goethe,Oliver Goethe,O GOETHE,f2Driver,Germany,GER,MP Motorsport,78,bronze,Combative Saturday racer chasing his sprint break,no,assets/racing_driver_images/oliver-goethe.png
+racing,ritomo-miyata,Ritomo Miyata,R MIYATA,f2Driver,Japan,JPN,Hitech,78,bronze,Tyre-conscious racer building consistency,no,assets/racing_driver_images/ritomo-miyata.png
+racing,zane-smith,Zane Smith,Z SMITH,nascarDriver,United States,USA,Front Row Motorsports,78,bronze,Superspeedway racecraft learning the rest of the calendar,no,assets/racing_driver_images/zane-smith.png
+racing,caio-collet,Caio Collet,C COLLET,indycarDriver,Brazil,BRA,A. J. Foyt Enterprises,77,bronze,Brazilian rookie adjusting to the ovals,no,assets/racing_driver_images/caio-collet.png
+racing,louis-foster,Louis Foster,L FOSTER,indycarDriver,United Kingdom,GBR,Rahal Letterman Lanigan Racing,77,bronze,British junior graduate building his IndyCar case,no,assets/racing_driver_images/louis-foster.png
+racing,noel-leon,Noel León,N LEÓN,f2Driver,Mexico,MEX,Campos Racing,77,bronze,Braking hard into every opportunity,no,assets/racing_driver_images/noel-leon.png
+racing,nolan-siegel,Nolan Siegel,N SIEGEL,indycarDriver,United States,USA,Arrow McLaren,77,bronze,Development racer earning his stripes at McLaren,no,assets/racing_driver_images/nolan-siegel.png
+racing,riley-herbst,Riley Herbst,R HERBST,nascarDriver,United States,USA,23XI Racing,77,bronze,Rookie learning the Cup pace week to week,no,assets/racing_driver_images/riley-herbst.png
+racing,roman-bilinski,Roman Bilinski,R BILINSKI,f2Driver,Poland,POL,DAMS Lucas Oil,77,bronze,Raw pace still finding its polish,no,assets/racing_driver_images/roman-bilinski.png
+racing,ryan-preece,Ryan Preece,R PREECE,nascarDriver,United States,USA,RFK Racing,77,bronze,"Gritty veteran, never gives up a spot easily",no,assets/racing_driver_images/ryan-preece.png
+racing,ty-dillon,Ty Dillon,T DILLON,nascarDriver,United States,USA,Kaulig Racing,77,bronze,Journeyman consistency in a competitive Chevrolet,no,assets/racing_driver_images/ty-dillon.png
+racing,cian-shields,Cian Shields,C SHIELDS,f2Driver,United Kingdom,GBR,AIX Racing,76,bronze,British rookie chasing his F2 breakthrough,no,assets/racing_driver_images/cian-shields.png
+racing,cole-custer,Cole Custer,C CUSTER,nascarDriver,United States,USA,Haas Factory Team,76,bronze,Patient racer finding his footing at Haas,no,assets/racing_driver_images/cole-custer.png
+racing,dennis-hauger,Dennis Hauger,D HAUGER,indycarDriver,Norway,NOR,Dale Coyne Racing,76,bronze,Red Bull junior product finding oval racecraft,no,assets/racing_driver_images/dennis-hauger.png
+racing,emerson-fittipaldi-jr,Emerson Fittipaldi Jr.,E JR.,f2Driver,Brazil,BRA,AIX Racing,76,bronze,"Racing name, fresh rookie learning fast",no,assets/racing_driver_images/emerson-fittipaldi-jr.png
+racing,nico-varrone,Nico Varrone,N VARRONE,f2Driver,Argentina,ARG,Van Amersfoort Racing,76,bronze,Steady hands on a development team,no,assets/racing_driver_images/nico-varrone.png
+racing,tasanapol-inthraphuvasak,Tasanapol Inthraphuvasak,T INTHRAPHUVASAK,f2Driver,Thailand,THA,ART Grand Prix,76,bronze,Feeder-series rookie building race craft,no,assets/racing_driver_images/tasanapol-inthraphuvasak.png
+racing,laurens-van-hoepen,Laurens van Hoepen,L HOEPEN,f2Driver,Netherlands,NED,Trident,75,bronze,"Patient, tyre-smart, building a case for promotion",no,assets/racing_driver_images/laurens-van-hoepen.png
+racing,rafael-villagomez,Rafael Villagómez,R VILLAGÓMEZ,f2Driver,Mexico,MEX,Van Amersfoort Racing,75,bronze,Developing racer still finding his feet,no,assets/racing_driver_images/rafael-villagomez.png
+racing,sting-ray-robb,Sting Ray Robb,S ROBB,indycarDriver,United States,USA,Juncos Hollinger Racing,75,bronze,Determined racer maximizing a small-team package,no,assets/racing_driver_images/sting-ray-robb.png
+racing,cody-ware,Cody Ware,C WARE,nascarDriver,United States,USA,Rick Ware Racing,74,bronze,Underfunded fighter racing every lap to the checkers,no,assets/racing_driver_images/cody-ware.png
+racing,john-bennett,John Bennett,J BENNETT,f2Driver,United Kingdom,GBR,Trident,74,bronze,Grid rookie learning the F2 pace,no,assets/racing_driver_images/john-bennett.png
+racing,joshua-durksen,Joshua Dürksen,J DÜRKSEN,f2Driver,Paraguay,PAR,Invicta Racing,74,bronze,"Youngest of the grid, learning fast",no,assets/racing_driver_images/joshua-durksen.png

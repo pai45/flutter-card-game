@@ -43,19 +43,28 @@ class DetailTopBar extends StatelessWidget {
   }
 }
 
-/// League lockup: chamfered accent emblem + full name + team count.
+/// League lockup: chamfered accent emblem + full name + team count. The
+/// emblem is a flat accent plate rather than a glow, since it is persistent
+/// chrome (glow rule).
 class LeagueHeader extends StatelessWidget {
   const LeagueHeader({
     required this.league,
     required this.teamCount,
+    this.subtitle,
     super.key,
   });
 
   final League league;
   final int teamCount;
 
+  /// Overrides the default "N TEAMS · SEASON STANDINGS" strapline, e.g. with
+  /// the live season label from the feed.
+  final String? subtitle;
+
   @override
   Widget build(BuildContext context) {
+    final accent = league.accent;
+    final code = league.shortCode;
     return Row(
       children: [
         ClipPath(
@@ -64,17 +73,27 @@ class LeagueHeader extends StatelessWidget {
             width: 54,
             height: 54,
             alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 4),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
+              gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xff4ade80), Color(0xff22c55e)], // FIFA Green
+                colors: [
+                  accent,
+                  Color.lerp(accent, Colors.black, 0.32) ?? accent,
+                ],
               ),
               border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
             ),
-            child: Text(
-              'FIFA', // Hardcoded as per the design requirement, or use league.shortCode if dynamic
-              style: Cyber.display(15, color: Colors.white, letterSpacing: 0.5),
+            child: FittedBox(
+              child: Text(
+                code,
+                style: Cyber.display(
+                  15,
+                  color: _inkOn(accent),
+                  letterSpacing: 0.5,
+                ),
+              ),
             ),
           ),
         ),
@@ -84,7 +103,9 @@ class LeagueHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'FIFA World Cup 26',
+                league.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: Cyber.display(
                   19,
                   color: Colors.white,
@@ -93,7 +114,7 @@ class LeagueHeader extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                '$teamCount TEAMS · SEASON STANDINGS',
+                subtitle ?? '$teamCount TEAMS // SEASON STANDINGS',
                 style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1.2),
               ),
             ],
@@ -104,18 +125,35 @@ class LeagueHeader extends StatelessWidget {
   }
 }
 
+/// Dark ink on a bright plate, white on a dark one.
+Color _inkOn(Color fill) =>
+    fill.computeLuminance() > 0.45 ? AppTheme.darkInk : Colors.white;
+
 /// The league standings table. Football shows P/W/D/L/GD/PTS; cricket (rows with
 /// a null [TeamStanding.drawn]) shows P/W/L/NRR/PTS. Each row taps through to the
-/// team. Calm by design — no glow (glow rule); rank 1 gets a gold tick only.
+/// team. Calm by design — no glow (glow rule) except the qualification line,
+/// which is the table's single live element; rank 1 gets a gold tick only.
+///
+/// When rows carry [TeamStanding.goalsFor] the table widens to F/A, and when
+/// they carry [TeamStanding.zoneNote] a labelled cut-off line is drawn wherever
+/// the qualification zone changes (the MLS playoff line, promotion/relegation
+/// elsewhere).
 class StandingsTable extends StatelessWidget {
   const StandingsTable({
     required this.rows,
     required this.onTapTeam,
+    this.accent = Cyber.cyan,
+    this.showGoals = false,
     super.key,
   });
 
   final List<TeamStanding> rows;
   final ValueChanged<SportTeam> onTapTeam;
+  final Color accent;
+
+  /// Adds the F/A columns. Off by default so the narrow mock tables are
+  /// unaffected.
+  final bool showGoals;
 
   @override
   Widget build(BuildContext context) {
@@ -126,6 +164,7 @@ class StandingsTable extends StatelessWidget {
       );
     }
     final cricket = rows.first.drawn == null;
+    final withGoals = showGoals && rows.first.goalsFor != null;
     final cols = cricket
         ? <_Col>[
             _Col('P', 22, (s) => '${s.played}'),
@@ -139,6 +178,8 @@ class StandingsTable extends StatelessWidget {
             _Col('W', 20, (s) => '${s.won}'),
             _Col('D', 20, (s) => '${s.drawn}'),
             _Col('L', 20, (s) => '${s.lost}'),
+            if (withGoals) _Col('F', 22, (s) => '${s.goalsFor}'),
+            if (withGoals) _Col('A', 22, (s) => '${s.goalsAgainst}'),
             _Col('GD', 30, (s) => s.diffLabel),
             _Col('PTS', 30, (s) => '${s.points}'),
           ];
@@ -152,20 +193,91 @@ class StandingsTable extends StatelessWidget {
             end: Alignment.bottomRight,
             colors: [Color(0xff121b30), Color(0xff0e1628)],
           ),
-          border: Border.all(color: const Color(0xff243654)),
+          border: Border.all(
+            color: Color.lerp(const Color(0xff243654), accent, 0.22) ??
+                const Color(0xff243654),
+          ),
         ),
         child: Column(
           children: [
             _HeaderRow(cols: cols),
-            for (var i = 0; i < rows.length; i++)
+            for (var i = 0; i < rows.length; i++) ...[
               _DataRow(
                 row: rows[i],
                 cols: cols,
-                last: i == rows.length - 1,
+                last: i == rows.length - 1 && _zoneAfter(i) == null,
                 onTap: () => onTapTeam(rows[i].team),
               ),
+              if (_zoneAfter(i) case final zone?)
+                _QualificationLine(label: zone, color: rows[i].zoneColor),
+            ],
           ],
         ),
+      ),
+    );
+  }
+
+  /// The zone label to draw *below* row [i] — set when the next row leaves the
+  /// current qualification zone (or when this is the last qualifying row).
+  String? _zoneAfter(int i) {
+    final current = rows[i].zoneNote;
+    if (current == null || current.isEmpty) return null;
+    final next = i + 1 < rows.length ? rows[i + 1].zoneNote : null;
+    if (next == current) return null;
+    return _shortZoneLabel(current);
+  }
+}
+
+/// Turns the feed's prose into a HUD cut-off label. Where the note names a
+/// specific round ("Qualifies for MLS Cup Playoffs - Round One Best-of-3
+/// series") that round is what distinguishes one line from the next, so it
+/// wins ("ROUND ONE"); otherwise the whole note is used ("RELEGATION").
+String _shortZoneLabel(String note) {
+  final parts = note.split(' - ');
+  if (parts.length > 1) {
+    final words = parts[1].trim().split(RegExp(r'\s+'));
+    return words.take(2).join(' ').toUpperCase();
+  }
+  var text = parts.first.trim();
+  for (final prefix in const ['Qualifies for ', 'Qualification for ']) {
+    if (text.startsWith(prefix)) {
+      text = text.substring(prefix.length);
+      break;
+    }
+  }
+  return text.toUpperCase();
+}
+
+/// The cut-off rule under the last team inside a qualification zone. This is
+/// the table's one glowing element — it marks a live, meaningful threshold.
+class _QualificationLine extends StatelessWidget {
+  const _QualificationLine({required this.label, this.color});
+
+  final String label;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final tint = color ?? Cyber.success;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 3, 10, 3),
+      child: Row(
+        children: [
+          Expanded(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: tint.withValues(alpha: 0.65),
+                boxShadow: Cyber.glow(tint, alpha: 0.35, blur: 8, spread: -3),
+              ),
+              child: const SizedBox(height: 1.4),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: Cyber.label(7.5, color: tint, letterSpacing: 1.1),
+          ),
+        ],
       ),
     );
   }
@@ -221,6 +333,7 @@ class _DataRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rankColor = row.rank == 1 ? Cyber.gold : Cyber.muted;
+    final move = row.rankChange ?? 0;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
@@ -249,12 +362,13 @@ class _DataRow extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 8),
-            _TeamBadge(team: row.team),
+            _RankMove(change: move),
+            const SizedBox(width: 6),
+            TeamLogo(team: row.team, width: 26, height: 24),
             const SizedBox(width: 9),
             Expanded(
               child: Text(
-                row.team.name,
+                row.tableName ?? row.team.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Cyber.body(13, weight: FontWeight.w700, height: 1),
@@ -281,24 +395,23 @@ class _DataRow extends StatelessWidget {
   }
 }
 
-class _TeamBadge extends StatelessWidget {
-  const _TeamBadge({required this.team});
+/// Tiny caret showing positions gained or lost since the last table update.
+/// Occupies its slot even when flat so the team column never jitters.
+class _RankMove extends StatelessWidget {
+  const _RankMove({required this.change});
 
-  final SportTeam team;
+  final int change;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 28,
-      height: 22,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: team.color,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        team.shortName,
-        style: Cyber.label(9, color: Colors.white, weight: FontWeight.w800),
+    if (change == 0) return const SizedBox(width: 10);
+    final up = change > 0;
+    return SizedBox(
+      width: 10,
+      child: Icon(
+        up ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+        size: 14,
+        color: up ? Cyber.success : Cyber.danger,
       ),
     );
   }

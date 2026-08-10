@@ -6,6 +6,28 @@ import 'package:card_game/models/cards.dart';
 import 'package:card_game/models/football_chess.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+class _CountingRandom implements Random {
+  int calls = 0;
+
+  @override
+  bool nextBool() {
+    calls++;
+    return false;
+  }
+
+  @override
+  double nextDouble() {
+    calls++;
+    return 0.5;
+  }
+
+  @override
+  int nextInt(int max) {
+    calls++;
+    return 0;
+  }
+}
+
 void main() {
   final engine = FootballChessEngine(random: Random(7));
 
@@ -279,5 +301,186 @@ void main() {
       if (rng.tossCoin() == CoinSide.heads) heads++;
     }
     expect(heads / flips, closeTo(0.5, 0.06));
+  });
+
+  group('full-strength CPU tactics', () {
+    CpuDecisionContext context({
+      int playerScore = 0,
+      int opponentScore = 0,
+      double clock = 80,
+      List<BoardActionType> recent = const [],
+    }) => CpuDecisionContext(
+      playerScore: playerScore,
+      opponentScore: opponentScore,
+      clockRemaining: clock,
+      recentPlayerActions: recent,
+    );
+
+    BoardState board({
+      required List<BoardPiece> outfield,
+      required Side possession,
+      required String carrierId,
+    }) {
+      final carrier = outfield.firstWhere((piece) => piece.id == carrierId);
+      return BoardState(
+        pieces: [
+          ...outfield,
+          mk('pk', Side.player, const BoardCell(1, -1), strongGk, keeper: true),
+          mk(
+            'ok',
+            Side.opponent,
+            const BoardCell(1, kBoardRows),
+            strongGk,
+            keeper: true,
+          ),
+        ],
+        ballCell: carrier.cell,
+        possession: possession,
+      );
+    }
+
+    FootballChessEngine cpu() =>
+        FootballChessEngine(random: Random(91), decisionRandom: Random(7));
+
+    test('takes a clear high-quality shot', () {
+      final state = board(
+        outfield: [
+          mk('o0', Side.opponent, const BoardCell(1, 0), strongAtk),
+          mk('p0', Side.player, const BoardCell(2, 3), weakAtk),
+        ],
+        possession: Side.opponent,
+        carrierId: 'o0',
+      );
+
+      final action = cpu().cpuChooseAction(state, context());
+
+      expect(action?.type, BoardActionType.shoot);
+    });
+
+    test('rejects a blocked speculative shot for a progressive pass', () {
+      final state = board(
+        outfield: [
+          mk('o0', Side.opponent, const BoardCell(1, 1), strongAtk),
+          mk('o1', Side.opponent, const BoardCell(0, 0), strongAtk),
+          mk('p0', Side.player, const BoardCell(1, 0), strongDef),
+          mk('p1', Side.player, const BoardCell(2, 3), weakAtk),
+        ],
+        possession: Side.opponent,
+        carrierId: 'o0',
+      );
+
+      final action = cpu().cpuChooseAction(state, context());
+
+      expect(action?.type, BoardActionType.pass);
+      expect(action?.targetId, 'o1');
+    });
+
+    test('uses the safe standing tackle against an immediate threat', () {
+      final state = board(
+        outfield: [
+          mk('p0', Side.player, const BoardCell(1, 3), weakAtk),
+          mk('o0', Side.opponent, const BoardCell(1, 2), strongDef),
+          mk('o1', Side.opponent, const BoardCell(0, 2), strongDef),
+        ],
+        possession: Side.player,
+        carrierId: 'p0',
+      );
+
+      final action = cpu().cpuChooseAction(
+        state,
+        context(recent: const [BoardActionType.dribble, BoardActionType.shoot]),
+      );
+
+      expect(action?.type, BoardActionType.tackle);
+    });
+
+    test('passes to the open forward instead of a marked receiver', () {
+      final state = board(
+        outfield: [
+          mk('o0', Side.opponent, const BoardCell(1, 3), strongAtk),
+          mk('o1', Side.opponent, const BoardCell(1, 0), strongAtk),
+          mk('o2', Side.opponent, const BoardCell(2, 2), weakAtk),
+          mk('p0', Side.player, const BoardCell(2, 3), strongDef),
+          mk('p1', Side.player, const BoardCell(0, 2), weakAtk),
+        ],
+        possession: Side.opponent,
+        carrierId: 'o0',
+      );
+
+      final action = cpu().cpuChooseAction(state, context());
+
+      expect(action?.type, BoardActionType.pass);
+      expect(action?.targetId, 'o1');
+    });
+
+    test('presses a repeat shooter before another clear attempt', () {
+      final state = board(
+        outfield: [
+          mk('p0', Side.player, const BoardCell(1, 2), strongAtk),
+          mk('o0', Side.opponent, const BoardCell(0, 0), strongDef),
+          mk('o1', Side.opponent, const BoardCell(2, 0), strongDef),
+        ],
+        possession: Side.player,
+        carrierId: 'p0',
+      );
+
+      final action = cpu().cpuChooseAction(
+        state,
+        context(
+          recent: const [
+            BoardActionType.shoot,
+            BoardActionType.shoot,
+            BoardActionType.pass,
+          ],
+        ),
+      );
+
+      expect(action?.type, BoardActionType.press);
+    });
+
+    test('protects a late lead but attacks when trailing', () {
+      final state = board(
+        outfield: [
+          mk('o0', Side.opponent, const BoardCell(1, 1), strongAtk),
+          mk('o1', Side.opponent, const BoardCell(0, 1), strongAtk),
+          mk('p0', Side.player, const BoardCell(2, 3), weakAtk),
+        ],
+        possession: Side.opponent,
+        carrierId: 'o0',
+      );
+
+      final leading = cpu().cpuChooseAction(
+        state,
+        context(opponentScore: 1, clock: 8),
+      );
+      final trailing = cpu().cpuChooseAction(
+        state,
+        context(playerScore: 1, clock: 8),
+      );
+
+      expect(leading?.type, isNot(BoardActionType.shoot));
+      expect(trailing?.type, BoardActionType.shoot);
+    });
+
+    test('decision search does not consume gameplay randomness', () {
+      final gameplayRandom = _CountingRandom();
+      final engine = FootballChessEngine(
+        random: gameplayRandom,
+        decisionRandom: Random(3),
+      );
+      final state = board(
+        outfield: [
+          mk('o0', Side.opponent, const BoardCell(1, 0), strongAtk),
+          mk('p0', Side.player, const BoardCell(2, 3), weakAtk),
+        ],
+        possession: Side.opponent,
+        carrierId: 'o0',
+      );
+
+      final action = engine.cpuChooseAction(state, context());
+
+      expect(action, isNotNull);
+      expect(gameplayRandom.calls, 0);
+    });
   });
 }

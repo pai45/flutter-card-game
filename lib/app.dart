@@ -7,6 +7,7 @@ import 'blocs/friends/friends_cubit.dart';
 import 'blocs/game/game_bloc.dart';
 import 'blocs/game/game_event.dart';
 import 'blocs/game/game_state.dart';
+import 'blocs/league_stats/league_stats_cubit.dart';
 import 'blocs/match_circle/match_circle_cubit.dart';
 import 'blocs/picks/picks_cubit.dart';
 import 'blocs/picks/picks_state.dart';
@@ -18,6 +19,7 @@ import 'blocs/tennis/tennis_state.dart';
 import 'config/enums.dart';
 import 'config/theme.dart';
 import 'models/league.dart';
+import 'models/oz_coin_ledger.dart';
 import 'models/sport_match.dart';
 import 'screens/final_over/final_over_hub.dart';
 import 'screens/football_bingo/football_bingo_hub.dart';
@@ -28,6 +30,7 @@ import 'screens/game/game_screen.dart';
 import 'screens/shootout/shootout_hub.dart';
 import 'screens/tennis/tennis_hub.dart';
 import 'screens/home/widgets/starter_pack_onboarding.dart';
+import 'screens/onboarding/widgets/onboarding_coin_reward_animation.dart';
 import 'screens/onboarding/profile_setup_screen.dart';
 import 'screens/predictions/league_detail_screen.dart';
 import 'screens/predictions/match_detail_screen.dart';
@@ -52,7 +55,6 @@ import 'services/prediction_repository.dart';
 import 'services/rolling_window_service.dart';
 import 'services/secure_storage_service.dart';
 import 'widgets/achievement_celebration_host.dart';
-import 'widgets/reward_settlement_popup.dart';
 import 'widgets/streak_celebration_host.dart';
 
 enum _PendingGameLaunchKind { football, cricket, basketball, tennis, grandPrix }
@@ -170,7 +172,8 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   );
   bool _onboardingLoading = true;
   bool _onboardingComplete = false;
-  bool _demoRewardSettlementSeen = true;
+  OnboardingRewardStatus? _onboardingRewardStatus;
+  bool _onboardingRewardDismissing = false;
   String? _selectedAvatarId;
 
   @override
@@ -212,14 +215,23 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   Future<void> _loadOnboardingState() async {
     final avatarId = await _storage.loadSelectedAvatarId();
     final complete = await _storage.loadOnboardingComplete();
-    final demoRewardSeen = await _storage.loadDemoRewardSettlementSeen();
+    var rewardStatus = await _storage.loadOnboardingRewardStatus();
+    // A completed profile with no reward marker predates this feature. Mark it
+    // seen without granting coins so rollout only rewards new onboarding runs.
+    if (complete && rewardStatus == null) {
+      rewardStatus = OnboardingRewardStatus.seen;
+      await _storage.saveOnboardingRewardStatus(rewardStatus);
+    }
     if (!mounted) return;
     setState(() {
       _selectedAvatarId = avatarId;
       _onboardingComplete = complete;
-      _demoRewardSettlementSeen = demoRewardSeen;
+      _onboardingRewardStatus = rewardStatus;
       _onboardingLoading = false;
     });
+    if (complete && rewardStatus == OnboardingRewardStatus.pending) {
+      context.read<GameBloc>().add(OnboardingRewardClaimed());
+    }
   }
 
   void _go(AppSection next) => setState(() {
@@ -264,19 +276,37 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     await _storage.savePrimarySportName(result.primarySport.name);
     await _storage.saveFollowedLeagueIds(result.followedLeagueIds);
     await _storage.saveFavoriteTeams(result.favoriteTeams);
+    final rewardPending =
+        _onboardingRewardStatus != OnboardingRewardStatus.seen;
+    if (rewardPending) {
+      await _storage.saveOnboardingRewardStatus(OnboardingRewardStatus.pending);
+    }
     await _storage.saveOnboardingComplete(true);
     if (!mounted) return;
     setState(() {
       _selectedAvatarId = result.avatarId;
       _onboardingComplete = true;
-      _demoRewardSettlementSeen = false;
+      if (rewardPending) {
+        _onboardingRewardStatus = OnboardingRewardStatus.pending;
+      }
     });
+    if (rewardPending) {
+      context.read<GameBloc>().add(OnboardingRewardClaimed());
+    }
   }
 
-  Future<void> _dismissDemoRewardSettlement() async {
-    if (_demoRewardSettlementSeen) return;
-    setState(() => _demoRewardSettlementSeen = true);
-    await _storage.saveDemoRewardSettlementSeen();
+  Future<void> _dismissOnboardingReward() async {
+    if (_onboardingRewardStatus != OnboardingRewardStatus.pending ||
+        _onboardingRewardDismissing) {
+      return;
+    }
+    _onboardingRewardDismissing = true;
+    await _storage.saveOnboardingRewardStatus(OnboardingRewardStatus.seen);
+    if (!mounted) return;
+    setState(() {
+      _onboardingRewardStatus = OnboardingRewardStatus.seen;
+      _onboardingRewardDismissing = false;
+    });
   }
 
   Future<void> _logoutFromProfile() async {
@@ -291,7 +321,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
       _pendingGameLaunchKind = null;
       _selectedAvatarId = null;
       _onboardingComplete = false;
-      _demoRewardSettlementSeen = false;
+      _onboardingRewardDismissing = false;
     });
   }
 
@@ -599,7 +629,10 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   void _openLeague(League league) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => LeagueDetailScreen(league: league),
+        builder: (_) => BlocProvider<LeagueStatsCubit>(
+          create: (_) => LeagueStatsCubit(league.id)..load(),
+          child: LeagueDetailScreen(league: league),
+        ),
       ),
     );
   }
@@ -655,6 +688,24 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
               onComplete: _completeProfileSetup,
             );
           }
+          if (_onboardingRewardStatus == OnboardingRewardStatus.pending) {
+            OzCoinLedgerEntry? rewardEntry;
+            for (final entry in state.coinLedger) {
+              if (entry.source == OzCoinTransactionSource.onboardingReward) {
+                rewardEntry = entry;
+                break;
+              }
+            }
+            if (rewardEntry == null) {
+              return const ColoredBox(color: Cyber.bg);
+            }
+            return OnboardingCoinRewardAnimation(
+              key: const ValueKey('onboarding-coin-reward'),
+              amount: rewardEntry.delta,
+              balanceAfter: rewardEntry.balanceAfter,
+              onComplete: _dismissOnboardingReward,
+            );
+          }
           final packReveal = state.pendingPackReveal;
           if (packReveal != null && packReveal.items.isNotEmpty) {
             return PackOnboardingScreen(
@@ -707,18 +758,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
               onAddCoins: _openShopCoins,
             ),
           };
-          return Stack(
-            children: [
-              Positioned.fill(child: content),
-              if (!_demoRewardSettlementSeen)
-                Positioned.fill(
-                  child: RewardSettlementPopup(
-                    data: RewardSettlementDemoData.demo(),
-                    onDismiss: _dismissDemoRewardSettlement,
-                  ),
-                ),
-            ],
-          );
+          return content;
         },
       ),
     );

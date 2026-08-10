@@ -4,6 +4,303 @@ import 'package:flutter/services.dart';
 
 import '../../config/theme.dart';
 import '../../utils/sound_effects.dart';
+import '../match_widgets.dart';
+import '../spotlight_walkthrough.dart';
+
+/// Shared full-screen coin-toss presentation used by Pitch Duel and Football
+/// Chess. Modes own the rules and resolved content; this widget owns the common
+/// stadium chrome, entrance, call controls, flip, landing, and result reveal.
+class CyberCoinTossPhase extends StatefulWidget {
+  const CyberCoinTossPhase({
+    required this.result,
+    required this.won,
+    required this.call,
+    required this.onQuit,
+    required this.onCall,
+    required this.resolvedContent,
+    this.onLanded,
+    this.callTargetKey,
+    this.coinTargetKey,
+    this.overlay,
+    this.prompt = 'CALL THE TOSS TO SEE WHO ATTACKS',
+    super.key,
+  });
+
+  final String? result;
+  final bool? won;
+  final String? call;
+  final VoidCallback onQuit;
+  final ValueChanged<String> onCall;
+  final Widget resolvedContent;
+  final VoidCallback? onLanded;
+  final GlobalKey? callTargetKey;
+  final GlobalKey? coinTargetKey;
+  final Widget? overlay;
+  final String prompt;
+
+  @override
+  State<CyberCoinTossPhase> createState() => _CyberCoinTossPhaseState();
+}
+
+class _CyberCoinTossPhaseState extends State<CyberCoinTossPhase>
+    with TickerProviderStateMixin {
+  late final AnimationController _entry;
+  late final Animation<double> _coinEntry;
+  late final Animation<double> _ctaEntry;
+  late final AnimationController _reveal;
+
+  bool _landed = false;
+
+  bool get _resolved => widget.result != null;
+
+  String get _resultCaption {
+    final landed = (widget.result ?? '').toUpperCase();
+    final call = widget.call?.toUpperCase();
+    return call == null
+        ? 'IT LANDED $landed'
+        : 'YOU CALLED $call · IT LANDED $landed';
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _entry = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _coinEntry = CurvedAnimation(
+      parent: _entry,
+      curve: const Interval(0, 0.72, curve: Curves.easeOutBack),
+    );
+    _ctaEntry = CurvedAnimation(
+      parent: _entry,
+      curve: const Interval(0.45, 1, curve: Curves.easeOut),
+    );
+    _reveal = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 620),
+    );
+    _entry.forward();
+  }
+
+  @override
+  void didUpdateWidget(covariant CyberCoinTossPhase oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.result != null && widget.result == null) {
+      _landed = false;
+      _reveal.reset();
+      _entry.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _entry.dispose();
+    _reveal.dispose();
+    super.dispose();
+  }
+
+  void _onCoinLanded() {
+    if (_landed || !mounted) return;
+    setState(() => _landed = true);
+    playSound(SoundEffect.whoosh);
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _reveal.value = 1;
+    } else {
+      _reveal.forward();
+    }
+    widget.onLanded?.call();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Cyber.bg,
+      body: Stack(
+        children: [
+          const Positioned.fill(child: StadiumBackground()),
+          SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _CyberTossTopBar(onQuit: widget.onQuit),
+                Expanded(
+                  child: Center(
+                    child: AnimatedBuilder(
+                      animation: _entry,
+                      builder: (context, child) => Transform.scale(
+                        scale: _coinEntry.value.clamp(0, 1.05),
+                        child: child,
+                      ),
+                      child: widget.coinTargetKey == null
+                          ? CyberTossCoin(
+                              result: widget.result,
+                              won: widget.won,
+                              onLanded: _onCoinLanded,
+                            )
+                          : SpotlightTarget(
+                              spotlightKey: widget.coinTargetKey!,
+                              child: CyberTossCoin(
+                                result: widget.result,
+                                won: widget.won,
+                                onLanded: _onCoinLanded,
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 280),
+                  child: _buildBottom(),
+                ),
+              ],
+            ),
+          ),
+          ...switch (widget.overlay) {
+            null => const <Widget>[],
+            final overlay => [overlay],
+          },
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottom() {
+    if (!_resolved) return _buildCallControls();
+    if (!_landed) {
+      return Padding(
+        key: const ValueKey('flipping'),
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 36),
+        child: Text(
+          'FLIPPING…',
+          textAlign: TextAlign.center,
+          style: Cyber.label(12, color: Cyber.muted, letterSpacing: 3),
+        ),
+      );
+    }
+
+    return AnimatedBuilder(
+      key: const ValueKey('result'),
+      animation: _reveal,
+      builder: (context, child) {
+        final t = Curves.easeOutCubic.transform(_reveal.value.clamp(0, 1));
+        final panelT = Curves.easeOutBack.transform(_reveal.value.clamp(0, 1));
+        return Opacity(
+          opacity: t,
+          child: Transform.translate(
+            offset: Offset(0, 26 * (1 - t)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  _resultCaption,
+                  textAlign: TextAlign.center,
+                  style: Cyber.label(13, color: Cyber.muted, letterSpacing: 2),
+                ),
+                const SizedBox(height: 14),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  child: Transform.translate(
+                    offset: Offset(0, 46 * (1 - panelT)),
+                    child: child,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      child: widget.resolvedContent,
+    );
+  }
+
+  Widget _buildCallControls() {
+    Widget choices = Row(
+      children: [
+        Expanded(
+          child: CyberCallChoiceButton(
+            face: 'H',
+            label: 'HEADS',
+            accent: Cyber.cyan,
+            onTap: () => widget.onCall('heads'),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: CyberCallChoiceButton(
+            face: 'T',
+            label: 'TAILS',
+            accent: Cyber.violet,
+            onTap: () => widget.onCall('tails'),
+          ),
+        ),
+      ],
+    );
+    if (widget.callTargetKey case final targetKey?) {
+      choices = SpotlightTarget(spotlightKey: targetKey, child: choices);
+    }
+
+    return Padding(
+      key: const ValueKey('flip'),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
+      child: AnimatedBuilder(
+        animation: _entry,
+        builder: (context, child) => Opacity(
+          opacity: _ctaEntry.value.clamp(0, 1),
+          child: Transform.translate(
+            offset: Offset(0, 16 * (1 - _ctaEntry.value)),
+            child: child,
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              widget.prompt,
+              textAlign: TextAlign.center,
+              style: Cyber.body(11, color: Cyber.muted),
+            ),
+            const SizedBox(height: 12),
+            choices,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CyberTossTopBar extends StatelessWidget {
+  const _CyberTossTopBar({required this.onQuit});
+
+  final VoidCallback onQuit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 4, 4, 0),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: onQuit,
+            icon: const Icon(Icons.close, color: Cyber.cyan, size: 24),
+          ),
+          Expanded(
+            child: Text(
+              'COIN TOSS',
+              textAlign: TextAlign.center,
+              style: Cyber.label(
+                11,
+                color: Cyber.cyan.withValues(alpha: 0.75),
+                letterSpacing: 2,
+              ),
+            ),
+          ),
+          const SizedBox(width: 48),
+        ],
+      ),
+    );
+  }
+}
 
 class CyberTossCoin extends StatefulWidget {
   const CyberTossCoin({
@@ -15,17 +312,18 @@ class CyberTossCoin extends StatefulWidget {
 
   /// 'heads', 'tails', or null if idle
   final String? result;
-  
+
   /// Determines if it glows cyan (true) or danger/red (false) upon landing.
   final bool? won;
-  
+
   final VoidCallback? onLanded;
 
   @override
   State<CyberTossCoin> createState() => _CyberTossCoinState();
 }
 
-class _CyberTossCoinState extends State<CyberTossCoin> with TickerProviderStateMixin {
+class _CyberTossCoinState extends State<CyberTossCoin>
+    with TickerProviderStateMixin {
   static const double _coinSize = 122;
 
   // Idle motion.
@@ -153,7 +451,9 @@ class _CyberTossCoinState extends State<CyberTossCoin> with TickerProviderStateM
     final flipping = widget.result != null;
     // Neutral cyan until the coin settles; only then the outcome accent shows
     // (cyan = player won the call, red = CPU).
-    final faceColor = _revealed && widget.won == false ? Cyber.danger : Cyber.cyan;
+    final faceColor = _revealed && widget.won == false
+        ? Cyber.danger
+        : Cyber.cyan;
     return AnimatedBuilder(
       animation: Listenable.merge([_float, _ring, _flip, _glow]),
       builder: (context, _) {

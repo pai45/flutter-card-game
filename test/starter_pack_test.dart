@@ -125,20 +125,24 @@ void main() {
 
   group('cricket catalog and starter pack', () {
     test('catalog includes every CSV player', () {
-      final rowCount =
-          File(
-            'ipl_players.csv',
-          ).readAsLinesSync().where((line) => line.trim().isNotEmpty).length -
-          1;
+      final csvPlayerNames = File('ipl_players.csv')
+          .readAsLinesSync()
+          .skip(1)
+          .where((line) => line.trim().isNotEmpty)
+          .map((line) => line.split(',').first.trim())
+          .toSet();
+      final catalogNames = cricketPlayerCards.map((card) => card.name).toSet();
 
-      expect(cricketPlayerCards, hasLength(rowCount));
+      expect(csvPlayerNames, isNotEmpty);
+      expect(catalogNames, containsAll(csvPlayerNames));
       expect(
         allPlayerCards,
         hasLength(
           footballPlayerCards.length +
               cricketPlayerCards.length +
               basketballPlayerCards.length +
-              tennisPlayerCards.length,
+              tennisPlayerCards.length +
+              racingPlayerCards.length,
         ),
       );
     });

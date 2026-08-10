@@ -1,166 +1,219 @@
-# StatOz Product Documentation
+# StatOz / Pitch Duel Product Documentation
 
-StatOz is a sports prediction and game app built around four connected product loops:
+> **Status:** BUILT
+> **Last verified:** 2026-08-09
+> **Audience:** Product, design, engineering, QA, and coding agents
 
-- users predict real-world-style matches, submit answers, and claim rewards when results settle
-- users collect cards, build squads, and play game modes such as Pitch Duel, Penalty Shootout, Final Over, Grand Prix Dash, Football Quiz, Football Bingo, Guess the Player, and Football Chess
-- users compare progress through leaderboard surfaces across match day, tournaments, coins, and games
-- users set up a profile identity with avatar, banner, followed leagues, and favorite teams
+This folder is the canonical product source of truth for StatOz, the sports
+prediction and games app whose flagship card mode is Pitch Duel. It describes
+the player experience, game rules, progression, economy, design language,
+persistence, current limitations, and planned scope. Runtime code remains the
+authority when a discrepancy is found; the documentation must then be corrected
+and recorded in the [documentation ledger](DOCUMENTATION_LEDGER.md).
 
-This documentation is the product source of truth. It explains how the app works from the user experience outward, so future changes can update the product behavior before implementation details drift.
+## Product Purpose
+
+This index gives contributors one verified map of the app: what players can
+reach, how the major loops connect, which behavior is built or planned, and
+where to verify every rule in code and tests.
+
+## Where It Lives
+
+This file is the entry point for product documentation. Game pages live in
+`games/`, shared feature pages in `systems/`, and gamer-experience/design rules
+in `design/`. The repository root README links here rather than restating features.
+
+## Player Flow
+
+The whole-app journey begins with identity onboarding and its welcome reward,
+then cycles through predicting, placing picks, playing games, collecting and
+customizing, progressing mastery/level, comparing rivals/history, and returning
+for streaks, daily content, rewards, and fresh fixtures.
+
+## Mechanics and Rules
+
+This index owns navigation, coverage, status vocabulary, cross-system loops,
+and documentation governance. Individual pages own formulas, state machines,
+settlement rules, persistence, and page-level planned scope.
+
+## Rewards and Progression
+
+Shared progression uses per-mode XP tracks plus an aggregate level. Oz Coins,
+cards/packs, streak milestones, achievements, cosmetics, histories, and typed
+settlement ledgers connect the 18 game entries and prediction/pick loops. Each
+linked page states its exact reward contract and exceptions.
+
+## Status Legend
+
+- **BUILT**: reachable, functional behavior in the current app.
+- **PROTOTYPE**: functional local or demo-backed behavior that is not yet a
+  production-integrated service.
+- **PLANNED**: approved product scope without a reachable implementation.
+- **DEPRECATED**: superseded behavior retained only for historical reference.
+
+Pages can contain both built and planned sections, but every planned section
+must be explicitly tagged.
 
 ## App Map
 
-On first launch, the app opens into Profile Setup until onboarding is complete. After setup, the app opens into the Predictions experience. From there, users move between:
+First launch opens profile setup. Completing it saves the player's identity and
+awards an idempotent 1,000 Oz Coin welcome bonus with a reward animation. The
+main app then opens the sports hub with four persistent destinations:
 
-- **Matches**: fixture cards grouped by league, with prediction quizzes for individual matches.
-- **Pick**: a market-style picks surface where users choose outcomes and confirm an Oz Coin amount.
-- **Games**: entry point for Pitch Duel, Penalty Shootout, Final Over, Grand Prix Dash, Football Quiz, Football Bingo, Guess the Player, and 5v5 Football Chess.
-- **Leaderboard**: ranking surfaces for match day, tournaments, coins, and games.
-- **Shop and Profile**: supporting areas for identity setup, avatar and banner display, followed leagues, favorite teams, wallet, collection, card backs, and cosmetic browsing.
+- **Sports**: PREDICT, PICK, and GAMES tabs, each with sport filters.
+- **Shop**: avatars, frames, banners, kits/liveries, coins, packs, and cards.
+- **Top**: leaderboard, podium, rival, and challenge surfaces.
+- **Profile**: progression, achievements, activity history, decks, collection,
+  friends, following preferences, tutorials, support, and settings.
 
-The main navigation keeps Predictions, Pick, Leaderboard, Shop, and Profile as app-level destinations. Game modes open as full-screen hubs from the Games tab; Pitch Duel and Penalty Shootout share deck, collection, progression, wallet, and match-history systems.
+Game modes open as full-screen experiences. Shared systems connect them through
+XP tracks, total level, Oz Coins, cards and decks, achievements, streaks,
+starter packs, reward reveals, and local persistence.
 
-## Feature Docs
+## Playable Game Coverage
 
-- [Prediction Matches](prediction-matches.md)
-- [Prediction Gamification](prediction-gamification.md) (designed, not yet built)
-- [Picks](picks.md)
-- [Pitch Duel Card Game](pitch-duel-card-game.md)
-- [Penalty Shootout](penalty-shootout.md)
-- [Grand Prix Dash](grand-prix-dash.md)
-- [Football Quiz](football-quiz.md)
-- [Football Bingo](football-bingo.md)
-- [Guess the Player](guess-the-player.md)
-- [5v5 Football Chess](football-chess.md)
-- [Pitch Duel Leveling System](pitch-duel-leveling.md)
-- [Leaderboard](leaderboard.md)
-- [Profile And Identity](profile-and-identity.md)
-- [Friends Referral System](friends-referral-system.md)
+The current Games tab contains 18 playable entries. The three sport-specific
+Guess the Player entries share one implementation and one product page.
 
-## Product Loops
+| Sport | Game | Status | Product page |
+|---|---|---|---|
+| Football | Pitch Duel | BUILT | [Pitch Duel](games/pitch-duel.md) |
+| Football | Penalty Shootout | BUILT | [Penalty Shootout](games/penalty-shootout.md) |
+| Football | 5v5 Football Chess | BUILT | [Football Chess](games/football-chess.md) |
+| Football | Football Quiz | BUILT | [Football Quiz](games/football-quiz.md) |
+| Football | Football Bingo | BUILT | [Football Bingo](games/football-bingo.md) |
+| Football | Guess the Player | BUILT | [Guess the Player](games/guess-the-player.md) |
+| Cricket | Final Over | BUILT | [Final Over](games/final-over.md) |
+| Cricket | Cricket Quiz | BUILT | [Cricket Quiz](games/cricket-quiz.md) |
+| Cricket | Guess the Player | BUILT | [Guess the Player](games/guess-the-player.md#sport-variants) |
+| Basketball | Hoop Duel | BUILT | [Hoop Duel](games/hoop-duel.md) |
+| Basketball | Basketball Quiz | BUILT | [Basketball Quiz](games/basketball-quiz.md) |
+| Basketball | Guess the Player | BUILT | [Guess the Player](games/guess-the-player.md#sport-variants) |
+| F1 | Grand Prix Dash | BUILT | [Grand Prix Dash](games/grand-prix-dash.md) |
+| F1 | F1 Quiz | BUILT | [F1 Quiz](games/f1-quiz.md) |
+| F1 | Guess the Driver | BUILT | [Guess the Driver](games/guess-the-driver.md) |
+| Tennis | Tennis Rally | BUILT | [Tennis Rally](games/tennis-rally.md) |
+| Tennis | Tennis Quiz | BUILT | [Tennis Quiz](games/tennis-quiz.md) |
+| Tennis | Guess the Winner | BUILT | [Guess the Winner](games/guess-the-winner.md) |
 
-**Prediction loop**
+## Product Systems
 
-1. User opens Matches.
-2. User chooses an upcoming fixture.
-3. User answers the animated match quiz before kickoff.
-4. Already-submitted predictions reopen as an editable review list until kickoff.
-5. Prediction locks once the match is live or no longer editable, with vote results available for review.
-6. Finished matches can show correct answers, vote distribution, and settlement when result data is available.
-7. Finished settleable matches dock a REVEAL RESULTS action: settlement plays as a staged reveal cinematic and correct answers credit XP into the shared progression track (predictions never pay coins).
-8. (Designed, not yet built) The reveal will also feed an accuracy streak, achievements, and daily quests — see [Prediction Gamification](prediction-gamification.md).
+| System | Status | Product page |
+|---|---|---|
+| Match predictions, quizzes, scoreline contests, and settlement | BUILT / PROTOTYPE DATA | [Predictions](systems/predictions.md) |
+| Prediction feedback, rewards, and future quests | BUILT / PLANNED | [Prediction Gamification](systems/prediction-gamification.md) |
+| Outcome markets, positions, settlement, and payouts | BUILT / PROTOTYPE DATA | [Picks](systems/picks.md) |
+| Per-mode XP tracks and aggregate player level | BUILT | [Progression and Leveling](systems/progression-and-leveling.md) |
+| Daily activity streaks, milestones, and claims | BUILT | [Streaks](systems/streaks.md) |
+| Cross-app badges and unlock celebrations | BUILT | [Achievements](systems/achievements.md) |
+| Cards, decks, packs, starter packs, and daily drops | BUILT | [Collections, Decks, and Packs](systems/collections-decks-and-packs.md) |
+| Oz Coins, shop, cosmetics, XP/coin ledgers, and settlement | BUILT / PROTOTYPE COMMERCE | [Economy, Shop, and Ledgers](systems/economy-shop-and-ledgers.md) |
+| Leaderboards, rivals, challenges, and activity history | BUILT / PROTOTYPE DATA | [Leaderboards, Rivals, and History](systems/leaderboards-rivals-and-history.md) |
+| Identity, onboarding, followed leagues, teams, and settings | BUILT | [Profile, Onboarding, and Settings](systems/profile-onboarding-and-settings.md) |
+| Local friend bookmarks and CPU-themed challenges | BUILT / PROTOTYPE SOCIAL DATA | [Friends](systems/friends.md) |
+| Invite links and demo referral rewards | PROTOTYPE | [Referrals](systems/referrals.md) |
+| Tutorials, How to Play, and support | BUILT / PARTIAL COVERAGE | [Tutorials, How to Play, and Support](systems/tutorials-how-to-play-and-support.md) |
 
-**Pitch Duel card-game loop**
+## Core Product Loops
 
-1. User enters Games and chooses Pitch Duel.
-2. First-time users claim a starter pack (see [Starter Pack](pitch-duel-card-game.md#first-time-entry-and-starter-pack) for composition, tier odds, and roll logic).
-3. User receives cards and a legal starter deck.
-4. User plays a four-round card match.
-5. Match result awards XP and coins.
-6. User grows level, collection, and match history. See [Pitch Duel Leveling System](pitch-duel-leveling.md) for the XP curve, match rewards, pack XP, and opponent scaling.
+### Predict and settle
 
-**Penalty Shootout loop**
+1. Choose a sport, league, fixture, and quiz.
+2. Answer one question at a time, optionally assigning available boosters.
+3. Submit before lock; reopen an editable review until kickoff.
+4. Review live/finished states and reveal settled results cinematically.
+5. Credit prediction XP through the shared progression ledger. Paid scoreline
+   contests are the explicit exception that can also pay Oz Coin prizes.
 
-1. User enters Games and chooses Penalty Shootout.
-2. User makes sure the shared active deck is ready; the shootout takers use 2 attackers, 2 defenders, and 1 goalkeeper.
-3. User faces a level-scaled CPU opponent in a five-kicks-each shootout.
-4. The shootout can end early, or move into sudden death pairs after five kicks each.
-5. Result awards smaller XP/coin rewards than a full Pitch Duel match.
-6. Match history, XP/coin ledgers, and the penalty shootout streak are updated. See [Penalty Shootout](penalty-shootout.md) for full rules.
+### Play, master, and collect
 
-**Final Over loop**
+1. Choose one of the 18 game entries.
+2. Claim a sport starter pack when the mode requires a roster or deck.
+3. Play a short, readable session with live HUD feedback and decisive result
+   beats.
+4. Receive XP, coins where applicable, stats, streak activity, and achievement
+   progress.
+5. Improve the relevant mastery track, collection, loadout, and personal bests.
 
-1. User enters Games and chooses Final Over from the Cricket section.
-2. First-time cricket players claim a cricket starter pack and equip a three-batsman deck.
-3. User chooses a tier and starts a six-ball chase against a CPU target.
-4. Each ball asks the user to time contact and manage overdrive.
-5. Shot outcome updates score, wickets, and the chase state.
-6. The completed over awards shared XP and updates Final Over stats.
+### Return and progress
 
-**Grand Prix Dash loop**
+1. Complete predictions, picks, games, or daily mysteries.
+2. Extend activity streaks and unlock milestone claims.
+3. Claim the 24-hour daily drop and open packs.
+4. Review XP and Oz Coin histories, achievements, leaderboards, rivals, and
+   career statistics.
+5. Return through a reward, challenge, fresh fixture, or daily puzzle rather
+   than a flat task list.
 
-1. User enters Games and chooses Grand Prix Dash from the F1 section.
-2. User chooses a circuit and cosmetic livery, or keeps their last selections.
-3. User starts from a randomized P8-P16 grid slot in a 20-car one-lap race.
-4. User reacts to lights out, manages speed, steers through corners, uses slipstream, and avoids wall/contact losses.
-5. Finish position and personal best status determine XP.
-6. Local racing stats and circuit personal bests are updated. See [Grand Prix Dash](grand-prix-dash.md) for full rules.
+## Product Design
 
-**Football Quiz loop**
+- [Gamer-First Experience Principles](design/experience-principles.md)
+- [Cyber UI Design System](design/cyber-ui-design-system.md)
+- [Motion, Audio, Haptics, and Celebration](design/motion-audio-haptics.md)
 
-1. User enters Games and chooses Football Quiz.
-2. User chooses a trivia category and an unlocked set.
-3. Starting a set spends 25 Oz Coins.
-4. User answers 10 multiple-choice questions and submits once every question has an answer.
-5. The reveal overlay grades the set question by question.
-6. Passing the set awards XP per correct answer and persists category/set progress. See [Football Quiz](football-quiz.md) for full rules.
+The design contract is dark, fast, cyber-HUD, and reward-led. Shared UI is
+reused before new components are introduced, and every meaningful action must
+produce clear feedback or gratification.
 
-**Football Bingo loop**
+## Gratification and Feedback
 
-1. User enters Games and chooses Football Bingo.
-2. The mode opens today's unlocked 3x3 grid and restores any saved progress for that day.
-3. User places each active player into the matching row/column club-intersection cell.
-4. Correct placements fill the grid; wrong placements spend lifelines.
-5. If lifelines run out, the user can spend 25 Oz Coins to buy one lifeline and continue.
-6. Completing all 9 cells saves the daily grid as complete. See [Football Bingo](football-bingo.md) for full rules.
+Across the app, small decisions receive immediate input feedback, game actions
+resolve through readable beats, and meaningful outcomes use proportionate
+reward reveals. Pack unpacking, settlement cinematics, result phases, level-up,
+achievement, streak, referral, onboarding, and shop acquisition moments are the
+shared payoff patterns. Skipping presentation never changes settlement.
 
-**Guess the Player loop**
+## Visible States
 
-1. User enters Games and chooses Guess the Player.
-2. The mode opens today's deterministic career-timeline mystery.
-3. User studies the club timeline, searches the player pool, and submits guesses.
-4. Wrong guesses spend hearts; a correct guess or zero hearts ends the daily run.
-5. The result is saved into daily logs for review.
-6. Guess the Player currently shows a win XP value in the result overlay, but does not yet credit the shared XP ledger. See [Guess the Player](guess-the-player.md) for full rules.
+Canonical feature pages own their loading, available/locked, active, result,
+reward, empty, error, and review states. This index identifies current coverage
+and status; it does not replace those state contracts.
 
-**Football Chess loop**
+## Persistence
 
-1. User enters Games and chooses 5v5 Football Chess.
-2. User makes sure the shared active deck has 2 attackers, 2 defenders, and 1 goalkeeper.
-3. User chooses a starting formation.
-4. Matchmaking introduces a level-scaled CPU opponent and shows both squads.
-5. User calls the coin toss, then alternates one-action board turns with the CPU.
-6. Goals reset the board and give kickoff to the conceding side.
-7. Full time awards XP, updates the local Football Chess record, and shows the result screen. See [5v5 Football Chess](football-chess.md) for full rules.
+Current product state is primarily local through `SecureGameStorage` and
+feature repositories. Pages distinguish durable results/ownership/ledgers from
+session-only presentation and identify mock/seeded data that is not a remote service.
 
-**Competition loop**
+## Planned Scope and Current Limitations
 
-1. User predicts, picks, or plays game modes.
-2. Activity earns XP, wins, coins, and visible progress.
-3. Leaderboards convert that progress into rank, movement, podiums, and the user's current position.
+- **BUILT:** All 18 Games-tab entries and the shared systems linked above are
+  reachable as described, subject to page-level status qualifications.
+- **PROTOTYPE:** Social graphs, leaderboard populations, several data feeds,
+  contest fields, and pick markets are local or seeded.
+- **PLANNED:** Backend, network, live-data, and additional game/design ideas are
+  commitments only where a page explicitly tags them `PLANNED`.
 
-**Identity loop**
+## Implementation References
 
-1. First-time user chooses an avatar and profile banner.
-2. User optionally follows leagues and picks favorite teams for those leagues.
-3. Profile displays the selected identity and a Following band for favorite team badges.
-4. Shop supports the identity layer with cosmetic browsing, including player portrait avatar tiles.
+- [`lib/main.dart`](../../lib/main.dart)
+- [`lib/screens/predictions/prediction_home_screen.dart`](../../lib/screens/predictions/prediction_home_screen.dart)
+- [`lib/blocs/game/game_bloc.dart`](../../lib/blocs/game/game_bloc.dart)
+- [`lib/models/progression.dart`](../../lib/models/progression.dart)
+- [`lib/services/secure_storage_service.dart`](../../lib/services/secure_storage_service.dart)
 
-## Current Product Notes
+## Tests
 
-- Match fixtures, quizzes, vote results, and match leaderboard rows are currently mock-backed but written as product behavior so the surface can later connect to live data.
-- The Pick tab currently behaves like a product prototype: users can choose a market and confirm an amount, but the confirmed pick is not yet a persisted portfolio position.
-- Leaderboard entries are seeded to demonstrate ranking states, user highlighting, podiums, movement, and team boards.
-- Pitch Duel gameplay, Penalty Shootout gameplay, deck ownership, progression, wallet, daily drop, streaks, and match history are persistent product experiences.
-- Football Quiz persists category/set progress, spends coins on entry, and credits shared XP only for passed sets.
-- Football Bingo persists a daily archive and spends coins only for optional lifeline purchases; completion currently does not credit XP or coins.
-- Guess the Player persists daily results and logs; its result overlay shows a win XP value, but shared XP crediting is not yet wired.
-- Final Over persists its own chase record and credits shared XP, but it does not pay coins.
-- Grand Prix Dash currently persists its own race record, circuit personal bests, and shared XP, but it does not pay coins and abandons in-progress races on exit.
-- Football Chess currently persists its own win/loss/draw/streak record and shared XP ledger entries, but it does not yet write match-history or coin-ledger entries.
-- Profile setup and identity preferences are persistent local product state: avatar, banner, followed leagues, favorite teams, and onboarding completion.
-- The prediction gamification layer (streaks, settlement reveal, achievements, prediction XP, daily quests) is a designed-not-yet-built system documented in [Prediction Gamification](prediction-gamification.md).
+- [`test/sport_modules_test.dart`](../../test/sport_modules_test.dart)
+- [`test/progression_tracks_test.dart`](../../test/progression_tracks_test.dart)
+- [`test/streak_bloc_test.dart`](../../test/streak_bloc_test.dart)
+- [`test/daily_mystery_cubit_test.dart`](../../test/daily_mystery_cubit_test.dart)
 
-## How To Maintain These Docs
+## Documentation Contract
 
-When a feature changes, update the feature doc first, then update this main map if the change affects navigation, loops, or cross-feature behavior.
+- Start new pages from [the document template](DOCUMENT_TEMPLATE.md).
+- Record every product-document update in the
+  [documentation ledger](DOCUMENTATION_LEDGER.md).
+- Update this index whenever navigation, game coverage, system coverage, or
+  cross-feature behavior changes.
+- Mark planned ideas explicitly; never describe an unbuilt feature as shipped.
+- Verify rules and formulas against current code and tests, then include the
+  relevant implementation references.
+- Historical documents live under `docs/archive/legacy/` and are never product
+  sources of truth. Canonical pages do not link to archived material.
 
-Each feature doc should answer:
+## Supporting Technical References
 
-- What problem this feature solves for the user
-- Where the feature lives in the app
-- What the primary user flow is
-- What states the user can see
-- What rewards or progression it affects
-- What is current behavior versus planned or prototype behavior
+- [Round resolution and match settlement](../technical/round-resolution.md)
+- [Audio cue catalog](../audio/CUE_CATALOG.md)
+- [IPL player data sheet](../data/ipl_players.md)

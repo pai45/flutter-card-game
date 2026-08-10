@@ -909,7 +909,7 @@ const _guides = <_ModeGuide>[
         title: 'Match the criteria',
         body:
             'Look at the row and column clubs. The active player must have '
-            'played for both.',
+            'played senior football for both. Correct picks unlock their route.',
       ),
       _GuideStep(
         title: 'Tap to place',

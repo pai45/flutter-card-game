@@ -16,10 +16,9 @@
       "PowerShell(python --version 2>&1)",
       "PowerShell(dart --version 2>&1)",
       "Bash(dart run *)",
-      "Bash(brew upgrade *)",
-      "Bash(brew --version)",
-      "Bash(HOMEBREW_NO_BOOTSNAP=1 brew upgrade claude-code)",
-      "Bash(python3 *)"
+      "PowerShell(flutter analyze lib/blocs/game/game_bloc.dart lib/blocs/game/game_state.dart lib/screens/game/game_screen.dart lib/screens/game/widgets/duel_board_phase.dart)",
+      "Skill(run)",
+      "Skill(run:*)"
     ]
   }
 }

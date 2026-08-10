@@ -127,6 +127,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<TutorialsSkippedAll>(_onTutorialsSkippedAll);
     on<OwnedCardAdded>(_onOwnedCardAdded);
     on<CoinsAdded>(_onCoinsAdded);
+    on<OnboardingRewardClaimed>(_onOnboardingRewardClaimed);
     on<CoinsSpent>(_onCoinsSpent);
     on<PredictionXpAdded>(_onPredictionXpAdded);
     on<DailyGuessPlayerSettled>(_onDailyGuessPlayerSettled);
@@ -476,6 +477,24 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       type: event.type ?? _defaultPositiveType(event.source),
       title: event.title ?? _defaultCoinTitle(event.source, true),
       subtitle: event.subtitle,
+    );
+  }
+
+  Future<void> _onOnboardingRewardClaimed(
+    OnboardingRewardClaimed event,
+    Emitter<GameState> emit,
+  ) async {
+    final alreadyClaimed = state.coinLedger.any(
+      (entry) => entry.source == OzCoinTransactionSource.onboardingReward,
+    );
+    if (alreadyClaimed) return;
+    await _applyCoinDelta(
+      delta: 1000,
+      emit: emit,
+      source: OzCoinTransactionSource.onboardingReward,
+      type: OzCoinTransactionType.earn,
+      title: 'WELCOME BONUS',
+      subtitle: 'ONBOARDING COMPLETE',
     );
   }
 
@@ -2506,6 +2525,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       OzCoinTransactionSource.duplicateRefund => 'DUPLICATE REFUND',
       OzCoinTransactionSource.directCardPurchase => 'CARD PURCHASE',
       OzCoinTransactionSource.shopTopUp => 'COIN TOP-UP',
+      OzCoinTransactionSource.onboardingReward => 'WELCOME BONUS',
       OzCoinTransactionSource.streakReward => 'STREAK REWARD',
       OzCoinTransactionSource.referralReward => 'FRIEND REFERRAL',
       OzCoinTransactionSource.quizEntry => 'FOOTBALL QUIZ ENTRY',

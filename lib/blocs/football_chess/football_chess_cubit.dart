@@ -180,13 +180,11 @@ class FootballChessCubit extends Cubit<FootballChessState> {
 
   void _select(BoardPiece piece) {
     final m = state.match!;
-    final available = _engine.availableActions(
-      m.board,
-      Side.player,
-      piece,
-    );
+    final available = _engine.availableActions(m.board, Side.player, piece);
     final hasMove = available.contains(BoardActionType.move);
-    final cells = hasMove ? _engine.legalMoves(m.board, piece) : const <BoardCell>[];
+    final cells = hasMove
+        ? _engine.legalMoves(m.board, piece)
+        : const <BoardCell>[];
 
     emit(
       state.copyWith(
@@ -432,7 +430,18 @@ class FootballChessCubit extends Cubit<FootballChessState> {
     _cpuTimer = Timer(const Duration(milliseconds: 650), () {
       final m = state.match;
       if (m == null || m.phase != ChessMatchPhase.opponentTurn) return;
-      final action = _engine.cpuChooseAction(m.board, m.opponentLevel);
+      final action = _engine.cpuChooseAction(
+        m.board,
+        CpuDecisionContext(
+          playerScore: m.playerScore,
+          opponentScore: m.opponentScore,
+          clockRemaining: m.clockRemaining,
+          recentPlayerActions: [
+            for (final entry in m.moveLog)
+              if (entry.side == Side.player) entry.verb,
+          ],
+        ),
+      );
       if (action == null) {
         _startTurn(Side.player);
         return;

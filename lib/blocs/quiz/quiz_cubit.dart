@@ -29,8 +29,8 @@ class QuizCubit extends Cubit<QuizState> {
       state.progressFor(sport, mode).setProgress(setNumber);
 
   /// Folds a finished session into the persisted progress. Returns the outcome
-  /// so the reveal can play a "MODE UNLOCKED" beat when a tier is first cleared.
-  Future<({bool newlyCleared, QuizMode? unlocked})> recordResult(
+  /// so the reveal can play its "SET N+1 UNLOCKED" and mastery-star beats.
+  Future<({bool newlyCleared, int stars, int starsGained})> recordResult(
     Sport sport,
     QuizMode mode, {
     int setNumber = 1,
@@ -48,6 +48,10 @@ class QuizCubit extends Cubit<QuizState> {
 
     emit(state.copyWith(progressBySport: nextProgressBySport));
     await _storage.saveQuizProgress(sport, result.progress);
-    return (newlyCleared: result.newlyCleared, unlocked: result.unlocked);
+    return (
+      newlyCleared: result.newlyCleared,
+      stars: result.stars,
+      starsGained: result.starsGained,
+    );
   }
 }

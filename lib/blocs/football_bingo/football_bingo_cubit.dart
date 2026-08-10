@@ -137,16 +137,20 @@ class FootballBingoCubit extends Cubit<FootballBingoState> {
 
   Future<FootballBingoArchive> _loadArchive(DateTime now) async {
     final archive = await _storage.loadFootballBingoArchive();
-    if (archive != null && archive.firstUnlockDayKey.isNotEmpty) {
+    if (archive != null &&
+        archive.contentVersion == kFootballBingoContentVersion &&
+        archive.firstUnlockDayKey.isNotEmpty) {
       return archive;
     }
 
-    final legacy = await _storage.loadFootballBingoProgress();
-    if (legacy != null && legacy.puzzleId.isNotEmpty) {
-      final legacyDayKey = footballBingoDayKey(legacy.startedAt);
+    // v1 stored three grids whose intersections were not career-validated.
+    // Begin a clean v2 season rather than attaching those solutions to new data.
+    if (archive != null) {
+      final todayKey = footballBingoDayKey(now);
       return FootballBingoArchive(
-        firstUnlockDayKey: legacyDayKey,
-        progressByDay: {legacyDayKey: _safeProgress(legacy, legacyDayKey)},
+        contentVersion: kFootballBingoContentVersion,
+        firstUnlockDayKey: todayKey,
+        progressByDay: {todayKey: _newProgressForDay(todayKey, todayKey)},
       );
     }
 

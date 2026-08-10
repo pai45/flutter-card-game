@@ -667,7 +667,6 @@ class DailyMysteryPlayLayout extends StatelessWidget {
     required this.icon,
     required this.dossierLabel,
     required this.dossierTitle,
-    required this.dossierDescription,
     required this.details,
     required this.searchLabel,
     required this.options,
@@ -685,6 +684,9 @@ class DailyMysteryPlayLayout extends StatelessWidget {
     required this.onSubmit,
     this.audioProfile = const DailyMysteryAudioProfile(),
     this.extraPanel,
+    this.targetName,
+    this.caseCode,
+    this.backdropPainter,
     super.key,
   });
 
@@ -695,7 +697,6 @@ class DailyMysteryPlayLayout extends StatelessWidget {
   final IconData icon;
   final String dossierLabel;
   final String dossierTitle;
-  final String dossierDescription;
   final List<DailyMysteryDetail> details;
   final String searchLabel;
   final List<String> options;
@@ -712,7 +713,20 @@ class DailyMysteryPlayLayout extends StatelessWidget {
   final VoidCallback onCleared;
   final VoidCallback onSubmit;
   final DailyMysteryAudioProfile audioProfile;
+
+  /// Rendered as an extra locked clue inside the dossier, under the intel row.
   final Widget? extraPanel;
+
+  /// The answer being hunted. Only its word/letter *shape* is shown, as the
+  /// redacted target plate — never the characters themselves.
+  final String? targetName;
+
+  /// Short greeble stamped top-right of the dossier (both games pass the day key).
+  final String? caseCode;
+
+  /// Faint sport line-art washed behind the dossier, e.g.
+  /// `TennisMysterySignalPainter` / `F1MysterySignalPainter`.
+  final CustomPainter? backdropPainter;
 
   @override
   Widget build(BuildContext context) {
@@ -759,15 +773,14 @@ class DailyMysteryPlayLayout extends StatelessWidget {
                                 icon: icon,
                                 eyebrow: dossierLabel,
                                 title: dossierTitle,
-                                description: dossierDescription,
                                 details: details,
                                 compact: compact,
+                                targetName: targetName,
+                                caseCode: caseCode,
+                                backdropPainter: backdropPainter,
+                                extraPanel: extraPanel,
                               ),
                             ),
-                            if (extraPanel != null) ...[
-                              SizedBox(height: compact ? 8 : 12),
-                              extraPanel!,
-                            ],
                             SizedBox(height: compact ? 12 : 20),
                             Text(
                               searchLabel,
@@ -817,28 +830,56 @@ class DailyMysteryPlayLayout extends StatelessWidget {
   }
 }
 
-class _DamageFeedback extends StatelessWidget {
+/// Shake + red flash on every wrong guess.
+///
+/// Driven by [serial] through `didUpdateWidget` rather than a changing `key`:
+/// re-keying rebuilt the whole dossier subtree, which would restart the
+/// dossier's staggered entrance on each miss.
+class _DamageFeedback extends StatefulWidget {
   const _DamageFeedback({required this.serial, required this.child});
 
   final int serial;
   final Widget child;
 
   @override
+  State<_DamageFeedback> createState() => _DamageFeedbackState();
+}
+
+class _DamageFeedbackState extends State<_DamageFeedback>
+    with SingleTickerProviderStateMixin {
+  // Rests at 1 (= fully settled) so the first frame never flashes.
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 420),
+    value: 1,
+  );
+
+  @override
+  void didUpdateWidget(covariant _DamageFeedback oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.serial == oldWidget.serial) return;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.value = 1;
+    } else {
+      _controller.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final reducedMotion = MediaQuery.disableAnimationsOf(context);
-    return TweenAnimationBuilder<double>(
-      key: ValueKey('daily-mystery-damage-$serial'),
-      duration: serial == 0 || reducedMotion
-          ? Duration.zero
-          : const Duration(milliseconds: 420),
-      tween: Tween(begin: serial == 0 ? 0 : 1, end: 0),
-      curve: Curves.easeOut,
-      builder: (context, value, child) {
-        final shake = reducedMotion
-            ? 0.0
-            : math.sin(value * math.pi * 7) * value * 6;
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final value = 1 - Curves.easeOut.transform(_controller.value);
+        if (value <= 0.001) return child!;
         return Transform.translate(
-          offset: Offset(shake, 0),
+          offset: Offset(math.sin(value * math.pi * 7) * value * 6, 0),
           child: ColorFiltered(
             colorFilter: ColorFilter.mode(
               Cyber.danger.withValues(alpha: value * 0.22),
@@ -848,11 +889,14 @@ class _DamageFeedback extends StatelessWidget {
           ),
         );
       },
-      child: child,
+      child: widget.child,
     );
   }
 }
 
+/// The case file the player works from: an encrypted header, the redacted
+/// target identity, and the decrypted clues — which are the actual puzzle and
+/// so carry the most visual weight.
 class _MysteryDossier extends StatelessWidget {
   const _MysteryDossier({
     required this.accent,
@@ -860,9 +904,12 @@ class _MysteryDossier extends StatelessWidget {
     required this.icon,
     required this.eyebrow,
     required this.title,
-    required this.description,
     required this.details,
     required this.compact,
+    this.targetName,
+    this.caseCode,
+    this.backdropPainter,
+    this.extraPanel,
   });
 
   final Color accent;
@@ -870,83 +917,115 @@ class _MysteryDossier extends StatelessWidget {
   final IconData icon;
   final String eyebrow;
   final String title;
-  final String description;
   final List<DailyMysteryDetail> details;
   final bool compact;
+  final String? targetName;
+  final String? caseCode;
+  final CustomPainter? backdropPainter;
+  final Widget? extraPanel;
 
   @override
   Widget build(BuildContext context) {
+    final reducedMotion = MediaQuery.disableAnimationsOf(context);
+    final bandGap = compact ? 10.0 : 14.0;
+    final innerGap = compact ? 6.0 : 8.0;
+
     return CyberPanel(
       accent: secondaryAccent,
-      padding: EdgeInsets.all(compact ? 12 : 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      // Zero here so the backdrop can reach the panel edges; the content
+      // carries its own padding inside the stack.
+      padding: EdgeInsets.zero,
+      child: Stack(
         children: [
-          Row(
-            children: [
-              Container(
-                width: compact ? 56 : 72,
-                height: compact ? 56 : 72,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: Cyber.bg2,
-                  border: Border.all(color: accent.withValues(alpha: 0.5)),
-                ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Icon(icon, color: accent, size: compact ? 30 : 38),
-                    Positioned(
-                      right: 5,
-                      bottom: 5,
-                      child: Icon(
-                        Icons.lock_rounded,
-                        color: secondaryAccent,
-                        size: 13,
-                      ),
-                    ),
-                  ],
+          if (backdropPainter != null)
+            Positioned.fill(
+              child: IgnorePointer(
+                // Faint: these painters were drawn for full-page backdrops, so
+                // at card scale their focal marks (the ball, the car) read as
+                // specks unless pushed well down.
+                child: Opacity(
+                  opacity: 0.07,
+                  child: CustomPaint(painter: backdropPainter),
                 ),
               ),
-              SizedBox(width: compact ? 12 : 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(eyebrow, style: Cyber.label(8, color: accent)),
-                    const SizedBox(height: 5),
-                    Text(
-                      title,
-                      style: Cyber.display(
-                        compact ? 13 : 16,
-                        color: AppTheme.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      description,
-                      maxLines: compact ? 2 : 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: Cyber.body(
-                        compact ? 10 : 11.5,
-                        color: Cyber.muted,
-                        height: 1.25,
-                      ),
-                    ),
-                  ],
+            ),
+          Padding(
+            padding: EdgeInsets.all(compact ? 12 : 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _Entrance(
+                  reducedMotion: reducedMotion,
+                  child: _CaseHeaderStrip(
+                    eyebrow: eyebrow,
+                    caseCode: caseCode,
+                    accent: accent,
+                    compact: compact,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: compact ? 12 : 18),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (var index = 0; index < details.length; index++) ...[
-                Expanded(child: _DetailCell(detail: details[index])),
-                if (index < details.length - 1) const SizedBox(width: 8),
+                SizedBox(height: bandGap),
+                _Entrance(
+                  reducedMotion: reducedMotion,
+                  delay: const Duration(milliseconds: 70),
+                  child: _TargetIdentity(
+                    icon: icon,
+                    title: title,
+                    accent: accent,
+                    secondaryAccent: secondaryAccent,
+                    compact: compact,
+                    targetName: targetName,
+                  ),
+                ),
+                SizedBox(height: bandGap),
+                _Entrance(
+                  reducedMotion: reducedMotion,
+                  delay: const Duration(milliseconds: 140),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'DECRYPTED INTEL',
+                        style: Cyber.label(
+                          compact ? 7.5 : 8,
+                          color: Cyber.muted,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      SizedBox(height: innerGap),
+                      IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            for (var i = 0; i < details.length; i++) ...[
+                              Expanded(
+                                // Short values (a year) don't need a full
+                                // share; give the width to wordy clues like
+                                // "Autodromo Enzo e Dino Ferrari" instead.
+                                flex: details[i].value.length <= 4 ? 2 : 3,
+                                child: _DetailCell(
+                                  detail: details[i],
+                                  accent: accent,
+                                  compact: compact,
+                                ),
+                              ),
+                              if (i < details.length - 1)
+                                const SizedBox(width: 8),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Deliberately outside the entrance: this slot is tappable
+                // (F1's coin hint), and a widget mid-fade/slide is awkward to
+                // hit. It stays live from the first frame.
+                if (extraPanel != null) ...[
+                  SizedBox(height: innerGap),
+                  extraPanel!,
+                ],
               ],
-            ],
+            ),
           ),
         ],
       ),
@@ -954,39 +1033,351 @@ class _MysteryDossier extends StatelessWidget {
   }
 }
 
+class _CaseHeaderStrip extends StatelessWidget {
+  const _CaseHeaderStrip({
+    required this.eyebrow,
+    required this.accent,
+    required this.compact,
+    this.caseCode,
+  });
+
+  final String eyebrow;
+  final Color accent;
+  final bool compact;
+  final String? caseCode;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: const BoxDecoration(
+                color: Cyber.success,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                eyebrow,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Cyber.label(
+                  compact ? 8.5 : 9,
+                  color: accent,
+                  letterSpacing: 1.4,
+                ),
+              ),
+            ),
+            if (caseCode != null) ...[
+              const SizedBox(width: 10),
+              Text(
+                caseCode!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style:
+                    Cyber.label(
+                      compact ? 7 : 7.5,
+                      color: Cyber.muted,
+                    ).copyWith(
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+              ),
+            ],
+          ],
+        ),
+        SizedBox(height: compact ? 8 : 10),
+        Container(height: 1, color: accent.withValues(alpha: 0.18)),
+      ],
+    );
+  }
+}
+
+class _TargetIdentity extends StatelessWidget {
+  const _TargetIdentity({
+    required this.icon,
+    required this.title,
+    required this.accent,
+    required this.secondaryAccent,
+    required this.compact,
+    this.targetName,
+  });
+
+  final IconData icon;
+  final String title;
+  final Color accent;
+  final Color secondaryAccent;
+  final bool compact;
+  final String? targetName;
+
+  @override
+  Widget build(BuildContext context) {
+    final tile = compact ? 48.0 : 56.0;
+    final name = targetName?.trim() ?? '';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: tile,
+              height: tile,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Cyber.bg2,
+                border: Border.all(color: accent.withValues(alpha: 0.5)),
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Icon(icon, color: accent, size: compact ? 26 : 30),
+                  Positioned(
+                    right: 4,
+                    bottom: 4,
+                    child: Icon(
+                      Icons.lock_rounded,
+                      color: secondaryAccent,
+                      size: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: compact ? 12 : 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: Cyber.display(
+                      compact ? 16 : 19,
+                      color: AppTheme.textPrimary,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                  SizedBox(height: compact ? 6 : 8),
+                  Text(
+                    'TARGET IDENTITY',
+                    style: Cyber.label(
+                      compact ? 7 : 7.5,
+                      color: Cyber.muted,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        if (name.isNotEmpty) ...[
+          SizedBox(height: compact ? 8 : 10),
+          _RedactedName(name: name, accent: accent, compact: compact),
+        ],
+      ],
+    );
+  }
+}
+
+/// The locked answer, shown only as its shape: one block per character, words
+/// kept apart, punctuation left legible. Never renders the letters themselves.
+class _RedactedName extends StatelessWidget {
+  const _RedactedName({
+    required this.name,
+    required this.accent,
+    required this.compact,
+  });
+
+  final String name;
+  final Color accent;
+  final bool compact;
+
+  /// Letters (including accented ones such as `á` in "Sánchez") and digits get
+  /// masked; punctuation like `-` and `'` stays visible so "Jo-Wilfried" keeps
+  /// its silhouette.
+  static bool _isMasked(String char) {
+    final code = char.codeUnitAt(0);
+    return (code >= 65 && code <= 90) ||
+        (code >= 97 && code <= 122) ||
+        (code >= 48 && code <= 57) ||
+        code > 127;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reducedMotion = MediaQuery.disableAnimationsOf(context);
+    final words = name
+        .split(RegExp(r'\s+'))
+        .where((word) => word.isNotEmpty)
+        .toList();
+    final maskedTotal = words
+        .expand((word) => word.split(''))
+        .where(_isMasked)
+        .length;
+
+    Widget plate(double sweep) {
+      var index = 0;
+      final wordRows = <Widget>[];
+      for (final word in words) {
+        final glyphs = <Widget>[];
+        for (final char in word.split('')) {
+          if (_isMasked(char)) {
+            // 0 at rest, 1 as the sweep passes over this cell.
+            final heat = sweep < 0
+                ? 0.0
+                : (1 - (index - sweep).abs() / 1.6).clamp(0.0, 1.0);
+            glyphs.add(_cell(heat));
+            index++;
+          } else {
+            glyphs.add(
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 1),
+                child: Text(
+                  char,
+                  style: Cyber.label(compact ? 9 : 10, color: Cyber.muted),
+                ),
+              ),
+            );
+          }
+        }
+        wordRows.add(Row(mainAxisSize: MainAxisSize.min, children: glyphs));
+      }
+      return Wrap(
+        spacing: compact ? 8 : 10,
+        runSpacing: compact ? 5 : 6,
+        children: wordRows,
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 8 : 10,
+        vertical: compact ? 8 : 10,
+      ),
+      decoration: BoxDecoration(
+        color: Cyber.bg2,
+        border: Border.all(color: accent.withValues(alpha: 0.45)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (reducedMotion)
+            plate(-1)
+          else
+            CyberPulse(
+              period: const Duration(milliseconds: 2000),
+              // Runs past both ends so the sweep clears the row before turning.
+              builder: (context, t) => plate(t * (maskedTotal + 3) - 1.5),
+            ),
+          SizedBox(height: compact ? 6 : 7),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              '$maskedTotal CHARS',
+              style:
+                  Cyber.label(
+                    compact ? 6.5 : 7,
+                    color: Cyber.muted,
+                    letterSpacing: 1,
+                  ).copyWith(
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _cell(double heat) {
+    return Container(
+      width: compact ? 11 : 13,
+      height: compact ? 15 : 18,
+      margin: const EdgeInsets.only(right: 2),
+      decoration: BoxDecoration(
+        color: Color.lerp(
+          accent.withValues(alpha: 0.22),
+          accent.withValues(alpha: 0.55),
+          heat,
+        ),
+        border: Border.all(color: accent.withValues(alpha: 0.5)),
+      ),
+    );
+  }
+}
+
+/// One decrypted clue. Value-over-label (the `CyberHudStat` pattern) so the
+/// clue itself reads first — it is what the player is actually solving with.
 class _DetailCell extends StatelessWidget {
-  const _DetailCell({required this.detail});
+  const _DetailCell({
+    required this.detail,
+    required this.accent,
+    required this.compact,
+  });
 
   final DailyMysteryDetail detail;
+  final Color accent;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(minHeight: 54),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
+      constraints: BoxConstraints(minHeight: compact ? 50 : 58),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 7 : 8,
+        vertical: compact ? 8 : 10,
+      ),
       decoration: BoxDecoration(
         color: Cyber.panel2,
-        border: Border.all(color: Cyber.borderSubtle),
+        border: Border(
+          top: const BorderSide(color: Cyber.borderSubtle),
+          right: const BorderSide(color: Cyber.borderSubtle),
+          bottom: const BorderSide(color: Cyber.borderSubtle),
+          left: BorderSide(color: accent.withValues(alpha: 0.55), width: 2),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
+          // Flexible so the value yields rather than overflows: IntrinsicHeight
+          // can under-measure wrapping text at large accessibility text scales.
+          Flexible(
+            child: Text(
+              detail.value.toUpperCase(),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              // Sized so the longest single word in the real data
+              // ("AUSTRALIAN", "AUTODROMO") fits one line — any larger and
+              // Orbitron breaks mid-word, which reads as a glitch.
+              style:
+                  Cyber.display(
+                    compact ? 10 : 11,
+                    color: AppTheme.textPrimary,
+                    letterSpacing: 0.2,
+                  ).copyWith(
+                    height: 1.25,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+            ),
+          ),
+          SizedBox(height: compact ? 5 : 6),
           Text(
             detail.label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.label(7, color: Cyber.muted),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            detail.value,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: Cyber.body(
-              10.5,
-              color: AppTheme.textPrimary,
-              weight: FontWeight.w700,
-              height: 1.15,
+            style: Cyber.label(
+              compact ? 7 : 7.5,
+              color: Cyber.muted,
+              letterSpacing: 1,
             ),
           ),
         ],

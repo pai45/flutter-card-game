@@ -3501,23 +3501,40 @@ const _segGreenB = Color(0xFF009865);
 const _segAmberA = Color(0xFFFFB13D);
 const _segAmberB = Color(0xFFFF7A1A);
 const _segTrack = Color(0xFF314158);
+const _segRedA = Color(0xFFFF6B6B);
+const _segRedB = Color(0xFFC81E30);
 
 /// One bar in a paginated progress row: amber "you are here" for [current],
 /// green for already-[answered]/passed, slate otherwise. Only the current
 /// segment glows.
+///
+/// Pass [verdict] on quiz-style rows where an answer has already been marked
+/// right or wrong — the segment then reads as a scoreboard (green = correct,
+/// red = wrong) instead of a plain answered/unanswered tracker.
 class HudProgressSegment extends StatelessWidget {
   const HudProgressSegment({
     required this.answered,
     required this.current,
+    this.verdict,
     super.key,
   });
 
   final bool answered;
   final bool current;
 
+  /// null = not graded (default, the original behaviour).
+  final bool? verdict;
+
   @override
   Widget build(BuildContext context) {
-    final Gradient? gradient = current
+    final graded = verdict != null;
+    final Gradient? gradient = graded
+        ? LinearGradient(
+            colors: verdict!
+                ? const [_segGreenA, _segGreenB]
+                : const [_segRedA, _segRedB],
+          )
+        : current
         ? const LinearGradient(colors: [_segAmberA, _segAmberB])
         : answered
         ? const LinearGradient(colors: [_segGreenA, _segGreenB])
@@ -3528,9 +3545,60 @@ class HudProgressSegment extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: gradient,
         color: gradient == null ? _segTrack : null,
-        boxShadow: current
+        boxShadow: current && !graded
             ? Cyber.glow(Cyber.amber, alpha: 0.35, blur: 8)
             : null,
+      ),
+    );
+  }
+}
+
+/// Mastery grade for a quiz set — up to [max] chamfered star plates, [earned]
+/// of them lit. Shared by the set grid and the end-of-run summary.
+///
+/// Follows the glow rule: only a full sweep (every star earned) glows, so a
+/// wall of set tiles stays calm and a mastered one pops.
+class CyberStarRating extends StatelessWidget {
+  const CyberStarRating({
+    required this.earned,
+    this.max = 3,
+    this.size = 12,
+    this.spacing = 2,
+    this.dimColor = _segTrack,
+    super.key,
+  });
+
+  final int earned;
+  final int max;
+  final double size;
+  final double spacing;
+  final Color dimColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final complete = earned >= max;
+    return Semantics(
+      label: '$earned of $max stars',
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < max; i++) ...[
+            if (i > 0) SizedBox(width: spacing),
+            Icon(
+              i < earned ? Icons.star_rounded : Icons.star_outline_rounded,
+              size: size,
+              color: i < earned ? Cyber.gold : dimColor,
+              shadows: i < earned && complete
+                  ? [
+                      Shadow(
+                        color: Cyber.gold.withValues(alpha: 0.6),
+                        blurRadius: 8,
+                      ),
+                    ]
+                  : null,
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -4146,15 +4214,19 @@ class CyberBentoGrid extends StatelessWidget {
   const CyberBentoGrid({
     required this.tiles,
     this.gap = 12,
+    double? rowGap,
     this.maxWidth = 440,
     this.rowHeightFactor = 1,
     this.minRowHeight = 0,
     super.key,
-  }) : assert(rowHeightFactor > 0),
+  }) : rowGap = rowGap ?? gap,
+       assert(rowGap == null || rowGap >= 0),
+       assert(rowHeightFactor > 0),
        assert(minRowHeight >= 0);
 
   final List<CyberBentoTile> tiles;
   final double gap;
+  final double rowGap;
   final double maxWidth;
 
   /// Multiplier for each grid row relative to a column cell's width.
@@ -4173,7 +4245,7 @@ class CyberBentoGrid extends StatelessWidget {
         final rowHeight = max(unit * rowHeightFactor, minRowHeight).toDouble();
         final layout = _packBentoTiles(tiles);
         final height =
-            layout.rowCount * rowHeight + max(0, layout.rowCount - 1) * gap;
+            layout.rowCount * rowHeight + max(0, layout.rowCount - 1) * rowGap;
 
         return Align(
           alignment: Alignment.topCenter,
@@ -4186,13 +4258,13 @@ class CyberBentoGrid extends StatelessWidget {
                 for (var index = 0; index < tiles.length; index++)
                   Positioned(
                     left: layout.cells[index].column * (unit + gap),
-                    top: layout.cells[index].row * (rowHeight + gap),
+                    top: layout.cells[index].row * (rowHeight + rowGap),
                     width:
                         layout.cells[index].columnSpan * unit +
                         (layout.cells[index].columnSpan - 1) * gap,
                     height:
                         layout.cells[index].rowSpan * rowHeight +
-                        (layout.cells[index].rowSpan - 1) * gap,
+                        (layout.cells[index].rowSpan - 1) * rowGap,
                     child: tiles[index].child,
                   ),
               ],

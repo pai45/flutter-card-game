@@ -17,6 +17,7 @@ import '../../widgets/player_level_badge.dart';
 import '../match_history/match_history_pages.dart';
 import 'final_over_deck_builder_screen.dart';
 import 'final_over_match_screen.dart';
+import 'widgets/final_over_arena_background.dart';
 
 /// The Final Over lobby. Tier selection, primary CTA, and secondary links.
 class FinalOverHub extends StatelessWidget {
@@ -42,7 +43,7 @@ class FinalOverHub extends StatelessWidget {
               return const Scaffold(
                 backgroundColor: Cyber.bg,
                 body: Center(
-                  child: CircularProgressIndicator(color: Cyber.gold),
+                  child: CircularProgressIndicator(color: Cyber.cyan),
                 ),
               );
             }
@@ -59,8 +60,7 @@ class FinalOverHub extends StatelessWidget {
                   track: ProgressTrack.finalOver,
                 ),
               ),
-              body: CyberBackground(
-                animated: true,
+              body: FinalOverArenaBackground(
                 child: SafeArea(
                   top: false,
                   child: LayoutBuilder(
@@ -97,7 +97,7 @@ class FinalOverHub extends StatelessWidget {
                                     child: HudCtaButton(
                                       label: ready ? 'TAKE GUARD' : 'BUILD SQUAD',
                                       icon: Icons.sports_cricket_rounded,
-                                      accent: Cyber.gold,
+                                      accent: Cyber.cyan,
                                       helper: ready
                                           ? '${state.tier.label} // TARGET ${state.tier.range}'
                                           : 'PICK 3 OWNED BATTERS TO CHASE',
@@ -201,8 +201,8 @@ class _PitchStatusBar extends StatelessWidget {
         height: 7,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Cyber.lime,
-          boxShadow: Cyber.glow(Cyber.lime, alpha: 0.8, blur: 8),
+          color: Cyber.cyan,
+          boxShadow: Cyber.glow(Cyber.cyan, alpha: 0.8, blur: 8),
         ),
       ),
       const SizedBox(width: 8),
@@ -234,13 +234,13 @@ class _HeroRow extends StatelessWidget {
             shape: BoxShape.circle,
             color: Cyber.panel,
             border: Border.all(
-              color: Cyber.gold.withValues(alpha: 0.4 + 0.35 * t),
+              color: Cyber.cyan.withValues(alpha: 0.4 + 0.35 * t),
               width: 1.6,
             ),
           ),
           child: const Icon(
             Icons.sports_cricket_rounded,
-            color: Cyber.gold,
+            color: Cyber.cyan,
             size: 26,
           ),
         ),
@@ -260,7 +260,7 @@ class _HeroRow extends StatelessWidget {
               style: Cyber.label(8.5, color: Cyber.muted, letterSpacing: 1.4),
             ),
             const SizedBox(height: 8),
-            CyberChip(label: tier.blurb, color: Cyber.gold),
+            CyberChip(label: tier.blurb, color: Cyber.cyan),
           ],
         ),
       ),
@@ -274,7 +274,7 @@ class _RecordPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => CyberPanel(
-    accent: Cyber.gold,
+    accent: Cyber.cyan,
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -344,11 +344,11 @@ class _TierPicker extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
                     color: tier == selected
-                        ? Cyber.gold.withValues(alpha: 0.16)
+                        ? Cyber.cyan.withValues(alpha: 0.16)
                         : Cyber.panel.withValues(alpha: 0.8),
                     border: Border.all(
                       color: tier == selected
-                          ? Cyber.gold.withValues(alpha: 0.9)
+                          ? Cyber.cyan.withValues(alpha: 0.9)
                           : Cyber.border,
                       width: tier == selected ? 1.5 : 1,
                     ),
@@ -359,7 +359,7 @@ class _TierPicker extends StatelessWidget {
                         tier.label,
                         style: Cyber.display(
                           12,
-                          color: tier == selected ? Cyber.gold : Cyber.muted,
+                          color: tier == selected ? Cyber.cyan : Cyber.muted,
                           letterSpacing: 1.4,
                         ),
                       ),

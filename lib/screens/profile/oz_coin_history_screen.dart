@@ -318,6 +318,7 @@ IconData _sourceIcon(OzCoinTransactionSource source) {
     OzCoinTransactionSource.guessDriverHint => Icons.sports_motorsports,
     OzCoinTransactionSource.streakReward => Icons.local_fire_department,
     OzCoinTransactionSource.referralReward => Icons.card_giftcard_rounded,
+    OzCoinTransactionSource.onboardingReward => Icons.redeem_rounded,
     OzCoinTransactionSource.pickStake ||
     OzCoinTransactionSource.pickPayout => Icons.keyboard_double_arrow_up,
     OzCoinTransactionSource.packPurchase ||

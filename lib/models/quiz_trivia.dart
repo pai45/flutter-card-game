@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../config/theme.dart';
+import 'sport_match.dart';
 
-/// The four Football Quiz modes. Three are skill tiers (easy → medium → hard)
-/// and [global] is the world-football capstone, unlocked after hard. Each mode
+/// The four Knowledge Arena quiz modes. Three are skill tiers
+/// (easy → medium → hard) and [global] is the world-sport capstone. Each mode
 /// is a self-contained pool of answer-keyed trivia (see `quiz_trivia_bank.dart`).
 ///
 /// Modes are progression-gated: [easy] is always open; every other mode unlocks
@@ -14,10 +15,11 @@ const int kQuizSetCount = 50;
 const int kQuizQuestionsPerSet = 10;
 const int kQuizQuestionPoolPerMode = kQuizSetCount * kQuizQuestionsPerSet;
 const int kQuizEntryCost = 25;
-const int kQuizMaxWrongToPass = 5;
 
-bool quizSetPassed({required int correct, int total = kQuizQuestionsPerSet}) =>
-    total - correct <= kQuizMaxWrongToPass;
+/// Best-score thresholds for the mastery stars shown on the set grid. There is
+/// no pass/fail gate — finishing a set always clears it — so stars are the
+/// reason to replay.
+const int kQuizTwoStarScore = 7;
 
 extension QuizModeX on QuizMode {
   /// HUD label.
@@ -28,20 +30,40 @@ extension QuizModeX on QuizMode {
     QuizMode.global => 'GLOBAL',
   };
 
-  /// One-line pitch shown on the mode tile.
-  String get blurb => switch (this) {
-    QuizMode.easy => 'FOOTBALL BASICS',
-    QuizMode.medium => 'CLUBS & CUPS',
+  /// One-line pitch shown on the mode tile — sport-specific copy so cricket /
+  /// tennis / basketball / motorsport never inherit football wording.
+  String blurbFor(Sport sport) => switch (this) {
+    QuizMode.easy => switch (sport) {
+      Sport.football => 'FOOTBALL BASICS',
+      Sport.cricket => 'CRICKET BASICS',
+      Sport.tennis => 'TENNIS BASICS',
+      Sport.basketball => 'BASKETBALL BASICS',
+      Sport.motorsport => 'MOTORSPORT BASICS',
+    },
+    QuizMode.medium => switch (sport) {
+      Sport.football => 'CLUBS & CUPS',
+      Sport.cricket => 'TEAMS & TOURNAMENTS',
+      Sport.tennis => 'SLAMS & TOURS',
+      Sport.basketball => 'TEAMS & TITLES',
+      Sport.motorsport => 'TEAMS & SERIES',
+    },
     QuizMode.hard => 'DEEP-CUT TRIVIA',
-    QuizMode.global => 'WORLD FOOTBALL',
+    QuizMode.global => switch (sport) {
+      Sport.football => 'WORLD FOOTBALL',
+      Sport.cricket => 'WORLD CRICKET',
+      Sport.tennis => 'WORLD TENNIS',
+      Sport.basketball => 'WORLD BASKETBALL',
+      Sport.motorsport => 'WORLD MOTORSPORT',
+    },
   };
 
-  /// XP paid per correct answer, only when a set is passed.
+  /// XP paid per correct answer. Every correct answer pays, whatever the final
+  /// score — there is no pass gate.
   int get reward => switch (this) {
-    QuizMode.easy => 5,
-    QuizMode.medium => 10,
-    QuizMode.hard => 20,
-    QuizMode.global => 30,
+    QuizMode.easy => 1,
+    QuizMode.medium => 2,
+    QuizMode.hard => 4,
+    QuizMode.global => 5,
   };
 
   /// Accent colour — follows the glow/colour discipline: success→amber→danger
@@ -53,14 +75,21 @@ extension QuizModeX on QuizMode {
     QuizMode.global => Cyber.violet,
   };
 
-  IconData get icon => switch (this) {
-    QuizMode.easy => Icons.sports_soccer,
+  /// Easy uses the sport glyph; medium/hard/global keep the ladder icons.
+  IconData iconFor(Sport sport) => switch (this) {
+    QuizMode.easy => switch (sport) {
+      Sport.football => Icons.sports_soccer,
+      Sport.cricket => Icons.sports_cricket,
+      Sport.tennis => Icons.sports_tennis,
+      Sport.basketball => Icons.sports_basketball,
+      Sport.motorsport => Icons.sports_motorsports,
+    },
     QuizMode.medium => Icons.emoji_events_outlined,
     QuizMode.hard => Icons.local_fire_department_outlined,
     QuizMode.global => Icons.public,
   };
 
-  /// Legacy mode-ladder dependency. New Football Quiz categories are all open;
+  /// Legacy mode-ladder dependency. Quiz categories are all open;
   /// set progression is gated inside each mode.
   QuizMode? get unlockedBy => switch (this) {
     QuizMode.easy => null,
@@ -100,35 +129,49 @@ class TriviaQuestion {
 
 class QuizSetProgress {
   const QuizSetProgress({
-    this.passed = false,
+    this.completed = false,
     this.bestCorrect = 0,
     this.attempts = 0,
   });
 
+  /// The persisted key stays `passed` (and still falls back to the older
+  /// `cleared`) so saves written before the pass gate was removed keep loading.
   factory QuizSetProgress.fromJson(Map<String, dynamic> json) =>
       QuizSetProgress(
-        passed: json['passed'] as bool? ?? json['cleared'] as bool? ?? false,
+        completed: json['passed'] as bool? ?? json['cleared'] as bool? ?? false,
         bestCorrect: json['bestCorrect'] as int? ?? 0,
         attempts: json['attempts'] as int? ?? json['played'] as int? ?? 0,
       );
 
-  final bool passed;
+  /// True once the player has answered every question in the set once. Any
+  /// score completes it — the score only decides [stars].
+  final bool completed;
   final int bestCorrect;
   final int attempts;
 
   bool get hasRun => attempts > 0;
   double get bestPct => bestCorrect / kQuizQuestionsPerSet;
 
+  /// Mastery grade, 0–3. A flawless run is the only way to three stars.
+  int get stars {
+    if (bestCorrect >= kQuizQuestionsPerSet) return 3;
+    if (bestCorrect >= kQuizTwoStarScore) return 2;
+    if (bestCorrect > 0) return 1;
+    return 0;
+  }
+
+  bool get mastered => stars >= 3;
+
   QuizSetProgress merge({required int correct}) {
     return QuizSetProgress(
-      passed: passed || quizSetPassed(correct: correct),
+      completed: true,
       bestCorrect: correct > bestCorrect ? correct : bestCorrect,
       attempts: attempts + 1,
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'passed': passed,
+    'passed': completed,
     'bestCorrect': bestCorrect,
     'attempts': attempts,
   };
@@ -163,7 +206,7 @@ class QuizModeProgress {
     return QuizModeProgress(
       sets: {
         1: QuizSetProgress(
-          passed: legacyCleared,
+          completed: legacyCleared,
           bestCorrect: legacyBest.clamp(0, kQuizQuestionsPerSet),
           attempts: legacyPlayed,
         ),
@@ -179,13 +222,18 @@ class QuizModeProgress {
   bool isSetUnlocked(int setNumber) {
     if (setNumber < 1 || setNumber > kQuizSetCount) return false;
     if (setNumber == 1) return true;
-    return setProgress(setNumber - 1).passed;
+    return setProgress(setNumber - 1).completed;
   }
 
-  int get passedCount =>
-      sets.entries.where((entry) => entry.value.passed).length;
+  int get completedCount =>
+      sets.entries.where((entry) => entry.value.completed).length;
 
-  bool get cleared => passedCount >= kQuizSetCount;
+  /// Total mastery stars banked across the mode's 50 sets (max 150).
+  int get starCount => sets.values.fold(0, (sum, set) => sum + set.stars);
+
+  int get maxStars => kQuizSetCount * 3;
+
+  bool get cleared => completedCount >= kQuizSetCount;
   bool get hasRun => sets.values.any((set) => set.hasRun);
   int get played => sets.values.fold(0, (sum, set) => sum + set.attempts);
   int get bestCorrect => sets.values.fold(
@@ -240,10 +288,15 @@ class QuizProgress {
   int get clearedCount =>
       QuizMode.values.where((m) => forMode(m).cleared).length;
 
-  /// Returns an updated copy with [mode]'s result folded in. The boolean tells
-  /// the caller whether [mode] crossed from not-cleared to cleared on this run
-  /// (so the reveal can play a "MODE UNLOCKED" beat).
-  ({QuizProgress progress, bool newlyCleared, QuizMode? unlocked}) record(
+  /// Returns an updated copy with [mode]'s result folded in.
+  ///
+  /// [newlyCleared] is true when this run completed the set for the first time
+  /// (so the reveal can play a "SET N+1 UNLOCKED" beat), [stars] is the set's
+  /// mastery grade afterwards and [starsGained] is how many this run added on
+  /// top of the previous best. The reveal reads all three from here rather than
+  /// re-reading cubit state after an await, so they can never disagree.
+  ({QuizProgress progress, bool newlyCleared, int stars, int starsGained})
+  record(
     QuizMode mode, {
     required int correct,
     required int total,
@@ -252,10 +305,13 @@ class QuizProgress {
     final before = forMode(mode);
     final beforeSet = before.setProgress(setNumber);
     final after = before.recordSet(setNumber, correct: correct);
-    final next = QuizProgress({...byMode, mode: after});
-    final newlyCleared =
-        !beforeSet.passed && after.setProgress(setNumber).passed;
-    return (progress: next, newlyCleared: newlyCleared, unlocked: null);
+    final afterSet = after.setProgress(setNumber);
+    return (
+      progress: QuizProgress({...byMode, mode: after}),
+      newlyCleared: !beforeSet.completed && afterSet.completed,
+      stars: afterSet.stars,
+      starsGained: afterSet.stars - beforeSet.stars,
+    );
   }
 
   Map<String, dynamic> toJson() => {

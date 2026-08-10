@@ -1,0 +1,5017 @@
+{
+  "sport": "cricket",
+  "mode": "global",
+  "version": 1,
+  "bands": {
+    "1": [
+      {
+        "p": "United States makes 255. Bangladesh is 100 in reply. How many more runs are needed to win?",
+        "o": [
+          "156",
+          "150",
+          "162",
+          "168"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Scotland adds a 90-run partnership; one batter makes 43. What did the partner contribute?",
+        "o": [
+          "44",
+          "47",
+          "50",
+          "53"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Across two matches, LSG scores 248 and 206; KKR scores 165 and 146. Run difference?",
+        "o": [
+          "137",
+          "149",
+          "143",
+          "155"
+        ],
+        "a": 2
+      },
+      {
+        "p": "India makes 258. Scotland is 103 in reply. How many more runs are needed to win?",
+        "o": [
+          "150",
+          "162",
+          "168",
+          "156"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Bangladesh adds a 93-run partnership; one batter makes 43. What did the partner contribute?",
+        "o": [
+          "50",
+          "47",
+          "53",
+          "56"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Across two matches, MI scores 251 and 207; PBKS scores 166 and 146. Run difference?",
+        "o": [
+          "140",
+          "146",
+          "152",
+          "158"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Which country did Andy Flower represent in international cricket?",
+        "o": [
+          "Bangladesh",
+          "England",
+          "Zimbabwe",
+          "India"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Which country did Sana Mir represent in international cricket?",
+        "o": [
+          "Thailand",
+          "United Arab Emirates",
+          "West Indies",
+          "Pakistan"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Who won the Orange Cap in the 2017 IPL?",
+        "o": [
+          "David Warner",
+          "Virat Kohli",
+          "Chris Gayle",
+          "Jos Buttler"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Australia makes 261. England is 106 in reply. How many more runs are needed to win?",
+        "o": [
+          "150",
+          "156",
+          "162",
+          "168"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Across two matches, West Indies scores 149 and 213; Australia scores 170 and 149. Run difference?",
+        "o": [
+          "40",
+          "46",
+          "43",
+          "49"
+        ],
+        "a": 2
+      },
+      {
+        "p": "PBKS is 130 chasing 255 with 15 overs left. What required run rate is needed?",
+        "o": [
+          "7.83",
+          "8.83",
+          "9.33",
+          "8.33"
+        ],
+        "a": 3
+      },
+      {
+        "p": "West Indies adds a 115-run partnership; one batter makes 83. What did the partner contribute?",
+        "o": [
+          "32",
+          "29",
+          "35",
+          "38"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Across two matches, India scores 152 and 214; Ireland scores 170 and 149. Run difference?",
+        "o": [
+          "44",
+          "47",
+          "50",
+          "53"
+        ],
+        "a": 1
+      },
+      {
+        "p": "RR is 133 chasing 258 with 7 overs left. What required run rate is needed?",
+        "o": [
+          "16.86",
+          "18.86",
+          "17.86",
+          "19.86"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Which country did Heath Streak represent in international cricket?",
+        "o": [
+          "Pakistan",
+          "Scotland",
+          "South Africa",
+          "Zimbabwe"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Which country did Bismah Maroof represent in international cricket?",
+        "o": [
+          "Pakistan",
+          "United Arab Emirates",
+          "West Indies",
+          "Australia"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Netherlands adds a 118-run partnership; one batter makes 39. What did the partner contribute?",
+        "o": [
+          "76",
+          "79",
+          "82",
+          "85"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Across two matches, Scotland scores 155 and 215; Pakistan scores 171 and 150. Run difference?",
+        "o": [
+          "46",
+          "52",
+          "49",
+          "55"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Zimbabwe is 136 chasing 261 with 10 overs left. What required run rate is needed?",
+        "o": [
+          "11.50",
+          "13.50",
+          "14.50",
+          "12.50"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Across two matches, England scores 174 and 222; South Africa scores 175 and 153. Run difference?",
+        "o": [
+          "68",
+          "65",
+          "71",
+          "74"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Which country did Sikandar Raza represent in international cricket?",
+        "o": [
+          "Bangladesh",
+          "Zimbabwe",
+          "England",
+          "India"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Which country did Nida Dar represent in international cricket?",
+        "o": [
+          "New Zealand",
+          "Scotland",
+          "Pakistan",
+          "South Africa"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Bangladesh is 155 chasing 280 with 7 overs left. What required run rate is needed?",
+        "o": [
+          "16.86",
+          "18.86",
+          "19.86",
+          "17.86"
+        ],
+        "a": 3
+      },
+      {
+        "p": "New Zealand's bowler concedes 52 from 42 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "7.43",
+          "6.93",
+          "7.93",
+          "8.43"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Across two matches, Sri Lanka scores 177 and 223; New Zealand scores 175 and 153. Run difference?",
+        "o": [
+          "69",
+          "72",
+          "75",
+          "78"
+        ],
+        "a": 1
+      },
+      {
+        "p": "West Indies is 158 chasing 283 with 10 overs left. What required run rate is needed?",
+        "o": [
+          "11.50",
+          "13.50",
+          "12.50",
+          "14.50"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Which country did Kevin O'Brien represent in international cricket?",
+        "o": [
+          "Pakistan",
+          "Scotland",
+          "South Africa",
+          "Ireland"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Which country did Chamari Athapaththu represent in international cricket?",
+        "o": [
+          "Sri Lanka",
+          "India",
+          "Ireland",
+          "Nepal"
+        ],
+        "a": 0
+      },
+      {
+        "p": "South Africa's bowler concedes 55 from 45 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "6.83",
+          "7.33",
+          "7.83",
+          "8.33"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Sri Lanka is 86 chasing 302 with 7 overs left. What required run rate is needed?",
+        "o": [
+          "29.86",
+          "31.86",
+          "30.86",
+          "32.86"
+        ],
+        "a": 2
+      },
+      {
+        "p": "England's bowler concedes 23 from 29 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "4.26",
+          "5.26",
+          "5.76",
+          "4.76"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Ireland needs 97 from 45 balls, then scores 8 in six balls. What is the new required rate?",
+        "o": [
+          "13.69",
+          "12.69",
+          "14.69",
+          "15.69"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Which country did Paul Stirling represent in international cricket?",
+        "o": [
+          "Australia",
+          "Ireland",
+          "Bangladesh",
+          "England"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Which country did Shashikala Siriwardene represent in international cricket?",
+        "o": [
+          "Australia",
+          "Bangladesh",
+          "Sri Lanka",
+          "England"
+        ],
+        "a": 2
+      },
+      {
+        "p": "India is 89 chasing 305 with 10 overs left. What required run rate is needed?",
+        "o": [
+          "20.60",
+          "22.60",
+          "23.60",
+          "21.60"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Scotland's bowler concedes 26 from 32 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "4.88",
+          "4.38",
+          "5.38",
+          "5.88"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Nepal needs 100 from 48 balls, then scores 11 in six balls. What is the new required rate?",
+        "o": [
+          "11.71",
+          "12.71",
+          "13.71",
+          "14.71"
+        ],
+        "a": 1
+      },
+      {
+        "p": "England is 92 chasing 308 with 13 overs left. What required run rate is needed?",
+        "o": [
+          "15.62",
+          "17.62",
+          "16.62",
+          "18.62"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Which country did Ryan ten Doeschate represent in international cricket?",
+        "o": [
+          "Zimbabwe",
+          "Afghanistan",
+          "Australia",
+          "Netherlands"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Which country did Salma Khatun represent in international cricket?",
+        "o": [
+          "Bangladesh",
+          "Scotland",
+          "South Africa",
+          "Sri Lanka"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Netherlands needs 119 from 67 balls, then scores 4 in six balls. What is the new required rate?",
+        "o": [
+          "10.31",
+          "11.31",
+          "12.31",
+          "13.31"
+        ],
+        "a": 1
+      },
+      {
+        "p": "New Zealand: 9 wins, 5 losses, 0 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "17 points",
+          "19 points",
+          "18 points",
+          "20 points"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Zimbabwe's bowler concedes 48 from 19 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "14.16",
+          "16.16",
+          "17.16",
+          "15.16"
+        ],
+        "a": 3
+      },
+      {
+        "p": "West Indies needs 122 from 70 balls, then scores 7 in six balls. What is the new required rate?",
+        "o": [
+          "10.78",
+          "9.78",
+          "11.78",
+          "12.78"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Which country did Bas de Leede represent in international cricket?",
+        "o": [
+          "India",
+          "Netherlands",
+          "Ireland",
+          "Nepal"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Bangladesh: 5 wins, 3 losses, 0 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "9 points",
+          "11 points",
+          "10 points",
+          "12 points"
+        ],
+        "a": 2
+      },
+      {
+        "p": "United States' bowler concedes 51 from 22 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "12.91",
+          "14.91",
+          "15.91",
+          "13.91"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Which country did Paras Khadka represent in international cricket?",
+        "o": [
+          "Nepal",
+          "Afghanistan",
+          "Australia",
+          "Bangladesh"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Sri Lanka needs 125 from 36 balls, then scores 10 in six balls. What is the new required rate?",
+        "o": [
+          "22.00",
+          "23.00",
+          "24.00",
+          "25.00"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Scotland needs 58 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "9 sixes",
+          "11 sixes",
+          "10 sixes",
+          "12 sixes"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Which country did Dipendra Singh Airee represent in international cricket?",
+        "o": [
+          "Pakistan",
+          "Scotland",
+          "South Africa",
+          "Nepal"
+        ],
+        "a": 3
+      },
+      {
+        "p": "South Africa needs 83 from 55 balls, then scores 3 in six balls. What is the new required rate?",
+        "o": [
+          "9.80",
+          "9.30",
+          "10.30",
+          "10.80"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Ireland: 6 wins, 5 losses, 1 no-result. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "12 points",
+          "13 points",
+          "14 points",
+          "15 points"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Which country did Kyle Coetzer represent in international cricket?",
+        "o": [
+          "New Zealand",
+          "Pakistan",
+          "Scotland",
+          "South Africa"
+        ],
+        "a": 2
+      },
+      {
+        "p": "England needs 61 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "10 sixes",
+          "12 sixes",
+          "13 sixes",
+          "11 sixes"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Afghanistan needs 86 from 58 balls, then scores 6 in six balls. What is the new required rate?",
+        "o": [
+          "9.23",
+          "8.73",
+          "9.73",
+          "10.23"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Which country did Richie Berrington represent in international cricket?",
+        "o": [
+          "Pakistan",
+          "Scotland",
+          "South Africa",
+          "Sri Lanka"
+        ],
+        "a": 1
+      },
+      {
+        "p": "India: 9 wins, 3 losses, 1 no-result. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "18 points",
+          "20 points",
+          "19 points",
+          "21 points"
+        ],
+        "a": 2
+      },
+      {
+        "p": "West Indies needs 64 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "10 sixes",
+          "12 sixes",
+          "13 sixes",
+          "11 sixes"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Where was the 2025 World Test Championship final staged?",
+        "o": [
+          "England",
+          "South Africa, Zimbabwe and Kenya",
+          "Sri Lanka",
+          "UAE and Oman"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Nepal: 7 wins, 2 losses, 2 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "15 points",
+          "16 points",
+          "17 points",
+          "18 points"
+        ],
+        "a": 1
+      },
+      {
+        "p": "New Zealand needs 25 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "4 sixes",
+          "6 sixes",
+          "5 sixes",
+          "7 sixes"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Where was the 2023 World Test Championship final staged?",
+        "o": [
+          "India and Pakistan",
+          "India and Sri Lanka",
+          "India, Pakistan and Sri Lanka",
+          "England"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Netherlands scores 180 and one batter makes 40. What percentage of the total did that batter score?",
+        "o": [
+          "22.22%",
+          "21.22%",
+          "23.22%",
+          "24.22%"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Pakistan: 3 wins, 5 losses, 2 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "7 points",
+          "8 points",
+          "9 points",
+          "10 points"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Where was the 2021 World Test Championship final staged?",
+        "o": [
+          "United States and West Indies",
+          "West Indies",
+          "England",
+          "Australia"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Zimbabwe needs 28 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "4 sixes",
+          "6 sixes",
+          "7 sixes",
+          "5 sixes"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Australia scores 240 and one batter makes 70. What percentage of the total did that batter score?",
+        "o": [
+          "29.17%",
+          "28.17%",
+          "30.17%",
+          "31.17%"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Where was the 2025 Champions Trophy staged?",
+        "o": [
+          "Australia and New Zealand",
+          "Pakistan and UAE",
+          "Bangladesh",
+          "England"
+        ],
+        "a": 1
+      },
+      {
+        "p": "South Africa's bowler has 1/34 and 1/39. What is the combined bowling average?",
+        "o": [
+          "35.50",
+          "37.50",
+          "36.50",
+          "38.50"
+        ],
+        "a": 2
+      },
+      {
+        "p": "United States scores 140 and one batter makes 80. What percentage of the total did that batter score?",
+        "o": [
+          "52.14%",
+          "62.14%",
+          "67.14%",
+          "57.14%"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Where was the 2017 Champions Trophy staged?",
+        "o": [
+          "England and Wales",
+          "Bangladesh",
+          "England",
+          "India"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Sri Lanka's bowler has 3/47 and 3/52. What is the combined bowling average?",
+        "o": [
+          "15.50",
+          "16.50",
+          "17.50",
+          "18.50"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Scotland needs 50 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "8 sixes",
+          "10 sixes",
+          "9 sixes",
+          "11 sixes"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Where was the 2013 Champions Trophy staged?",
+        "o": [
+          "India and Pakistan",
+          "India and Sri Lanka",
+          "India, Pakistan and Sri Lanka",
+          "England and Wales"
+        ],
+        "a": 3
+      },
+      {
+        "p": "South Africa scores 200 and one batter makes 50. What percentage of the total did that batter score?",
+        "o": [
+          "25.00%",
+          "24.00%",
+          "26.00%",
+          "27.00%"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Ireland's bowler has 2/50 and 4/55. What is the combined bowling average?",
+        "o": [
+          "16.50",
+          "17.50",
+          "18.50",
+          "19.50"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Where was the 2009 Champions Trophy staged?",
+        "o": [
+          "Pakistan and UAE",
+          "South Africa, Zimbabwe and Kenya",
+          "South Africa",
+          "Sri Lanka"
+        ],
+        "a": 2
+      },
+      {
+        "p": "England needs 53 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "8 sixes",
+          "10 sixes",
+          "11 sixes",
+          "9 sixes"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Afghanistan's bowler has 1/38 and 2/43. What is the combined bowling average?",
+        "o": [
+          "27.00",
+          "26.00",
+          "28.00",
+          "29.00"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Where was the 2006 Champions Trophy staged?",
+        "o": [
+          "Kenya",
+          "India",
+          "Pakistan and UAE",
+          "South Africa"
+        ],
+        "a": 1
+      },
+      {
+        "p": "India has faced 74 legal balls in a hypothetical men's T20I. Which over notation is correct?",
+        "o": [
+          "12.3 overs",
+          "13.2 overs",
+          "12.2 overs",
+          "7.4 overs"
+        ],
+        "a": 2
+      },
+      {
+        "p": "West Indies scores 160 and one batter makes 30. What percentage of the total did that batter score?",
+        "o": [
+          "17.75%",
+          "19.75%",
+          "20.75%",
+          "18.75%"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Where was the 2004 Champions Trophy staged?",
+        "o": [
+          "England",
+          "Bangladesh",
+          "England and Wales",
+          "India"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Nepal's bowler has 4/41 and 3/46. What is the combined bowling average?",
+        "o": [
+          "11.43",
+          "12.43",
+          "13.43",
+          "14.43"
+        ],
+        "a": 1
+      },
+      {
+        "p": "New Zealand has faced 47 legal balls in a hypothetical men's ODI. Which over notation is correct?",
+        "o": [
+          "7.0 overs",
+          "8.5 overs",
+          "7.5 overs",
+          "4.7 overs"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Where was the 2000 Champions Trophy staged?",
+        "o": [
+          "India",
+          "India and Pakistan",
+          "India and Sri Lanka",
+          "Kenya"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Netherlands scores 220 and one batter makes 60. What percentage of the total did that batter score?",
+        "o": [
+          "27.27%",
+          "26.27%",
+          "28.27%",
+          "29.27%"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Pakistan's bowler has 3/44 and 4/49. What is the combined bowling average?",
+        "o": [
+          "12.29",
+          "13.29",
+          "14.29",
+          "15.29"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Where was the 1998 Champions Trophy staged?",
+        "o": [
+          "India and Pakistan",
+          "India and Sri Lanka",
+          "Bangladesh",
+          "India, Pakistan and Sri Lanka"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Ireland's bowler has 4/38 and 4/43. What is the combined bowling average?",
+        "o": [
+          "9.13",
+          "11.13",
+          "12.13",
+          "10.13"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Australia's bowler has 2/32 and 2/37. What is the combined bowling average?",
+        "o": [
+          "17.25",
+          "16.25",
+          "18.25",
+          "19.25"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Where was the 2026 Men's T20 World Cup staged?",
+        "o": [
+          "Australia and New Zealand",
+          "India and Sri Lanka",
+          "Bangladesh",
+          "England"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Bangladesh has faced 99 legal balls in a hypothetical men's T20I. Which over notation is correct?",
+        "o": [
+          "16.4 overs",
+          "17.3 overs",
+          "16.3 overs",
+          "9.9 overs"
+        ],
+        "a": 2
+      },
+      {
+        "p": "England has faced 105 legal balls in a hypothetical men's T20I. Which over notation is correct?",
+        "o": [
+          "17.4 overs",
+          "18.3 overs",
+          "10.5 overs",
+          "17.3 overs"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Where was the 2024 Men's T20 World Cup staged?",
+        "o": [
+          "United States and West Indies",
+          "Pakistan and UAE",
+          "South Africa",
+          "South Africa, Zimbabwe and Kenya"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Sri Lanka's bowler has 1/35 and 3/40. What is the combined bowling average?",
+        "o": [
+          "17.75",
+          "18.75",
+          "19.75",
+          "20.75"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Scotland has faced 72 legal balls in a hypothetical men's ODI. Which over notation is correct?",
+        "o": [
+          "12.1 overs",
+          "13.0 overs",
+          "12.0 overs",
+          "7.2 overs"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Where was the 2022 Men's T20 World Cup staged?",
+        "o": [
+          "India",
+          "India and Pakistan",
+          "India and Sri Lanka",
+          "Australia"
+        ],
+        "a": 3
+      }
+    ],
+    "2": [
+      {
+        "p": "Zimbabwe is 73 chasing 189 with 11 overs left. What required run rate is needed?",
+        "o": [
+          "10.55",
+          "9.55",
+          "11.55",
+          "12.55"
+        ],
+        "a": 0
+      },
+      {
+        "p": "West Indies adds a 129-run partnership; one batter makes 65. What did the partner contribute?",
+        "o": [
+          "61",
+          "64",
+          "67",
+          "70"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Across two matches, GT scores 247 and 165; MI scores 214 and 180. Run difference?",
+        "o": [
+          "17",
+          "19",
+          "18",
+          "20"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Where was the 2021 Men's T20 World Cup staged?",
+        "o": [
+          "India, Sri Lanka and Bangladesh",
+          "Kenya",
+          "Pakistan and UAE",
+          "UAE and Oman"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Which country did Nigar Sultana represent in international cricket?",
+        "o": [
+          "Bangladesh",
+          "Ireland",
+          "Nepal",
+          "New Zealand"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Who won the Orange Cap in the 2016 IPL?",
+        "o": [
+          "Sai Sudharsan",
+          "Virat Kohli",
+          "Shaun Marsh",
+          "Shubman Gill"
+        ],
+        "a": 1
+      },
+      {
+        "p": "United States is 76 chasing 192 with 14 overs left. What required run rate is needed?",
+        "o": [
+          "7.79",
+          "8.79",
+          "8.29",
+          "9.29"
+        ],
+        "a": 2
+      },
+      {
+        "p": "India adds a 132-run partnership; one batter makes 47. What did the partner contribute?",
+        "o": [
+          "79",
+          "91",
+          "97",
+          "85"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Across two matches, KKR scores 250 and 166; RCB scores 214 and 181. Run difference?",
+        "o": [
+          "21",
+          "18",
+          "24",
+          "27"
+        ],
+        "a": 0
+      },
+      {
+        "p": "South Africa is 79 chasing 195 with 6 overs left. What required run rate is needed?",
+        "o": [
+          "18.33",
+          "19.33",
+          "20.33",
+          "21.33"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Across two matches, Scotland scores 148 and 173; India scores 218 and 183. Run difference?",
+        "o": [
+          "77",
+          "83",
+          "80",
+          "86"
+        ],
+        "a": 2
+      },
+      {
+        "p": "LSG is 98 chasing 214 with 14 overs left. What required run rate is needed?",
+        "o": [
+          "7.79",
+          "8.79",
+          "9.29",
+          "8.29"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Where was the 2016 Men's T20 World Cup staged?",
+        "o": [
+          "India",
+          "England",
+          "England and Wales",
+          "India and Pakistan"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Which country did Isobel Joyce represent in international cricket?",
+        "o": [
+          "South Africa",
+          "Ireland",
+          "Sri Lanka",
+          "Thailand"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Who won the Orange Cap in the 2015 IPL?",
+        "o": [
+          "Sai Sudharsan",
+          "Shaun Marsh",
+          "David Warner",
+          "Shubman Gill"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Afghanistan's bowler concedes 64 from 48 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "7.50",
+          "8.50",
+          "9.00",
+          "8.00"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Across two matches, Bangladesh scores 151 and 174; Scotland scores 219 and 184. Run difference?",
+        "o": [
+          "78",
+          "75",
+          "81",
+          "84"
+        ],
+        "a": 0
+      },
+      {
+        "p": "West Indies is 101 chasing 217 with 6 overs left. What required run rate is needed?",
+        "o": [
+          "18.33",
+          "19.33",
+          "20.33",
+          "21.33"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Thailand's bowler concedes 67 from 51 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "7.38",
+          "8.38",
+          "7.88",
+          "8.88"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Where was the 2014 Men's T20 World Cup staged?",
+        "o": [
+          "Sri Lanka",
+          "UAE and Oman",
+          "United States and West Indies",
+          "Bangladesh"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Which country did Gaby Lewis represent in international cricket?",
+        "o": [
+          "Ireland",
+          "Australia",
+          "Bangladesh",
+          "England"
+        ],
+        "a": 0
+      },
+      {
+        "p": "New Zealand is 120 chasing 236 with 14 overs left. What required run rate is needed?",
+        "o": [
+          "7.79",
+          "8.29",
+          "8.79",
+          "9.29"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Australia's bowler concedes 35 from 35 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "5.50",
+          "6.50",
+          "6.00",
+          "7.00"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Pakistan needs 130 from 39 balls, then scores 3 in six balls. What is the new required rate?",
+        "o": [
+          "22.09",
+          "24.09",
+          "25.09",
+          "23.09"
+        ],
+        "a": 3
+      },
+      {
+        "p": "India is 123 chasing 239 with 6 overs left. What required run rate is needed?",
+        "o": [
+          "19.33",
+          "18.33",
+          "20.33",
+          "21.33"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Where was the 2012 Men's T20 World Cup staged?",
+        "o": [
+          "India and Pakistan",
+          "Sri Lanka",
+          "India and Sri Lanka",
+          "India, Pakistan and Sri Lanka"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Which country did Sornnarin Tippoch represent in international cricket?",
+        "o": [
+          "Sri Lanka",
+          "United Arab Emirates",
+          "Thailand",
+          "West Indies"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Australia's bowler concedes 38 from 38 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "5.50",
+          "6.50",
+          "7.00",
+          "6.00"
+        ],
+        "a": 3
+      },
+      {
+        "p": "South Africa needs 72 from 42 balls, then scores 6 in six balls. What is the new required rate?",
+        "o": [
+          "11.00",
+          "10.00",
+          "12.00",
+          "13.00"
+        ],
+        "a": 0
+      },
+      {
+        "p": "United States is 126 chasing 242 with 9 overs left. What required run rate is needed?",
+        "o": [
+          "11.89",
+          "12.89",
+          "13.89",
+          "14.89"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Pakistan needs 91 from 61 balls, then scores 12 in six balls. What is the new required rate?",
+        "o": [
+          "8.12",
+          "9.12",
+          "8.62",
+          "9.62"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Where was the 2010 Men's T20 World Cup staged?",
+        "o": [
+          "United States and West Indies",
+          "Australia",
+          "Australia and New Zealand",
+          "West Indies"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Which country did Nattaya Boochatham represent in international cricket?",
+        "o": [
+          "Thailand",
+          "Pakistan",
+          "Scotland",
+          "South Africa"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Scotland: 8 wins, 1 loss, 0 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "15 points",
+          "16 points",
+          "17 points",
+          "18 points"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Bangladesh's bowler concedes 60 from 25 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "13.40",
+          "15.40",
+          "14.40",
+          "16.40"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Ireland needs 94 from 64 balls, then scores 15 in six balls. What is the new required rate?",
+        "o": [
+          "7.67",
+          "8.67",
+          "9.17",
+          "8.17"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Thailand: 4 wins, 4 losses, 0 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "8 points",
+          "7 points",
+          "9 points",
+          "10 points"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Where was the 2009 Men's T20 World Cup staged?",
+        "o": [
+          "India, Pakistan and Sri Lanka",
+          "England",
+          "India, Sri Lanka and Bangladesh",
+          "Kenya"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Which country did Kathryn Bryce represent in international cricket?",
+        "o": [
+          "India",
+          "Ireland",
+          "Scotland",
+          "Nepal"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Afghanistan's bowler concedes 63 from 28 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "12.50",
+          "14.50",
+          "15.50",
+          "13.50"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Australia: 9 wins, 3 losses, 1 no-result. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "19 points",
+          "18 points",
+          "20 points",
+          "21 points"
+        ],
+        "a": 0
+      },
+      {
+        "p": "West Indies needs 42 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "6 sixes",
+          "7 sixes",
+          "8 sixes",
+          "9 sixes"
+        ],
+        "a": 1
+      },
+      {
+        "p": "India needs 116 from 49 balls, then scores 11 in six balls. What is the new required rate?",
+        "o": [
+          "13.65",
+          "15.65",
+          "14.65",
+          "16.65"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Where was the 2007 Men's T20 World Cup staged?",
+        "o": [
+          "Australia",
+          "Australia and New Zealand",
+          "Bangladesh",
+          "South Africa"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Which country did Esha Oza represent in international cricket?",
+        "o": [
+          "United Arab Emirates",
+          "Bangladesh",
+          "England",
+          "India"
+        ],
+        "a": 0
+      },
+      {
+        "p": "New Zealand: 5 wins, 1 loss, 1 no-result. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "10 points",
+          "11 points",
+          "12 points",
+          "13 points"
+        ],
+        "a": 1
+      },
+      {
+        "p": "South Africa needs 45 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "7 sixes",
+          "9 sixes",
+          "8 sixes",
+          "10 sixes"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Pakistan needs 119 from 52 balls, then scores 14 in six balls. What is the new required rate?",
+        "o": [
+          "12.70",
+          "14.70",
+          "15.70",
+          "13.70"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Pakistan: 8 wins, 4 losses, 1 no-result. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "17 points",
+          "16 points",
+          "18 points",
+          "19 points"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Where was the 2023 Men's ODI World Cup staged?",
+        "o": [
+          "United States and West Indies",
+          "India",
+          "West Indies",
+          "Australia"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Which country did Rubina Chhetry represent in international cricket?",
+        "o": [
+          "Pakistan",
+          "Scotland",
+          "Nepal",
+          "South Africa"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Australia scores 120 and one batter makes 70. What percentage of the total did that batter score?",
+        "o": [
+          "53.33%",
+          "63.33%",
+          "68.33%",
+          "58.33%"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Bangladesh: 6 wins, 3 losses, 2 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "14 points",
+          "13 points",
+          "15 points",
+          "16 points"
+        ],
+        "a": 0
+      },
+      {
+        "p": "United States needs 67 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "11 sixes",
+          "12 sixes",
+          "13 sixes",
+          "14 sixes"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Thailand scores 180 and one batter makes 40. What percentage of the total did that batter score?",
+        "o": [
+          "21.22%",
+          "23.22%",
+          "22.22%",
+          "24.22%"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Where was the 2019 Men's ODI World Cup staged?",
+        "o": [
+          "Sri Lanka",
+          "UAE and Oman",
+          "United States and West Indies",
+          "England and Wales"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Scotland: 9 wins, 1 loss, 2 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "20 points",
+          "19 points",
+          "21 points",
+          "22 points"
+        ],
+        "a": 0
+      },
+      {
+        "p": "South Africa needs 70 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "11 sixes",
+          "12 sixes",
+          "13 sixes",
+          "14 sixes"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Where was the 2015 Men's ODI World Cup staged?",
+        "o": [
+          "West Indies",
+          "Australia",
+          "Australia and New Zealand",
+          "Bangladesh"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Ireland scores 240 and one batter makes 70. What percentage of the total did that batter score?",
+        "o": [
+          "28.17%",
+          "30.17%",
+          "31.17%",
+          "29.17%"
+        ],
+        "a": 3
+      },
+      {
+        "p": "England needs 31 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "6 sixes",
+          "5 sixes",
+          "7 sixes",
+          "8 sixes"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Where was the 2011 Men's ODI World Cup staged?",
+        "o": [
+          "Bangladesh",
+          "India, Sri Lanka and Bangladesh",
+          "England",
+          "England and Wales"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Afghanistan scores 140 and one batter makes 80. What percentage of the total did that batter score?",
+        "o": [
+          "52.14%",
+          "62.14%",
+          "57.14%",
+          "67.14%"
+        ],
+        "a": 2
+      },
+      {
+        "p": "India's bowler has 3/46 and 3/51. What is the combined bowling average?",
+        "o": [
+          "15.17",
+          "17.17",
+          "18.17",
+          "16.17"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Where was the 2007 Men's ODI World Cup staged?",
+        "o": [
+          "West Indies",
+          "India, Pakistan and Sri Lanka",
+          "India, Sri Lanka and Bangladesh",
+          "Kenya"
+        ],
+        "a": 0
+      },
+      {
+        "p": "West Indies needs 34 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "5 sixes",
+          "6 sixes",
+          "7 sixes",
+          "8 sixes"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Nepal scores 200 and one batter makes 50. What percentage of the total did that batter score?",
+        "o": [
+          "24.00%",
+          "26.00%",
+          "25.00%",
+          "27.00%"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Where was the 2003 Men's ODI World Cup staged?",
+        "o": [
+          "Pakistan and UAE",
+          "South Africa",
+          "Sri Lanka",
+          "South Africa, Zimbabwe and Kenya"
+        ],
+        "a": 3
+      },
+      {
+        "p": "New Zealand's bowler has 2/49 and 4/54. What is the combined bowling average?",
+        "o": [
+          "17.17",
+          "16.17",
+          "18.17",
+          "19.17"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Netherlands needs 37 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "6 sixes",
+          "7 sixes",
+          "8 sixes",
+          "9 sixes"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Where was the 1999 Men's ODI World Cup staged?",
+        "o": [
+          "India",
+          "India and Pakistan",
+          "England",
+          "India and Sri Lanka"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Pakistan's bowler has 1/37 and 2/42. What is the combined bowling average?",
+        "o": [
+          "25.33",
+          "27.33",
+          "28.33",
+          "26.33"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Zimbabwe has faced 112 legal balls in a hypothetical men's T20I. Which over notation is correct?",
+        "o": [
+          "18.4 overs",
+          "18.5 overs",
+          "19.4 overs",
+          "11.2 overs"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Where was the 1996 Men's ODI World Cup staged?",
+        "o": [
+          "Bangladesh",
+          "India, Pakistan and Sri Lanka",
+          "England",
+          "England and Wales"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Australia scores 160 and one batter makes 30. What percentage of the total did that batter score?",
+        "o": [
+          "17.75%",
+          "19.75%",
+          "18.75%",
+          "20.75%"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Bangladesh's bowler has 4/40 and 3/45. What is the combined bowling average?",
+        "o": [
+          "11.14",
+          "13.14",
+          "14.14",
+          "12.14"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Where was the 1992 Men's ODI World Cup staged?",
+        "o": [
+          "Australia and New Zealand",
+          "India and Pakistan",
+          "India and Sri Lanka",
+          "India, Pakistan and Sri Lanka"
+        ],
+        "a": 0
+      },
+      {
+        "p": "United States has faced 263 legal balls in a hypothetical men's ODI. Which over notation is correct?",
+        "o": [
+          "43.0 overs",
+          "43.5 overs",
+          "44.5 overs",
+          "26.3 overs"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Sri Lanka scores 220 and one batter makes 60. What percentage of the total did that batter score?",
+        "o": [
+          "26.27%",
+          "28.27%",
+          "27.27%",
+          "29.27%"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Where was the 1987 Men's ODI World Cup staged?",
+        "o": [
+          "India, Sri Lanka and Bangladesh",
+          "Kenya",
+          "Pakistan and UAE",
+          "India and Pakistan"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Scotland has faced 282 legal balls in a hypothetical men's ODI. Which over notation is correct?",
+        "o": [
+          "47.0 overs",
+          "47.1 overs",
+          "48.0 overs",
+          "28.2 overs"
+        ],
+        "a": 0
+      },
+      {
+        "p": "United States' bowler has 2/43 and 2/48. What is the combined bowling average?",
+        "o": [
+          "21.75",
+          "22.75",
+          "23.75",
+          "24.75"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Where was the 1983 Men's ODI World Cup staged?",
+        "o": [
+          "South Africa",
+          "South Africa, Zimbabwe and Kenya",
+          "England",
+          "Sri Lanka"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Ireland's bowler has 2/31 and 2/36. What is the combined bowling average?",
+        "o": [
+          "15.75",
+          "17.75",
+          "18.75",
+          "16.75"
+        ],
+        "a": 3
+      },
+      {
+        "p": "England has faced 48 legal balls in a hypothetical men's T20I. Which over notation is correct?",
+        "o": [
+          "8.0 overs",
+          "8.1 overs",
+          "9.0 overs",
+          "4.8 overs"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Where was the 1979 Men's ODI World Cup staged?",
+        "o": [
+          "Australia",
+          "England",
+          "Australia and New Zealand",
+          "Bangladesh"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Afghanistan's bowler has delivered 49 balls in a men's ODI. How many remain in the maximum allocation?",
+        "o": [
+          "10 balls",
+          "12 balls",
+          "11 balls",
+          "13 balls"
+        ],
+        "a": 2
+      },
+      {
+        "p": "India's bowler has 1/34 and 3/39. What is the combined bowling average?",
+        "o": [
+          "17.25",
+          "19.25",
+          "20.25",
+          "18.25"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Where was the 1975 Men's ODI World Cup staged?",
+        "o": [
+          "England",
+          "England and Wales",
+          "India",
+          "India and Pakistan"
+        ],
+        "a": 0
+      },
+      {
+        "p": "West Indies has faced 288 legal balls in a hypothetical men's ODI. Which over notation is correct?",
+        "o": [
+          "48.1 overs",
+          "48.0 overs",
+          "49.0 overs",
+          "28.8 overs"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Nepal has completed 2 overs of a 6-over powerplay. How many powerplay balls remain?",
+        "o": [
+          "21 balls",
+          "27 balls",
+          "24 balls",
+          "30 balls"
+        ],
+        "a": 2
+      },
+      {
+        "p": "In which country is Lord's located?",
+        "o": [
+          "South Africa",
+          "Sri Lanka",
+          "Trinidad and Tobago",
+          "England"
+        ],
+        "a": 3
+      },
+      {
+        "p": "New Zealand has faced 38 legal balls in a hypothetical men's ODI. Which over notation is correct?",
+        "o": [
+          "6.2 overs",
+          "6.3 overs",
+          "7.2 overs",
+          "3.8 overs"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Sri Lanka's bowler has delivered 23 balls in a men's T20I. How many remain in the maximum allocation?",
+        "o": [
+          "0 balls",
+          "1 ball",
+          "2 balls",
+          "3 balls"
+        ],
+        "a": 1
+      },
+      {
+        "p": "In which country is The Oval located?",
+        "o": [
+          "Sri Lanka",
+          "Trinidad and Tobago",
+          "England",
+          "United Arab Emirates"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Pakistan has completed 4 overs of a 10-over powerplay. How many powerplay balls remain?",
+        "o": [
+          "33 balls",
+          "39 balls",
+          "42 balls",
+          "36 balls"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Zimbabwe has faced 73 legal balls in a hypothetical men's T20I. Which over notation is correct?",
+        "o": [
+          "12.1 overs",
+          "12.2 overs",
+          "13.1 overs",
+          "7.3 overs"
+        ],
+        "a": 0
+      },
+      {
+        "p": "In which country is Edgbaston located?",
+        "o": [
+          "India",
+          "England",
+          "Ireland",
+          "Jamaica"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Australia's bowler has delivered 38 balls in a men's ODI. How many remain in the maximum allocation?",
+        "o": [
+          "19 balls",
+          "25 balls",
+          "22 balls",
+          "28 balls"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Bangladesh has completed 3 overs of a 6-over powerplay. How many powerplay balls remain?",
+        "o": [
+          "17 balls",
+          "19 balls",
+          "20 balls",
+          "18 balls"
+        ],
+        "a": 3
+      }
+    ],
+    "3": [
+      {
+        "p": "In which country is Old Trafford located?",
+        "o": [
+          "England",
+          "Ireland",
+          "Jamaica",
+          "New Zealand"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Which country or region hosted the 2024 Women's T20 World Cup?",
+        "o": [
+          "Sri Lanka",
+          "United Arab Emirates",
+          "West Indies",
+          "Australia"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Who won the Orange Cap in the 2014 IPL?",
+        "o": [
+          "Michael Hussey",
+          "Ruturaj Gaikwad",
+          "Robin Uthappa",
+          "Sachin Tendulkar"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Nepal's bowler concedes 22 from 51 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "2.09",
+          "3.09",
+          "3.59",
+          "2.59"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Across two matches, Ireland scores 243 and 245; Australia scores 140 and 113. Run difference?",
+        "o": [
+          "235",
+          "229",
+          "241",
+          "247"
+        ],
+        "a": 0
+      },
+      {
+        "p": "PBKS is 132 chasing 289 with 10 overs left. What required run rate is needed?",
+        "o": [
+          "14.70",
+          "15.70",
+          "16.70",
+          "17.70"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Pakistan's bowler concedes 25 from 19 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "7.39",
+          "8.39",
+          "7.89",
+          "8.89"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Across two matches, Pakistan scores 246 and 246; Ireland scores 141 and 114. Run difference?",
+        "o": [
+          "231",
+          "243",
+          "249",
+          "237"
+        ],
+        "a": 3
+      },
+      {
+        "p": "RR is 135 chasing 292 with 13 overs left. What required run rate is needed?",
+        "o": [
+          "12.08",
+          "11.08",
+          "13.08",
+          "14.08"
+        ],
+        "a": 0
+      },
+      {
+        "p": "In which country is Headingley located?",
+        "o": [
+          "United Arab Emirates",
+          "England",
+          "Zimbabwe",
+          "Australia"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Which country or region hosted the 2023 Women's T20 World Cup?",
+        "o": [
+          "West Indies",
+          "Australia",
+          "South Africa",
+          "Bangladesh"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Who won the Orange Cap in the 2013 IPL?",
+        "o": [
+          "KL Rahul",
+          "Kane Williamson",
+          "Matthew Hayden",
+          "Michael Hussey"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Bangladesh needs 99 from 67 balls, then scores 8 in six balls. What is the new required rate?",
+        "o": [
+          "8.95",
+          "8.45",
+          "9.45",
+          "9.95"
+        ],
+        "a": 0
+      },
+      {
+        "p": "New Zealand is 154 chasing 311 with 10 overs left. What required run rate is needed?",
+        "o": [
+          "14.70",
+          "15.70",
+          "16.70",
+          "17.70"
+        ],
+        "a": 1
+      },
+      {
+        "p": "RCB's bowler concedes 47 from 41 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "6.38",
+          "7.38",
+          "6.88",
+          "7.88"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Scotland needs 102 from 70 balls, then scores 11 in six balls. What is the new required rate?",
+        "o": [
+          "8.03",
+          "9.03",
+          "9.53",
+          "8.53"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Australia is 157 chasing 314 with 13 overs left. What required run rate is needed?",
+        "o": [
+          "12.08",
+          "11.08",
+          "13.08",
+          "14.08"
+        ],
+        "a": 0
+      },
+      {
+        "p": "In which country is Trent Bridge located?",
+        "o": [
+          "Jamaica",
+          "England",
+          "New Zealand",
+          "Pakistan"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Which country or region hosted the 2020 Women's T20 World Cup?",
+        "o": [
+          "India",
+          "New Zealand",
+          "Australia",
+          "South Africa"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Ireland's bowler concedes 50 from 44 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "6.32",
+          "7.32",
+          "7.82",
+          "6.82"
+        ],
+        "a": 3
+      },
+      {
+        "p": "India: 4 wins, 4 losses, 0 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "8 points",
+          "7 points",
+          "9 points",
+          "10 points"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Afghanistan's bowler concedes 69 from 28 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "13.79",
+          "14.79",
+          "15.79",
+          "16.79"
+        ],
+        "a": 1
+      },
+      {
+        "p": "South Africa needs 124 from 55 balls, then scores 7 in six balls. What is the new required rate?",
+        "o": [
+          "13.33",
+          "15.33",
+          "14.33",
+          "16.33"
+        ],
+        "a": 2
+      },
+      {
+        "p": "In which country is Melbourne Cricket Ground located?",
+        "o": [
+          "Bangladesh",
+          "Barbados",
+          "England",
+          "Australia"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Which country or region hosted the 2018 Women's T20 World Cup?",
+        "o": [
+          "West Indies",
+          "Bangladesh",
+          "England",
+          "India"
+        ],
+        "a": 0
+      },
+      {
+        "p": "West Indies: 7 wins, 2 losses, 0 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "13 points",
+          "14 points",
+          "15 points",
+          "16 points"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Pakistan's bowler concedes 21 from 31 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "3.56",
+          "4.56",
+          "4.06",
+          "5.06"
+        ],
+        "a": 2
+      },
+      {
+        "p": "New Zealand needs 127 from 58 balls, then scores 10 in six balls. What is the new required rate?",
+        "o": [
+          "12.50",
+          "14.50",
+          "15.50",
+          "13.50"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Bangladesh: 3 wins, 5 losses, 0 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "6 points",
+          "5 points",
+          "7 points",
+          "8 points"
+        ],
+        "a": 0
+      },
+      {
+        "p": "In which country is Sydney Cricket Ground located?",
+        "o": [
+          "South Africa",
+          "Australia",
+          "Sri Lanka",
+          "Trinidad and Tobago"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Which country or region hosted the 2016 Women's T20 World Cup?",
+        "o": [
+          "New Zealand",
+          "South Africa",
+          "India",
+          "Sri Lanka"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Pakistan needs 85 from 40 balls, then scores 3 in six balls. What is the new required rate?",
+        "o": [
+          "13.47",
+          "15.47",
+          "16.47",
+          "14.47"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Thailand: 8 wins, 4 losses, 1 no-result. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "17 points",
+          "16 points",
+          "18 points",
+          "19 points"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Australia needs 26 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "4 sixes",
+          "5 sixes",
+          "6 sixes",
+          "7 sixes"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Australia needs 88 from 43 balls, then scores 6 in six balls. What is the new required rate?",
+        "o": [
+          "12.30",
+          "14.30",
+          "13.30",
+          "15.30"
+        ],
+        "a": 2
+      },
+      {
+        "p": "In which country is Adelaide Oval located?",
+        "o": [
+          "Barbados",
+          "England",
+          "India",
+          "Australia"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Which country or region hosted the 2014 Women's T20 World Cup?",
+        "o": [
+          "Bangladesh",
+          "Sri Lanka",
+          "United Arab Emirates",
+          "West Indies"
+        ],
+        "a": 0
+      },
+      {
+        "p": "United States: 4 wins, 2 losses, 1 no-result. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "8 points",
+          "9 points",
+          "10 points",
+          "11 points"
+        ],
+        "a": 1
+      },
+      {
+        "p": "India needs 29 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "4 sixes",
+          "6 sixes",
+          "5 sixes",
+          "7 sixes"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Scotland needs 91 from 46 balls, then scores 9 in six balls. What is the new required rate?",
+        "o": [
+          "11.30",
+          "13.30",
+          "14.30",
+          "12.30"
+        ],
+        "a": 3
+      },
+      {
+        "p": "South Africa needs 48 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "8 sixes",
+          "7 sixes",
+          "9 sixes",
+          "10 sixes"
+        ],
+        "a": 0
+      },
+      {
+        "p": "In which country is The Gabba located?",
+        "o": [
+          "Pakistan",
+          "Australia",
+          "South Africa",
+          "Sri Lanka"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Which country or region hosted the 2012 Women's T20 World Cup?",
+        "o": [
+          "West Indies",
+          "Australia",
+          "Sri Lanka",
+          "Bangladesh"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Netherlands scores 260 and one batter makes 40. What percentage of the total did that batter score?",
+        "o": [
+          "14.38%",
+          "16.38%",
+          "17.38%",
+          "15.38%"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Pakistan: 5 wins, 4 losses, 2 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "12 points",
+          "11 points",
+          "13 points",
+          "14 points"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Afghanistan needs 51 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "8 sixes",
+          "9 sixes",
+          "10 sixes",
+          "11 sixes"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Bangladesh scores 180 and one batter makes 40. What percentage of the total did that batter score?",
+        "o": [
+          "21.22%",
+          "23.22%",
+          "22.22%",
+          "24.22%"
+        ],
+        "a": 2
+      },
+      {
+        "p": "In which country is Perth Stadium located?",
+        "o": [
+          "Sri Lanka",
+          "Trinidad and Tobago",
+          "United Arab Emirates",
+          "Australia"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Which country or region hosted the 2010 Women's T20 World Cup?",
+        "o": [
+          "West Indies",
+          "Bangladesh",
+          "England",
+          "India"
+        ],
+        "a": 0
+      },
+      {
+        "p": "West Indies: 8 wins, 2 losses, 2 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "17 points",
+          "18 points",
+          "19 points",
+          "20 points"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Thailand scores 240 and one batter makes 50. What percentage of the total did that batter score?",
+        "o": [
+          "19.83%",
+          "21.83%",
+          "20.83%",
+          "22.83%"
+        ],
+        "a": 2
+      },
+      {
+        "p": "New Zealand's bowler has 4/42 and 2/47. What is the combined bowling average?",
+        "o": [
+          "13.83",
+          "15.83",
+          "16.83",
+          "14.83"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Australia needs 73 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "13 sixes",
+          "12 sixes",
+          "14 sixes",
+          "15 sixes"
+        ],
+        "a": 0
+      },
+      {
+        "p": "In which country is Wankhede Stadium located?",
+        "o": [
+          "Barbados",
+          "India",
+          "England",
+          "Ireland"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Which country or region hosted the 2009 Women's T20 World Cup?",
+        "o": [
+          "West Indies",
+          "Australia",
+          "England",
+          "Bangladesh"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Pakistan scores 140 and one batter makes 80. What percentage of the total did that batter score?",
+        "o": [
+          "52.14%",
+          "62.14%",
+          "67.14%",
+          "57.14%"
+        ],
+        "a": 3
+      },
+      {
+        "p": "India's bowler has 3/45 and 3/50. What is the combined bowling average?",
+        "o": [
+          "15.83",
+          "14.83",
+          "16.83",
+          "17.83"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Australia needs 76 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "12 sixes",
+          "13 sixes",
+          "14 sixes",
+          "15 sixes"
+        ],
+        "a": 1
+      },
+      {
+        "p": "New Zealand needs 48 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "7 sixes",
+          "9 sixes",
+          "8 sixes",
+          "10 sixes"
+        ],
+        "a": 2
+      },
+      {
+        "p": "In which country is Eden Gardens located?",
+        "o": [
+          "South Africa",
+          "Sri Lanka",
+          "Trinidad and Tobago",
+          "India"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Which country or region hosted the 2022 Women's ODI World Cup?",
+        "o": [
+          "New Zealand",
+          "England",
+          "India",
+          "South Africa"
+        ],
+        "a": 0
+      },
+      {
+        "p": "United States has faced 204 legal balls in a hypothetical men's ODI. Which over notation is correct?",
+        "o": [
+          "34.1 overs",
+          "34.0 overs",
+          "35.0 overs",
+          "20.4 overs"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Thailand's bowler has 4/32 and 3/37. What is the combined bowling average?",
+        "o": [
+          "9.36",
+          "10.36",
+          "9.86",
+          "10.86"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Scotland's bowler has 1/36 and 2/41. What is the combined bowling average?",
+        "o": [
+          "24.67",
+          "26.67",
+          "27.67",
+          "25.67"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Bangladesh has faced 61 legal balls in a hypothetical women's T20I. Which over notation is correct?",
+        "o": [
+          "10.1 overs",
+          "10.2 overs",
+          "11.1 overs",
+          "6.1 overs"
+        ],
+        "a": 0
+      },
+      {
+        "p": "In which country is M. Chinnaswamy Stadium located?",
+        "o": [
+          "Sri Lanka",
+          "India",
+          "Trinidad and Tobago",
+          "United Arab Emirates"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Ireland scores 160 and one batter makes 30. What percentage of the total did that batter score?",
+        "o": [
+          "17.75%",
+          "19.75%",
+          "18.75%",
+          "20.75%"
+        ],
+        "a": 2
+      },
+      {
+        "p": "England's bowler has 4/39 and 3/44. What is the combined bowling average?",
+        "o": [
+          "10.86",
+          "12.86",
+          "13.86",
+          "11.86"
+        ],
+        "a": 3
+      },
+      {
+        "p": "In which country is M. A. Chidambaram Stadium located?",
+        "o": [
+          "India",
+          "Trinidad and Tobago",
+          "United Arab Emirates",
+          "Zimbabwe"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Afghanistan has faced 210 legal balls in a hypothetical men's ODI. Which over notation is correct?",
+        "o": [
+          "35.1 overs",
+          "35.0 overs",
+          "36.0 overs",
+          "21.0 overs"
+        ],
+        "a": 1
+      },
+      {
+        "p": "India's bowler has 3/27 and 1/32. What is the combined bowling average?",
+        "o": [
+          "13.75",
+          "15.75",
+          "14.75",
+          "16.75"
+        ],
+        "a": 2
+      },
+      {
+        "p": "In which country is Arun Jaitley Stadium located?",
+        "o": [
+          "Barbados",
+          "England",
+          "Ireland",
+          "India"
+        ],
+        "a": 3
+      },
+      {
+        "p": "West Indies has faced 229 legal balls in a hypothetical men's ODI. Which over notation is correct?",
+        "o": [
+          "38.1 overs",
+          "38.2 overs",
+          "39.1 overs",
+          "22.9 overs"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Nepal's bowler has delivered 16 balls in a men's T20I. How many remain in the maximum allocation?",
+        "o": [
+          "7 balls",
+          "8 balls",
+          "9 balls",
+          "10 balls"
+        ],
+        "a": 1
+      },
+      {
+        "p": "In which country is Narendra Modi Stadium located?",
+        "o": [
+          "Sri Lanka",
+          "Trinidad and Tobago",
+          "India",
+          "United Arab Emirates"
+        ],
+        "a": 2
+      },
+      {
+        "p": "New Zealand's bowler has 2/30 and 2/35. What is the combined bowling average?",
+        "o": [
+          "15.25",
+          "17.25",
+          "18.25",
+          "16.25"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Netherlands has faced 86 legal balls in a hypothetical men's T20I. Which over notation is correct?",
+        "o": [
+          "14.2 overs",
+          "14.3 overs",
+          "15.2 overs",
+          "8.6 overs"
+        ],
+        "a": 0
+      },
+      {
+        "p": "In which country is Green Park located?",
+        "o": [
+          "England",
+          "India",
+          "Ireland",
+          "Jamaica"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Pakistan's bowler has delivered 49 balls in a men's ODI. How many remain in the maximum allocation?",
+        "o": [
+          "10 balls",
+          "12 balls",
+          "11 balls",
+          "13 balls"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Zimbabwe's bowler has 1/33 and 3/38. What is the combined bowling average?",
+        "o": [
+          "16.75",
+          "18.75",
+          "19.75",
+          "17.75"
+        ],
+        "a": 3
+      },
+      {
+        "p": "In which country is HPCA Stadium located?",
+        "o": [
+          "India",
+          "United Arab Emirates",
+          "Zimbabwe",
+          "Australia"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Australia's bowler has delivered 56 balls in a men's ODI. How many remain in the maximum allocation?",
+        "o": [
+          "3 balls",
+          "4 balls",
+          "5 balls",
+          "6 balls"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Australia has completed 7 overs of a 10-over powerplay. How many powerplay balls remain?",
+        "o": [
+          "17 balls",
+          "19 balls",
+          "18 balls",
+          "20 balls"
+        ],
+        "a": 2
+      },
+      {
+        "p": "In which country is National Bank Stadium located?",
+        "o": [
+          "Barbados",
+          "England",
+          "India",
+          "Pakistan"
+        ],
+        "a": 3
+      },
+      {
+        "p": "United States has faced 254 legal balls in a hypothetical men's ODI. Which over notation is correct?",
+        "o": [
+          "42.2 overs",
+          "42.3 overs",
+          "43.2 overs",
+          "25.4 overs"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Bangladesh has faced 34 legal balls in a hypothetical men's T20I. Which over notation is correct?",
+        "o": [
+          "5.5 overs",
+          "5.4 overs",
+          "6.4 overs",
+          "3.4 overs"
+        ],
+        "a": 1
+      },
+      {
+        "p": "In which country is Gaddafi Stadium located?",
+        "o": [
+          "Bangladesh",
+          "Barbados",
+          "Pakistan",
+          "England"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Scotland has completed 4 overs of a 10-over powerplay. How many powerplay balls remain?",
+        "o": [
+          "33 balls",
+          "39 balls",
+          "42 balls",
+          "36 balls"
+        ],
+        "a": 3
+      },
+      {
+        "p": "South Africa has faced 111 legal balls in a hypothetical men's T20I. Which over notation is correct?",
+        "o": [
+          "18.3 overs",
+          "18.4 overs",
+          "19.3 overs",
+          "11.1 overs"
+        ],
+        "a": 0
+      },
+      {
+        "p": "In which country is Rawalpindi Cricket Stadium located?",
+        "o": [
+          "Zimbabwe",
+          "Pakistan",
+          "Australia",
+          "Bangladesh"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Ireland has completed 5 overs of a 10-over powerplay. How many powerplay balls remain?",
+        "o": [
+          "27 balls",
+          "33 balls",
+          "30 balls",
+          "36 balls"
+        ],
+        "a": 2
+      },
+      {
+        "p": "England makes 8 and Afghanistan makes 3 in a hypothetical Super Over. What is the run margin?",
+        "o": [
+          "4 runs",
+          "6 runs",
+          "7 runs",
+          "5 runs"
+        ],
+        "a": 3
+      },
+      {
+        "p": "In which country is Newlands located?",
+        "o": [
+          "South Africa",
+          "Sri Lanka",
+          "Trinidad and Tobago",
+          "United Arab Emirates"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Afghanistan's bowler has delivered 45 balls in a men's ODI. How many remain in the maximum allocation?",
+        "o": [
+          "14 balls",
+          "15 balls",
+          "16 balls",
+          "17 balls"
+        ],
+        "a": 1
+      },
+      {
+        "p": "India has completed 3 overs of a 6-over powerplay. How many powerplay balls remain?",
+        "o": [
+          "17 balls",
+          "19 balls",
+          "18 balls",
+          "20 balls"
+        ],
+        "a": 2
+      },
+      {
+        "p": "In which country is The Wanderers located?",
+        "o": [
+          "Bangladesh",
+          "Barbados",
+          "England",
+          "South Africa"
+        ],
+        "a": 3
+      },
+      {
+        "p": "West Indies makes 11 and Zimbabwe makes 4 in a hypothetical Super Over. What is the run margin?",
+        "o": [
+          "7 runs",
+          "6 runs",
+          "8 runs",
+          "9 runs"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Nepal's bowler has delivered 6 balls in a men's T20I. How many remain in the maximum allocation?",
+        "o": [
+          "17 balls",
+          "18 balls",
+          "19 balls",
+          "20 balls"
+        ],
+        "a": 1
+      },
+      {
+        "p": "In which country is SuperSport Park located?",
+        "o": [
+          "Jamaica",
+          "New Zealand",
+          "South Africa",
+          "Pakistan"
+        ],
+        "a": 2
+      },
+      {
+        "p": "New Zealand has completed 2 overs of a 10-over powerplay. How many powerplay balls remain?",
+        "o": [
+          "45 balls",
+          "51 balls",
+          "54 balls",
+          "48 balls"
+        ],
+        "a": 3
+      }
+    ],
+    "4": [
+      {
+        "p": "India is 98 chasing 246 with 7 overs left. What required run rate is needed?",
+        "o": [
+          "21.14",
+          "20.14",
+          "22.14",
+          "23.14"
+        ],
+        "a": 0
+      },
+      {
+        "p": "New Zealand's bowler concedes 60 from 48 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "7.00",
+          "7.50",
+          "8.00",
+          "8.50"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Across two matches, LSG scores 243 and 204; RR scores 189 and 148. Run difference?",
+        "o": [
+          "104",
+          "116",
+          "110",
+          "122"
+        ],
+        "a": 2
+      },
+      {
+        "p": "New Zealand is 101 chasing 249 with 10 overs left. What required run rate is needed?",
+        "o": [
+          "13.80",
+          "15.80",
+          "16.80",
+          "14.80"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Australia's bowler concedes 63 from 51 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "7.41",
+          "6.91",
+          "7.91",
+          "8.41"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Across two matches, MI scores 246 and 205; CSK scores 189 and 148. Run difference?",
+        "o": [
+          "108",
+          "114",
+          "120",
+          "126"
+        ],
+        "a": 1
+      },
+      {
+        "p": "In which country is Kingsmead located?",
+        "o": [
+          "Trinidad and Tobago",
+          "United Arab Emirates",
+          "South Africa",
+          "Zimbabwe"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Which country or region hosted the 2017 Women's ODI World Cup?",
+        "o": [
+          "South Africa",
+          "Sri Lanka",
+          "United Arab Emirates",
+          "England"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Who won the Orange Cap in the 2012 IPL?",
+        "o": [
+          "Chris Gayle",
+          "David Warner",
+          "Jos Buttler",
+          "KL Rahul"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Zimbabwe is 104 chasing 252 with 13 overs left. What required run rate is needed?",
+        "o": [
+          "10.38",
+          "11.38",
+          "12.38",
+          "13.38"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Ireland needs 97 from 50 balls, then scores 3 in six balls. What is the new required rate?",
+        "o": [
+          "11.82",
+          "13.82",
+          "12.82",
+          "14.82"
+        ],
+        "a": 2
+      },
+      {
+        "p": "PBKS is 123 chasing 271 with 10 overs left. What required run rate is needed?",
+        "o": [
+          "13.80",
+          "15.80",
+          "16.80",
+          "14.80"
+        ],
+        "a": 3
+      },
+      {
+        "p": "United States' bowler concedes 34 from 38 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "5.37",
+          "4.87",
+          "5.87",
+          "6.37"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Pakistan needs 100 from 53 balls, then scores 6 in six balls. What is the new required rate?",
+        "o": [
+          "11.00",
+          "12.00",
+          "13.00",
+          "14.00"
+        ],
+        "a": 1
+      },
+      {
+        "p": "RR is 126 chasing 274 with 13 overs left. What required run rate is needed?",
+        "o": [
+          "10.38",
+          "12.38",
+          "11.38",
+          "13.38"
+        ],
+        "a": 2
+      },
+      {
+        "p": "In which country is Basin Reserve located?",
+        "o": [
+          "Barbados",
+          "England",
+          "India",
+          "New Zealand"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Which country or region hosted the 2013 Women's ODI World Cup?",
+        "o": [
+          "India",
+          "Australia",
+          "Bangladesh",
+          "England"
+        ],
+        "a": 0
+      },
+      {
+        "p": "South Africa's bowler concedes 37 from 41 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "4.91",
+          "5.41",
+          "5.91",
+          "6.41"
+        ],
+        "a": 1
+      },
+      {
+        "p": "New Zealand needs 103 from 56 balls, then scores 9 in six balls. What is the new required rate?",
+        "o": [
+          "10.28",
+          "12.28",
+          "11.28",
+          "13.28"
+        ],
+        "a": 2
+      },
+      {
+        "p": "England is 129 chasing 277 with 5 overs left. What required run rate is needed?",
+        "o": [
+          "28.60",
+          "30.60",
+          "31.60",
+          "29.60"
+        ],
+        "a": 3
+      },
+      {
+        "p": "West Indies needs 122 from 38 balls, then scores 15 in six balls. What is the new required rate?",
+        "o": [
+          "20.06",
+          "19.06",
+          "21.06",
+          "22.06"
+        ],
+        "a": 0
+      },
+      {
+        "p": "In which country is Eden Park located?",
+        "o": [
+          "Ireland",
+          "New Zealand",
+          "Jamaica",
+          "Pakistan"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Which country or region hosted the 2009 Women's ODI World Cup?",
+        "o": [
+          "England",
+          "India",
+          "Australia",
+          "New Zealand"
+        ],
+        "a": 2
+      },
+      {
+        "p": "India: 4 wins, 4 losses, 2 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "9 points",
+          "11 points",
+          "12 points",
+          "10 points"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Sri Lanka's bowler concedes 59 from 28 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "12.64",
+          "11.64",
+          "13.64",
+          "14.64"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Nepal needs 125 from 41 balls, then scores 5 in six balls. What is the new required rate?",
+        "o": [
+          "19.57",
+          "20.57",
+          "21.57",
+          "22.57"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Ireland: 7 wins, 2 losses, 2 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "15 points",
+          "17 points",
+          "16 points",
+          "18 points"
+        ],
+        "a": 2
+      },
+      {
+        "p": "In which country is Hagley Oval located?",
+        "o": [
+          "Zimbabwe",
+          "Australia",
+          "Bangladesh",
+          "New Zealand"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Which country or region hosted the 2005 Women's ODI World Cup?",
+        "o": [
+          "South Africa",
+          "Sri Lanka",
+          "United Arab Emirates",
+          "West Indies"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Netherlands' bowler concedes 62 from 31 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "11.00",
+          "12.00",
+          "13.00",
+          "14.00"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Scotland: 5 wins, 1 loss, 0 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "9 points",
+          "11 points",
+          "10 points",
+          "12 points"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Zimbabwe needs 36 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "5 sixes",
+          "7 sixes",
+          "8 sixes",
+          "6 sixes"
+        ],
+        "a": 3
+      },
+      {
+        "p": "England needs 86 from 63 balls, then scores 14 in six balls. What is the new required rate?",
+        "o": [
+          "7.58",
+          "7.08",
+          "8.08",
+          "8.58"
+        ],
+        "a": 0
+      },
+      {
+        "p": "In which country is Sabina Park located?",
+        "o": [
+          "Ireland",
+          "Jamaica",
+          "New Zealand",
+          "Pakistan"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Which country or region hosted the 2000 Women's ODI World Cup?",
+        "o": [
+          "England",
+          "India",
+          "New Zealand",
+          "South Africa"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Bangladesh: 8 wins, 4 losses, 0 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "15 points",
+          "17 points",
+          "18 points",
+          "16 points"
+        ],
+        "a": 3
+      },
+      {
+        "p": "New Zealand needs 39 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "7 sixes",
+          "6 sixes",
+          "8 sixes",
+          "9 sixes"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Sri Lanka needs 89 from 66 balls, then scores 4 in six balls. What is the new required rate?",
+        "o": [
+          "8.00",
+          "8.50",
+          "9.00",
+          "9.50"
+        ],
+        "a": 1
+      },
+      {
+        "p": "West Indies: 4 wins, 2 losses, 0 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "7 points",
+          "9 points",
+          "8 points",
+          "10 points"
+        ],
+        "a": 2
+      },
+      {
+        "p": "In which country is Kensington Oval located?",
+        "o": [
+          "Trinidad and Tobago",
+          "United Arab Emirates",
+          "Zimbabwe",
+          "Barbados"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Which country or region hosted the 1997 Women's ODI World Cup?",
+        "o": [
+          "India",
+          "England",
+          "New Zealand",
+          "South Africa"
+        ],
+        "a": 0
+      },
+      {
+        "p": "South Africa scores 160 and one batter makes 30. What percentage of the total did that batter score?",
+        "o": [
+          "17.75%",
+          "18.75%",
+          "19.75%",
+          "20.75%"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Sri Lanka: 9 wins, 1 loss, 1 no-result. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "18 points",
+          "20 points",
+          "19 points",
+          "21 points"
+        ],
+        "a": 2
+      },
+      {
+        "p": "United States scores 260 and one batter makes 60. What percentage of the total did that batter score?",
+        "o": [
+          "22.08%",
+          "24.08%",
+          "25.08%",
+          "23.08%"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Ireland scores 220 and one batter makes 60. What percentage of the total did that batter score?",
+        "o": [
+          "27.27%",
+          "26.27%",
+          "28.27%",
+          "29.27%"
+        ],
+        "a": 0
+      },
+      {
+        "p": "In which country is Queen's Park Oval located?",
+        "o": [
+          "United Arab Emirates",
+          "Trinidad and Tobago",
+          "Zimbabwe",
+          "Australia"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Which country or region hosted the 1993 Women's ODI World Cup?",
+        "o": [
+          "United Arab Emirates",
+          "West Indies",
+          "England",
+          "Australia"
+        ],
+        "a": 2
+      },
+      {
+        "p": "India: 5 wins, 4 losses, 1 no-result. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "10 points",
+          "12 points",
+          "13 points",
+          "11 points"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Scotland needs 64 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "11 sixes",
+          "10 sixes",
+          "12 sixes",
+          "13 sixes"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Nepal scores 120 and one batter makes 30. What percentage of the total did that batter score?",
+        "o": [
+          "24.00%",
+          "25.00%",
+          "26.00%",
+          "27.00%"
+        ],
+        "a": 1
+      },
+      {
+        "p": "England needs 25 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "4 sixes",
+          "6 sixes",
+          "5 sixes",
+          "7 sixes"
+        ],
+        "a": 2
+      },
+      {
+        "p": "In which country is Sinhalese Sports Club Ground located?",
+        "o": [
+          "Pakistan",
+          "South Africa",
+          "Trinidad and Tobago",
+          "Sri Lanka"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Which country or region hosted the 1988 Women's ODI World Cup?",
+        "o": [
+          "Australia",
+          "Bangladesh",
+          "England",
+          "India"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Sri Lanka needs 64 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "10 sixes",
+          "11 sixes",
+          "12 sixes",
+          "13 sixes"
+        ],
+        "a": 1
+      },
+      {
+        "p": "New Zealand's bowler has 1/39 and 3/44. What is the combined bowling average?",
+        "o": [
+          "19.75",
+          "21.75",
+          "20.75",
+          "22.75"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Scotland scores 160 and one batter makes 70. What percentage of the total did that batter score?",
+        "o": [
+          "42.75%",
+          "44.75%",
+          "45.75%",
+          "43.75%"
+        ],
+        "a": 3
+      },
+      {
+        "p": "West Indies scores 240 and one batter makes 70. What percentage of the total did that batter score?",
+        "o": [
+          "29.17%",
+          "28.17%",
+          "30.17%",
+          "31.17%"
+        ],
+        "a": 0
+      },
+      {
+        "p": "In which country is R. Premadasa Stadium located?",
+        "o": [
+          "South Africa",
+          "Sri Lanka",
+          "Trinidad and Tobago",
+          "United Arab Emirates"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Which country or region hosted the 1982 Women's ODI World Cup?",
+        "o": [
+          "United Arab Emirates",
+          "West Indies",
+          "New Zealand",
+          "Australia"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Bangladesh's bowler has 4/42 and 4/47. What is the combined bowling average?",
+        "o": [
+          "10.13",
+          "12.13",
+          "13.13",
+          "11.13"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Sri Lanka scores 140 and one batter makes 80. What percentage of the total did that batter score?",
+        "o": [
+          "57.14%",
+          "52.14%",
+          "62.14%",
+          "67.14%"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Sri Lanka's bowler has 3/30 and 3/35. What is the combined bowling average?",
+        "o": [
+          "9.83",
+          "10.83",
+          "11.83",
+          "12.83"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Ireland has faced 180 legal balls in a hypothetical women's ODI. Which over notation is correct?",
+        "o": [
+          "30.1 overs",
+          "31.0 overs",
+          "30.0 overs",
+          "18.0 overs"
+        ],
+        "a": 2
+      },
+      {
+        "p": "In which country is Pallekele International Stadium located?",
+        "o": [
+          "Trinidad and Tobago",
+          "United Arab Emirates",
+          "Zimbabwe",
+          "Sri Lanka"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Which country or region hosted the 1978 Women's ODI World Cup?",
+        "o": [
+          "India",
+          "West Indies",
+          "Australia",
+          "Bangladesh"
+        ],
+        "a": 0
+      },
+      {
+        "p": "South Africa has faced 69 legal balls in a hypothetical men's T20I. Which over notation is correct?",
+        "o": [
+          "11.4 overs",
+          "11.3 overs",
+          "12.3 overs",
+          "6.9 overs"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Scotland's bowler has 2/33 and 4/38. What is the combined bowling average?",
+        "o": [
+          "10.83",
+          "12.83",
+          "11.83",
+          "13.83"
+        ],
+        "a": 2
+      },
+      {
+        "p": "England has faced 39 legal balls in a hypothetical men's T20I. Which over notation is correct?",
+        "o": [
+          "6.4 overs",
+          "7.3 overs",
+          "3.9 overs",
+          "6.3 overs"
+        ],
+        "a": 3
+      },
+      {
+        "p": "England scores 260 and one batter makes 80. What percentage of the total did that batter score?",
+        "o": [
+          "30.77%",
+          "29.77%",
+          "31.77%",
+          "32.77%"
+        ],
+        "a": 0
+      },
+      {
+        "p": "In which country is Sher-e-Bangla National Stadium located?",
+        "o": [
+          "Jamaica",
+          "Bangladesh",
+          "New Zealand",
+          "Pakistan"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Which country or region hosted the 1973 Women's ODI World Cup?",
+        "o": [
+          "South Africa",
+          "Sri Lanka",
+          "England",
+          "United Arab Emirates"
+        ],
+        "a": 2
+      },
+      {
+        "p": "India has faced 58 legal balls in a hypothetical men's T20I. Which over notation is correct?",
+        "o": [
+          "9.5 overs",
+          "10.4 overs",
+          "5.8 overs",
+          "9.4 overs"
+        ],
+        "a": 3
+      },
+      {
+        "p": "New Zealand's bowler has delivered 24 balls in a women's ODI. How many remain in the maximum allocation?",
+        "o": [
+          "36 balls",
+          "33 balls",
+          "39 balls",
+          "42 balls"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Nepal's bowler has 4/24 and 3/29. What is the combined bowling average?",
+        "o": [
+          "7.07",
+          "7.57",
+          "8.07",
+          "8.57"
+        ],
+        "a": 1
+      },
+      {
+        "p": "West Indies has faced 205 legal balls in a hypothetical women's ODI. Which over notation is correct?",
+        "o": [
+          "34.2 overs",
+          "35.1 overs",
+          "34.1 overs",
+          "20.5 overs"
+        ],
+        "a": 2
+      },
+      {
+        "p": "In which country is Harare Sports Club located?",
+        "o": [
+          "New Zealand",
+          "Pakistan",
+          "South Africa",
+          "Zimbabwe"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Netherlands' bowler has delivered 9 balls in a men's T20I. How many remain in the maximum allocation?",
+        "o": [
+          "15 balls",
+          "14 balls",
+          "16 balls",
+          "17 balls"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Pakistan's bowler has 3/27 and 4/32. What is the combined bowling average?",
+        "o": [
+          "7.93",
+          "8.43",
+          "8.93",
+          "9.43"
+        ],
+        "a": 1
+      },
+      {
+        "p": "In which country is Malahide Cricket Club Ground located?",
+        "o": [
+          "Bangladesh",
+          "Barbados",
+          "Ireland",
+          "England"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Zimbabwe has faced 64 legal balls in a hypothetical men's T20I. Which over notation is correct?",
+        "o": [
+          "10.5 overs",
+          "11.4 overs",
+          "6.4 overs",
+          "10.4 overs"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Australia has completed 9 overs of a 10-over powerplay. How many powerplay balls remain?",
+        "o": [
+          "6 balls",
+          "5 balls",
+          "7 balls",
+          "8 balls"
+        ],
+        "a": 0
+      },
+      {
+        "p": "In which country is Dubai International Stadium located?",
+        "o": [
+          "New Zealand",
+          "United Arab Emirates",
+          "Pakistan",
+          "South Africa"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Bangladesh has faced 83 legal balls in a hypothetical men's T20I. Which over notation is correct?",
+        "o": [
+          "13.0 overs",
+          "14.5 overs",
+          "13.5 overs",
+          "8.3 overs"
+        ],
+        "a": 2
+      },
+      {
+        "p": "United States' bowler has delivered 13 balls in a men's ODI. How many remain in the maximum allocation?",
+        "o": [
+          "44 balls",
+          "50 balls",
+          "53 balls",
+          "47 balls"
+        ],
+        "a": 3
+      },
+      {
+        "p": "In which country is Sharjah Cricket Stadium located?",
+        "o": [
+          "United Arab Emirates",
+          "England",
+          "India",
+          "Ireland"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Sri Lanka has completed 3 overs of a 6-over powerplay. How many powerplay balls remain?",
+        "o": [
+          "17 balls",
+          "18 balls",
+          "19 balls",
+          "20 balls"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Scotland has faced 230 legal balls in a hypothetical men's ODI. Which over notation is correct?",
+        "o": [
+          "38.3 overs",
+          "39.2 overs",
+          "38.2 overs",
+          "23.0 overs"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Ireland has faced 248 legal balls in a hypothetical men's ODI. Which over notation is correct?",
+        "o": [
+          "41.3 overs",
+          "42.2 overs",
+          "24.8 overs",
+          "41.2 overs"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Ireland has completed 6 overs of a 10-over powerplay. How many powerplay balls remain?",
+        "o": [
+          "24 balls",
+          "21 balls",
+          "27 balls",
+          "30 balls"
+        ],
+        "a": 0
+      },
+      {
+        "p": "England has faced 89 legal balls in a hypothetical men's T20I. Which over notation is correct?",
+        "o": [
+          "14.0 overs",
+          "14.5 overs",
+          "15.5 overs",
+          "8.9 overs"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Afghanistan has completed 7 overs of a 10-over powerplay. How many powerplay balls remain?",
+        "o": [
+          "17 balls",
+          "19 balls",
+          "18 balls",
+          "20 balls"
+        ],
+        "a": 2
+      },
+      {
+        "p": "India makes 19 and Pakistan makes 14 in a hypothetical Super Over. What is the run margin?",
+        "o": [
+          "4 runs",
+          "6 runs",
+          "7 runs",
+          "5 runs"
+        ],
+        "a": 3
+      },
+      {
+        "p": "West Indies' bowler has delivered 56 balls in a men's ODI. How many remain in the maximum allocation?",
+        "o": [
+          "4 balls",
+          "3 balls",
+          "5 balls",
+          "6 balls"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Nepal has completed 3 overs of a 6-over powerplay. How many powerplay balls remain?",
+        "o": [
+          "17 balls",
+          "18 balls",
+          "19 balls",
+          "20 balls"
+        ],
+        "a": 1
+      },
+      {
+        "p": "New Zealand makes 9 and South Africa makes 7 in a hypothetical Super Over. What is the run margin?",
+        "o": [
+          "1 run",
+          "3 runs",
+          "2 runs",
+          "4 runs"
+        ],
+        "a": 2
+      },
+      {
+        "p": "England has completed 5 overs of a 6-over powerplay. How many powerplay balls remain?",
+        "o": [
+          "5 balls",
+          "7 balls",
+          "8 balls",
+          "6 balls"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Afghanistan makes 8 and Bangladesh makes 3 in a hypothetical Super Over. What is the run margin?",
+        "o": [
+          "5 runs",
+          "4 runs",
+          "6 runs",
+          "7 runs"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Zimbabwe makes 12 and New Zealand makes 7 in a hypothetical Super Over. What is the run margin?",
+        "o": [
+          "4 runs",
+          "5 runs",
+          "6 runs",
+          "7 runs"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Nepal makes 11 and Afghanistan makes 8 in a hypothetical Super Over. What is the run margin?",
+        "o": [
+          "2 runs",
+          "4 runs",
+          "3 runs",
+          "5 runs"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Bangladesh has completed 4 overs of a 6-over powerplay. How many powerplay balls remain?",
+        "o": [
+          "11 balls",
+          "13 balls",
+          "14 balls",
+          "12 balls"
+        ],
+        "a": 3
+      }
+    ],
+    "5": [
+      {
+        "p": "Across two matches, Sri Lanka scores 252 and 167; New Zealand scores 239 and 184. Run difference?",
+        "o": [
+          "4",
+          "3",
+          "5",
+          "6"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Ireland is 79 chasing 218 with 8 overs left. What required run rate is needed?",
+        "o": [
+          "16.38",
+          "17.38",
+          "18.38",
+          "19.38"
+        ],
+        "a": 1
+      },
+      {
+        "p": "PBKS's bowler concedes 59 from 22 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "15.09",
+          "17.09",
+          "16.09",
+          "18.09"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Across two matches, Ireland scores 255 and 168; Sri Lanka scores 239 and 184. Run difference?",
+        "o": [
+          "1",
+          "2",
+          "5",
+          "0"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Pakistan is 82 chasing 221 with 11 overs left. What required run rate is needed?",
+        "o": [
+          "12.64",
+          "11.64",
+          "13.64",
+          "14.64"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Who won the Orange Cap in the 2011 IPL?",
+        "o": [
+          "Shubman Gill",
+          "Chris Gayle",
+          "Vaibhav Sooryavanshi",
+          "Virat Kohli"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Afghanistan's bowler concedes 62 from 25 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "13.88",
+          "15.88",
+          "14.88",
+          "16.88"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Across two matches, Bangladesh scores 258 and 169; Scotland scores 240 and 185. Run difference?",
+        "o": [
+          "1",
+          "3",
+          "4",
+          "2"
+        ],
+        "a": 3
+      },
+      {
+        "p": "DC is 85 chasing 224 with 14 overs left. What required run rate is needed?",
+        "o": [
+          "9.93",
+          "9.43",
+          "10.43",
+          "10.93"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Nepal's bowler concedes 65 from 28 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "12.93",
+          "13.93",
+          "14.93",
+          "15.93"
+        ],
+        "a": 1
+      },
+      {
+        "p": "West Indies is 104 chasing 243 with 11 overs left. What required run rate is needed?",
+        "o": [
+          "11.64",
+          "13.64",
+          "12.64",
+          "14.64"
+        ],
+        "a": 2
+      },
+      {
+        "p": "GT's bowler concedes 33 from 47 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "3.71",
+          "4.71",
+          "5.21",
+          "4.21"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Pakistan needs 110 from 48 balls, then scores 13 in six balls. What is the new required rate?",
+        "o": [
+          "13.86",
+          "12.86",
+          "14.86",
+          "15.86"
+        ],
+        "a": 0
+      },
+      {
+        "p": "India is 107 chasing 246 with 14 overs left. What required run rate is needed?",
+        "o": [
+          "9.43",
+          "9.93",
+          "10.43",
+          "10.93"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Who won the Orange Cap in the 2010 IPL?",
+        "o": [
+          "Ruturaj Gaikwad",
+          "Sai Sudharsan",
+          "Sachin Tendulkar",
+          "Shaun Marsh"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Australia's bowler concedes 36 from 50 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "3.82",
+          "4.82",
+          "5.32",
+          "4.32"
+        ],
+        "a": 3
+      },
+      {
+        "p": "South Africa needs 113 from 51 balls, then scores 3 in six balls. What is the new required rate?",
+        "o": [
+          "14.67",
+          "13.67",
+          "15.67",
+          "16.67"
+        ],
+        "a": 0
+      },
+      {
+        "p": "United States is 110 chasing 249 with 6 overs left. What required run rate is needed?",
+        "o": [
+          "22.17",
+          "23.17",
+          "24.17",
+          "25.17"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Pakistan's bowler concedes 39 from 53 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "3.92",
+          "4.92",
+          "4.42",
+          "5.42"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Scotland needs 116 from 54 balls, then scores 6 in six balls. What is the new required rate?",
+        "o": [
+          "12.75",
+          "14.75",
+          "15.75",
+          "13.75"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Bangladesh's bowler concedes 58 from 37 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "9.41",
+          "8.91",
+          "9.91",
+          "10.41"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Ireland needs 74 from 36 balls, then scores 12 in six balls. What is the new required rate?",
+        "o": [
+          "11.40",
+          "12.40",
+          "13.40",
+          "14.40"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Thailand: 9 wins, 1 loss, 1 no-result. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "18 points",
+          "20 points",
+          "19 points",
+          "21 points"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Afghanistan's bowler concedes 61 from 40 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "8.65",
+          "9.65",
+          "10.15",
+          "9.15"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Australia needs 77 from 39 balls, then scores 15 in six balls. What is the new required rate?",
+        "o": [
+          "11.27",
+          "10.27",
+          "12.27",
+          "13.27"
+        ],
+        "a": 0
+      },
+      {
+        "p": "West Indies: 5 wins, 4 losses, 1 no-result. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "10 points",
+          "11 points",
+          "12 points",
+          "13 points"
+        ],
+        "a": 1
+      },
+      {
+        "p": "India's bowler concedes 64 from 43 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "8.43",
+          "9.43",
+          "8.93",
+          "9.93"
+        ],
+        "a": 2
+      },
+      {
+        "p": "New Zealand needs 80 from 42 balls, then scores 5 in six balls. What is the new required rate?",
+        "o": [
+          "11.50",
+          "13.50",
+          "14.50",
+          "12.50"
+        ],
+        "a": 3
+      },
+      {
+        "p": "South Africa: 8 wins, 2 losses, 1 no-result. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "17 points",
+          "16 points",
+          "18 points",
+          "19 points"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Pakistan's bowler concedes 67 from 46 legal balls. What is the economy rate per six balls?",
+        "o": [
+          "8.24",
+          "8.74",
+          "9.24",
+          "9.74"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Pakistan: 6 wins, 1 loss, 2 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "13 points",
+          "15 points",
+          "14 points",
+          "16 points"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Australia needs 64 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "10 sixes",
+          "12 sixes",
+          "13 sixes",
+          "11 sixes"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Bangladesh needs 102 from 64 balls, then scores 14 in six balls. What is the new required rate?",
+        "o": [
+          "9.10",
+          "8.60",
+          "9.60",
+          "10.10"
+        ],
+        "a": 0
+      },
+      {
+        "p": "United States: 9 wins, 4 losses, 2 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "19 points",
+          "20 points",
+          "21 points",
+          "22 points"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Thailand needs 67 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "11 sixes",
+          "13 sixes",
+          "12 sixes",
+          "14 sixes"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Scotland needs 105 from 67 balls, then scores 4 in six balls. What is the new required rate?",
+        "o": [
+          "9.43",
+          "10.43",
+          "10.93",
+          "9.93"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Australia: 5 wins, 2 losses, 2 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "12 points",
+          "11 points",
+          "13 points",
+          "14 points"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Ireland needs 70 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "11 sixes",
+          "12 sixes",
+          "13 sixes",
+          "14 sixes"
+        ],
+        "a": 1
+      },
+      {
+        "p": "India needs 108 from 70 balls, then scores 7 in six balls. What is the new required rate?",
+        "o": [
+          "8.97",
+          "9.97",
+          "9.47",
+          "10.47"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Afghanistan: 8 wins, 5 losses, 2 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "17 points",
+          "19 points",
+          "20 points",
+          "18 points"
+        ],
+        "a": 3
+      },
+      {
+        "p": "South Africa scores 140 and one batter makes 80. What percentage of the total did that batter score?",
+        "o": [
+          "57.14%",
+          "52.14%",
+          "62.14%",
+          "67.14%"
+        ],
+        "a": 0
+      },
+      {
+        "p": "West Indies: 6 wins, 4 losses, 0 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "11 points",
+          "12 points",
+          "13 points",
+          "14 points"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Pakistan needs 34 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "5 sixes",
+          "7 sixes",
+          "6 sixes",
+          "8 sixes"
+        ],
+        "a": 2
+      },
+      {
+        "p": "New Zealand scores 200 and one batter makes 50. What percentage of the total did that batter score?",
+        "o": [
+          "24.00%",
+          "26.00%",
+          "27.00%",
+          "25.00%"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Bangladesh: 9 wins, 2 losses, 0 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "18 points",
+          "17 points",
+          "19 points",
+          "20 points"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Pakistan needs 37 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "6 sixes",
+          "7 sixes",
+          "8 sixes",
+          "9 sixes"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Thailand scores 260 and one batter makes 80. What percentage of the total did that batter score?",
+        "o": [
+          "29.77%",
+          "31.77%",
+          "30.77%",
+          "32.77%"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Australia: 5 wins, 5 losses, 0 no-results. At 2 points per win and 1 per no-result, total?",
+        "o": [
+          "9 points",
+          "11 points",
+          "12 points",
+          "10 points"
+        ],
+        "a": 3
+      },
+      {
+        "p": "South Africa scores 220 and one batter makes 80. What percentage of the total did that batter score?",
+        "o": [
+          "36.36%",
+          "35.36%",
+          "37.36%",
+          "38.36%"
+        ],
+        "a": 0
+      },
+      {
+        "p": "United States scores 160 and one batter makes 50. What percentage of the total did that batter score?",
+        "o": [
+          "30.25%",
+          "31.25%",
+          "32.25%",
+          "33.25%"
+        ],
+        "a": 1
+      },
+      {
+        "p": "India needs 59 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "9 sixes",
+          "11 sixes",
+          "10 sixes",
+          "12 sixes"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Ireland needs 52 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "8 sixes",
+          "10 sixes",
+          "11 sixes",
+          "9 sixes"
+        ],
+        "a": 3
+      },
+      {
+        "p": "South Africa's bowler has 3/26 and 4/31. What is the combined bowling average?",
+        "o": [
+          "8.14",
+          "7.64",
+          "8.64",
+          "9.14"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Ireland needs 62 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "10 sixes",
+          "11 sixes",
+          "12 sixes",
+          "13 sixes"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Pakistan scores 120 and one batter makes 30. What percentage of the total did that batter score?",
+        "o": [
+          "24.00%",
+          "26.00%",
+          "25.00%",
+          "27.00%"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Afghanistan's bowler has 2/29 and 1/34. What is the combined bowling average?",
+        "o": [
+          "20.00",
+          "22.00",
+          "23.00",
+          "21.00"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Bangladesh needs 65 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "11 sixes",
+          "10 sixes",
+          "12 sixes",
+          "13 sixes"
+        ],
+        "a": 0
+      },
+      {
+        "p": "West Indies scores 180 and one batter makes 60. What percentage of the total did that batter score?",
+        "o": [
+          "32.33%",
+          "33.33%",
+          "34.33%",
+          "35.33%"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Thailand's bowler has 1/32 and 2/37. What is the combined bowling average?",
+        "o": [
+          "22.00",
+          "24.00",
+          "23.00",
+          "25.00"
+        ],
+        "a": 2
+      },
+      {
+        "p": "New Zealand needs 68 runs. If every scoring shot is a six, what minimum number of sixes wins?",
+        "o": [
+          "11 sixes",
+          "13 sixes",
+          "14 sixes",
+          "12 sixes"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Australia's bowler has 4/20 and 4/25. What is the combined bowling average?",
+        "o": [
+          "5.63",
+          "5.13",
+          "6.13",
+          "6.63"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Pakistan has faced 180 legal balls in a hypothetical men's ODI. Which over notation is correct?",
+        "o": [
+          "30.1 overs",
+          "30.0 overs",
+          "31.0 overs",
+          "18.0 overs"
+        ],
+        "a": 1
+      },
+      {
+        "p": "India scores 140 and one batter makes 40. What percentage of the total did that batter score?",
+        "o": [
+          "27.57%",
+          "29.57%",
+          "28.57%",
+          "30.57%"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Australia's bowler has 3/23 and 1/28. What is the combined bowling average?",
+        "o": [
+          "11.75",
+          "13.75",
+          "14.75",
+          "12.75"
+        ],
+        "a": 3
+      },
+      {
+        "p": "South Africa has faced 41 legal balls in a hypothetical women's T20I. Which over notation is correct?",
+        "o": [
+          "6.5 overs",
+          "6.0 overs",
+          "7.5 overs",
+          "4.1 overs"
+        ],
+        "a": 0
+      },
+      {
+        "p": "United States scores 200 and one batter makes 70. What percentage of the total did that batter score?",
+        "o": [
+          "34.00%",
+          "35.00%",
+          "36.00%",
+          "37.00%"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Pakistan's bowler has 2/26 and 2/31. What is the combined bowling average?",
+        "o": [
+          "13.25",
+          "15.25",
+          "14.25",
+          "16.25"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Scotland has faced 186 legal balls in a hypothetical men's ODI. Which over notation is correct?",
+        "o": [
+          "31.1 overs",
+          "32.0 overs",
+          "18.6 overs",
+          "31.0 overs"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Bangladesh scores 260 and one batter makes 40. What percentage of the total did that batter score?",
+        "o": [
+          "15.38%",
+          "14.38%",
+          "16.38%",
+          "17.38%"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Ireland's bowler has 1/29 and 3/34. What is the combined bowling average?",
+        "o": [
+          "14.75",
+          "15.75",
+          "16.75",
+          "17.75"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Thailand's bowler has delivered 20 balls in a women's T20I. How many remain in the maximum allocation?",
+        "o": [
+          "3 balls",
+          "5 balls",
+          "4 balls",
+          "6 balls"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Afghanistan's bowler has 4/48 and 2/53. What is the combined bowling average?",
+        "o": [
+          "15.83",
+          "17.83",
+          "18.83",
+          "16.83"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Australia has faced 66 legal balls in a hypothetical women's T20I. Which over notation is correct?",
+        "o": [
+          "11.0 overs",
+          "11.1 overs",
+          "12.0 overs",
+          "6.6 overs"
+        ],
+        "a": 0
+      },
+      {
+        "p": "West Indies' bowler has delivered 59 balls in a men's ODI. How many remain in the maximum allocation?",
+        "o": [
+          "0 balls",
+          "1 ball",
+          "2 balls",
+          "3 balls"
+        ],
+        "a": 1
+      },
+      {
+        "p": "India's bowler has 3/20 and 3/25. What is the combined bowling average?",
+        "o": [
+          "7.00",
+          "8.00",
+          "7.50",
+          "8.50"
+        ],
+        "a": 2
+      },
+      {
+        "p": "New Zealand has faced 211 legal balls in a hypothetical men's ODI. Which over notation is correct?",
+        "o": [
+          "35.2 overs",
+          "36.1 overs",
+          "21.1 overs",
+          "35.1 overs"
+        ],
+        "a": 3
+      },
+      {
+        "p": "South Africa's bowler has delivered 20 balls in a women's T20I. How many remain in the maximum allocation?",
+        "o": [
+          "4 balls",
+          "3 balls",
+          "5 balls",
+          "6 balls"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Pakistan's bowler has 2/23 and 4/28. What is the combined bowling average?",
+        "o": [
+          "8.00",
+          "8.50",
+          "9.00",
+          "9.50"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Pakistan has faced 96 legal balls in a hypothetical women's T20I. Which over notation is correct?",
+        "o": [
+          "16.1 overs",
+          "17.0 overs",
+          "16.0 overs",
+          "9.6 overs"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Australia's bowler has delivered 41 balls in a men's ODI. How many remain in the maximum allocation?",
+        "o": [
+          "18 balls",
+          "20 balls",
+          "21 balls",
+          "19 balls"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Bangladesh has faced 91 legal balls in a hypothetical women's T20I. Which over notation is correct?",
+        "o": [
+          "15.1 overs",
+          "15.2 overs",
+          "16.1 overs",
+          "9.1 overs"
+        ],
+        "a": 0
+      },
+      {
+        "p": "United States' bowler has delivered 42 balls in a men's ODI. How many remain in the maximum allocation?",
+        "o": [
+          "17 balls",
+          "18 balls",
+          "19 balls",
+          "20 balls"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Thailand has completed 3 overs of a 6-over powerplay. How many powerplay balls remain?",
+        "o": [
+          "17 balls",
+          "19 balls",
+          "18 balls",
+          "20 balls"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Scotland has faced 236 legal balls in a hypothetical men's ODI. Which over notation is correct?",
+        "o": [
+          "39.3 overs",
+          "40.2 overs",
+          "23.6 overs",
+          "39.2 overs"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Australia's bowler has delivered 9 balls in a women's T20I. How many remain in the maximum allocation?",
+        "o": [
+          "15 balls",
+          "14 balls",
+          "16 balls",
+          "17 balls"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Ireland has completed 2 overs of a 10-over powerplay. How many powerplay balls remain?",
+        "o": [
+          "45 balls",
+          "48 balls",
+          "51 balls",
+          "54 balls"
+        ],
+        "a": 1
+      },
+      {
+        "p": "England has faced 97 legal balls in a hypothetical men's T20I. Which over notation is correct?",
+        "o": [
+          "16.2 overs",
+          "17.1 overs",
+          "16.1 overs",
+          "9.7 overs"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Afghanistan's bowler has delivered 24 balls in a men's ODI. How many remain in the maximum allocation?",
+        "o": [
+          "33 balls",
+          "39 balls",
+          "42 balls",
+          "36 balls"
+        ],
+        "a": 3
+      },
+      {
+        "p": "India has completed 4 overs of a 6-over powerplay. How many powerplay balls remain?",
+        "o": [
+          "12 balls",
+          "11 balls",
+          "13 balls",
+          "14 balls"
+        ],
+        "a": 0
+      },
+      {
+        "p": "West Indies has faced 242 legal balls in a hypothetical men's ODI. Which over notation is correct?",
+        "o": [
+          "40.3 overs",
+          "40.2 overs",
+          "41.2 overs",
+          "24.2 overs"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Afghanistan makes 10 and Netherlands makes 6 in a hypothetical Super Over. What is the run margin?",
+        "o": [
+          "3 runs",
+          "5 runs",
+          "4 runs",
+          "6 runs"
+        ],
+        "a": 2
+      },
+      {
+        "p": "New Zealand makes 11 and Bangladesh makes 4 in a hypothetical Super Over. What is the run margin?",
+        "o": [
+          "6 runs",
+          "8 runs",
+          "9 runs",
+          "7 runs"
+        ],
+        "a": 3
+      },
+      {
+        "p": "Netherlands' bowler has delivered 16 balls in a men's T20I. How many remain in the maximum allocation?",
+        "o": [
+          "8 balls",
+          "7 balls",
+          "9 balls",
+          "10 balls"
+        ],
+        "a": 0
+      },
+      {
+        "p": "Pakistan has completed 9 overs of a 10-over powerplay. How many powerplay balls remain?",
+        "o": [
+          "5 balls",
+          "6 balls",
+          "7 balls",
+          "8 balls"
+        ],
+        "a": 1
+      },
+      {
+        "p": "Zimbabwe makes 14 and Afghanistan makes 8 in a hypothetical Super Over. What is the run margin?",
+        "o": [
+          "5 runs",
+          "7 runs",
+          "6 runs",
+          "8 runs"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Australia's bowler has delivered 13 balls in a men's ODI. How many remain in the maximum allocation?",
+        "o": [
+          "44 balls",
+          "50 balls",
+          "53 balls",
+          "47 balls"
+        ],
+        "a": 3
+      },
+      {
+        "p": "India's bowler has delivered 16 balls in a men's T20I. How many remain in the maximum allocation?",
+        "o": [
+          "8 balls",
+          "7 balls",
+          "9 balls",
+          "10 balls"
+        ],
+        "a": 0
+      },
+      {
+        "p": "United States makes 17 and Zimbabwe makes 14 in a hypothetical Super Over. What is the run margin?",
+        "o": [
+          "2 runs",
+          "3 runs",
+          "4 runs",
+          "5 runs"
+        ],
+        "a": 1
+      },
+      {
+        "p": "West Indies has completed 3 overs of a 10-over powerplay. How many powerplay balls remain?",
+        "o": [
+          "39 balls",
+          "45 balls",
+          "42 balls",
+          "48 balls"
+        ],
+        "a": 2
+      },
+      {
+        "p": "Scotland has completed 6 overs of a 10-over powerplay. How many powerplay balls remain?",
+        "o": [
+          "21 balls",
+          "27 balls",
+          "30 balls",
+          "24 balls"
+        ],
+        "a": 3
+      }
+    ]
+  }
+}

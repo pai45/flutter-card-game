@@ -15,10 +15,10 @@ import '../../models/progression.dart';
 import '../../models/xp_ledger.dart';
 import '../../utils/game_audio_mappings.dart';
 import '../../utils/sound_effects.dart';
-import '../../widgets/cyber/cyber_toss_coin.dart';
 import '../../widgets/spotlight_walkthrough.dart';
 import 'widgets/football_chess_overlays.dart';
 import 'widgets/football_chess_result.dart';
+import 'widgets/football_chess_toss_phase.dart';
 
 /// The live grid Football Chess match: a full-bleed Flame board with the bare
 /// minimum chrome (slim score·clock, a transient centre flash, a contextual
@@ -42,7 +42,6 @@ class FootballChessMatchScreen extends StatefulWidget {
 class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
   late final FootballChessCubit _cubit;
   late final FootballChessGame _game;
-  bool _kickoffScheduled = false;
   bool _xpDispatched = false;
   int _awardedXp = 0;
   bool _walkthroughShown = false;
@@ -90,14 +89,6 @@ class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
             !gameBloc.state.tutorialSeen.contains('football-chess-first')) {
           _walkthroughShown = true;
           _showWalkthrough();
-        }
-        if (m.tossResult != null && !_kickoffScheduled) {
-          _kickoffScheduled = true;
-          playSound(SoundEffect.coinLand);
-          HapticFeedback.mediumImpact();
-          Future.delayed(const Duration(milliseconds: 1300), () {
-            if (mounted) _cubit.beginPlay();
-          });
         }
       case ChessMatchPhase.playerTurn:
       case ChessMatchPhase.opponentTurn:
@@ -265,7 +256,14 @@ class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
                   ],
                 ),
               ),
-              _TossLayer(tossKey: _tossKey, onCall: _cubit.callToss),
+              Positioned.fill(
+                child: FootballChessTossPhase(
+                  tossKey: _tossKey,
+                  onCall: _cubit.callToss,
+                  onBeginPlay: _cubit.beginPlay,
+                  onQuit: widget.onExit,
+                ),
+              ),
               _ResultLayer(
                 awardedXp: () => _awardedXp,
                 onExit: widget.onExit,
@@ -275,107 +273,6 @@ class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
           ),
         ),
       ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Toss overlay (coin call → reveal).
-// ---------------------------------------------------------------------------
-
-class _TossLayer extends StatelessWidget {
-  const _TossLayer({required this.tossKey, required this.onCall});
-
-  final GlobalKey tossKey;
-  final ValueChanged<CoinSide> onCall;
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<FootballChessCubit, FootballChessState>(
-      buildWhen: (p, c) =>
-          (p.match?.phase == ChessMatchPhase.toss) !=
-              (c.match?.phase == ChessMatchPhase.toss) ||
-          p.match?.eventTick != c.match?.eventTick,
-      builder: (context, state) {
-        final m = state.match;
-        if (m == null || m.phase != ChessMatchPhase.toss) {
-          return const SizedBox.shrink();
-        }
-        final revealed = m.tossResult != null;
-        return Positioned.fill(
-          child: Container(
-            color: Cyber.bg.withValues(alpha: 0.86),
-            alignment: Alignment.center,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SpotlightTarget(
-                  spotlightKey: tossKey,
-                  child: Text(
-                    revealed ? 'TOSS RESULT' : 'CALL THE TOSS',
-                    style: TextStyle(
-                      fontFamily: Cyber.displayFont,
-                      fontSize: 16,
-                      letterSpacing: 4,
-                      fontWeight: FontWeight.w700,
-                      color: Cyber.muted,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                CyberTossCoin(
-                  result: revealed ? m.tossResult!.name : null,
-                  won: m.playerWonToss,
-                ),
-                const SizedBox(height: 32),
-                if (!revealed)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Expanded(
-                        child: CyberCallChoiceButton(
-                          face: 'H',
-                          label: 'HEADS',
-                          accent: Cyber.cyan,
-                          onTap: () {
-                            playSound(SoundEffect.coinFlip);
-                            HapticFeedback.mediumImpact();
-                            onCall(CoinSide.heads);
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: CyberCallChoiceButton(
-                          face: 'T',
-                          label: 'TAILS',
-                          accent: const Color(0xFFC084FC),
-                          onTap: () {
-                            playSound(SoundEffect.coinFlip);
-                            HapticFeedback.mediumImpact();
-                            onCall(CoinSide.tails);
-                          },
-                        ),
-                      ),
-                    ],
-                  )
-                else
-                  Text(
-                    (m.playerWonToss ?? false)
-                        ? 'YOU WON THE TOSS — YOU KICK OFF'
-                        : 'CPU WON THE TOSS',
-                    style: Cyber.label(12).copyWith(
-                      color: (m.playerWonToss ?? false)
-                          ? Cyber.cyan
-                          : Cyber.danger,
-                      letterSpacing: 1.6,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 }

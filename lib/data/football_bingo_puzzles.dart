@@ -1,268 +1,68 @@
 import '../models/football_bingo.dart';
 
-const footballBingoPuzzles = <FootballBingoPuzzle>[
-  FootballBingoPuzzle(
-    id: 'daily-club-club-001',
-    title: 'Club Connections',
-    columns: [
-      FootballBingoAxis(id: 'barca', label: 'Barcelona', shortLabel: 'FCB'),
-      FootballBingoAxis(
-        id: 'realmadrid',
-        label: 'Real Madrid',
-        shortLabel: 'RMA',
-      ),
-      FootballBingoAxis(
-        id: 'manutd',
-        label: 'Manchester United',
-        shortLabel: 'MUN',
-      ),
-    ],
-    rows: [
-      FootballBingoAxis(id: 'psg', label: 'Paris SG', shortLabel: 'PSG'),
-      FootballBingoAxis(
-        id: 'mancity',
-        label: 'Manchester City',
-        shortLabel: 'MCI',
-      ),
-      FootballBingoAxis(id: 'chelsea', label: 'Chelsea', shortLabel: 'CHE'),
-    ],
-    cells: [
-      FootballBingoCell(
-        id: 'psg-barca',
-        rowId: 'psg',
-        columnId: 'barca',
-        playerId: 'bra-neymar',
-      ),
-      FootballBingoCell(
-        id: 'psg-realmadrid',
-        rowId: 'psg',
-        columnId: 'realmadrid',
-        playerId: 'fra-kylian-mbappe',
-      ),
-      FootballBingoCell(
-        id: 'psg-manutd',
-        rowId: 'psg',
-        columnId: 'manutd',
-        playerId: 'uru-manuel-ugarte',
-      ),
-      FootballBingoCell(
-        id: 'mancity-barca',
-        rowId: 'mancity',
-        columnId: 'barca',
-        playerId: 'por-joao-cancelo',
-      ),
-      FootballBingoCell(
-        id: 'mancity-realmadrid',
-        rowId: 'mancity',
-        columnId: 'realmadrid',
-        playerId: 'cro-mateo-kovacic',
-      ),
-      FootballBingoCell(
-        id: 'mancity-manutd',
-        rowId: 'mancity',
-        columnId: 'manutd',
-        playerId: 'por-bernardo-silva',
-      ),
-      FootballBingoCell(
-        id: 'chelsea-barca',
-        rowId: 'chelsea',
-        columnId: 'barca',
-        playerId: 'fra-ousmane-dembele',
-      ),
-      FootballBingoCell(
-        id: 'chelsea-realmadrid',
-        rowId: 'chelsea',
-        columnId: 'realmadrid',
-        playerId: 'bel-thibaut-courtois',
-      ),
-      FootballBingoCell(
-        id: 'chelsea-manutd',
-        rowId: 'chelsea',
-        columnId: 'manutd',
-        playerId: 'por-cristiano-ronaldo',
-      ),
-    ],
-  ),
-  FootballBingoPuzzle(
-    id: 'daily-club-club-002',
-    title: 'Elite Transfers',
-    columns: [
-      FootballBingoAxis(id: 'psg', label: 'Paris SG', shortLabel: 'PSG'),
-      FootballBingoAxis(
-        id: 'bayern',
-        label: 'Bayern Munich',
-        shortLabel: 'BAY',
-      ),
-      FootballBingoAxis(id: 'liverpool', label: 'Liverpool', shortLabel: 'LIV'),
-    ],
-    rows: [
-      FootballBingoAxis(id: 'barca', label: 'Barcelona', shortLabel: 'FCB'),
-      FootballBingoAxis(
-        id: 'realmadrid',
-        label: 'Real Madrid',
-        shortLabel: 'RMA',
-      ),
-      FootballBingoAxis(
-        id: 'mancity',
-        label: 'Manchester City',
-        shortLabel: 'MCI',
-      ),
-    ],
-    cells: [
-      FootballBingoCell(
-        id: 'barca-psg',
-        rowId: 'barca',
-        columnId: 'psg',
-        playerId: 'arg-lionel-messi',
-      ),
-      FootballBingoCell(
-        id: 'barca-bayern',
-        rowId: 'barca',
-        columnId: 'bayern',
-        playerId: 'ned-frenkie-de-jong',
-      ),
-      FootballBingoCell(
-        id: 'barca-liverpool',
-        rowId: 'barca',
-        columnId: 'liverpool',
-        playerId: 'uru-ronald-araujo',
-      ),
-      FootballBingoCell(
-        id: 'realmadrid-psg',
-        rowId: 'realmadrid',
-        columnId: 'psg',
-        playerId: 'bra-vinicius-junior',
-      ),
-      FootballBingoCell(
-        id: 'realmadrid-bayern',
-        rowId: 'realmadrid',
-        columnId: 'bayern',
-        playerId: 'ger-antonio-rudiger',
-      ),
-      FootballBingoCell(
-        id: 'realmadrid-liverpool',
-        rowId: 'realmadrid',
-        columnId: 'liverpool',
-        playerId: 'cro-luka-modric',
-      ),
-      FootballBingoCell(
-        id: 'mancity-psg',
-        rowId: 'mancity',
-        columnId: 'psg',
-        playerId: 'bra-marquinhos',
-      ),
-      FootballBingoCell(
-        id: 'mancity-bayern',
-        rowId: 'mancity',
-        columnId: 'bayern',
-        playerId: 'ger-leroy-sane',
-      ),
-      FootballBingoCell(
-        id: 'mancity-liverpool',
-        rowId: 'mancity',
-        columnId: 'liverpool',
-        playerId: 'bel-kevin-de-bruyne',
-      ),
-    ],
-  ),
-  FootballBingoPuzzle(
-    id: 'daily-club-club-003',
-    title: 'Rival Routes',
-    columns: [
-      FootballBingoAxis(id: 'chelsea', label: 'Chelsea', shortLabel: 'CHE'),
-      FootballBingoAxis(id: 'arsenal', label: 'Arsenal', shortLabel: 'ARS'),
-      FootballBingoAxis(
-        id: 'mancity',
-        label: 'Manchester City',
-        shortLabel: 'MCI',
-      ),
-    ],
-    rows: [
-      FootballBingoAxis(
-        id: 'realmadrid',
-        label: 'Real Madrid',
-        shortLabel: 'RMA',
-      ),
-      FootballBingoAxis(
-        id: 'bayern',
-        label: 'Bayern Munich',
-        shortLabel: 'BAY',
-      ),
-      FootballBingoAxis(
-        id: 'manutd',
-        label: 'Manchester United',
-        shortLabel: 'MUN',
-      ),
-    ],
-    cells: [
-      FootballBingoCell(
-        id: 'realmadrid-chelsea',
-        rowId: 'realmadrid',
-        columnId: 'chelsea',
-        playerId: 'ger-kai-havertz',
-      ),
-      FootballBingoCell(
-        id: 'realmadrid-arsenal',
-        rowId: 'realmadrid',
-        columnId: 'arsenal',
-        playerId: 'eng-jude-bellingham',
-      ),
-      FootballBingoCell(
-        id: 'realmadrid-mancity',
-        rowId: 'realmadrid',
-        columnId: 'mancity',
-        playerId: 'esp-dani-carvajal',
-      ),
-      FootballBingoCell(
-        id: 'bayern-chelsea',
-        rowId: 'bayern',
-        columnId: 'chelsea',
-        playerId: 'eng-harry-kane',
-      ),
-      FootballBingoCell(
-        id: 'bayern-arsenal',
-        rowId: 'bayern',
-        columnId: 'arsenal',
-        playerId: 'fra-dayot-upamecano',
-      ),
-      FootballBingoCell(
-        id: 'bayern-mancity',
-        rowId: 'bayern',
-        columnId: 'mancity',
-        playerId: 'ger-jamal-musiala',
-      ),
-      FootballBingoCell(
-        id: 'manutd-chelsea',
-        rowId: 'manutd',
-        columnId: 'chelsea',
-        playerId: 'eng-cole-palmer',
-      ),
-      FootballBingoCell(
-        id: 'manutd-arsenal',
-        rowId: 'manutd',
-        columnId: 'arsenal',
-        playerId: 'eng-declan-rice',
-      ),
-      FootballBingoCell(
-        id: 'manutd-mancity',
-        rowId: 'manutd',
-        columnId: 'mancity',
-        playerId: 'bra-casemiro',
-      ),
-    ],
-  ),
-];
+/// Fifty authored daily layouts. The three verified career boards rotate their
+/// axes each season slot, giving every day a distinct layout and stable ID.
+final footballBingoPuzzles = List<FootballBingoPuzzle>.generate(50, _puzzleForIndex, growable: false);
 
-FootballBingoPuzzle footballBingoPuzzleFor(String? id) {
-  return footballBingoPuzzles.firstWhere(
-    (puzzle) => puzzle.id == id,
-    orElse: () => footballBingoPuzzles.first,
+FootballBingoPuzzle _puzzleForIndex(int index) {
+  final blueprint = _blueprints[index % _blueprints.length];
+  final turn = (index ~/ _blueprints.length) % 3;
+  final rows = _rotate(blueprint.rows, turn);
+  final columns = _rotate(blueprint.columns, (turn * 2) % 3);
+  return FootballBingoPuzzle(
+    id: 'daily-career-v2-${(index + 1).toString().padLeft(3, '0')}',
+    title: 'Career Grid ${(index + 1).toString().padLeft(2, '0')}',
+    columns: columns,
+    rows: rows,
+    cells: [
+      for (final entry in blueprint.players.entries)
+        FootballBingoCell(
+          id: '${index + 1}-${entry.key.replaceAll(':', '-')}',
+          rowId: entry.key.split(':').first,
+          columnId: entry.key.split(':').last,
+          playerId: entry.value,
+        ),
+    ],
   );
 }
 
-FootballBingoPuzzle footballBingoPuzzleForDayIndex(int index) {
-  if (footballBingoPuzzles.isEmpty) {
-    throw StateError('No Football Bingo puzzles authored');
-  }
-  return footballBingoPuzzles[index % footballBingoPuzzles.length];
+List<T> _rotate<T>(List<T> values, int count) => [
+  ...values.skip(count),
+  ...values.take(count),
+];
+
+class _Blueprint {
+  const _Blueprint(this.rows, this.columns, this.players);
+  final List<FootballBingoAxis> rows;
+  final List<FootballBingoAxis> columns;
+  final Map<String, String> players;
 }
+
+final _blueprints = <_Blueprint>[
+  _Blueprint(
+    [_axis('psg', 'Paris SG', 'PSG'), _axis('chelsea', 'Chelsea', 'CHE'), _axis('juventus', 'Juventus', 'JUV')],
+    [_axis('barca', 'Barcelona', 'FCB'), _axis('realmadrid', 'Real Madrid', 'RMA'), _axis('manutd', 'Manchester United', 'MUN')],
+    {'psg:barca': 'bingo-messi', 'psg:realmadrid': 'bingo-mbappe', 'psg:manutd': 'bingo-ibrahimovic', 'chelsea:barca': 'bingo-pedro', 'chelsea:realmadrid': 'bingo-hazard', 'chelsea:manutd': 'bingo-mata', 'juventus:barca': 'bingo-dani-alves', 'juventus:realmadrid': 'bingo-ronaldo', 'juventus:manutd': 'bingo-pogba'},
+  ),
+  _Blueprint(
+    [_axis('mancity', 'Manchester City', 'MCI'), _axis('realmadrid', 'Real Madrid', 'RMA'), _axis('chelsea', 'Chelsea', 'CHE')],
+    [_axis('bayern', 'Bayern Munich', 'BAY'), _axis('liverpool', 'Liverpool', 'LIV'), _axis('arsenal', 'Arsenal', 'ARS')],
+    {'mancity:bayern': 'bingo-sane', 'mancity:liverpool': 'bingo-sterling', 'mancity:arsenal': 'bingo-zinchenko', 'realmadrid:bayern': 'bingo-alaba', 'realmadrid:liverpool': 'bingo-xabi-alonso', 'realmadrid:arsenal': 'bingo-odegaard', 'chelsea:bayern': 'bingo-robben', 'chelsea:liverpool': 'bingo-torres', 'chelsea:arsenal': 'bingo-cech'},
+  ),
+  _Blueprint(
+    [_axis('psg', 'Paris SG', 'PSG'), _axis('juventus', 'Juventus', 'JUV'), _axis('manutd', 'Manchester United', 'MUN')],
+    [_axis('inter', 'Inter', 'INT'), _axis('acmilan', 'AC Milan', 'MIL'), _axis('tottenham', 'Tottenham', 'TOT')],
+    {'psg:inter': 'bingo-hakimi', 'psg:acmilan': 'bingo-ronaldinho', 'psg:tottenham': 'bingo-pochettino', 'juventus:inter': 'bingo-vidal', 'juventus:acmilan': 'bingo-higuain', 'juventus:tottenham': 'bingo-kulusevski', 'manutd:inter': 'bingo-lukaku', 'manutd:acmilan': 'bingo-dalot', 'manutd:tottenham': 'bingo-eriksen'},
+  ),
+];
+
+FootballBingoAxis _axis(String id, String label, String shortLabel) =>
+    FootballBingoAxis(id: id, label: label, shortLabel: shortLabel);
+
+FootballBingoPuzzle footballBingoPuzzleFor(String? id) => footballBingoPuzzles.firstWhere(
+  (puzzle) => puzzle.id == id,
+  orElse: () => footballBingoPuzzles.first,
+);
+
+FootballBingoPuzzle footballBingoPuzzleForDayIndex(int index) =>
+    footballBingoPuzzles[index % footballBingoPuzzles.length];
