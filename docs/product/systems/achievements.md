@@ -1,7 +1,7 @@
 # Achievements
 
 > **Status:** BUILT
-> **Last verified:** 2026-08-09
+> **Last verified:** 2026-08-11
 > **Scope:** Achievement catalog, progress evaluation, unlocks, claims, profile badges, and celebration queue
 
 ## Product Purpose
@@ -21,7 +21,8 @@ screen.
 
 1. Perform an eligible action or cross a tracked threshold.
 2. Progress evaluation updates matching catalog entries.
-3. Newly completed entries enter the celebration queue.
+3. Newly completed entries enter the celebration queue unless their reveal is
+   temporarily suppressed by the controller.
 4. The player sees the unlock beat and can inspect the badge in Profile.
 5. Where a bounty exists, claim it once through the shared reward pipeline.
 
@@ -41,7 +42,9 @@ kept as achievement-local currency.
 
 Global badge reveals, rarity treatment, progress bars, unlocked/locked states,
 and an unclaimed chip create a clear anticipation-to-payoff arc. The strongest
-glow and audio are reserved for the actual unlock.
+glow and audio are reserved for the actual unlock. The **Treasury** badge still
+unlocks at 1,000 coins and remains visible in Profile, but its global reveal is
+currently suppressed so it does not overlap the first-run welcome-bonus moment.
 
 ## Visible States
 
@@ -71,6 +74,4 @@ outcome.
 
 ## Tests
 
-No dedicated achievement test file is currently present. Achievement changes
-must add targeted model/service and celebration-queue coverage before the page
-can claim stronger automated verification.
+- [`test/achievement_celebration_controller_test.dart`](../../../test/achievement_celebration_controller_test.dart)

@@ -3,11 +3,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../models/achievement.dart';
 import '../../services/secure_storage_service.dart';
 
+/// Unlocks that remain visible in Profile but do not launch a global reveal.
+///
+/// Treasury is suppressed while the onboarding welcome-bonus animation owns
+/// the 1,000-coin reward moment.
+const Set<String> _hiddenCelebrationIds = {'treasury'};
+
 /// What the [AchievementCelebrationHost] needs to render: the queue of badges
 /// waiting to be revealed (the head is shown first) and whether a screen is
 /// currently holding the reveal back during its own "moment".
 class AchievementCelebrationState {
-  const AchievementCelebrationState({this.queue = const [], this.holding = false});
+  const AchievementCelebrationState({
+    this.queue = const [],
+    this.holding = false,
+  });
 
   final List<Achievement> queue;
   final bool holding;
@@ -77,7 +86,11 @@ class AchievementCelebrationController
     if (fresh.isEmpty) return;
     _celebrated = {..._celebrated, for (final a in fresh) a.id};
     _persist();
-    emit(state.copyWith(queue: [...state.queue, ...fresh]));
+    final visible = fresh
+        .where((achievement) => !_hiddenCelebrationIds.contains(achievement.id))
+        .toList(growable: false);
+    if (visible.isEmpty) return;
+    emit(state.copyWith(queue: [...state.queue, ...visible]));
   }
 
   /// Defer the reveal while a screen runs its own moment (e.g. the quiz

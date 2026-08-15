@@ -263,6 +263,20 @@ void main() {
       }
     });
 
+    test('cricket uses recorded facts rather than hypothetical scenarios', () {
+      for (final mode in QuizMode.values) {
+        final pool = QuizBank.pool(Sport.cricket, mode);
+        expect(pool, hasLength(kQuizQuestionPoolPerMode));
+        for (final question in pool) {
+          expect(
+            question.prompt.toLowerCase(),
+            isNot(contains('hypothetical')),
+            reason: question.prompt,
+          );
+        }
+      }
+    });
+
     test('an unauthored pool degrades to no playable sets', () async {
       // Sports whose ladders are not written yet must not crash or serve
       // filler — they simply have nothing to play.

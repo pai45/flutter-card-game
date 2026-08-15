@@ -1,7 +1,7 @@
 # Profile, Onboarding, Identity, and Settings
 
 > **Status:** BUILT
-> **Last verified:** 2026-08-09
+> **Last verified:** 2026-08-11
 > **Scope:** First-run identity, welcome reward, Profile hub, followed competitions/teams, cosmetics, and settings
 
 ## Product Purpose
@@ -50,6 +50,8 @@ from their authoritative shared systems.
 The profile-locked identity reveal, dealt favorite-team badges, welcome-coin
 animation, personalized hero, level/mastery meters, cosmetic previews, and
 achievement/history shortcuts make setup feel like entering a player career.
+The welcome-coin animation owns the first 1,000-coin payoff; the simultaneously
+earned Treasury achievement is recorded without launching a competing reveal.
 
 ## Visible States
 
