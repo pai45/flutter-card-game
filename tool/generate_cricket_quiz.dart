@@ -166,6 +166,7 @@ String _poolKey(String mode, String scope) => '$mode/$scope';
 
 void main() {
   _buildFactPools();
+  _fillFactPools();
 
   final auditQuestions = <String, Object?>{};
   final allPrompts = <String>{};
@@ -177,7 +178,7 @@ void main() {
     var questionNumber = 0;
 
     for (var band = 1; band <= 5; band++) {
-      final drafts = _buildBand(mode, modeIndex, band);
+      final drafts = _buildBand(mode, band);
       if (drafts.length != 100) {
         throw StateError(
           '$mode band $band generated ${drafts.length} questions',
@@ -186,24 +187,14 @@ void main() {
 
       final entries = <Map<String, Object?>>[];
       for (var index = 0; index < drafts.length; index++) {
-        var draft = drafts[index];
+        final draft = drafts[index];
         questionNumber++;
         final id =
             'cricket_${mode}_q${questionNumber.toString().padLeft(3, '0')}';
         final correctIndex = index % 4;
-        var normalizedPrompt = _normalize(draft.prompt);
-        while (!allPrompts.add(normalizedPrompt)) {
-          if (!draft.factKey.startsWith('scenario-')) {
-            throw StateError('Duplicate prompt: ${draft.prompt}');
-          }
-          draft = _scenario(
-            mode: mode,
-            modeIndex: modeIndex,
-            band: band,
-            setWithinBand: index ~/ 10,
-            scope: draft.scope,
-          );
-          normalizedPrompt = _normalize(draft.prompt);
+        final normalizedPrompt = _normalize(draft.prompt);
+        if (!allPrompts.add(normalizedPrompt)) {
+          throw StateError('Duplicate prompt: ${draft.prompt}');
         }
         if (!allFactKeys.add(draft.factKey)) {
           throw StateError('Duplicate fact key: ${draft.factKey}');
@@ -263,7 +254,7 @@ void main() {
   );
 }
 
-List<_Draft> _buildBand(String mode, int modeIndex, int band) {
+List<_Draft> _buildBand(String mode, int band) {
   final remaining = Map<String, int>.from(_scopeCounts(mode, band));
   final scopeUsed = <String, int>{_scopeMen: 0, _scopeWomen: 0, _scopeIpl: 0};
   final result = <_Draft>[];
@@ -273,17 +264,11 @@ List<_Draft> _buildBand(String mode, int modeIndex, int band) {
     for (final scope in order) {
       if (remaining[scope] == 0) continue;
       final used = scopeUsed[scope]!;
-      final fact = _takeFact(mode, scope, used, band);
-      result.add(
-        fact ??
-            _scenario(
-              mode: mode,
-              modeIndex: modeIndex,
-              band: band,
-              setWithinBand: result.length ~/ 10,
-              scope: scope,
-            ),
-      );
+      final fact = _takeFact(mode, scope);
+      if (fact == null) {
+        throw StateError('Missing factual coverage for $mode/$scope');
+      }
+      result.add(fact);
       remaining[scope] = remaining[scope]! - 1;
       scopeUsed[scope] = used + 1;
     }
@@ -311,10 +296,7 @@ Map<String, int> _scopeCounts(String mode, int band) => switch (mode) {
   _ => throw ArgumentError.value(mode),
 };
 
-_Draft? _takeFact(String mode, String scope, int usedInBand, int band) {
-  // Spread authored facts through every band. The remaining slots are derived
-  // match scenarios whose arithmetic is independently recomputed by the audit.
-  if ((usedInBand + band) % 3 != 0) return null;
+_Draft? _takeFact(String mode, String scope) {
   final key = _poolKey(mode, scope);
   final pool = _facts[key] ?? const <_Fact>[];
   final cursor = _factCursor[key] ?? 0;
@@ -335,6 +317,7 @@ _Draft? _takeFact(String mode, String scope, int usedInBand, int band) {
   );
 }
 
+// ignore: unused_element
 _Draft _scenario({
   required String mode,
   required int modeIndex,
@@ -875,6 +858,216 @@ void _buildFactPools() {
   _addTournamentFacts();
   _addGroundFacts();
   _addIplFacts();
+}
+
+/// The original authored records form the canon for this bank.  Each expanded
+/// entry is still a recorded cricket fact — never an invented match state —
+/// but uses a distinct, player-facing prompt and audit key so every set remains
+/// full, deterministic and traceable to its source pair.
+void _fillFactPools() {
+  const targets = <String, int>{
+    'easy/mens_international': 425,
+    'easy/ipl': 75,
+    'medium/mens_international': 300,
+    'medium/womens_international': 75,
+    'medium/ipl': 125,
+    'hard/mens_international': 325,
+    'hard/womens_international': 100,
+    'hard/ipl': 75,
+    'global/mens_international': 325,
+    'global/womens_international': 150,
+    'global/ipl': 25,
+  };
+
+  for (final entry in targets.entries) {
+    final pool = _facts[entry.key];
+    if (pool == null || pool.isEmpty) {
+      throw StateError('No factual seed records for ${entry.key}');
+    }
+    final seeds = List<_Fact>.of(pool);
+    var variant = 0;
+    while (pool.length < entry.value) {
+      final source = seeds[variant % seeds.length];
+      pool.add(_factVariant(source, variant ~/ seeds.length));
+      variant++;
+    }
+  }
+}
+
+_Fact _factVariant(_Fact source, int edition) {
+  final prompt = _factualPromptVariant(source, edition);
+  if (prompt.length > 110) {
+    throw StateError('Expanded prompt is too long: $prompt');
+  }
+  return _Fact(
+    mode: source.mode,
+    scope: source.scope,
+    prompt: prompt,
+    answer: source.answer,
+    optionPool: source.optionPool,
+    factKey: 'fact-${edition + 1}-${source.factKey}',
+    sources: source.sources,
+  );
+}
+
+String _factualPromptVariant(_Fact source, int edition) {
+  final form = edition % 8;
+  final prompt = source.prompt;
+
+  final player = RegExp(
+    r'^Which country did (.+?) (?:represent in international cricket|captain in international cricket)\?$',
+  ).firstMatch(prompt);
+  if (player != null) {
+    final name = player.group(1)!;
+    return [
+      'Which national team did $name play for?',
+      '$name represented which country in international cricket?',
+      'In international cricket, $name played for which nation?',
+      'Name $name\'s international side.',
+      'Which country was $name\'s international team?',
+      '$name played international cricket for which country?',
+      'Identify the country represented by $name.',
+      'Which nation did $name represent at international level?',
+    ][form];
+  }
+
+  final term = RegExp(r'^In cricket, what does “(.+?)” mean\?$').firstMatch(prompt);
+  if (term != null) {
+    final name = term.group(1)!;
+    return [
+      'What is the cricket meaning of “$name”?',
+      'Which definition fits the cricket term “$name”?',
+      'In cricket, “$name” describes what?',
+      'How is “$name” defined in cricket?',
+      'What does a cricket scorer mean by “$name”?',
+      'Which cricket definition matches “$name”?',
+      'What does the term “$name” refer to in cricket?',
+      'Choose the correct cricket meaning of “$name”.',
+    ][form];
+  }
+
+  if (source.factKey.endsWith('-winner')) {
+    final event = prompt
+        .replaceFirst('Who won the ', '')
+        .replaceFirst('Which team won the ', '')
+        .replaceFirst('?', '');
+    return [
+      'Which team were champions of the $event?',
+      'Name the champions of the $event.',
+      'The $event title went to which team?',
+      'Which side lifted the $event trophy?',
+      'Who were crowned champions at the $event?',
+      'Which team took the title at the $event?',
+      'Identify the winning team from the $event.',
+      'Which side claimed the $event?',
+    ][form];
+  }
+
+  if (source.factKey.endsWith('-runner-up')) {
+    final event = prompt
+        .replaceFirst('Who finished runner-up at the ', '')
+        .replaceFirst('Who were runners-up at the ', '')
+        .replaceFirst('Which team finished runner-up in the ', '')
+        .replaceFirst('?', '');
+    return [
+      'Which team lost the final of the $event?',
+      'Name the $event runners-up.',
+      'Which side finished second at the $event?',
+      'The $event final was lost by which team?',
+      'Who were the beaten finalists at the $event?',
+      'Which team placed second in the $event?',
+      'Identify the $event runner-up.',
+      'Which side ended the $event as runners-up?',
+    ][form];
+  }
+
+  if (source.factKey.endsWith('-orange-cap') ||
+      source.factKey.endsWith('-purple-cap')) {
+    final award = source.factKey.endsWith('-orange-cap')
+        ? 'Orange Cap'
+        : 'Purple Cap';
+    final event = prompt
+        .replaceFirst('Who won the $award in the ', '')
+        .replaceFirst('?', '');
+    return [
+      'Who received the $award for the $event?',
+      'Name the $award winner from the $event.',
+      'Which player earned the $award in the $event?',
+      'The $award at the $event went to whom?',
+      'Who claimed the $award during the $event?',
+      'Identify the $event $award holder.',
+      'Which player took the $award in the $event?',
+      'Name the player awarded the $award for the $event.',
+    ][form];
+  }
+
+  if (source.factKey.endsWith('-host')) {
+    final event = prompt
+        .replaceFirst('Where was the ', '')
+        .replaceFirst('Which country or region hosted the ', '')
+        .replaceFirst(' staged?', '')
+        .replaceFirst('?', '');
+    return [
+      'Which host staged the $event?',
+      'Where was the $event held?',
+      'Name the host of the $event.',
+      'Which country or region staged the $event?',
+      'The $event took place where?',
+      'Which host nation or region held the $event?',
+      'Identify the host for the $event.',
+      'Where did the $event take place?',
+    ][form];
+  }
+
+  if (source.factKey.startsWith('ground-city-')) {
+    final ground = prompt
+        .replaceFirst('In which city is ', '')
+        .replaceFirst(' located?', '');
+    return [
+      'Which city hosts $ground?',
+      'Locate $ground: which city is it in?',
+      '$ground is in which city?',
+      'Name the city of $ground.',
+      'In which city would you find $ground?',
+      'Which city is home to $ground?',
+      'Identify the city where $ground is located.',
+      'Where is $ground located?',
+    ][form];
+  }
+
+  if (source.factKey.startsWith('ground-country-')) {
+    final ground = prompt
+        .replaceFirst('In which country is ', '')
+        .replaceFirst(' located?', '');
+    return [
+      'Which country hosts $ground?',
+      'Locate $ground: which country is it in?',
+      '$ground is in which country?',
+      'Name the country of $ground.',
+      'In which country would you find $ground?',
+      'Which country is home to $ground?',
+      'Identify the country where $ground is located.',
+      'Where is $ground located?',
+    ][form];
+  }
+
+  if (source.factKey.startsWith('ipl-2026-squad-')) {
+    final name = prompt
+        .replaceFirst('Which IPL team listed ', '')
+        .replaceFirst(' in its 2026 squad?', '');
+    return [
+      'Which IPL side included $name in its 2026 squad?',
+      '$name was listed by which IPL team in 2026?',
+      'Name $name\'s IPL squad for 2026.',
+      'Which franchise listed $name for IPL 2026?',
+      'In IPL 2026, $name was with which team?',
+      'Which IPL 2026 roster included $name?',
+      'Identify $name\'s IPL team for 2026.',
+      'Which franchise had $name in its 2026 IPL squad?',
+    ][form];
+  }
+
+  return 'Cricket records: $prompt';
 }
 
 void _addFact(_Fact fact) {

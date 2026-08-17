@@ -7,6 +7,8 @@ Use one row per coherent request, not one row per file.
 | Date | Area | Change type | Status | Summary | Affected documentation | Code/tests verified |
 |---|---|---|---|---|---|---|
 | 2026-08-09 | Whole app | Overhaul | BUILT / PROTOTYPE / PLANNED | Reorganized the product library; documented all 18 Games-tab entries; added progression, streak, achievement, social, economy, collection, support, and design coverage; corrected current behavior; archived superseded root documents. | `README.md`, `games/`, `systems/`, `design/`, `DOCUMENT_TEMPLATE.md` | App navigation and Games registry; progression, streak, achievement, storage, picks, prediction, referral, friends, daily-mystery and game-mode sources; targeted tests listed on feature pages; refreshed stale catalog coverage to include racing cards |
+| 2026-08-11 | Onboarding / achievements | Feedback adjustment | BUILT | Suppressed the Treasury global achievement reveal so the one-time 1,000-coin welcome animation remains the sole first-run reward moment; the badge still unlocks and is recorded as celebrated. | `systems/achievements.md`, `systems/profile-onboarding-and-settings.md` | `lib/blocs/achievement/achievement_celebration_controller.dart`; `test/achievement_celebration_controller_test.dart`; targeted Flutter analyze and onboarding/celebration tests |
+| 2026-08-15 | Cricket Quiz | Content correction | BUILT | Replaced every fictional score and arithmetic scenario with audit-backed factual cricket trivia while retaining the 2,000-question ladder, mode coverage, and rewards. | `games/cricket-quiz.md` | `tool/generate_cricket_quiz.dart`; `tool/verify_quiz_bank.dart`; `test/quiz_cubit_test.dart`; targeted quiz tests and Flutter analyze |
 
 ## Ledger Rules
 

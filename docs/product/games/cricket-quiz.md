@@ -138,6 +138,10 @@ Women's international coverage therefore increases with difficulty while the
 bank remains predominantly men's cricket. Domestic leagues other than the IPL
 only appear when they provide necessary context for an international fact.
 
+Every cricket prompt is a recorded fact. The bank contains no invented score,
+chase, or arithmetic scenarios; questions cover rules, players, teams, venues,
+tournaments, records, and IPL history instead.
+
 Facts are frozen at **9 August 2026**. Tournament and record questions name the
 relevant edition or date rather than relying on words such as "current" or
 "latest". The effective MCC Laws, ICC playing conditions, official ICC

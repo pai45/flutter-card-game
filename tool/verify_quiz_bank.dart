@@ -187,6 +187,10 @@ void _checkBand(
         '"${prompt.substring(0, 40)}…"',
       );
     }
+    if (scope.startsWith('cricket/') &&
+        prompt.toLowerCase().contains('hypothetical')) {
+      errors.add('$where — cricket questions must use recorded facts, not hypothetical scenarios');
+    }
 
     if (options is! List || options.length != optionCount) {
       errors.add('$where — "o" must have exactly $optionCount options');
@@ -393,6 +397,9 @@ void _checkCricketAudit() {
         if (factKey is! String || factKey.isEmpty) {
           errors.add('$where — factKey must be a non-empty string');
         } else {
+          if (factKey.startsWith('scenario-')) {
+            errors.add('$where — cricket factKey must not identify a scenario');
+          }
           final previous = factKeys[factKey];
           if (previous != null) {
             errors.add(
