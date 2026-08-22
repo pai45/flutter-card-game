@@ -1,7 +1,7 @@
 # Basketball Quiz
 
 > **Status:** BUILT
-> **Last verified:** 2026-08-09
+> **Last verified:** 2026-08-17
 > **Scope:** Basketball trivia categories, set ladder, answer feedback, entry cost, persistence, and XP
 
 Basketball Quiz is StatOz's trivia ladder mode. It gives the Games tab a knowledge-first loop: choose a category, pay a small Oz Coin entry fee, answer a 10-question set, and earn XP for every correct answer.
@@ -119,6 +119,34 @@ demand by `lib/services/quiz_bank.dart`. Run
 `dart run tool/verify_quiz_bank.dart` to validate counts, option lengths,
 duplicate prompts and answer-position balance, and to print a coverage table.
 
+Basketball ships the complete 2,000-question ladder. Its NBA-led global mix is
+fixed by mode so every 100-question chapter remains varied:
+
+| Mode | NBA | WNBA | FIBA / Olympics | NCAA | EuroLeague / world clubs |
+|------|----:|-----:|-----------------:|-----:|-------------------------:|
+| Easy | 350 | 50 | 50 | 25 | 25 |
+| Medium | 325 | 50 | 50 | 50 | 25 |
+| Hard | 300 | 50 | 60 | 50 | 40 |
+| Global | 125 | 75 | 175 | 50 | 75 |
+
+The FIBA allocation contains 100 women's questions and the NCAA allocation
+contains 60 women's questions, in addition to the dedicated 225-question WNBA
+coverage. Within every mode, each chapter receives the same scope proportions;
+the later chapters move from headline knowledge toward older and less familiar
+records.
+
+Facts are frozen at **17 August 2026**. The bank excludes unresolved 2026 WNBA
+standings and awards, and every time-sensitive prompt names its season or event.
+Official NBA, WNBA, FIBA, NCAA and EuroLeague archives are the primary sources.
+
+`tool/generate_basketball_quiz.dart` builds the four runtime assets and the
+development-only `tool/quiz_audit/basketball.json` ledger. Every audit entry
+stores the canonical answer, unique fact key, scope, competition, season,
+difficulty position and at least two official source references. The verifier
+checks all 2,000 audit entries against the runtime answer keys, exact scope
+totals, source metadata, and an exact 25/25/25/25 answer-position split in every
+100-question band.
+
 Sets past the authored range render as SOON in the ladder rather than falling
 back to placeholder questions.
 
@@ -158,6 +186,8 @@ Current limitations:
 |---------|--------|
 | Quiz constants, category metadata, set progress model | [`lib/models/quiz_trivia.dart`](../../../lib/models/quiz_trivia.dart) |
 | Trivia question bank and deterministic set building | [`lib/services/quiz_trivia_bank.dart`](../../../lib/services/quiz_trivia_bank.dart) |
+| Basketball asset and audit generation | [`tool/generate_basketball_quiz.dart`](../../../tool/generate_basketball_quiz.dart) |
+| Structural, coverage, and audit validation | [`tool/verify_quiz_bank.dart`](../../../tool/verify_quiz_bank.dart) |
 | Quiz progress loading and result persistence | [`lib/blocs/quiz/quiz_cubit.dart`](../../../lib/blocs/quiz/quiz_cubit.dart) |
 | Quiz state fields and derived getters | [`lib/blocs/quiz/quiz_state.dart`](../../../lib/blocs/quiz/quiz_state.dart) |
 | Basketball Quiz shell | [`lib/screens/quiz/quiz_hub.dart`](../../../lib/screens/quiz/quiz_hub.dart) |
@@ -170,6 +200,7 @@ Current limitations:
 
 - [`test/quiz_cubit_test.dart`](../../../test/quiz_cubit_test.dart)
 - [`test/quiz_set_flow_test.dart`](../../../test/quiz_set_flow_test.dart)
+- `tool/verify_quiz_bank.dart`
 
 ## Gratification and Feedback
 
@@ -183,7 +214,7 @@ answer, correct/wrong reveal, incomplete exit, and completed set states are repr
 
 ## Planned Scope and Current Limitations
 
-- **BUILT:** Basketball content on the shared quiz ladder with a 25-coin entry,
-  persisted stars/best scores, and Quiz-track XP.
+- **BUILT:** Full 2,000-question audited Basketball content on the shared quiz
+  ladder with a 25-coin entry, persisted stars/best scores, and Quiz-track XP.
 - **PLANNED:** Any additional categories or live question service require
   explicit scope; current questions ship locally.

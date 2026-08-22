@@ -8,6 +8,15 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Every sport now ships a complete authored ladder.
+const _bankedSports = <Sport>[
+  Sport.football,
+  Sport.cricket,
+  Sport.basketball,
+  Sport.tennis,
+  Sport.motorsport,
+];
+
 Future<QuizCubit> _loaded() async {
   final cubit = QuizCubit(SecureGameStorage());
   await cubit.load();
@@ -160,6 +169,41 @@ void main() {
         8,
       );
     });
+
+    test(
+      'basketball progress persists without unlocking another sport',
+      () async {
+        final cubit = await _loaded();
+        addTearDown(cubit.close);
+
+        await cubit.recordResult(
+          Sport.basketball,
+          QuizMode.medium,
+          setNumber: 1,
+          correct: 10,
+          total: kQuizQuestionsPerSet,
+        );
+
+        final reloaded = await _loaded();
+        addTearDown(reloaded.close);
+        expect(
+          reloaded.isSetUnlocked(Sport.basketball, QuizMode.medium, 2),
+          isTrue,
+        );
+        expect(
+          reloaded.setProgressFor(Sport.basketball, QuizMode.medium, 1).stars,
+          3,
+        );
+        expect(
+          reloaded.isSetUnlocked(Sport.football, QuizMode.medium, 2),
+          isFalse,
+        );
+        expect(
+          reloaded.isSetUnlocked(Sport.cricket, QuizMode.medium, 2),
+          isFalse,
+        );
+      },
+    );
   });
 
   group('quiz question bank', () {
@@ -167,7 +211,7 @@ void main() {
     // synchronous set builders can read it.
     setUp(() async {
       QuizBank.debugReset();
-      for (final sport in [Sport.football, Sport.cricket]) {
+      for (final sport in _bankedSports) {
         for (final mode in QuizMode.values) {
           await QuizBank.ensureLoaded(sport, mode);
         }
@@ -186,7 +230,7 @@ void main() {
     });
 
     test('buildQuizSet returns deterministic answer-keyed sets', () {
-      for (final sport in [Sport.football, Sport.cricket]) {
+      for (final sport in _bankedSports) {
         for (final mode in QuizMode.values) {
           final first = buildQuizSet(sport, mode, 12);
           final second = buildQuizSet(sport, mode, 12);
@@ -219,8 +263,8 @@ void main() {
       },
     );
 
-    test('football and cricket author the full 50-set ladders', () {
-      for (final sport in [Sport.football, Sport.cricket]) {
+    test('every sport authors a full 50-set ladder', () {
+      for (final sport in _bankedSports) {
         for (final mode in QuizMode.values) {
           expect(
             QuizBank.authoredSetCount(sport, mode),
@@ -235,7 +279,7 @@ void main() {
     test('sets are dealt in band order so difficulty climbs', () {
       // Band k owns sets 10(k-1)+1..10k, so the first question of set 11 is
       // pool entry 101 — the start of band 2.
-      for (final sport in [Sport.football, Sport.cricket]) {
+      for (final sport in _bankedSports) {
         final pool = QuizBank.pool(sport, QuizMode.easy);
         expect(pool, hasLength(kQuizQuestionPoolPerMode));
         expect(buildQuizSet(sport, QuizMode.easy, 1).first.id, pool[0].id);
@@ -245,7 +289,7 @@ void main() {
     });
 
     test('every authored question is well formed', () {
-      for (final sport in [Sport.football, Sport.cricket]) {
+      for (final sport in _bankedSports) {
         final prompts = <String>{};
         for (final mode in QuizMode.values) {
           final pool = QuizBank.pool(sport, mode);
@@ -277,12 +321,25 @@ void main() {
       }
     });
 
-    test('an unauthored pool degrades to no playable sets', () async {
-      // Sports whose ladders are not written yet must not crash or serve
-      // filler — they simply have nothing to play.
-      await QuizBank.ensureLoaded(Sport.tennis, QuizMode.easy);
+    test('an unauthored pool degrades to no playable sets', () {
+      // Every sport ships a ladder now, so there is no unauthored sport left to
+      // point this at — force an empty pool instead. A ladder that is not
+      // written must not crash or serve filler; it simply has nothing to play.
+      QuizBank.debugSetPool(Sport.tennis, QuizMode.easy, const []);
       expect(QuizBank.authoredSetCount(Sport.tennis, QuizMode.easy), 0);
       expect(buildQuizSet(Sport.tennis, QuizMode.easy, 1), isEmpty);
+    });
+
+    test('a half-authored pool stops rather than serving filler', () {
+      // A pool can ship short while a ladder is still being written. Sets
+      // inside the authored range deal normally; the first set past it is
+      // empty rather than padded.
+      final full = QuizBank.pool(Sport.tennis, QuizMode.easy);
+      QuizBank.debugSetPool(Sport.tennis, QuizMode.easy, full.take(250).toList());
+
+      expect(QuizBank.authoredSetCount(Sport.tennis, QuizMode.easy), 25);
+      expect(buildQuizSet(Sport.tennis, QuizMode.easy, 25), hasLength(10));
+      expect(buildQuizSet(Sport.tennis, QuizMode.easy, 26), isEmpty);
     });
   });
 }

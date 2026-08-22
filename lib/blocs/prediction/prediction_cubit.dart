@@ -229,6 +229,18 @@ class PredictionCubit extends Cubit<PredictionState> {
     await _loadSportUnchecked(sport);
   }
 
+  /// Loads every missing sport feed for cross-sport discovery surfaces.
+  ///
+  /// Loading is intentionally sequential: [_loadSportUnchecked] merges each
+  /// response into the latest emitted fixture state, so serial work prevents
+  /// concurrent responses from replacing one another with stale snapshots.
+  Future<void> loadAllSports() async {
+    for (final sport in Sport.values) {
+      if (isClosed) return;
+      await loadSport(sport);
+    }
+  }
+
   /// Resolves configured fixture IDs without adding repository-only demo
   /// fixtures to the shared sport feed.
   Future<Map<String, SportMatch>> resolveCatalogFixtures(

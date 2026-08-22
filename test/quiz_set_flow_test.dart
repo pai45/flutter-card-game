@@ -15,6 +15,15 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Every sport now ships a complete authored ladder.
+const _bankedSports = <Sport>[
+  Sport.football,
+  Sport.cricket,
+  Sport.basketball,
+  Sport.tennis,
+  Sport.motorsport,
+];
+
 Future<GameBloc> _loadedGameBloc({int coins = 0}) async {
   final bloc = GameBloc(SecureGameStorage())..add(GameLoaded());
   await bloc.stream.firstWhere((state) => !state.loading);
@@ -105,7 +114,7 @@ void main() {
     // Questions are asset data; the lobby preloads them in the app, so the
     // widget tests have to do the same before pumping a play screen.
     QuizBank.debugReset();
-    for (final sport in [Sport.football, Sport.cricket]) {
+    for (final sport in _bankedSports) {
       for (final mode in QuizMode.values) {
         await QuizBank.ensureLoaded(sport, mode);
       }
@@ -277,6 +286,11 @@ void main() {
     addTearDown(gameBloc.close);
     addTearDown(quizCubit.close);
 
+    // Every sport ships a ladder now, so the holding screen has to be reached
+    // by forcing an empty pool rather than by picking an unauthored sport.
+    QuizBank.debugSetPool(Sport.tennis, QuizMode.easy, const []);
+    addTearDown(QuizBank.debugReset);
+
     await tester.pumpWidget(
       _wrap(
         gameBloc: gameBloc,
@@ -317,6 +331,191 @@ void main() {
     expect(find.text('CRICKET QUIZ'), findsOneWidget);
     expect(find.text('GLOBAL · SET 50'), findsOneWidget);
     expect(find.byKey(const ValueKey('quiz-option-0')), findsOneWidget);
+  });
+
+  testWidgets('basketball renders authored questions through the final set', (
+    tester,
+  ) async {
+    final gameBloc = await _loadedGameBloc();
+    final quizCubit = await _loadedQuizCubit();
+    addTearDown(gameBloc.close);
+    addTearDown(quizCubit.close);
+
+    await tester.pumpWidget(
+      _wrap(
+        gameBloc: gameBloc,
+        quizCubit: quizCubit,
+        child: const QuizPlayScreen(
+          sport: Sport.basketball,
+          mode: QuizMode.global,
+          setNumber: 50,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('BASKETBALL QUIZ'), findsOneWidget);
+    expect(find.text('GLOBAL · SET 50'), findsOneWidget);
+    expect(find.byKey(const ValueKey('quiz-option-0')), findsOneWidget);
+  });
+
+  testWidgets('motorsport renders authored questions through the final set', (
+    tester,
+  ) async {
+    final gameBloc = await _loadedGameBloc();
+    final quizCubit = await _loadedQuizCubit();
+    addTearDown(gameBloc.close);
+    addTearDown(quizCubit.close);
+
+    await tester.pumpWidget(
+      _wrap(
+        gameBloc: gameBloc,
+        quizCubit: quizCubit,
+        child: const QuizPlayScreen(
+          sport: Sport.motorsport,
+          mode: QuizMode.global,
+          setNumber: 50,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('MOTORSPORT QUIZ'), findsOneWidget);
+    expect(find.text('GLOBAL · SET 50'), findsOneWidget);
+    expect(find.byKey(const ValueKey('quiz-option-0')), findsOneWidget);
+  });
+
+  testWidgets('tennis renders authored questions through the final set', (
+    tester,
+  ) async {
+    final gameBloc = await _loadedGameBloc();
+    final quizCubit = await _loadedQuizCubit();
+    addTearDown(gameBloc.close);
+    addTearDown(quizCubit.close);
+
+    await tester.pumpWidget(
+      _wrap(
+        gameBloc: gameBloc,
+        quizCubit: quizCubit,
+        child: const QuizPlayScreen(
+          sport: Sport.tennis,
+          mode: QuizMode.global,
+          setNumber: 50,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('TENNIS QUIZ'), findsOneWidget);
+    expect(find.text('GLOBAL · SET 50'), findsOneWidget);
+    expect(find.byKey(const ValueKey('quiz-option-0')), findsOneWidget);
+  });
+
+  testWidgets('a flawless tennis set pays XP, stars and its unlock', (
+    tester,
+  ) async {
+    final gameBloc = await _loadedGameBloc();
+    final quizCubit = await _loadedQuizCubit();
+    addTearDown(gameBloc.close);
+    addTearDown(quizCubit.close);
+    final questions = buildQuizSet(Sport.tennis, QuizMode.easy, 1);
+
+    await tester.pumpWidget(
+      _wrap(
+        gameBloc: gameBloc,
+        quizCubit: quizCubit,
+        child: const QuizPlayScreen(
+          sport: Sport.tennis,
+          mode: QuizMode.easy,
+          setNumber: 1,
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('TENNIS QUIZ'), findsOneWidget);
+
+    await _playSet(tester, questions, correctCount: questions.length);
+    await tester.tap(find.text('SEE RESULTS'));
+    await tester.pump(const Duration(milliseconds: 450));
+
+    expect(gameBloc.state.progression.totalXP, 10);
+    expect(quizCubit.isSetUnlocked(Sport.tennis, QuizMode.easy, 2), isTrue);
+    expect(quizCubit.setProgressFor(Sport.tennis, QuizMode.easy, 1).stars, 3);
+    await tester.pump(const Duration(seconds: 4));
+  });
+
+  testWidgets('a flawless motorsport set pays XP, stars and its unlock', (
+    tester,
+  ) async {
+    final gameBloc = await _loadedGameBloc();
+    final quizCubit = await _loadedQuizCubit();
+    addTearDown(gameBloc.close);
+    addTearDown(quizCubit.close);
+    final questions = buildQuizSet(Sport.motorsport, QuizMode.easy, 1);
+
+    await tester.pumpWidget(
+      _wrap(
+        gameBloc: gameBloc,
+        quizCubit: quizCubit,
+        child: const QuizPlayScreen(
+          sport: Sport.motorsport,
+          mode: QuizMode.easy,
+          setNumber: 1,
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('MOTORSPORT QUIZ'), findsOneWidget);
+
+    await _playSet(tester, questions, correctCount: questions.length);
+    await tester.tap(find.text('SEE RESULTS'));
+    await tester.pump(const Duration(milliseconds: 450));
+
+    expect(gameBloc.state.progression.totalXP, 10);
+    expect(quizCubit.isSetUnlocked(Sport.motorsport, QuizMode.easy, 2), isTrue);
+    expect(
+      quizCubit.setProgressFor(Sport.motorsport, QuizMode.easy, 1).stars,
+      3,
+    );
+    await tester.pump(const Duration(seconds: 4));
+  });
+
+  testWidgets('a flawless basketball set pays XP, stars and its unlock', (
+    tester,
+  ) async {
+    final gameBloc = await _loadedGameBloc();
+    final quizCubit = await _loadedQuizCubit();
+    addTearDown(gameBloc.close);
+    addTearDown(quizCubit.close);
+    final questions = buildQuizSet(Sport.basketball, QuizMode.easy, 1);
+
+    await tester.pumpWidget(
+      _wrap(
+        gameBloc: gameBloc,
+        quizCubit: quizCubit,
+        child: const QuizPlayScreen(
+          sport: Sport.basketball,
+          mode: QuizMode.easy,
+          setNumber: 1,
+        ),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('BASKETBALL QUIZ'), findsOneWidget);
+
+    await _playSet(tester, questions, correctCount: questions.length);
+    await tester.tap(find.text('SEE RESULTS'));
+    await tester.pump(const Duration(milliseconds: 450));
+
+    expect(gameBloc.state.progression.totalXP, 10);
+    expect(quizCubit.isSetUnlocked(Sport.basketball, QuizMode.easy, 2), isTrue);
+    expect(
+      quizCubit.setProgressFor(Sport.basketball, QuizMode.easy, 1).stars,
+      3,
+    );
+    // Let the reveal's staged score/star/unlock timers complete before the
+    // test disposes the overlay.
+    await tester.pump(const Duration(seconds: 4));
   });
 
   testWidgets('locking an answer reveals the verdict before advancing', (

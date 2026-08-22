@@ -129,6 +129,14 @@ abstract final class QuizBank {
     );
   }
 
+  /// Test seam — forces a pool without touching the asset bundle, so the
+  /// unauthored-ladder path stays under test now that every sport ships one.
+  static void debugSetPool(
+    Sport sport,
+    QuizMode mode,
+    List<TriviaQuestion> questions,
+  ) => _pools[_key(sport, mode)] = List<TriviaQuestion>.unmodifiable(questions);
+
   /// Test seam — drops every cached pool.
   static void debugReset() {
     _pools.clear();

@@ -124,8 +124,9 @@ class _FriendsArenaScreenState extends State<FriendsArenaScreen> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-            child: _SearchField(
+            child: CyberSearchField(
               controller: _searchController,
+              hintText: 'Player tag or username',
               onChanged: (value) => setState(() => _query = value),
               onClear: () {
                 _searchController.clear();
@@ -227,62 +228,6 @@ class _FriendsArenaScreenState extends State<FriendsArenaScreen> {
       isFriend: isFriend,
       onView: () => _openDossier(seed.name),
       onToggleFriend: () => _toggleFriend(seed.name),
-    );
-  }
-}
-
-/// Cyber-styled search input (tag or username).
-class _SearchField extends StatelessWidget {
-  const _SearchField({
-    required this.controller,
-    required this.onChanged,
-    required this.onClear,
-  });
-
-  final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: cutCornerDecoration(
-        color: Cyber.bg.withValues(alpha: 0.55),
-        borderColor: Cyber.line,
-        cut: 11,
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Row(
-        children: [
-          const Icon(Icons.search, color: Cyber.cyan, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              onChanged: onChanged,
-              textCapitalization: TextCapitalization.characters,
-              cursorColor: Cyber.cyan,
-              style: Cyber.body(14),
-              decoration: InputDecoration(
-                isDense: true,
-                border: InputBorder.none,
-                hintText: 'Player tag or username',
-                hintStyle: Cyber.body(14, color: Cyber.muted),
-                contentPadding: const EdgeInsets.symmetric(vertical: 14),
-              ),
-            ),
-          ),
-          if (controller.text.isNotEmpty)
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: onClear,
-              child: const Padding(
-                padding: EdgeInsets.all(4),
-                child: Icon(Icons.close, color: Cyber.muted, size: 18),
-              ),
-            ),
-        ],
-      ),
     );
   }
 }

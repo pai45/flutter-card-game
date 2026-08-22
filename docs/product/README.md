@@ -90,7 +90,7 @@ Guess the Player entries share one implementation and one product page.
 | Basketball | Basketball Quiz | BUILT | [Basketball Quiz](games/basketball-quiz.md) |
 | Basketball | Guess the Player | BUILT | [Guess the Player](games/guess-the-player.md#sport-variants) |
 | F1 | Grand Prix Dash | BUILT | [Grand Prix Dash](games/grand-prix-dash.md) |
-| F1 | F1 Quiz | BUILT | [F1 Quiz](games/f1-quiz.md) |
+| F1 | Motorsport Quiz | BUILT | [Motorsport Quiz](games/motorsport-quiz.md) |
 | F1 | Guess the Driver | BUILT | [Guess the Driver](games/guess-the-driver.md) |
 | Tennis | Tennis Rally | BUILT | [Tennis Rally](games/tennis-rally.md) |
 | Tennis | Tennis Quiz | BUILT | [Tennis Quiz](games/tennis-quiz.md) |
@@ -100,7 +100,7 @@ Guess the Player entries share one implementation and one product page.
 
 | System | Status | Product page |
 |---|---|---|
-| Match predictions, quizzes, scoreline contests, and settlement | BUILT / PROTOTYPE DATA | [Predictions](systems/predictions.md) |
+| Match discovery/search, predictions, quizzes, scoreline contests, and settlement | BUILT / PROTOTYPE DATA | [Predictions](systems/predictions.md) |
 | Prediction feedback, rewards, and future quests | BUILT / PLANNED | [Prediction Gamification](systems/prediction-gamification.md) |
 | Outcome markets, positions, settlement, and payouts | BUILT / PROTOTYPE DATA | [Picks](systems/picks.md) |
 | Per-mode XP tracks and aggregate player level | BUILT | [Progression and Leveling](systems/progression-and-leveling.md) |

@@ -5,6 +5,7 @@ import '../data/basketball_athletes.dart';
 import '../data/racing_drivers.dart';
 import '../data/racing_portraits.dart';
 import '../data/tennis_athletes.dart';
+import '../data/tennis_portraits.dart';
 import '../utils/tennis_country_map.dart';
 import 'basketball.dart';
 import 'racing.dart';
@@ -5244,7 +5245,7 @@ PlayerCard _tennisPlayerCard(TennisPlayer athlete) => PlayerCard(
   trait: athlete.signature,
   tier: packRarityForRating(athlete.overallRating),
   icon: Icons.sports_tennis,
-  portraitAsset: 'assets/tennis_player_images/${athlete.id}.webp',
+  portraitAsset: tennisPortraitAssetFor(athlete.id),
 );
 
 String _tennisShortName(String name) {

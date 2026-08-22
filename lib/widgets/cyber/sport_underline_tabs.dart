@@ -40,12 +40,14 @@ class SportHubTabs extends StatelessWidget {
     required this.activeIndex,
     required this.onTap,
     required this.onMore,
+    this.trailingAction,
     super.key,
   });
 
   final int activeIndex;
   final ValueChanged<int> onTap;
   final VoidCallback onMore;
+  final Widget? trailingAction;
 
   static final _visibleSports = sportTabOrder
       .where((sport) => sport != Sport.motorsport)
@@ -76,13 +78,14 @@ class SportHubTabs extends StatelessWidget {
         ? -1
         : selectedShortcut + 1;
     final moreIndex = _labels.length - 1;
-    return CyberUnderlineTabs(
+    final accent = selectedSport == null
+        ? Cyber.cyan
+        : sportModuleFor(selectedSport).accent;
+    final tabs = CyberUnderlineTabs(
       labels: _labels,
       icons: _icons,
       activeIndex: visibleActiveIndex,
-      accent: selectedSport == null
-          ? Cyber.cyan
-          : sportModuleFor(selectedSport).accent,
+      accent: accent,
       onTap: (index) {
         if (index == moreIndex) {
           onMore();
@@ -94,6 +97,29 @@ class SportHubTabs extends StatelessWidget {
         }
         onTap(hubIndexForSport(_visibleSports[index - 1]));
       },
+    );
+    final action = trailingAction;
+    if (action == null) return tabs;
+
+    return SizedBox(
+      height: 50,
+      child: Row(
+        children: [
+          Expanded(child: tabs),
+          Container(
+            width: 48,
+            height: 50,
+            decoration: BoxDecoration(
+              color: Cyber.bg.withValues(alpha: 0.4),
+              border: Border(
+                left: BorderSide(color: accent.withValues(alpha: 0.22)),
+                bottom: BorderSide(color: accent.withValues(alpha: 0.22)),
+              ),
+            ),
+            child: Center(child: action),
+          ),
+        ],
+      ),
     );
   }
 }
