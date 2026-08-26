@@ -1,7 +1,7 @@
 # Hoop Duel
 
 > **Status:** BUILT
-> **Last verified:** 2026-08-09
+> **Last verified:** 2026-08-25
 > **Scope:** Basketball starter roster, real-time half-court match, rewards, and career stats
 
 ## Product Purpose
@@ -39,6 +39,8 @@ difficulty, record, and matchmaking.
 - Baskets, stops, and offensive boards build heat. Six unanswered points also
   fills it. Active heat lasts a tuned window and ends when the opponent scores.
 - Athletes use guard, wing, or big roles plus readable archetype traits.
+- 69 supplied, labeled athlete portraits map to their exact current-roster
+  cards; athletes without supplied art retain the collectible-card icon fallback.
 
 ## Rewards and Progression
 Hoop Duel credits the **Hoop Duel** XP track and never pays coins. A regulation
@@ -77,6 +79,7 @@ progression, and XP ledger.
 ## Implementation References
 
 - [`lib/models/basketball.dart`](../../../lib/models/basketball.dart)
+- [`lib/data/basketball_portraits.dart`](../../../lib/data/basketball_portraits.dart)
 - [`lib/games/basketball/basketball_engine.dart`](../../../lib/games/basketball/basketball_engine.dart)
 - [`lib/blocs/basketball/basketball_cubit.dart`](../../../lib/blocs/basketball/basketball_cubit.dart)
 - [`lib/screens/basketball/basketball_lobby_screen.dart`](../../../lib/screens/basketball/basketball_lobby_screen.dart)
@@ -88,4 +91,5 @@ progression, and XP ledger.
 - [`test/basketball_lobby_screen_test.dart`](../../../test/basketball_lobby_screen_test.dart)
 - [`test/basketball_match_ui_test.dart`](../../../test/basketball_match_ui_test.dart)
 - [`test/basketball_roster_deck_test.dart`](../../../test/basketball_roster_deck_test.dart)
+- [`test/basketball_portraits_test.dart`](../../../test/basketball_portraits_test.dart)
 - [`test/basketball_team_shop_test.dart`](../../../test/basketball_team_shop_test.dart)

@@ -31,9 +31,9 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  test('50-day season contains valid, sourced career grids', () {
+  test('200-day season contains valid, sourced career grids', () {
     expect(footballBingoPuzzles, hasLength(kFootballBingoCampaignLength));
-    expect(footballBingoPuzzles.map((puzzle) => puzzle.id).toSet(), hasLength(50));
+    expect(footballBingoPuzzles.map((puzzle) => puzzle.id).toSet(), hasLength(200));
     for (final puzzle in footballBingoPuzzles) {
       final errors = validateFootballBingoPuzzle(puzzle, [
         ...allPlayerCards,
@@ -307,10 +307,14 @@ void main() {
     await tester.pump();
 
     expect(find.text('BINGO LOGS'), findsOneWidget);
+    // Today's tile is the last of 200 season entries (reverse-chronological
+    // grid), so the 200-day season needs a much bigger scroll budget than a
+    // 50-day one did.
     await tester.scrollUntilVisible(
       find.text('JUL 2, 2026'),
-      300,
+      4000,
       scrollable: find.byType(Scrollable).last,
+      maxScrolls: 100,
     );
     expect(find.text('JUL 2, 2026'), findsOneWidget);
     expect(find.text('CLUB CONNECTIONS'), findsNothing);

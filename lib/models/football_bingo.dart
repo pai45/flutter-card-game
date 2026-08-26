@@ -6,8 +6,8 @@ const int kFootballBingoGridSize = 3;
 const int kFootballBingoStartingLifelines = 5;
 const int kFootballBingoLifelineCost = 25;
 const Duration kFootballBingoCooldown = Duration(hours: 24);
-const int kFootballBingoCampaignLength = 50;
-const int kFootballBingoContentVersion = 2;
+const int kFootballBingoCampaignLength = 200;
+const int kFootballBingoContentVersion = 3;
 
 DateTime footballBingoDateOnly(DateTime value) {
   final local = value.toLocal();

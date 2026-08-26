@@ -1,7 +1,7 @@
 # Football Bingo
 
 > **Status:** BUILT
-> **Last verified:** 2026-08-09
+> **Last verified:** 2026-08-23
 > **Scope:** Daily football grid, player validation, lifelines, archive, and career verification
 
 Football Bingo is StatOz's daily grid puzzle. It gives the Games tab a compact football-knowledge challenge: place the active player into the matching club-intersection cell, protect the run with lifelines, and complete a 3x3 grid before moving on to the next daily puzzle.
@@ -43,7 +43,9 @@ The cell order is shuffled per puzzle/day with a stable seed, so the active-play
 
 Football Bingo uses local day keys in `yyyy-mm-dd` format.
 
-On first load, the current day becomes the first unlocked day of a 50-day season. Daily Logs previews that season: played days are available, while later dates are visibly locked. Day 51 begins a fresh season that reuses the authored order with new date-specific progress.
+On first load, the current day becomes the first unlocked day of a 200-day season. Daily Logs previews that season: played days are available, while later dates are visibly locked. Day 201 begins a fresh season that reuses the authored order with new date-specific progress.
+
+Day mapping is per-user, not a shared calendar date: a player's own first-open day becomes their day 1, so two players who open Football Bingo on different real-world dates see the same 200-grid sequence starting at their own day 1, not the same grid on the same date.
 
 Past days are read-only when opened from the archive.
 
@@ -112,6 +114,8 @@ The cubit also supports migration from the older single-progress storage shape i
 ## Career Verification
 
 Every Bingo player has a curated senior-club timeline. Academy/reserve-only spells are excluded; senior loan spells count. Each record retains career-source URLs and puzzle validation rejects any row/column intersection not present in the player history.
+
+The season covers 200 independently authored grids (no axis-rotation padding) drawn from 213 real footballers and 57 real clubs across the top five European leagues plus Portugal, the Netherlands, Turkey, Scotland, South America, MLS, and Saudi Arabia — spanning multiple eras so the 200-day run does not repeat the same handful of names. `test/football_bingo_test.dart` runs `validateFootballBingoPuzzle` and `validateFootballBingoCareerPuzzle` against every grid on every test run.
 
 ## Implementation References
 | Concern | Source |

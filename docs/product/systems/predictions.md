@@ -58,6 +58,11 @@ results-ready card treatment, sequential verdict flips, XP count-up, perfect
 quiz treatment, crowd comparison, contest podium/prize, progress fill, and
 level-up handoff create the prediction payoff.
 
+The default Trending feed's FUTURE/PICK market tiles show a pulsing "hot"
+delta chip when the leader's latest tick swings by 5+ percentage points on a
+market that hasn't already settled — reusing the shared `CyberProgressBar`/
+`CyberPulse` components rather than a bespoke meter.
+
 ## Visible States
 
 Loading/empty fixture board, upcoming available, drafted/submitted, editable,
@@ -91,6 +96,8 @@ Progression, wallet, ledgers, streaks, and achievements persist in their shared 
 - [`lib/screens/predictions/match_search_screen.dart`](../../../lib/screens/predictions/match_search_screen.dart)
 - [`lib/screens/predictions/match_prediction_screen.dart`](../../../lib/screens/predictions/match_prediction_screen.dart)
 - [`lib/screens/predictions/widgets/settlement_reveal.dart`](../../../lib/screens/predictions/widgets/settlement_reveal.dart)
+- [`lib/screens/predictions/widgets/trending_match_bento.dart`](../../../lib/screens/predictions/widgets/trending_match_bento.dart)
+- [`lib/screens/predictions/trending_hub_catalog.dart`](../../../lib/screens/predictions/trending_hub_catalog.dart)
 
 ## Tests
 

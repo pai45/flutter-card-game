@@ -26,6 +26,11 @@ import 'pick_status_style.dart';
 /// of a tile must stay readable at the app's 15px minimum.
 const double _kTrendingTileHeadingSize = 15;
 
+/// A market is "hot" when its leader's latest tick swung by at least this
+/// many percentage points — calibrated against the live catalog so the pulse
+/// stays rare (only a genuine mover crosses it), per the glow rule.
+const int _kHotDeltaThreshold = 5;
+
 class TrendingMatchesView extends StatefulWidget {
   const TrendingMatchesView({
     required this.onOpenMatch,
@@ -107,7 +112,7 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
                 CyberBentoGrid(
                   rowGap: 20,
                   rowHeightFactor: 0.86,
-                  minRowHeight: 136,
+                  minRowHeight: 150,
                   tiles: [
                     for (var index = 0; index < catalog.length; index++)
                       CyberBentoTile(
@@ -552,6 +557,10 @@ class _TrendingMarketCard extends StatelessWidget {
     final module = sportModuleFor(sport);
     final leader = market.leadingOutcome;
     final delta = market.latestDeltaFor(leader.id);
+    final hot =
+        delta != null &&
+        delta.abs() >= _kHotDeltaThreshold &&
+        !market.isResultKnown;
     return _TrendSignalShell(
       semanticsLabel: market.question,
       accent: accent,
@@ -589,7 +598,7 @@ class _TrendingMarketCard extends StatelessWidget {
                 Text(
                   market.question,
                   maxLines: compact
-                      ? 1
+                      ? 2
                       : tall
                       ? 4
                       : 3,
@@ -602,7 +611,7 @@ class _TrendingMarketCard extends StatelessWidget {
                 ),
                 SizedBox(
                   height: compact
-                      ? 7
+                      ? 4
                       : tall
                       ? 16
                       : 12,
@@ -623,7 +632,7 @@ class _TrendingMarketCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: Cyber.display(10, letterSpacing: 0.5),
                   ),
-                  SizedBox(height: compact ? 2 : 4),
+                  SizedBox(height: compact ? 1 : 4),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -644,20 +653,7 @@ class _TrendingMarketCard extends StatelessWidget {
                         const SizedBox(width: 6),
                         Padding(
                           padding: const EdgeInsets.only(bottom: 2),
-                          child: Text(
-                            '${delta >= 0 ? '+' : ''}$delta',
-                            style:
-                                Cyber.label(
-                                  10,
-                                  color: delta >= 0
-                                      ? Cyber.success
-                                      : Cyber.danger,
-                                ).copyWith(
-                                  fontFeatures: const [
-                                    FontFeature.tabularFigures(),
-                                  ],
-                                ),
-                          ),
+                          child: _DeltaBadge(delta: delta, hot: hot),
                         ),
                       ],
                     ],
@@ -722,14 +718,45 @@ class _OutcomeSignal extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 3),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: FractionallySizedBox(
-            widthFactor: value / 100,
-            child: Container(height: 2, color: accent.withValues(alpha: 0.8)),
+        CyberProgressBar(value: value / 100, accent: accent, height: 4, radius: 2),
+      ],
+    );
+  }
+}
+
+class _DeltaBadge extends StatelessWidget {
+  const _DeltaBadge({required this.delta, required this.hot});
+
+  final int delta;
+  final bool hot;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = delta >= 0 ? Cyber.success : Cyber.danger;
+    final text = Text(
+      '${delta >= 0 ? '+' : ''}$delta',
+      style: Cyber.label(10, color: color).copyWith(
+        fontFeatures: const [FontFeature.tabularFigures()],
+      ),
+    );
+    if (!hot) return text;
+    return CyberPulse(
+      period: const Duration(milliseconds: 900),
+      builder: (context, t) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.10 + 0.06 * t),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: color.withValues(alpha: 0.4 + 0.35 * t)),
+          boxShadow: Cyber.glow(
+            color,
+            alpha: 0.12 + 0.18 * t,
+            blur: 7,
+            spread: -3,
           ),
         ),
-      ],
+        child: text,
+      ),
     );
   }
 }
