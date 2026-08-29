@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
-import '../models/sport_match.dart';
+import 'package:flutter/services.dart';
+
 import '../config/theme.dart';
+import '../data/team_palettes.dart';
+import '../models/sport_match.dart';
+import 'cyber/cyber_filter_chips.dart';
+import 'cyber/cyber_widgets.dart';
+import 'team_logo.dart';
 
 class MatchPitchView extends StatefulWidget {
-  const MatchPitchView({super.key, required this.match});
+  const MatchPitchView({required this.match, super.key});
+
   final SportMatch match;
 
   @override
@@ -17,117 +24,74 @@ class _MatchPitchViewState extends State<MatchPitchView> {
   Widget build(BuildContext context) {
     final homeLineup = widget.match.homeLineup;
     final awayLineup = widget.match.awayLineup;
-
     if (homeLineup == null || awayLineup == null) {
-      return const Center(
-        child: Text('Lineup data not available', style: TextStyle(color: Cyber.muted)),
+      return const CyberNoDataState(
+        key: ValueKey('match-lineups-empty'),
+        icon: Icons.groups_outlined,
+        title: 'Lineups not locked',
+        message: 'Confirmed formations and squad roles will appear here.',
+        accent: Cyber.cyan,
+        spark: Icons.stadium_outlined,
       );
     }
 
-    final activeLineup = _showHome ? homeLineup : awayLineup;
-    final activeTeam = _showHome ? widget.match.home : widget.match.away;
-
+    final lineup = _showHome ? homeLineup : awayLineup;
+    final team = _showHome ? widget.match.home : widget.match.away;
+    final teamColor = paletteForTeam(team, sport: widget.match.sport).primary;
     return Column(
       children: [
-        // Team Toggle
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Container(
-            height: 40,
-            decoration: BoxDecoration(
-              color: Cyber.panel,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Cyber.line),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => _showHome = true),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: _showHome ? Cyber.cyan.withValues(alpha: 0.2) : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        widget.match.home.name,
-                        style: Cyber.body(13, weight: _showHome ? FontWeight.w800 : FontWeight.w600, color: _showHome ? Cyber.cyan : Cyber.muted),
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => _showHome = false),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: !_showHome ? Cyber.gold.withValues(alpha: 0.2) : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        widget.match.away.name,
-                        style: Cyber.body(13, weight: !_showHome ? FontWeight.w800 : FontWeight.w600, color: !_showHome ? Cyber.gold : Cyber.muted),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        CyberFilterChips(
+          labels: [widget.match.home.shortName, widget.match.away.shortName],
+          selected: _showHome
+              ? widget.match.home.shortName
+              : widget.match.away.shortName,
+          accent: teamColor,
+          onSelect: (label) {
+            HapticFeedback.selectionClick();
+            setState(() => _showHome = label == widget.match.home.shortName);
+          },
         ),
-
-        // Pitch
         Expanded(
           child: SingleChildScrollView(
+            key: ValueKey('match-lineup-${team.id}'),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
+                _LineupIdentityPanel(
+                  team: team,
+                  lineup: lineup,
+                  sport: widget.match.sport,
+                  teamColor: teamColor,
+                ),
+                const SizedBox(height: 12),
+                CyberPanel(
+                  accent: teamColor,
+                  padding: const EdgeInsets.all(8),
                   child: AspectRatio(
-                    aspectRatio: 2 / 3,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2A2A2A), // Dark pitch color
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.white24, width: 2),
-                      ),
-                      child: CustomPaint(
-                        painter: widget.match.sport == Sport.basketball ? _CourtPainter() : _PitchPainter(),
-                        child: _buildFormation(activeLineup, activeTeam.color),
+                    aspectRatio: widget.match.sport == Sport.basketball
+                        ? 0.74
+                        : 0.66,
+                    child: ClipPath(
+                      clipper: CyberClipper(),
+                      child: ColoredBox(
+                        color: Cyber.panel2,
+                        child: CustomPaint(
+                          painter: _PitchSurfacePainter(
+                            basketball: widget.match.sport == Sport.basketball,
+                            accent: teamColor,
+                          ),
+                          child: _FormationBoard(
+                            lineup: lineup,
+                            teamColor: teamColor,
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
-                
-                if (activeLineup.substitutes.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          'BENCH / SUBSTITUTES',
-                          style: Cyber.label(12, color: Cyber.cyan, letterSpacing: 1.2),
-                        ),
-                        const SizedBox(height: 16),
-                        Wrap(
-                          spacing: 12,
-                          runSpacing: 16,
-                          alignment: WrapAlignment.start,
-                          children: activeLineup.substitutes.map((player) {
-                            return SizedBox(
-                              width: 64,
-                              child: _buildPlayer(player, activeTeam.color, isSubstitute: true),
-                            );
-                          }).toList(),
-                        ),
-                        const SizedBox(height: 24),
-                      ],
-                    ),
-                  ),
+                const SizedBox(height: 12),
+                _BenchPanel(lineup: lineup, teamColor: teamColor),
               ],
             ),
           ),
@@ -135,272 +99,397 @@ class _MatchPitchViewState extends State<MatchPitchView> {
       ],
     );
   }
+}
 
-  Widget _buildFormation(MatchLineup lineup, Color teamColor) {
-    // Parse formation, e.g., "4-3-3" -> [1, 4, 3, 3] (1 for GK)
-    final parts = lineup.formation.split('-').map((e) => int.tryParse(e) ?? 0).toList();
-    final rows = [1, ...parts];
+class _LineupIdentityPanel extends StatelessWidget {
+  const _LineupIdentityPanel({
+    required this.team,
+    required this.lineup,
+    required this.sport,
+    required this.teamColor,
+  });
 
-    // Distribute players into rows
-    final List<List<MatchPlayer>> positionedRows = [];
-    int playerIndex = 0;
-    for (int count in rows) {
-      final rowPlayers = <MatchPlayer>[];
-      for (int i = 0; i < count; i++) {
-        if (playerIndex < lineup.startingXI.length) {
-          rowPlayers.add(lineup.startingXI[playerIndex]);
-          playerIndex++;
-        }
-      }
-      positionedRows.add(rowPlayers);
-    }
+  final SportTeam team;
+  final MatchLineup lineup;
+  final Sport sport;
+  final Color teamColor;
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: positionedRows.map((rowPlayers) {
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: rowPlayers.map((player) => _buildPlayer(player, teamColor)).toList(),
-        );
-      }).toList(),
+  @override
+  Widget build(BuildContext context) {
+    final playerCount =
+        lineup.reportedPlayerCount ??
+        lineup.startingXI.length + lineup.substitutes.length;
+    return CyberPanel(
+      accent: teamColor,
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        children: [
+          TeamLogo(team: team, width: 48, height: 48, sport: sport),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(team.name.toUpperCase(), style: Cyber.display(15)),
+                const SizedBox(height: 4),
+                Text(
+                  '${lineup.formation} FORMATION // $playerCount PLAYER SQUAD',
+                  style: Cyber.label(
+                    8.5,
+                    color: Cyber.muted,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+            decoration: BoxDecoration(
+              color: (lineup.confirmed ? Cyber.success : Cyber.gold).withValues(
+                alpha: 0.1,
+              ),
+              border: Border.all(
+                color: (lineup.confirmed ? Cyber.success : Cyber.gold)
+                    .withValues(alpha: 0.5),
+              ),
+            ),
+            child: Text(
+              lineup.confirmed ? 'CONFIRMED' : 'PROJECTED',
+              style: Cyber.label(
+                8,
+                color: lineup.confirmed ? Cyber.success : Cyber.gold,
+                letterSpacing: 0.8,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
+}
 
-  Widget _buildPlayer(MatchPlayer player, Color teamColor, {bool isSubstitute = false}) {
-    final double size = isSubstitute ? 36 : 48;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Stack(
-          clipBehavior: Clip.none,
-          alignment: Alignment.center,
-          children: [
-            // Player Avatar Placeholder
-            Container(
-              width: size,
-              height: size,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFF1E1E1E),
-                border: Border.all(color: teamColor.withValues(alpha: 0.8), width: 2),
-              ),
-              child: Icon(Icons.person, color: Colors.white54, size: size * 0.6),
-            ),
-            // Rating Badge
-            if (player.rating != null && !isSubstitute)
-              Positioned(
-                top: -6,
-                right: -12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: player.rating! >= 7.0 ? Cyber.lime : (player.rating! >= 6.0 ? Cyber.gold : Colors.orange),
-                    borderRadius: BorderRadius.circular(12),
+class _FormationBoard extends StatelessWidget {
+  const _FormationBoard({required this.lineup, required this.teamColor});
+
+  final MatchLineup lineup;
+  final Color teamColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final players = [...lineup.startingXI]
+      ..sort((a, b) {
+        final aPlace = int.tryParse(a.formationPlace ?? '');
+        final bPlace = int.tryParse(b.formationPlace ?? '');
+        if (aPlace == null || bPlace == null) return 0;
+        return aPlace.compareTo(bPlace);
+      });
+    final rows = <int>[
+      1,
+      ...lineup.formation.split('-').map((part) {
+        return int.tryParse(part) ?? 0;
+      }),
+    ];
+    final positionedRows = <List<MatchPlayer>>[];
+    var cursor = 0;
+    for (final count in rows) {
+      final end = (cursor + count).clamp(cursor, players.length);
+      positionedRows.add(players.sublist(cursor, end));
+      cursor = end;
+    }
+    if (cursor < players.length) positionedRows.add(players.sublist(cursor));
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          for (final row in positionedRows)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                for (final player in row)
+                  Flexible(
+                    child: _PitchPlayer(player: player, teamColor: teamColor),
                   ),
-                  child: Text(
-                    player.rating!.toStringAsFixed(1),
-                    style: const TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.bold),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PitchPlayer extends StatelessWidget {
+  const _PitchPlayer({required this.player, required this.teamColor});
+
+  final MatchPlayer player;
+  final Color teamColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 72,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CustomPaint(
+            foregroundPainter: OctagonBorderPainter(
+              color: teamColor.withValues(alpha: 0.78),
+              strokeWidth: 1.5,
+            ),
+            child: ClipPath(
+              clipper: const OctagonClipper(),
+              child: Container(
+                width: 38,
+                height: 38,
+                alignment: Alignment.center,
+                color: Cyber.card,
+                child: Text(
+                  player.number.toString(),
+                  style: Cyber.display(12, color: teamColor).copyWith(
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        // Name and Number
-        Container(
-          width: isSubstitute ? 64 : 76,
-          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-          decoration: BoxDecoration(
-            color: Colors.black54,
-            borderRadius: BorderRadius.circular(4),
+            ),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          const SizedBox(height: 4),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+            decoration: BoxDecoration(
+              color: Cyber.bg.withValues(alpha: 0.82),
+              border: Border.all(color: Cyber.line.withValues(alpha: 0.2)),
+            ),
+            child: Text(
+              player.shortName ?? player.name,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Cyber.body(8.5, weight: FontWeight.w800),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BenchPanel extends StatelessWidget {
+  const _BenchPanel({required this.lineup, required this.teamColor});
+
+  final MatchLineup lineup;
+  final Color teamColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return CyberPanel(
+      accent: teamColor,
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
             children: [
               Text(
-                '${player.number}',
-                style: const TextStyle(color: Cyber.cyan, fontSize: 10, fontWeight: FontWeight.bold),
+                'BENCH UNIT',
+                style: Cyber.label(10, color: teamColor, letterSpacing: 1.2),
               ),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  player.name,
-                  textAlign: TextAlign.center,
-                  maxLines: isSubstitute ? 2 : 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                ),
+              const Spacer(),
+              Text(
+                '${lineup.substitutes.length.toString().padLeft(2, '0')} AVAILABLE',
+                style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.7),
               ),
             ],
           ),
-        ),
-      ],
+          const SizedBox(height: 12),
+          if (lineup.substitutes.isEmpty)
+            Text(
+              'No substitutes supplied.',
+              style: Cyber.body(12, color: Cyber.muted),
+            )
+          else
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final width = (constraints.maxWidth - 8) / 2;
+                return Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final player in lineup.substitutes)
+                      SizedBox(
+                        width: width,
+                        child: _BenchPlayerTile(
+                          player: player,
+                          teamColor: teamColor,
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+        ],
+      ),
     );
   }
 }
 
-class _PitchPainter extends CustomPainter {
+class _BenchPlayerTile extends StatelessWidget {
+  const _BenchPlayerTile({required this.player, required this.teamColor});
+
+  final MatchPlayer player;
+  final Color teamColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
+      decoration: BoxDecoration(
+        color: Cyber.panel2.withValues(alpha: 0.48),
+        border: Border.all(color: Cyber.line.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 28,
+            child: Text(
+              player.number.toString(),
+              style: Cyber.display(
+                10,
+                color: teamColor,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            ),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  player.shortName ?? player.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Cyber.body(10, weight: FontWeight.w800),
+                ),
+                Text(
+                  (player.role ?? 'Squad player').toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Cyber.label(7, color: Cyber.muted, letterSpacing: 0.5),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PitchSurfacePainter extends CustomPainter {
+  const _PitchSurfacePainter({required this.basketball, required this.accent});
+
+  final bool basketball;
+  final Color accent;
+
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white24
+    final linePaint = Paint()
+      ..color = Cyber.line.withValues(alpha: 0.32)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
+      ..strokeWidth = 1.2;
+    final signalPaint = Paint()
+      ..color = accent.withValues(alpha: 0.12)
+      ..style = PaintingStyle.fill;
 
-    // Halfway line
+    const grid = 32.0;
+    for (double x = 0; x < size.width; x += grid) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), linePaint);
+    }
+    for (double y = 0; y < size.height; y += grid) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), linePaint);
+    }
+    canvas.drawRect(Offset.zero & size, linePaint);
     canvas.drawLine(
       Offset(0, size.height / 2),
       Offset(size.width, size.height / 2),
-      paint,
+      linePaint,
     );
-
-    // Center circle
     canvas.drawCircle(
       Offset(size.width / 2, size.height / 2),
       size.width * 0.15,
-      paint,
+      linePaint,
     );
-    
-    // Center dot
     canvas.drawCircle(
       Offset(size.width / 2, size.height / 2),
-      2,
-      Paint()..color = Colors.white24..style = PaintingStyle.fill,
+      2.5,
+      signalPaint,
     );
 
-    // Penalty areas (Top and Bottom)
-    final penaltyAreaWidth = size.width * 0.5;
-    final penaltyAreaHeight = size.height * 0.15;
-    
-    // Top Penalty Area
+    if (basketball) {
+      _paintBasketball(canvas, size, linePaint);
+    } else {
+      _paintFootball(canvas, size, linePaint);
+    }
+  }
+
+  void _paintFootball(Canvas canvas, Size size, Paint paint) {
+    final penaltyWidth = size.width * 0.54;
+    final penaltyHeight = size.height * 0.15;
+    final goalWidth = size.width * 0.26;
+    final goalHeight = size.height * 0.055;
     canvas.drawRect(
-      Rect.fromCenter(
-        center: Offset(size.width / 2, penaltyAreaHeight / 2),
-        width: penaltyAreaWidth,
-        height: penaltyAreaHeight,
+      Rect.fromLTWH(
+        (size.width - penaltyWidth) / 2,
+        0,
+        penaltyWidth,
+        penaltyHeight,
       ),
       paint,
     );
-
-    // Bottom Penalty Area
     canvas.drawRect(
-      Rect.fromCenter(
-        center: Offset(size.width / 2, size.height - (penaltyAreaHeight / 2)),
-        width: penaltyAreaWidth,
-        height: penaltyAreaHeight,
+      Rect.fromLTWH(
+        (size.width - penaltyWidth) / 2,
+        size.height - penaltyHeight,
+        penaltyWidth,
+        penaltyHeight,
       ),
       paint,
     );
-
-    // Goal areas
-    final goalAreaWidth = size.width * 0.25;
-    final goalAreaHeight = size.height * 0.06;
-
-    // Top Goal Area
     canvas.drawRect(
-      Rect.fromCenter(
-        center: Offset(size.width / 2, goalAreaHeight / 2),
-        width: goalAreaWidth,
-        height: goalAreaHeight,
-      ),
+      Rect.fromLTWH((size.width - goalWidth) / 2, 0, goalWidth, goalHeight),
       paint,
     );
-
-    // Bottom Goal Area
     canvas.drawRect(
-      Rect.fromCenter(
-        center: Offset(size.width / 2, size.height - (goalAreaHeight / 2)),
-        width: goalAreaWidth,
-        height: goalAreaHeight,
+      Rect.fromLTWH(
+        (size.width - goalWidth) / 2,
+        size.height - goalHeight,
+        goalWidth,
+        goalHeight,
       ),
       paint,
     );
   }
 
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _CourtPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white24
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-
-    // Halfway line
-    canvas.drawLine(
-      Offset(0, size.height / 2),
-      Offset(size.width, size.height / 2),
-      paint,
-    );
-
-    // Center circle
-    canvas.drawCircle(
-      Offset(size.width / 2, size.height / 2),
-      size.width * 0.15,
-      paint,
-    );
-
-    // Center dot
-    canvas.drawCircle(
-      Offset(size.width / 2, size.height / 2),
-      2,
-      Paint()..color = Colors.white24..style = PaintingStyle.fill,
-    );
-
-    final keyWidth = size.width * 0.35;
+  void _paintBasketball(Canvas canvas, Size size, Paint paint) {
+    final keyWidth = size.width * 0.36;
     final keyHeight = size.height * 0.22;
-
-    // Top Key
     canvas.drawRect(
-      Rect.fromCenter(
-        center: Offset(size.width / 2, keyHeight / 2),
-        width: keyWidth,
-        height: keyHeight,
+      Rect.fromLTWH((size.width - keyWidth) / 2, 0, keyWidth, keyHeight),
+      paint,
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(
+        (size.width - keyWidth) / 2,
+        size.height - keyHeight,
+        keyWidth,
+        keyHeight,
       ),
       paint,
     );
-
-    // Bottom Key
-    canvas.drawRect(
-      Rect.fromCenter(
-        center: Offset(size.width / 2, size.height - (keyHeight / 2)),
-        width: keyWidth,
-        height: keyHeight,
-      ),
-      paint,
-    );
-
-    // Free Throw Circles
-    canvas.drawArc(
-      Rect.fromCenter(center: Offset(size.width / 2, keyHeight), width: keyWidth * 0.7, height: keyWidth * 0.7),
-      0, 3.14159, false, paint,
-    ); // Top free throw arc
-
-    canvas.drawArc(
-      Rect.fromCenter(center: Offset(size.width / 2, size.height - keyHeight), width: keyWidth * 0.7, height: keyWidth * 0.7),
-      3.14159, 3.14159, false, paint,
-    ); // Bottom free throw arc
-
-    // 3-Point Arcs
-    final arcWidth = size.width * 0.85;
-    final arcHeight = size.height * 0.5;
-    
-    // Top 3-point arc
-    final topArcRect = Rect.fromCenter(center: Offset(size.width / 2, 0), width: arcWidth, height: arcHeight);
-    canvas.drawArc(topArcRect, 0.3, 3.14159 - 0.6, false, paint);
-    canvas.drawLine(Offset(size.width / 2 - arcWidth / 2 + 10, 0), Offset(size.width / 2 - arcWidth / 2 + 10, arcHeight * 0.15), paint);
-    canvas.drawLine(Offset(size.width / 2 + arcWidth / 2 - 10, 0), Offset(size.width / 2 + arcWidth / 2 - 10, arcHeight * 0.15), paint);
-
-    // Bottom 3-point arc
-    final bottomArcRect = Rect.fromCenter(center: Offset(size.width / 2, size.height), width: arcWidth, height: arcHeight);
-    canvas.drawArc(bottomArcRect, 3.14159 + 0.3, 3.14159 - 0.6, false, paint);
-    canvas.drawLine(Offset(size.width / 2 - arcWidth / 2 + 10, size.height), Offset(size.width / 2 - arcWidth / 2 + 10, size.height - arcHeight * 0.15), paint);
-    canvas.drawLine(Offset(size.width / 2 + arcWidth / 2 - 10, size.height), Offset(size.width / 2 + arcWidth / 2 - 10, size.height - arcHeight * 0.15), paint);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _PitchSurfacePainter oldDelegate) =>
+      oldDelegate.basketball != basketball || oldDelegate.accent != accent;
 }

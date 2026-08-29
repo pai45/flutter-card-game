@@ -1,0 +1,3313 @@
+{
+  "matchDetails": {
+    "gameType": "football",
+    "league": "English Premier League",
+    "season": "2026-27 English Premier League",
+    "date": "2026-08-24",
+    "time": "19:00",
+    "kickoff": "2026-08-24T19:00Z",
+    "status": "Full Time",
+    "completed": true,
+    "location": {
+      "venue": "Craven Cottage",
+      "city": "London",
+      "country": "England",
+      "neutralSite": false
+    },
+    "attendance": 27461,
+    "score": {
+      "home": {
+        "team": "Fulham",
+        "abbreviation": "FUL",
+        "score": 2
+      },
+      "away": {
+        "team": "Chelsea",
+        "abbreviation": "CHE",
+        "score": 3
+      },
+      "display": "2-3",
+      "winner": "Chelsea"
+    },
+    "scorers": [
+      {
+        "id": "284960",
+        "name": "João Pedro",
+        "team": "Chelsea",
+        "teamId": "363",
+        "minute": "1'",
+        "period": 1,
+        "type": "Goal",
+        "assist": "Cole Palmer",
+        "shootout": false
+      },
+      {
+        "id": "409541",
+        "name": "Josh King",
+        "team": "Fulham",
+        "teamId": "370",
+        "minute": "23'",
+        "period": 1,
+        "type": "Goal",
+        "assist": "Timothy Castagne",
+        "shootout": false
+      },
+      {
+        "id": "265653",
+        "name": "Morgan Rogers",
+        "team": "Chelsea",
+        "teamId": "363",
+        "minute": "41'",
+        "period": 1,
+        "type": "Goal",
+        "assist": "Maxence Lacroix",
+        "shootout": false
+      },
+      {
+        "id": "296395",
+        "name": "Cole Palmer",
+        "team": "Chelsea",
+        "teamId": "363",
+        "minute": "49'",
+        "period": 2,
+        "type": "Goal",
+        "assist": "João Pedro",
+        "shootout": false
+      },
+      {
+        "id": "87297",
+        "name": "Gonzalo García",
+        "team": "Fulham",
+        "teamId": "370",
+        "minute": "54'",
+        "period": 2,
+        "type": "Goal - Header",
+        "assist": null,
+        "shootout": false
+      }
+    ]
+  },
+  "topStats": [
+    {
+      "name": "possessionPct",
+      "label": "Possession",
+      "available": true,
+      "home": {
+        "value": 61.5,
+        "display": "61.5%",
+        "share": 61.5
+      },
+      "away": {
+        "value": 38.5,
+        "display": "38.5%",
+        "share": 38.5
+      },
+      "higher": "home"
+    },
+    {
+      "name": "totalShots",
+      "label": "SHOTS",
+      "available": true,
+      "home": {
+        "value": 14,
+        "display": "14",
+        "share": 43.8
+      },
+      "away": {
+        "value": 18,
+        "display": "18",
+        "share": 56.3
+      },
+      "higher": "away"
+    },
+    {
+      "name": "shotsOnTarget",
+      "label": "ON GOAL",
+      "available": true,
+      "home": {
+        "value": 6,
+        "display": "6",
+        "share": 50
+      },
+      "away": {
+        "value": 6,
+        "display": "6",
+        "share": 50
+      },
+      "higher": null
+    },
+    {
+      "name": "wonCorners",
+      "label": "Corner Kicks",
+      "available": true,
+      "home": {
+        "value": 6,
+        "display": "6",
+        "share": 60
+      },
+      "away": {
+        "value": 4,
+        "display": "4",
+        "share": 40
+      },
+      "higher": "home"
+    },
+    {
+      "name": "accuratePasses",
+      "label": "Accurate Passes",
+      "available": true,
+      "home": {
+        "value": 533,
+        "display": "533",
+        "share": 62.7
+      },
+      "away": {
+        "value": 317,
+        "display": "317",
+        "share": 37.3
+      },
+      "higher": "home"
+    },
+    {
+      "name": "foulsCommitted",
+      "label": "Fouls",
+      "available": true,
+      "home": {
+        "value": 12,
+        "display": "12",
+        "share": 63.2
+      },
+      "away": {
+        "value": 7,
+        "display": "7",
+        "share": 36.8
+      },
+      "higher": "home"
+    },
+    {
+      "name": "yellowCards",
+      "label": "Yellow Cards",
+      "available": true,
+      "home": {
+        "value": 2,
+        "display": "2",
+        "share": 40
+      },
+      "away": {
+        "value": 3,
+        "display": "3",
+        "share": 60
+      },
+      "higher": "away"
+    }
+  ],
+  "timeline": [
+    {
+      "minute": "",
+      "clock": 0,
+      "period": 1,
+      "kind": "kickoff",
+      "label": "Kickoff",
+      "marker": true,
+      "side": null,
+      "team": null,
+      "teamId": null,
+      "player": null,
+      "assist": null,
+      "playerIn": null,
+      "playerOut": null,
+      "card": null,
+      "score": {
+        "home": 0,
+        "away": 0,
+        "display": "0 - 0"
+      },
+      "text": null
+    },
+    {
+      "minute": "1'",
+      "clock": 31,
+      "period": 1,
+      "kind": "goal",
+      "label": "Goal",
+      "marker": false,
+      "side": "away",
+      "team": "Chelsea",
+      "teamId": "363",
+      "player": "João Pedro",
+      "assist": "Cole Palmer",
+      "playerIn": null,
+      "playerOut": null,
+      "card": null,
+      "score": {
+        "home": 0,
+        "away": 1,
+        "display": "0 - 1"
+      },
+      "text": "Goal! Fulham 0, Chelsea 1. João Pedro (Chelsea) right footed shot from the centre of the box to the bottom left corner. Assisted by Cole Palmer following a fast break."
+    },
+    {
+      "minute": "5'",
+      "clock": 254,
+      "period": 1,
+      "kind": "yellow-card",
+      "label": "Yellow Card",
+      "marker": false,
+      "side": "away",
+      "team": "Chelsea",
+      "teamId": "363",
+      "player": "Levi Colwill",
+      "assist": null,
+      "playerIn": null,
+      "playerOut": null,
+      "card": "yellow",
+      "score": {
+        "home": 0,
+        "away": 1,
+        "display": "0 - 1"
+      },
+      "text": "Levi Colwill (Chelsea) is shown the yellow card for a bad foul."
+    },
+    {
+      "minute": "12'",
+      "clock": 675,
+      "period": 1,
+      "kind": "yellow-card",
+      "label": "Yellow Card",
+      "marker": false,
+      "side": "away",
+      "team": "Chelsea",
+      "teamId": "363",
+      "player": "Romeo Lavia",
+      "assist": null,
+      "playerIn": null,
+      "playerOut": null,
+      "card": "yellow",
+      "score": {
+        "home": 0,
+        "away": 1,
+        "display": "0 - 1"
+      },
+      "text": "Roméo Lavia (Chelsea) is shown the yellow card for a bad foul."
+    },
+    {
+      "minute": "23'",
+      "clock": 1359,
+      "period": 1,
+      "kind": "goal",
+      "label": "Goal",
+      "marker": false,
+      "side": "home",
+      "team": "Fulham",
+      "teamId": "370",
+      "player": "Josh King",
+      "assist": "Timothy Castagne",
+      "playerIn": null,
+      "playerOut": null,
+      "card": null,
+      "score": {
+        "home": 1,
+        "away": 1,
+        "display": "1 - 1"
+      },
+      "text": "Goal! Fulham 1, Chelsea 1. Josh King (Fulham) right footed shot from the right side of the box to the centre of the goal. Assisted by Timothy Castagne."
+    },
+    {
+      "minute": "41'",
+      "clock": 2405,
+      "period": 1,
+      "kind": "goal",
+      "label": "Goal",
+      "marker": false,
+      "side": "away",
+      "team": "Chelsea",
+      "teamId": "363",
+      "player": "Morgan Rogers",
+      "assist": "Maxence Lacroix",
+      "playerIn": null,
+      "playerOut": null,
+      "card": null,
+      "score": {
+        "home": 1,
+        "away": 2,
+        "display": "1 - 2"
+      },
+      "text": "Goal! Fulham 1, Chelsea 2. Morgan Rogers (Chelsea) right footed shot from the centre of the box to the centre of the goal. Assisted by Maxence Lacroix."
+    },
+    {
+      "minute": "45'+3'",
+      "clock": 2700,
+      "period": 1,
+      "kind": "halftime",
+      "label": "Halftime",
+      "marker": true,
+      "side": null,
+      "team": null,
+      "teamId": null,
+      "player": null,
+      "assist": null,
+      "playerIn": null,
+      "playerOut": null,
+      "card": null,
+      "score": {
+        "home": 1,
+        "away": 2,
+        "display": "1 - 2"
+      },
+      "text": "First Half ends, Fulham 1, Chelsea 2."
+    },
+    {
+      "minute": "45'",
+      "clock": 2700,
+      "period": 2,
+      "kind": "start-2nd-half",
+      "label": "Start 2nd Half",
+      "marker": true,
+      "side": null,
+      "team": null,
+      "teamId": null,
+      "player": null,
+      "assist": null,
+      "playerIn": null,
+      "playerOut": null,
+      "card": null,
+      "score": {
+        "home": 1,
+        "away": 2,
+        "display": "1 - 2"
+      },
+      "text": null
+    },
+    {
+      "minute": "49'",
+      "clock": 2925,
+      "period": 2,
+      "kind": "goal",
+      "label": "Goal",
+      "marker": false,
+      "side": "away",
+      "team": "Chelsea",
+      "teamId": "363",
+      "player": "Cole Palmer",
+      "assist": "João Pedro",
+      "playerIn": null,
+      "playerOut": null,
+      "card": null,
+      "score": {
+        "home": 1,
+        "away": 3,
+        "display": "1 - 3"
+      },
+      "text": "Goal! Fulham 1, Chelsea 3. Cole Palmer (Chelsea) left footed shot from a difficult angle on the left to the centre of the goal. Assisted by João Pedro."
+    },
+    {
+      "minute": "54'",
+      "clock": 3228,
+      "period": 2,
+      "kind": "goal",
+      "label": "Goal - Header",
+      "marker": false,
+      "side": "home",
+      "team": "Fulham",
+      "teamId": "370",
+      "player": "Gonzalo García",
+      "assist": null,
+      "playerIn": null,
+      "playerOut": null,
+      "card": null,
+      "score": {
+        "home": 2,
+        "away": 3,
+        "display": "2 - 3"
+      },
+      "text": "Goal! Fulham 2, Chelsea 3. Gonzalo García (Fulham) header from very close range to the top left corner."
+    },
+    {
+      "minute": "65'",
+      "clock": 3872,
+      "period": 2,
+      "kind": "substitution",
+      "label": "Substitution",
+      "marker": false,
+      "side": "away",
+      "team": "Chelsea",
+      "teamId": "363",
+      "player": "Enzo Fernández",
+      "assist": null,
+      "playerIn": "Enzo Fernández",
+      "playerOut": "Romeo Lavia",
+      "card": null,
+      "score": {
+        "home": 2,
+        "away": 3,
+        "display": "2 - 3"
+      },
+      "text": "Substitution, Chelsea. Enzo Fernández replaces Roméo Lavia."
+    },
+    {
+      "minute": "65'",
+      "clock": 3892,
+      "period": 2,
+      "kind": "substitution",
+      "label": "Substitution",
+      "marker": false,
+      "side": "away",
+      "team": "Chelsea",
+      "teamId": "363",
+      "player": "Pep Chavarría",
+      "assist": null,
+      "playerIn": "Pep Chavarría",
+      "playerOut": "Jorrel Hato",
+      "card": null,
+      "score": {
+        "home": 2,
+        "away": 3,
+        "display": "2 - 3"
+      },
+      "text": "Substitution, Chelsea. Pep Chavarría replaces Jorrel Hato because of an injury."
+    },
+    {
+      "minute": "67'",
+      "clock": 3966,
+      "period": 2,
+      "kind": "substitution",
+      "label": "Substitution",
+      "marker": false,
+      "side": "home",
+      "team": "Fulham",
+      "teamId": "370",
+      "player": "Shea Charles",
+      "assist": null,
+      "playerIn": "Shea Charles",
+      "playerOut": "Oscar Bobb",
+      "card": null,
+      "score": {
+        "home": 2,
+        "away": 3,
+        "display": "2 - 3"
+      },
+      "text": "Substitution, Fulham. Shea Charles replaces Oscar Bobb."
+    },
+    {
+      "minute": "73'",
+      "clock": 4344,
+      "period": 2,
+      "kind": "substitution",
+      "label": "Substitution",
+      "marker": false,
+      "side": "home",
+      "team": "Fulham",
+      "teamId": "370",
+      "player": "Kevin",
+      "assist": null,
+      "playerIn": "Kevin",
+      "playerOut": "César Palacios",
+      "card": null,
+      "score": {
+        "home": 2,
+        "away": 3,
+        "display": "2 - 3"
+      },
+      "text": "Substitution, Fulham. Kevin replaces César Palacios."
+    },
+    {
+      "minute": "73'",
+      "clock": 4356,
+      "period": 2,
+      "kind": "substitution",
+      "label": "Substitution",
+      "marker": false,
+      "side": "home",
+      "team": "Fulham",
+      "teamId": "370",
+      "player": "Ryan Sessegnon",
+      "assist": null,
+      "playerIn": "Ryan Sessegnon",
+      "playerOut": "Sander Berge",
+      "card": null,
+      "score": {
+        "home": 2,
+        "away": 3,
+        "display": "2 - 3"
+      },
+      "text": "Substitution, Fulham. Ryan Sessegnon replaces Sander Berge."
+    },
+    {
+      "minute": "75'",
+      "clock": 4480,
+      "period": 2,
+      "kind": "yellow-card",
+      "label": "Yellow Card",
+      "marker": false,
+      "side": "away",
+      "team": "Chelsea",
+      "teamId": "363",
+      "player": "Reece James",
+      "assist": null,
+      "playerIn": null,
+      "playerOut": null,
+      "card": "yellow",
+      "score": {
+        "home": 2,
+        "away": 3,
+        "display": "2 - 3"
+      },
+      "text": "Reece James (Chelsea) is shown the yellow card for a bad foul."
+    },
+    {
+      "minute": "76'",
+      "clock": 4520,
+      "period": 2,
+      "kind": "substitution",
+      "label": "Substitution",
+      "marker": false,
+      "side": "away",
+      "team": "Chelsea",
+      "teamId": "363",
+      "player": "Pedro Neto",
+      "assist": null,
+      "playerIn": "Pedro Neto",
+      "playerOut": "Malo Gusto",
+      "card": null,
+      "score": {
+        "home": 2,
+        "away": 3,
+        "display": "2 - 3"
+      },
+      "text": "Substitution, Chelsea. Pedro Neto replaces Malo Gusto."
+    },
+    {
+      "minute": "76'",
+      "clock": 4544,
+      "period": 2,
+      "kind": "yellow-card",
+      "label": "Yellow Card",
+      "marker": false,
+      "side": "home",
+      "team": "Fulham",
+      "teamId": "370",
+      "player": "Calvin Bassey",
+      "assist": null,
+      "playerIn": null,
+      "playerOut": null,
+      "card": "yellow",
+      "score": {
+        "home": 2,
+        "away": 3,
+        "display": "2 - 3"
+      },
+      "text": "Calvin Bassey (Fulham) is shown the yellow card."
+    },
+    {
+      "minute": "82'",
+      "clock": 4903,
+      "period": 2,
+      "kind": "substitution",
+      "label": "Substitution",
+      "marker": false,
+      "side": "home",
+      "team": "Fulham",
+      "teamId": "370",
+      "player": "Rodrigo Muniz",
+      "assist": null,
+      "playerIn": "Rodrigo Muniz",
+      "playerOut": "Antonee Robinson",
+      "card": null,
+      "score": {
+        "home": 2,
+        "away": 3,
+        "display": "2 - 3"
+      },
+      "text": "Substitution, Fulham. Rodrigo Muniz replaces Antonee Robinson."
+    },
+    {
+      "minute": "82'",
+      "clock": 4919,
+      "period": 2,
+      "kind": "substitution",
+      "label": "Substitution",
+      "marker": false,
+      "side": "away",
+      "team": "Chelsea",
+      "teamId": "363",
+      "player": "Geovany Quenda",
+      "assist": null,
+      "playerIn": "Geovany Quenda",
+      "playerOut": "Morgan Rogers",
+      "card": null,
+      "score": {
+        "home": 2,
+        "away": 3,
+        "display": "2 - 3"
+      },
+      "text": "Substitution, Chelsea. Geovany Quenda replaces Morgan Rogers."
+    },
+    {
+      "minute": "83'",
+      "clock": 4926,
+      "period": 2,
+      "kind": "substitution",
+      "label": "Substitution",
+      "marker": false,
+      "side": "away",
+      "team": "Chelsea",
+      "teamId": "363",
+      "player": "Estêvão",
+      "assist": null,
+      "playerIn": "Estêvão",
+      "playerOut": "Cole Palmer",
+      "card": null,
+      "score": {
+        "home": 2,
+        "away": 3,
+        "display": "2 - 3"
+      },
+      "text": "Substitution, Chelsea. Estêvão replaces Cole Palmer because of an injury."
+    },
+    {
+      "minute": "88'",
+      "clock": 5278,
+      "period": 2,
+      "kind": "yellow-card",
+      "label": "Yellow Card",
+      "marker": false,
+      "side": "home",
+      "team": "Fulham",
+      "teamId": "370",
+      "player": "Timothy Castagne",
+      "assist": null,
+      "playerIn": null,
+      "playerOut": null,
+      "card": "yellow",
+      "score": {
+        "home": 2,
+        "away": 3,
+        "display": "2 - 3"
+      },
+      "text": "Timothy Castagne (Fulham) is shown the yellow card for a bad foul."
+    },
+    {
+      "minute": "90'+5'",
+      "clock": 5400,
+      "period": 2,
+      "kind": "end-regular-time",
+      "label": "End Regular Time",
+      "marker": true,
+      "side": null,
+      "team": null,
+      "teamId": null,
+      "player": null,
+      "assist": null,
+      "playerIn": null,
+      "playerOut": null,
+      "card": null,
+      "score": {
+        "home": 2,
+        "away": 3,
+        "display": "2 - 3"
+      },
+      "text": null
+    }
+  ],
+  "momentum": {
+    "totalMinutes": 97,
+    "halftimeMinute": 47,
+    "home": {
+      "team": "Fulham",
+      "side": "home"
+    },
+    "away": {
+      "team": "Chelsea",
+      "side": "away"
+    },
+    "series": [
+      {
+        "minute": 0,
+        "home": 2,
+        "away": 45.7,
+        "value": -43.7
+      },
+      {
+        "minute": 1,
+        "home": 7.1,
+        "away": 51.4,
+        "value": -44.3
+      },
+      {
+        "minute": 2,
+        "home": 14.6,
+        "away": 45.2,
+        "value": -30.6
+      },
+      {
+        "minute": 3,
+        "home": 17.5,
+        "away": 39.9,
+        "value": -22.5
+      },
+      {
+        "minute": 4,
+        "home": 19.1,
+        "away": 37.5,
+        "value": -18.3
+      },
+      {
+        "minute": 5,
+        "home": 11.1,
+        "away": 26.8,
+        "value": -15.7
+      },
+      {
+        "minute": 6,
+        "home": 4.3,
+        "away": 26.6,
+        "value": -22.2
+      },
+      {
+        "minute": 7,
+        "home": 0,
+        "away": 33.3,
+        "value": -33.3
+      },
+      {
+        "minute": 8,
+        "home": 4.7,
+        "away": 34,
+        "value": -29.3
+      },
+      {
+        "minute": 9,
+        "home": 12.2,
+        "away": 18.5,
+        "value": -6.3
+      },
+      {
+        "minute": 10,
+        "home": 19.5,
+        "away": 3.9,
+        "value": 15.6
+      },
+      {
+        "minute": 11,
+        "home": 20.2,
+        "away": 0,
+        "value": 20.2
+      },
+      {
+        "minute": 12,
+        "home": 17.4,
+        "away": 0,
+        "value": 17.4
+      },
+      {
+        "minute": 13,
+        "home": 17.6,
+        "away": 0,
+        "value": 17.6
+      },
+      {
+        "minute": 14,
+        "home": 9.8,
+        "away": 0,
+        "value": 9.8
+      },
+      {
+        "minute": 15,
+        "home": 3.8,
+        "away": 0,
+        "value": 3.8
+      },
+      {
+        "minute": 16,
+        "home": 0,
+        "away": 0,
+        "value": 0
+      },
+      {
+        "minute": 17,
+        "home": 0,
+        "away": 4.4,
+        "value": -4.4
+      },
+      {
+        "minute": 18,
+        "home": 19.1,
+        "away": 11.2,
+        "value": 7.9
+      },
+      {
+        "minute": 19,
+        "home": 43.6,
+        "away": 15.9,
+        "value": 27.7
+      },
+      {
+        "minute": 20,
+        "home": 58,
+        "away": 9.2,
+        "value": 48.9
+      },
+      {
+        "minute": 21,
+        "home": 62.9,
+        "away": 2.4,
+        "value": 60.6
+      },
+      {
+        "minute": 22,
+        "home": 61.8,
+        "away": 0,
+        "value": 61.8
+      },
+      {
+        "minute": 23,
+        "home": 56.9,
+        "away": 0.4,
+        "value": 56.6
+      },
+      {
+        "minute": 24,
+        "home": 27.2,
+        "away": 2,
+        "value": 25.2
+      },
+      {
+        "minute": 25,
+        "home": 16,
+        "away": 3.6,
+        "value": 12.4
+      },
+      {
+        "minute": 26,
+        "home": 33,
+        "away": 2.9,
+        "value": 30.1
+      },
+      {
+        "minute": 27,
+        "home": 47,
+        "away": 1.9,
+        "value": 45.1
+      },
+      {
+        "minute": 28,
+        "home": 39.3,
+        "away": 5,
+        "value": 34.3
+      },
+      {
+        "minute": 29,
+        "home": 16,
+        "away": 12.4,
+        "value": 3.6
+      },
+      {
+        "minute": 30,
+        "home": 3.9,
+        "away": 18.5,
+        "value": -14.6
+      },
+      {
+        "minute": 31,
+        "home": 0,
+        "away": 22,
+        "value": -22
+      },
+      {
+        "minute": 32,
+        "home": 0,
+        "away": 34.5,
+        "value": -34.5
+      },
+      {
+        "minute": 33,
+        "home": 0,
+        "away": 66.3,
+        "value": -66.3
+      },
+      {
+        "minute": 34,
+        "home": 0,
+        "away": 85.2,
+        "value": -85.2
+      },
+      {
+        "minute": 35,
+        "home": 0,
+        "away": 100,
+        "value": -100
+      },
+      {
+        "minute": 36,
+        "home": 0,
+        "away": 63.2,
+        "value": -63.2
+      },
+      {
+        "minute": 37,
+        "home": 6,
+        "away": 24.9,
+        "value": -18.9
+      },
+      {
+        "minute": 38,
+        "home": 11.9,
+        "away": 18.6,
+        "value": -6.6
+      },
+      {
+        "minute": 39,
+        "home": 11.9,
+        "away": 46.1,
+        "value": -34.2
+      },
+      {
+        "minute": 40,
+        "home": 6,
+        "away": 66.6,
+        "value": -60.6
+      },
+      {
+        "minute": 41,
+        "home": 0,
+        "away": 41.4,
+        "value": -41.4
+      },
+      {
+        "minute": 42,
+        "home": 0,
+        "away": 19.1,
+        "value": -19.1
+      },
+      {
+        "minute": 43,
+        "home": 0,
+        "away": 11.4,
+        "value": -11.4
+      },
+      {
+        "minute": 44,
+        "home": 0,
+        "away": 13.9,
+        "value": -13.9
+      },
+      {
+        "minute": 45,
+        "home": 0,
+        "away": 9.1,
+        "value": -9.1
+      },
+      {
+        "minute": 46,
+        "home": 0,
+        "away": 5.9,
+        "value": -5.9
+      },
+      {
+        "minute": 47,
+        "home": 1.3,
+        "away": 14.8,
+        "value": -13.5
+      },
+      {
+        "minute": 48,
+        "home": 2.8,
+        "away": 22.8,
+        "value": -19.9
+      },
+      {
+        "minute": 49,
+        "home": 3.4,
+        "away": 43.8,
+        "value": -40.4
+      },
+      {
+        "minute": 50,
+        "home": 1.8,
+        "away": 66.8,
+        "value": -64.9
+      },
+      {
+        "minute": 51,
+        "home": 0.3,
+        "away": 69.9,
+        "value": -69.6
+      },
+      {
+        "minute": 52,
+        "home": 0,
+        "away": 40.1,
+        "value": -40.1
+      },
+      {
+        "minute": 53,
+        "home": 0,
+        "away": 14.3,
+        "value": -14.3
+      },
+      {
+        "minute": 54,
+        "home": 24.9,
+        "away": 5.5,
+        "value": 19.5
+      },
+      {
+        "minute": 55,
+        "home": 64.2,
+        "away": 2.7,
+        "value": 61.6
+      },
+      {
+        "minute": 56,
+        "home": 92.9,
+        "away": 0,
+        "value": 92.9
+      },
+      {
+        "minute": 57,
+        "home": 58.6,
+        "away": 0,
+        "value": 58.6
+      },
+      {
+        "minute": 58,
+        "home": 25.8,
+        "away": 0,
+        "value": 25.8
+      },
+      {
+        "minute": 59,
+        "home": 16.4,
+        "away": 0,
+        "value": 16.4
+      },
+      {
+        "minute": 60,
+        "home": 14.9,
+        "away": 0,
+        "value": 14.9
+      },
+      {
+        "minute": 61,
+        "home": 13.5,
+        "away": 0,
+        "value": 13.5
+      },
+      {
+        "minute": 62,
+        "home": 8.6,
+        "away": 1.6,
+        "value": 7
+      },
+      {
+        "minute": 63,
+        "home": 3.5,
+        "away": 7.7,
+        "value": -4.2
+      },
+      {
+        "minute": 64,
+        "home": 0,
+        "away": 14.4,
+        "value": -14.4
+      },
+      {
+        "minute": 65,
+        "home": 0,
+        "away": 11.8,
+        "value": -11.8
+      },
+      {
+        "minute": 66,
+        "home": 0,
+        "away": 7.3,
+        "value": -7.3
+      },
+      {
+        "minute": 67,
+        "home": 0,
+        "away": 4.2,
+        "value": -4.2
+      },
+      {
+        "minute": 68,
+        "home": 0,
+        "away": 4.6,
+        "value": -4.6
+      },
+      {
+        "minute": 69,
+        "home": 0,
+        "away": 5.2,
+        "value": -5.2
+      },
+      {
+        "minute": 70,
+        "home": 0,
+        "away": 5.8,
+        "value": -5.8
+      },
+      {
+        "minute": 71,
+        "home": 0,
+        "away": 5.3,
+        "value": -5.3
+      },
+      {
+        "minute": 72,
+        "home": 3,
+        "away": 2.6,
+        "value": 0.4
+      },
+      {
+        "minute": 73,
+        "home": 9.5,
+        "away": 0.2,
+        "value": 9.3
+      },
+      {
+        "minute": 74,
+        "home": 16,
+        "away": 1.5,
+        "value": 14.4
+      },
+      {
+        "minute": 75,
+        "home": 15.2,
+        "away": 2.9,
+        "value": 12.3
+      },
+      {
+        "minute": 76,
+        "home": 15.4,
+        "away": 3.8,
+        "value": 11.6
+      },
+      {
+        "minute": 77,
+        "home": 17.3,
+        "away": 4.5,
+        "value": 12.8
+      },
+      {
+        "minute": 78,
+        "home": 16.9,
+        "away": 4.6,
+        "value": 12.3
+      },
+      {
+        "minute": 79,
+        "home": 16.6,
+        "away": 2.6,
+        "value": 14
+      },
+      {
+        "minute": 80,
+        "home": 10.6,
+        "away": 0.6,
+        "value": 9.9
+      },
+      {
+        "minute": 81,
+        "home": 4.2,
+        "away": 0.1,
+        "value": 4.1
+      },
+      {
+        "minute": 82,
+        "home": 0,
+        "away": 1.6,
+        "value": -1.6
+      },
+      {
+        "minute": 83,
+        "home": 0,
+        "away": 3.1,
+        "value": -3.1
+      },
+      {
+        "minute": 84,
+        "home": 14.1,
+        "away": 2.9,
+        "value": 11.2
+      },
+      {
+        "minute": 85,
+        "home": 35.6,
+        "away": 1.4,
+        "value": 34.2
+      },
+      {
+        "minute": 86,
+        "home": 50.4,
+        "away": 0,
+        "value": 50.4
+      },
+      {
+        "minute": 87,
+        "home": 28.9,
+        "away": 0,
+        "value": 28.9
+      },
+      {
+        "minute": 88,
+        "home": 7.4,
+        "away": 2.6,
+        "value": 4.8
+      },
+      {
+        "minute": 89,
+        "home": 0,
+        "away": 11.7,
+        "value": -11.7
+      },
+      {
+        "minute": 90,
+        "home": 0,
+        "away": 23.8,
+        "value": -23.8
+      },
+      {
+        "minute": 91,
+        "home": 0,
+        "away": 25.9,
+        "value": -25.9
+      },
+      {
+        "minute": 92,
+        "home": 1.2,
+        "away": 19.5,
+        "value": -18.3
+      },
+      {
+        "minute": 93,
+        "home": 7.1,
+        "away": 12.1,
+        "value": -4.9
+      },
+      {
+        "minute": 94,
+        "home": 16,
+        "away": 11.9,
+        "value": 4.1
+      },
+      {
+        "minute": 95,
+        "home": 25.2,
+        "away": 15.7,
+        "value": 9.5
+      },
+      {
+        "minute": 96,
+        "home": 30.9,
+        "away": 16.5,
+        "value": 14.4
+      },
+      {
+        "minute": 97,
+        "home": 20.4,
+        "away": 8.8,
+        "value": 11.5
+      }
+    ],
+    "goals": [
+      {
+        "minute": 1,
+        "axis": 1,
+        "clock": "1'",
+        "side": "away",
+        "team": "Chelsea",
+        "player": "João Pedro"
+      },
+      {
+        "minute": 23,
+        "axis": 23,
+        "clock": "23'",
+        "side": "home",
+        "team": "Fulham",
+        "player": "Josh King"
+      },
+      {
+        "minute": 41,
+        "axis": 40,
+        "clock": "41'",
+        "side": "away",
+        "team": "Chelsea",
+        "player": "Morgan Rogers"
+      },
+      {
+        "minute": 49,
+        "axis": 51,
+        "clock": "49'",
+        "side": "away",
+        "team": "Chelsea",
+        "player": "Cole Palmer"
+      },
+      {
+        "minute": 54,
+        "axis": 56,
+        "clock": "54'",
+        "side": "home",
+        "team": "Fulham",
+        "player": "Gonzalo García"
+      }
+    ]
+  },
+  "commentary": [
+    {
+      "sequence": 0,
+      "minute": null,
+      "clock": 0,
+      "period": null,
+      "kind": null,
+      "text": "Lineups are announced and players are warming up.",
+      "team": null,
+      "side": null,
+      "players": [],
+      "playId": null
+    },
+    {
+      "sequence": 1,
+      "minute": null,
+      "clock": 0,
+      "period": null,
+      "kind": null,
+      "text": "First Half begins.",
+      "team": null,
+      "side": null,
+      "players": [],
+      "playId": null
+    },
+    {
+      "sequence": 2,
+      "minute": "1'",
+      "clock": 31,
+      "period": 1,
+      "kind": "goal",
+      "text": "Goal! Fulham 0, Chelsea 1. João Pedro (Chelsea) right footed shot from the centre of the box to the bottom left corner. Assisted by Cole Palmer following a fast break.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "João Pedro",
+        "Cole Palmer"
+      ],
+      "playId": "51402631"
+    },
+    {
+      "sequence": 3,
+      "minute": "3'",
+      "clock": 127,
+      "period": 1,
+      "kind": "foul",
+      "text": "Foul by Morgan Rogers (Chelsea).",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Morgan Rogers",
+        "Timothy Castagne"
+      ],
+      "playId": "51402712"
+    },
+    {
+      "sequence": 4,
+      "minute": "3'",
+      "clock": 127,
+      "period": 1,
+      "kind": "foul",
+      "text": "Timothy Castagne (Fulham) wins a free kick on the right wing.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Morgan Rogers",
+        "Timothy Castagne"
+      ],
+      "playId": "51402712"
+    },
+    {
+      "sequence": 5,
+      "minute": "4'",
+      "clock": 183,
+      "period": 1,
+      "kind": "shot-blocked",
+      "text": "Attempt blocked. Morgan Rogers (Chelsea) right footed shot from outside the box is blocked. Assisted by Cole Palmer.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Morgan Rogers",
+        "Cole Palmer"
+      ],
+      "playId": "51402774"
+    },
+    {
+      "sequence": 6,
+      "minute": "4'",
+      "clock": 184,
+      "period": 1,
+      "kind": "corner-awarded",
+      "text": "Corner, Chelsea. Conceded by Antonee Robinson.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [],
+      "playId": "51402776"
+    },
+    {
+      "sequence": 7,
+      "minute": "4'",
+      "clock": 218,
+      "period": 1,
+      "kind": "shot-blocked",
+      "text": "Attempt blocked. Reece James (Chelsea) right footed shot from outside the box is blocked. Assisted by Morgan Rogers.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Reece James",
+        "Morgan Rogers"
+      ],
+      "playId": "51402780"
+    },
+    {
+      "sequence": 8,
+      "minute": "5'",
+      "clock": 246,
+      "period": 1,
+      "kind": "foul",
+      "text": "Foul by Levi Colwill (Chelsea).",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Levi Colwill",
+        "Oscar Bobb"
+      ],
+      "playId": "51402789"
+    },
+    {
+      "sequence": 9,
+      "minute": "5'",
+      "clock": 246,
+      "period": 1,
+      "kind": "foul",
+      "text": "Oscar Bobb (Fulham) wins a free kick in the attacking half.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Levi Colwill",
+        "Oscar Bobb"
+      ],
+      "playId": "51402789"
+    },
+    {
+      "sequence": 10,
+      "minute": "5'",
+      "clock": 254,
+      "period": 1,
+      "kind": "yellow-card",
+      "text": "Levi Colwill (Chelsea) is shown the yellow card for a bad foul.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Levi Colwill"
+      ],
+      "playId": "51402857"
+    },
+    {
+      "sequence": 11,
+      "minute": "6'",
+      "clock": 338,
+      "period": 1,
+      "kind": "shot-blocked",
+      "text": "Attempt blocked. Levi Colwill (Chelsea) left footed shot from the left side of the box is blocked.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Levi Colwill"
+      ],
+      "playId": "51402906"
+    },
+    {
+      "sequence": 12,
+      "minute": "8'",
+      "clock": 466,
+      "period": 1,
+      "kind": "shot-on-target",
+      "text": "Attempt saved. Cole Palmer (Chelsea) right footed shot from the right side of the box is saved in the top right corner by Bernd Leno (Fulham). Assisted by Morgan Rogers.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Cole Palmer",
+        "Morgan Rogers"
+      ],
+      "playId": "51402961"
+    },
+    {
+      "sequence": 13,
+      "minute": "10'",
+      "clock": 584,
+      "period": 1,
+      "kind": "corner-awarded",
+      "text": "Corner, Fulham. Conceded by Jorrel Hato.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [],
+      "playId": "51403072"
+    },
+    {
+      "sequence": 14,
+      "minute": "12'",
+      "clock": 668,
+      "period": 1,
+      "kind": "foul",
+      "text": "Calvin Bassey (Fulham) wins a free kick in the defensive half.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Romeo Lavia",
+        "Calvin Bassey"
+      ],
+      "playId": "51403136"
+    },
+    {
+      "sequence": 15,
+      "minute": "12'",
+      "clock": 668,
+      "period": 1,
+      "kind": "foul",
+      "text": "Foul by Roméo Lavia (Chelsea).",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Romeo Lavia",
+        "Calvin Bassey"
+      ],
+      "playId": "51403136"
+    },
+    {
+      "sequence": 16,
+      "minute": "12'",
+      "clock": 675,
+      "period": 1,
+      "kind": "yellow-card",
+      "text": "Roméo Lavia (Chelsea) is shown the yellow card for a bad foul.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Romeo Lavia"
+      ],
+      "playId": "51403198"
+    },
+    {
+      "sequence": 17,
+      "minute": "14'",
+      "clock": 787,
+      "period": 1,
+      "kind": "corner-awarded",
+      "text": "Corner, Fulham. Conceded by Robert Sánchez.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [],
+      "playId": "51403243"
+    },
+    {
+      "sequence": 18,
+      "minute": "19'",
+      "clock": 1131,
+      "period": 1,
+      "kind": "shot-blocked",
+      "text": "Attempt blocked. Cole Palmer (Chelsea) left footed shot from the centre of the box is blocked. Assisted by Morgan Rogers.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Cole Palmer",
+        "Morgan Rogers"
+      ],
+      "playId": "51403562"
+    },
+    {
+      "sequence": 19,
+      "minute": "20'",
+      "clock": 1172,
+      "period": 1,
+      "kind": "shot-on-target",
+      "text": "Attempt saved. Josh King (Fulham) right footed shot from outside the box is saved in the top centre of the goal by Robert Sánchez (Chelsea). Assisted by Sander Berge.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Josh King",
+        "Sander Berge"
+      ],
+      "playId": "51403600"
+    },
+    {
+      "sequence": 20,
+      "minute": "20'",
+      "clock": 1173,
+      "period": 1,
+      "kind": "corner-awarded",
+      "text": "Corner, Fulham. Conceded by Robert Sánchez.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [],
+      "playId": "51403602"
+    },
+    {
+      "sequence": 21,
+      "minute": "21'",
+      "clock": 1213,
+      "period": 1,
+      "kind": "shot-off-target",
+      "text": "Attempt missed. César Palacios (Fulham) right footed shot from outside the box is high and wide to the right. Assisted by Josh King following a corner.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "César Palacios",
+        "Josh King"
+      ],
+      "playId": "51403607"
+    },
+    {
+      "sequence": 22,
+      "minute": "22'",
+      "clock": 1289,
+      "period": 1,
+      "kind": "shot-blocked",
+      "text": "Attempt blocked. Sander Berge (Fulham) right footed shot from the right side of the box is blocked.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Sander Berge"
+      ],
+      "playId": "51403711"
+    },
+    {
+      "sequence": 23,
+      "minute": "23'",
+      "clock": 1359,
+      "period": 1,
+      "kind": "goal",
+      "text": "Goal! Fulham 1, Chelsea 1. Josh King (Fulham) right footed shot from the right side of the box to the centre of the goal. Assisted by Timothy Castagne.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Josh King",
+        "Timothy Castagne"
+      ],
+      "playId": "51403758"
+    },
+    {
+      "sequence": 24,
+      "minute": "26'",
+      "clock": 1517,
+      "period": 1,
+      "kind": "offside",
+      "text": "Offside, Chelsea. Cole Palmer is caught offside.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Levi Colwill"
+      ],
+      "playId": "51403929"
+    },
+    {
+      "sequence": 25,
+      "minute": "27'",
+      "clock": 1588,
+      "period": 1,
+      "kind": "shot-blocked",
+      "text": "Attempt blocked. César Palacios (Fulham) right footed shot from the centre of the box is blocked. Assisted by Timothy Castagne with a cross.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "César Palacios",
+        "Timothy Castagne"
+      ],
+      "playId": "51403951"
+    },
+    {
+      "sequence": 26,
+      "minute": "27'",
+      "clock": 1609,
+      "period": 1,
+      "kind": "shot-blocked",
+      "text": "Attempt blocked. Gonzalo García (Fulham) right footed shot from the centre of the box is blocked. Assisted by Oscar Bobb.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Gonzalo García",
+        "Oscar Bobb"
+      ],
+      "playId": "51404012"
+    },
+    {
+      "sequence": 27,
+      "minute": "28'",
+      "clock": 1653,
+      "period": 1,
+      "kind": "foul",
+      "text": "Foul by Malo Gusto (Chelsea).",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Malo Gusto",
+        "Gonzalo García"
+      ],
+      "playId": "51404075"
+    },
+    {
+      "sequence": 28,
+      "minute": "28'",
+      "clock": 1653,
+      "period": 1,
+      "kind": "foul",
+      "text": "Gonzalo García (Fulham) wins a free kick in the defensive half.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Malo Gusto",
+        "Gonzalo García"
+      ],
+      "playId": "51404075"
+    },
+    {
+      "sequence": 29,
+      "minute": "29'",
+      "clock": 1684,
+      "period": 1,
+      "kind": "corner-awarded",
+      "text": "Corner, Fulham. Conceded by Maxence Lacroix.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [],
+      "playId": "51404081"
+    },
+    {
+      "sequence": 30,
+      "minute": "29'",
+      "clock": 1723,
+      "period": 1,
+      "kind": "foul",
+      "text": "Cole Palmer (Chelsea) wins a free kick in the defensive half.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Josh King",
+        "Cole Palmer"
+      ],
+      "playId": "51404107"
+    },
+    {
+      "sequence": 31,
+      "minute": "29'",
+      "clock": 1723,
+      "period": 1,
+      "kind": "foul",
+      "text": "Foul by Josh King (Fulham).",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Josh King",
+        "Cole Palmer"
+      ],
+      "playId": "51404107"
+    },
+    {
+      "sequence": 32,
+      "minute": "30'",
+      "clock": 1799,
+      "period": 1,
+      "kind": "shot-off-target",
+      "text": "Attempt missed. João Pedro (Chelsea) right footed shot from the centre of the box is close, but misses to the right. Assisted by Cole Palmer with a cross.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "João Pedro",
+        "Cole Palmer"
+      ],
+      "playId": "51404122"
+    },
+    {
+      "sequence": 33,
+      "minute": "33'",
+      "clock": 1974,
+      "period": 1,
+      "kind": "shot-blocked",
+      "text": "Attempt blocked. Morgan Rogers (Chelsea) right footed shot from outside the box is blocked. Assisted by João Pedro.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Morgan Rogers",
+        "João Pedro"
+      ],
+      "playId": "51404267"
+    },
+    {
+      "sequence": 34,
+      "minute": "33'",
+      "clock": 1976,
+      "period": 1,
+      "kind": "shot-on-target",
+      "text": "Attempt saved. Reece James (Chelsea) left footed shot from the right side of the box is saved in the bottom right corner by Bernd Leno (Fulham).",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Reece James"
+      ],
+      "playId": "51404268"
+    },
+    {
+      "sequence": 35,
+      "minute": "35'",
+      "clock": 2072,
+      "period": 1,
+      "kind": "corner-awarded",
+      "text": "Corner, Chelsea. Conceded by César Palacios.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [],
+      "playId": "51404377"
+    },
+    {
+      "sequence": 36,
+      "minute": "35'",
+      "clock": 2100,
+      "period": 1,
+      "kind": "shot-blocked",
+      "text": "Attempt blocked. Jorrel Hato (Chelsea) header from the centre of the box is blocked. Assisted by Reece James with a cross.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Jorrel Hato",
+        "Reece James"
+      ],
+      "playId": "51404381"
+    },
+    {
+      "sequence": 37,
+      "minute": "36'",
+      "clock": 2104,
+      "period": 1,
+      "kind": "shot-on-target",
+      "text": "Attempt saved. Roméo Lavia (Chelsea) right footed shot from very close range is saved in the bottom left corner by Bernd Leno (Fulham). Assisted by Jorrel Hato.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Romeo Lavia",
+        "Jorrel Hato"
+      ],
+      "playId": "51404383"
+    },
+    {
+      "sequence": 38,
+      "minute": "36'",
+      "clock": 2105,
+      "period": 1,
+      "kind": "corner-awarded",
+      "text": "Corner, Chelsea. Conceded by Bernd Leno.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [],
+      "playId": "51404385"
+    },
+    {
+      "sequence": 39,
+      "minute": "36'",
+      "clock": 2148,
+      "period": 1,
+      "kind": "foul",
+      "text": "Cole Palmer (Chelsea) wins a free kick on the right wing.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "César Palacios",
+        "Cole Palmer"
+      ],
+      "playId": "51404443"
+    },
+    {
+      "sequence": 40,
+      "minute": "36'",
+      "clock": 2148,
+      "period": 1,
+      "kind": "foul",
+      "text": "Foul by César Palacios (Fulham).",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "César Palacios",
+        "Cole Palmer"
+      ],
+      "playId": "51404443"
+    },
+    {
+      "sequence": 41,
+      "minute": "39'",
+      "clock": 2310,
+      "period": 1,
+      "kind": "shot-blocked",
+      "text": "Attempt blocked. Calvin Bassey (Fulham) left footed shot from outside the box is blocked. Assisted by Sander Berge.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Calvin Bassey",
+        "Sander Berge"
+      ],
+      "playId": "51404536"
+    },
+    {
+      "sequence": 42,
+      "minute": "40'",
+      "clock": 2349,
+      "period": 1,
+      "kind": "foul",
+      "text": "João Pedro (Chelsea) wins a free kick in the attacking half.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Josh King",
+        "João Pedro"
+      ],
+      "playId": "51404552"
+    },
+    {
+      "sequence": 43,
+      "minute": "40'",
+      "clock": 2349,
+      "period": 1,
+      "kind": "foul",
+      "text": "Foul by Josh King (Fulham).",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Josh King",
+        "João Pedro"
+      ],
+      "playId": "51404552"
+    },
+    {
+      "sequence": 44,
+      "minute": "41'",
+      "clock": 2405,
+      "period": 1,
+      "kind": "goal",
+      "text": "Goal! Fulham 1, Chelsea 2. Morgan Rogers (Chelsea) right footed shot from the centre of the box to the centre of the goal. Assisted by Maxence Lacroix.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Morgan Rogers",
+        "Maxence Lacroix"
+      ],
+      "playId": "51404619"
+    },
+    {
+      "sequence": 45,
+      "minute": "44'",
+      "clock": 2622,
+      "period": 1,
+      "kind": "shot-off-target",
+      "text": "Attempt missed. Cole Palmer (Chelsea) left footed shot from outside the box misses to the left. Assisted by Morgan Rogers.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Cole Palmer",
+        "Morgan Rogers"
+      ],
+      "playId": "51404717"
+    },
+    {
+      "sequence": 46,
+      "minute": "45'+1'",
+      "clock": 2702,
+      "period": null,
+      "kind": null,
+      "text": "Fourth official has announced 2 minutes of added time.",
+      "team": null,
+      "side": null,
+      "players": [],
+      "playId": null
+    },
+    {
+      "sequence": 47,
+      "minute": "45'+2'",
+      "clock": 2820,
+      "period": 1,
+      "kind": "foul",
+      "text": "Morgan Rogers (Chelsea) wins a free kick in the defensive half.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Oscar Bobb",
+        "Morgan Rogers"
+      ],
+      "playId": "51404931"
+    },
+    {
+      "sequence": 48,
+      "minute": "45'+2'",
+      "clock": 2820,
+      "period": 1,
+      "kind": "foul",
+      "text": "Foul by Oscar Bobb (Fulham).",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Oscar Bobb",
+        "Morgan Rogers"
+      ],
+      "playId": "51404931"
+    },
+    {
+      "sequence": 49,
+      "minute": "45'+3'",
+      "clock": 2825,
+      "period": 1,
+      "kind": "halftime",
+      "text": "First Half ends, Fulham 1, Chelsea 2.",
+      "team": null,
+      "side": null,
+      "players": [],
+      "playId": "51404998"
+    },
+    {
+      "sequence": 50,
+      "minute": "45'",
+      "clock": 2700,
+      "period": null,
+      "kind": null,
+      "text": "Second Half begins Fulham 1, Chelsea 2.",
+      "team": null,
+      "side": null,
+      "players": [],
+      "playId": null
+    },
+    {
+      "sequence": 51,
+      "minute": "47'",
+      "clock": 2785,
+      "period": 2,
+      "kind": "shot-blocked",
+      "text": "Attempt blocked. João Pedro (Chelsea) left footed shot from the left side of the box is blocked. Assisted by Roméo Lavia.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "João Pedro",
+        "Romeo Lavia"
+      ],
+      "playId": "51405642"
+    },
+    {
+      "sequence": 52,
+      "minute": "47'",
+      "clock": 2796,
+      "period": 2,
+      "kind": "foul",
+      "text": "Foul by João Pedro (Chelsea).",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "João Pedro",
+        "Timothy Castagne"
+      ],
+      "playId": "51405670"
+    },
+    {
+      "sequence": 53,
+      "minute": "47'",
+      "clock": 2796,
+      "period": 2,
+      "kind": "foul",
+      "text": "Timothy Castagne (Fulham) wins a free kick in the defensive half.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "João Pedro",
+        "Timothy Castagne"
+      ],
+      "playId": "51405670"
+    },
+    {
+      "sequence": 54,
+      "minute": "48'",
+      "clock": 2871,
+      "period": 2,
+      "kind": "shot-off-target",
+      "text": "Attempt missed. Cole Palmer (Chelsea) left footed shot from the right side of the box misses to the left. Assisted by Roméo Lavia.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Cole Palmer",
+        "Romeo Lavia"
+      ],
+      "playId": "51405693"
+    },
+    {
+      "sequence": 55,
+      "minute": "49'",
+      "clock": 2925,
+      "period": 2,
+      "kind": "goal",
+      "text": "Goal! Fulham 1, Chelsea 3. Cole Palmer (Chelsea) left footed shot from a difficult angle on the left to the centre of the goal. Assisted by João Pedro.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Cole Palmer",
+        "João Pedro"
+      ],
+      "playId": "51405757"
+    },
+    {
+      "sequence": 56,
+      "minute": "52'",
+      "clock": 3082,
+      "period": 2,
+      "kind": "foul",
+      "text": "Jorrel Hato (Chelsea) wins a free kick in the defensive half.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Timothy Castagne",
+        "Jorrel Hato"
+      ],
+      "playId": "51405887"
+    },
+    {
+      "sequence": 57,
+      "minute": "52'",
+      "clock": 3082,
+      "period": 2,
+      "kind": "foul",
+      "text": "Foul by Timothy Castagne (Fulham).",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Timothy Castagne",
+        "Jorrel Hato"
+      ],
+      "playId": "51405887"
+    },
+    {
+      "sequence": 58,
+      "minute": "54'",
+      "clock": 3225,
+      "period": 2,
+      "kind": "shot-on-target",
+      "text": "Attempt saved. Timothy Castagne (Fulham) left footed shot from the centre of the box is saved in the centre of the goal by Robert Sánchez (Chelsea).",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Timothy Castagne"
+      ],
+      "playId": "51405933"
+    },
+    {
+      "sequence": 59,
+      "minute": "54'",
+      "clock": 3228,
+      "period": 2,
+      "kind": "goal---header",
+      "text": "Goal! Fulham 2, Chelsea 3. Gonzalo García (Fulham) header from very close range to the top left corner.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Gonzalo García"
+      ],
+      "playId": "51405934"
+    },
+    {
+      "sequence": 60,
+      "minute": "57'",
+      "clock": 3400,
+      "period": 2,
+      "kind": "corner-awarded",
+      "text": "Corner, Fulham. Conceded by Roméo Lavia.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [],
+      "playId": "51406012"
+    },
+    {
+      "sequence": 61,
+      "minute": "60'",
+      "clock": 3546,
+      "period": 2,
+      "kind": "foul",
+      "text": "Foul by Maxence Lacroix (Chelsea).",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Maxence Lacroix",
+        "Gonzalo García"
+      ],
+      "playId": "51406224"
+    },
+    {
+      "sequence": 62,
+      "minute": "60'",
+      "clock": 3546,
+      "period": 2,
+      "kind": "foul",
+      "text": "Gonzalo García (Fulham) wins a free kick on the left wing.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Maxence Lacroix",
+        "Gonzalo García"
+      ],
+      "playId": "51406224"
+    },
+    {
+      "sequence": 63,
+      "minute": "63'",
+      "clock": 3729,
+      "period": 2,
+      "kind": "shot-off-target",
+      "text": "Attempt missed. João Pedro (Chelsea) right footed shot from outside the box is too high. Assisted by Morgan Rogers.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "João Pedro",
+        "Morgan Rogers"
+      ],
+      "playId": "51406338"
+    },
+    {
+      "sequence": 64,
+      "minute": "64'",
+      "clock": 3807,
+      "period": 2,
+      "kind": "foul",
+      "text": "Jorrel Hato (Chelsea) wins a free kick in the defensive half.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Gonzalo García",
+        "Jorrel Hato"
+      ],
+      "playId": "51406361"
+    },
+    {
+      "sequence": 65,
+      "minute": "64'",
+      "clock": 3807,
+      "period": 2,
+      "kind": "foul",
+      "text": "Foul by Gonzalo García (Fulham).",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Gonzalo García",
+        "Jorrel Hato"
+      ],
+      "playId": "51406361"
+    },
+    {
+      "sequence": 66,
+      "minute": "65'",
+      "clock": 3872,
+      "period": 2,
+      "kind": "substitution",
+      "text": "Substitution, Chelsea. Enzo Fernández replaces Roméo Lavia.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Enzo Fernández",
+        "Romeo Lavia"
+      ],
+      "playId": "51406378"
+    },
+    {
+      "sequence": 67,
+      "minute": "65'",
+      "clock": 3892,
+      "period": 2,
+      "kind": "substitution",
+      "text": "Substitution, Chelsea. Pep Chavarría replaces Jorrel Hato because of an injury.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Pep Chavarría",
+        "Jorrel Hato"
+      ],
+      "playId": "51406422"
+    },
+    {
+      "sequence": 68,
+      "minute": "66'",
+      "clock": 3941,
+      "period": 2,
+      "kind": "offside",
+      "text": "Offside, Chelsea. Josh Acheampong is caught offside.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Cole Palmer"
+      ],
+      "playId": "51406423"
+    },
+    {
+      "sequence": 69,
+      "minute": "67'",
+      "clock": 3966,
+      "period": 2,
+      "kind": "substitution",
+      "text": "Substitution, Fulham. Shea Charles replaces Oscar Bobb.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Shea Charles",
+        "Oscar Bobb"
+      ],
+      "playId": "51406494"
+    },
+    {
+      "sequence": 70,
+      "minute": "69'",
+      "clock": 4105,
+      "period": 2,
+      "kind": "foul",
+      "text": "Maxence Lacroix (Chelsea) wins a free kick in the defensive half.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "César Palacios",
+        "Maxence Lacroix"
+      ],
+      "playId": "51406529"
+    },
+    {
+      "sequence": 71,
+      "minute": "69'",
+      "clock": 4105,
+      "period": 2,
+      "kind": "foul",
+      "text": "Foul by César Palacios (Fulham).",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "César Palacios",
+        "Maxence Lacroix"
+      ],
+      "playId": "51406529"
+    },
+    {
+      "sequence": 72,
+      "minute": "72'",
+      "clock": 4317,
+      "period": 2,
+      "kind": "shot-off-target",
+      "text": "Attempt missed. Josh King (Fulham) right footed shot from outside the box is close, but misses to the left. Assisted by Antonee Robinson.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Josh King",
+        "Antonee Robinson"
+      ],
+      "playId": "51406732"
+    },
+    {
+      "sequence": 73,
+      "minute": "73'",
+      "clock": 4344,
+      "period": 2,
+      "kind": "substitution",
+      "text": "Substitution, Fulham. Kevin replaces César Palacios.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Kevin",
+        "César Palacios"
+      ],
+      "playId": "51406775"
+    },
+    {
+      "sequence": 74,
+      "minute": "73'",
+      "clock": 4356,
+      "period": 2,
+      "kind": "substitution",
+      "text": "Substitution, Fulham. Ryan Sessegnon replaces Sander Berge.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Ryan Sessegnon",
+        "Sander Berge"
+      ],
+      "playId": "51406776"
+    },
+    {
+      "sequence": 75,
+      "minute": "74'",
+      "clock": 4396,
+      "period": 2,
+      "kind": "foul",
+      "text": "Josh Acheampong (Chelsea) wins a free kick in the defensive half.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Kevin",
+        "Josh Acheampong"
+      ],
+      "playId": "51406773"
+    },
+    {
+      "sequence": 76,
+      "minute": "74'",
+      "clock": 4396,
+      "period": 2,
+      "kind": "foul",
+      "text": "Foul by Kevin (Fulham).",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Kevin",
+        "Josh Acheampong"
+      ],
+      "playId": "51406773"
+    },
+    {
+      "sequence": 77,
+      "minute": "75'",
+      "clock": 4478,
+      "period": 2,
+      "kind": "foul",
+      "text": "Foul by Reece James (Chelsea).",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Reece James",
+        "Josh King"
+      ],
+      "playId": "51406812"
+    },
+    {
+      "sequence": 78,
+      "minute": "75'",
+      "clock": 4478,
+      "period": 2,
+      "kind": "foul",
+      "text": "Josh King (Fulham) wins a free kick on the left wing.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Reece James",
+        "Josh King"
+      ],
+      "playId": "51406812"
+    },
+    {
+      "sequence": 79,
+      "minute": "75'",
+      "clock": 4480,
+      "period": 2,
+      "kind": "yellow-card",
+      "text": "Reece James (Chelsea) is shown the yellow card for a bad foul.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Reece James"
+      ],
+      "playId": "51406873"
+    },
+    {
+      "sequence": 80,
+      "minute": "76'",
+      "clock": 4520,
+      "period": 2,
+      "kind": "substitution",
+      "text": "Substitution, Chelsea. Pedro Neto replaces Malo Gusto.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Pedro Neto",
+        "Malo Gusto"
+      ],
+      "playId": "51406882"
+    },
+    {
+      "sequence": 81,
+      "minute": "76'",
+      "clock": 4542,
+      "period": null,
+      "kind": null,
+      "text": "Calvin Bassey (Fulham) has gone down, but the referee deems it simulation.",
+      "team": null,
+      "side": null,
+      "players": [],
+      "playId": null
+    },
+    {
+      "sequence": 82,
+      "minute": "76'",
+      "clock": 4544,
+      "period": 2,
+      "kind": "yellow-card",
+      "text": "Calvin Bassey (Fulham) is shown the yellow card.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Calvin Bassey"
+      ],
+      "playId": "51406924"
+    },
+    {
+      "sequence": 83,
+      "minute": "78'",
+      "clock": 4624,
+      "period": 2,
+      "kind": "shot-off-target",
+      "text": "Attempt missed. Antonee Robinson (Fulham) right footed shot from outside the box misses to the right. Assisted by Jorge Cuenca.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Antonee Robinson",
+        "Jorge Cuenca"
+      ],
+      "playId": "51406944"
+    },
+    {
+      "sequence": 84,
+      "minute": "82'",
+      "clock": 4881,
+      "period": 2,
+      "kind": "foul",
+      "text": "Cole Palmer (Chelsea) wins a free kick in the defensive half.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Kevin",
+        "Cole Palmer"
+      ],
+      "playId": "51407144"
+    },
+    {
+      "sequence": 85,
+      "minute": "82'",
+      "clock": 4881,
+      "period": 2,
+      "kind": "foul",
+      "text": "Foul by Kevin (Fulham).",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Kevin",
+        "Cole Palmer"
+      ],
+      "playId": "51407144"
+    },
+    {
+      "sequence": 86,
+      "minute": "82'",
+      "clock": 4903,
+      "period": 2,
+      "kind": "substitution",
+      "text": "Substitution, Fulham. Rodrigo Muniz replaces Antonee Robinson.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Rodrigo Muniz",
+        "Antonee Robinson"
+      ],
+      "playId": "51407164"
+    },
+    {
+      "sequence": 87,
+      "minute": "82'",
+      "clock": 4919,
+      "period": 2,
+      "kind": "substitution",
+      "text": "Substitution, Chelsea. Geovany Quenda replaces Morgan Rogers.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Geovany Quenda",
+        "Morgan Rogers"
+      ],
+      "playId": "51407165"
+    },
+    {
+      "sequence": 88,
+      "minute": "83'",
+      "clock": 4926,
+      "period": 2,
+      "kind": "substitution",
+      "text": "Substitution, Chelsea. Estêvão replaces Cole Palmer because of an injury.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Estêvão",
+        "Cole Palmer"
+      ],
+      "playId": "51407166"
+    },
+    {
+      "sequence": 89,
+      "minute": "84'",
+      "clock": 5025,
+      "period": 2,
+      "kind": "shot-on-target",
+      "text": "Attempt saved. Ryan Sessegnon (Fulham) left footed shot from a difficult angle on the left is saved in the bottom left corner by Robert Sánchez (Chelsea). Assisted by Jorge Cuenca.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Ryan Sessegnon",
+        "Jorge Cuenca"
+      ],
+      "playId": "51407335"
+    },
+    {
+      "sequence": 90,
+      "minute": "84'",
+      "clock": 5027,
+      "period": 2,
+      "kind": "corner-awarded",
+      "text": "Corner, Fulham. Conceded by Robert Sánchez.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [],
+      "playId": "51407337"
+    },
+    {
+      "sequence": 91,
+      "minute": "88'",
+      "clock": 5275,
+      "period": 2,
+      "kind": "foul",
+      "text": "Levi Colwill (Chelsea) wins a free kick in the defensive half.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Timothy Castagne",
+        "Levi Colwill"
+      ],
+      "playId": "51407545"
+    },
+    {
+      "sequence": 92,
+      "minute": "88'",
+      "clock": 5275,
+      "period": 2,
+      "kind": "foul",
+      "text": "Foul by Timothy Castagne (Fulham).",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Timothy Castagne",
+        "Levi Colwill"
+      ],
+      "playId": "51407545"
+    },
+    {
+      "sequence": 93,
+      "minute": "88'",
+      "clock": 5278,
+      "period": 2,
+      "kind": "yellow-card",
+      "text": "Timothy Castagne (Fulham) is shown the yellow card for a bad foul.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Timothy Castagne"
+      ],
+      "playId": "51407546"
+    },
+    {
+      "sequence": 94,
+      "minute": "89'",
+      "clock": 5325,
+      "period": 2,
+      "kind": "corner-awarded",
+      "text": "Corner, Chelsea. Conceded by Ryan Sessegnon.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [],
+      "playId": "51407629"
+    },
+    {
+      "sequence": 95,
+      "minute": "90'",
+      "clock": 5392,
+      "period": 2,
+      "kind": "offside",
+      "text": "Offside, Chelsea. Geovany Quenda is caught offside.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "João Pedro"
+      ],
+      "playId": "51407691"
+    },
+    {
+      "sequence": 96,
+      "minute": "90'+1'",
+      "clock": 5426,
+      "period": null,
+      "kind": null,
+      "text": "Fourth official has announced 4 minutes of added time.",
+      "team": null,
+      "side": null,
+      "players": [],
+      "playId": null
+    },
+    {
+      "sequence": 97,
+      "minute": "90'+1'",
+      "clock": 5456,
+      "period": 2,
+      "kind": "foul",
+      "text": "Enzo Fernández (Chelsea) wins a free kick in the defensive half.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Gonzalo García",
+        "Enzo Fernández"
+      ],
+      "playId": "51407761"
+    },
+    {
+      "sequence": 98,
+      "minute": "90'+1'",
+      "clock": 5456,
+      "period": 2,
+      "kind": "foul",
+      "text": "Foul by Gonzalo García (Fulham).",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Gonzalo García",
+        "Enzo Fernández"
+      ],
+      "playId": "51407761"
+    },
+    {
+      "sequence": 99,
+      "minute": "90'+3'",
+      "clock": 5533,
+      "period": 2,
+      "kind": "shot-blocked",
+      "text": "Attempt blocked. Gonzalo García (Fulham) right footed shot from outside the box is blocked. Assisted by Rodrigo Muniz with a headed pass.",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Gonzalo García",
+        "Rodrigo Muniz"
+      ],
+      "playId": "51407787"
+    },
+    {
+      "sequence": 100,
+      "minute": "90'+4'",
+      "clock": 5614,
+      "period": 2,
+      "kind": "shot-off-target",
+      "text": "Attempt missed. Pedro Neto (Chelsea) left footed shot from a difficult angle on the right is close, but misses to the right. Assisted by Enzo Fernández.",
+      "team": "Chelsea",
+      "side": "away",
+      "players": [
+        "Pedro Neto",
+        "Enzo Fernández"
+      ],
+      "playId": "51407852"
+    },
+    {
+      "sequence": 101,
+      "minute": "90'+5'",
+      "clock": 5650,
+      "period": 2,
+      "kind": "shot-on-target",
+      "text": "Attempt saved. Rodrigo Muniz (Fulham) right footed shot from outside the box is saved in the top centre of the goal by Robert Sánchez (Chelsea).",
+      "team": "Fulham",
+      "side": "home",
+      "players": [
+        "Rodrigo Muniz"
+      ],
+      "playId": "51407879"
+    },
+    {
+      "sequence": 102,
+      "minute": "90'+5'",
+      "clock": 5655,
+      "period": null,
+      "kind": null,
+      "text": "Second Half ends, Fulham 2, Chelsea 3.",
+      "team": null,
+      "side": null,
+      "players": [],
+      "playId": null
+    },
+    {
+      "sequence": 103,
+      "minute": null,
+      "clock": 0,
+      "period": null,
+      "kind": null,
+      "text": "Match ends, Fulham 2, Chelsea 3.",
+      "team": null,
+      "side": null,
+      "players": [],
+      "playId": null
+    }
+  ],
+  "teams": [
+    {
+      "id": "370",
+      "name": "Fulham",
+      "abbreviation": "FUL",
+      "homeAway": "home",
+      "formation": "4-2-3-1",
+      "lineupsConfirmed": true,
+      "source": "roster",
+      "playerCount": 20,
+      "players": [
+        {
+          "id": "153765",
+          "name": "Bernd Leno",
+          "shortName": "B. Leno",
+          "jersey": "1",
+          "position": "G",
+          "positionName": "Goalkeeper",
+          "starter": true,
+          "formationPlace": "1",
+          "source": "roster"
+        },
+        {
+          "id": "252031",
+          "name": "Jorge Cuenca",
+          "shortName": "J. Cuenca",
+          "jersey": "4",
+          "position": "CD-L",
+          "positionName": "Center Left Defender",
+          "starter": true,
+          "formationPlace": "6",
+          "source": "roster"
+        },
+        {
+          "id": "263110",
+          "name": "Calvin Bassey",
+          "shortName": "C. Bassey",
+          "jersey": "3",
+          "position": "CD-R",
+          "positionName": "Center Right Defender",
+          "starter": true,
+          "formationPlace": "5",
+          "source": "roster"
+        },
+        {
+          "id": "222396",
+          "name": "Antonee Robinson",
+          "shortName": "A. Robinson",
+          "jersey": "33",
+          "position": "LB",
+          "positionName": "Left Back",
+          "starter": true,
+          "formationPlace": "3",
+          "source": "roster"
+        },
+        {
+          "id": "197163",
+          "name": "Timothy Castagne",
+          "shortName": "T. Castagne",
+          "jersey": "21",
+          "position": "RB",
+          "positionName": "Right Back",
+          "starter": true,
+          "formationPlace": "2",
+          "source": "roster"
+        },
+        {
+          "id": "409541",
+          "name": "Josh King",
+          "shortName": "J. King",
+          "jersey": "24",
+          "position": "AM",
+          "positionName": "Attacking Midfielder",
+          "starter": true,
+          "formationPlace": "10",
+          "source": "roster"
+        },
+        {
+          "id": "175063",
+          "name": "Alex Iwobi",
+          "shortName": "A. Iwobi",
+          "jersey": "17",
+          "position": "LM",
+          "positionName": "Left Midfielder",
+          "starter": true,
+          "formationPlace": "4",
+          "source": "roster"
+        },
+        {
+          "id": "218998",
+          "name": "Sander Berge",
+          "shortName": "S. Berge",
+          "jersey": "16",
+          "position": "RM",
+          "positionName": "Right Midfielder",
+          "starter": true,
+          "formationPlace": "8",
+          "source": "roster"
+        },
+        {
+          "id": "87297",
+          "name": "Gonzalo García",
+          "shortName": "G. García",
+          "jersey": "7",
+          "position": "F",
+          "positionName": "Forward",
+          "starter": true,
+          "formationPlace": "9",
+          "source": "roster"
+        },
+        {
+          "id": "12172",
+          "name": "César Palacios",
+          "shortName": "C. Palacios",
+          "jersey": "8",
+          "position": "AM-L",
+          "positionName": "Attacking Midfielder Left",
+          "starter": true,
+          "formationPlace": "11",
+          "source": "roster"
+        },
+        {
+          "id": "307111",
+          "name": "Oscar Bobb",
+          "shortName": "O. Bobb",
+          "jersey": "14",
+          "position": "AM-R",
+          "positionName": "Attacking Midfielder Right",
+          "starter": true,
+          "formationPlace": "7",
+          "source": "roster"
+        },
+        {
+          "id": "190974",
+          "name": "Kenny Tete",
+          "shortName": "K. Tete",
+          "jersey": "2",
+          "position": "SUB",
+          "positionName": "Substitute",
+          "starter": false,
+          "formationPlace": "0",
+          "source": "roster"
+        },
+        {
+          "id": "365345",
+          "name": "Luc de Fougerolles",
+          "shortName": "L. de Fougerolles",
+          "jersey": "44",
+          "position": "SUB",
+          "positionName": "Substitute",
+          "starter": false,
+          "formationPlace": "0",
+          "source": "roster"
+        },
+        {
+          "id": "193246",
+          "name": "Harrison Reed",
+          "shortName": "H. Reed",
+          "jersey": "6",
+          "position": "SUB",
+          "positionName": "Substitute",
+          "starter": false,
+          "formationPlace": "0",
+          "source": "roster"
+        },
+        {
+          "id": "324164",
+          "name": "Shea Charles",
+          "shortName": "S. Charles",
+          "jersey": "19",
+          "position": "SUB",
+          "positionName": "Substitute",
+          "starter": false,
+          "formationPlace": "0",
+          "source": "roster"
+        },
+        {
+          "id": "330764",
+          "name": "Kevin",
+          "shortName": "Kevin",
+          "jersey": "11",
+          "position": "SUB",
+          "positionName": "Substitute",
+          "starter": false,
+          "formationPlace": "0",
+          "source": "roster"
+        },
+        {
+          "id": "266697",
+          "name": "Emile Smith Rowe",
+          "shortName": "E. Smith Rowe",
+          "jersey": "32",
+          "position": "SUB",
+          "positionName": "Substitute",
+          "starter": false,
+          "formationPlace": "0",
+          "source": "roster"
+        },
+        {
+          "id": "149517",
+          "name": "Benjamin Lecomte",
+          "shortName": "B. Lecomte",
+          "jersey": "23",
+          "position": "SUB",
+          "positionName": "Substitute",
+          "starter": false,
+          "formationPlace": "0",
+          "source": "roster"
+        },
+        {
+          "id": "241328",
+          "name": "Ryan Sessegnon",
+          "shortName": "R. Sessegnon",
+          "jersey": "30",
+          "position": "SUB",
+          "positionName": "Substitute",
+          "starter": false,
+          "formationPlace": "0",
+          "source": "roster"
+        },
+        {
+          "id": "301525",
+          "name": "Rodrigo Muniz",
+          "shortName": "R. Muniz",
+          "jersey": "9",
+          "position": "SUB",
+          "positionName": "Substitute",
+          "starter": false,
+          "formationPlace": "0",
+          "source": "roster"
+        }
+      ]
+    },
+    {
+      "id": "363",
+      "name": "Chelsea",
+      "abbreviation": "CHE",
+      "homeAway": "away",
+      "formation": "3-4-2-1",
+      "lineupsConfirmed": true,
+      "source": "roster",
+      "playerCount": 20,
+      "players": [
+        {
+          "id": "108662",
+          "name": "Robert Sánchez",
+          "shortName": "R. Sánchez",
+          "jersey": "1",
+          "position": "G",
+          "positionName": "Goalkeeper",
+          "starter": true,
+          "formationPlace": "1",
+          "source": "roster"
+        },
+        {
+          "id": "265918",
+          "name": "Maxence Lacroix",
+          "shortName": "M. Lacroix",
+          "jersey": "5",
+          "position": "CD",
+          "positionName": "Center Defender",
+          "starter": true,
+          "formationPlace": "5",
+          "source": "roster"
+        },
+        {
+          "id": "296410",
+          "name": "Levi Colwill",
+          "shortName": "L. Colwill",
+          "jersey": "6",
+          "position": "CD-L",
+          "positionName": "Center Left Defender",
+          "starter": true,
+          "formationPlace": "4",
+          "source": "roster"
+        },
+        {
+          "id": "368317",
+          "name": "Josh Acheampong",
+          "shortName": "J. Acheampong",
+          "jersey": "34",
+          "position": "CD-R",
+          "positionName": "Center Right Defender",
+          "starter": true,
+          "formationPlace": "6",
+          "source": "roster"
+        },
+        {
+          "id": "308217",
+          "name": "Romeo Lavia",
+          "shortName": "R. Lavia",
+          "jersey": "45",
+          "position": "CM-L",
+          "positionName": "Center Left Midfielder",
+          "starter": true,
+          "formationPlace": "8",
+          "source": "roster"
+        },
+        {
+          "id": "189007",
+          "name": "Reece James",
+          "shortName": "R. James",
+          "jersey": "24",
+          "position": "CM-R",
+          "positionName": "Center Right Midfielder",
+          "starter": true,
+          "formationPlace": "7",
+          "source": "roster"
+        },
+        {
+          "id": "353951",
+          "name": "Jorrel Hato",
+          "shortName": "J. Hato",
+          "jersey": "21",
+          "position": "LM",
+          "positionName": "Left Midfielder",
+          "starter": true,
+          "formationPlace": "3",
+          "source": "roster"
+        },
+        {
+          "id": "308947",
+          "name": "Malo Gusto",
+          "shortName": "M. Gusto",
+          "jersey": "27",
+          "position": "RM",
+          "positionName": "Right Midfielder",
+          "starter": true,
+          "formationPlace": "2",
+          "source": "roster"
+        },
+        {
+          "id": "284960",
+          "name": "João Pedro",
+          "shortName": "João Pedro",
+          "jersey": "9",
+          "position": "F",
+          "positionName": "Forward",
+          "starter": true,
+          "formationPlace": "9",
+          "source": "roster"
+        },
+        {
+          "id": "265653",
+          "name": "Morgan Rogers",
+          "shortName": "M. Rogers",
+          "jersey": "17",
+          "position": "CF-L",
+          "positionName": "Center Left Forward",
+          "starter": true,
+          "formationPlace": "11",
+          "source": "roster"
+        },
+        {
+          "id": "296395",
+          "name": "Cole Palmer",
+          "shortName": "C. Palmer",
+          "jersey": "10",
+          "position": "CF-R",
+          "positionName": "Center Right Forward",
+          "starter": true,
+          "formationPlace": "10",
+          "source": "roster"
+        },
+        {
+          "id": "339879",
+          "name": "Jamie Gittens",
+          "shortName": "J. Gittens",
+          "jersey": "11",
+          "position": "SUB",
+          "positionName": "Substitute",
+          "starter": false,
+          "formationPlace": "0",
+          "source": "roster"
+        },
+        {
+          "id": "256115",
+          "name": "Pedro Neto",
+          "shortName": "P. Neto",
+          "jersey": "7",
+          "position": "SUB",
+          "positionName": "Substitute",
+          "starter": false,
+          "formationPlace": "0",
+          "source": "roster"
+        },
+        {
+          "id": "285450",
+          "name": "Enzo Fernández",
+          "shortName": "E. Fernández",
+          "jersey": "8",
+          "position": "SUB",
+          "positionName": "Substitute",
+          "starter": false,
+          "formationPlace": "0",
+          "source": "roster"
+        },
+        {
+          "id": "115271",
+          "name": "Danny Welbeck",
+          "shortName": "D. Welbeck",
+          "jersey": "18",
+          "position": "SUB",
+          "positionName": "Substitute",
+          "starter": false,
+          "formationPlace": "0",
+          "source": "roster"
+        },
+        {
+          "id": "376481",
+          "name": "Estêvão",
+          "shortName": "Estêvão",
+          "jersey": "41",
+          "position": "SUB",
+          "positionName": "Substitute",
+          "starter": false,
+          "formationPlace": "0",
+          "source": "roster"
+        },
+        {
+          "id": "300331",
+          "name": "Pep Chavarría",
+          "shortName": "P. Chavarría",
+          "jersey": "29",
+          "position": "SUB",
+          "positionName": "Substitute",
+          "starter": false,
+          "formationPlace": "0",
+          "source": "roster"
+        },
+        {
+          "id": "332343",
+          "name": "Mike Penders",
+          "shortName": "M. Penders",
+          "jersey": "39",
+          "position": "SUB",
+          "positionName": "Substitute",
+          "starter": false,
+          "formationPlace": "0",
+          "source": "roster"
+        },
+        {
+          "id": "320760",
+          "name": "Valentín Barco",
+          "shortName": "V. Barco",
+          "jersey": "4",
+          "position": "SUB",
+          "positionName": "Substitute",
+          "starter": false,
+          "formationPlace": "0",
+          "source": "roster"
+        },
+        {
+          "id": "376274",
+          "name": "Geovany Quenda",
+          "shortName": "G. Quenda",
+          "jersey": "23",
+          "position": "SUB",
+          "positionName": "Substitute",
+          "starter": false,
+          "formationPlace": "0",
+          "source": "roster"
+        }
+      ]
+    }
+  ]
+}

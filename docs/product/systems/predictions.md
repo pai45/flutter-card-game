@@ -1,7 +1,7 @@
 # Predictions
 
 > **Status:** BUILT
-> **Last verified:** 2026-08-22
+> **Last verified:** 2026-08-28
 > **Scope:** Fixture quiz discovery, submission/editing, boosters, lock lifecycle, XP settlement, and paid Scoreline contest
 
 ## Product Purpose
@@ -63,6 +63,14 @@ delta chip when the leader's latest tick swings by 5+ percentage points on a
 market that hasn't already settled — reusing the shared `CyberProgressBar`/
 `CyberPulse` components rather than a bespoke meter.
 
+The match STATS tab uses sport-specific report HUDs. Football reveals momentum,
+events, confirmed lineups, and commentary; basketball reveals win probability,
+scoring coordinates, turning points, plays, box scores, rosters, and injuries;
+cricket reveals innings comparison, a supplied late-chase rate trace, complete
+scorecards, match notes, ball commentary, and published squads. Selection
+haptics and short graph reveals provide feedback while glow stays reserved for
+the active section or live reveal.
+
 ## Visible States
 
 Loading/empty fixture board, upcoming available, drafted/submitted, editable,
@@ -70,6 +78,9 @@ locked/live, result verifying, settleable, settled, voided question, contest
 affordable/unaffordable/paid, and result-reveal states are represented. Search
 also represents cross-sport scanning, partial-feed, guidance, no-result, grouped
 team/league result, and matching-fixture states.
+Sport report views also represent complete bundled packages and partial ESPN
+feeds, with contextual empty states for missing flow, event, scorecard,
+commentary, lineup, roster, and squad data.
 
 ## Persistence
 
@@ -84,7 +95,10 @@ Progression, wallet, ledgers, streaks, and achievements persist in their shared 
   activity streak recording, achievements, and the paid Scoreline contest
   exception.
 - **PROTOTYPE:** Fixtures, votes, standings, contest field, and leaderboard data
-  are currently local/mock-backed.
+  are currently local/mock-backed. The bundled Fulham–Chelsea EPL,
+  Spurs–Knicks NBA Finals, and RCB–Gujarat IPL Final packages are normalized
+  reference fixtures; the same report views continue to accept partial ESPN
+  enrichment without treating these packages as live providers.
 - **PLANNED:** Live feeds, server locks, authoritative results/contest ranks,
   and cross-device synchronization require backend scope.
 
@@ -97,6 +111,9 @@ Progression, wallet, ledgers, streaks, and achievements persist in their shared 
 - [`lib/screens/predictions/match_prediction_screen.dart`](../../../lib/screens/predictions/match_prediction_screen.dart)
 - [`lib/screens/predictions/widgets/settlement_reveal.dart`](../../../lib/screens/predictions/widgets/settlement_reveal.dart)
 - [`lib/screens/predictions/widgets/trending_match_bento.dart`](../../../lib/screens/predictions/widgets/trending_match_bento.dart)
+- [`lib/screens/predictions/widgets/football_match_stats_view.dart`](../../../lib/screens/predictions/widgets/football_match_stats_view.dart)
+- [`lib/screens/predictions/widgets/basketball_match_stats_view.dart`](../../../lib/screens/predictions/widgets/basketball_match_stats_view.dart)
+- [`lib/screens/predictions/widgets/cricket_match_stats_view.dart`](../../../lib/screens/predictions/widgets/cricket_match_stats_view.dart)
 - [`lib/screens/predictions/trending_hub_catalog.dart`](../../../lib/screens/predictions/trending_hub_catalog.dart)
 
 ## Tests
@@ -105,3 +122,7 @@ Progression, wallet, ledgers, streaks, and achievements persist in their shared 
 - [`test/match_prediction_screen_test.dart`](../../../test/match_prediction_screen_test.dart)
 - [`test/prediction_home_day_navigation_test.dart`](../../../test/prediction_home_day_navigation_test.dart)
 - [`test/match_search_screen_test.dart`](../../../test/match_search_screen_test.dart)
+- [`test/football_match_package_service_test.dart`](../../../test/football_match_package_service_test.dart)
+- [`test/football_match_stats_view_test.dart`](../../../test/football_match_stats_view_test.dart)
+- [`test/basketball_cricket_match_package_service_test.dart`](../../../test/basketball_cricket_match_package_service_test.dart)
+- [`test/basketball_cricket_match_stats_view_test.dart`](../../../test/basketball_cricket_match_stats_view_test.dart)

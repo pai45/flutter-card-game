@@ -69,11 +69,10 @@ abstract final class MatchOutcomeResolver {
     final resultLine = match.resultLine?.toLowerCase() ?? '';
     final noResult =
         resultLine.contains('no result') || resultLine.contains('abandon');
+    if (noResult) return MatchOutcome.unresolved(match.id);
 
     OutcomeSide? winner;
-    if (noResult ||
-        resultLine.contains('tied') ||
-        resultLine.contains(' tie ')) {
+    if (resultLine.contains('tied') || resultLine.contains(' tie ')) {
       winner = OutcomeSide.draw;
     } else if (resultLine.isNotEmpty) {
       final homeMentioned = resultLine.contains(match.home.name.toLowerCase());

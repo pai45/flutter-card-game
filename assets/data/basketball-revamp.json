@@ -1,0 +1,3571 @@
+{
+  "matchDetails": {
+    "gameType": "basketball",
+    "league": "National Basketball Association",
+    "leagueAbbreviation": "NBA",
+    "season": 2026,
+    "gameNote": "NBA Finals - Game 5",
+    "date": "2026-06-14",
+    "time": "00:30",
+    "tipoff": "2026-06-14T00:30Z",
+    "status": "Final",
+    "completed": true,
+    "period": null,
+    "clock": null,
+    "overtime": false,
+    "location": {
+      "venue": "Frost Bank Center",
+      "city": "San Antonio",
+      "state": "TX",
+      "country": null,
+      "neutralSite": false
+    },
+    "attendance": 18984,
+    "broadcast": "ABC",
+    "series": [
+      {
+        "title": "Regular Season Series",
+        "description": "NBA Finals",
+        "summary": "Series tied 1-1",
+        "completed": true
+      },
+      {
+        "title": "Playoff Series",
+        "description": "NBA Finals",
+        "summary": "NY wins series 4-1",
+        "completed": true
+      }
+    ],
+    "score": {
+      "home": {
+        "team": "San Antonio Spurs",
+        "abbreviation": "SA",
+        "score": 90,
+        "record": "62-20"
+      },
+      "away": {
+        "team": "New York Knicks",
+        "abbreviation": "NY",
+        "score": 94,
+        "record": "53-29"
+      },
+      "display": "90-94",
+      "margin": 4,
+      "winner": "New York Knicks"
+    },
+    "periods": [
+      {
+        "period": 1,
+        "label": "Q1",
+        "home": 23,
+        "away": 13
+      },
+      {
+        "period": 2,
+        "label": "Q2",
+        "home": 19,
+        "away": 24
+      },
+      {
+        "period": 3,
+        "label": "Q3",
+        "home": 30,
+        "away": 28
+      },
+      {
+        "period": 4,
+        "label": "Q4",
+        "home": 18,
+        "away": 29
+      }
+    ],
+    "officials": [
+      {
+        "name": "James Capers",
+        "role": "Referee"
+      },
+      {
+        "name": "Scott Foster",
+        "role": "Referee"
+      },
+      {
+        "name": "Mitchell Ervin",
+        "role": "Referee"
+      },
+      {
+        "name": "Tyler Ford",
+        "role": "Referee"
+      }
+    ],
+    "leaders": [
+      {
+        "team": "San Antonio Spurs",
+        "teamId": "24",
+        "leaders": [
+          {
+            "category": "points",
+            "label": "Points",
+            "id": "5037871",
+            "name": "Dylan Harper",
+            "value": 25
+          },
+          {
+            "category": "assists",
+            "label": "Assists",
+            "id": "4066259",
+            "name": "De'Aaron Fox",
+            "value": 5
+          },
+          {
+            "category": "rebounds",
+            "label": "Rebounds",
+            "id": "5104157",
+            "name": "Victor Wembanyama",
+            "value": 14
+          }
+        ]
+      },
+      {
+        "team": "New York Knicks",
+        "teamId": "18",
+        "leaders": [
+          {
+            "category": "points",
+            "label": "Points",
+            "id": "3934672",
+            "name": "Jalen Brunson",
+            "value": 45
+          },
+          {
+            "category": "assists",
+            "label": "Assists",
+            "id": "3147657",
+            "name": "Mikal Bridges",
+            "value": 4
+          },
+          {
+            "category": "rebounds",
+            "label": "Rebounds",
+            "id": "3062679",
+            "name": "Josh Hart",
+            "value": 11
+          }
+        ]
+      }
+    ]
+  },
+  "lineScore": {
+    "periods": [
+      {
+        "period": 1,
+        "label": "Q1",
+        "home": 23,
+        "away": 13
+      },
+      {
+        "period": 2,
+        "label": "Q2",
+        "home": 19,
+        "away": 24
+      },
+      {
+        "period": 3,
+        "label": "Q3",
+        "home": 30,
+        "away": 28
+      },
+      {
+        "period": 4,
+        "label": "Q4",
+        "home": 18,
+        "away": 29
+      }
+    ],
+    "home": {
+      "team": "San Antonio Spurs",
+      "abbreviation": "SA",
+      "total": 90
+    },
+    "away": {
+      "team": "New York Knicks",
+      "abbreviation": "NY",
+      "total": 94
+    },
+    "overtime": false
+  },
+  "topStats": [
+    {
+      "name": "fieldGoalPct",
+      "label": "Field Goal %",
+      "available": true,
+      "home": 38,
+      "away": 36,
+      "higher": "home"
+    },
+    {
+      "name": "threePointFieldGoalPct",
+      "label": "Three Point %",
+      "available": true,
+      "home": 32,
+      "away": 32,
+      "higher": null
+    },
+    {
+      "name": "freeThrowPct",
+      "label": "Free Throw %",
+      "available": true,
+      "home": 63,
+      "away": 71,
+      "higher": "away"
+    },
+    {
+      "name": "totalRebounds",
+      "label": "Rebounds",
+      "available": true,
+      "home": 47,
+      "away": 48,
+      "higher": "away"
+    },
+    {
+      "name": "assists",
+      "label": "Assists",
+      "available": true,
+      "home": 18,
+      "away": 14,
+      "higher": "home"
+    },
+    {
+      "name": "steals",
+      "label": "Steals",
+      "available": true,
+      "home": 6,
+      "away": 8,
+      "higher": "away"
+    },
+    {
+      "name": "blocks",
+      "label": "Blocks",
+      "available": true,
+      "home": 7,
+      "away": 4,
+      "higher": "home"
+    },
+    {
+      "name": "totalTurnovers",
+      "label": "Total Turnovers",
+      "available": true,
+      "home": 13,
+      "away": 14,
+      "higher": "away"
+    },
+    {
+      "name": "pointsInPaint",
+      "label": "Points in Paint",
+      "available": true,
+      "home": 38,
+      "away": 30,
+      "higher": "home"
+    },
+    {
+      "name": "fastBreakPoints",
+      "label": "Fast Break Points",
+      "available": true,
+      "home": 13,
+      "away": 13,
+      "higher": null
+    },
+    {
+      "name": "turnoverPoints",
+      "label": "Points Conceded Off Turnovers",
+      "available": true,
+      "home": 18,
+      "away": 21,
+      "higher": "away"
+    },
+    {
+      "name": "fouls",
+      "label": "Fouls",
+      "available": true,
+      "home": 22,
+      "away": 21,
+      "higher": "home"
+    }
+  ],
+  "turningPoints": [
+    {
+      "playId": "401859967749",
+      "period": 4,
+      "clock": "8.5",
+      "homeWinPercentage": 0.326,
+      "awayWinPercentage": 0.674,
+      "homeScore": 90,
+      "awayScore": 93,
+      "swing": 0.18,
+      "text": "Landry Shamet personal take foul"
+    },
+    {
+      "playId": "401859967699",
+      "period": 4,
+      "clock": "2:36",
+      "homeWinPercentage": 0.453,
+      "awayWinPercentage": 0.547,
+      "homeScore": 85,
+      "awayScore": 86,
+      "swing": 0.169,
+      "text": "Josh Hart misses two point shot"
+    },
+    {
+      "playId": "401859967753",
+      "period": 4,
+      "clock": "8.5",
+      "homeWinPercentage": 0.067,
+      "awayWinPercentage": 0.933,
+      "homeScore": 90,
+      "awayScore": 93,
+      "swing": -0.159,
+      "text": "Luke Kornet enters the game for De'Aaron Fox"
+    },
+    {
+      "playId": "401859967691",
+      "period": 4,
+      "clock": "1:53",
+      "homeWinPercentage": 0.427,
+      "awayWinPercentage": 0.573,
+      "homeScore": 85,
+      "awayScore": 88,
+      "swing": 0.136,
+      "text": "Karl-Anthony Towns shooting foul"
+    },
+    {
+      "playId": "401859967719",
+      "period": 4,
+      "clock": "26.1",
+      "homeWinPercentage": 0.221,
+      "awayWinPercentage": 0.779,
+      "homeScore": 88,
+      "awayScore": 91,
+      "swing": 0.133,
+      "text": "Josh Hart misses free throw 2 of 2"
+    },
+    {
+      "playId": "401859967664",
+      "period": 4,
+      "clock": "3:40",
+      "homeWinPercentage": 0.516,
+      "awayWinPercentage": 0.484,
+      "homeScore": 85,
+      "awayScore": 83,
+      "swing": -0.13,
+      "text": "Devin Vassell shooting foul"
+    },
+    {
+      "playId": "401859967735",
+      "period": 4,
+      "clock": "8.8",
+      "homeWinPercentage": 0.053,
+      "awayWinPercentage": 0.947,
+      "homeScore": 90,
+      "awayScore": 92,
+      "swing": -0.129,
+      "text": "Dylan Harper personal foul"
+    },
+    {
+      "playId": "401859967701",
+      "period": 4,
+      "clock": "1:29",
+      "homeWinPercentage": 0.353,
+      "awayWinPercentage": 0.647,
+      "homeScore": 86,
+      "awayScore": 88,
+      "swing": -0.122,
+      "text": "Jalen Brunson misses 14-foot step back jumpshot"
+    },
+    {
+      "playId": "401859967758",
+      "period": 4,
+      "clock": "7.7",
+      "homeWinPercentage": 0.02,
+      "awayWinPercentage": 0.98,
+      "homeScore": 90,
+      "awayScore": 93,
+      "swing": -0.121,
+      "text": "Dylan Harper personal take foul"
+    },
+    {
+      "playId": "401859967655",
+      "period": 4,
+      "clock": "4:25",
+      "homeWinPercentage": 0.68,
+      "awayWinPercentage": 0.32,
+      "homeScore": 83,
+      "awayScore": 83,
+      "swing": 0.119,
+      "text": "OG Anunoby loose ball foul"
+    }
+  ],
+  "playByPlay": [
+    {
+      "id": "40185996730",
+      "period": 1,
+      "clock": "9:44",
+      "kind": "shot",
+      "label": "Running Dunk Shot",
+      "text": "Victor Wembanyama makes 1-foot running dunk (Stephon Castle assists)",
+      "side": "home",
+      "players": [
+        "Victor Wembanyama",
+        "Stephon Castle"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 2,
+      "awayScore": 0,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 23,
+        "y": 1
+      },
+      "homeWinPct": 0.608,
+      "swing": 0.025
+    },
+    {
+      "id": "40185996732",
+      "period": 1,
+      "clock": "9:30",
+      "kind": "shot",
+      "label": "Pullup Jump Shot",
+      "text": "Jalen Brunson makes 25-foot three pointer (Mikal Bridges assists)",
+      "side": "away",
+      "players": [
+        "Jalen Brunson",
+        "Mikal Bridges"
+      ],
+      "scoringPlay": true,
+      "points": 3,
+      "homeScore": 2,
+      "awayScore": 3,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 42,
+        "y": 19
+      },
+      "homeWinPct": 0.559,
+      "swing": -0.049
+    },
+    {
+      "id": "40185996742",
+      "period": 1,
+      "clock": "8:43",
+      "kind": "shot",
+      "label": "Layup Shot Putback",
+      "text": "Julian Champagnie makes two point shot",
+      "side": "home",
+      "players": [
+        "Julian Champagnie"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 4,
+      "awayScore": 3,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 25,
+        "y": 0
+      },
+      "homeWinPct": 0.583,
+      "swing": 0.025
+    },
+    {
+      "id": "40185996751",
+      "period": 1,
+      "clock": "8:08",
+      "kind": "free-throw",
+      "label": "Free Throw - 1 of 2",
+      "text": "OG Anunoby makes free throw 1 of 2",
+      "side": "away",
+      "players": [
+        "OG Anunoby"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 4,
+      "awayScore": 4,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.537,
+      "swing": -0.028
+    },
+    {
+      "id": "40185996752",
+      "period": 1,
+      "clock": "8:08",
+      "kind": "free-throw",
+      "label": "Free Throw - 2 of 2",
+      "text": "OG Anunoby makes free throw 2 of 2",
+      "side": "away",
+      "players": [
+        "OG Anunoby"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 4,
+      "awayScore": 5,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.556,
+      "swing": 0.019
+    },
+    {
+      "id": "40185996755",
+      "period": 1,
+      "clock": "7:49",
+      "kind": "free-throw",
+      "label": "Free Throw - 1 of 2",
+      "text": "Victor Wembanyama makes free throw 1 of 2",
+      "side": "home",
+      "players": [
+        "Victor Wembanyama"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 5,
+      "awayScore": 5,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.602,
+      "swing": 0.007
+    },
+    {
+      "id": "40185996760",
+      "period": 1,
+      "clock": "7:49",
+      "kind": "free-throw",
+      "label": "Free Throw - 2 of 2",
+      "text": "Victor Wembanyama makes free throw 2 of 2",
+      "side": "home",
+      "players": [
+        "Victor Wembanyama"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 6,
+      "awayScore": 5,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.583,
+      "swing": -0.019
+    },
+    {
+      "id": "40185996765",
+      "period": 1,
+      "clock": "7:16",
+      "kind": "shot",
+      "label": "Tip Dunk Shot",
+      "text": "Victor Wembanyama makes tip in dunk",
+      "side": "home",
+      "players": [
+        "Victor Wembanyama"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 8,
+      "awayScore": 5,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 25,
+        "y": 0
+      },
+      "homeWinPct": 0.632,
+      "swing": 0.024
+    },
+    {
+      "id": "40185996768",
+      "period": 1,
+      "clock": "6:40",
+      "kind": "shot",
+      "label": "Jump Shot",
+      "text": "Dylan Harper makes 25-foot three point jumper (Victor Wembanyama assists)",
+      "side": "home",
+      "players": [
+        "Dylan Harper",
+        "Victor Wembanyama"
+      ],
+      "scoringPlay": true,
+      "points": 3,
+      "homeScore": 11,
+      "awayScore": 5,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 26,
+        "y": 26
+      },
+      "homeWinPct": 0.703,
+      "swing": 0.046
+    },
+    {
+      "id": "40185996770",
+      "period": 1,
+      "clock": "6:20",
+      "kind": "shot",
+      "label": "Jump Shot",
+      "text": "OG Anunoby makes 22-foot three point jumper (Karl-Anthony Towns assists)",
+      "side": "away",
+      "players": [
+        "OG Anunoby",
+        "Karl-Anthony Towns"
+      ],
+      "scoringPlay": true,
+      "points": 3,
+      "homeScore": 11,
+      "awayScore": 8,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 2,
+        "y": -1
+      },
+      "homeWinPct": 0.658,
+      "swing": -0.045
+    },
+    {
+      "id": "40185996786",
+      "period": 1,
+      "clock": "5:35",
+      "kind": "shot",
+      "label": "Running Pullup Jump Shot",
+      "text": "Dylan Harper makes 7-foot running pullup jump shot",
+      "side": "home",
+      "players": [
+        "Dylan Harper"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 13,
+      "awayScore": 8,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 25,
+        "y": 8
+      },
+      "homeWinPct": 0.682,
+      "swing": 0.024
+    },
+    {
+      "id": "401859967100",
+      "period": 1,
+      "clock": "4:43",
+      "kind": "shot",
+      "label": "Layup Driving Reverse",
+      "text": "Dylan Harper makes two point shot",
+      "side": "home",
+      "players": [
+        "Dylan Harper"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 15,
+      "awayScore": 8,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 22,
+        "y": 1
+      },
+      "homeWinPct": 0.727,
+      "swing": 0.022
+    },
+    {
+      "id": "401859967120",
+      "period": 1,
+      "clock": "3:06",
+      "kind": "shot",
+      "label": "Jump Shot",
+      "text": "Keldon Johnson makes 22-foot three point jumper (Dylan Harper assists)",
+      "side": "home",
+      "players": [
+        "Keldon Johnson",
+        "Dylan Harper"
+      ],
+      "scoringPlay": true,
+      "points": 3,
+      "homeScore": 18,
+      "awayScore": 8,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 48,
+        "y": 0
+      },
+      "homeWinPct": 0.793,
+      "swing": 0.041
+    },
+    {
+      "id": "401859967128",
+      "period": 1,
+      "clock": "2:14",
+      "kind": "shot",
+      "label": "Step Back Jump Shot",
+      "text": "Jalen Brunson makes 11-foot step back jumpshot",
+      "side": "away",
+      "players": [
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 18,
+      "awayScore": 10,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 36,
+        "y": 4
+      },
+      "homeWinPct": 0.773,
+      "swing": -0.021
+    },
+    {
+      "id": "401859967148",
+      "period": 1,
+      "clock": "1:24",
+      "kind": "shot",
+      "label": "Pullup Jump Shot",
+      "text": "De'Aaron Fox makes 9-foot pullup jump shot",
+      "side": "home",
+      "players": [
+        "De'Aaron Fox"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 20,
+      "awayScore": 10,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 25,
+        "y": 10
+      },
+      "homeWinPct": 0.795,
+      "swing": 0.021
+    },
+    {
+      "id": "401859967149",
+      "period": 1,
+      "clock": "1:00",
+      "kind": "shot",
+      "label": "Pullup Jump Shot",
+      "text": "Jalen Brunson makes 27-foot three pointer",
+      "side": "away",
+      "players": [
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 3,
+      "homeScore": 20,
+      "awayScore": 13,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 39,
+        "y": 24
+      },
+      "homeWinPct": 0.753,
+      "swing": -0.042
+    },
+    {
+      "id": "401859967159",
+      "period": 1,
+      "clock": "22.5",
+      "kind": "shot",
+      "label": "Jump Shot",
+      "text": "Julian Champagnie makes 25-foot three point jumper (De'Aaron Fox assists)",
+      "side": "home",
+      "players": [
+        "Julian Champagnie",
+        "De'Aaron Fox"
+      ],
+      "scoringPlay": true,
+      "points": 3,
+      "homeScore": 23,
+      "awayScore": 13,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 35,
+        "y": 24
+      },
+      "homeWinPct": 0.796,
+      "swing": 0.007
+    },
+    {
+      "id": "401859967176",
+      "period": 2,
+      "clock": "10:59",
+      "kind": "shot",
+      "label": "Jump Shot",
+      "text": "Julian Champagnie makes 24-foot three point jumper",
+      "side": "home",
+      "players": [
+        "Julian Champagnie"
+      ],
+      "scoringPlay": true,
+      "points": 3,
+      "homeScore": 26,
+      "awayScore": 13,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 1,
+        "y": 1
+      },
+      "homeWinPct": 0.856,
+      "swing": 0.038
+    },
+    {
+      "id": "401859967203",
+      "period": 2,
+      "clock": "9:29",
+      "kind": "free-throw",
+      "label": "Free Throw - 1 of 2",
+      "text": "Dylan Harper makes free throw 1 of 2",
+      "side": "home",
+      "players": [
+        "Dylan Harper"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 27,
+      "awayScore": 13,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.898,
+      "swing": 0.004
+    },
+    {
+      "id": "401859967206",
+      "period": 2,
+      "clock": "9:29",
+      "kind": "free-throw",
+      "label": "Free Throw - 2 of 2",
+      "text": "Dylan Harper makes free throw 2 of 2",
+      "side": "home",
+      "players": [
+        "Dylan Harper"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 28,
+      "awayScore": 13,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.889,
+      "swing": -0.009
+    },
+    {
+      "id": "401859967207",
+      "period": 2,
+      "clock": "9:04",
+      "kind": "shot",
+      "label": "Turnaround Fade Away Jump Shot",
+      "text": "Karl-Anthony Towns makes 18-foot two point shot",
+      "side": "away",
+      "players": [
+        "Karl-Anthony Towns"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 28,
+      "awayScore": 15,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 36,
+        "y": 15
+      },
+      "homeWinPct": 0.876,
+      "swing": -0.013
+    },
+    {
+      "id": "401859967213",
+      "period": 2,
+      "clock": "8:29",
+      "kind": "shot",
+      "label": "Jump Shot",
+      "text": "Victor Wembanyama makes 25-foot three point jumper",
+      "side": "home",
+      "players": [
+        "Victor Wembanyama"
+      ],
+      "scoringPlay": true,
+      "points": 3,
+      "homeScore": 31,
+      "awayScore": 15,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 38,
+        "y": 22
+      },
+      "homeWinPct": 0.904,
+      "swing": 0.027
+    },
+    {
+      "id": "401859967229",
+      "period": 2,
+      "clock": "7:44",
+      "kind": "shot",
+      "label": "Jump Shot",
+      "text": "Mikal Bridges makes 23-foot three point jumper (Miles McBride assists)",
+      "side": "away",
+      "players": [
+        "Mikal Bridges",
+        "Miles McBride"
+      ],
+      "scoringPlay": true,
+      "points": 3,
+      "homeScore": 31,
+      "awayScore": 18,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 2,
+        "y": -1
+      },
+      "homeWinPct": 0.88,
+      "swing": -0.025
+    },
+    {
+      "id": "401859967242",
+      "period": 2,
+      "clock": "6:41",
+      "kind": "shot",
+      "label": "Pullup Jump Shot",
+      "text": "Dylan Harper makes 14-foot pullup jump shot",
+      "side": "home",
+      "players": [
+        "Dylan Harper"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 33,
+      "awayScore": 18,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 21,
+        "y": 14
+      },
+      "homeWinPct": 0.896,
+      "swing": 0.013
+    },
+    {
+      "id": "401859967243",
+      "period": 2,
+      "clock": "6:21",
+      "kind": "shot",
+      "label": "Jump Shot",
+      "text": "Josh Hart makes 25-foot three point jumper (Mikal Bridges assists)",
+      "side": "away",
+      "players": [
+        "Josh Hart",
+        "Mikal Bridges"
+      ],
+      "scoringPlay": true,
+      "points": 3,
+      "homeScore": 33,
+      "awayScore": 21,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 25,
+        "y": 26
+      },
+      "homeWinPct": 0.866,
+      "swing": -0.03
+    },
+    {
+      "id": "401859967261",
+      "period": 2,
+      "clock": "5:28",
+      "kind": "shot",
+      "label": "Jump Shot",
+      "text": "Jalen Brunson makes 26-foot three point jumper",
+      "side": "away",
+      "players": [
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 3,
+      "homeScore": 33,
+      "awayScore": 24,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 9,
+        "y": 21
+      },
+      "homeWinPct": 0.814,
+      "swing": -0.037
+    },
+    {
+      "id": "401859967268",
+      "period": 2,
+      "clock": "4:57",
+      "kind": "shot",
+      "label": "Running Finger Roll Layup",
+      "text": "Devin Vassell makes two point shot",
+      "side": "home",
+      "players": [
+        "Devin Vassell"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 35,
+      "awayScore": 24,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 25,
+        "y": 0
+      },
+      "homeWinPct": 0.835,
+      "swing": 0.019
+    },
+    {
+      "id": "401859967270",
+      "period": 2,
+      "clock": "4:44",
+      "kind": "shot",
+      "label": "Pullup Jump Shot",
+      "text": "Jalen Brunson makes 10-foot pullup jump shot",
+      "side": "away",
+      "players": [
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 35,
+      "awayScore": 26,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 20,
+        "y": 10
+      },
+      "homeWinPct": 0.817,
+      "swing": -0.018
+    },
+    {
+      "id": "401859967273",
+      "period": 2,
+      "clock": "4:06",
+      "kind": "shot",
+      "label": "Jump Shot",
+      "text": "Jalen Brunson makes 20-foot jumper",
+      "side": "away",
+      "players": [
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 35,
+      "awayScore": 28,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 6,
+        "y": 8
+      },
+      "homeWinPct": 0.774,
+      "swing": -0.019
+    },
+    {
+      "id": "401859967276",
+      "period": 2,
+      "clock": "3:32",
+      "kind": "shot",
+      "label": "Jump Shot",
+      "text": "De'Aaron Fox makes 24-foot three point jumper (Victor Wembanyama assists)",
+      "side": "home",
+      "players": [
+        "De'Aaron Fox",
+        "Victor Wembanyama"
+      ],
+      "scoringPlay": true,
+      "points": 3,
+      "homeScore": 38,
+      "awayScore": 28,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 1,
+        "y": 8
+      },
+      "homeWinPct": 0.82,
+      "swing": 0.045
+    },
+    {
+      "id": "401859967292",
+      "period": 2,
+      "clock": "3:15",
+      "kind": "free-throw",
+      "label": "Free Throw - 2 of 2",
+      "text": "Jalen Brunson makes free throw 2 of 2",
+      "side": "away",
+      "players": [
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 38,
+      "awayScore": 29,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.821,
+      "swing": 0.001
+    },
+    {
+      "id": "401859967295",
+      "period": 2,
+      "clock": "2:45",
+      "kind": "shot",
+      "label": "Jump Shot",
+      "text": "Mikal Bridges makes 26-foot three point jumper (Jalen Brunson assists)",
+      "side": "away",
+      "players": [
+        "Mikal Bridges",
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 3,
+      "homeScore": 38,
+      "awayScore": 32,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 31,
+        "y": 26
+      },
+      "homeWinPct": 0.751,
+      "swing": -0.048
+    },
+    {
+      "id": "401859967304",
+      "period": 2,
+      "clock": "2:34",
+      "kind": "free-throw",
+      "label": "Free Throw - 1 of 2",
+      "text": "Stephon Castle makes free throw 1 of 2",
+      "side": "home",
+      "players": [
+        "Stephon Castle"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 39,
+      "awayScore": 32,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.795,
+      "swing": -0.065
+    },
+    {
+      "id": "401859967307",
+      "period": 2,
+      "clock": "2:34",
+      "kind": "free-throw",
+      "label": "Free Throw - 2 of 2",
+      "text": "Stephon Castle makes free throw 2 of 2",
+      "side": "home",
+      "players": [
+        "Stephon Castle"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 40,
+      "awayScore": 32,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.777,
+      "swing": -0.044
+    },
+    {
+      "id": "401859967320",
+      "period": 2,
+      "clock": "1:18",
+      "kind": "shot",
+      "label": "Running Finger Roll Layup",
+      "text": "Josh Hart makes two point shot",
+      "side": "away",
+      "players": [
+        "Josh Hart"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 40,
+      "awayScore": 34,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 22,
+        "y": 1
+      },
+      "homeWinPct": 0.755,
+      "swing": -0.025
+    },
+    {
+      "id": "401859967325",
+      "period": 2,
+      "clock": "1:18",
+      "kind": "free-throw",
+      "label": "Free Throw - Flagrant 1 of 1",
+      "text": "Josh Hart makes free throw flagrant 1 of 1",
+      "side": "away",
+      "players": [
+        "Josh Hart"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 40,
+      "awayScore": 35,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.698,
+      "swing": -0.042
+    },
+    {
+      "id": "401859967328",
+      "period": 2,
+      "clock": "1:07",
+      "kind": "shot",
+      "label": "Driving Floating Jump Shot",
+      "text": "Mikal Bridges makes 4-foot driving floating jump shot (Mitchell Robinson assists)",
+      "side": "away",
+      "players": [
+        "Mikal Bridges",
+        "Mitchell Robinson"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 40,
+      "awayScore": 37,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 27,
+        "y": 4
+      },
+      "homeWinPct": 0.671,
+      "swing": -0.027
+    },
+    {
+      "id": "401859967338",
+      "period": 2,
+      "clock": "0.1",
+      "kind": "shot",
+      "label": "Pullup Jump Shot",
+      "text": "Devin Vassell makes 12-foot pullup jump shot (De'Aaron Fox assists)",
+      "side": "home",
+      "players": [
+        "Devin Vassell",
+        "De'Aaron Fox"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 42,
+      "awayScore": 37,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 18,
+        "y": 11
+      },
+      "homeWinPct": 0.695,
+      "swing": 0.028
+    },
+    {
+      "id": "401859967360",
+      "period": 3,
+      "clock": "10:54",
+      "kind": "shot",
+      "label": "Driving Floating Jump Shot",
+      "text": "Mikal Bridges makes 6-foot driving floating jump shot",
+      "side": "away",
+      "players": [
+        "Mikal Bridges"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 42,
+      "awayScore": 39,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 31,
+        "y": 2
+      },
+      "homeWinPct": 0.671,
+      "swing": -0.03
+    },
+    {
+      "id": "401859967361",
+      "period": 3,
+      "clock": "10:41",
+      "kind": "shot",
+      "label": "Jump Shot",
+      "text": "Julian Champagnie makes 23-foot three point jumper (Stephon Castle assists)",
+      "side": "home",
+      "players": [
+        "Julian Champagnie",
+        "Stephon Castle"
+      ],
+      "scoringPlay": true,
+      "points": 3,
+      "homeScore": 45,
+      "awayScore": 39,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 1,
+        "y": 1
+      },
+      "homeWinPct": 0.732,
+      "swing": 0.061
+    },
+    {
+      "id": "401859967363",
+      "period": 3,
+      "clock": "10:22",
+      "kind": "shot",
+      "label": "Pullup Jump Shot",
+      "text": "Jalen Brunson makes 12-foot pullup jump shot (Mitchell Robinson assists)",
+      "side": "away",
+      "players": [
+        "Jalen Brunson",
+        "Mitchell Robinson"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 45,
+      "awayScore": 41,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 21,
+        "y": 12
+      },
+      "homeWinPct": 0.704,
+      "swing": -0.028
+    },
+    {
+      "id": "401859967371",
+      "period": 3,
+      "clock": "9:42",
+      "kind": "shot",
+      "label": "Running Dunk Shot",
+      "text": "Victor Wembanyama makes 1-foot running dunk (De'Aaron Fox assists)",
+      "side": "home",
+      "players": [
+        "Victor Wembanyama",
+        "De'Aaron Fox"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 47,
+      "awayScore": 41,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 26,
+        "y": 2
+      },
+      "homeWinPct": 0.735,
+      "swing": 0.03
+    },
+    {
+      "id": "401859967377",
+      "period": 3,
+      "clock": "9:42",
+      "kind": "free-throw",
+      "label": "Free Throw - Flagrant 1 of 1",
+      "text": "Victor Wembanyama makes free throw flagrant 1 of 1",
+      "side": "home",
+      "players": [
+        "Victor Wembanyama"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 48,
+      "awayScore": 41,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.793,
+      "swing": 0.044
+    },
+    {
+      "id": "401859967378",
+      "period": 3,
+      "clock": "9:29",
+      "kind": "shot",
+      "label": "Step Back Jump Shot",
+      "text": "Julian Champagnie makes 25-foot three point step back jumpshot (De'Aaron Fox assists)",
+      "side": "home",
+      "players": [
+        "Julian Champagnie",
+        "De'Aaron Fox"
+      ],
+      "scoringPlay": true,
+      "points": 3,
+      "homeScore": 51,
+      "awayScore": 41,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 44,
+        "y": 18
+      },
+      "homeWinPct": 0.841,
+      "swing": 0.048
+    },
+    {
+      "id": "401859967384",
+      "period": 3,
+      "clock": "8:49",
+      "kind": "shot",
+      "label": "Turnaround Jump Shot",
+      "text": "Victor Wembanyama makes 10-foot turnaround jump shot",
+      "side": "home",
+      "players": [
+        "Victor Wembanyama"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 53,
+      "awayScore": 41,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 30,
+        "y": 9
+      },
+      "homeWinPct": 0.886,
+      "swing": 0.021
+    },
+    {
+      "id": "401859967385",
+      "period": 3,
+      "clock": "8:36",
+      "kind": "shot",
+      "label": "Jump Shot",
+      "text": "Mikal Bridges makes 25-foot three point jumper (Jalen Brunson assists)",
+      "side": "away",
+      "players": [
+        "Mikal Bridges",
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 3,
+      "homeScore": 53,
+      "awayScore": 44,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 48,
+        "y": 10
+      },
+      "homeWinPct": 0.846,
+      "swing": -0.04
+    },
+    {
+      "id": "401859967389",
+      "period": 3,
+      "clock": "8:06",
+      "kind": "shot",
+      "label": "Pullup Jump Shot",
+      "text": "Jalen Brunson makes 16-foot pullup jump shot",
+      "side": "away",
+      "players": [
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 53,
+      "awayScore": 46,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 30,
+        "y": 16
+      },
+      "homeWinPct": 0.798,
+      "swing": -0.024
+    },
+    {
+      "id": "401859967398",
+      "period": 3,
+      "clock": "7:41",
+      "kind": "shot",
+      "label": "Driving Finger Roll Layup",
+      "text": "Dylan Harper makes 1-foot two point shot",
+      "side": "home",
+      "players": [
+        "Dylan Harper"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 55,
+      "awayScore": 46,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 26,
+        "y": 2
+      },
+      "homeWinPct": 0.824,
+      "swing": 0.027
+    },
+    {
+      "id": "401859967405",
+      "period": 3,
+      "clock": "7:12",
+      "kind": "shot",
+      "label": "Driving Finger Roll Layup",
+      "text": "Jalen Brunson makes 3-foot two point shot (Josh Hart assists)",
+      "side": "away",
+      "players": [
+        "Jalen Brunson",
+        "Josh Hart"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 55,
+      "awayScore": 48,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 22,
+        "y": 1
+      },
+      "homeWinPct": 0.802,
+      "swing": -0.023
+    },
+    {
+      "id": "401859967412",
+      "period": 3,
+      "clock": "6:33",
+      "kind": "shot",
+      "label": "Running Layup Shot",
+      "text": "OG Anunoby makes running layup",
+      "side": "away",
+      "players": [
+        "OG Anunoby"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 55,
+      "awayScore": 50,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 26,
+        "y": 1
+      },
+      "homeWinPct": 0.746,
+      "swing": -0.031
+    },
+    {
+      "id": "401859967423",
+      "period": 3,
+      "clock": "6:17",
+      "kind": "shot",
+      "label": "Step Back Jump Shot",
+      "text": "Dylan Harper makes 16-foot step back jumpshot (Devin Vassell assists)",
+      "side": "home",
+      "players": [
+        "Dylan Harper",
+        "Devin Vassell"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 57,
+      "awayScore": 50,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 36,
+        "y": 12
+      },
+      "homeWinPct": 0.779,
+      "swing": 0.033
+    },
+    {
+      "id": "401859967427",
+      "period": 3,
+      "clock": "5:39",
+      "kind": "shot",
+      "label": "Layup Shot",
+      "text": "Victor Wembanyama makes layup (Dylan Harper assists)",
+      "side": "home",
+      "players": [
+        "Victor Wembanyama",
+        "Dylan Harper"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 59,
+      "awayScore": 50,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 24,
+        "y": 1
+      },
+      "homeWinPct": 0.835,
+      "swing": 0.025
+    },
+    {
+      "id": "401859967429",
+      "period": 3,
+      "clock": "5:29",
+      "kind": "shot",
+      "label": "Pullup Jump Shot",
+      "text": "Jalen Brunson makes 26-foot three pointer",
+      "side": "away",
+      "players": [
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 3,
+      "homeScore": 59,
+      "awayScore": 53,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 16,
+        "y": 26
+      },
+      "homeWinPct": 0.783,
+      "swing": -0.052
+    },
+    {
+      "id": "401859967430",
+      "period": 3,
+      "clock": "5:19",
+      "kind": "shot",
+      "label": "Jump Shot",
+      "text": "Devin Vassell makes 25-foot three point jumper (Dylan Harper assists)",
+      "side": "home",
+      "players": [
+        "Devin Vassell",
+        "Dylan Harper"
+      ],
+      "scoringPlay": true,
+      "points": 3,
+      "homeScore": 62,
+      "awayScore": 53,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 48,
+        "y": 11
+      },
+      "homeWinPct": 0.837,
+      "swing": 0.054
+    },
+    {
+      "id": "401859967443",
+      "period": 3,
+      "clock": "4:31",
+      "kind": "shot",
+      "label": "Jump Shot",
+      "text": "Dylan Harper makes 26-foot three point jumper (De'Aaron Fox assists)",
+      "side": "home",
+      "players": [
+        "Dylan Harper",
+        "De'Aaron Fox"
+      ],
+      "scoringPlay": true,
+      "points": 3,
+      "homeScore": 65,
+      "awayScore": 53,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 37,
+        "y": 24
+      },
+      "homeWinPct": 0.907,
+      "swing": 0.041
+    },
+    {
+      "id": "401859967472",
+      "period": 3,
+      "clock": "3:35",
+      "kind": "free-throw",
+      "label": "Free Throw - 2 of 2",
+      "text": "Dylan Harper makes free throw 2 of 2",
+      "side": "home",
+      "players": [
+        "Dylan Harper"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 66,
+      "awayScore": 53,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.927,
+      "swing": -0.002
+    },
+    {
+      "id": "401859967477",
+      "period": 3,
+      "clock": "3:11",
+      "kind": "shot",
+      "label": "Layup Shot Putback",
+      "text": "Dylan Harper makes two point shot",
+      "side": "home",
+      "players": [
+        "Dylan Harper"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 68,
+      "awayScore": 53,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 25,
+        "y": 0
+      },
+      "homeWinPct": 0.954,
+      "swing": 0.012
+    },
+    {
+      "id": "401859967480",
+      "period": 3,
+      "clock": "2:59",
+      "kind": "free-throw",
+      "label": "Free Throw - 1 of 2",
+      "text": "Jalen Brunson makes free throw 1 of 2",
+      "side": "away",
+      "players": [
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 68,
+      "awayScore": 54,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.934,
+      "swing": -0.003
+    },
+    {
+      "id": "401859967483",
+      "period": 3,
+      "clock": "2:59",
+      "kind": "free-throw",
+      "label": "Free Throw - 2 of 2",
+      "text": "Jalen Brunson makes free throw 2 of 2",
+      "side": "away",
+      "players": [
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 68,
+      "awayScore": 55,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.944,
+      "swing": 0.01
+    },
+    {
+      "id": "401859967486",
+      "period": 3,
+      "clock": "2:51",
+      "kind": "free-throw",
+      "label": "Free Throw - 1 of 2",
+      "text": "Keldon Johnson makes free throw 1 of 2",
+      "side": "home",
+      "players": [
+        "Keldon Johnson"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 69,
+      "awayScore": 55,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.962,
+      "swing": 0.002
+    },
+    {
+      "id": "401859967506",
+      "period": 3,
+      "clock": "2:25",
+      "kind": "free-throw",
+      "label": "Free Throw - 2 of 2",
+      "text": "Stephon Castle makes free throw 2 of 2",
+      "side": "home",
+      "players": [
+        "Stephon Castle"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 70,
+      "awayScore": 55,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.957,
+      "swing": -0.002
+    },
+    {
+      "id": "401859967509",
+      "period": 3,
+      "clock": "2:04",
+      "kind": "shot",
+      "label": "Pullup Jump Shot",
+      "text": "Josh Hart makes 26-foot three pointer (Ariel Hukporti assists)",
+      "side": "away",
+      "players": [
+        "Josh Hart",
+        "Ariel Hukporti"
+      ],
+      "scoringPlay": true,
+      "points": 3,
+      "homeScore": 70,
+      "awayScore": 58,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 12,
+        "y": 24
+      },
+      "homeWinPct": 0.939,
+      "swing": 0.01
+    },
+    {
+      "id": "401859967525",
+      "period": 3,
+      "clock": "1:26",
+      "kind": "free-throw",
+      "label": "Free Throw - 1 of 3",
+      "text": "Jalen Brunson makes free throw 1 of 3",
+      "side": "away",
+      "players": [
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 70,
+      "awayScore": 59,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.892,
+      "swing": -0.004
+    },
+    {
+      "id": "401859967528",
+      "period": 3,
+      "clock": "1:26",
+      "kind": "free-throw",
+      "label": "Free Throw - 2 of 3",
+      "text": "Jalen Brunson makes free throw 2 of 3",
+      "side": "away",
+      "players": [
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 70,
+      "awayScore": 60,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.868,
+      "swing": -0.024
+    },
+    {
+      "id": "401859967529",
+      "period": 3,
+      "clock": "1:26",
+      "kind": "free-throw",
+      "label": "Free Throw - 3 of 3",
+      "text": "Jalen Brunson makes free throw 3 of 3",
+      "side": "away",
+      "players": [
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 70,
+      "awayScore": 61,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.889,
+      "swing": 0.021
+    },
+    {
+      "id": "401859967530",
+      "period": 3,
+      "clock": "1:16",
+      "kind": "shot",
+      "label": "Driving Floating Jump Shot",
+      "text": "De'Aaron Fox makes 7-foot driving floating jump shot",
+      "side": "home",
+      "players": [
+        "De'Aaron Fox"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 72,
+      "awayScore": 61,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 24,
+        "y": 8
+      },
+      "homeWinPct": 0.907,
+      "swing": 0.018
+    },
+    {
+      "id": "401859967535",
+      "period": 3,
+      "clock": "39.5",
+      "kind": "shot",
+      "label": "Driving Floating Jump Shot",
+      "text": "Jordan Clarkson makes 10-foot driving floating jump shot (Jalen Brunson assists)",
+      "side": "away",
+      "players": [
+        "Jordan Clarkson",
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 72,
+      "awayScore": 63,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 26,
+        "y": 11
+      },
+      "homeWinPct": 0.895,
+      "swing": -0.015
+    },
+    {
+      "id": "401859967541",
+      "period": 3,
+      "clock": "3.5",
+      "kind": "shot",
+      "label": "Tip Shot",
+      "text": "Mitchell Robinson makes tip shot",
+      "side": "away",
+      "players": [
+        "Mitchell Robinson"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 72,
+      "awayScore": 65,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 25,
+        "y": 0
+      },
+      "homeWinPct": 0.847,
+      "swing": -0.026
+    },
+    {
+      "id": "401859967560",
+      "period": 4,
+      "clock": "11:13",
+      "kind": "shot",
+      "label": "Jump Shot",
+      "text": "Keldon Johnson makes 24-foot three point jumper (Stephon Castle assists)",
+      "side": "home",
+      "players": [
+        "Keldon Johnson",
+        "Stephon Castle"
+      ],
+      "scoringPlay": true,
+      "points": 3,
+      "homeScore": 75,
+      "awayScore": 65,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 2,
+        "y": 7
+      },
+      "homeWinPct": 0.906,
+      "swing": 0.051
+    },
+    {
+      "id": "401859967562",
+      "period": 4,
+      "clock": "10:59",
+      "kind": "shot",
+      "label": "Jump Shot",
+      "text": "Josh Hart makes 25-foot three point jumper (Mikal Bridges assists)",
+      "side": "away",
+      "players": [
+        "Josh Hart",
+        "Mikal Bridges"
+      ],
+      "scoringPlay": true,
+      "points": 3,
+      "homeScore": 75,
+      "awayScore": 68,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 38,
+        "y": 22
+      },
+      "homeWinPct": 0.859,
+      "swing": -0.047
+    },
+    {
+      "id": "401859967568",
+      "period": 4,
+      "clock": "10:35",
+      "kind": "shot",
+      "label": "Driving Dunk Shot",
+      "text": "Victor Wembanyama makes 1-foot driving dunk (Devin Vassell assists)",
+      "side": "home",
+      "players": [
+        "Victor Wembanyama",
+        "Devin Vassell"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 77,
+      "awayScore": 68,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 24,
+        "y": 2
+      },
+      "homeWinPct": 0.886,
+      "swing": 0.025
+    },
+    {
+      "id": "401859967577",
+      "period": 4,
+      "clock": "9:28",
+      "kind": "shot",
+      "label": "Jump Shot",
+      "text": "Landry Shamet makes 25-foot three point jumper (Mikal Bridges assists)",
+      "side": "away",
+      "players": [
+        "Landry Shamet",
+        "Mikal Bridges"
+      ],
+      "scoringPlay": true,
+      "points": 3,
+      "homeScore": 77,
+      "awayScore": 71,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 43,
+        "y": 19
+      },
+      "homeWinPct": 0.837,
+      "swing": -0.077
+    },
+    {
+      "id": "401859967579",
+      "period": 4,
+      "clock": "9:10",
+      "kind": "shot",
+      "label": "Jump Shot",
+      "text": "Devin Vassell makes 26-foot three point jumper (Stephon Castle assists)",
+      "side": "home",
+      "players": [
+        "Devin Vassell",
+        "Stephon Castle"
+      ],
+      "scoringPlay": true,
+      "points": 3,
+      "homeScore": 80,
+      "awayScore": 71,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 10,
+        "y": 22
+      },
+      "homeWinPct": 0.898,
+      "swing": 0.061
+    },
+    {
+      "id": "401859967599",
+      "period": 4,
+      "clock": "8:51",
+      "kind": "free-throw",
+      "label": "Free Throw - 2 of 2",
+      "text": "Stephon Castle makes free throw 2 of 2",
+      "side": "home",
+      "players": [
+        "Stephon Castle"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 81,
+      "awayScore": 71,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.926
+    },
+    {
+      "id": "401859967600",
+      "period": 4,
+      "clock": "8:31",
+      "kind": "shot",
+      "label": "Driving Layup Shot",
+      "text": "Landry Shamet makes driving layup",
+      "side": "away",
+      "players": [
+        "Landry Shamet"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 81,
+      "awayScore": 73,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 25,
+        "y": 1
+      },
+      "homeWinPct": 0.908,
+      "swing": -0.018
+    },
+    {
+      "id": "401859967601",
+      "period": 4,
+      "clock": "8:21",
+      "kind": "shot",
+      "label": "Driving Finger Roll Layup",
+      "text": "Dylan Harper makes 1-foot two point shot (Julian Champagnie assists)",
+      "side": "home",
+      "players": [
+        "Dylan Harper",
+        "Julian Champagnie"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 83,
+      "awayScore": 73,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 24,
+        "y": 1
+      },
+      "homeWinPct": 0.93,
+      "swing": 0.022
+    },
+    {
+      "id": "401859967615",
+      "period": 4,
+      "clock": "7:43",
+      "kind": "free-throw",
+      "label": "Free Throw - 2 of 3",
+      "text": "Jalen Brunson makes free throw 2 of 3",
+      "side": "away",
+      "players": [
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 83,
+      "awayScore": 74,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.893,
+      "swing": -0.041
+    },
+    {
+      "id": "401859967616",
+      "period": 4,
+      "clock": "7:43",
+      "kind": "free-throw",
+      "label": "Free Throw - 3 of 3",
+      "text": "Jalen Brunson makes free throw 3 of 3",
+      "side": "away",
+      "players": [
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 83,
+      "awayScore": 75,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.914,
+      "swing": 0.021
+    },
+    {
+      "id": "401859967619",
+      "period": 4,
+      "clock": "7:14",
+      "kind": "shot",
+      "label": "Driving Finger Roll Layup",
+      "text": "Jalen Brunson makes 1-foot two point shot",
+      "side": "away",
+      "players": [
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 83,
+      "awayScore": 77,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 23,
+        "y": 1
+      },
+      "homeWinPct": 0.864,
+      "swing": -0.027
+    },
+    {
+      "id": "401859967627",
+      "period": 4,
+      "clock": "6:28",
+      "kind": "shot",
+      "label": "Driving Finger Roll Layup",
+      "text": "Jalen Brunson makes 1-foot two point shot",
+      "side": "away",
+      "players": [
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 83,
+      "awayScore": 79,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 26,
+        "y": 1
+      },
+      "homeWinPct": 0.79,
+      "swing": -0.029
+    },
+    {
+      "id": "401859967645",
+      "period": 4,
+      "clock": "5:18",
+      "kind": "free-throw",
+      "label": "Free Throw - 1 of 2",
+      "text": "Jalen Brunson makes free throw 1 of 2",
+      "side": "away",
+      "players": [
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 83,
+      "awayScore": 80,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.642,
+      "swing": -0.002
+    },
+    {
+      "id": "401859967648",
+      "period": 4,
+      "clock": "5:18",
+      "kind": "free-throw",
+      "label": "Free Throw - 2 of 2",
+      "text": "Jalen Brunson makes free throw 2 of 2",
+      "side": "away",
+      "players": [
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 83,
+      "awayScore": 81,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.694,
+      "swing": 0.052
+    },
+    {
+      "id": "401859967652",
+      "period": 4,
+      "clock": "4:48",
+      "kind": "shot",
+      "label": "Running Finger Roll Layup",
+      "text": "Jalen Brunson makes two point shot",
+      "side": "away",
+      "players": [
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 83,
+      "awayScore": 83,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 24,
+        "y": 2
+      },
+      "homeWinPct": 0.561,
+      "swing": -0.066
+    },
+    {
+      "id": "401859967659",
+      "period": 4,
+      "clock": "4:14",
+      "kind": "shot",
+      "label": "Pullup Jump Shot",
+      "text": "Devin Vassell makes 16-foot pullup jump shot (Dylan Harper assists)",
+      "side": "home",
+      "players": [
+        "Devin Vassell",
+        "Dylan Harper"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 85,
+      "awayScore": 83,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 12,
+        "y": 11
+      },
+      "homeWinPct": 0.644,
+      "swing": -0.036
+    },
+    {
+      "id": "401859967666",
+      "period": 4,
+      "clock": "3:40",
+      "kind": "free-throw",
+      "label": "Free Throw - 1 of 3",
+      "text": "Jalen Brunson makes free throw 1 of 3",
+      "side": "away",
+      "players": [
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 85,
+      "awayScore": 84,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.496,
+      "swing": -0.02
+    },
+    {
+      "id": "401859967667",
+      "period": 4,
+      "clock": "3:40",
+      "kind": "free-throw",
+      "label": "Free Throw - 2 of 3",
+      "text": "Jalen Brunson makes free throw 2 of 3",
+      "side": "away",
+      "players": [
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 85,
+      "awayScore": 85,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.42,
+      "swing": -0.076
+    },
+    {
+      "id": "401859967668",
+      "period": 4,
+      "clock": "3:40",
+      "kind": "free-throw",
+      "label": "Free Throw - 3 of 3",
+      "text": "Jalen Brunson makes free throw 3 of 3",
+      "side": "away",
+      "players": [
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 85,
+      "awayScore": 86,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.483,
+      "swing": 0.063
+    },
+    {
+      "id": "401859967688",
+      "period": 4,
+      "clock": "2:07",
+      "kind": "shot",
+      "label": "Cutting Dunk Shot",
+      "text": "OG Anunoby makes dunk (Josh Hart assists)",
+      "side": "away",
+      "players": [
+        "OG Anunoby",
+        "Josh Hart"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 85,
+      "awayScore": 88,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 25,
+        "y": 0
+      },
+      "homeWinPct": 0.291,
+      "swing": -0.087
+    },
+    {
+      "id": "401859967698",
+      "period": 4,
+      "clock": "1:53",
+      "kind": "free-throw",
+      "label": "Free Throw - 2 of 2",
+      "text": "Victor Wembanyama makes free throw 2 of 2",
+      "side": "home",
+      "players": [
+        "Victor Wembanyama"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 86,
+      "awayScore": 88,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.284,
+      "swing": -0.002
+    },
+    {
+      "id": "401859967704",
+      "period": 4,
+      "clock": "1:16",
+      "kind": "shot",
+      "label": "Turnaround Jump Shot",
+      "text": "Dylan Harper makes 8-foot turnaround jump shot",
+      "side": "home",
+      "players": [
+        "Dylan Harper"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 88,
+      "awayScore": 88,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 30,
+        "y": 7
+      },
+      "homeWinPct": 0.468,
+      "swing": 0.088
+    },
+    {
+      "id": "401859967705",
+      "period": 4,
+      "clock": "1:05",
+      "kind": "shot",
+      "label": "Driving Floating Jump Shot",
+      "text": "Jalen Brunson makes 11-foot driving floating jump shot",
+      "side": "away",
+      "players": [
+        "Jalen Brunson"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 88,
+      "awayScore": 90,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 20,
+        "y": 11
+      },
+      "homeWinPct": 0.376,
+      "swing": -0.092
+    },
+    {
+      "id": "401859967714",
+      "period": 4,
+      "clock": "26.1",
+      "kind": "free-throw",
+      "label": "Free Throw - 1 of 2",
+      "text": "Josh Hart makes free throw 1 of 2",
+      "side": "away",
+      "players": [
+        "Josh Hart"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 88,
+      "awayScore": 91,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.088,
+      "swing": -0.014
+    },
+    {
+      "id": "401859967723",
+      "period": 4,
+      "clock": "21.6",
+      "kind": "free-throw",
+      "label": "Free Throw - 1 of 2",
+      "text": "OG Anunoby makes free throw 1 of 2",
+      "side": "away",
+      "players": [
+        "OG Anunoby"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 88,
+      "awayScore": 92,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.043,
+      "swing": -0.008
+    },
+    {
+      "id": "401859967731",
+      "period": 4,
+      "clock": "16.3",
+      "kind": "shot",
+      "label": "Tip Dunk Shot",
+      "text": "Stephon Castle makes tip in dunk",
+      "side": "home",
+      "players": [
+        "Stephon Castle"
+      ],
+      "scoringPlay": true,
+      "points": 2,
+      "homeScore": 90,
+      "awayScore": 92,
+      "shootingPlay": true,
+      "made": true,
+      "coordinate": {
+        "x": 25,
+        "y": 0
+      },
+      "homeWinPct": 0.182,
+      "swing": 0.066
+    },
+    {
+      "id": "401859967743",
+      "period": 4,
+      "clock": "8.8",
+      "kind": "free-throw",
+      "label": "Free Throw - 2 of 2",
+      "text": "Mikal Bridges makes free throw 2 of 2",
+      "side": "away",
+      "players": [
+        "Mikal Bridges"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 90,
+      "awayScore": 93,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.146,
+      "swing": 0.005
+    },
+    {
+      "id": "401859967768",
+      "period": 4,
+      "clock": "7.7",
+      "kind": "free-throw",
+      "label": "Free Throw - 2 of 2",
+      "text": "OG Anunoby makes free throw 2 of 2",
+      "side": "away",
+      "players": [
+        "OG Anunoby"
+      ],
+      "scoringPlay": true,
+      "points": 1,
+      "homeScore": 90,
+      "awayScore": 94,
+      "shootingPlay": true,
+      "made": true,
+      "homeWinPct": 0.073,
+      "swing": 0.013
+    }
+  ],
+  "injuries": [
+    {
+      "team": "San Antonio Spurs",
+      "teamId": "24",
+      "injuries": [
+        {
+          "id": "4713010",
+          "name": "David Jones Garcia",
+          "position": "F",
+          "status": "Day-To-Day",
+          "date": "2026-07-22T19:16Z"
+        },
+        {
+          "id": "5101845",
+          "name": "Jayden Quaintance",
+          "position": "F",
+          "status": "Out",
+          "date": "2026-07-19T12:33Z"
+        }
+      ]
+    },
+    {
+      "team": "New York Knicks",
+      "teamId": "18",
+      "injuries": [
+        {
+          "id": "5289900",
+          "name": "Mohamed Diawara",
+          "position": "F",
+          "status": "Day-To-Day",
+          "date": "2026-07-18T02:45Z"
+        },
+        {
+          "id": "3934672",
+          "name": "Jalen Brunson",
+          "position": "G",
+          "status": "Day-To-Day",
+          "date": "2026-07-07T15:14Z"
+        }
+      ]
+    }
+  ],
+  "teams": [
+    {
+      "id": "24",
+      "name": "San Antonio Spurs",
+      "abbreviation": "SA",
+      "homeAway": "home",
+      "boxscoreAvailable": true,
+      "playerCount": 15,
+      "playedCount": 9,
+      "starters": [
+        "Julian Champagnie",
+        "Victor Wembanyama",
+        "De'Aaron Fox",
+        "Devin Vassell",
+        "Stephon Castle"
+      ],
+      "players": [
+        {
+          "id": "4592479",
+          "name": "Julian Champagnie",
+          "shortName": "J. Champagnie",
+          "jersey": "30",
+          "position": "F",
+          "starter": true,
+          "didNotPlay": false,
+          "reason": null,
+          "ejected": false,
+          "minutes": 31,
+          "points": 14,
+          "fieldGoals": {
+            "made": 5,
+            "attempted": 9,
+            "pct": 55.6
+          },
+          "threePointFieldGoals": {
+            "made": 4,
+            "attempted": 8,
+            "pct": 50
+          },
+          "freeThrows": {
+            "made": 0,
+            "attempted": 0,
+            "pct": 0
+          },
+          "rebounds": 7,
+          "assists": 1,
+          "turnovers": 4,
+          "steals": 1,
+          "blocks": 0,
+          "offensiveRebounds": 2,
+          "defensiveRebounds": 5,
+          "fouls": 3,
+          "plusMinus": -10
+        },
+        {
+          "id": "5104157",
+          "name": "Victor Wembanyama",
+          "shortName": "V. Wembanyama",
+          "jersey": "1",
+          "position": "F",
+          "starter": true,
+          "didNotPlay": false,
+          "reason": null,
+          "ejected": false,
+          "minutes": 38,
+          "points": 19,
+          "fieldGoals": {
+            "made": 7,
+            "attempted": 19,
+            "pct": 36.8
+          },
+          "threePointFieldGoals": {
+            "made": 1,
+            "attempted": 6,
+            "pct": 16.7
+          },
+          "freeThrows": {
+            "made": 4,
+            "attempted": 5,
+            "pct": 80
+          },
+          "rebounds": 14,
+          "assists": 2,
+          "turnovers": 2,
+          "steals": 0,
+          "blocks": 5,
+          "offensiveRebounds": 6,
+          "defensiveRebounds": 8,
+          "fouls": 3,
+          "plusMinus": -3
+        },
+        {
+          "id": "4066259",
+          "name": "De'Aaron Fox",
+          "shortName": "D. Fox",
+          "jersey": "4",
+          "position": "G",
+          "starter": true,
+          "didNotPlay": false,
+          "reason": null,
+          "ejected": false,
+          "minutes": 37,
+          "points": 7,
+          "fieldGoals": {
+            "made": 3,
+            "attempted": 15,
+            "pct": 20
+          },
+          "threePointFieldGoals": {
+            "made": 1,
+            "attempted": 8,
+            "pct": 12.5
+          },
+          "freeThrows": {
+            "made": 0,
+            "attempted": 0,
+            "pct": 0
+          },
+          "rebounds": 0,
+          "assists": 5,
+          "turnovers": 1,
+          "steals": 2,
+          "blocks": 0,
+          "offensiveRebounds": 0,
+          "defensiveRebounds": 0,
+          "fouls": 2,
+          "plusMinus": 1
+        },
+        {
+          "id": "4395630",
+          "name": "Devin Vassell",
+          "shortName": "D. Vassell",
+          "jersey": "24",
+          "position": "G",
+          "starter": true,
+          "didNotPlay": false,
+          "reason": null,
+          "ejected": false,
+          "minutes": 39,
+          "points": 12,
+          "fieldGoals": {
+            "made": 5,
+            "attempted": 8,
+            "pct": 62.5
+          },
+          "threePointFieldGoals": {
+            "made": 2,
+            "attempted": 5,
+            "pct": 40
+          },
+          "freeThrows": {
+            "made": 0,
+            "attempted": 0,
+            "pct": 0
+          },
+          "rebounds": 7,
+          "assists": 2,
+          "turnovers": 0,
+          "steals": 2,
+          "blocks": 1,
+          "offensiveRebounds": 0,
+          "defensiveRebounds": 7,
+          "fouls": 1,
+          "plusMinus": -11
+        },
+        {
+          "id": "4845367",
+          "name": "Stephon Castle",
+          "shortName": "S. Castle",
+          "jersey": "5",
+          "position": "G",
+          "starter": true,
+          "didNotPlay": false,
+          "reason": null,
+          "ejected": false,
+          "minutes": 32,
+          "points": 6,
+          "fieldGoals": {
+            "made": 1,
+            "attempted": 10,
+            "pct": 10
+          },
+          "threePointFieldGoals": {
+            "made": 0,
+            "attempted": 3,
+            "pct": 0
+          },
+          "freeThrows": {
+            "made": 4,
+            "attempted": 6,
+            "pct": 66.7
+          },
+          "rebounds": 5,
+          "assists": 4,
+          "turnovers": 3,
+          "steals": 1,
+          "blocks": 0,
+          "offensiveRebounds": 1,
+          "defensiveRebounds": 4,
+          "fouls": 4,
+          "plusMinus": -1
+        },
+        {
+          "id": "4395723",
+          "name": "Keldon Johnson",
+          "shortName": "K. Johnson",
+          "jersey": "3",
+          "position": "F",
+          "starter": false,
+          "didNotPlay": false,
+          "reason": null,
+          "ejected": false,
+          "minutes": 16,
+          "points": 7,
+          "fieldGoals": {
+            "made": 2,
+            "attempted": 5,
+            "pct": 40
+          },
+          "threePointFieldGoals": {
+            "made": 2,
+            "attempted": 3,
+            "pct": 66.7
+          },
+          "freeThrows": {
+            "made": 1,
+            "attempted": 2,
+            "pct": 50
+          },
+          "rebounds": 5,
+          "assists": 0,
+          "turnovers": 0,
+          "steals": 0,
+          "blocks": 0,
+          "offensiveRebounds": 2,
+          "defensiveRebounds": 3,
+          "fouls": 2,
+          "plusMinus": 17
+        },
+        {
+          "id": "5061568",
+          "name": "Carter Bryant",
+          "shortName": "C. Bryant",
+          "jersey": "11",
+          "position": "F",
+          "starter": false,
+          "didNotPlay": false,
+          "reason": null,
+          "ejected": false,
+          "minutes": 6,
+          "points": 0,
+          "fieldGoals": {
+            "made": 0,
+            "attempted": 0,
+            "pct": 0
+          },
+          "threePointFieldGoals": {
+            "made": 0,
+            "attempted": 0,
+            "pct": 0
+          },
+          "freeThrows": {
+            "made": 0,
+            "attempted": 0,
+            "pct": 0
+          },
+          "rebounds": 2,
+          "assists": 0,
+          "turnovers": 1,
+          "steals": 0,
+          "blocks": 0,
+          "offensiveRebounds": 0,
+          "defensiveRebounds": 2,
+          "fouls": 0,
+          "plusMinus": 2
+        },
+        {
+          "id": "3064560",
+          "name": "Luke Kornet",
+          "shortName": "L. Kornet",
+          "jersey": "7",
+          "position": "C",
+          "starter": false,
+          "didNotPlay": false,
+          "reason": null,
+          "ejected": false,
+          "minutes": 10,
+          "points": 0,
+          "fieldGoals": {
+            "made": 0,
+            "attempted": 1,
+            "pct": 0
+          },
+          "threePointFieldGoals": {
+            "made": 0,
+            "attempted": 0,
+            "pct": 0
+          },
+          "freeThrows": {
+            "made": 0,
+            "attempted": 0,
+            "pct": 0
+          },
+          "rebounds": 2,
+          "assists": 0,
+          "turnovers": 1,
+          "steals": 0,
+          "blocks": 0,
+          "offensiveRebounds": 1,
+          "defensiveRebounds": 1,
+          "fouls": 2,
+          "plusMinus": -3
+        },
+        {
+          "id": "5037871",
+          "name": "Dylan Harper",
+          "shortName": "D. Harper",
+          "jersey": "2",
+          "position": "G",
+          "starter": false,
+          "didNotPlay": false,
+          "reason": null,
+          "ejected": false,
+          "minutes": 31,
+          "points": 25,
+          "fieldGoals": {
+            "made": 10,
+            "attempted": 19,
+            "pct": 52.6
+          },
+          "threePointFieldGoals": {
+            "made": 2,
+            "attempted": 4,
+            "pct": 50
+          },
+          "freeThrows": {
+            "made": 3,
+            "attempted": 6,
+            "pct": 50
+          },
+          "rebounds": 5,
+          "assists": 4,
+          "turnovers": 0,
+          "steals": 0,
+          "blocks": 1,
+          "offensiveRebounds": 2,
+          "defensiveRebounds": 3,
+          "fouls": 5,
+          "plusMinus": -12
+        },
+        {
+          "id": "6578",
+          "name": "Harrison Barnes",
+          "shortName": "H. Barnes",
+          "jersey": "40",
+          "position": "F",
+          "starter": false,
+          "didNotPlay": true,
+          "reason": "COACH'S DECISION",
+          "ejected": false
+        },
+        {
+          "id": "2489663",
+          "name": "Kelly Olynyk",
+          "shortName": "K. Olynyk",
+          "jersey": "8",
+          "position": "F",
+          "starter": false,
+          "didNotPlay": true,
+          "reason": "COACH'S DECISION",
+          "ejected": false
+        },
+        {
+          "id": "4066317",
+          "name": "Lindy Waters III",
+          "shortName": "L. Waters III",
+          "jersey": "43",
+          "position": "F",
+          "starter": false,
+          "didNotPlay": true,
+          "reason": "COACH'S DECISION",
+          "ejected": false
+        },
+        {
+          "id": "6427",
+          "name": "Bismack Biyombo",
+          "shortName": "B. Biyombo",
+          "jersey": "18",
+          "position": "C",
+          "starter": false,
+          "didNotPlay": true,
+          "reason": "COACH'S DECISION",
+          "ejected": false
+        },
+        {
+          "id": "2488653",
+          "name": "Mason Plumlee",
+          "shortName": "M. Plumlee",
+          "jersey": "45",
+          "position": "C",
+          "starter": false,
+          "didNotPlay": true,
+          "reason": "COACH'S DECISION",
+          "ejected": false
+        },
+        {
+          "id": "3134916",
+          "name": "Jordan McLaughlin",
+          "shortName": "J. McLaughlin",
+          "jersey": "0",
+          "position": "G",
+          "starter": false,
+          "didNotPlay": true,
+          "reason": "COACH'S DECISION",
+          "ejected": false
+        }
+      ]
+    },
+    {
+      "id": "18",
+      "name": "New York Knicks",
+      "abbreviation": "NY",
+      "homeAway": "away",
+      "boxscoreAvailable": true,
+      "playerCount": 15,
+      "playedCount": 12,
+      "starters": [
+        "OG Anunoby",
+        "Karl-Anthony Towns",
+        "Josh Hart",
+        "Mikal Bridges",
+        "Jalen Brunson"
+      ],
+      "players": [
+        {
+          "id": "3934719",
+          "name": "OG Anunoby",
+          "shortName": "O. Anunoby",
+          "jersey": "8",
+          "position": "F",
+          "starter": true,
+          "didNotPlay": false,
+          "reason": null,
+          "ejected": false,
+          "minutes": 33,
+          "points": 11,
+          "fieldGoals": {
+            "made": 3,
+            "attempted": 11,
+            "pct": 27.3
+          },
+          "threePointFieldGoals": {
+            "made": 1,
+            "attempted": 5,
+            "pct": 20
+          },
+          "freeThrows": {
+            "made": 4,
+            "attempted": 6,
+            "pct": 66.7
+          },
+          "rebounds": 8,
+          "assists": 0,
+          "turnovers": 1,
+          "steals": 3,
+          "blocks": 1,
+          "offensiveRebounds": 0,
+          "defensiveRebounds": 8,
+          "fouls": 5,
+          "plusMinus": 2
+        },
+        {
+          "id": "3136195",
+          "name": "Karl-Anthony Towns",
+          "shortName": "K. Towns",
+          "jersey": "32",
+          "position": "C",
+          "starter": true,
+          "didNotPlay": false,
+          "reason": null,
+          "ejected": false,
+          "minutes": 23,
+          "points": 2,
+          "fieldGoals": {
+            "made": 1,
+            "attempted": 7,
+            "pct": 14.3
+          },
+          "threePointFieldGoals": {
+            "made": 0,
+            "attempted": 2,
+            "pct": 0
+          },
+          "freeThrows": {
+            "made": 0,
+            "attempted": 0,
+            "pct": 0
+          },
+          "rebounds": 10,
+          "assists": 1,
+          "turnovers": 5,
+          "steals": 3,
+          "blocks": 1,
+          "offensiveRebounds": 1,
+          "defensiveRebounds": 9,
+          "fouls": 6,
+          "plusMinus": -4
+        },
+        {
+          "id": "3062679",
+          "name": "Josh Hart",
+          "shortName": "J. Hart",
+          "jersey": "3",
+          "position": "G",
+          "starter": true,
+          "didNotPlay": false,
+          "reason": null,
+          "ejected": false,
+          "minutes": 39,
+          "points": 13,
+          "fieldGoals": {
+            "made": 4,
+            "attempted": 11,
+            "pct": 36.4
+          },
+          "threePointFieldGoals": {
+            "made": 3,
+            "attempted": 6,
+            "pct": 50
+          },
+          "freeThrows": {
+            "made": 2,
+            "attempted": 3,
+            "pct": 66.7
+          },
+          "rebounds": 11,
+          "assists": 2,
+          "turnovers": 1,
+          "steals": 0,
+          "blocks": 0,
+          "offensiveRebounds": 3,
+          "defensiveRebounds": 8,
+          "fouls": 3,
+          "plusMinus": 15
+        },
+        {
+          "id": "3147657",
+          "name": "Mikal Bridges",
+          "shortName": "M. Bridges",
+          "jersey": "25",
+          "position": "G",
+          "starter": true,
+          "didNotPlay": false,
+          "reason": null,
+          "ejected": false,
+          "minutes": 39,
+          "points": 14,
+          "fieldGoals": {
+            "made": 5,
+            "attempted": 10,
+            "pct": 50
+          },
+          "threePointFieldGoals": {
+            "made": 3,
+            "attempted": 7,
+            "pct": 42.9
+          },
+          "freeThrows": {
+            "made": 1,
+            "attempted": 2,
+            "pct": 50
+          },
+          "rebounds": 2,
+          "assists": 4,
+          "turnovers": 0,
+          "steals": 0,
+          "blocks": 1,
+          "offensiveRebounds": 0,
+          "defensiveRebounds": 2,
+          "fouls": 1,
+          "plusMinus": 6
+        },
+        {
+          "id": "3934672",
+          "name": "Jalen Brunson",
+          "shortName": "J. Brunson",
+          "jersey": "11",
+          "position": "G",
+          "starter": true,
+          "didNotPlay": false,
+          "reason": null,
+          "ejected": false,
+          "minutes": 41,
+          "points": 45,
+          "fieldGoals": {
+            "made": 14,
+            "attempted": 27,
+            "pct": 51.9
+          },
+          "threePointFieldGoals": {
+            "made": 4,
+            "attempted": 7,
+            "pct": 57.1
+          },
+          "freeThrows": {
+            "made": 13,
+            "attempted": 15,
+            "pct": 86.7
+          },
+          "rebounds": 3,
+          "assists": 3,
+          "turnovers": 3,
+          "steals": 2,
+          "blocks": 0,
+          "offensiveRebounds": 1,
+          "defensiveRebounds": 2,
+          "fouls": 1,
+          "plusMinus": 10
+        },
+        {
+          "id": "4610139",
+          "name": "Jeremy Sochan",
+          "shortName": "J. Sochan",
+          "jersey": "20",
+          "position": "F",
+          "starter": false,
+          "didNotPlay": false,
+          "reason": null,
+          "ejected": false,
+          "minutes": 0,
+          "points": 0,
+          "fieldGoals": {
+            "made": 0,
+            "attempted": 0,
+            "pct": 0
+          },
+          "threePointFieldGoals": {
+            "made": 0,
+            "attempted": 0,
+            "pct": 0
+          },
+          "freeThrows": {
+            "made": 0,
+            "attempted": 0,
+            "pct": 0
+          },
+          "rebounds": 0,
+          "assists": 0,
+          "turnovers": 0,
+          "steals": 0,
+          "blocks": 0,
+          "offensiveRebounds": 0,
+          "defensiveRebounds": 0,
+          "fouls": 0,
+          "plusMinus": 1
+        },
+        {
+          "id": "4351852",
+          "name": "Mitchell Robinson",
+          "shortName": "M. Robinson",
+          "jersey": "23",
+          "position": "C",
+          "starter": false,
+          "didNotPlay": false,
+          "reason": null,
+          "ejected": false,
+          "minutes": 20,
+          "points": 2,
+          "fieldGoals": {
+            "made": 1,
+            "attempted": 2,
+            "pct": 50
+          },
+          "threePointFieldGoals": {
+            "made": 0,
+            "attempted": 0,
+            "pct": 0
+          },
+          "freeThrows": {
+            "made": 0,
+            "attempted": 2,
+            "pct": 0
+          },
+          "rebounds": 10,
+          "assists": 2,
+          "turnovers": 0,
+          "steals": 0,
+          "blocks": 0,
+          "offensiveRebounds": 6,
+          "defensiveRebounds": 4,
+          "fouls": 1,
+          "plusMinus": 5
+        },
+        {
+          "id": "4871141",
+          "name": "Ariel Hukporti",
+          "shortName": "A. Hukporti",
+          "jersey": "55",
+          "position": "C",
+          "starter": false,
+          "didNotPlay": false,
+          "reason": null,
+          "ejected": false,
+          "minutes": 2,
+          "points": 0,
+          "fieldGoals": {
+            "made": 0,
+            "attempted": 0,
+            "pct": 0
+          },
+          "threePointFieldGoals": {
+            "made": 0,
+            "attempted": 0,
+            "pct": 0
+          },
+          "freeThrows": {
+            "made": 0,
+            "attempted": 0,
+            "pct": 0
+          },
+          "rebounds": 1,
+          "assists": 1,
+          "turnovers": 0,
+          "steals": 0,
+          "blocks": 1,
+          "offensiveRebounds": 1,
+          "defensiveRebounds": 0,
+          "fouls": 0,
+          "plusMinus": 4
+        },
+        {
+          "id": "2528426",
+          "name": "Jordan Clarkson",
+          "shortName": "J. Clarkson",
+          "jersey": "00",
+          "position": "G",
+          "starter": false,
+          "didNotPlay": false,
+          "reason": null,
+          "ejected": false,
+          "minutes": 6,
+          "points": 2,
+          "fieldGoals": {
+            "made": 1,
+            "attempted": 5,
+            "pct": 20
+          },
+          "threePointFieldGoals": {
+            "made": 0,
+            "attempted": 2,
+            "pct": 0
+          },
+          "freeThrows": {
+            "made": 0,
+            "attempted": 0,
+            "pct": 0
+          },
+          "rebounds": 1,
+          "assists": 0,
+          "turnovers": 0,
+          "steals": 0,
+          "blocks": 0,
+          "offensiveRebounds": 1,
+          "defensiveRebounds": 0,
+          "fouls": 0,
+          "plusMinus": 3
+        },
+        {
+          "id": "3914044",
+          "name": "Landry Shamet",
+          "shortName": "L. Shamet",
+          "jersey": "44",
+          "position": "G",
+          "starter": false,
+          "didNotPlay": false,
+          "reason": null,
+          "ejected": false,
+          "minutes": 13,
+          "points": 5,
+          "fieldGoals": {
+            "made": 2,
+            "attempted": 7,
+            "pct": 28.6
+          },
+          "threePointFieldGoals": {
+            "made": 1,
+            "attempted": 4,
+            "pct": 25
+          },
+          "freeThrows": {
+            "made": 0,
+            "attempted": 0,
+            "pct": 0
+          },
+          "rebounds": 1,
+          "assists": 0,
+          "turnovers": 0,
+          "steals": 0,
+          "blocks": 0,
+          "offensiveRebounds": 0,
+          "defensiveRebounds": 1,
+          "fouls": 2,
+          "plusMinus": -14
+        },
+        {
+          "id": "4277869",
+          "name": "Jose Alvarado",
+          "shortName": "J. Alvarado",
+          "jersey": "5",
+          "position": "G",
+          "starter": false,
+          "didNotPlay": false,
+          "reason": null,
+          "ejected": false,
+          "minutes": 11,
+          "points": 0,
+          "fieldGoals": {
+            "made": 0,
+            "attempted": 5,
+            "pct": 0
+          },
+          "threePointFieldGoals": {
+            "made": 0,
+            "attempted": 2,
+            "pct": 0
+          },
+          "freeThrows": {
+            "made": 0,
+            "attempted": 0,
+            "pct": 0
+          },
+          "rebounds": 1,
+          "assists": 0,
+          "turnovers": 0,
+          "steals": 0,
+          "blocks": 0,
+          "offensiveRebounds": 0,
+          "defensiveRebounds": 1,
+          "fouls": 1,
+          "plusMinus": -11
+        },
+        {
+          "id": "4431823",
+          "name": "Miles McBride",
+          "shortName": "M. McBride",
+          "jersey": "2",
+          "position": "G",
+          "starter": false,
+          "didNotPlay": false,
+          "reason": null,
+          "ejected": false,
+          "minutes": 13,
+          "points": 0,
+          "fieldGoals": {
+            "made": 0,
+            "attempted": 2,
+            "pct": 0
+          },
+          "threePointFieldGoals": {
+            "made": 0,
+            "attempted": 2,
+            "pct": 0
+          },
+          "freeThrows": {
+            "made": 0,
+            "attempted": 0,
+            "pct": 0
+          },
+          "rebounds": 0,
+          "assists": 1,
+          "turnovers": 0,
+          "steals": 0,
+          "blocks": 0,
+          "offensiveRebounds": 0,
+          "defensiveRebounds": 0,
+          "fouls": 1,
+          "plusMinus": 3
+        },
+        {
+          "id": "5211983",
+          "name": "Pacome Dadiet",
+          "shortName": "P. Dadiet",
+          "jersey": "4",
+          "position": "F",
+          "starter": false,
+          "didNotPlay": true,
+          "reason": "COACH'S DECISION",
+          "ejected": false
+        },
+        {
+          "id": "5289900",
+          "name": "Mohamed Diawara",
+          "shortName": "M. Diawara",
+          "jersey": "51",
+          "position": "F",
+          "starter": false,
+          "didNotPlay": true,
+          "reason": "COACH'S DECISION",
+          "ejected": false
+        },
+        {
+          "id": "4433225",
+          "name": "Tyler Kolek",
+          "shortName": "T. Kolek",
+          "jersey": "13",
+          "position": "G",
+          "starter": false,
+          "didNotPlay": true,
+          "reason": "COACH'S DECISION",
+          "ejected": false
+        }
+      ]
+    }
+  ]
+}

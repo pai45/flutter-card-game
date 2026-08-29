@@ -37,6 +37,9 @@ import 'match_circle_screen.dart';
 import 'match_prediction_screen.dart';
 import 'widgets/pick_market_card.dart';
 import 'widgets/pick_trade_sheet.dart';
+import 'widgets/football_match_stats_view.dart';
+import 'widgets/basketball_match_stats_view.dart';
+import 'widgets/cricket_match_stats_view.dart';
 import 'widgets/standings_table.dart' show DetailTopBar;
 import '../../widgets/match_pitch_view.dart';
 
@@ -629,7 +632,9 @@ class _MatchLeaderboardTabState extends State<_MatchLeaderboardTab> {
 
     // A thin field (< 3) skips the podium and lists everyone as flat rows.
     final usePodium = entries.length >= 3;
-    final podium = usePodium ? entries.take(3).toList() : const <LeaderboardEntry>[];
+    final podium = usePodium
+        ? entries.take(3).toList()
+        : const <LeaderboardEntry>[];
     final rest = usePodium ? entries.skip(3).toList() : entries;
 
     return Column(
@@ -805,11 +810,7 @@ class _BoardMetaStrip extends StatelessWidget {
           color: Cyber.gold,
         ),
         const SizedBox(width: 18),
-        _BoardMetaCell(
-          label: 'PLAYERS',
-          value: '$players',
-          color: accent,
-        ),
+        _BoardMetaCell(label: 'PLAYERS', value: '$players', color: accent),
       ],
     );
   }
@@ -831,7 +832,10 @@ class _BoardMetaCell extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Text(label, style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1)),
+        Text(
+          label,
+          style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1),
+        ),
         const SizedBox(height: 3),
         Text(
           value,
@@ -857,7 +861,10 @@ class _BoardHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(label, style: Cyber.label(10, color: Cyber.gold, letterSpacing: 1.6)),
+        Text(
+          label,
+          style: Cyber.label(10, color: Cyber.gold, letterSpacing: 1.6),
+        ),
         const SizedBox(height: 8),
         Container(height: 1, color: Cyber.gold.withValues(alpha: 0.22)),
       ],
@@ -905,6 +912,15 @@ class _ScoreboardTabState extends State<_ScoreboardTab> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.match.sport == Sport.football) {
+      return FootballMatchStatsView(match: widget.match);
+    }
+    if (widget.match.sport == Sport.basketball) {
+      return BasketballMatchStatsView(match: widget.match);
+    }
+    if (widget.match.sport == Sport.cricket) {
+      return CricketMatchStatsView(match: widget.match);
+    }
     return Column(
       children: [
         CyberFilterChips(
@@ -1032,6 +1048,16 @@ class _TimelineRow extends StatelessWidget {
 
     Widget eventIcon;
     switch (event.type) {
+      case MatchEventType.kickoff:
+      case MatchEventType.halftime:
+      case MatchEventType.secondHalf:
+      case MatchEventType.fullTime:
+        eventIcon = const Icon(
+          Icons.flag_outlined,
+          size: 16,
+          color: Cyber.cyan,
+        );
+        break;
       case MatchEventType.goal:
         eventIcon = const Icon(
           Icons.sports_soccer,
@@ -1463,9 +1489,10 @@ class _F1GridRow extends StatelessWidget {
             width: 36,
             child: Text(
               'P${parsed.position ?? (index + 1)}',
-              style: Cyber.display(13, color: posColor).copyWith(
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
+              style: Cyber.display(
+                13,
+                color: posColor,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
           ),
           Expanded(
@@ -1485,7 +1512,11 @@ class _F1GridRow extends StatelessWidget {
                     parsed.constructor!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.0),
+                    style: Cyber.label(
+                      9,
+                      color: Cyber.muted,
+                      letterSpacing: 1.0,
+                    ),
                   ),
                 ],
               ],
@@ -1505,9 +1536,7 @@ class _F1GridRow extends StatelessWidget {
               style: Cyber.display(
                 12,
                 color: isPole ? Cyber.gold : Cyber.muted,
-              ).copyWith(
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
           ],
         ],
@@ -1521,7 +1550,9 @@ List<F1SessionResult> _f1QualifyingSessions(List<F1SessionResult>? sessions) {
   return sessions.where((s) => s.isQualifying).toList(growable: false);
 }
 
-List<F1SessionResult> _f1NonQualifyingSessions(List<F1SessionResult>? sessions) {
+List<F1SessionResult> _f1NonQualifyingSessions(
+  List<F1SessionResult>? sessions,
+) {
   if (sessions == null || sessions.isEmpty) return const [];
   return sessions.where((s) => !s.isQualifying).toList(growable: false);
 }
@@ -1532,9 +1563,7 @@ _parseF1ResultEntry(String entry) {
   final int? position = positionMatch == null
       ? null
       : int.tryParse(positionMatch.group(1)!);
-  final stripped = entry
-      .replaceFirst(RegExp(r'^\s*\d+[.)]\s*'), '')
-      .trim();
+  final stripped = entry.replaceFirst(RegExp(r'^\s*\d+[.)]\s*'), '').trim();
   final timeMatch = RegExp(r'\(([^)]+)\)\s*$').firstMatch(stripped);
   final String? time = timeMatch?.group(1)?.trim();
   final withoutTime = timeMatch == null
@@ -1546,7 +1575,9 @@ _parseF1ResultEntry(String entry) {
   return (
     position: position,
     driver: driver.isEmpty ? entry : driver,
-    constructor: constructor == null || constructor.isEmpty ? null : constructor,
+    constructor: constructor == null || constructor.isEmpty
+        ? null
+        : constructor,
     time: time == null || time.isEmpty ? null : time,
   );
 }

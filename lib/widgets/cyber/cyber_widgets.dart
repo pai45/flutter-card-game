@@ -1397,6 +1397,57 @@ class CyberPanel extends StatelessWidget {
   }
 }
 
+/// Data-dense match report panel with the shared telemetry header treatment.
+/// Static reports stay calm; opt into [glow] only for an active graph reveal.
+class CyberHudPanel extends StatelessWidget {
+  const CyberHudPanel({
+    required this.title,
+    required this.code,
+    required this.child,
+    this.accent = Cyber.cyan,
+    this.glow = false,
+    super.key,
+  });
+
+  final String title;
+  final String code;
+  final Widget child;
+  final Color accent;
+  final bool glow;
+
+  @override
+  Widget build(BuildContext context) {
+    return CyberPanel(
+      accent: accent,
+      glow: glow,
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(width: 18, height: 2, color: accent),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title.toUpperCase(),
+                  style: Cyber.label(10, color: accent, letterSpacing: 1.3),
+                ),
+              ),
+              Text(
+                code,
+                style: Cyber.label(7.5, color: Cyber.muted, letterSpacing: 0.6),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
 /// Matchmaking identity banner: an octagonal avatar overlaps a long chamfered
 /// plate, with an optional detached progression badge. Mirror the composition
 /// for the away side so both identities face the central VS marker.

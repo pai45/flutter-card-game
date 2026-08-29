@@ -1,13 +1,25 @@
 import 'package:flutter/material.dart';
 
 import 'basketball_scorecard.dart';
+import 'basketball_match_data.dart';
+import 'cricket_match_data.dart';
 import 'cricket_scorecard.dart';
+import 'football_match_data.dart';
 import 'tennis_scorecard.dart';
 
 /// Lifecycle of a fixture, which drives whether a prediction can still be made.
 enum MatchStatus { upcoming, live, finished }
 
-enum MatchEventType { goal, yellowCard, redCard, substitution }
+enum MatchEventType {
+  kickoff,
+  goal,
+  yellowCard,
+  redCard,
+  substitution,
+  halftime,
+  secondHalf,
+  fullTime,
+}
 
 class MatchEvent {
   const MatchEvent({
@@ -16,13 +28,30 @@ class MatchEvent {
     required this.playerName,
     required this.type,
     this.secondaryPlayerName,
+    this.displayMinute,
+    this.clockSeconds,
+    this.period,
+    this.label,
+    this.teamName,
+    this.scoreDisplay,
+    this.description,
   });
 
   final int minute;
   final bool isHomeTeam;
   final String playerName;
   final MatchEventType type;
-  final String? secondaryPlayerName; // Used for substitution (e.g. player subbed off)
+  final String?
+  secondaryPlayerName; // Used for substitution (e.g. player subbed off)
+  final String? displayMinute;
+  final int? clockSeconds;
+  final int? period;
+  final String? label;
+  final String? teamName;
+  final String? scoreDisplay;
+  final String? description;
+
+  String get minuteLabel => displayMinute ?? "$minute'";
 }
 
 class MatchCommentary {
@@ -32,12 +61,28 @@ class MatchCommentary {
     this.shortText,
     this.scoreValue,
     this.isWicket = false,
+    this.sequence,
+    this.clockSeconds,
+    this.period,
+    this.kind,
+    this.teamName,
+    this.isHomeTeam,
+    this.players = const [],
+    this.playId,
   });
   final String minute;
   final String text;
   final String? shortText;
   final int? scoreValue;
   final bool isWicket;
+  final int? sequence;
+  final int? clockSeconds;
+  final int? period;
+  final String? kind;
+  final String? teamName;
+  final bool? isHomeTeam;
+  final List<String> players;
+  final String? playId;
 }
 
 class MatchPlayer {
@@ -49,6 +94,9 @@ class MatchPlayer {
     this.imageUrl,
     this.role,
     this.isCaptain = false,
+    this.shortName,
+    this.formationPlace,
+    this.source,
   });
   final String id;
   final String name;
@@ -57,6 +105,9 @@ class MatchPlayer {
   final String? imageUrl;
   final String? role;
   final bool isCaptain;
+  final String? shortName;
+  final String? formationPlace;
+  final String? source;
 }
 
 class MatchLineup {
@@ -65,11 +116,17 @@ class MatchLineup {
     required this.startingXI,
     this.substitutes = const [],
     this.manager,
+    this.confirmed = false,
+    this.source,
+    this.reportedPlayerCount,
   });
   final String formation; // e.g. "4-3-3"
   final List<MatchPlayer> startingXI; // Always 11 players
   final List<MatchPlayer> substitutes; // Bench players
   final String? manager; // Manager/Coach name
+  final bool confirmed;
+  final String? source;
+  final int? reportedPlayerCount;
 }
 
 /// One head-to-head statistic — the same metric for both sides, ready to draw
@@ -101,10 +158,7 @@ class TeamStatLine {
 }
 
 class F1SessionResult {
-  const F1SessionResult({
-    required this.name,
-    required this.results,
-  });
+  const F1SessionResult({required this.name, required this.results});
   final String name; // e.g. "Practice 1", "Qualifying", ESPN abbr "QUAL"
   final List<String> results; // e.g. ["1. Verstappen", "2. Hamilton"]
 
@@ -179,6 +233,10 @@ class SportMatch {
     this.tennisScorecard,
     this.commentary,
     this.teamStats,
+    this.footballDetails,
+    this.footballMomentum,
+    this.basketballDetails,
+    this.cricketDetails,
     this.f1Sessions,
     this.f1DriverStandings,
     this.f1WeekendEndDate,
@@ -231,6 +289,11 @@ class SportMatch {
   /// bars on the STATS tab. Null when the feed carries no stats for the tie.
   final List<TeamStatLine>? teamStats;
 
+  final FootballMatchDetails? footballDetails;
+  final FootballMomentum? footballMomentum;
+  final BasketballMatchDetails? basketballDetails;
+  final CricketMatchDetails? cricketDetails;
+
   /// F1 Driver Standings.
   final List<String>? f1DriverStandings;
 
@@ -271,6 +334,10 @@ class SportMatch {
     TennisScorecard? tennisScorecard,
     List<MatchCommentary>? commentary,
     List<TeamStatLine>? teamStats,
+    FootballMatchDetails? footballDetails,
+    FootballMomentum? footballMomentum,
+    BasketballMatchDetails? basketballDetails,
+    CricketMatchDetails? cricketDetails,
     List<F1SessionResult>? f1Sessions,
     List<String>? f1DriverStandings,
     DateTime? f1WeekendEndDate,
@@ -281,6 +348,8 @@ class SportMatch {
     bool clearResultLine = false,
     bool clearLiveLastUpdated = false,
     bool clearLiveStatusNote = false,
+    bool clearBasketballDetails = false,
+    bool clearCricketDetails = false,
   }) => SportMatch(
     id: id ?? this.id,
     leagueId: leagueId ?? this.leagueId,
@@ -308,6 +377,14 @@ class SportMatch {
     tennisScorecard: tennisScorecard ?? this.tennisScorecard,
     commentary: commentary ?? this.commentary,
     teamStats: teamStats ?? this.teamStats,
+    footballDetails: footballDetails ?? this.footballDetails,
+    footballMomentum: footballMomentum ?? this.footballMomentum,
+    basketballDetails: clearBasketballDetails
+        ? null
+        : basketballDetails ?? this.basketballDetails,
+    cricketDetails: clearCricketDetails
+        ? null
+        : cricketDetails ?? this.cricketDetails,
     f1Sessions: f1Sessions ?? this.f1Sessions,
     f1DriverStandings: f1DriverStandings ?? this.f1DriverStandings,
     f1WeekendEndDate: f1WeekendEndDate ?? this.f1WeekendEndDate,
