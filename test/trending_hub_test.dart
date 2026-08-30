@@ -82,8 +82,9 @@ void main() {
     final hubTabs = find.byType(SportHubTabs);
     expect(
       find.descendant(of: hubTabs, matching: find.byType(Icon)),
-      findsNWidgets(6),
+      findsNWidgets(7),
     );
+    expect(find.byKey(const ValueKey('match-search-button')), findsOneWidget);
     expect(
       find.descendant(
         of: hubTabs,
@@ -429,6 +430,7 @@ class _HubHarnessState extends State<_HubHarness> {
       onOpenMatch: (match) => openedMatchId = match.id,
       onOpenMarket: (marketId) => openedMarketId = marketId,
       onOpenLeague: (League _) {},
+      onOpenLeagueGames: (League _) {},
       onOpenGame: () => pitchDuelOpens++,
       onOpenShootout: () => shootoutOpens++,
       onOpenQuiz: (sport) => openedQuizSport = sport,

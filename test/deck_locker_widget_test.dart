@@ -1,9 +1,12 @@
 import 'package:card_game/blocs/final_over/final_over_cubit.dart';
 import 'package:card_game/blocs/game/game_bloc.dart';
 import 'package:card_game/blocs/game/game_state.dart';
+import 'package:card_game/models/deck.dart';
+import 'package:card_game/models/sport_match.dart';
 import 'package:card_game/screens/deck/all_decks_screen.dart';
 import 'package:card_game/screens/profile/widgets/all_decks_profile_card.dart';
 import 'package:card_game/services/secure_storage_service.dart';
+import 'package:card_game/widgets/cyber/cyber_cta_button.dart';
 import 'package:card_game/widgets/cyber/cyber_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -47,7 +50,7 @@ void main() {
     expect(opened, isTrue);
   });
 
-  testWidgets('Deck Locker renders all five locked sport channels', (
+  testWidgets('Deck Locker opens on the football tab, locked', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(430, 1500);
@@ -62,16 +65,54 @@ void main() {
     addTearDown(harness.dispose);
 
     expect(find.text('DECK LOCKER'), findsOneWidget);
-    expect(find.text('FOOTBALL'), findsOneWidget);
-    expect(find.text('CRICKET'), findsOneWidget);
-    expect(find.text('BASKETBALL'), findsOneWidget);
-    expect(find.text('TENNIS'), findsOneWidget);
-    expect(find.text('F1 / RACING'), findsOneWidget);
-    expect(find.text('LOCKED'), findsNWidgets(5));
-    expect(find.text('OPEN THE STARTER PACK IN GAMES'), findsNWidgets(5));
+    expect(find.text('FOOTBALL SQUAD LOCKED'), findsOneWidget);
+    expect(find.textContaining('claim your'), findsOneWidget);
+    expect(find.text('PLAY FOOTBALL'), findsOneWidget);
   });
 
-  testWidgets('unlocked football channel opens management mode', (
+  testWidgets('sport tabs switch between locked loadouts', (tester) async {
+    tester.view.physicalSize = const Size(430, 1500);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final harness = await _pumpLocker(
+      tester,
+      GameState.initial().copyWith(loading: false),
+    );
+    addTearDown(harness.dispose);
+
+    expect(find.text('FOOTBALL SQUAD LOCKED'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.sports_cricket));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('CRICKET SQUAD LOCKED'), findsOneWidget);
+    expect(find.text('PLAY CRICKET'), findsOneWidget);
+  });
+
+  testWidgets('locked tab CTA routes to that sport\'s GAMES tab', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(430, 1500);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    Sport? playedSport;
+    final harness = await _pumpLocker(
+      tester,
+      GameState.initial().copyWith(loading: false),
+      onPlaySport: (sport) => playedSport = sport,
+    );
+    addTearDown(harness.dispose);
+
+    await tester.tap(find.text('PLAY FOOTBALL'));
+    expect(playedSport, Sport.football);
+  });
+
+  testWidgets('unlocked football channel shows the real squad and opens management mode', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(430, 1100);
@@ -79,20 +120,29 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
+    final startingSlot = defaultDeckSlots.first;
     final harness = await _pumpLocker(
       tester,
       GameState.initial().copyWith(
         loading: false,
         starterPackClaimed: true,
+        // Readiness also requires ownership, not just deck-slot assignment —
+        // mirror what claiming the starter pack actually grants.
+        ownedCardIds: [
+          ...startingSlot.attackers,
+          ...startingSlot.defenders,
+          if (startingSlot.keeper != null) startingSlot.keeper!,
+        ],
+        ownedActionCardIds: startingSlot.actions,
       ),
     );
     addTearDown(harness.dispose);
-    final footballCard = find.ancestor(
-      of: find.text('FOOTBALL'),
-      matching: find.byType(PressableScale),
-    );
 
-    await tester.tap(footballCard.first);
+    expect(find.text('FOOTBALL SQUAD LOCKED'), findsNothing);
+    expect(find.text('EDIT LOADOUT'), findsOneWidget);
+    expect(find.byType(CyberPlayerCardTile), findsWidgets);
+
+    await tester.tap(find.byType(HudCtaButton));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
 
@@ -141,8 +191,9 @@ void main() {
 
 Future<_LockerHarness> _pumpLocker(
   WidgetTester tester,
-  GameState state,
-) async {
+  GameState state, {
+  ValueChanged<Sport>? onPlaySport,
+}) async {
   final storage = SecureGameStorage();
   final game = GameBloc(storage)..emit(state);
   final finalOver = FinalOverCubit(storage);
@@ -153,7 +204,12 @@ Future<_LockerHarness> _pumpLocker(
         BlocProvider.value(value: game),
         BlocProvider.value(value: finalOver),
       ],
-      child: MaterialApp(home: AllDecksScreen(onBack: () {})),
+      child: MaterialApp(
+        home: AllDecksScreen(
+          onBack: () {},
+          onPlaySport: onPlaySport ?? (_) {},
+        ),
+      ),
     ),
   );
   await tester.pump();

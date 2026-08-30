@@ -50,6 +50,10 @@ class BasketballTeamStats {
     required this.steals,
     required this.blocks,
     required this.turnovers,
+    this.pointsInPaint,
+    this.fastBreakPoints,
+    this.turnoverPoints,
+    this.fouls,
   });
   final String fgMadeApt;
   final double fgPct;
@@ -62,6 +66,10 @@ class BasketballTeamStats {
   final int steals;
   final int blocks;
   final int turnovers;
+  final int? pointsInPaint;
+  final int? fastBreakPoints;
+  final int? turnoverPoints;
+  final int? fouls;
 }
 
 class BasketballPlayerStat {
@@ -80,6 +88,15 @@ class BasketballPlayerStat {
     required this.blocks,
     required this.fouls,
     required this.plusMinus,
+    this.id,
+    this.shortName,
+    this.jersey,
+    this.position,
+    this.didNotPlay = false,
+    this.reason,
+    this.ejected = false,
+    this.offensiveRebounds,
+    this.defensiveRebounds,
   });
   final String name;
   final bool starter;
@@ -95,4 +112,13 @@ class BasketballPlayerStat {
   final int blocks;
   final int fouls;
   final String plusMinus;
+  final String? id;
+  final String? shortName;
+  final String? jersey;
+  final String? position;
+  final bool didNotPlay;
+  final String? reason;
+  final bool ejected;
+  final int? offensiveRebounds;
+  final int? defensiveRebounds;
 }

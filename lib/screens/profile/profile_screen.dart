@@ -60,11 +60,16 @@ class ProfileScreen extends StatelessWidget {
     required this.onNavigate,
     required this.onLogout,
     required this.onChallenge,
+    required this.onOpenSportGames,
     super.key,
   });
 
   final ValueChanged<AppSection> onNavigate;
   final Future<void> Function() onLogout;
+
+  /// Routes a locked Deck Locker tab to that sport's GAMES tab, where
+  /// launching the game claims the starter pack and fills the loadout.
+  final ValueChanged<Sport> onOpenSportGames;
 
   /// Launches a card match against a CPU themed as the given rival (name,
   /// level). Threaded into the Friends Arena so a friend can be challenged.
@@ -247,6 +252,10 @@ class ProfileScreen extends StatelessWidget {
                                   context,
                                   (nav) => AllDecksScreen(
                                     onBack: () => nav(AppSection.profile),
+                                    onPlaySport: (sport) {
+                                      nav(AppSection.profile);
+                                      onOpenSportGames(sport);
+                                    },
                                   ),
                                 ),
                               ),

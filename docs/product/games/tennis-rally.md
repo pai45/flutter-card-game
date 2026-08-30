@@ -1,7 +1,7 @@
 # Tennis Rally
 
 > **Status:** BUILT
-> **Last verified:** 2026-08-09
+> **Last verified:** 2026-08-18
 > **Scope:** Tennis roster, five play modes, match engine, mastery, rewards, career, and settings
 
 ## Product Purpose
@@ -15,7 +15,9 @@ training, practice score attacks, mastery, and accessibility settings.
 Open **Sports -> Games -> Tennis -> Tennis Rally**. A free tennis starter pack
 unlocks the first athlete. The hub exposes resume, five modes, athlete choice,
 difficulty, career, trophies, mastery, achievements, and tennis-specific
-settings.
+settings. Supplied athlete portraits resolve by roster ID across collectible
+cards and tennis shop avatars; athletes without supplied art retain the existing
+fallback treatment.
 
 ## Player Flow
 

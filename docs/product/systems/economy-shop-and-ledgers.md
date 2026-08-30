@@ -1,7 +1,7 @@
 # Oz Coins, Shop, Cosmetics, Rewards, Ledgers, and Settlement
 
 > **Status:** BUILT
-> **Last verified:** 2026-08-09
+> **Last verified:** 2026-08-18
 > **Scope:** Oz Coin wallet, shop inventory, cosmetics, reward application, XP/coin history, and idempotent settlement
 
 ## Product Purpose
@@ -13,7 +13,9 @@ XP drives progression; both remain auditable through player-facing ledgers.
 ## Where It Lives
 
 Wallet balances appear across the app. The Shop has avatar, frame, banner,
-kit/livery, coin, pack, and card tabs. Profile exposes XP and Oz Coin history.
+kit/livery, coin, pack, and card tabs. Tennis avatars that have bundled player
+portraits appear in the AVATAR tab alongside the other sports, filtered by
+country. Profile exposes XP and Oz Coin history.
 Settlement helpers are used by games, predictions, picks, onboarding, referrals,
 packs, achievements, and daily mysteries.
 

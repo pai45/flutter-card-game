@@ -10,6 +10,9 @@ import '../models/sport_match.dart';
 import '../models/team_standing.dart';
 import '../models/tennis_scorecard.dart';
 import 'espn_score_service.dart';
+import 'basketball_match_package_service.dart';
+import 'cricket_match_package_service.dart';
+import 'football_match_package_service.dart';
 import 'football_question_bank.dart';
 
 /// Data seam for the prediction hub. The UI/cubit only ever talk to this
@@ -63,6 +66,24 @@ abstract interface class PredictionCatalogLookup {
 /// cricket). Single source of truth for fixtures until a backend exists.
 class MockPredictionRepository
     implements PredictionRepository, PredictionCatalogLookup {
+  MockPredictionRepository({
+    FootballMatchPackageService footballPackageService =
+        const FootballMatchPackageService(),
+    BasketballMatchPackageService basketballPackageService =
+        const BasketballMatchPackageService(),
+    CricketMatchPackageService cricketPackageService =
+        const CricketMatchPackageService(),
+  }) : _footballPackageService = footballPackageService,
+       _basketballPackageService = basketballPackageService,
+       _cricketPackageService = cricketPackageService;
+
+  final FootballMatchPackageService _footballPackageService;
+  final BasketballMatchPackageService _basketballPackageService;
+  final CricketMatchPackageService _cricketPackageService;
+  Future<SportMatch>? _bundledFootballFixture;
+  Future<SportMatch>? _bundledBasketballFixture;
+  Future<SportMatch>? _bundledCricketFixture;
+
   // ── Leagues (EPL first to match the reference order) ─────────────────────────
   static const _intl = League(
     id: '23810',
@@ -75,6 +96,12 @@ class MockPredictionRepository
     name: 'FIFA World Cup 26',
     shortCode: 'FIFA',
     accent: Color(0xff00d084),
+  );
+  static const _epl = League(
+    id: 'eng.1',
+    name: 'English Premier League',
+    shortCode: 'EPL',
+    accent: Cyber.cyan,
   );
   static const _f1 = League(
     id: 'f1',
@@ -93,6 +120,12 @@ class MockPredictionRepository
     name: 'NBA',
     shortCode: 'NBA',
     accent: Color(0xffc9082a),
+  );
+  static const _ipl = League(
+    id: 'ipl',
+    name: 'Indian Premier League',
+    shortCode: 'IPL',
+    accent: Cyber.gold,
   );
   static const _atp = League(
     id: 'atp',
@@ -3696,6 +3729,7 @@ class MockPredictionRepository
   };
 
   static const _curatedLeagues = <League>[
+    _epl,
     _fifa,
     _mls,
     _uclq,
@@ -3703,6 +3737,7 @@ class MockPredictionRepository
     _ligaMx,
     _allsvenskan,
     _eliteserien,
+    _ipl,
     _lpl,
     _pakTourWi,
     _saWomenU19TourPak,
@@ -3733,6 +3768,37 @@ class MockPredictionRepository
         .where((f) => sport == null || f.sport == sport)
         .toList();
 
+    if (sport == null || sport == Sport.football) {
+      try {
+        final bundled = await (_bundledFootballFixture ??=
+            _footballPackageService.loadBundled());
+        mockFixtures.add(bundled);
+      } catch (_) {
+        // Keep the rest of the fixture board available if the prototype asset
+        // cannot be loaded in a constrained embedder.
+      }
+    }
+    if (sport == null || sport == Sport.basketball) {
+      try {
+        mockFixtures.add(
+          await (_bundledBasketballFixture ??= _basketballPackageService
+              .loadBundled()),
+        );
+      } catch (_) {
+        // A missing prototype asset must not block live/seeded basketball.
+      }
+    }
+    if (sport == null || sport == Sport.cricket) {
+      try {
+        mockFixtures.add(
+          await (_bundledCricketFixture ??= _cricketPackageService
+              .loadBundled()),
+        );
+      } catch (_) {
+        // A missing prototype asset must not block live/seeded cricket.
+      }
+    }
+
     return List.unmodifiable(mockFixtures);
   }
 
@@ -3755,7 +3821,33 @@ class MockPredictionRepository
   }
 
   @override
-  Future<SportMatch?> fixtureById(String matchId) async => _fixtureFor(matchId);
+  Future<SportMatch?> fixtureById(String matchId) async {
+    if (matchId == FootballMatchPackageService.bundledMatchId) {
+      try {
+        return await (_bundledFootballFixture ??= _footballPackageService
+            .loadBundled());
+      } catch (_) {
+        return null;
+      }
+    }
+    if (matchId == BasketballMatchPackageService.bundledMatchId) {
+      try {
+        return await (_bundledBasketballFixture ??= _basketballPackageService
+            .loadBundled());
+      } catch (_) {
+        return null;
+      }
+    }
+    if (matchId == CricketMatchPackageService.bundledMatchId) {
+      try {
+        return await (_bundledCricketFixture ??= _cricketPackageService
+            .loadBundled());
+      } catch (_) {
+        return null;
+      }
+    }
+    return _fixtureFor(matchId);
+  }
 
   @override
   Future<PredictionQuiz?> quizFor(String matchId, String quizId) async {
@@ -3806,7 +3898,10 @@ class MockPredictionRepository
       }
     }
     for (final f in dynamicMatches) {
-      allFixturesMap[f.id] = f;
+      final duplicatesPrototype = allFixturesMap.values.any(
+        (existing) => _sameFixture(existing, f),
+      );
+      if (!duplicatesPrototype) allFixturesMap[f.id] = f;
     }
 
     final allFixturesForSport = allFixturesMap.values.toList();
@@ -3818,6 +3913,18 @@ class MockPredictionRepository
     // Merge back with other sports
     final otherFixtures = fixtures.where((f) => f.sport != sport).toList();
     return [...otherFixtures, ...enriched];
+  }
+
+  bool _sameFixture(SportMatch a, SportMatch b) {
+    if (a.sport != b.sport) return false;
+    final sameDay =
+        a.kickoff.year == b.kickoff.year &&
+        a.kickoff.month == b.kickoff.month &&
+        a.kickoff.day == b.kickoff.day;
+    if (!sameDay) return false;
+    String normalize(String value) => value.toLowerCase().replaceAll(' ', '');
+    return normalize(a.home.name) == normalize(b.home.name) &&
+        normalize(a.away.name) == normalize(b.away.name);
   }
 
   @override

@@ -1,7 +1,7 @@
 # Collections, Decks, Cards, Packs, Starter Packs, and Daily Drops
 
 > **Status:** BUILT
-> **Last verified:** 2026-08-09
+> **Last verified:** 2026-08-17
 > **Scope:** Card ownership, sport decks, pack opening, starter entitlement, duplicate handling, and daily drops
 
 ## Product Purpose
@@ -13,9 +13,27 @@ Basketball, and Tennis.
 
 ## Where It Lives
 
-Collections are exposed through All Cards, All Decks, mode-specific deck
-builders, home starter-pack onboarding, daily drops, shop packs, and pack reveal
-flows.
+Collections are exposed through All Cards, the Deck Locker (All Decks),
+mode-specific deck builders, home starter-pack onboarding, daily drops, shop
+packs, and pack reveal flows.
+
+The Deck Locker (Profile → **ALL DECKS**) is sport-tabbed, matching the GAMES
+tab's sport strip (Football, Cricket, Basketball, Tennis, Motorsport — one
+tab per sport, sliding accent-coloured underline). Each tab shows that sport's
+real equipped squad as cards (attack/defence/keeper/action-deck groups for
+Football, batting order for Cricket, rotation for Basketball, a hero athlete
+card for Tennis/Motorsport), a fill meter, and a docked **EDIT LOADOUT** /
+**BUILD LOADOUT** CTA into that sport's deck builder — the tab's one glowing
+element. A tab whose starter pack is still unclaimed shows a locked state
+(lock icon, sport-accent messaging) with a **PLAY \<SPORT\>** action that
+routes to that sport's GAMES tab, where launching the game claims the starter
+pack (see the starter-pack gates below) and returns the player to a filled
+loadout. The locker no longer exposes multi-squad slot switching or squad
+creation — that management (the `SQUAD CHANNEL` pill row and **New squad**)
+now lives only inside the football deck builder
+([`lib/screens/deck/deck_builder_screen.dart`](../../../lib/screens/deck/deck_builder_screen.dart)),
+reachable from Pitch Duel's DECK section; the underlying multi-squad model
+(`StoredDeckSlot`, `DeckCreated`/`DeckApplied`) is unchanged.
 
 ## Player Flow
 
@@ -48,7 +66,11 @@ progress, and starter-pack onboarding provide the system's main reveal moments.
 
 Unowned/owned/duplicate cards, locked/eligible deck slots, invalid/valid saved
 decks, unopened/revealing/complete packs, starter-pack eligibility, and
-available/claimed daily drops are represented.
+available/claimed daily drops are represented. The Deck Locker additionally
+renders, per sport tab: locked (starter pack unclaimed, routes to GAMES),
+unlocked-but-incomplete (`BUILD LOADOUT`, empty card slots for unfilled
+roles), and unlocked-ready (`READY` chip, `EDIT LOADOUT`, a just-saved
+confirmation seal).
 
 ## Persistence
 

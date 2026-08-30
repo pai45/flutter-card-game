@@ -775,6 +775,80 @@ class SectionLabel extends StatelessWidget {
   }
 }
 
+/// Shared compact search input for cyber/HUD catalogue screens.
+///
+/// The surface stays calm and non-glowing because search is persistent chrome;
+/// callers can reserve the screen's live emphasis for results or progress.
+class CyberSearchField extends StatelessWidget {
+  const CyberSearchField({
+    required this.controller,
+    required this.onChanged,
+    required this.onClear,
+    this.hintText = 'Search',
+    this.accent = Cyber.cyan,
+    this.focusNode,
+    this.autofocus = false,
+    this.onSubmitted,
+    super.key,
+  });
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+  final String hintText;
+  final Color accent;
+  final FocusNode? focusNode;
+  final bool autofocus;
+  final ValueChanged<String>? onSubmitted;
+
+  @override
+  Widget build(BuildContext context) {
+    return CyberPanel(
+      accent: accent,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        children: [
+          Icon(Icons.search_rounded, color: accent, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              key: const ValueKey('cyber-search-text-field'),
+              controller: controller,
+              focusNode: focusNode,
+              autofocus: autofocus,
+              onChanged: onChanged,
+              onSubmitted: onSubmitted,
+              textInputAction: TextInputAction.search,
+              cursorColor: accent,
+              style: Cyber.body(14),
+              decoration: InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                hintText: hintText,
+                hintStyle: Cyber.body(14, color: Cyber.muted),
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          ),
+          if (controller.text.isNotEmpty)
+            Semantics(
+              button: true,
+              label: 'Clear search',
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onClear,
+                child: const Padding(
+                  padding: EdgeInsets.all(4),
+                  child: Icon(Icons.close, color: Cyber.muted, size: 18),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class CyberNoDataState extends StatelessWidget {
   const CyberNoDataState({
     required this.icon,
@@ -1318,6 +1392,57 @@ class CyberPanel extends StatelessWidget {
           ),
           child: Padding(padding: padding, child: child),
         ),
+      ),
+    );
+  }
+}
+
+/// Data-dense match report panel with the shared telemetry header treatment.
+/// Static reports stay calm; opt into [glow] only for an active graph reveal.
+class CyberHudPanel extends StatelessWidget {
+  const CyberHudPanel({
+    required this.title,
+    required this.code,
+    required this.child,
+    this.accent = Cyber.cyan,
+    this.glow = false,
+    super.key,
+  });
+
+  final String title;
+  final String code;
+  final Widget child;
+  final Color accent;
+  final bool glow;
+
+  @override
+  Widget build(BuildContext context) {
+    return CyberPanel(
+      accent: accent,
+      glow: glow,
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(width: 18, height: 2, color: accent),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title.toUpperCase(),
+                  style: Cyber.label(10, color: accent, letterSpacing: 1.3),
+                ),
+              ),
+              Text(
+                code,
+                style: Cyber.label(7.5, color: Cyber.muted, letterSpacing: 0.6),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          child,
+        ],
       ),
     );
   }

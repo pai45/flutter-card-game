@@ -17,6 +17,7 @@ import 'blocs/quiz/quiz_cubit.dart';
 import 'blocs/tennis/tennis_cubit.dart';
 import 'blocs/tennis/tennis_state.dart';
 import 'config/enums.dart';
+import 'config/sport_modules.dart';
 import 'config/theme.dart';
 import 'models/league.dart';
 import 'models/oz_coin_ledger.dart';
@@ -325,6 +326,17 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     });
   }
 
+  /// Deck Locker → the sport's GAMES tab, where launching a game claims that
+  /// sport's starter pack (see `_enterCricketGameFlow` and friends below) and
+  /// fills in the loadout the player just found locked.
+  void _openSportGames(Sport sport) {
+    setState(() {
+      section = AppSection.predictions;
+      _predictionTab = 1; // GAMES (0 = MATCH)
+      _predictionGamesSportTab = hubIndexForSport(sport);
+    });
+  }
+
   /// Enter the card game ("Pitch Duel") as a full-screen pushed flow from the
   /// GAMES tab. App-level destinations selected inside it pop back and switch
   /// the shell; card-game-internal sections are handled within GameTabContent.
@@ -626,16 +638,22 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     );
   }
 
-  void _openLeague(League league) {
+  void _openLeague(League league, {bool openFixturesTab = false}) {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => BlocProvider<LeagueStatsCubit>(
           create: (_) => LeagueStatsCubit(league.id)..load(),
-          child: LeagueDetailScreen(league: league),
+          child: LeagueDetailScreen(
+            league: league,
+            openFixturesTab: openFixturesTab,
+          ),
         ),
       ),
     );
   }
+
+  void _openLeagueGames(League league) =>
+      _openLeague(league, openFixturesTab: true);
 
   @override
   Widget build(BuildContext context) {
@@ -727,6 +745,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
               onNavigate: _go,
               onLogout: _logoutFromProfile,
               onChallenge: _openChallenge,
+              onOpenSportGames: _openSportGames,
             ),
             _ => PredictionHomeScreen(
               activeTab: _predictionTab,
@@ -741,6 +760,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
               onOpenMatch: _openMatch,
               onOpenMarket: _openMarket,
               onOpenLeague: _openLeague,
+              onOpenLeagueGames: _openLeagueGames,
               onOpenGame: _openGame,
               onOpenShootout: _openShootout,
               onOpenQuiz: _openQuiz,

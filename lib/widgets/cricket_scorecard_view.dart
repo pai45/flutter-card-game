@@ -87,6 +87,8 @@ class _CricketScorecardViewState extends State<CricketScorecardView> {
         if (innings.batters.isNotEmpty) _buildBattingTable(innings),
         if (innings.didNotBat.isNotEmpty) _buildDidNotBat(innings.didNotBat),
         if (innings.fow.isNotEmpty) _buildFow(innings.fow),
+        if (innings.partnerships.isNotEmpty)
+          _buildPartnerships(innings.partnerships),
         if (innings.bowlers.isNotEmpty) ...[
           const SizedBox(height: 16),
           _buildBowlingTable(innings.bowlers),
@@ -104,23 +106,46 @@ class _CricketScorecardViewState extends State<CricketScorecardView> {
         border: Border.all(color: Cyber.border),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: Text(
-              '${innings.teamName} Innings',
-              style: Cyber.body(13, color: AppTheme.whiteColor).copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppTheme.whiteColor,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${innings.teamName} Innings',
+                  style: Cyber.body(13, color: AppTheme.whiteColor).copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.whiteColor,
+                  ),
+                ),
+                if (innings.runRate != null)
+                  Text(
+                    'RR ${innings.runRate!.toStringAsFixed(2)}'
+                    '${innings.target == null ? '' : ' // TARGET ${innings.target}'}',
+                    style: Cyber.label(8, color: Cyber.muted),
+                  ),
+              ],
             ),
           ),
-          Text(
-            innings.scoreText,
-            style: Cyber.body(
-              13,
-              color: AppTheme.whiteColor,
-            ).copyWith(fontWeight: FontWeight.w900, color: widget.accent),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                innings.scoreText,
+                textAlign: TextAlign.right,
+                style: Cyber.display(
+                  13,
+                  color: widget.accent,
+                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+              ),
+              if (innings.overs != null)
+                Text(
+                  '${innings.overs!.toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')} OV',
+                  style: Cyber.label(8, color: Cyber.muted),
+                ),
+            ],
           ),
         ],
       ),
@@ -202,6 +227,12 @@ class _CricketScorecardViewState extends State<CricketScorecardView> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
+                            Text(
+                              '${b.position == null ? '' : 'POS ${b.position} // '}${b.minutes == null ? '' : '${b.minutes} MIN // '}${b.notOut ? 'NOT OUT' : ''}${b.milestone == null ? '' : ' // ${b.milestone}'}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Cyber.label(6.8, color: Cyber.muted),
+                            ),
                           ],
                         ),
                       ),
@@ -279,9 +310,13 @@ class _CricketScorecardViewState extends State<CricketScorecardView> {
         text: TextSpan(
           style: Cyber.body(12, color: Cyber.muted),
           children: [
-            const TextSpan(
+            TextSpan(
               text: 'Yet to bat: ',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: Cyber.body(
+                12,
+                color: Cyber.muted,
+                weight: FontWeight.bold,
+              ),
             ),
             TextSpan(text: dnb.join(', ')),
           ],
@@ -297,11 +332,67 @@ class _CricketScorecardViewState extends State<CricketScorecardView> {
         text: TextSpan(
           style: Cyber.body(12, color: Cyber.muted),
           children: [
-            const TextSpan(
+            TextSpan(
               text: 'Fall of wickets: ',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: Cyber.body(
+                12,
+                color: Cyber.muted,
+                weight: FontWeight.bold,
+              ),
             ),
             TextSpan(text: fow.join(', ')),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPartnerships(List<CricketPartnership> partnerships) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Cyber.panel,
+          border: Border.all(color: Cyber.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'PARTNERSHIPS',
+              style: Cyber.label(9, color: widget.accent, letterSpacing: 1),
+            ),
+            const SizedBox(height: 8),
+            for (final partnership in partnerships)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 36,
+                      child: Text(
+                        partnership.wicket,
+                        style: Cyber.label(8, color: Cyber.muted),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        partnership.batters
+                            .map((batter) => '${batter.name} ${batter.runs}')
+                            .join(' + '),
+                        style: Cyber.body(11),
+                      ),
+                    ),
+                    Text(
+                      '${partnership.runs} (${partnership.overs.toStringAsFixed(1)} ov)',
+                      style: Cyber.display(9, color: widget.accent).copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
@@ -354,9 +445,20 @@ class _CricketScorecardViewState extends State<CricketScorecardView> {
                   children: [
                     Expanded(
                       flex: 3,
-                      child: Text(
-                        b.name,
-                        style: Cyber.body(13, color: AppTheme.whiteColor),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            b.name,
+                            style: Cyber.body(13, color: AppTheme.whiteColor),
+                          ),
+                          Text(
+                            'DOT ${b.dots ?? '-'} // WD ${b.wides ?? '-'} // NB ${b.noBalls ?? '-'} // 4C ${b.foursConceded ?? '-'} // 6C ${b.sixesConceded ?? '-'}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Cyber.label(6.5, color: Cyber.muted),
+                          ),
+                        ],
                       ),
                     ),
                     Expanded(

@@ -36,16 +36,26 @@ enum _HubTab { table, leaders, fixtures, picks }
 /// competition has no ESPN slug the table falls back to the repository-backed
 /// standings on [PredictionCubit].
 class LeagueDetailScreen extends StatefulWidget {
-  const LeagueDetailScreen({required this.league, super.key});
+  const LeagueDetailScreen({
+    required this.league,
+    this.openFixturesTab = false,
+    super.key,
+  });
 
   final League league;
+
+  /// Opens straight to the GAMES (fixtures) tab instead of the standings
+  /// table — used by the "view more" link on a league's collapsed match feed.
+  final bool openFixturesTab;
 
   @override
   State<LeagueDetailScreen> createState() => _LeagueDetailScreenState();
 }
 
 class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
-  _HubTab _tab = _HubTab.table;
+  late _HubTab _tab = widget.openFixturesTab
+      ? _HubTab.fixtures
+      : _HubTab.table;
 
   League get _league => widget.league;
   Color get _accent => _league.accent;

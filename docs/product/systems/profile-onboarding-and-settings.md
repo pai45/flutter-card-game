@@ -16,7 +16,11 @@ a welcome moment.
 Profile Setup gates first entry until onboarding is complete. Profile is a main
 destination containing the identity hero, level/wallet, following, statistics,
 achievements, histories, collections/decks, social/help shortcuts, cosmetics,
-and the current settings sheet.
+and the current settings sheet. Profile's **ALL DECKS** card opens the
+sport-tabbed **Deck Locker**; a sport tab whose starter pack is still unclaimed
+routes its **PLAY \<SPORT\>** action to that sport's GAMES tab instead of
+showing a dead-end message (see
+[`systems/collections-decks-and-packs.md`](collections-decks-and-packs.md)).
 
 ## Player Flow
 

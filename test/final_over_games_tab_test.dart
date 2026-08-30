@@ -58,6 +58,7 @@ void main() {
               onOpenMatch: (_) {},
               onOpenMarket: (_) {},
               onOpenLeague: (_) {},
+              onOpenLeagueGames: (_) {},
               onOpenGame: () {},
               onOpenShootout: () {},
               onOpenQuiz: (_) => quizOpens++,

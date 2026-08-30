@@ -39,6 +39,188 @@ const expectedCricketScopes = <String, Map<String, int>>{
   'global': {'mens_international': 325, 'womens_international': 150, 'ipl': 25},
 };
 
+const basketballAuditPath = 'tool/quiz_audit/basketball.json';
+const basketballCutoff = '2026-08-17';
+const expectedBasketballScopes = <String, Map<String, int>>{
+  'easy': {
+    'nba': 350,
+    'wnba': 50,
+    'fiba_men': 40,
+    'fiba_women': 10,
+    'ncaa_men': 20,
+    'ncaa_women': 5,
+    'euroleague_world': 25,
+  },
+  'medium': {
+    'nba': 325,
+    'wnba': 50,
+    'fiba_men': 35,
+    'fiba_women': 15,
+    'ncaa_men': 35,
+    'ncaa_women': 15,
+    'euroleague_world': 25,
+  },
+  'hard': {
+    'nba': 300,
+    'wnba': 50,
+    'fiba_men': 40,
+    'fiba_women': 20,
+    'ncaa_men': 35,
+    'ncaa_women': 15,
+    'euroleague_world': 40,
+  },
+  'global': {
+    'nba': 125,
+    'wnba': 75,
+    'fiba_men': 120,
+    'fiba_women': 55,
+    'ncaa_men': 25,
+    'ncaa_women': 25,
+    'euroleague_world': 75,
+  },
+};
+
+const motorsportAuditPath = 'tool/quiz_audit/motorsport.json';
+const motorsportCutoff = '2026-08-19';
+const expectedMotorsportScopes = <String, Map<String, int>>{
+  'easy': {
+    'f1': 300,
+    'motogp': 55,
+    'nascar': 50,
+    'indycar': 40,
+    'endurance': 30,
+    'rally': 15,
+    'feeder_other': 10,
+  },
+  'medium': {
+    'f1': 285,
+    'motogp': 55,
+    'nascar': 50,
+    'indycar': 45,
+    'endurance': 40,
+    'rally': 15,
+    'feeder_other': 10,
+  },
+  'hard': {
+    'f1': 265,
+    'motogp': 55,
+    'nascar': 50,
+    'indycar': 45,
+    'endurance': 45,
+    'rally': 25,
+    'feeder_other': 15,
+  },
+  'global': {
+    'f1': 135,
+    'motogp': 80,
+    'nascar': 45,
+    'indycar': 50,
+    'endurance': 85,
+    'rally': 60,
+    'feeder_other': 45,
+  },
+};
+
+const tennisAuditPath = 'tool/quiz_audit/tennis.json';
+const tennisCutoff = '2026-08-21';
+const expectedTennisScopes = <String, Map<String, int>>{
+  'easy': {
+    'atp': 240,
+    'wta': 100,
+    'majors_events': 60,
+    'team_events': 30,
+    'doubles': 25,
+    'rules_terms': 35,
+    'world_other': 10,
+  },
+  'medium': {
+    'atp': 245,
+    'wta': 110,
+    'majors_events': 55,
+    'team_events': 35,
+    'doubles': 30,
+    'rules_terms': 15,
+    'world_other': 10,
+  },
+  'hard': {
+    'atp': 250,
+    'wta': 110,
+    'majors_events': 50,
+    'team_events': 35,
+    'doubles': 35,
+    'rules_terms': 5,
+    'world_other': 15,
+  },
+  'global': {
+    'atp': 130,
+    'wta': 105,
+    'majors_events': 50,
+    'team_events': 90,
+    'doubles': 55,
+    'rules_terms': 10,
+    'world_other': 60,
+  },
+};
+
+final class AuditSpec {
+  const AuditSpec({
+    required this.sport,
+    required this.path,
+    required this.cutoff,
+    required this.expectedScopes,
+    this.requirePrimarySource = false,
+    this.requireContextMetadata = false,
+    this.requireDistinctFacts = false,
+  });
+
+  final String sport;
+  final String path;
+  final String cutoff;
+  final Map<String, Map<String, int>> expectedScopes;
+  final bool requirePrimarySource;
+  final bool requireContextMetadata;
+
+  /// Rejects re-worded duplicates of an existing fact. Cricket and basketball
+  /// pad short pools by rephrasing a seed fact up to eight ways; motorsport
+  /// does not, and this keeps that guarantee enforced rather than conventional.
+  final bool requireDistinctFacts;
+}
+
+const auditedSports = [
+  AuditSpec(
+    sport: 'cricket',
+    path: cricketAuditPath,
+    cutoff: cricketCutoff,
+    expectedScopes: expectedCricketScopes,
+  ),
+  AuditSpec(
+    sport: 'basketball',
+    path: basketballAuditPath,
+    cutoff: basketballCutoff,
+    expectedScopes: expectedBasketballScopes,
+    requirePrimarySource: true,
+    requireContextMetadata: true,
+  ),
+  AuditSpec(
+    sport: 'motorsport',
+    path: motorsportAuditPath,
+    cutoff: motorsportCutoff,
+    expectedScopes: expectedMotorsportScopes,
+    requirePrimarySource: true,
+    requireContextMetadata: true,
+    requireDistinctFacts: true,
+  ),
+  AuditSpec(
+    sport: 'tennis',
+    path: tennisAuditPath,
+    cutoff: tennisCutoff,
+    expectedScopes: expectedTennisScopes,
+    requirePrimarySource: true,
+    requireContextMetadata: true,
+    requireDistinctFacts: true,
+  ),
+];
+
 const bandNames = [
   'FOUNDATION',
   'PROSPECT',
@@ -133,7 +315,9 @@ void main() {
     }
   }
 
-  _checkCricketAudit();
+  for (final spec in auditedSports) {
+    _checkAudit(spec);
+  }
 
   _printCoverage(coverage, totalQuestions);
 
@@ -189,7 +373,9 @@ void _checkBand(
     }
     if (scope.startsWith('cricket/') &&
         prompt.toLowerCase().contains('hypothetical')) {
-      errors.add('$where — cricket questions must use recorded facts, not hypothetical scenarios');
+      errors.add(
+        '$where — cricket questions must use recorded facts, not hypothetical scenarios',
+      );
     }
 
     if (options is! List || options.length != optionCount) {
@@ -293,11 +479,13 @@ void _printCoverage(Map<String, Map<String, int>> coverage, int total) {
 
 String _bar(int bands) => '${'#' * bands}${'.' * (bandCount - bands)}';
 
-void _checkCricketAudit() {
-  final relativePath = cricketAuditPath;
+void _checkAudit(AuditSpec spec) {
+  final relativePath = spec.path;
   final file = File('$repoRoot/$relativePath');
   if (!file.existsSync()) {
-    errors.add('$relativePath — required cricket audit ledger is missing');
+    errors.add(
+      '$relativePath — required ${spec.sport} audit ledger is missing',
+    );
     return;
   }
 
@@ -309,13 +497,13 @@ void _checkCricketAudit() {
     return;
   }
 
-  if (audit['sport'] != 'cricket') {
-    errors.add('$relativePath — "sport" must be cricket');
+  if (audit['sport'] != spec.sport) {
+    errors.add('$relativePath — "sport" must be ${spec.sport}');
   }
-  if (audit['factualCutoff'] != cricketCutoff) {
+  if (audit['factualCutoff'] != spec.cutoff) {
     errors.add(
       '$relativePath — factualCutoff is ${audit['factualCutoff']}, '
-      'expected $cricketCutoff',
+      'expected ${spec.cutoff}',
     );
   }
   final sources = audit['sources'];
@@ -331,7 +519,10 @@ void _checkCricketAudit() {
 
   for (final entry in sources.entries) {
     final value = entry.value;
-    if (value is! Map || value['title'] is! String || value['url'] is! String) {
+    if (value is! Map ||
+        value['title'] is! String ||
+        value['url'] is! String ||
+        (spec.requirePrimarySource && value['kind'] != 'primary')) {
       errors.add('$relativePath — source ${entry.key} is malformed');
       continue;
     }
@@ -347,11 +538,11 @@ void _checkCricketAudit() {
   final factKeys = <String, String>{};
   final scopeCounts = <String, Map<String, int>>{
     for (final mode in modes)
-      mode: {'mens_international': 0, 'womens_international': 0, 'ipl': 0},
+      mode: {for (final scope in spec.expectedScopes[mode]!.keys) scope: 0},
   };
 
   for (final mode in modes) {
-    final bank = File(bankPath('cricket', mode));
+    final bank = File(bankPath(spec.sport, mode));
     if (!bank.existsSync()) continue;
     final json = jsonDecode(bank.readAsStringSync()) as Map<String, dynamic>;
     final bands = json['bands'] as Map;
@@ -362,7 +553,8 @@ void _checkCricketAudit() {
       final answerCounts = List<int>.filled(optionCount, 0);
       for (var index = 0; index < entries.length; index++) {
         number++;
-        final id = 'cricket_${mode}_q${number.toString().padLeft(3, '0')}';
+        final id =
+            '${spec.sport}_${mode}_q${number.toString().padLeft(3, '0')}';
         expectedIds.add(id);
         final where = '$relativePath $id';
         final authored = entries[index];
@@ -389,16 +581,25 @@ void _checkCricketAudit() {
             'o[a] "$mappedAnswer"',
           );
         }
-        if (record['cutoff'] != cricketCutoff) {
-          errors.add('$where — cutoff must be $cricketCutoff');
+        if (record['cutoff'] != spec.cutoff) {
+          errors.add('$where — cutoff must be ${spec.cutoff}');
         }
 
         final factKey = record['factKey'];
         if (factKey is! String || factKey.isEmpty) {
           errors.add('$where — factKey must be a non-empty string');
         } else {
+          if (spec.requireDistinctFacts &&
+              RegExp(r'^(v\d+|fact-\d+)-').hasMatch(factKey)) {
+            errors.add(
+              '$where — ${spec.sport} must author distinct facts, but '
+              'factKey "$factKey" is a re-worded variant',
+            );
+          }
           if (factKey.startsWith('scenario-')) {
-            errors.add('$where — cricket factKey must not identify a scenario');
+            errors.add(
+              '$where — ${spec.sport} factKey must not identify a scenario',
+            );
           }
           final previous = factKeys[factKey];
           if (previous != null) {
@@ -428,21 +629,38 @@ void _checkCricketAudit() {
           );
         }
 
+        if (spec.requireContextMetadata) {
+          final competition = record['competition'];
+          final season = record['season'];
+          if (competition is! String || competition.trim().isEmpty) {
+            errors.add('$where — competition must be a non-empty string');
+          }
+          if (season is! String || season.trim().isEmpty) {
+            errors.add('$where — season must be a non-empty string');
+          }
+        }
+
         final refs = record['sources'];
         if (refs is! List || refs.length < 2) {
           errors.add('$where — at least two source references are required');
         } else {
+          var hasPrimary = false;
           for (final ref in refs) {
             if (ref is! String || !sources.containsKey(ref)) {
               errors.add('$where — unknown source reference "$ref"');
+            } else if ((sources[ref] as Map)['kind'] == 'primary') {
+              hasPrimary = true;
             }
+          }
+          if (spec.requirePrimarySource && !hasPrimary) {
+            errors.add('$where — at least one primary source is required');
           }
         }
       }
       for (var answerIndex = 0; answerIndex < optionCount; answerIndex++) {
         if (answerCounts[answerIndex] != bandSize ~/ optionCount) {
           errors.add(
-            'assets/quiz/cricket_$mode.json band $band — answer index '
+            'assets/quiz/${spec.sport}_$mode.json band $band — answer index '
             '$answerIndex occurs ${answerCounts[answerIndex]} times, expected 25',
           );
         }
@@ -462,7 +680,7 @@ void _checkCricketAudit() {
     }
   }
   for (final mode in modes) {
-    final expected = expectedCricketScopes[mode]!;
+    final expected = spec.expectedScopes[mode]!;
     final actual = scopeCounts[mode]!;
     for (final scope in expected.keys) {
       if (actual[scope] != expected[scope]) {

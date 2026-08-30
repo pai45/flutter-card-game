@@ -73,6 +73,7 @@ void main() {
               onOpenMatch: (_) {},
               onOpenMarket: (_) {},
               onOpenLeague: (_) {},
+              onOpenLeagueGames: (_) {},
               onOpenGame: () => pitchDuelOpens++,
               onOpenShootout: () => penaltyShootoutOpens++,
               onOpenQuiz: (sport) {
@@ -239,7 +240,7 @@ void main() {
     expect(find.text('RACE NOW'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('grand-prix-dash-hero-card')));
     expect(grandPrixOpens, 1);
-    final f1QuizCard = find.byKey(const ValueKey('f1-quiz-grid-card'));
+    final f1QuizCard = find.byKey(const ValueKey('motorsport-quiz-grid-card'));
     await tester.scrollUntilVisible(
       f1QuizCard,
       180,

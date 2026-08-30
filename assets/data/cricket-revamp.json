@@ -1,0 +1,2475 @@
+{
+  "matchDetails": {
+    "gameType": "cricket",
+    "league": "Indian Premier League",
+    "leagueAbbreviation": "IPL",
+    "season": 2026,
+    "title": "Royal Challengers Bengaluru v Gujarat Titans",
+    "stage": "Final",
+    "format": "T20",
+    "formatName": "Twenty20 matches",
+    "limitedOvers": true,
+    "date": "2026-05-31",
+    "time": "14:00",
+    "start": "2026-05-31T14:00Z",
+    "end": "2026-06-01T23:59Z",
+    "status": "Result",
+    "state": "post",
+    "completed": true,
+    "result": "RCB won by 5 wkts (12b rem)",
+    "seriesNote": "Royal Challengers Bengaluru won the 2026 Indian Premier League",
+    "location": {
+      "venue": "Narendra Modi Stadium, Motera, Ahmedabad",
+      "city": "Ahmedabad",
+      "country": "India",
+      "neutralSite": true
+    },
+    "attendance": null,
+    "toss": {
+      "team": "Royal Challengers Bengaluru",
+      "decision": "bowl"
+    },
+    "score": {
+      "home": {
+        "team": "Royal Challengers Bengaluru",
+        "abbreviation": "RCB",
+        "teamId": "335970",
+        "score": "161/5 (18/20 ov, target 156)",
+        "runs": 161,
+        "wickets": 5,
+        "overs": 18,
+        "innings": [
+          2
+        ]
+      },
+      "away": {
+        "team": "Gujarat Titans",
+        "abbreviation": "GT",
+        "teamId": "1298769",
+        "score": "155/8",
+        "runs": 155,
+        "wickets": 8,
+        "overs": 20,
+        "innings": [
+          1
+        ]
+      },
+      "display": "RCB 161/5 (18/20 ov, target 156) v GT 155/8",
+      "winner": "Royal Challengers Bengaluru",
+      "winnerId": "335970"
+    },
+    "innings": [
+      {
+        "innings": 1,
+        "team": "Gujarat Titans",
+        "teamId": "1298769",
+        "abbreviation": "GT",
+        "runs": 155,
+        "wickets": 8,
+        "overs": 20,
+        "fours": 15,
+        "sixes": 3,
+        "target": null,
+        "score": "155/8",
+        "description": "complete",
+        "current": false
+      },
+      {
+        "innings": 2,
+        "team": "Royal Challengers Bengaluru",
+        "teamId": "335970",
+        "abbreviation": "RCB",
+        "runs": 161,
+        "wickets": 5,
+        "overs": 18,
+        "fours": 18,
+        "sixes": 7,
+        "target": 156,
+        "score": "161/5 (18/20 ov, target 156)",
+        "description": "target reached",
+        "current": true
+      }
+    ],
+    "playerOfTheMatch": {
+      "id": "253802",
+      "name": "Virat Kohli",
+      "award": "Player Of The Match",
+      "team": "Royal Challengers Bengaluru",
+      "teamId": "335970"
+    },
+    "playerOfTheSeries": {
+      "id": "1408688",
+      "name": "Vaibhav Sooryavanshi",
+      "award": "Player Of The Series",
+      "team": "Rajasthan Royals",
+      "teamId": "335977"
+    },
+    "officials": [
+      {
+        "name": "KN Ananthapadmanabhan",
+        "role": "umpire",
+        "country": "India"
+      },
+      {
+        "name": "Nitin Menon",
+        "role": "umpire",
+        "country": "India"
+      },
+      {
+        "name": "Jayaraman Madanagopal",
+        "role": "tv umpire",
+        "country": "India"
+      },
+      {
+        "name": "Javagal Srinath",
+        "role": "referee",
+        "country": "India"
+      },
+      {
+        "name": "Virender Sharma",
+        "role": "reserve umpire",
+        "country": "India"
+      },
+      {
+        "name": "Vaibhav Sooryavanshi",
+        "role": "non-playing award",
+        "country": "India"
+      }
+    ]
+  },
+  "teamStats": [
+    {
+      "name": "runs",
+      "label": "Runs",
+      "available": true,
+      "home": 161,
+      "away": 155,
+      "higher": "home"
+    },
+    {
+      "name": "wickets",
+      "label": "Wickets Lost",
+      "available": true,
+      "home": 5,
+      "away": 8,
+      "higher": "away"
+    },
+    {
+      "name": "overs",
+      "label": "Overs",
+      "available": true,
+      "home": 18,
+      "away": 20,
+      "higher": "away"
+    },
+    {
+      "name": "runRate",
+      "label": "Run Rate",
+      "available": true,
+      "home": 8.94,
+      "away": 7.75,
+      "higher": "home"
+    },
+    {
+      "name": "fours",
+      "label": "Fours",
+      "available": true,
+      "home": 18,
+      "away": 15,
+      "higher": "home"
+    },
+    {
+      "name": "sixes",
+      "label": "Sixes",
+      "available": true,
+      "home": 7,
+      "away": 3,
+      "higher": "home"
+    },
+    {
+      "name": "extras",
+      "label": "Extras",
+      "available": true,
+      "home": 2,
+      "away": 5,
+      "higher": "away"
+    }
+  ],
+  "innings": [
+    {
+      "innings": 1,
+      "team": "Gujarat Titans",
+      "teamId": "1298769",
+      "abbreviation": "GT",
+      "runs": 155,
+      "wickets": 8,
+      "overs": 20,
+      "fours": 15,
+      "sixes": 3,
+      "target": null,
+      "score": "155/8",
+      "description": "complete",
+      "current": false
+    },
+    {
+      "innings": 2,
+      "team": "Royal Challengers Bengaluru",
+      "teamId": "335970",
+      "abbreviation": "RCB",
+      "runs": 161,
+      "wickets": 5,
+      "overs": 18,
+      "fours": 18,
+      "sixes": 7,
+      "target": 156,
+      "score": "161/5 (18/20 ov, target 156)",
+      "description": "target reached",
+      "current": true
+    }
+  ],
+  "scorecard": [
+    {
+      "innings": 1,
+      "battingTeam": "Gujarat Titans",
+      "battingTeamId": "1298769",
+      "bowlingTeam": "Royal Challengers Bengaluru",
+      "bowlingTeamId": "335970",
+      "runs": 155,
+      "wickets": 8,
+      "overs": 20,
+      "runRate": 7.75,
+      "target": null,
+      "score": "155/8",
+      "extras": {
+        "total": 5,
+        "wides": 4,
+        "noballs": 0,
+        "byes": 0,
+        "legByes": 1
+      },
+      "batting": [
+        {
+          "id": "1151288",
+          "name": "Sai Sudharsan",
+          "innings": 1,
+          "position": 1,
+          "runs": 12,
+          "balls": 12,
+          "fours": 2,
+          "sixes": 0,
+          "strikeRate": 100,
+          "minutes": 20,
+          "dismissal": "c",
+          "notOut": false,
+          "milestone": null,
+          "score": "12 (12)"
+        },
+        {
+          "id": "1070173",
+          "name": "Shubman Gill",
+          "innings": 1,
+          "position": 2,
+          "runs": 10,
+          "balls": 8,
+          "fours": 2,
+          "sixes": 0,
+          "strikeRate": 125,
+          "minutes": 13,
+          "dismissal": "c",
+          "notOut": false,
+          "milestone": null,
+          "score": "10 (8)"
+        },
+        {
+          "id": "1292506",
+          "name": "Nishant Sindhu",
+          "innings": 1,
+          "position": 3,
+          "runs": 20,
+          "balls": 18,
+          "fours": 3,
+          "sixes": 0,
+          "strikeRate": 111.11,
+          "minutes": 26,
+          "dismissal": "c",
+          "notOut": false,
+          "milestone": null,
+          "score": "20 (18)"
+        },
+        {
+          "id": "308967",
+          "name": "Jos Buttler",
+          "innings": 1,
+          "position": 4,
+          "runs": 19,
+          "balls": 23,
+          "fours": 1,
+          "sixes": 0,
+          "strikeRate": 82.6,
+          "minutes": 40,
+          "dismissal": "st",
+          "notOut": false,
+          "milestone": null,
+          "score": "19 (23)"
+        },
+        {
+          "id": "719715",
+          "name": "Washington Sundar",
+          "innings": 1,
+          "position": 5,
+          "runs": 50,
+          "balls": 37,
+          "fours": 5,
+          "sixes": 0,
+          "strikeRate": 135.13,
+          "minutes": 66,
+          "dismissal": "not out",
+          "notOut": true,
+          "milestone": "fifty",
+          "score": "50* (37)"
+        },
+        {
+          "id": "1244751",
+          "name": "Arshad Khan",
+          "innings": 1,
+          "position": 6,
+          "runs": 15,
+          "balls": 6,
+          "fours": 0,
+          "sixes": 2,
+          "strikeRate": 250,
+          "minutes": 10,
+          "dismissal": "c",
+          "notOut": false,
+          "milestone": null,
+          "score": "15 (6)"
+        },
+        {
+          "id": "423838",
+          "name": "Rahul Tewatia",
+          "innings": 1,
+          "position": 7,
+          "runs": 7,
+          "balls": 5,
+          "fours": 1,
+          "sixes": 0,
+          "strikeRate": 140,
+          "minutes": 12,
+          "dismissal": "c",
+          "notOut": false,
+          "milestone": null,
+          "score": "7 (5)"
+        },
+        {
+          "id": "391485",
+          "name": "Jason Holder",
+          "innings": 1,
+          "position": 8,
+          "runs": 7,
+          "balls": 5,
+          "fours": 1,
+          "sixes": 0,
+          "strikeRate": 140,
+          "minutes": 13,
+          "dismissal": "c",
+          "notOut": false,
+          "milestone": null,
+          "score": "7 (5)"
+        },
+        {
+          "id": "793463",
+          "name": "Rashid Khan",
+          "innings": 1,
+          "position": 9,
+          "runs": 7,
+          "balls": 3,
+          "fours": 0,
+          "sixes": 1,
+          "strikeRate": 233.33,
+          "minutes": 4,
+          "dismissal": "c",
+          "notOut": false,
+          "milestone": null,
+          "score": "7 (3)"
+        },
+        {
+          "id": "550215",
+          "name": "Kagiso Rabada",
+          "innings": 1,
+          "position": 10,
+          "runs": 3,
+          "balls": 3,
+          "fours": 0,
+          "sixes": 0,
+          "strikeRate": 100,
+          "minutes": 3,
+          "dismissal": "not out",
+          "notOut": true,
+          "milestone": null,
+          "score": "3* (3)"
+        }
+      ],
+      "bowling": [
+        {
+          "id": "547766",
+          "name": "Jacob Duffy",
+          "innings": 1,
+          "position": 1,
+          "overs": 4,
+          "balls": 24,
+          "maidens": 0,
+          "runs": 38,
+          "wickets": 0,
+          "economy": 9.5,
+          "dots": 6,
+          "wides": 3,
+          "noballs": 0,
+          "foursConceded": 4,
+          "sixesConceded": 1,
+          "figures": "0/38"
+        },
+        {
+          "id": "326016",
+          "name": "Bhuvneshwar Kumar",
+          "innings": 1,
+          "position": 2,
+          "overs": 4,
+          "balls": 24,
+          "maidens": 0,
+          "runs": 29,
+          "wickets": 2,
+          "economy": 7.25,
+          "dots": 11,
+          "wides": 0,
+          "noballs": 0,
+          "foursConceded": 4,
+          "sixesConceded": 0,
+          "figures": "2/29"
+        },
+        {
+          "id": "288284",
+          "name": "Josh Hazlewood",
+          "innings": 1,
+          "position": 3,
+          "overs": 4,
+          "balls": 24,
+          "maidens": 0,
+          "runs": 37,
+          "wickets": 2,
+          "economy": 9.25,
+          "dots": 7,
+          "wides": 1,
+          "noballs": 0,
+          "foursConceded": 6,
+          "sixesConceded": 0,
+          "figures": "2/37"
+        },
+        {
+          "id": "1161489",
+          "name": "Rasikh Salam",
+          "innings": 1,
+          "position": 4,
+          "overs": 4,
+          "balls": 24,
+          "maidens": 0,
+          "runs": 27,
+          "wickets": 3,
+          "economy": 6.75,
+          "dots": 8,
+          "wides": 0,
+          "noballs": 0,
+          "foursConceded": 1,
+          "sixesConceded": 1,
+          "figures": "3/27"
+        },
+        {
+          "id": "471342",
+          "name": "Krunal Pandya",
+          "innings": 1,
+          "position": 5,
+          "overs": 4,
+          "balls": 24,
+          "maidens": 0,
+          "runs": 23,
+          "wickets": 1,
+          "economy": 5.75,
+          "dots": 7,
+          "wides": 0,
+          "noballs": 0,
+          "foursConceded": 0,
+          "sixesConceded": 1,
+          "figures": "1/23"
+        }
+      ],
+      "fallOfWickets": [],
+      "partnerships": [],
+      "didNotBat": [
+        "Mohammed Siraj",
+        "Prasidh Krishna"
+      ]
+    },
+    {
+      "innings": 2,
+      "battingTeam": "Royal Challengers Bengaluru",
+      "battingTeamId": "335970",
+      "bowlingTeam": "Gujarat Titans",
+      "bowlingTeamId": "1298769",
+      "runs": 161,
+      "wickets": 5,
+      "overs": 18,
+      "runRate": 8.94,
+      "target": 156,
+      "score": "161/5 (18/20 ov, target 156)",
+      "extras": {
+        "total": 2,
+        "wides": 1,
+        "noballs": 0,
+        "byes": 0,
+        "legByes": 1
+      },
+      "batting": [
+        {
+          "id": "851403",
+          "name": "Venkatesh Iyer",
+          "innings": 2,
+          "position": 1,
+          "runs": 32,
+          "balls": 16,
+          "fours": 4,
+          "sixes": 2,
+          "strikeRate": 200,
+          "minutes": 25,
+          "dismissal": "c",
+          "notOut": false,
+          "milestone": null,
+          "score": "32 (16)"
+        },
+        {
+          "id": "253802",
+          "name": "Virat Kohli",
+          "innings": 2,
+          "position": 2,
+          "runs": 75,
+          "balls": 42,
+          "fours": 9,
+          "sixes": 3,
+          "strikeRate": 178.57,
+          "minutes": 102,
+          "dismissal": "not out",
+          "notOut": true,
+          "milestone": "fifty",
+          "score": "75* (42)"
+        },
+        {
+          "id": "1119026",
+          "name": "Devdutt Padikkal",
+          "innings": 2,
+          "position": 3,
+          "runs": 1,
+          "balls": 4,
+          "fours": 0,
+          "sixes": 0,
+          "strikeRate": 25,
+          "minutes": 4,
+          "dismissal": "c",
+          "notOut": false,
+          "milestone": null,
+          "score": "1 (4)"
+        },
+        {
+          "id": "823703",
+          "name": "Rajat Patidar",
+          "innings": 2,
+          "position": 4,
+          "runs": 15,
+          "balls": 13,
+          "fours": 1,
+          "sixes": 1,
+          "strikeRate": 115.38,
+          "minutes": 18,
+          "dismissal": "c",
+          "notOut": false,
+          "milestone": null,
+          "score": "15 (13)"
+        },
+        {
+          "id": "471342",
+          "name": "Krunal Pandya",
+          "innings": 2,
+          "position": 5,
+          "runs": 1,
+          "balls": 2,
+          "fours": 0,
+          "sixes": 0,
+          "strikeRate": 50,
+          "minutes": 2,
+          "dismissal": "lbw",
+          "notOut": false,
+          "milestone": null,
+          "score": "1 (2)"
+        },
+        {
+          "id": "892749",
+          "name": "Tim David",
+          "innings": 2,
+          "position": 6,
+          "runs": 24,
+          "balls": 17,
+          "fours": 3,
+          "sixes": 1,
+          "strikeRate": 141.17,
+          "minutes": 28,
+          "dismissal": "c",
+          "notOut": false,
+          "milestone": null,
+          "score": "24 (17)"
+        },
+        {
+          "id": "721867",
+          "name": "Jitesh Sharma",
+          "innings": 2,
+          "position": 7,
+          "runs": 11,
+          "balls": 14,
+          "fours": 1,
+          "sixes": 0,
+          "strikeRate": 78.57,
+          "minutes": 22,
+          "dismissal": "not out",
+          "notOut": true,
+          "milestone": null,
+          "score": "11* (14)"
+        }
+      ],
+      "bowling": [
+        {
+          "id": "940973",
+          "name": "Mohammed Siraj",
+          "innings": 2,
+          "position": 1,
+          "overs": 4,
+          "balls": 24,
+          "maidens": 0,
+          "runs": 36,
+          "wickets": 1,
+          "economy": 9,
+          "dots": 10,
+          "wides": 1,
+          "noballs": 0,
+          "foursConceded": 3,
+          "sixesConceded": 2,
+          "figures": "1/36"
+        },
+        {
+          "id": "550215",
+          "name": "Kagiso Rabada",
+          "innings": 2,
+          "position": 2,
+          "overs": 3,
+          "balls": 18,
+          "maidens": 0,
+          "runs": 44,
+          "wickets": 1,
+          "economy": 14.66,
+          "dots": 7,
+          "wides": 0,
+          "noballs": 0,
+          "foursConceded": 6,
+          "sixesConceded": 3,
+          "figures": "1/44"
+        },
+        {
+          "id": "391485",
+          "name": "Jason Holder",
+          "innings": 2,
+          "position": 3,
+          "overs": 2,
+          "balls": 12,
+          "maidens": 0,
+          "runs": 16,
+          "wickets": 0,
+          "economy": 8,
+          "dots": 5,
+          "wides": 0,
+          "noballs": 0,
+          "foursConceded": 3,
+          "sixesConceded": 0,
+          "figures": "0/16"
+        },
+        {
+          "id": "793463",
+          "name": "Rashid Khan",
+          "innings": 2,
+          "position": 4,
+          "overs": 4,
+          "balls": 24,
+          "maidens": 0,
+          "runs": 25,
+          "wickets": 2,
+          "economy": 6.25,
+          "dots": 9,
+          "wides": 0,
+          "noballs": 0,
+          "foursConceded": 1,
+          "sixesConceded": 1,
+          "figures": "2/25"
+        },
+        {
+          "id": "1244751",
+          "name": "Arshad Khan",
+          "innings": 2,
+          "position": 5,
+          "overs": 4,
+          "balls": 24,
+          "maidens": 0,
+          "runs": 32,
+          "wickets": 1,
+          "economy": 8,
+          "dots": 9,
+          "wides": 0,
+          "noballs": 0,
+          "foursConceded": 4,
+          "sixesConceded": 1,
+          "figures": "1/32"
+        },
+        {
+          "id": "917159",
+          "name": "Prasidh Krishna",
+          "innings": 2,
+          "position": 6,
+          "overs": 1,
+          "balls": 6,
+          "maidens": 0,
+          "runs": 7,
+          "wickets": 0,
+          "economy": 7,
+          "dots": 3,
+          "wides": 0,
+          "noballs": 0,
+          "foursConceded": 1,
+          "sixesConceded": 0,
+          "figures": "0/7"
+        }
+      ],
+      "fallOfWickets": [
+        {
+          "wicket": 1,
+          "score": "62/1",
+          "runs": 62,
+          "overs": 4.3,
+          "batter": "VR Iyer"
+        },
+        {
+          "wicket": 2,
+          "score": "63/2",
+          "runs": 63,
+          "overs": 5.1,
+          "batter": "D Padikkal"
+        },
+        {
+          "wicket": 3,
+          "score": "89/3",
+          "runs": 89,
+          "overs": 8.2,
+          "batter": "RM Patidar"
+        },
+        {
+          "wicket": 4,
+          "score": "91/4",
+          "runs": 91,
+          "overs": 8.5,
+          "batter": "KH Pandya"
+        },
+        {
+          "wicket": 5,
+          "score": "132/5",
+          "runs": 132,
+          "overs": 14,
+          "batter": "TH David"
+        }
+      ],
+      "partnerships": [
+        {
+          "wicket": "1st",
+          "runs": 62,
+          "overs": 4.3,
+          "batters": [
+            {
+              "name": "V Kohli",
+              "runs": 29
+            },
+            {
+              "name": "VR Iyer",
+              "runs": 32
+            }
+          ]
+        },
+        {
+          "wicket": "2nd",
+          "runs": 1,
+          "overs": 0.4,
+          "batters": [
+            {
+              "name": "V Kohli",
+              "runs": 0
+            },
+            {
+              "name": "D Padikkal",
+              "runs": 1
+            }
+          ]
+        },
+        {
+          "wicket": "3rd",
+          "runs": 26,
+          "overs": 3.1,
+          "batters": [
+            {
+              "name": "V Kohli",
+              "runs": 10
+            },
+            {
+              "name": "RM Patidar",
+              "runs": 15
+            }
+          ]
+        },
+        {
+          "wicket": "4th",
+          "runs": 2,
+          "overs": 0.3,
+          "batters": [
+            {
+              "name": "V Kohli",
+              "runs": 1
+            },
+            {
+              "name": "KH Pandya",
+              "runs": 1
+            }
+          ]
+        },
+        {
+          "wicket": "5th",
+          "runs": 41,
+          "overs": 5.1,
+          "batters": [
+            {
+              "name": "V Kohli",
+              "runs": 17
+            },
+            {
+              "name": "TH David",
+              "runs": 24
+            }
+          ]
+        },
+        {
+          "wicket": "6th",
+          "runs": 29,
+          "overs": 4,
+          "batters": [
+            {
+              "name": "V Kohli",
+              "runs": 18
+            },
+            {
+              "name": "JM Sharma",
+              "runs": 11
+            }
+          ]
+        }
+      ],
+      "didNotBat": [
+        "Romario Shepherd",
+        "Bhuvneshwar Kumar",
+        "Josh Hazlewood",
+        "Rasikh Salam",
+        "Jacob Duffy"
+      ]
+    }
+  ],
+  "notes": [
+    {
+      "id": "756708",
+      "innings": 1,
+      "day": 0,
+      "kind": "innings",
+      "text": "Gujarat Titans innings"
+    },
+    {
+      "id": "756709",
+      "innings": 1,
+      "day": 0,
+      "kind": "powerplay",
+      "text": "Powerplay 1: Overs 0.1 - 6.0 (Mandatory - 45 runs, 2 wickets)"
+    },
+    {
+      "id": "756710",
+      "innings": 1,
+      "day": 0,
+      "kind": "review",
+      "text": "Over 0.4: Review by Gujarat Titans (Batting), Decision Challenged - Wicket, Umpire - Nitin Menon, Batter - B Sai Sudharsan (Upheld)"
+    },
+    {
+      "id": "756711",
+      "innings": 1,
+      "day": 0,
+      "kind": "impact-sub",
+      "text": "Gujarat Titans Impact Player Subs: Prasidh Krishna, Glenn Phillips, Anuj Rawat, Kumar Kushagra, Sai Kishore."
+    },
+    {
+      "id": "756712",
+      "innings": 1,
+      "day": 0,
+      "kind": "impact-sub",
+      "text": "Royal Challengers Bengaluru Impact Player Subs: Venkatesh Iyer, Kanishk Chohan, Swapnil Singh, Abhinandan Singh, Jordan Cox."
+    },
+    {
+      "id": "756713",
+      "innings": 1,
+      "day": 0,
+      "kind": "milestone",
+      "text": "Gujarat Titans: 50 runs in 6.5 overs (41 balls), Extras 3"
+    },
+    {
+      "id": "756714",
+      "innings": 1,
+      "day": 0,
+      "kind": "timeout",
+      "text": "Strategic Timeout: Gujarat Titans - 59/3 in 9.0 overs (JC Buttler 12, Washington Sundar 2)"
+    },
+    {
+      "id": "756715",
+      "innings": 1,
+      "day": 0,
+      "kind": "impact-sub",
+      "text": "Royal Challengers Bengaluru Impact Player Sub: Venkatesh Iyer in for Jacob Duffy (Gujarat Titans innings, 13.6 ov)"
+    },
+    {
+      "id": "756722",
+      "innings": 2,
+      "day": 0,
+      "kind": "milestone",
+      "text": "Gujarat Titans: 100 runs in 14.2 overs (86 balls), Extras 4"
+    },
+    {
+      "id": "756724",
+      "innings": 2,
+      "day": 0,
+      "kind": "review",
+      "text": "Over 17.4: Review by Royal Challengers Bengaluru (Bowling), Decision Challenged - Wide, Umpire - KN Ananthapadmanabhan, Batter - Washington Sundar (Struck down)"
+    },
+    {
+      "id": "756725",
+      "innings": 2,
+      "day": 0,
+      "kind": "milestone",
+      "text": "Gujarat Titans: 150 runs in 19.1 overs (115 balls), Extras 5"
+    },
+    {
+      "id": "756727",
+      "innings": 2,
+      "day": 0,
+      "kind": "note",
+      "text": "Washington Sundar: 50 off 37 balls (5 x 4)"
+    },
+    {
+      "id": "756728",
+      "innings": 2,
+      "day": 0,
+      "kind": "break",
+      "text": "Innings Break: Gujarat Titans - 155/8 in 20.0 overs (Washington Sundar 50, K Rabada 3)"
+    },
+    {
+      "id": "756733",
+      "innings": 3,
+      "day": 0,
+      "kind": "innings",
+      "text": "Royal Challengers Bengaluru innings"
+    },
+    {
+      "id": "756734",
+      "innings": 3,
+      "day": 0,
+      "kind": "powerplay",
+      "text": "Powerplay 1: Overs 0.1 - 6.0 (Mandatory - 70 runs, 2 wickets)"
+    },
+    {
+      "id": "756736",
+      "innings": 3,
+      "day": 0,
+      "kind": "impact-sub",
+      "text": "Gujarat Titans Impact Player Sub: Prasidh Krishna in for Rahul Tewatia (Gujarat Titans innings, 19.6 ov)"
+    },
+    {
+      "id": "756737",
+      "innings": 3,
+      "day": 0,
+      "kind": "milestone",
+      "text": "Royal Challengers Bengaluru: 50 runs in 3.3 overs (21 balls), Extras 1"
+    },
+    {
+      "id": "756740",
+      "innings": 3,
+      "day": 0,
+      "kind": "milestone",
+      "text": "1st Wicket: 50 runs in 21 balls (VR Iyer 26, V Kohli 23, Ex 1)"
+    },
+    {
+      "id": "756742",
+      "innings": 3,
+      "day": 0,
+      "kind": "timeout",
+      "text": "Strategic Timeout: Royal Challengers Bengaluru - 88/2 in 8.0 overs (V Kohli 38, RM Patidar 15)"
+    },
+    {
+      "id": "756743",
+      "innings": 3,
+      "day": 0,
+      "kind": "milestone",
+      "text": "Royal Challengers Bengaluru: 100 runs in 9.5 overs (59 balls), Extras 2"
+    },
+    {
+      "id": "756746",
+      "innings": 3,
+      "day": 0,
+      "kind": "note",
+      "text": "V Kohli: 50 off 25 balls (7 x 4, 2 x 6)"
+    },
+    {
+      "id": "756749",
+      "innings": 3,
+      "day": 0,
+      "kind": "timeout",
+      "text": "Strategic Timeout: Royal Challengers Bengaluru - 126/4 in 13.0 overs (V Kohli 56, TH David 19)"
+    },
+    {
+      "id": "756753",
+      "innings": 3,
+      "day": 0,
+      "kind": "review",
+      "text": "Over 13.6: Review by Gujarat Titans (Bowling), Decision Challenged - Wicket, Umpire - KN Ananthapadmanabhan, Batter - TH David (Upheld)"
+    },
+    {
+      "id": "756754",
+      "innings": 3,
+      "day": 0,
+      "kind": "milestone",
+      "text": "Royal Challengers Bengaluru: 150 runs in 17.2 overs (104 balls), Extras 2"
+    },
+    {
+      "id": "756755",
+      "innings": 3,
+      "day": 0,
+      "kind": "note",
+      "text": "Final was shifted to Ahmedabad from Bangalore and Royal Challengers Bengaluru played the game as designated home team."
+    }
+  ],
+  "commentary": [
+    {
+      "id": "215010",
+      "sequence": 201501,
+      "innings": 2,
+      "over": "15.1",
+      "overNumber": 16,
+      "ball": 1,
+      "batter": "Virat Kohli",
+      "bowler": "Arshad Khan",
+      "runs": 0,
+      "boundary": false,
+      "wicket": false,
+      "dismissal": null,
+      "score": "139/5",
+      "runRate": 9.16,
+      "required": {
+        "runs": 17,
+        "balls": 29,
+        "runRate": 3.51
+      },
+      "shortText": "Arshad Khan to Kohli, no run",
+      "text": "Length in the channel, defended to backward point",
+      "preText": "Rabada should've bowled out by now, Ravi Shastri says on air",
+      "postText": null
+    },
+    {
+      "id": "215020",
+      "sequence": 201502,
+      "innings": 2,
+      "over": "15.2",
+      "overNumber": 16,
+      "ball": 2,
+      "batter": "Virat Kohli",
+      "bowler": "Arshad Khan",
+      "runs": 4,
+      "boundary": true,
+      "wicket": false,
+      "dismissal": null,
+      "score": "143/5",
+      "runRate": 9.32,
+      "required": {
+        "runs": 13,
+        "balls": 28,
+        "runRate": 2.78
+      },
+      "shortText": "Arshad Khan to Kohli, FOUR",
+      "text": "Pulled fine, rolls to the cushion in front of the GT dugout. Short ball from over the wicket at chest-height. Middle stump line. Kohli slightly square on, inside the line and helping it along",
+      "preText": null,
+      "postText": null
+    },
+    {
+      "id": "215030",
+      "sequence": 201503,
+      "innings": 2,
+      "over": "15.3",
+      "overNumber": 16,
+      "ball": 3,
+      "batter": "Virat Kohli",
+      "bowler": "Arshad Khan",
+      "runs": 1,
+      "boundary": false,
+      "wicket": false,
+      "dismissal": null,
+      "score": "144/5",
+      "runRate": 9.29,
+      "required": {
+        "runs": 12,
+        "balls": 27,
+        "runRate": 2.66
+      },
+      "shortText": "Arshad Khan to Kohli, 1 run",
+      "text": "Trademark cover drive, bit more than a punch. Hit off a length to deep cover",
+      "preText": null,
+      "postText": null
+    },
+    {
+      "id": "215040",
+      "sequence": 201504,
+      "innings": 2,
+      "over": "15.4",
+      "overNumber": 16,
+      "ball": 4,
+      "batter": "Jitesh Sharma",
+      "bowler": "Arshad Khan",
+      "runs": 0,
+      "boundary": false,
+      "wicket": false,
+      "dismissal": null,
+      "score": "144/5",
+      "runRate": 9.19,
+      "required": {
+        "runs": 12,
+        "balls": 26,
+        "runRate": 2.76
+      },
+      "shortText": "Arshad Khan to Sharma, no run",
+      "text": "Length in the channel, defended to cover. Jitesh was back in the crease, just outside off and square on",
+      "preText": null,
+      "postText": null
+    },
+    {
+      "id": "215050",
+      "sequence": 201505,
+      "innings": 2,
+      "over": "15.5",
+      "overNumber": 16,
+      "ball": 5,
+      "batter": "Jitesh Sharma",
+      "bowler": "Arshad Khan",
+      "runs": 1,
+      "boundary": false,
+      "wicket": false,
+      "dismissal": null,
+      "score": "145/5",
+      "runRate": 9.15,
+      "required": {
+        "runs": 11,
+        "balls": 25,
+        "runRate": 2.64
+      },
+      "shortText": "Arshad Khan to Sharma, 1 run",
+      "text": "Length on off, punched off the back foot to mid-off's right",
+      "preText": null,
+      "postText": null
+    },
+    {
+      "id": "215060",
+      "sequence": 201506,
+      "innings": 2,
+      "over": "15.6",
+      "overNumber": 16,
+      "ball": 6,
+      "batter": "Virat Kohli",
+      "bowler": "Arshad Khan",
+      "runs": 0,
+      "boundary": false,
+      "wicket": false,
+      "dismissal": null,
+      "score": "145/5",
+      "runRate": 9.06,
+      "required": {
+        "runs": 11,
+        "balls": 24,
+        "runRate": 2.75
+      },
+      "shortText": "Arshad Khan to Kohli, no run",
+      "text": "Kohli finally falls? He's asking someone if that's out. Walks back to Jitesh. The umpire, Nitin Menon, seems to signal him to walk. And he does... And he turns again. Third umpire's voice comes on for the first time, he'll check. Gill was forward, on his right knee as he tried to take a low catch. The catch was taken inches above the ground, ball popping down... and the question is did he plonk it like Cox did in the first innings? \"I can see the fingers on the side of the ball and some part of the ball touching the ground\", Madanagopal says. \"Ball is touching the ground between the fingers\" and a massive cheer erupts as not out is called. \"Told you so\" signals Kohli. Fist pump and a c'mon from him, Gill looks down in disappointment. Length ball outside off, driven uppishly on the up. Was dying on Gill at mid-off",
+      "preText": null,
+      "postText": null
+    },
+    {
+      "id": "216010",
+      "sequence": 201601,
+      "innings": 2,
+      "over": "16.1",
+      "overNumber": 17,
+      "ball": 1,
+      "batter": "Jitesh Sharma",
+      "bowler": "Rashid Khan",
+      "runs": 0,
+      "boundary": false,
+      "wicket": false,
+      "dismissal": null,
+      "score": "145/5",
+      "runRate": 8.96,
+      "required": {
+        "runs": 11,
+        "balls": 23,
+        "runRate": 2.86
+      },
+      "shortText": "Rashid Khan to Sharma, no run",
+      "text": "Length on leg, low bounce. Leading edge off the flick goes to cover.",
+      "preText": null,
+      "postText": null
+    },
+    {
+      "id": "216020",
+      "sequence": 201602,
+      "innings": 2,
+      "over": "16.2",
+      "overNumber": 17,
+      "ball": 2,
+      "batter": "Jitesh Sharma",
+      "bowler": "Rashid Khan",
+      "runs": 1,
+      "boundary": false,
+      "wicket": false,
+      "dismissal": null,
+      "score": "146/5",
+      "runRate": 8.93,
+      "required": {
+        "runs": 10,
+        "balls": 22,
+        "runRate": 2.72
+      },
+      "shortText": "Rashid Khan to Sharma, 1 run",
+      "text": "Catch is the call, goes safely to long-on. Jitesh went back and pulled the short skiddy ball from outside off. Bounce a touch low",
+      "preText": null,
+      "postText": null
+    },
+    {
+      "id": "216030",
+      "sequence": 201603,
+      "innings": 2,
+      "over": "16.3",
+      "overNumber": 17,
+      "ball": 3,
+      "batter": "Virat Kohli",
+      "bowler": "Rashid Khan",
+      "runs": 1,
+      "boundary": false,
+      "wicket": false,
+      "dismissal": null,
+      "score": "147/5",
+      "runRate": 8.9,
+      "required": {
+        "runs": 9,
+        "balls": 21,
+        "runRate": 2.57
+      },
+      "shortText": "Rashid Khan to Kohli, 1 run",
+      "text": "Flicked off the back foot to long-on. Shortish ball on off, legbreak spun. Kohli stayed leg side of the ball and played it nicely. Down to single figures now",
+      "preText": null,
+      "postText": null
+    },
+    {
+      "id": "216040",
+      "sequence": 201604,
+      "innings": 2,
+      "over": "16.4",
+      "overNumber": 17,
+      "ball": 4,
+      "batter": "Jitesh Sharma",
+      "bowler": "Rashid Khan",
+      "runs": 0,
+      "boundary": false,
+      "wicket": false,
+      "dismissal": null,
+      "score": "147/5",
+      "runRate": 8.82,
+      "required": {
+        "runs": 9,
+        "balls": 20,
+        "runRate": 2.7
+      },
+      "shortText": "Rashid Khan to Sharma, no run",
+      "text": "Length around top of off, driven back to the bowler",
+      "preText": null,
+      "postText": "Shriram M: \"What a turnaround it has been for patidar at Ahmedabad. It was at this ground in 2021 vs PBKS where he was dropped from RCB and went unsold the next year. Now he is in the verge of winning back to back titles at this ground.\""
+    },
+    {
+      "id": "216050",
+      "sequence": 201605,
+      "innings": 2,
+      "over": "16.5",
+      "overNumber": 17,
+      "ball": 5,
+      "batter": "Jitesh Sharma",
+      "bowler": "Rashid Khan",
+      "runs": 1,
+      "boundary": false,
+      "wicket": false,
+      "dismissal": null,
+      "score": "148/5",
+      "runRate": 8.79,
+      "required": {
+        "runs": 8,
+        "balls": 19,
+        "runRate": 2.52
+      },
+      "shortText": "Rashid Khan to Sharma, 1 run",
+      "text": "Wide and fullish, slapped over extra cover with a nice drive. Long-off stops it",
+      "preText": null,
+      "postText": null
+    },
+    {
+      "id": "216060",
+      "sequence": 201606,
+      "innings": 2,
+      "over": "16.6",
+      "overNumber": 17,
+      "ball": 6,
+      "batter": "Virat Kohli",
+      "bowler": "Rashid Khan",
+      "runs": 0,
+      "boundary": false,
+      "wicket": false,
+      "dismissal": null,
+      "score": "148/5",
+      "runRate": 8.7,
+      "required": {
+        "runs": 8,
+        "balls": 18,
+        "runRate": 2.66
+      },
+      "shortText": "Rashid Khan to Kohli, no run",
+      "text": "Chops the length ball to cover. Overhit that, dribbled to the left and smiled at himself",
+      "preText": null,
+      "postText": "Alex: \"Was Kohli stoic as ever?\" emo as ever"
+    },
+    {
+      "id": "217010",
+      "sequence": 201701,
+      "innings": 2,
+      "over": "17.1",
+      "overNumber": 18,
+      "ball": 1,
+      "batter": "Jitesh Sharma",
+      "bowler": "Arshad Khan",
+      "runs": 1,
+      "boundary": false,
+      "wicket": false,
+      "dismissal": null,
+      "score": "149/5",
+      "runRate": 8.67,
+      "required": {
+        "runs": 7,
+        "balls": 17,
+        "runRate": 2.47
+      },
+      "shortText": "Arshad Khan to Sharma, 1 run",
+      "text": "Length on fourth, run down to deep third with a fully open face. Arshad falls into the ground, likely cramps. Left leg.",
+      "preText": null,
+      "postText": "Sid-M : \"Cramps in the air tonight \""
+    },
+    {
+      "id": "217020",
+      "sequence": 201702,
+      "innings": 2,
+      "over": "17.2",
+      "overNumber": 18,
+      "ball": 2,
+      "batter": "Virat Kohli",
+      "bowler": "Arshad Khan",
+      "runs": 1,
+      "boundary": false,
+      "wicket": false,
+      "dismissal": null,
+      "score": "150/5",
+      "runRate": 8.65,
+      "required": {
+        "runs": 6,
+        "balls": 16,
+        "runRate": 2.25
+      },
+      "shortText": "Arshad Khan to Kohli, 1 run",
+      "text": "Back of length outside off, guided to deep third",
+      "preText": "Takes a couple of minutes but Arshad good to continue",
+      "postText": "sahil : \"lots of on-field interaction b/w Kohli and Gill today\""
+    },
+    {
+      "id": "217030",
+      "sequence": 201703,
+      "innings": 2,
+      "over": "17.3",
+      "overNumber": 18,
+      "ball": 3,
+      "batter": "Jitesh Sharma",
+      "bowler": "Arshad Khan",
+      "runs": 0,
+      "boundary": false,
+      "wicket": false,
+      "dismissal": null,
+      "score": "150/5",
+      "runRate": 8.57,
+      "required": {
+        "runs": 6,
+        "balls": 15,
+        "runRate": 2.4
+      },
+      "shortText": "Arshad Khan to Sharma, no run",
+      "text": "Low full toss on middle and off. Jitesh was nearly on fourth stump as he flicked to midwicket. Stayed well inside the crease",
+      "preText": "One biggie needed",
+      "postText": null
+    },
+    {
+      "id": "217040",
+      "sequence": 201704,
+      "innings": 2,
+      "over": "17.4",
+      "overNumber": 18,
+      "ball": 4,
+      "batter": "Jitesh Sharma",
+      "bowler": "Arshad Khan",
+      "runs": 1,
+      "boundary": false,
+      "wicket": false,
+      "dismissal": null,
+      "score": "151/5",
+      "runRate": 8.54,
+      "required": {
+        "runs": 5,
+        "balls": 14,
+        "runRate": 2.14
+      },
+      "shortText": "Arshad Khan to Sharma, 1 run",
+      "text": "Rabada at deep third is very fine. So it'll be just one. Back of length just outside off, Jitesh, on the back foot, opened up proper as he opened the face and got it wide of the keeper",
+      "preText": null,
+      "postText": null
+    },
+    {
+      "id": "217050",
+      "sequence": 201705,
+      "innings": 2,
+      "over": "17.5",
+      "overNumber": 18,
+      "ball": 5,
+      "batter": "Virat Kohli",
+      "bowler": "Arshad Khan",
+      "runs": 4,
+      "boundary": true,
+      "wicket": false,
+      "dismissal": null,
+      "score": "155/5",
+      "runRate": 8.69,
+      "required": {
+        "runs": 1,
+        "balls": 13,
+        "runRate": 0.46
+      },
+      "shortText": "Arshad Khan to Kohli, FOUR",
+      "text": "<strong>Pulled wide of mid-on and the scores are level!</strong> Back of length over off, pulled into the gap between midwicket and mid-on.",
+      "preText": null,
+      "postText": null
+    },
+    {
+      "id": "217060",
+      "sequence": 201706,
+      "innings": 2,
+      "over": "17.6",
+      "overNumber": 18,
+      "ball": 6,
+      "batter": "Virat Kohli",
+      "bowler": "Arshad Khan",
+      "runs": 6,
+      "boundary": true,
+      "wicket": false,
+      "dismissal": null,
+      "score": "161/5",
+      "runRate": 8.94,
+      "required": {
+        "runs": null,
+        "balls": 12,
+        "runRate": null
+      },
+      "shortText": "Arshad Khan to Kohli, SIX",
+      "text": "<em>Ee salanoo cup namde</em>. Kohli goes back in the crease, opens his stance and smears the length ball over long-on. Points to the stands and shakes his hands in a cupping motion. The players run out for celebrations. Gill looks on with a blank face. Fireworks begin",
+      "preText": null,
+      "postText": "What a time to be an RCB fan, could things have together any better for them?! <a href=\"https://www.espncricinfo.com/series/ipl-2016-968923/royal-challengers-bangalore-vs-sunrisers-hyderabad-final-981019/full-scorecard\">Ten years ago</a>, they would've felt the world was against them. That sentiment continued for nearly a decade. Chris Gayle left, AB de Villiers left. Virat Kohli stayed and they reworked their strategy, it was a gradual shift earlier in the decade. It took full flight after the mega auction last year, now they have two trophies to show for. This could be a dynasty forming. Even if not, it's been special. On that note, it's time to say goodbye one last time. I'm Ekanth, signing off on behalf of Ashish Pant, our scorers Chandan Duorah and M Venkat Raghav, and everyone from the Cricinfo team who've covered the comp. Thanks again for joining us. See you again soon.\n\n<!--\nname: twitter\nurl: https://twitter.com/ESPNcricinfo/status/2061165552752787793\n-->\n\n\n<strong>Rajat Patidar collects the IPL trophy</strong>, the team-mates run in onto the dais. Captain holds it aloft, everyone's screaming their hearts out. Trophy handed to Kohli as confetti rains along with the cheers. Turns taken with the trophy-lifting. Dinesh Karthik and Coach Andy Flower join in. They pose and everyone walks across to the Champions tag. Fingers signal a V for the two-time champions.\n\n<strong>Rajat Patidar, RCB captain</strong> It feels superb. There were a lot of memories from last year but we had to stay in the present. Don't have words to express but feeling good. Plan was clear, it was easier to chase. Wanted to get their top-three. Our bowlers throughout the tournament have been superb. Bhuvi, Hazlewood, Rasikh, Krunal, Sheppie, all have been superb. Never dreamt I'd win for RCB, it's all written. Last year, there was a lot of pressure. This year, we were confident. All were in a good frame of mind as compared to last year. Was good to see fans coming, everywhere you go it was like home. Pre-tournament prep was very good for me. The way I look at my batting, I try to work on where I can improve, against pacers especially. Got a lot of ideas and help from DK and Kohli bhail. Whenever I see him, he's always there for the team and all players. He goes to the young players even if they're nervous approaching. This one's for you again: RCB fans - <em>EE salanoo cup namdu</em>\n\n<!--\nname: twitter\nurl: https://twitter.com/ESPNcricinfo/status/2061164728286908504\n-->\n\n\nRCB captain <strong>Rajat Patidar</strong> collects the winners' cheque of <strong>INR 20 crore</strong>\n\nGill collects the runner-up shield. Winners award presented to RCB. Andy Flower collects a watch\n\n<strong>Shubman Gill, GT captain</strong> If we'd have gotten 180-190, it'd have been a good match. Maybe a little two-paced but not too much. There's some early movement for pacers. We lost early wickets and never got momentum. We felt we'll be in the game if we took 1-2 in the powerplay. We gave 15-20 too many, they got away in the powerplay. We were one of the best bowling sides. We came back strong after losing the first two games. Kept challenging and improving ourselves. Very happy overall. Couldn't get over the line. Still would've had things to improve on even if we'd won the trophy.\n\nShubman Gill of <strong>Gujarat Titans</strong> walks out to collect the runner-up cheque of INR 12.5 crores\n\nThere's also a <strong>Pitch and Ground award</strong> for the ground hosting under four games and that goes to the <strong>Himachal Pradesh Cricket Association</strong> (ground, Dharamsala)\n\n<strong>Cricket Association of Bengal</strong> (Eden Gardens) wins the <strong>Pitch and Ground award</strong>\n\n<b>Vaibhav Sooryavanshi</b>: It feels nice, but there is pressure because I am doing interviews. It is a proud moment and I will try and do well next season, too. [Intent] I try to back my game and if the ball is there to be hit, I go allout for it and just try to play that way. [Learning] How to play the pressure game, how to change myself every game, you can't play every game in one mode, you need to read the game situation and play according to the team's requirements. These are my learnings from this season. [On fitness] Yes, my focus is on that. If I have to play long, I have to stay clear of injuries and work on my fitness and have to focus more. [On RR and Jaiswal] Everyone is supportive, they all back me, the senior players, the support staff. They have backed me a lot. I have had lots to learn from the senior players. There is a great environment\n\n<!--\nname: twitter\nurl: https://twitter.com/ESPNcricinfo/status/2061158746773221463?ref_src=twsrc%5Egoogle%7Ctwcamp%5Eserp%7Ctwgr%5Etweet\n-->\n\n\n<strong>Vaibhav Sooryavanshi</strong> is the <strong>Most Valuable Player</strong> - 436.5 points\n\n<strong>Vaibhav Sooryavanshi</strong> wins the <strong>Orange Cap</strong> for being the highest run-getter - 776\n\n\n<strong>Kagiso Rabada</strong> wins the <strong>Purple Cap</strong> for being the highest wicket-taker - 29 scalps\n\n<strong>Punjab Kings</strong> win the <strong>Fairplay award</strong>\n\nKKR's <strong>Manish Pandey</strong> wins the award for the <strong>Catch of the Season</strong> for taking Tim David's catch at backward point. Devdutt Padikkal collects the award on his behalf\n\n<strong>Mohammed Siraj</strong> wins an award for bowling the <strong>most dots</strong> - 172\n\n<strong>Sai Sudharsan</strong> wins the award for the <strong>most fours</strong> - 75\n\n<strong>Vaibhav Sooryavanshi</strong> wins the award for hitting the most sixes - 72\n\n<strong>Vaibhav Sooryavanshi</strong> is the Super Striker (for the highest strike rate of 237), and the 15-year-old wins a car\n\n<strong>Vaibhav Sooryavanshi</strong> gets the <strong>Emerging Player of the Season</strong> award\n\n<strong>Virat Kohli, POTM</strong>: Stuff you dream of. Thought of this moment many times, wanting to hit the winning run. Felt really relaxed coming in. The team we have gives confidence to see any kind of situation through. Knew exactly what to do in the chase. Such is the demand super young players pushing you to up the ante. (On his fastest fifty) Gives you something to work towards. I had to change my mindset not my game so much, take on bowlers and get extra runs. First target was to go top of the table. We didn't care what jersey was in front of us thereon. We're respectful, don't poke any team. We have mature professionals and experience shines through. Come the big situation you need the big boys to step up. I know it's a chase and they'll look to get me out early, but I knew we have a champion side that can chase it down with 3-4 overs to go. When we won last year, Mo Bobat said this is not the end of the journey and we had to go back to back. Told Venky we need to kill the game in the powerplay. There was total clarity. We had small targets and played free cricket. His intent was the difference-maker in the last three-four games. We have 14 home games, not seven, we have fans behind us all the time. 90 percent fans are on our side despite it being GT's home ground\n\n<strong>12:02am</strong> Time for the presentations. There'll be a host of awards handed out before the match and POTS are handed out.\n\nShaurya: \"Well I am still interested to know what all awards Vaibhav is not winning today..and will he come to recieve it..!!?!\" He's at the ground and will receive his Orange Cap likely among a few other awards\n\n<!--\nname: twitter\nurl: https://twitter.com/ESPNcricinfo/status/2061145385868140843\n-->\n\n\n<strong>Patidar etches RCB's name onto the trophy. The strip is stuck to the sound of cheers, kisses and caresses on top of the trophy from Krunal and Jitesh</strong>\n\nSandip : \"Somewhat unfair that Bhuvi misses out on the purple cap. He has better average and runs per over than Rabada. His wickets of Gill in Q1 and Sai in final were also very instrumental in RCB winning the title whereas Rabada was taken to the cleaners today\" unfortunate maybe but not unfair. Can't win the purple cap without doing a lot of things right through the season\n\nAbinash Das: \"Eighteen years of absolute heartbreak, and now they stand at the gates of a historic dynasty! By sealing the ultimate triumph tonight, RCB has transformed from the eternal underdogs into a back-to-back powerhouse with a shot at a legendary three-peat next year. It is no longer just a transformation\"\n\n<strong>Matthew Hayden</strong> Always hard to put it down to one thing for a season that's so long. We have apex predators but couldn't get going in the powerplay. All our bowlers have been amazing. Krunal's spell was good as any tonight. It's a very successful franchise. We've developed a nice fanbase that's sticking behind Gill, Sai and Buttler. This group is calm, does nothing urgently. Nehra is chilled out. Biggest thing in this franchise is family, that'll keep it in good stead. (To Finch on interviewing Kohli) I was doing the same thing last time. Experience as coach was beyond my expectations. It was more detailed with bowling plans. We're a conservative batting side but crush the ball out of the ground at times. Credit to all our staff, makes it possible for us to play harder and recover quicker. Trying to understand what's happened is difficult. Comp brings talent to life. Guys like Sooryavanshi, extraordinary and exciting to watch. All those youngsters watching, keep playing and looking at your heroes.\n\n<b>Devdutt Padikkal</b>: Yeah it has been incredible. Just batting with these guys has been special. When you have quality around you, it makes you go up and that's what happened with me. [Bowlers] They have been unbelievable. The plans they execute is great, I have been in a few meetings, and they are meticulous. They execute it to the T. [On Kohli] When each wicket fell, I was just telling Venky, as long as he is there, then are no nerves. He has not stayed still, he has evolved, he has continuously improved. [Back to back] After the season finished, we spoke about going back to back and making sure of sticking to the feeling of winning. Grateful I made it to this season injury free and won it\n\n<b>Bhuvneshwar Kumar</b>: Trophy's most important, happy to trade Purple cap. Season went well. There was a lot of planning. Confidence goes up with wickets. If I didn't do well, Josh did, or Rasikh did. \n\n<!--\nname: twitter\nurl: https://twitter.com/ESPNcricinfo/status/2061148311168663566\n-->\n\n<b>Josh Hazlewood</b>: Right up there. More relaxed with the group, got the monkey off the back last year. Calm and composed throughout. Someone or other stepped up. 10 POTMs. Can't remember a game where he went over 35 runs. Took wickets, we could be relaxed. It's nice. Franchise, support staff put together beautifully. Everyone has a good time. Tough to build a good culture when teams shuffle but we've got it. (Threepeat) Can't see why not\n\n<b>Jitesh Sharma</b>: Mo [Bobat] had said earlier, we are not defending, we are chasing the title. The mindset changed there. [Atmosphere] All the credit goes to the management. The way they have pushed us forward, DK has helped me, so has Mo. They have nourished us. We knew we are very strong. Our focus was one game at a time. Just one match. We never thought, how well we are playing. Focus was on our tactics. Next year, we will have a third.\n\n<b>Virat Kohli</b>: I said to a few of the boys that it doesn't feel like the same pressure as last year. We knew what kind of ability we have in the group. We topped the table. There's a reason why we got here first. And we just said one thing. If we stick to our cricket, if we execute our plans, we are the best team in the comp. And there's a reason why we have done well so far in the group stage. We ended up topping the league stage. And yeah, just the skill sets we have, the maturity, the composure of the guys just shone through again tonight. And it was a clinical performance. [Doubts] Well, to be fair, after the break we had a couple of losses. I mean, one loss and then we had a close win against MI. I'd say that week for us was a bit tricky because we wanted to finish top. But as soon as we got that win against MI, the belief kicked back in. And then we had a comprehensive win against KKR. And then, yeah, just ended up topping the table and just on our way to the finals. [Give us a couple of words about this group. Oh, it's amazing. I mean, we've had to wait for so long. And then, you know, just to have a group of guys where you feel like you're stepping onto the ground, you don't need to be the one to step up every time. There's guys behind you, around you, who can win games of cricket for you. We have so many Man of the Match awards spread throughout the group as well. I mean, you look at world-class bowling like Hoff, Bhuv, Duff. I mean, Krunal Pandya, you know, you can bank on him as good as ever. Rasikh Dar was brilliant this season. All the batsmen chipped in as well. So, I feel so happy to play in a group where we have balance, we have strength. And we are an all-round strong team. And, yeah, that's why we have the confidence we have on the field right now.\n<b>Krunal Pandya</b>: [Five titles in 11 years] There is no doubt about it, winning back to back. It is like having kids, you can't pick. To have five trophies in 11 years, it is pretty special. Lot of credit goes to support staff. The way they prepared before the auction and set the team, half the battle is won in the auction. Glad that we have a hand on the trophy back to back. This is for the RCB fans, and also for Virat\n\n\n<!--\nname: twitter\nurl: https://twitter.com/ESPNcricinfo/status/2061144789777797157\n-->\n\n\nNaman: \"3 titles on the trot for Phil Salt. I guess he only the 2nd player to do so after Karn Sharma.\" Suyash is a hunch from our stats team\n\nAravind: \"Hazlewood remains unbeaten in white ball finals and Krunal wins every IPL final he's been in\"\n\n<strong>11:27pm</strong> There were cramps but never the danger of falling. The first title win took 18 seasons, the second just one. So clinical it has been that the celebrations seem rather subdued. Kohli was in tears of joy at long-on last time, this time there's no melodrama and no thrills. Not great for the neutrals, or GT, who have been dominant at home but didn't really turn up on the final. The game was lost in the first dig. The bowlers tried to cook something up in the chase but cramping Venkatesh and an on-fire Kohli won the powerplay in style. Rabada being taken down was a sight to watch. Rashid took a couple but the momentum didn't last as RCB's middle order stood tall with Kohli for company."
+    }
+  ],
+  "teams": [
+    {
+      "id": "335970",
+      "name": "Royal Challengers Bengaluru",
+      "abbreviation": "RCB",
+      "homeAway": "home",
+      "captain": "Rajat Patidar",
+      "keeper": "Jitesh Sharma",
+      "squadPublished": true,
+      "playerCount": 12,
+      "players": [
+        {
+          "id": "851403",
+          "name": "Venkatesh Iyer",
+          "fullName": "Venkatesh Rajasekaran Iyer",
+          "battingName": "VR Iyer",
+          "role": "Allrounder",
+          "keeper": false,
+          "captain": false,
+          "starter": true,
+          "subbedIn": false,
+          "subbedOut": false,
+          "active": false,
+          "battingStyle": "Left-hand bat",
+          "bowlingStyle": "Right-arm medium",
+          "batting": [
+            {
+              "innings": 2,
+              "position": 1,
+              "runs": 32,
+              "balls": 16,
+              "fours": 4,
+              "sixes": 2,
+              "strikeRate": 200,
+              "minutes": 25,
+              "dismissal": "c",
+              "notOut": false,
+              "milestone": null,
+              "score": "32 (16)"
+            }
+          ],
+          "bowling": [],
+          "fielding": []
+        },
+        {
+          "id": "253802",
+          "name": "Virat Kohli",
+          "fullName": "Virat Kohli",
+          "battingName": "V Kohli",
+          "role": "Unknown",
+          "keeper": false,
+          "captain": false,
+          "starter": true,
+          "subbedIn": false,
+          "subbedOut": false,
+          "active": true,
+          "battingStyle": "Right-hand bat",
+          "bowlingStyle": "Right-arm medium",
+          "batting": [
+            {
+              "innings": 2,
+              "position": 2,
+              "runs": 75,
+              "balls": 42,
+              "fours": 9,
+              "sixes": 3,
+              "strikeRate": 178.57,
+              "minutes": 102,
+              "dismissal": "not out",
+              "notOut": true,
+              "milestone": "fifty",
+              "score": "75* (42)"
+            }
+          ],
+          "bowling": [],
+          "fielding": []
+        },
+        {
+          "id": "1119026",
+          "name": "Devdutt Padikkal",
+          "fullName": "Devdutt Padikkal",
+          "battingName": "D Padikkal",
+          "role": "Unknown",
+          "keeper": false,
+          "captain": false,
+          "starter": true,
+          "subbedIn": false,
+          "subbedOut": false,
+          "active": false,
+          "battingStyle": "Left-hand bat",
+          "bowlingStyle": "Right-arm offbreak",
+          "batting": [
+            {
+              "innings": 2,
+              "position": 3,
+              "runs": 1,
+              "balls": 4,
+              "fours": 0,
+              "sixes": 0,
+              "strikeRate": 25,
+              "minutes": 4,
+              "dismissal": "c",
+              "notOut": false,
+              "milestone": null,
+              "score": "1 (4)"
+            }
+          ],
+          "bowling": [],
+          "fielding": [
+            {
+              "innings": 1,
+              "catches": 1,
+              "stumpings": 0
+            }
+          ]
+        },
+        {
+          "id": "823703",
+          "name": "Rajat Patidar",
+          "fullName": "Rajat Manohar Patidar",
+          "battingName": "RM Patidar",
+          "role": "Unknown",
+          "keeper": false,
+          "captain": true,
+          "starter": true,
+          "subbedIn": false,
+          "subbedOut": false,
+          "active": false,
+          "battingStyle": "Right-hand bat",
+          "bowlingStyle": "Right-arm offbreak",
+          "batting": [
+            {
+              "innings": 2,
+              "position": 4,
+              "runs": 15,
+              "balls": 13,
+              "fours": 1,
+              "sixes": 1,
+              "strikeRate": 115.38,
+              "minutes": 18,
+              "dismissal": "c",
+              "notOut": false,
+              "milestone": null,
+              "score": "15 (13)"
+            }
+          ],
+          "bowling": [],
+          "fielding": [
+            {
+              "innings": 1,
+              "catches": 2,
+              "stumpings": 0
+            }
+          ]
+        },
+        {
+          "id": "471342",
+          "name": "Krunal Pandya",
+          "fullName": "Krunal Himanshu Pandya",
+          "battingName": "KH Pandya",
+          "role": "Allrounder",
+          "keeper": false,
+          "captain": false,
+          "starter": true,
+          "subbedIn": false,
+          "subbedOut": false,
+          "active": false,
+          "battingStyle": "Left-hand bat",
+          "bowlingStyle": "Slow left-arm orthodox",
+          "batting": [
+            {
+              "innings": 2,
+              "position": 5,
+              "runs": 1,
+              "balls": 2,
+              "fours": 0,
+              "sixes": 0,
+              "strikeRate": 50,
+              "minutes": 2,
+              "dismissal": "lbw",
+              "notOut": false,
+              "milestone": null,
+              "score": "1 (2)"
+            }
+          ],
+          "bowling": [
+            {
+              "innings": 1,
+              "position": 5,
+              "overs": 4,
+              "balls": 24,
+              "maidens": 0,
+              "runs": 23,
+              "wickets": 1,
+              "economy": 5.75,
+              "dots": 7,
+              "wides": 0,
+              "noballs": 0,
+              "foursConceded": 0,
+              "sixesConceded": 1,
+              "figures": "1/23"
+            }
+          ],
+          "fielding": []
+        },
+        {
+          "id": "892749",
+          "name": "Tim David",
+          "fullName": "Timothy Hays David",
+          "battingName": "TH David",
+          "role": "Unknown",
+          "keeper": false,
+          "captain": false,
+          "starter": true,
+          "subbedIn": false,
+          "subbedOut": false,
+          "active": false,
+          "battingStyle": "Right-hand bat",
+          "bowlingStyle": "Right-arm offbreak",
+          "batting": [
+            {
+              "innings": 2,
+              "position": 6,
+              "runs": 24,
+              "balls": 17,
+              "fours": 3,
+              "sixes": 1,
+              "strikeRate": 141.17,
+              "minutes": 28,
+              "dismissal": "c",
+              "notOut": false,
+              "milestone": null,
+              "score": "24 (17)"
+            }
+          ],
+          "bowling": [],
+          "fielding": []
+        },
+        {
+          "id": "721867",
+          "name": "Jitesh Sharma",
+          "fullName": "Jitesh Mohan Sharma",
+          "battingName": "JM Sharma",
+          "role": "Wicketkeeper",
+          "keeper": true,
+          "captain": false,
+          "starter": true,
+          "subbedIn": false,
+          "subbedOut": false,
+          "active": true,
+          "battingStyle": "Right-hand bat",
+          "bowlingStyle": null,
+          "batting": [
+            {
+              "innings": 2,
+              "position": 7,
+              "runs": 11,
+              "balls": 14,
+              "fours": 1,
+              "sixes": 0,
+              "strikeRate": 78.57,
+              "minutes": 22,
+              "dismissal": "not out",
+              "notOut": true,
+              "milestone": null,
+              "score": "11* (14)"
+            }
+          ],
+          "bowling": [],
+          "fielding": [
+            {
+              "innings": 1,
+              "catches": 1,
+              "stumpings": 1
+            }
+          ]
+        },
+        {
+          "id": "677077",
+          "name": "Romario Shepherd",
+          "fullName": "Romario Shepherd",
+          "battingName": "R Shepherd",
+          "role": "Allrounder",
+          "keeper": false,
+          "captain": false,
+          "starter": true,
+          "subbedIn": false,
+          "subbedOut": false,
+          "active": false,
+          "battingStyle": "Right-hand bat",
+          "bowlingStyle": "Right-arm fast-medium",
+          "batting": [],
+          "bowling": [],
+          "fielding": [
+            {
+              "innings": 1,
+              "catches": 1,
+              "stumpings": 0
+            }
+          ]
+        },
+        {
+          "id": "326016",
+          "name": "Bhuvneshwar Kumar",
+          "fullName": "Bhuvneshwar Kumar Singh",
+          "battingName": "B Kumar",
+          "role": "Bowler",
+          "keeper": false,
+          "captain": false,
+          "starter": true,
+          "subbedIn": false,
+          "subbedOut": false,
+          "active": false,
+          "battingStyle": "Right-hand bat",
+          "bowlingStyle": "Right-arm medium",
+          "batting": [],
+          "bowling": [
+            {
+              "innings": 1,
+              "position": 2,
+              "overs": 4,
+              "balls": 24,
+              "maidens": 0,
+              "runs": 29,
+              "wickets": 2,
+              "economy": 7.25,
+              "dots": 11,
+              "wides": 0,
+              "noballs": 0,
+              "foursConceded": 4,
+              "sixesConceded": 0,
+              "figures": "2/29"
+            }
+          ],
+          "fielding": []
+        },
+        {
+          "id": "288284",
+          "name": "Josh Hazlewood",
+          "fullName": "Josh Reginald Hazlewood",
+          "battingName": "JR Hazlewood",
+          "role": "Bowler",
+          "keeper": false,
+          "captain": false,
+          "starter": true,
+          "subbedIn": false,
+          "subbedOut": false,
+          "active": false,
+          "battingStyle": "Left-hand bat",
+          "bowlingStyle": "Right-arm fast-medium",
+          "batting": [],
+          "bowling": [
+            {
+              "innings": 1,
+              "position": 3,
+              "overs": 4,
+              "balls": 24,
+              "maidens": 0,
+              "runs": 37,
+              "wickets": 2,
+              "economy": 9.25,
+              "dots": 7,
+              "wides": 1,
+              "noballs": 0,
+              "foursConceded": 6,
+              "sixesConceded": 0,
+              "figures": "2/37"
+            }
+          ],
+          "fielding": [
+            {
+              "innings": 1,
+              "catches": 1,
+              "stumpings": 0
+            }
+          ]
+        },
+        {
+          "id": "1161489",
+          "name": "Rasikh Salam",
+          "fullName": "Rasikh Salam Dar",
+          "battingName": "Rasikh Salam",
+          "role": "Bowler",
+          "keeper": false,
+          "captain": false,
+          "starter": true,
+          "subbedIn": false,
+          "subbedOut": false,
+          "active": false,
+          "battingStyle": "Right-hand bat",
+          "bowlingStyle": "Right-arm fast-medium",
+          "batting": [],
+          "bowling": [
+            {
+              "innings": 1,
+              "position": 4,
+              "overs": 4,
+              "balls": 24,
+              "maidens": 0,
+              "runs": 27,
+              "wickets": 3,
+              "economy": 6.75,
+              "dots": 8,
+              "wides": 0,
+              "noballs": 0,
+              "foursConceded": 1,
+              "sixesConceded": 1,
+              "figures": "3/27"
+            }
+          ],
+          "fielding": [
+            {
+              "innings": 1,
+              "catches": 1,
+              "stumpings": 0
+            }
+          ]
+        },
+        {
+          "id": "547766",
+          "name": "Jacob Duffy",
+          "fullName": "Jacob Andrew Duffy",
+          "battingName": "JA Duffy",
+          "role": "Bowler",
+          "keeper": false,
+          "captain": false,
+          "starter": true,
+          "subbedIn": false,
+          "subbedOut": false,
+          "active": false,
+          "battingStyle": "Right-hand bat",
+          "bowlingStyle": "Right-arm fast-medium",
+          "batting": [],
+          "bowling": [
+            {
+              "innings": 1,
+              "position": 1,
+              "overs": 4,
+              "balls": 24,
+              "maidens": 0,
+              "runs": 38,
+              "wickets": 0,
+              "economy": 9.5,
+              "dots": 6,
+              "wides": 3,
+              "noballs": 0,
+              "foursConceded": 4,
+              "sixesConceded": 1,
+              "figures": "0/38"
+            }
+          ],
+          "fielding": []
+        }
+      ]
+    },
+    {
+      "id": "1298769",
+      "name": "Gujarat Titans",
+      "abbreviation": "GT",
+      "homeAway": "away",
+      "captain": "Shubman Gill",
+      "keeper": "Jos Buttler",
+      "squadPublished": true,
+      "playerCount": 12,
+      "players": [
+        {
+          "id": "1151288",
+          "name": "Sai Sudharsan",
+          "fullName": "Bhardwaj Sai Sudharsan",
+          "battingName": "B Sai Sudharsan",
+          "role": "Unknown",
+          "keeper": false,
+          "captain": false,
+          "starter": true,
+          "subbedIn": false,
+          "subbedOut": false,
+          "active": false,
+          "battingStyle": "Left-hand bat",
+          "bowlingStyle": "Legbreak",
+          "batting": [
+            {
+              "innings": 1,
+              "position": 1,
+              "runs": 12,
+              "balls": 12,
+              "fours": 2,
+              "sixes": 0,
+              "strikeRate": 100,
+              "minutes": 20,
+              "dismissal": "c",
+              "notOut": false,
+              "milestone": null,
+              "score": "12 (12)"
+            }
+          ],
+          "bowling": [],
+          "fielding": []
+        },
+        {
+          "id": "1070173",
+          "name": "Shubman Gill",
+          "fullName": "Shubman Gill",
+          "battingName": "Shubman Gill",
+          "role": "Unknown",
+          "keeper": false,
+          "captain": true,
+          "starter": true,
+          "subbedIn": false,
+          "subbedOut": false,
+          "active": false,
+          "battingStyle": "Right-hand bat",
+          "bowlingStyle": "Right-arm offbreak",
+          "batting": [
+            {
+              "innings": 1,
+              "position": 2,
+              "runs": 10,
+              "balls": 8,
+              "fours": 2,
+              "sixes": 0,
+              "strikeRate": 125,
+              "minutes": 13,
+              "dismissal": "c",
+              "notOut": false,
+              "milestone": null,
+              "score": "10 (8)"
+            }
+          ],
+          "bowling": [],
+          "fielding": []
+        },
+        {
+          "id": "1292506",
+          "name": "Nishant Sindhu",
+          "fullName": "Nishant Sindhu",
+          "battingName": "N Sindhu",
+          "role": "Allrounder",
+          "keeper": false,
+          "captain": false,
+          "starter": true,
+          "subbedIn": false,
+          "subbedOut": false,
+          "active": false,
+          "battingStyle": "Left-hand bat",
+          "bowlingStyle": "Slow left-arm orthodox",
+          "batting": [
+            {
+              "innings": 1,
+              "position": 3,
+              "runs": 20,
+              "balls": 18,
+              "fours": 3,
+              "sixes": 0,
+              "strikeRate": 111.11,
+              "minutes": 26,
+              "dismissal": "c",
+              "notOut": false,
+              "milestone": null,
+              "score": "20 (18)"
+            }
+          ],
+          "bowling": [],
+          "fielding": []
+        },
+        {
+          "id": "308967",
+          "name": "Jos Buttler",
+          "fullName": "Joseph Charles Buttler",
+          "battingName": "JC Buttler",
+          "role": "Wicketkeeper",
+          "keeper": true,
+          "captain": false,
+          "starter": true,
+          "subbedIn": false,
+          "subbedOut": false,
+          "active": false,
+          "battingStyle": "Right-hand bat",
+          "bowlingStyle": null,
+          "batting": [
+            {
+              "innings": 1,
+              "position": 4,
+              "runs": 19,
+              "balls": 23,
+              "fours": 1,
+              "sixes": 0,
+              "strikeRate": 82.6,
+              "minutes": 40,
+              "dismissal": "st",
+              "notOut": false,
+              "milestone": null,
+              "score": "19 (23)"
+            }
+          ],
+          "bowling": [],
+          "fielding": [
+            {
+              "innings": 2,
+              "catches": 1,
+              "stumpings": 0
+            }
+          ]
+        },
+        {
+          "id": "719715",
+          "name": "Washington Sundar",
+          "fullName": "Washington Sundar",
+          "battingName": "Washington Sundar",
+          "role": "Allrounder",
+          "keeper": false,
+          "captain": false,
+          "starter": true,
+          "subbedIn": false,
+          "subbedOut": false,
+          "active": false,
+          "battingStyle": "Left-hand bat",
+          "bowlingStyle": "Right-arm offbreak",
+          "batting": [
+            {
+              "innings": 1,
+              "position": 5,
+              "runs": 50,
+              "balls": 37,
+              "fours": 5,
+              "sixes": 0,
+              "strikeRate": 135.13,
+              "minutes": 66,
+              "dismissal": "not out",
+              "notOut": true,
+              "milestone": "fifty",
+              "score": "50* (37)"
+            }
+          ],
+          "bowling": [],
+          "fielding": []
+        },
+        {
+          "id": "1244751",
+          "name": "Arshad Khan",
+          "fullName": "Mohd Arshad Khan",
+          "battingName": "Arshad Khan",
+          "role": "Bowler",
+          "keeper": false,
+          "captain": false,
+          "starter": true,
+          "subbedIn": false,
+          "subbedOut": false,
+          "active": true,
+          "battingStyle": "Left-hand bat",
+          "bowlingStyle": "Left-arm fast-medium",
+          "batting": [
+            {
+              "innings": 1,
+              "position": 6,
+              "runs": 15,
+              "balls": 6,
+              "fours": 0,
+              "sixes": 2,
+              "strikeRate": 250,
+              "minutes": 10,
+              "dismissal": "c",
+              "notOut": false,
+              "milestone": null,
+              "score": "15 (6)"
+            }
+          ],
+          "bowling": [
+            {
+              "innings": 2,
+              "position": 5,
+              "overs": 4,
+              "balls": 24,
+              "maidens": 0,
+              "runs": 32,
+              "wickets": 1,
+              "economy": 8,
+              "dots": 9,
+              "wides": 0,
+              "noballs": 0,
+              "foursConceded": 4,
+              "sixesConceded": 1,
+              "figures": "1/32"
+            }
+          ],
+          "fielding": [
+            {
+              "innings": 2,
+              "catches": 1,
+              "stumpings": 0
+            }
+          ]
+        },
+        {
+          "id": "423838",
+          "name": "Rahul Tewatia",
+          "fullName": "Rahul Tewatia",
+          "battingName": "R Tewatia",
+          "role": "Allrounder",
+          "keeper": false,
+          "captain": false,
+          "starter": true,
+          "subbedIn": false,
+          "subbedOut": false,
+          "active": false,
+          "battingStyle": "Left-hand bat",
+          "bowlingStyle": "Legbreak",
+          "batting": [
+            {
+              "innings": 1,
+              "position": 7,
+              "runs": 7,
+              "balls": 5,
+              "fours": 1,
+              "sixes": 0,
+              "strikeRate": 140,
+              "minutes": 12,
+              "dismissal": "c",
+              "notOut": false,
+              "milestone": null,
+              "score": "7 (5)"
+            }
+          ],
+          "bowling": [],
+          "fielding": []
+        },
+        {
+          "id": "391485",
+          "name": "Jason Holder",
+          "fullName": "Jason Omar Holder",
+          "battingName": "JO Holder",
+          "role": "Allrounder",
+          "keeper": false,
+          "captain": false,
+          "starter": true,
+          "subbedIn": false,
+          "subbedOut": false,
+          "active": false,
+          "battingStyle": "Right-hand bat",
+          "bowlingStyle": "Right-arm medium-fast",
+          "batting": [
+            {
+              "innings": 1,
+              "position": 8,
+              "runs": 7,
+              "balls": 5,
+              "fours": 1,
+              "sixes": 0,
+              "strikeRate": 140,
+              "minutes": 13,
+              "dismissal": "c",
+              "notOut": false,
+              "milestone": null,
+              "score": "7 (5)"
+            }
+          ],
+          "bowling": [
+            {
+              "innings": 2,
+              "position": 3,
+              "overs": 2,
+              "balls": 12,
+              "maidens": 0,
+              "runs": 16,
+              "wickets": 0,
+              "economy": 8,
+              "dots": 5,
+              "wides": 0,
+              "noballs": 0,
+              "foursConceded": 3,
+              "sixesConceded": 0,
+              "figures": "0/16"
+            }
+          ],
+          "fielding": []
+        },
+        {
+          "id": "793463",
+          "name": "Rashid Khan",
+          "fullName": "Rashid Khan Arman",
+          "battingName": "Rashid Khan",
+          "role": "Allrounder",
+          "keeper": false,
+          "captain": false,
+          "starter": true,
+          "subbedIn": false,
+          "subbedOut": false,
+          "active": true,
+          "battingStyle": "Right-hand bat",
+          "bowlingStyle": "Legbreak googly",
+          "batting": [
+            {
+              "innings": 1,
+              "position": 9,
+              "runs": 7,
+              "balls": 3,
+              "fours": 0,
+              "sixes": 1,
+              "strikeRate": 233.33,
+              "minutes": 4,
+              "dismissal": "c",
+              "notOut": false,
+              "milestone": null,
+              "score": "7 (3)"
+            }
+          ],
+          "bowling": [
+            {
+              "innings": 2,
+              "position": 4,
+              "overs": 4,
+              "balls": 24,
+              "maidens": 0,
+              "runs": 25,
+              "wickets": 2,
+              "economy": 6.25,
+              "dots": 9,
+              "wides": 0,
+              "noballs": 0,
+              "foursConceded": 1,
+              "sixesConceded": 1,
+              "figures": "2/25"
+            }
+          ],
+          "fielding": []
+        },
+        {
+          "id": "550215",
+          "name": "Kagiso Rabada",
+          "fullName": "Kagiso Rabada",
+          "battingName": "K Rabada",
+          "role": "Bowler",
+          "keeper": false,
+          "captain": false,
+          "starter": true,
+          "subbedIn": false,
+          "subbedOut": false,
+          "active": false,
+          "battingStyle": "Left-hand bat",
+          "bowlingStyle": "Right-arm fast",
+          "batting": [
+            {
+              "innings": 1,
+              "position": 10,
+              "runs": 3,
+              "balls": 3,
+              "fours": 0,
+              "sixes": 0,
+              "strikeRate": 100,
+              "minutes": 3,
+              "dismissal": "not out",
+              "notOut": true,
+              "milestone": null,
+              "score": "3* (3)"
+            }
+          ],
+          "bowling": [
+            {
+              "innings": 2,
+              "position": 2,
+              "overs": 3,
+              "balls": 18,
+              "maidens": 0,
+              "runs": 44,
+              "wickets": 1,
+              "economy": 14.66,
+              "dots": 7,
+              "wides": 0,
+              "noballs": 0,
+              "foursConceded": 6,
+              "sixesConceded": 3,
+              "figures": "1/44"
+            }
+          ],
+          "fielding": [
+            {
+              "innings": 2,
+              "catches": 2,
+              "stumpings": 0
+            }
+          ]
+        },
+        {
+          "id": "940973",
+          "name": "Mohammed Siraj",
+          "fullName": "Mohammed Siraj",
+          "battingName": "Mohammed Siraj",
+          "role": "Bowler",
+          "keeper": false,
+          "captain": false,
+          "starter": true,
+          "subbedIn": false,
+          "subbedOut": false,
+          "active": false,
+          "battingStyle": "Right-hand bat",
+          "bowlingStyle": "Right-arm fast",
+          "batting": [],
+          "bowling": [
+            {
+              "innings": 2,
+              "position": 1,
+              "overs": 4,
+              "balls": 24,
+              "maidens": 0,
+              "runs": 36,
+              "wickets": 1,
+              "economy": 9,
+              "dots": 10,
+              "wides": 1,
+              "noballs": 0,
+              "foursConceded": 3,
+              "sixesConceded": 2,
+              "figures": "1/36"
+            }
+          ],
+          "fielding": []
+        },
+        {
+          "id": "917159",
+          "name": "Prasidh Krishna",
+          "fullName": "Muralikrishna Prasidh Krishna",
+          "battingName": "M Prasidh Krishna",
+          "role": "Bowler",
+          "keeper": false,
+          "captain": false,
+          "starter": true,
+          "subbedIn": false,
+          "subbedOut": false,
+          "active": false,
+          "battingStyle": "Right-hand bat",
+          "bowlingStyle": "Right-arm fast-medium",
+          "batting": [],
+          "bowling": [
+            {
+              "innings": 2,
+              "position": 6,
+              "overs": 1,
+              "balls": 6,
+              "maidens": 0,
+              "runs": 7,
+              "wickets": 0,
+              "economy": 7,
+              "dots": 3,
+              "wides": 0,
+              "noballs": 0,
+              "foursConceded": 1,
+              "sixesConceded": 0,
+              "figures": "0/7"
+            }
+          ],
+          "fielding": []
+        }
+      ]
+    }
+  ]
+}

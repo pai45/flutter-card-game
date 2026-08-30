@@ -23,6 +23,7 @@ import '../../widgets/stat_oz_top_bar.dart';
 import '../../widgets/streak_widgets.dart';
 import '../profile/widgets/profile_card.dart';
 import 'all_sports_screen.dart';
+import 'match_search_screen.dart';
 import 'streak_calendar_screen.dart';
 import 'trending_hub_catalog.dart';
 import 'widgets/history_hud.dart';
@@ -43,6 +44,7 @@ class PredictionHomeScreen extends StatefulWidget {
     required this.onOpenMatch,
     required this.onOpenMarket,
     required this.onOpenLeague,
+    required this.onOpenLeagueGames,
     required this.onOpenGame,
     required this.onOpenShootout,
     required this.onOpenQuiz,
@@ -71,6 +73,7 @@ class PredictionHomeScreen extends StatefulWidget {
   final ValueChanged<SportMatch> onOpenMatch;
   final ValueChanged<String> onOpenMarket;
   final ValueChanged<League> onOpenLeague;
+  final ValueChanged<League> onOpenLeagueGames;
   final VoidCallback onOpenGame;
   final VoidCallback onOpenShootout;
   final ValueChanged<Sport> onOpenQuiz;
@@ -159,6 +162,7 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
                 ),
                 onOpenMatch: widget.onOpenMatch,
                 onOpenMarket: widget.onOpenMarket,
+                onSearch: _openMatchSearch,
                 animateIntro: _shouldAnimateIntro(0),
                 onIntroPlayed: () => _markIntroPlayed(0),
               )
@@ -173,8 +177,10 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
                 ),
                 onOpenMatch: widget.onOpenMatch,
                 onOpenLeague: widget.onOpenLeague,
+                onOpenLeagueGames: widget.onOpenLeagueGames,
                 onOpenGame: widget.onOpenGame,
                 onOpenShootout: widget.onOpenShootout,
+                onSearch: _openMatchSearch,
                 animateIntro: _shouldAnimateIntro(0),
                 onIntroPlayed: () => _markIntroPlayed(0),
               ),
@@ -246,6 +252,16 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
     );
   }
 
+  void _openMatchSearch() {
+    playSound(SoundEffect.uiTap);
+    HapticFeedback.selectionClick();
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => MatchSearchScreen(onOpenMatch: widget.onOpenMatch),
+      ),
+    );
+  }
+
   bool _shouldAnimateIntro(int tab) => !_introPlayedTabs.contains(tab);
 
   void _markIntroPlayed(int tab) {
@@ -262,6 +278,31 @@ class _PredictionBackground extends StatelessWidget {
   }
 }
 
+class _MatchSearchButton extends StatelessWidget {
+  const _MatchSearchButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Search teams and leagues',
+      child: Tooltip(
+        message: 'Search teams and leagues',
+        child: IconButton(
+          key: const ValueKey('match-search-button'),
+          constraints: const BoxConstraints.tightFor(width: 44, height: 44),
+          padding: EdgeInsets.zero,
+          visualDensity: VisualDensity.compact,
+          onPressed: onTap,
+          icon: const Icon(Icons.search_rounded, color: Cyber.cyan, size: 22),
+        ),
+      ),
+    );
+  }
+}
+
 class _TrendingMatchesTab extends StatelessWidget {
   const _TrendingMatchesTab({
     required this.activeSportTab,
@@ -269,6 +310,7 @@ class _TrendingMatchesTab extends StatelessWidget {
     required this.onMore,
     required this.onOpenMatch,
     required this.onOpenMarket,
+    required this.onSearch,
     required this.animateIntro,
     required this.onIntroPlayed,
   });
@@ -278,6 +320,7 @@ class _TrendingMatchesTab extends StatelessWidget {
   final VoidCallback onMore;
   final ValueChanged<SportMatch> onOpenMatch;
   final ValueChanged<String> onOpenMarket;
+  final VoidCallback onSearch;
   final bool animateIntro;
   final VoidCallback onIntroPlayed;
 
@@ -289,6 +332,7 @@ class _TrendingMatchesTab extends StatelessWidget {
           activeIndex: activeSportTab,
           onTap: onSportTabChanged,
           onMore: onMore,
+          trailingAction: _MatchSearchButton(onTap: onSearch),
         ),
         Expanded(
           child: TrendingMatchesView(
@@ -338,8 +382,10 @@ class _MatchesTab extends StatefulWidget {
     required this.onMore,
     required this.onOpenMatch,
     required this.onOpenLeague,
+    required this.onOpenLeagueGames,
     required this.onOpenGame,
     required this.onOpenShootout,
+    required this.onSearch,
     required this.animateIntro,
     required this.onIntroPlayed,
   });
@@ -350,8 +396,10 @@ class _MatchesTab extends StatefulWidget {
   final VoidCallback onMore;
   final ValueChanged<SportMatch> onOpenMatch;
   final ValueChanged<League> onOpenLeague;
+  final ValueChanged<League> onOpenLeagueGames;
   final VoidCallback onOpenGame;
   final VoidCallback onOpenShootout;
+  final VoidCallback onSearch;
   final bool animateIntro;
   final VoidCallback? onIntroPlayed;
 
@@ -515,6 +563,7 @@ class _MatchesTabState extends State<_MatchesTab> {
           activeIndex: widget.activeSportTab,
           onTap: widget.onSportTabChanged,
           onMore: widget.onMore,
+          trailingAction: _MatchSearchButton(onTap: widget.onSearch),
         ),
         Expanded(
           child: BlocBuilder<PredictionCubit, PredictionState>(
@@ -793,7 +842,9 @@ class _MatchesTabState extends State<_MatchesTab> {
                               ),
                             ),
                           ),
-                          for (final match in entry.value) ...[
+                          for (final match in _visibleLeagueMatches(
+                            entry.value,
+                          )) ...[
                             StaggeredCardEntrance(
                               key: ValueKey(
                                 'day-$_dayGeneration-$cardEntranceIndex',
@@ -818,6 +869,18 @@ class _MatchesTabState extends State<_MatchesTab> {
                                     )],
                                 onTap: () => widget.onOpenMatch(match),
                               ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          if (entry.value.length > _kLeaguePreviewCount) ...[
+                            _LeagueViewMoreRow(
+                              remaining:
+                                  entry.value.length - _kLeaguePreviewCount,
+                              accent: entry.key.accent,
+                              onTap: () {
+                                playSound(SoundEffect.uiTap);
+                                widget.onOpenLeagueGames(entry.key);
+                              },
                             ),
                             const SizedBox(height: 16),
                           ],
@@ -1385,6 +1448,58 @@ Map<League, List<SportMatch>> _groupByLeague(
     if (matches.isNotEmpty) grouped[league] = matches;
   }
   return grouped;
+}
+
+/// Number of a league's games shown per match day before the feed collapses
+/// the rest behind [_LeagueViewMoreRow].
+const int _kLeaguePreviewCount = 3;
+
+List<SportMatch> _visibleLeagueMatches(List<SportMatch> matches) =>
+    matches.length > _kLeaguePreviewCount
+    ? matches.sublist(0, _kLeaguePreviewCount)
+    : matches;
+
+/// Secondary "collapsed list" link shown once a league has more games on a
+/// match day than the preview count. Right-aligned flat text + chevron, no
+/// rule line and no glow (glow is reserved for live/primary elements per the
+/// cyber-ui glow rule).
+class _LeagueViewMoreRow extends StatelessWidget {
+  const _LeagueViewMoreRow({
+    required this.remaining,
+    required this.accent,
+    required this.onTap,
+  });
+
+  final int remaining;
+  final Color accent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'View $remaining more games',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text(
+              'VIEW MORE',
+              style: Cyber.label(9, color: accent, letterSpacing: 1.1),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.keyboard_double_arrow_down_rounded,
+              size: 14,
+              color: accent,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 List<DateTime> _calendarDays(
@@ -2085,8 +2200,8 @@ class _GamesTabState extends State<_GamesTab> {
           startIndex: 1,
           games: [
             _QuickGameEntry(
-              key: const ValueKey('f1-quiz-grid-card'),
-              title: 'F1 QUIZ',
+              key: const ValueKey('motorsport-quiz-grid-card'),
+              title: 'MOTORSPORT QUIZ',
               subtitle: 'TRIVIA GAUNTLET',
               icon: Icons.quiz_rounded,
               accent: Cyber.violet,

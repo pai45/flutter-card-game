@@ -6,6 +6,8 @@ import 'package:card_game/models/prediction.dart';
 import 'package:card_game/models/sport_match.dart';
 import 'package:card_game/models/team_standing.dart';
 import 'package:card_game/screens/predictions/prediction_home_screen.dart';
+import 'package:card_game/screens/predictions/match_search_screen.dart';
+import 'package:card_game/screens/predictions/widgets/match_prediction_card.dart';
 import 'package:card_game/screens/predictions/widgets/motorsport_week_picker.dart';
 import 'package:card_game/services/prediction_repository.dart';
 import 'package:card_game/services/secure_storage_service.dart';
@@ -45,6 +47,42 @@ void main() {
 
     expect(_headingText('TODAY'), findsOneWidget);
     expect(_headingText('(1)'), findsOneWidget);
+  });
+
+  testWidgets('match search action fits narrow layout and opens search', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final cubit = _NavCubit(_NavRepo());
+    cubit.seed(_fixtures());
+    addTearDown(cubit.close);
+
+    await _pumpHome(tester, cubit, activeMatchSportTab: 1);
+
+    expect(find.byKey(const ValueKey('match-search-button')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    await tester.tap(find.byKey(const ValueKey('match-search-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MatchSearchScreen), findsOneWidget);
+    expect(find.byKey(const ValueKey('match-search-field')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('games tab does not show the match search action', (
+    tester,
+  ) async {
+    final cubit = _NavCubit(_NavRepo());
+    cubit.seed(_fixtures());
+    addTearDown(cubit.close);
+
+    await _pumpHome(tester, cubit, activeTab: 1);
+
+    expect(find.byKey(const ValueKey('match-search-button')), findsNothing);
   });
 
   testWidgets('match day arrows move to tomorrow and yesterday', (
@@ -116,6 +154,51 @@ void main() {
     expect(_headingText(expectedLabel), findsOneWidget);
   });
 
+  testWidgets('league match list caps at 3 games and reveals view more', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(412, 3200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final cubit = _NavCubit(_NavRepo());
+    cubit.seed(_sameDayFixtures(5));
+    addTearDown(cubit.close);
+
+    League? openedLeagueGames;
+    await _pumpHome(
+      tester,
+      cubit,
+      activeMatchSportTab: 1,
+      onOpenLeagueGames: (league) => openedLeagueGames = league,
+    );
+
+    expect(find.byType(MatchPredictionCard), findsNWidgets(3));
+    expect(find.text('VIEW MORE // +2 GAMES'), findsOneWidget);
+
+    await tester.tap(find.text('VIEW MORE // +2 GAMES'));
+    await tester.pump();
+
+    expect(openedLeagueGames?.id, _league.id);
+  });
+
+  testWidgets('league match list shows every game up to the preview count', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(412, 3200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final cubit = _NavCubit(_NavRepo());
+    cubit.seed(_sameDayFixtures(3));
+    addTearDown(cubit.close);
+
+    await _pumpHome(tester, cubit, activeMatchSportTab: 1);
+
+    expect(find.byType(MatchPredictionCard), findsNWidgets(3));
+    expect(find.textContaining('VIEW MORE'), findsNothing);
+  });
+
   testWidgets('motorsport week header starts on this week', (tester) async {
     final cubit = _NavCubit(_NavRepo());
     cubit.seed(_motorsportFixtures());
@@ -179,9 +262,11 @@ void main() {
 Future<void> _pumpHome(
   WidgetTester tester,
   PredictionCubit cubit, {
+  int activeTab = 0,
   int activeMatchSportTab = 1,
   VoidCallback? onOpenGame,
   VoidCallback? onOpenShootout,
+  ValueChanged<League>? onOpenLeagueGames,
 }) async {
   final gameBloc = GameBloc(SecureGameStorage());
   addTearDown(gameBloc.close);
@@ -194,7 +279,7 @@ Future<void> _pumpHome(
       ],
       child: MaterialApp(
         home: PredictionHomeScreen(
-          activeTab: 0,
+          activeTab: activeTab,
           onTabChanged: (_) {},
           activeMatchSportTab: activeMatchSportTab,
           onMatchSportTabChanged: (_) {},
@@ -204,6 +289,7 @@ Future<void> _pumpHome(
           onOpenMatch: (_) {},
           onOpenMarket: (_) {},
           onOpenLeague: (_) {},
+          onOpenLeagueGames: onOpenLeagueGames ?? (_) {},
           onOpenGame: onOpenGame ?? () {},
           onOpenShootout: onOpenShootout ?? () {},
           onOpenQuiz: (_) {},
@@ -234,6 +320,13 @@ List<SportMatch> _fixtures() {
     _match('yesterday', today.subtract(const Duration(days: 1))),
     _match('today', today),
     _match('tomorrow', today.add(const Duration(days: 1))),
+  ];
+}
+
+List<SportMatch> _sameDayFixtures(int count) {
+  final today = _today();
+  return [
+    for (var i = 0; i < count; i++) _match('same-day-$i', today),
   ];
 }
 
