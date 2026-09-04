@@ -109,9 +109,12 @@ flutter:
     - assets/animations/
     - assets/avatar_options/
     - assets/player_images/
+    # Canonical name-slug portraits used by collectible cricket player cards.
     - assets/cricketer_images/
+    # Supplied player-label portraits used by Hoop Duel collectible cards.
     - assets/basketball_player_images/
     - assets/tennis_player_images/
+    # F1 PNG and supplied F2/NASCAR/IndyCar WebP collectible-card portraits.
     - assets/racing_driver_images/
     - assets/audio/
     - assets/packs/

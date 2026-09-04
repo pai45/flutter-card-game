@@ -83,6 +83,52 @@ const basketballPortraitAssets = <String, String>{
   'phx-grayson-allen': 'assets/basketball_player_images/grayson_allen.webp',
   'por-jerami-grant': 'assets/basketball_player_images/jerami_grant.webp',
   'was-deandre-ayton': 'assets/basketball_player_images/deandre_ayton.webp',
+  'ind-aaron-nesmith': 'assets/basketball_player_images/aaron_nesmith.webp',
+  'hou-amen-thompson': 'assets/basketball_player_images/amen_thompson.webp',
+  'ind-andrew-nembhard': 'assets/basketball_player_images/andrew_nembhard.webp',
+  'det-ausar-thompson': 'assets/basketball_player_images/ausar_thompson.webp',
+  'chi-ayo-dosunmu': 'assets/basketball_player_images/ayo_dosunmu.webp',
+  'bos-baylor-scheierman':
+      'assets/basketball_player_images/baylor_scheierman.webp',
+  'ind-bennedict-mathurin':
+      'assets/basketball_player_images/bennedict_mathurin.webp',
+  'gsw-brandin-podziemski':
+      'assets/basketball_player_images/brandin_podziemski.webp',
+  'den-cam-johnson': 'assets/basketball_player_images/cam_johnson.webp',
+  'bkn-cam-thomas': 'assets/basketball_player_images/cam_thomas.webp',
+  'den-christian-braun': 'assets/basketball_player_images/christian_braun.webp',
+  'dal-cooper-flagg': 'assets/basketball_player_images/cooper_flagg.webp',
+  'dal-daniel-gafford': 'assets/basketball_player_images/daniel_gafford.webp',
+  'cle-deandre-hunter': 'assets/basketball_player_images/deandre_hunter.webp',
+  'hou-jabari-smith-jr': 'assets/basketball_player_images/jabari_smith_jr.webp',
+  'atl-jalen-johnson': 'assets/basketball_player_images/jalen_johnson.webp',
+  'lac-james-harden': 'assets/basketball_player_images/james_harden.webp',
+  'chi-josh-giddey': 'assets/basketball_player_images/josh_giddey.webp',
+  'den-julian-strawther':
+      'assets/basketball_player_images/julian_strawther.webp',
+  'cha-kon-knueppel': 'assets/basketball_player_images/kon_knueppel.webp',
+  'cha-kylan-boswell': 'assets/basketball_player_images/kylan_boswell.webp',
+  'chi-matas-buzelis': 'assets/basketball_player_images/matas_buzelis.webp',
+  'cle-max-strus': 'assets/basketball_player_images/max_strus.webp',
+  'gsw-moses-moody': 'assets/basketball_player_images/moses_moody.webp',
+  'cha-moussa-diabate': 'assets/basketball_player_images/moussa_diabate.webp',
+  'bos-neemias-queta': 'assets/basketball_player_images/neemias_queta.webp',
+  'atl-nickeil-alexander-walker':
+      'assets/basketball_player_images/nickeil_alexander_walker.webp',
+  'den-nikola-jokic': 'assets/basketball_player_images/nikola_jokic.webp',
+  'bkn-noah-clowney': 'assets/basketball_player_images/noah_clowney.webp',
+  'ind-obi-toppin': 'assets/basketball_player_images/obi_toppin.webp',
+  'atl-onyeka-okongwu': 'assets/basketball_player_images/onyeka_okongwu.webp',
+  'dal-pj-washington': 'assets/basketball_player_images/pj_washington.webp',
+  'hou-reed-sheppard': 'assets/basketball_player_images/reed_sheppard.webp',
+  'det-ron-holland': 'assets/basketball_player_images/ron_holland.webp',
+  'gsw-stephen-curry': 'assets/basketball_player_images/stephen_curry.webp',
+  'hou-steven-adams': 'assets/basketball_player_images/steven_adams.webp',
+  'bkn-terance-mann': 'assets/basketball_player_images/terance_mann.webp',
+  'chi-tobe-awaka': 'assets/basketball_player_images/tobe_awaka.webp',
+  'bkn-tyler-bilodeau': 'assets/basketball_player_images/tyler_bilodeau.webp',
+  'atl-zaccharie-risacher':
+      'assets/basketball_player_images/zaccharie_risacher.webp',
 };
 
 String? basketballPortraitAssetFor(String athleteId) =>

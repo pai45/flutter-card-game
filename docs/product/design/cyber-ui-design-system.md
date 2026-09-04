@@ -37,6 +37,45 @@ clear state/result feedback, and a reward/next-action handoff.
   `CyberCtaButton`, and `CyberSegmentedTabs`. If a visual pattern repeats, extend
   the shared cyber catalog rather than duplicate it.
 
+### Charts — one system
+
+All charts use `lib/widgets/cyber/cyber_chart.dart`. There is no charting
+package; the app draws its own.
+
+- `CyberChartPanel` is the whole treatment: a flat `Cyber.chartSurface` panel
+  with a cyan section label, an optional range switcher, a scrubbable plot, an
+  expand button, and a legend. Dragging it moves a dashed playhead with selection
+  haptics; the legend reads every series at that point plus a caller-supplied
+  context label (a minute, an over, a game clock). The expand button pushes
+  `CyberChartFullScreen` with the same plot.
+- `ChartSeries` is one line: values, colour, an optional gradient `fill`, and a
+  `readout(value, index)` so a series can label itself from a parallel list.
+- `ChartMarker` pins a moment (goal, wicket, lead change) to the plot as a dot,
+  diamond or ring. Only the `focal` marker draws a full-height rule — a dense
+  marker set otherwise reads as a cage.
+- `CyberChartPainter` handles the grid, the optional `signed` two-sided baseline,
+  the step/linear interpolation, the reveal sweep and the playhead. Set
+  `percentScale` for a probability axis (pinned 0–100); everything else scales to
+  its own data and never pads an all-positive series below zero.
+- Per the glow rule a chart panel is calm; `glow` is set only while the reveal
+  sweep runs.
+
+### Data-page furniture
+
+Data-dense pages (pick market detail, match STATS) share:
+`CyberSectionHeading` (label + hairline rule) instead of a per-section telemetry
+panel, `CyberMiniMetric` (small KPI cell), `CyberStatPill` (tinted outline token),
+`CyberDeltaChip` (▲/▼ movement), and — for match reports —
+`MatchPulseHeader`, `StatsRowShell` and `StatComparisonRow` from
+`lib/screens/predictions/widgets/match_stats_shell.dart`. A contested home-vs-away
+split uses two flat colour segments, not two progress meters: a static stat block
+gets its depth from fill, never a sheen.
+
+Persistent search uses the shared `CyberSearchField`: a calm 56 px rectangular
+panel with one cyan outline, no glow, and no nested filled input or clipped
+corners. Chamfers remain reserved for cards, panels, and action controls; the
+plain search silhouette prioritizes a clean typing target.
+
 ## Rewards and Progression
 
 Progression uses explicit meters, level/rank chips, and before/after movement.
@@ -75,9 +114,12 @@ widget must not become the authoritative store for durable state.
 - [`lib/widgets/cyber/cyber_widgets.dart`](../../../lib/widgets/cyber/cyber_widgets.dart)
 - [`lib/widgets/cyber/cyber_cta_button.dart`](../../../lib/widgets/cyber/cyber_cta_button.dart)
 - [`lib/widgets/cyber/cyber_segmented_tabs.dart`](../../../lib/widgets/cyber/cyber_segmented_tabs.dart)
+- [`lib/widgets/cyber/cyber_chart.dart`](../../../lib/widgets/cyber/cyber_chart.dart)
+- [`lib/screens/predictions/widgets/match_stats_shell.dart`](../../../lib/screens/predictions/widgets/match_stats_shell.dart)
 
 ## Tests
 
 Component behavior is exercised by screen/widget tests linked from the owning
-feature pages. Visual changes also require running-app review under the project
+feature pages; the shared chart system has its own
+[`test/cyber_chart_test.dart`](../../../test/cyber_chart_test.dart). Visual changes also require running-app review under the project
 instructions; documentation-only edits do not.

@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,8 +9,10 @@ import '../../../data/team_palettes.dart';
 import '../../../models/basketball_match_data.dart';
 import '../../../models/sport_match.dart';
 import '../../../widgets/basketball_scorecard_view.dart';
+import '../../../widgets/cyber/cyber_chart.dart';
 import '../../../widgets/cyber/cyber_filter_chips.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
+import 'match_stats_shell.dart';
 
 class BasketballMatchStatsView extends StatefulWidget {
   const BasketballMatchStatsView({
@@ -76,13 +79,45 @@ class _BasketballOverview extends StatelessWidget {
   Widget build(BuildContext context) {
     final details = match.basketballDetails;
     final scorecard = match.basketballScorecard;
+    final plays = details?.plays ?? const <BasketballPlay>[];
+    final pulse = _winPulse(match, plays);
+
     return ListView(
       key: const ValueKey('basketball-stats-overview'),
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
       children: [
-        CyberHudPanel(
-          title: 'Game Intel',
-          code: 'SYS://HOOPS/REPORT',
+        MatchPulseHeader(
+          match: match,
+          title: '${match.home.name} vs ${match.away.name}',
+          statusLabel: details?.status ?? _status(match.status),
+          heroValue: pulse.value,
+          heroLabel: pulse.label,
+          heroCaption: pulse.caption,
+          heroColor: pulse.color,
+          delta: pulse.delta,
+          deltaSuffix: pulse.deltaSuffix,
+          deltaDecimals: 1,
+          subtitle: details == null
+              ? _stateMessage(match)
+              : '${details.gameNote} // ${details.season}',
+          metrics: [
+            CyberMiniMetric(
+              label: 'SCORE',
+              value: '${match.awayScore ?? '-'} - ${match.homeScore ?? '-'}',
+            ),
+            CyberMiniMetric(
+              label: 'ATTENDANCE',
+              value: details == null || details.attendance <= 0
+                  ? '—'
+                  : _commas(details.attendance),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        const CyberSectionHeading(label: 'GAME INTEL'),
+        const SizedBox(height: 10),
+        StatsRowShell(
+          padding: const EdgeInsets.all(12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -90,41 +125,26 @@ class _BasketballOverview extends StatelessWidget {
                 details?.league.toUpperCase() ?? match.leagueId.toUpperCase(),
                 style: Cyber.display(15, letterSpacing: 0.8),
               ),
-              const SizedBox(height: 4),
-              Text(
-                details == null
-                    ? _stateMessage(match)
-                    : '${details.gameNote} // ${details.season}',
-                style: Cyber.body(12, color: Cyber.muted),
-              ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  _TelemetryChip(
-                    label: 'STATUS',
-                    value: details?.status ?? _status(match.status),
-                  ),
-                  _TelemetryChip(
+                  CyberStatPill(
                     label: 'BROADCAST',
                     value: _fallback(details?.broadcast),
+                    color: Cyber.cyan,
                   ),
-                  _TelemetryChip(
-                    label: 'ATTENDANCE',
-                    value: details == null || details.attendance <= 0
-                        ? 'Unavailable'
-                        : _commas(details.attendance),
-                  ),
-                  _TelemetryChip(
+                  CyberStatPill(
                     label: 'FORMAT',
                     value: details?.overtime == true
                         ? 'OVERTIME'
                         : 'REGULATION',
+                    color: Cyber.cyan,
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               _InfoLine(
                 label: 'VENUE',
                 value: details == null
@@ -135,44 +155,44 @@ class _BasketballOverview extends StatelessWidget {
           ),
         ),
         if (scorecard != null) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 18),
+          const CyberSectionHeading(label: 'QUARTER GRID'),
+          const SizedBox(height: 10),
           _QuarterPanel(match: match),
         ],
         if (details?.series.isNotEmpty ?? false) ...[
-          const SizedBox(height: 12),
-          CyberHudPanel(
-            title: 'Series Signal',
-            code: 'BRACKET://FINALS',
-            accent: Cyber.gold,
-            child: Column(
-              children: details!.series
-                  .map(
-                    (item) => _InfoLine(
-                      label: item.title,
-                      value:
-                          '${item.description} // ${item.summary} // ${item.completed ? 'COMPLETE' : 'ACTIVE'}',
-                    ),
-                  )
-                  .toList(),
+          const SizedBox(height: 18),
+          const CyberSectionHeading(label: 'SERIES SIGNAL'),
+          const SizedBox(height: 10),
+          for (final item in details!.series) ...[
+            StatsRowShell(
+              accent: Cyber.gold,
+              padding: const EdgeInsets.all(12),
+              child: _InfoLine(
+                label: item.title,
+                value:
+                    '${item.description} // ${item.summary} // ${item.completed ? 'COMPLETE' : 'ACTIVE'}',
+              ),
             ),
-          ),
+            const SizedBox(height: 8),
+          ],
         ],
         if (match.teamStats?.isNotEmpty ?? false) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 18),
           _BasketballStatPanel(match: match),
         ],
         if (details?.leaders.isNotEmpty ?? false) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 18),
           _LeaderPanel(match: match, groups: details!.leaders),
         ],
         if (details?.officials.isNotEmpty ?? false) ...[
-          const SizedBox(height: 12),
-          CyberHudPanel(
-            title: 'Officials',
-            code:
-                'CREW://${details!.officials.length.toString().padLeft(2, '0')}',
+          const SizedBox(height: 18),
+          const CyberSectionHeading(label: 'OFFICIALS'),
+          const SizedBox(height: 10),
+          StatsRowShell(
+            padding: const EdgeInsets.all(12),
             child: Column(
-              children: details.officials
+              children: details!.officials
                   .map((item) => _InfoLine(label: item.role, value: item.name))
                   .toList(),
             ),
@@ -190,10 +210,9 @@ class _QuarterPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lines = match.basketballScorecard!.linescores;
-    return CyberHudPanel(
-      title: 'Quarter Grid',
-      code: 'SCORE://PERIODS',
+    return StatsRowShell(
       accent: Cyber.magenta,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: Column(
         children: [
           _QuarterRow(
@@ -264,68 +283,51 @@ class _QuarterRow extends StatelessWidget {
   }
 }
 
-class _BasketballStatPanel extends StatelessWidget {
+/// TEAM CONTROL as a stack of market-style outcome rows — tap one to hold it
+/// highlighted while you read the rest.
+class _BasketballStatPanel extends StatefulWidget {
   const _BasketballStatPanel({required this.match});
   final SportMatch match;
 
   @override
+  State<_BasketballStatPanel> createState() => _BasketballStatPanelState();
+}
+
+class _BasketballStatPanelState extends State<_BasketballStatPanel> {
+  String? _selectedLabel;
+
+  @override
   Widget build(BuildContext context) {
+    final match = widget.match;
+    final stats = match.teamStats!;
     final homeColor = paletteForTeam(match.home, sport: match.sport).primary;
     final awayColor = paletteForTeam(match.away, sport: match.sport).primary;
-    return CyberHudPanel(
-      title: 'Team Control',
-      code: 'COMPARE://${match.teamStats!.length.toString().padLeft(2, '0')}',
-      child: Column(
-        children: match.teamStats!.map((stat) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 58,
-                      child: Text(
-                        stat.homeDisplay,
-                        style: _numberStyle(11, color: homeColor),
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        stat.label.toUpperCase(),
-                        textAlign: TextAlign.center,
-                        style: Cyber.label(8, color: Cyber.muted),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 58,
-                      child: Text(
-                        stat.awayDisplay,
-                        textAlign: TextAlign.right,
-                        style: _numberStyle(11, color: awayColor),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Expanded(
-                      flex: (stat.homeShare * 100).round().clamp(1, 99),
-                      child: Container(height: 3, color: homeColor),
-                    ),
-                    const SizedBox(width: 2),
-                    Expanded(
-                      flex: ((1 - stat.homeShare) * 100).round().clamp(1, 99),
-                      child: Container(height: 3, color: awayColor),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const CyberSectionHeading(label: 'TEAM CONTROL'),
+        const SizedBox(height: 12),
+        TeamLegendRow(match: match),
+        const SizedBox(height: 12),
+        for (final stat in stats) ...[
+          StatComparisonRow(
+            stat: stat,
+            homeColor: homeColor,
+            awayColor: awayColor,
+            selected: stat.label == _selectedLabel,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(
+                () => _selectedLabel = stat.label == _selectedLabel
+                    ? null
+                    : stat.label,
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+        ],
+      ],
     );
   }
 }
@@ -337,47 +339,67 @@ class _LeaderPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CyberHudPanel(
-      title: 'Impact Leaders',
-      code: 'LEADERS://06',
-      accent: Cyber.gold,
-      child: Column(
-        children: groups.map((group) {
-          final isHome = group.teamId == match.home.id;
-          final accent = paletteForTeam(
-            isHome ? match.home : match.away,
-            sport: match.sport,
-          ).primary;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  group.team.toUpperCase(),
-                  style: Cyber.label(9, color: accent),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const CyberSectionHeading(label: 'IMPACT LEADERS'),
+        const SizedBox(height: 10),
+        for (final group in groups) ...[
+          Builder(
+            builder: (context) {
+              final isHome = group.teamId == match.home.id;
+              final accent = paletteForTeam(
+                isHome ? match.home : match.away,
+                sport: match.sport,
+              ).primary;
+              return StatsRowShell(
+                accent: accent,
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      group.team.toUpperCase(),
+                      style: Cyber.label(9, color: accent),
+                    ),
+                    const SizedBox(height: 8),
+                    for (final leader in group.leaders)
+                      _InfoLine(
+                        label: leader.label,
+                        value: '${leader.name} // ${leader.value}',
+                      ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                for (final leader in group.leaders)
-                  _InfoLine(
-                    label: leader.label,
-                    value: '${leader.name} // ${leader.value}',
-                  ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+        ],
+      ],
     );
   }
 }
 
-class _BasketballFlow extends StatelessWidget {
+/// FLOW: the win-probability trace and the scoring map, both on the shared
+/// chart surface so they scrub and expand like a pick market.
+class _BasketballFlow extends StatefulWidget {
   const _BasketballFlow({required this.match});
   final SportMatch match;
 
   @override
+  State<_BasketballFlow> createState() => _BasketballFlowState();
+}
+
+class _BasketballFlowState extends State<_BasketballFlow> {
+  static const _flowRanges = ['GAME', 'H1', 'H2', 'CLUTCH'];
+  static const _mapRanges = ['ALL', 'HOME', 'AWAY', '3PT'];
+
+  String _flowRange = _flowRanges.first;
+  String _mapRange = _mapRanges.first;
+
+  @override
   Widget build(BuildContext context) {
+    final match = widget.match;
     final details = match.basketballDetails;
     if (details == null || details.plays.isEmpty) {
       return const CyberNoDataState(
@@ -386,112 +408,206 @@ class _BasketballFlow extends StatelessWidget {
         message: 'Win probability and scoring coordinates have not arrived.',
       );
     }
+
     final homeColor = paletteForTeam(match.home, sport: match.sport).primary;
     final awayColor = paletteForTeam(match.away, sport: match.sport).primary;
-    final mapped = details.plays
-        .where((play) => play.coordinate != null)
-        .toList();
+    final plays = _playsForRange(details.plays, _flowRange);
+    final mapped = _mappedPlays(details.plays, _mapRange);
+
     return ListView(
       key: const ValueKey('basketball-stats-flow'),
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
       children: [
         TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0, end: 1),
+          tween: Tween(begin: 0.0, end: 1.0),
           duration: const Duration(milliseconds: 760),
           curve: Curves.easeOutCubic,
-          builder: (context, progress, _) => CyberHudPanel(
-            title: 'Win Probability',
-            code: 'FLOW://${details.plays.length.toString().padLeft(3, '0')}',
+          builder: (context, progress, _) => CyberChartPanel(
+            chartKey: const ValueKey('basketball-win-probability-graph'),
+            title: 'WIN PROBABILITY',
+            caption: '${plays.length} PLAYS',
+            height: 220,
+            percentScale: true,
             glow: progress < 1,
-            child: SizedBox(
-              height: 220,
-              child: CustomPaint(
-                key: const ValueKey('basketball-win-probability-graph'),
-                painter: BasketballWinProbabilityPainter(
-                  plays: details.plays,
-                  homeColor: homeColor,
-                  awayColor: awayColor,
-                  progress: progress,
-                ),
+            revealProgress: progress,
+            ranges: _flowRanges,
+            activeRange: _flowRange,
+            onRangeChanged: (range) => setState(() => _flowRange = range),
+            markers: _turningPointMarkers(details.turningPoints, plays),
+            contextLabelAt: (index) {
+              final play = plays[index.clamp(0, plays.length - 1)];
+              return 'Q${play.period} ${play.clock}';
+            },
+            series: [
+              ChartSeries(
+                label: match.home.shortName.toUpperCase(),
+                color: homeColor,
+                fill: true,
+                readout: (value, _) => '${value.round()}%',
+                values: [
+                  for (final play in plays)
+                    (play.homeWinPercentage.clamp(0.0, 1.0)) * 100,
+                ],
               ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        CyberHudPanel(
-          title: 'Scoring Map',
-          code: 'COURT://${mapped.length.toString().padLeft(2, '0')}',
-          accent: Cyber.magenta,
-          child: Column(
-            children: [
-              SizedBox(
-                height: 230,
-                child: CustomPaint(
-                  key: const ValueKey('basketball-scoring-map'),
-                  painter: BasketballScoringMapPainter(
-                    plays: mapped,
-                    homeColor: homeColor,
-                    awayColor: awayColor,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'COORDINATE-BEARING MADE FIELD GOALS // FREE THROWS EXCLUDED',
-                textAlign: TextAlign.center,
-                style: Cyber.label(7.5, color: Cyber.muted, letterSpacing: 0.7),
+              ChartSeries(
+                label: match.away.shortName.toUpperCase(),
+                color: awayColor,
+                strokeWidth: 1.5,
+                readout: (value, _) => '${value.round()}%',
+                values: [
+                  for (final play in plays)
+                    (1 - play.homeWinPercentage.clamp(0.0, 1.0)) * 100,
+                ],
               ),
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        CyberHudPanel(
-          title: 'Turning Points',
-          code:
-              'SWINGS://${details.turningPoints.length.toString().padLeft(2, '0')}',
-          accent: Cyber.gold,
-          child: Column(
-            children: details.turningPoints.map((point) {
-              final positive = point.swing >= 0;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: 56,
-                      child: Text(
-                        'Q${point.period}\n${point.clock}',
-                        style: Cyber.label(8, color: Cyber.muted),
-                      ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(point.text, style: Cyber.body(12)),
-                          const SizedBox(height: 3),
-                          Text(
-                            '${point.awayScore}-${point.homeScore} // HOME ${(point.homeWinPercentage * 100).toStringAsFixed(1)}%',
-                            style: Cyber.label(7.5, color: Cyber.muted),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Text(
-                      '${positive ? '+' : ''}${(point.swing * 100).toStringAsFixed(1)}',
-                      style: _numberStyle(
-                        10,
-                        color: positive ? Cyber.success : Cyber.danger,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
+        const SizedBox(height: 14),
+        _ScoringMapPanel(
+          plays: mapped,
+          homeColor: homeColor,
+          awayColor: awayColor,
+          homeLabel: match.home.shortName.toUpperCase(),
+          awayLabel: match.away.shortName.toUpperCase(),
+          range: _mapRange,
+          ranges: _mapRanges,
+          onRangeChanged: (range) => setState(() => _mapRange = range),
         ),
+        const SizedBox(height: 18),
+        const CyberSectionHeading(label: 'TURNING POINTS'),
+        const SizedBox(height: 10),
+        for (final point in details.turningPoints) ...[
+          StatsRowShell(
+            accent: point.swing >= 0 ? homeColor : awayColor,
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 52,
+                  child: Text(
+                    'Q${point.period}\n${point.clock}',
+                    style: Cyber.label(8, color: Cyber.muted),
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(point.text, style: Cyber.body(12)),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${point.awayScore}-${point.homeScore} // HOME ${(point.homeWinPercentage * 100).toStringAsFixed(1)}%',
+                        style: Cyber.label(7.5, color: Cyber.muted),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                CyberDeltaChip(delta: point.swing * 100, decimals: 1),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
       ],
+    );
+  }
+}
+
+/// The court map keeps its own painter — it plots coordinates, not a series —
+/// but wears the same panel chrome and range switcher as the line charts.
+class _ScoringMapPanel extends StatelessWidget {
+  const _ScoringMapPanel({
+    required this.plays,
+    required this.homeColor,
+    required this.awayColor,
+    required this.homeLabel,
+    required this.awayLabel,
+    required this.range,
+    required this.ranges,
+    required this.onRangeChanged,
+  });
+
+  final List<BasketballPlay> plays;
+  final Color homeColor;
+  final Color awayColor;
+  final String homeLabel;
+  final String awayLabel;
+  final String range;
+  final List<String> ranges;
+  final ValueChanged<String> onRangeChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+      decoration: BoxDecoration(
+        color: Cyber.chartSurface,
+        border: Border.all(color: Cyber.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'SCORING MAP',
+                  style: Cyber.label(10, color: Cyber.cyan),
+                ),
+              ),
+              Text(
+                '${plays.length} BUCKETS',
+                style: Cyber.label(9, color: Cyber.muted),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          CyberChartRangeTabs(
+            ranges: ranges,
+            active: range,
+            onChanged: onRangeChanged,
+          ),
+          const SizedBox(height: 12),
+          AspectRatio(
+            aspectRatio: _CourtFrame.courtWidthFt / _CourtFrame.courtLengthFt,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                CustomPaint(
+                  key: const ValueKey('basketball-scoring-map'),
+                  painter: BasketballScoringMapPainter(
+                    plays: plays,
+                    homeColor: homeColor,
+                    awayColor: awayColor,
+                  ),
+                ),
+                if (plays.isEmpty)
+                  Center(
+                    child: Text(
+                      'NO PLOTTED SHOTS IN THIS FILTER',
+                      style: Cyber.label(8, color: Cyber.muted),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          _ScoringMapLegend(
+            homeColor: homeColor,
+            awayColor: awayColor,
+            homeLabel: homeLabel,
+            awayLabel: awayLabel,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'COORDINATE-BEARING MADE FIELD GOALS // FREE THROWS EXCLUDED',
+            textAlign: TextAlign.center,
+            style: Cyber.label(7.5, color: Cyber.muted, letterSpacing: 0.7),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -529,7 +645,7 @@ class _BasketballPlays extends StatelessWidget {
               final play = plays[index];
               final team = play.isHomeTeam ? match.home : match.away;
               final accent = paletteForTeam(team, sport: match.sport).primary;
-              return CyberPanel(
+              return StatsRowShell(
                 accent: accent,
                 padding: const EdgeInsets.all(12),
                 child: Row(
@@ -559,7 +675,7 @@ class _BasketballPlays extends StatelessWidget {
                           Text(play.text, style: Cyber.body(12)),
                           const SizedBox(height: 5),
                           Text(
-                            '${match.away.shortName} ${play.awayScore} // ${match.home.shortName} ${play.homeScore}  •  HOME ${(play.homeWinPercentage * 100).toStringAsFixed(1)}% // SWING ${play.swing >= 0 ? '+' : ''}${(play.swing * 100).toStringAsFixed(1)}',
+                            '${match.away.shortName} ${play.awayScore} // ${match.home.shortName} ${play.homeScore}  •  HOME ${(play.homeWinPercentage * 100).toStringAsFixed(1)}%',
                             style: Cyber.label(7.2, color: Cyber.muted),
                           ),
                         ],
@@ -636,6 +752,7 @@ class _BasketballTeamsState extends State<_BasketballTeams> {
       _home ? widget.match.home : widget.match.away,
       sport: widget.match.sport,
     ).primary;
+
     return Column(
       key: const ValueKey('basketball-stats-teams'),
       children: [
@@ -657,32 +774,36 @@ class _BasketballTeamsState extends State<_BasketballTeams> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
             children: [
-              CyberHudPanel(
-                title: team.name,
-                code: 'ROSTER://${team.playerCount}',
+              CyberSectionHeading(label: team.name),
+              const SizedBox(height: 10),
+              StatsRowShell(
                 accent: accent,
+                padding: const EdgeInsets.all(12),
                 child: Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _TelemetryChip(
+                    CyberStatPill(
                       label: 'PLAYED',
                       value: '${team.playedCount}',
+                      color: accent,
                     ),
-                    _TelemetryChip(label: 'STARTERS', value: '5'),
-                    _TelemetryChip(
+                    CyberStatPill(label: 'STARTERS', value: '5', color: accent),
+                    CyberStatPill(
                       label: 'BOX SCORE',
                       value: team.boxscoreAvailable ? 'CONFIRMED' : 'PENDING',
+                      color: accent,
                     ),
                   ],
                 ),
               ),
               if (injuries.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                CyberHudPanel(
-                  title: 'Availability Report',
-                  code: 'MED://${injuries.length.toString().padLeft(2, '0')}',
+                const SizedBox(height: 18),
+                const CyberSectionHeading(label: 'AVAILABILITY REPORT'),
+                const SizedBox(height: 10),
+                StatsRowShell(
                   accent: Cyber.danger,
+                  padding: const EdgeInsets.all(12),
                   child: Column(
                     children: injuries
                         .map(
@@ -696,7 +817,9 @@ class _BasketballTeamsState extends State<_BasketballTeams> {
                   ),
                 ),
               ],
-              const SizedBox(height: 12),
+              const SizedBox(height: 18),
+              const CyberSectionHeading(label: 'ROSTER'),
+              const SizedBox(height: 10),
               for (final player in team.players) ...[
                 _RosterRow(player: player, accent: accent),
                 const SizedBox(height: 8),
@@ -716,7 +839,7 @@ class _RosterRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CyberPanel(
+    return StatsRowShell(
       accent: player.didNotPlay ? Cyber.muted : accent,
       padding: const EdgeInsets.all(12),
       child: Row(
@@ -760,31 +883,6 @@ class _RosterRow extends StatelessWidget {
   }
 }
 
-class _TelemetryChip extends StatelessWidget {
-  const _TelemetryChip({required this.label, required this.value});
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
-      decoration: BoxDecoration(
-        color: Cyber.card,
-        border: Border.all(color: Cyber.borderSubtle),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: Cyber.label(7, color: Cyber.muted)),
-          const SizedBox(height: 2),
-          Text(value.toUpperCase(), style: _numberStyle(9.5)),
-        ],
-      ),
-    );
-  }
-}
-
 class _InfoLine extends StatelessWidget {
   const _InfoLine({required this.label, required this.value});
   final String label;
@@ -818,7 +916,7 @@ class _CountStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CyberPanel(
+    return StatsRowShell(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       child: Row(
         children: [
@@ -833,86 +931,118 @@ class _CountStrip extends StatelessWidget {
   }
 }
 
-class BasketballWinProbabilityPainter extends CustomPainter {
-  const BasketballWinProbabilityPainter({
-    required this.plays,
+/// Key for the plotted markers: which colour is which side, and how a three
+/// reads against a two. Sits under the court so the plot stays uncluttered.
+class _ScoringMapLegend extends StatelessWidget {
+  const _ScoringMapLegend({
     required this.homeColor,
     required this.awayColor,
-    required this.progress,
+    required this.homeLabel,
+    required this.awayLabel,
   });
-  final List<BasketballPlay> plays;
+
   final Color homeColor;
   final Color awayColor;
-  final double progress;
+  final String homeLabel;
+  final String awayLabel;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    if (plays.length < 2) return;
-    final rect = Rect.fromLTRB(8, 18, size.width - 8, size.height - 24);
-    final grid = Paint()..color = Cyber.line.withValues(alpha: 0.55);
-    for (final fraction in [0.0, 0.25, 0.5, 0.75, 1.0]) {
-      final y = rect.bottom - rect.height * fraction;
-      canvas.drawLine(Offset(rect.left, y), Offset(rect.right, y), grid);
-    }
-    for (var quarter = 1; quarter < 4; quarter++) {
-      final first = plays.indexWhere((play) => play.period == quarter + 1);
-      if (first < 0) continue;
-      final x = rect.left + rect.width * first / (plays.length - 1);
-      canvas.drawLine(Offset(x, rect.top), Offset(x, rect.bottom), grid);
-      final text = TextPainter(
-        text: TextSpan(
-          text: 'Q${quarter + 1}',
-          style: Cyber.label(7, color: Cyber.muted),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      text.paint(canvas, Offset(x + 3, 2));
-    }
-    final revealCount = math.max(2, (plays.length * progress).ceil());
-    final homePath = Path();
-    final awayPath = Path();
-    for (var index = 0; index < revealCount; index++) {
-      final play = plays[index.clamp(0, plays.length - 1)];
-      final x = rect.left + rect.width * index / (plays.length - 1);
-      final homeY =
-          rect.bottom - rect.height * play.homeWinPercentage.clamp(0, 1);
-      final awayY =
-          rect.bottom - rect.height * (1 - play.homeWinPercentage).clamp(0, 1);
-      if (index == 0) {
-        homePath.moveTo(x, homeY);
-        awayPath.moveTo(x, awayY);
-      } else {
-        homePath.lineTo(x, homeY);
-        awayPath.lineTo(x, awayY);
-      }
-    }
-    canvas.drawPath(
-      homePath,
-      Paint()
-        ..color = homeColor
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.4,
+  Widget build(BuildContext context) {
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 14,
+      runSpacing: 6,
+      children: [
+        _ScoringMapKey(color: homeColor, label: homeLabel),
+        _ScoringMapKey(color: awayColor, label: awayLabel),
+        const _ScoringMapKey(color: Cyber.muted, label: '3PT', hollow: true),
+      ],
     );
-    canvas.drawPath(
-      awayPath,
-      Paint()
-        ..color = awayColor
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5,
-    );
-    final mid = TextPainter(
-      text: TextSpan(
-        text: '50%',
-        style: Cyber.label(7, color: Cyber.muted),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    mid.paint(canvas, Offset(rect.left, rect.center.dy - 12));
   }
+}
+
+class _ScoringMapKey extends StatelessWidget {
+  const _ScoringMapKey({
+    required this.color,
+    required this.label,
+    this.hollow = false,
+  });
+
+  final Color color;
+  final String label;
+  final bool hollow;
 
   @override
-  bool shouldRepaint(covariant BasketballWinProbabilityPainter oldDelegate) =>
-      oldDelegate.progress != progress || oldDelegate.plays != plays;
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 9,
+          height: 9,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: hollow ? null : color.withValues(alpha: 0.85),
+            border: hollow ? Border.all(color: color, width: 1.4) : null,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(label, style: Cyber.label(8, color: Cyber.muted)),
+      ],
+    );
+  }
+}
+
+/// Maps ESPN basketball shot coordinates onto a drawn NBA half court.
+///
+/// The feed normalises every made field goal onto a single basket: `x` runs
+/// 0..50 across the baseline and `y` is the distance out from the rim, so the
+/// rim itself is the origin at `(25, 0)`. Keeping the painter in real feet and
+/// converting to pixels once is what lets the court furniture (lane, arc,
+/// restricted area) line up with the plotted shots.
+class _CourtFrame {
+  const _CourtFrame(this.rect);
+
+  final Rect rect;
+
+  /// Sideline-to-sideline, in feet.
+  static const double courtWidthFt = 50;
+
+  /// The rim sits 5ft 3in inside the floor, so the baseline is behind y = 0.
+  static const double baselineFt = -5.25;
+
+  /// Drawn depth. A full half court runs to 41.75ft, but nothing is ever shot
+  /// from beyond ~30ft, so the court is cropped past the arc the way broadcast
+  /// shot charts crop it — no permanently empty third of the panel.
+  static const double frontcourtFt = 34;
+  static const double courtLengthFt = frontcourtFt - baselineFt;
+
+  // Court furniture, all in feet from the rim origin.
+  static const double laneHalfWidthFt = 8; // 16ft NBA lane
+  static const double freeThrowFt = 13.75; // 19ft from the baseline
+  static const double freeThrowRadiusFt = 6;
+  static const double threePointRadiusFt = 23.75;
+  static const double cornerInsetFt = 3; // corner line sits 3ft off the sideline
+  static const double cornerBreakFt = 8.75; // where the corner meets the arc
+  static const double restrictedRadiusFt = 4;
+  static const double backboardFt = -1.25;
+  static const double backboardHalfWidthFt = 3;
+  static const double rimRadiusFt = 0.75;
+
+  double dx(double x) => rect.left + rect.width * (x / courtWidthFt);
+
+  double dy(double y) =>
+      rect.bottom - rect.height * ((y - baselineFt) / courtLengthFt);
+
+  Offset p(double x, double y) => Offset(dx(x), dy(y));
+
+  /// A feet-space rectangle, given its court-coordinate edges.
+  Rect box(double left, double bottom, double right, double top) =>
+      Rect.fromLTRB(dx(left), dy(top), dx(right), dy(bottom));
+
+  /// The bounding box of a feet-space circle, ready for [Canvas.drawArc].
+  Rect circle(double cx, double cy, double radius) =>
+      box(cx - radius, cy - radius, cx + radius, cy + radius);
 }
 
 class BasketballScoringMapPainter extends CustomPainter {
@@ -921,62 +1051,306 @@ class BasketballScoringMapPainter extends CustomPainter {
     required this.homeColor,
     required this.awayColor,
   });
+
   final List<BasketballPlay> plays;
   final Color homeColor;
   final Color awayColor;
 
   @override
   void paint(Canvas canvas, Size size) {
+    final frame = _CourtFrame(
+      Rect.fromLTWH(2, 2, size.width - 4, size.height - 4),
+    );
+    _paintCourt(canvas, frame);
+    _paintShots(canvas, frame);
+  }
+
+  void _paintCourt(Canvas canvas, _CourtFrame f) {
+    final floor = Paint()..color = Cyber.bg.withValues(alpha: 0.55);
     final line = Paint()
       ..color = Cyber.line
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
-    final court = Rect.fromLTWH(5, 5, size.width - 10, size.height - 10);
-    canvas.drawRect(court, line);
+    final faintLine = Paint()
+      ..color = Cyber.borderSubtle
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final laneFill = Paint()..color = Cyber.cyan.withValues(alpha: 0.07);
+    final rimPaint = Paint()
+      ..color = Cyber.amber.withValues(alpha: 0.75)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4;
+
+    // The court is cropped, so the floor and the sidelines fade out at the top
+    // rather than ending on a hard edge that would read as a wall.
+    final court = f.box(
+      0,
+      _CourtFrame.baselineFt,
+      _CourtFrame.courtWidthFt,
+      _CourtFrame.frontcourtFt,
+    );
+    canvas.drawRect(court, floor);
+    final fade = ui.Gradient.linear(
+      court.bottomCenter,
+      court.topCenter,
+      [Cyber.line, Cyber.line, Cyber.line.withValues(alpha: 0)],
+      const [0, 0.62, 1],
+    );
+    final edge = Paint()
+      ..shader = fade
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    canvas.drawLine(court.bottomLeft, court.topLeft, edge);
+    canvas.drawLine(court.bottomRight, court.topRight, edge);
+    canvas.drawLine(court.bottomLeft, court.bottomRight, line);
+
+    // Lane, free-throw line and the split free-throw circle.
+    final lane = f.box(
+      25 - _CourtFrame.laneHalfWidthFt,
+      _CourtFrame.baselineFt,
+      25 + _CourtFrame.laneHalfWidthFt,
+      _CourtFrame.freeThrowFt,
+    );
+    canvas.drawRect(lane, laneFill);
+    canvas.drawRect(lane, line);
+    final freeThrowCircle = f.circle(
+      25,
+      _CourtFrame.freeThrowFt,
+      _CourtFrame.freeThrowRadiusFt,
+    );
+    canvas.drawArc(freeThrowCircle, 0, -math.pi, false, line);
+    _drawDashedArc(canvas, freeThrowCircle, 0, math.pi, faintLine);
+
+    // Lane blocks — the hash marks players line up on for a free throw.
+    for (final markFt in const [1.75, 2.75, 5.75, 8.75]) {
+      for (final side in const [-1.0, 1.0]) {
+        final edge = 25 + side * _CourtFrame.laneHalfWidthFt;
+        canvas.drawLine(
+          f.p(edge, markFt),
+          f.p(edge + side * 0.7, markFt),
+          faintLine,
+        );
+      }
+    }
+
+    // Three-point line: two corner runs joined by the arc.
+    for (final side in const [-1.0, 1.0]) {
+      final x = 25 + side * (25 - _CourtFrame.cornerInsetFt);
+      canvas.drawLine(
+        f.p(x, _CourtFrame.baselineFt),
+        f.p(x, _CourtFrame.cornerBreakFt),
+        line,
+      );
+    }
+    final breakAngle = math.asin(
+      _CourtFrame.cornerBreakFt / _CourtFrame.threePointRadiusFt,
+    );
+    canvas.drawArc(
+      f.circle(25, 0, _CourtFrame.threePointRadiusFt),
+      -breakAngle,
+      -(math.pi - 2 * breakAngle),
+      false,
+      line,
+    );
+
+    // Restricted area, backboard and rim.
+    canvas.drawArc(
+      f.circle(25, 0, _CourtFrame.restrictedRadiusFt),
+      0,
+      -math.pi,
+      false,
+      faintLine,
+    );
     canvas.drawLine(
-      Offset(court.center.dx, court.top),
-      Offset(court.center.dx, court.bottom),
-      line,
+      f.p(25 - _CourtFrame.backboardHalfWidthFt, _CourtFrame.backboardFt),
+      f.p(25 + _CourtFrame.backboardHalfWidthFt, _CourtFrame.backboardFt),
+      rimPaint,
     );
-    canvas.drawCircle(court.center, 24, line);
-    canvas.drawRect(
-      Rect.fromCenter(
-        center: Offset(court.left + 28, court.center.dy),
-        width: 46,
-        height: 76,
-      ),
-      line,
+    canvas.drawLine(
+      f.p(25, _CourtFrame.backboardFt),
+      f.p(25, -_CourtFrame.rimRadiusFt),
+      rimPaint,
     );
-    canvas.drawRect(
-      Rect.fromCenter(
-        center: Offset(court.right - 28, court.center.dy),
-        width: 46,
-        height: 76,
-      ),
-      line,
+    canvas.drawCircle(
+      f.p(25, 0),
+      (f.circle(25, 0, _CourtFrame.rimRadiusFt).width / 2).clamp(2.0, 6.0),
+      rimPaint,
     );
-    for (final play in plays) {
+  }
+
+  void _paintShots(Canvas canvas, _CourtFrame f) {
+    // Twos first, so the rarer three-point rings read on top of the cluster.
+    final ordered = [
+      ...plays.where((play) => play.points != 3),
+      ...plays.where((play) => play.points == 3),
+    ];
+    for (final play in ordered) {
       final coordinate = play.coordinate!;
-      final normalizedX = (coordinate.x / 100).clamp(0.0, 1.0);
-      final normalizedY = (coordinate.y / 50).clamp(0.0, 1.0);
-      final point = Offset(
-        court.left + court.width * normalizedX,
-        court.top + court.height * normalizedY,
+      final point = f.p(
+        coordinate.x.clamp(0.0, _CourtFrame.courtWidthFt),
+        coordinate.y.clamp(_CourtFrame.baselineFt, _CourtFrame.frontcourtFt),
       );
-      canvas.drawCircle(
-        point,
-        play.points == 3 ? 4 : 3,
-        Paint()
-          ..color = (play.isHomeTeam ? homeColor : awayColor).withValues(
-            alpha: 0.82,
-          ),
-      );
+      final color = play.isHomeTeam ? homeColor : awayColor;
+      if (play.points == 3) {
+        canvas.drawCircle(
+          point,
+          4.4,
+          Paint()
+            ..color = color
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.6,
+        );
+        canvas.drawCircle(
+          point,
+          1.1,
+          Paint()..color = color.withValues(alpha: 0.9),
+        );
+      } else {
+        canvas.drawCircle(
+          point,
+          3.4,
+          Paint()..color = color.withValues(alpha: 0.85),
+        );
+        canvas.drawCircle(
+          point,
+          3.4,
+          Paint()
+            ..color = Cyber.bg.withValues(alpha: 0.6)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 0.8,
+        );
+      }
+    }
+  }
+
+  /// The bottom half of the free-throw circle is dashed on a real floor.
+  void _drawDashedArc(
+    Canvas canvas,
+    Rect bounds,
+    double start,
+    double sweep,
+    Paint paint,
+  ) {
+    const segments = 9;
+    final step = sweep / (segments * 2 - 1);
+    for (var i = 0; i < segments; i++) {
+      canvas.drawArc(bounds, start + step * i * 2, step, false, paint);
     }
   }
 
   @override
   bool shouldRepaint(covariant BasketballScoringMapPainter oldDelegate) =>
-      oldDelegate.plays != plays;
+      oldDelegate.plays != plays ||
+      oldDelegate.homeColor != homeColor ||
+      oldDelegate.awayColor != awayColor;
+}
+
+/// The hero readout: who the model favours right now, and how far that has
+/// moved inside the current period.
+({
+  String value,
+  String label,
+  String caption,
+  Color color,
+  double? delta,
+  String deltaSuffix,
+})
+_winPulse(SportMatch match, List<BasketballPlay> plays) {
+  if (plays.isEmpty) {
+    return (
+      value: '—',
+      label: match.home.shortName,
+      caption: 'WIN CHANCE',
+      color: Cyber.muted,
+      delta: null,
+      deltaSuffix: '',
+    );
+  }
+  final last = plays.last;
+  final homeChance = last.homeWinPercentage.clamp(0.0, 1.0) * 100;
+  final homeLeads = homeChance >= 50;
+  final leaderChance = homeLeads ? homeChance : 100 - homeChance;
+  final leader = homeLeads ? match.home : match.away;
+
+  final periodStart = plays.firstWhere(
+    (play) => play.period == last.period,
+    orElse: () => plays.first,
+  );
+  final startChance = periodStart.homeWinPercentage.clamp(0.0, 1.0) * 100;
+  final delta = homeLeads
+      ? homeChance - startChance
+      : (100 - homeChance) - (100 - startChance);
+
+  return (
+    value: '${leaderChance.round()}%',
+    label: leader.name,
+    caption: 'WIN CHANCE',
+    color: paletteForTeam(leader, sport: match.sport).primary,
+    delta: delta,
+    deltaSuffix: 'THIS QUARTER',
+  );
+}
+
+/// Filters the win-probability trace. CLUTCH is the final five minutes of the
+/// last regulation quarter — the stretch that decided it.
+List<BasketballPlay> _playsForRange(List<BasketballPlay> plays, String range) {
+  if (range == 'GAME' || plays.isEmpty) return plays;
+  final filtered = switch (range) {
+    'H1' => plays.where((play) => play.period <= 2),
+    'H2' => plays.where((play) => play.period >= 3),
+    'CLUTCH' => plays.where(
+      (play) => play.period >= 4 && _clockSeconds(play.clock) <= 300,
+    ),
+    _ => plays,
+  }.toList();
+  return filtered.length >= 2 ? filtered : plays;
+}
+
+List<BasketballPlay> _mappedPlays(List<BasketballPlay> plays, String range) {
+  final mapped = plays.where((play) => play.coordinate != null);
+  return switch (range) {
+    'HOME' => mapped.where((play) => play.isHomeTeam),
+    'AWAY' => mapped.where((play) => !play.isHomeTeam),
+    '3PT' => mapped.where((play) => play.points == 3),
+    _ => mapped,
+  }.toList();
+}
+
+/// Turning points sit on the plot as rings; the biggest swing is the focal one.
+List<ChartMarker> _turningPointMarkers(
+  List<BasketballTurningPoint> points,
+  List<BasketballPlay> plays,
+) {
+  if (points.isEmpty || plays.length < 2) return const <ChartMarker>[];
+  var biggest = 0.0;
+  for (final point in points) {
+    biggest = math.max(biggest, point.swing.abs());
+  }
+  final markers = <ChartMarker>[];
+  for (final point in points) {
+    final index = plays.indexWhere(
+      (play) => play.period == point.period && play.clock == point.clock,
+    );
+    if (index < 0) continue;
+    markers.add(
+      ChartMarker(
+        fraction: index / (plays.length - 1),
+        color: point.swing >= 0 ? Cyber.success : Cyber.danger,
+        shape: ChartMarkerShape.ring,
+        alignTop: point.swing >= 0,
+        focal: point.swing.abs() >= biggest,
+      ),
+    );
+  }
+  return markers;
+}
+
+int _clockSeconds(String clock) {
+  final parts = clock.split(':');
+  if (parts.length != 2) return 0;
+  final minutes = int.tryParse(parts.first) ?? 0;
+  final seconds = int.tryParse(parts.last) ?? 0;
+  return minutes * 60 + seconds;
 }
 
 TextStyle _numberStyle(double size, {Color color = Colors.white}) =>

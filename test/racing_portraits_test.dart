@@ -2,22 +2,36 @@ import 'package:card_game/config/enums.dart';
 import 'package:card_game/data/racing_drivers.dart';
 import 'package:card_game/data/racing_portraits.dart';
 import 'package:card_game/models/cards.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('every motorsport driver resolves a portrait asset path', () {
     for (final driver in allRacingDrivers) {
       final path = racingPortraitAsset(driver.id);
-      expect(path, 'assets/racing_driver_images/${driver.id}.png');
+      final extension = kRacingWebpPortraitArtIds.contains(driver.id)
+          ? 'webp'
+          : 'png';
+      expect(path, 'assets/racing_driver_images/${driver.id}.$extension');
     }
     expect(allRacingDrivers, isNotEmpty);
   });
 
-  test('F1 grid drivers with shipped art are flagged', () {
-    expect(racingPortraitArtCount, 22);
+  test('all shipped motorsport portraits map to current roster drivers', () {
+    expect(kRacingPngPortraitArtIds, hasLength(22));
+    expect(kRacingWebpPortraitArtIds, hasLength(80));
+    expect(racingPortraitArtCount, 102);
     for (final id in kRacingPortraitArtIds) {
       expect(racingPortraitHasArt(id), isTrue);
-      expect(f1Drivers2026.any((driver) => driver.id == id), isTrue);
+      expect(allRacingDrivers.any((driver) => driver.id == id), isTrue);
+    }
+  });
+
+  testWidgets('every shipped motorsport portrait is bundled', (tester) async {
+    for (final id in kRacingPortraitArtIds) {
+      final assetPath = racingPortraitAsset(id);
+      final asset = await rootBundle.load(assetPath);
+      expect(asset.lengthInBytes, greaterThan(0), reason: assetPath);
     }
   });
 

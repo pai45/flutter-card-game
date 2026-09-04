@@ -6,9 +6,11 @@ import '../../../config/theme.dart';
 import '../../../data/team_palettes.dart';
 import '../../../models/football_match_data.dart';
 import '../../../models/sport_match.dart';
+import '../../../widgets/cyber/cyber_chart.dart';
 import '../../../widgets/cyber/cyber_filter_chips.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../../widgets/match_pitch_view.dart';
+import 'match_stats_shell.dart';
 
 class FootballMatchStatsView extends StatefulWidget {
   const FootballMatchStatsView({required this.match, super.key});
@@ -77,21 +79,55 @@ class _OverviewSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final details = match.footballDetails;
     final stats = match.teamStats ?? const <TeamStatLine>[];
+    final pulse = _controlPulse(match, stats);
+
     return ListView(
       key: const ValueKey('football-stats-overview'),
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
       children: [
-        _MatchIntelPanel(match: match),
+        MatchPulseHeader(
+          match: match,
+          title: '${match.home.name} vs ${match.away.name}',
+          statusLabel: details?.status ?? _statusLabel(match.status),
+          heroValue: pulse.value,
+          heroLabel: pulse.label,
+          heroCaption: pulse.caption,
+          heroColor: pulse.color,
+          delta: pulse.delta,
+          deltaSuffix: 'PRESSURE',
+          deltaDecimals: 1,
+          subtitle: details?.season ?? 'Live competition feed',
+          metrics: [
+            CyberMiniMetric(
+              label: 'SCORE',
+              value:
+                  details?.scoreDisplay ??
+                  '${match.homeScore ?? '-'} - ${match.awayScore ?? '-'}',
+            ),
+            CyberMiniMetric(
+              label: 'KICKOFF',
+              value: _clockLabel(match.kickoff),
+            ),
+          ],
+        ),
+        // With no report feed, the channel state is the most useful thing on
+        // the page, so it leads rather than trailing the league card.
         if (details == null) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 18),
+          const CyberSectionHeading(label: 'SCOREBOARD CHANNEL'),
+          const SizedBox(height: 10),
           _FeedStatePanel(match: match),
         ],
+        const SizedBox(height: 18),
+        const CyberSectionHeading(label: 'MATCH INTEL'),
+        const SizedBox(height: 10),
+        _MatchIntelPanel(match: match),
         if (stats.isNotEmpty) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 18),
           _TeamControlPanel(match: match, stats: stats),
         ],
         if (details?.scorers.isNotEmpty ?? false) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 18),
           _GoalImpactPanel(match: match, scorers: details!.scorers),
         ],
       ],
@@ -119,40 +155,20 @@ class _MatchIntelPanel extends StatelessWidget {
         ? '—'
         : _compactNumber(details.attendance);
 
-    return _HudPanel(
-      title: 'MATCH INTEL',
-      code: 'SYS://FOOTBALL/REPORT',
+    return StatsRowShell(
       accent: statusColor,
+      padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      details?.league.toUpperCase() ??
-                          match.leagueId.toUpperCase(),
-                      style: Cyber.display(15, letterSpacing: 0.8),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      details?.season ?? 'Live competition feed',
-                      style: Cyber.body(12, color: Cyber.muted),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              _StatusPlate(
-                label: details?.status ?? _statusLabel(match.status),
-                color: statusColor,
-                live: match.status == MatchStatus.live,
-              ),
-            ],
+          Text(
+            details?.league.toUpperCase() ?? match.leagueId.toUpperCase(),
+            style: Cyber.display(15, letterSpacing: 0.8),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            details?.season ?? 'Live competition feed',
+            style: Cyber.body(12, color: Cyber.muted),
           ),
           const SizedBox(height: 16),
           Row(
@@ -208,10 +224,9 @@ class _FeedStatePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _HudPanel(
-      title: 'SCOREBOARD CHANNEL',
-      code: 'FEED://MATCH/STATE',
+    return StatsRowShell(
       accent: Cyber.muted,
+      padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -259,34 +274,6 @@ class _FeedFact extends StatelessWidget {
             style: Cyber.body(11, color: Colors.white70),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _StatusPlate extends StatelessWidget {
-  const _StatusPlate({
-    required this.label,
-    required this.color,
-    required this.live,
-  });
-
-  final String label;
-  final Color color;
-  final bool live;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        border: Border.all(color: color.withValues(alpha: 0.62)),
-        boxShadow: live ? Cyber.glow(color, alpha: 0.28, blur: 10) : null,
-      ),
-      child: Text(
-        label.toUpperCase(),
-        style: Cyber.label(9, color: color, letterSpacing: 1.1),
       ),
     );
   }
@@ -357,147 +344,50 @@ class _IntelCell extends StatelessWidget {
   }
 }
 
-class _TeamControlPanel extends StatelessWidget {
+/// TEAM CONTROL as market-style outcome rows — tap one to hold it highlighted.
+class _TeamControlPanel extends StatefulWidget {
   const _TeamControlPanel({required this.match, required this.stats});
 
   final SportMatch match;
   final List<TeamStatLine> stats;
 
   @override
+  State<_TeamControlPanel> createState() => _TeamControlPanelState();
+}
+
+class _TeamControlPanelState extends State<_TeamControlPanel> {
+  String? _selectedLabel;
+
+  @override
   Widget build(BuildContext context) {
+    final match = widget.match;
     final homeColor = paletteForTeam(match.home, sport: match.sport).primary;
     final awayColor = paletteForTeam(match.away, sport: match.sport).primary;
-    return _HudPanel(
-      title: 'TEAM CONTROL',
-      code: 'FEED://${stats.length.toString().padLeft(2, '0')}/METRICS',
-      child: Column(
-        children: [
-          Row(
-            children: [
-              _TeamLegend(
-                color: homeColor,
-                code: match.home.shortName,
-                name: match.home.name,
-              ),
-              const Spacer(),
-              _TeamLegend(
-                color: awayColor,
-                code: match.away.shortName,
-                name: match.away.name,
-                alignEnd: true,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          for (var index = 0; index < stats.length; index++) ...[
-            _StatComparisonRow(
-              stat: stats[index],
-              homeColor: homeColor,
-              awayColor: awayColor,
-            ),
-            if (index != stats.length - 1) const SizedBox(height: 14),
-          ],
-        ],
-      ),
-    );
-  }
-}
 
-class _TeamLegend extends StatelessWidget {
-  const _TeamLegend({
-    required this.color,
-    required this.code,
-    required this.name,
-    this.alignEnd = false,
-  });
-
-  final Color color;
-  final String code;
-  final String name;
-  final bool alignEnd;
-
-  @override
-  Widget build(BuildContext context) {
-    final swatch = Container(width: 4, height: 30, color: color);
-    final copy = Column(
-      crossAxisAlignment: alignEnd
-          ? CrossAxisAlignment.end
-          : CrossAxisAlignment.start,
-      children: [
-        Text(code.toUpperCase(), style: Cyber.display(13, color: color)),
-        Text(
-          name.toUpperCase(),
-          style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.8),
-        ),
-      ],
-    );
-    return Row(
-      children: alignEnd
-          ? [copy, const SizedBox(width: 8), swatch]
-          : [swatch, const SizedBox(width: 8), copy],
-    );
-  }
-}
-
-class _StatComparisonRow extends StatelessWidget {
-  const _StatComparisonRow({
-    required this.stat,
-    required this.homeColor,
-    required this.awayColor,
-  });
-
-  final TeamStatLine stat;
-  final Color homeColor;
-  final Color awayColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final homeFlex = (stat.homeShare * 1000).round().clamp(5, 995);
-    final valueStyle = Cyber.display(
-      14,
-    ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            SizedBox(
-              width: 56,
-              child: Text(stat.homeDisplay, style: valueStyle),
-            ),
-            Expanded(
-              child: Text(
-                stat.label.toUpperCase(),
-                textAlign: TextAlign.center,
-                style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1),
-              ),
-            ),
-            SizedBox(
-              width: 56,
-              child: Text(
-                stat.awayDisplay,
-                textAlign: TextAlign.end,
-                style: valueStyle,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        SizedBox(
-          height: 6,
-          child: Row(
-            children: [
-              Expanded(
-                flex: homeFlex,
-                child: ColoredBox(color: homeColor),
-              ),
-              const SizedBox(width: 3),
-              Expanded(
-                flex: 1000 - homeFlex,
-                child: ColoredBox(color: awayColor),
-              ),
-            ],
+        const CyberSectionHeading(label: 'TEAM CONTROL'),
+        const SizedBox(height: 12),
+        TeamLegendRow(match: match),
+        const SizedBox(height: 12),
+        for (final stat in widget.stats) ...[
+          StatComparisonRow(
+            stat: stat,
+            homeColor: homeColor,
+            awayColor: awayColor,
+            selected: stat.label == _selectedLabel,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(
+                () => _selectedLabel = stat.label == _selectedLabel
+                    ? null
+                    : stat.label,
+              );
+            },
           ),
-        ),
+          const SizedBox(height: 8),
+        ],
       ],
     );
   }
@@ -513,24 +403,25 @@ class _GoalImpactPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final homeColor = paletteForTeam(match.home, sport: match.sport).primary;
     final awayColor = paletteForTeam(match.away, sport: match.sport).primary;
-    return _HudPanel(
-      title: 'GOAL IMPACT',
-      code: 'LOG://${scorers.length.toString().padLeft(2, '0')}/STRIKES',
-      accent: Cyber.cyan,
-      child: Column(
-        children: [
-          for (var index = 0; index < scorers.length; index++) ...[
-            _ScorerRow(
-              scorer: scorers[index],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const CyberSectionHeading(label: 'GOAL IMPACT'),
+        const SizedBox(height: 10),
+        for (final scorer in scorers) ...[
+          StatsRowShell(
+            accent: scorer.teamId == match.home.id ? homeColor : awayColor,
+            padding: const EdgeInsets.all(12),
+            child: _ScorerRow(
+              scorer: scorer,
               homeTeamId: match.home.id,
               homeColor: homeColor,
               awayColor: awayColor,
             ),
-            if (index != scorers.length - 1)
-              Divider(color: Cyber.line.withValues(alpha: 0.16), height: 20),
-          ],
+          ),
+          const SizedBox(height: 8),
         ],
-      ),
+      ],
     );
   }
 }
@@ -598,13 +489,25 @@ class _ScorerRow extends StatelessWidget {
   }
 }
 
-class _MomentumSection extends StatelessWidget {
+/// MOMENTUM: the two-sided pressure trace on the shared chart surface. Drag it
+/// to read either side's pressure at any minute; goals ride the plot as markers
+/// and the decisive one carries the focal halo.
+class _MomentumSection extends StatefulWidget {
   const _MomentumSection({required this.match});
 
   final SportMatch match;
 
   @override
+  State<_MomentumSection> createState() => _MomentumSectionState();
+}
+
+class _MomentumSectionState extends State<_MomentumSection> {
+  static const _ranges = ['FULL', '1ST HALF', '2ND HALF'];
+  String _range = _ranges.first;
+
+  @override
   Widget build(BuildContext context) {
+    final match = widget.match;
     final momentum = match.footballMomentum;
     if (momentum == null || momentum.series.isEmpty) {
       return const CyberNoDataState(
@@ -619,129 +522,133 @@ class _MomentumSection extends StatelessWidget {
 
     final homeColor = paletteForTeam(match.home, sport: match.sport).primary;
     final awayColor = paletteForTeam(match.away, sport: match.sport).primary;
+    final samples = _samplesForRange(momentum, _range);
     final homePeak = momentum.homePeak!;
     final awayPeak = momentum.awayPeak!;
+
     return ListView(
       key: const ValueKey('football-stats-momentum'),
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
       children: [
-        _HudPanel(
-          title: 'MATCH MOMENTUM',
-          code: 'TRACE://${momentum.series.length}/SAMPLES',
-          accent: Cyber.cyan,
-          glow: true,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  _PressureLegend(
-                    label: match.home.shortName,
-                    side: 'HOME PRESSURE',
-                    color: homeColor,
-                  ),
-                  const Spacer(),
-                  _PressureLegend(
-                    label: match.away.shortName,
-                    side: 'AWAY PRESSURE',
-                    color: awayColor,
-                    alignEnd: true,
-                  ),
-                ],
+        TweenAnimationBuilder<double>(
+          duration: const Duration(milliseconds: 900),
+          curve: Curves.easeOutCubic,
+          tween: Tween(begin: 0.0, end: 1.0),
+          builder: (context, progress, _) => CyberChartPanel(
+            chartKey: const ValueKey('football-momentum-graph'),
+            title: 'MATCH MOMENTUM',
+            caption: '${momentum.series.length}/SAMPLES',
+            height: 250,
+            signed: true,
+            bloom: true,
+            glow: progress < 1,
+            revealProgress: progress,
+            ranges: _ranges,
+            activeRange: _range,
+            onRangeChanged: (range) => setState(() => _range = range),
+            markers: _goalMarkers(momentum, samples, homeColor, awayColor),
+            contextLabelAt: (index) =>
+                "${samples[index.clamp(0, samples.length - 1)].minute}'",
+            series: [
+              ChartSeries(
+                label: '${match.home.shortName.toUpperCase()} PRESSURE',
+                color: homeColor,
+                fill: true,
+                readout: (value, _) => value.abs().toStringAsFixed(0),
+                values: [for (final point in samples) point.home.abs()],
               ),
-              const SizedBox(height: 16),
-              SizedBox(
-                key: const ValueKey('football-momentum-graph'),
-                height: 250,
-                child: TweenAnimationBuilder<double>(
-                  duration: const Duration(milliseconds: 900),
-                  curve: Curves.easeOutCubic,
-                  tween: Tween(begin: 0, end: 1),
-                  builder: (context, progress, _) => CustomPaint(
-                    painter: FootballMomentumPainter(
-                      momentum: momentum,
-                      homeColor: homeColor,
-                      awayColor: awayColor,
-                      progress: progress,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'GOAL IMPACT MARKERS',
-                style: Cyber.label(8.5, color: Cyber.muted, letterSpacing: 1.1),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  for (final goal in momentum.goals)
-                    _GoalMarkerChip(
-                      goal: goal,
-                      color: goal.isHomeTeam ? homeColor : awayColor,
-                    ),
-                ],
+              ChartSeries(
+                label: '${match.away.shortName.toUpperCase()} PRESSURE',
+                color: awayColor,
+                fill: true,
+                readout: (value, _) => value.abs().toStringAsFixed(0),
+                values: [for (final point in samples) -point.away.abs()],
               ),
             ],
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 18),
+        const CyberSectionHeading(label: 'PEAK PRESSURE'),
+        const SizedBox(height: 10),
         Row(
           children: [
-            Expanded(
-              child: _PeakPressureCard(
-                label: match.home.shortName,
-                minute: homePeak.minute,
-                value: homePeak.value.abs(),
-                color: homeColor,
-              ),
+            CyberMiniMetric(
+              label: "${match.home.shortName} PEAK // ${homePeak.minute}'",
+              value: homePeak.value.abs().toStringAsFixed(1),
+              accent: homeColor,
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _PeakPressureCard(
-                label: match.away.shortName,
-                minute: awayPeak.minute,
-                value: awayPeak.value.abs(),
-                color: awayColor,
-              ),
+            const SizedBox(width: 10),
+            CyberMiniMetric(
+              label: "${match.away.shortName} PEAK // ${awayPeak.minute}'",
+              value: awayPeak.value.abs().toStringAsFixed(1),
+              accent: awayColor,
             ),
           ],
         ),
+        if (momentum.goals.isNotEmpty) ...[
+          const SizedBox(height: 18),
+          const CyberSectionHeading(label: 'GOAL IMPACT MARKERS'),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final goal in momentum.goals)
+                _GoalMarkerChip(
+                  goal: goal,
+                  color: goal.isHomeTeam ? homeColor : awayColor,
+                ),
+            ],
+          ),
+        ],
       ],
     );
   }
 }
 
-class _PressureLegend extends StatelessWidget {
-  const _PressureLegend({
-    required this.label,
-    required this.side,
-    required this.color,
-    this.alignEnd = false,
-  });
+/// FULL keeps every sample; the half filters split on the recorded halftime
+/// minute and fall back to the whole trace when a half has too few samples.
+List<FootballMomentumPoint> _samplesForRange(
+  FootballMomentum momentum,
+  String range,
+) {
+  if (range == 'FULL') return momentum.series;
+  final halftime = momentum.halftimeMinute;
+  final filtered =
+      (range == '1ST HALF'
+              ? momentum.series.where((point) => point.minute <= halftime)
+              : momentum.series.where((point) => point.minute > halftime))
+          .toList();
+  return filtered.length >= 2 ? filtered : momentum.series;
+}
 
-  final String label;
-  final String side;
-  final Color color;
-  final bool alignEnd;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: alignEnd
-          ? CrossAxisAlignment.end
-          : CrossAxisAlignment.start,
-      children: [
-        Text(label.toUpperCase(), style: Cyber.display(14, color: color)),
-        Text(
-          side,
-          style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.8),
-        ),
-      ],
+/// Goals pinned onto the visible window. The last goal is the decisive one, so
+/// it gets the focal halo — one focal element per chart.
+List<ChartMarker> _goalMarkers(
+  FootballMomentum momentum,
+  List<FootballMomentumPoint> samples,
+  Color homeColor,
+  Color awayColor,
+) {
+  if (momentum.goals.isEmpty || samples.length < 2) {
+    return const <ChartMarker>[];
+  }
+  final first = samples.first.minute;
+  final last = samples.last.minute;
+  final span = math.max(1, last - first);
+  final markers = <ChartMarker>[];
+  for (final goal in momentum.goals) {
+    if (goal.minute < first || goal.minute > last) continue;
+    markers.add(
+      ChartMarker(
+        fraction: (goal.minute - first) / span,
+        color: goal.isHomeTeam ? homeColor : awayColor,
+        alignTop: goal.isHomeTeam,
+        focal: goal == momentum.goals.last,
+      ),
     );
   }
+  return markers;
 }
 
 class _GoalMarkerChip extends StatelessWidget {
@@ -766,48 +673,6 @@ class _GoalMarkerChip extends StatelessWidget {
           Text(
             '${goal.clock} ${goal.player}',
             style: Cyber.label(8.5, color: Cyber.muted, letterSpacing: 0.4),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PeakPressureCard extends StatelessWidget {
-  const _PeakPressureCard({
-    required this.label,
-    required this.minute,
-    required this.value,
-    required this.color,
-  });
-
-  final String label;
-  final int minute;
-  final double value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return CyberPanel(
-      accent: color,
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '$label PEAK'.toUpperCase(),
-            style: Cyber.label(8.5, color: color, letterSpacing: 1),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value.toStringAsFixed(1),
-            style: Cyber.display(
-              20,
-            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-          ),
-          Text(
-            "PRESSURE // $minute'",
-            style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.8),
           ),
         ],
       ),
@@ -891,87 +756,92 @@ class _EventCard extends StatelessWidget {
     final secondaryPrefix = event.type == MatchEventType.substitution
         ? 'OUT'
         : 'ASSIST';
-    return ClipPath(
-      clipper: CyberClipper(),
-      child: Container(
-        padding: const EdgeInsets.all(12),
+    return StatsRowShell(
+      accent: teamColor,
+      padding: const EdgeInsets.all(12),
+      child: DecoratedBox(
         decoration: BoxDecoration(
-          color: Cyber.panel,
           border: Border(left: BorderSide(color: teamColor, width: 3)),
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 44,
-              child: Text(
-                event.minuteLabel,
-                style: Cyber.display(
-                  12,
-                  color: teamColor,
-                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+        child: Padding(
+          padding: const EdgeInsets.only(left: 9),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 44,
+                child: Text(
+                  event.minuteLabel,
+                  style: Cyber.display(12, color: teamColor).copyWith(
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
               ),
-            ),
-            Container(
-              width: 30,
-              height: 30,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.11),
-                border: Border.all(color: iconColor.withValues(alpha: 0.45)),
+              Container(
+                width: 30,
+                height: 30,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.11),
+                  border: Border.all(color: iconColor.withValues(alpha: 0.45)),
+                ),
+                child: Icon(icon, size: 15, color: iconColor),
               ),
-              child: Icon(icon, size: 15, color: iconColor),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          (event.playerName.isEmpty
-                                  ? event.label ?? 'MATCH EVENT'
-                                  : event.playerName)
-                              .toUpperCase(),
-                          style: Cyber.display(11.5, letterSpacing: 0.5),
-                        ),
-                      ),
-                      if (event.scoreDisplay != null)
-                        Text(
-                          event.scoreDisplay!,
-                          style: Cyber.display(11, color: Cyber.cyan).copyWith(
-                            fontFeatures: const [FontFeature.tabularFigures()],
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            (event.playerName.isEmpty
+                                    ? event.label ?? 'MATCH EVENT'
+                                    : event.playerName)
+                                .toUpperCase(),
+                            style: Cyber.display(11.5, letterSpacing: 0.5),
                           ),
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    [
-                      if (event.teamName != null) event.teamName!.toUpperCase(),
-                      if (event.label != null) event.label!.toUpperCase(),
-                      if (event.secondaryPlayerName != null)
-                        '$secondaryPrefix ${event.secondaryPlayerName!.toUpperCase()}',
-                    ].join(' // '),
-                    style: Cyber.label(
-                      8,
-                      color: Cyber.muted,
-                      letterSpacing: 0.6,
+                        if (event.scoreDisplay != null)
+                          Text(
+                            event.scoreDisplay!,
+                            style: Cyber.display(11, color: Cyber.cyan)
+                                .copyWith(
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
+                                  ],
+                                ),
+                          ),
+                      ],
                     ),
-                  ),
-                  if (event.description != null) ...[
-                    const SizedBox(height: 7),
+                    const SizedBox(height: 3),
                     Text(
-                      event.description!,
-                      style: Cyber.body(11.5, color: Cyber.muted),
+                      [
+                        if (event.teamName != null)
+                          event.teamName!.toUpperCase(),
+                        if (event.label != null) event.label!.toUpperCase(),
+                        if (event.secondaryPlayerName != null)
+                          '$secondaryPrefix ${event.secondaryPlayerName!.toUpperCase()}',
+                      ].join(' // '),
+                      style: Cyber.label(
+                        8,
+                        color: Cyber.muted,
+                        letterSpacing: 0.6,
+                      ),
                     ),
+                    if (event.description != null) ...[
+                      const SizedBox(height: 7),
+                      Text(
+                        event.description!,
+                        style: Cyber.body(11.5, color: Cyber.muted),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1060,28 +930,64 @@ class _CommentaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sequence = item.sequence ?? fallbackSequence;
-    return ClipPath(
-      clipper: CyberClipper(),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        color: Cyber.panel,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 48,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+    return StatsRowShell(
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 48,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.minute.isEmpty ? '—' : item.minute,
+                  style: Cyber.display(11, color: Cyber.cyan).copyWith(
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'SEQ ${sequence.toString().padLeft(3, '0')}',
+                  style: Cyber.label(
+                    7.5,
+                    color: Cyber.muted,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            width: 1,
+            height: 42,
+            color: Cyber.line.withValues(alpha: 0.22),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (item.teamName != null || item.kind != null) ...[
                   Text(
-                    item.minute.isEmpty ? '—' : item.minute,
-                    style: Cyber.display(11, color: Cyber.cyan).copyWith(
-                      fontFeatures: const [FontFeature.tabularFigures()],
+                    [
+                      if (item.teamName != null) item.teamName!.toUpperCase(),
+                      if (item.kind != null) item.kind!.toUpperCase(),
+                    ].join(' // '),
+                    style: Cyber.label(
+                      8,
+                      color: Cyber.cyan,
+                      letterSpacing: 0.7,
                     ),
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 5),
+                ],
+                Text(item.text, style: Cyber.body(12, color: Cyber.muted)),
+                if (item.players.isNotEmpty) ...[
+                  const SizedBox(height: 6),
                   Text(
-                    'SEQ ${sequence.toString().padLeft(3, '0')}',
+                    'PLAYERS // ${item.players.join(' · ')}',
                     style: Cyber.label(
                       7.5,
                       color: Cyber.muted,
@@ -1089,50 +995,10 @@ class _CommentaryCard extends StatelessWidget {
                     ),
                   ),
                 ],
-              ),
+              ],
             ),
-            const SizedBox(width: 8),
-            Container(
-              width: 1,
-              height: 42,
-              color: Cyber.line.withValues(alpha: 0.22),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (item.teamName != null || item.kind != null) ...[
-                    Text(
-                      [
-                        if (item.teamName != null) item.teamName!.toUpperCase(),
-                        if (item.kind != null) item.kind!.toUpperCase(),
-                      ].join(' // '),
-                      style: Cyber.label(
-                        8,
-                        color: Cyber.cyan,
-                        letterSpacing: 0.7,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                  ],
-                  Text(item.text, style: Cyber.body(12, color: Cyber.muted)),
-                  if (item.players.isNotEmpty) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      'PLAYERS // ${item.players.join(' · ')}',
-                      style: Cyber.label(
-                        7.5,
-                        color: Cyber.muted,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -1151,267 +1017,67 @@ class _LogHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CyberPanel(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Row(
-        children: [
-          Icon(Icons.sensors, size: 16, color: Cyber.cyan),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(title, style: Cyber.display(12, letterSpacing: 0.7)),
-          ),
-          Text(
-            '${count.toString().padLeft(3, '0')} $suffix',
-            style: Cyber.label(8.5, color: Cyber.muted, letterSpacing: 0.8),
-          ),
-        ],
+    return CyberSectionHeading(
+      label: title,
+      trailing: Text(
+        '${count.toString().padLeft(3, '0')} $suffix',
+        style: Cyber.label(
+          8.5,
+          color: Cyber.muted,
+          letterSpacing: 0.8,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
       ),
     );
   }
 }
 
-class _HudPanel extends StatelessWidget {
-  const _HudPanel({
-    required this.title,
-    required this.code,
-    required this.child,
-    this.accent = Cyber.cyan,
-    this.glow = false,
-  });
-
-  final String title;
-  final String code;
-  final Widget child;
-  final Color accent;
-  final bool glow;
-
-  @override
-  Widget build(BuildContext context) {
-    return CyberPanel(
-      accent: accent,
-      glow: glow,
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Container(width: 18, height: 2, color: accent),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title,
-                  style: Cyber.label(10, color: accent, letterSpacing: 1.3),
-                ),
-              ),
-              Text(
-                code,
-                style: Cyber.label(7.5, color: Cyber.muted, letterSpacing: 0.6),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          child,
-        ],
-      ),
+/// Football's hero number is territorial control — the leading side's share of
+/// the headline possession metric, with live pressure as the movement.
+({String value, String label, String caption, Color color, double? delta})
+_controlPulse(SportMatch match, List<TeamStatLine> stats) {
+  final momentum = match.footballMomentum;
+  final control = stats
+      .where(
+        (stat) =>
+            stat.label.toLowerCase().contains('possession') ||
+            stat.label.toLowerCase().contains('control'),
+      )
+      .firstOrNull;
+  final stat = control ?? (stats.isEmpty ? null : stats.first);
+  if (stat == null) {
+    return (
+      value: '—',
+      label: match.home.name,
+      caption: 'MATCH CONTROL',
+      color: Cyber.muted,
+      delta: null,
     );
   }
-}
+  final homeLeads = stat.homeShare >= 0.5;
+  final leader = homeLeads ? match.home : match.away;
+  final display = homeLeads ? stat.homeDisplay : stat.awayDisplay;
 
-class FootballMomentumPainter extends CustomPainter {
-  const FootballMomentumPainter({
-    required this.momentum,
-    required this.homeColor,
-    required this.awayColor,
-    required this.progress,
-  });
-
-  final FootballMomentum momentum;
-  final Color homeColor;
-  final Color awayColor;
-  final double progress;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const topInset = 22.0;
-    const bottomInset = 24.0;
-    final graphRect = Rect.fromLTRB(
-      0,
-      topInset,
-      size.width,
-      size.height - bottomInset,
-    );
-    final baseline = graphRect.center.dy;
-    final maxAxis = math.max(1, momentum.totalMinutes);
-    final revealX = graphRect.left + graphRect.width * progress;
-
-    final gridPaint = Paint()
-      ..color = Cyber.line.withValues(alpha: 0.16)
-      ..strokeWidth = 1;
-    for (final factor in <double>[0, 0.25, 0.5, 0.75, 1]) {
-      final y = graphRect.top + graphRect.height * factor;
-      canvas.drawLine(
-        Offset(graphRect.left, y),
-        Offset(graphRect.right, y),
-        gridPaint,
-      );
+  double? delta;
+  if (momentum != null && momentum.series.length >= 2) {
+    final window = momentum.series.length < 10
+        ? momentum.series
+        : momentum.series.sublist(momentum.series.length - 10);
+    var total = 0.0;
+    for (final point in window) {
+      total += point.value;
     }
-    canvas.drawLine(
-      Offset(graphRect.left, baseline),
-      Offset(graphRect.right, baseline),
-      Paint()
-        ..color = Cyber.cyan.withValues(alpha: 0.38)
-        ..strokeWidth = 1.2,
-    );
-
-    final halftimeX =
-        graphRect.left +
-        graphRect.width * (momentum.halftimeMinute / maxAxis).clamp(0, 1);
-    final halfPaint = Paint()
-      ..color = Cyber.line.withValues(alpha: 0.42)
-      ..strokeWidth = 1;
-    for (double y = graphRect.top; y < graphRect.bottom; y += 7) {
-      canvas.drawLine(
-        Offset(halftimeX, y),
-        Offset(halftimeX, math.min(y + 3, graphRect.bottom)),
-        halfPaint,
-      );
-    }
-
-    canvas.save();
-    canvas.clipRect(
-      Rect.fromLTRB(graphRect.left, graphRect.top, revealX, graphRect.bottom),
-    );
-    Offset? previous;
-    for (final point in momentum.series) {
-      final x =
-          graphRect.left +
-          graphRect.width * (point.minute / maxAxis).clamp(0, 1);
-      final signed = point.value.clamp(-100.0, 100.0);
-      final y = baseline - signed / 100 * graphRect.height * 0.46;
-      final color = signed >= 0 ? homeColor : awayColor;
-      canvas.drawLine(
-        Offset(x, baseline),
-        Offset(x, y),
-        Paint()
-          ..color = color.withValues(alpha: 0.22)
-          ..strokeWidth = math.max(
-            2,
-            graphRect.width / momentum.series.length * 0.72,
-          ),
-      );
-      if (previous != null) {
-        canvas.drawLine(
-          previous,
-          Offset(x, y),
-          Paint()
-            ..color = color.withValues(alpha: 0.22)
-            ..strokeWidth = 4
-            ..strokeCap = StrokeCap.round
-            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
-        );
-        canvas.drawLine(
-          previous,
-          Offset(x, y),
-          Paint()
-            ..color = color.withValues(alpha: 0.88)
-            ..strokeWidth = 1.5
-            ..strokeCap = StrokeCap.round,
-        );
-      }
-      previous = Offset(x, y);
-    }
-
-    for (final goal in momentum.goals) {
-      final x =
-          graphRect.left + graphRect.width * (goal.axis / maxAxis).clamp(0, 1);
-      final color = goal.isHomeTeam ? homeColor : awayColor;
-      canvas.drawLine(
-        Offset(x, graphRect.top),
-        Offset(x, graphRect.bottom),
-        Paint()
-          ..color = color.withValues(alpha: 0.34)
-          ..strokeWidth = 1,
-      );
-      final markerY = goal.isHomeTeam
-          ? graphRect.top + 8
-          : graphRect.bottom - 8;
-      canvas.drawCircle(Offset(x, markerY), 5, Paint()..color = color);
-      canvas.drawCircle(
-        Offset(x, markerY),
-        8,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1
-          ..color = color.withValues(alpha: 0.48),
-      );
-    }
-    canvas.restore();
-
-    _paintLabel(canvas, 'HOME +', Offset(graphRect.left, 0), homeColor);
-    _paintLabel(
-      canvas,
-      'AWAY −',
-      Offset(graphRect.left, graphRect.bottom + 7),
-      awayColor,
-    );
-    _paintAxisLabel(canvas, "0'", graphRect.left, graphRect.bottom + 7);
-    _paintAxisLabel(
-      canvas,
-      'HT',
-      halftimeX,
-      graphRect.bottom + 7,
-      centered: true,
-    );
-    _paintAxisLabel(
-      canvas,
-      "${momentum.totalMinutes}'",
-      graphRect.right,
-      graphRect.bottom + 7,
-      alignEnd: true,
-    );
+    final average = total / window.length;
+    delta = homeLeads ? average : -average;
   }
 
-  void _paintLabel(Canvas canvas, String text, Offset offset, Color color) {
-    final painter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: Cyber.label(7.5, color: color, letterSpacing: 0.8),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    painter.paint(canvas, offset);
-  }
-
-  void _paintAxisLabel(
-    Canvas canvas,
-    String text,
-    double x,
-    double y, {
-    bool centered = false,
-    bool alignEnd = false,
-  }) {
-    final painter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: Cyber.label(7.5, color: Cyber.muted, letterSpacing: 0.5),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    final dx = alignEnd
-        ? x - painter.width
-        : centered
-        ? x - painter.width / 2
-        : x;
-    painter.paint(canvas, Offset(dx, y));
-  }
-
-  @override
-  bool shouldRepaint(covariant FootballMomentumPainter oldDelegate) =>
-      oldDelegate.progress != progress ||
-      oldDelegate.momentum != momentum ||
-      oldDelegate.homeColor != homeColor ||
-      oldDelegate.awayColor != awayColor;
+  return (
+    value: display,
+    label: leader.name,
+    caption: stat.label.toUpperCase(),
+    color: paletteForTeam(leader, sport: match.sport).primary,
+    delta: delta,
+  );
 }
 
 bool _isPeriodMarker(MatchEventType type) => switch (type) {
@@ -1461,6 +1127,12 @@ String _formatFeedDateTime(DateTime? value) {
   String twoDigits(int number) => number.toString().padLeft(2, '0');
   return '${local.year}-${twoDigits(local.month)}-${twoDigits(local.day)} '
       '${twoDigits(local.hour)}:${twoDigits(local.minute)}';
+}
+
+String _clockLabel(DateTime value) {
+  final local = value.toLocal();
+  String two(int number) => number.toString().padLeft(2, '0');
+  return '${two(local.hour)}:${two(local.minute)}';
 }
 
 String _compactNumber(int value) {

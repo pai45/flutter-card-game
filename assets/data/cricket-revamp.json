@@ -227,6 +227,60 @@
       "current": true
     }
   ],
+  "inningsProgress": [
+    {
+      "innings": 1,
+      "teamId": "1298769",
+      "points": [
+        {"over": 0, "runs": 0, "wickets": 0, "wicket": false},
+        {"over": 1, "runs": 13, "wickets": 0, "wicket": false},
+        {"over": 2, "runs": 18, "wickets": 0, "wicket": false},
+        {"over": 3, "runs": 24, "wickets": 1, "wicket": true},
+        {"over": 4, "runs": 30, "wickets": 2, "wicket": true},
+        {"over": 5, "runs": 39, "wickets": 2, "wicket": false},
+        {"over": 6, "runs": 45, "wickets": 2, "wicket": false},
+        {"over": 7, "runs": 50, "wickets": 2, "wicket": false},
+        {"over": 8, "runs": 55, "wickets": 3, "wicket": true},
+        {"over": 9, "runs": 59, "wickets": 3, "wicket": false},
+        {"over": 10, "runs": 63, "wickets": 3, "wicket": false},
+        {"over": 11, "runs": 67, "wickets": 3, "wicket": false},
+        {"over": 12, "runs": 73, "wickets": 3, "wicket": false},
+        {"over": 13, "runs": 83, "wickets": 4, "wicket": true},
+        {"over": 14, "runs": 99, "wickets": 4, "wicket": false},
+        {"over": 15, "runs": 105, "wickets": 5, "wicket": true},
+        {"over": 16, "runs": 115, "wickets": 5, "wicket": false},
+        {"over": 17, "runs": 121, "wickets": 6, "wicket": true},
+        {"over": 18, "runs": 137, "wickets": 6, "wicket": false},
+        {"over": 19, "runs": 145, "wickets": 7, "wicket": true},
+        {"over": 20, "runs": 155, "wickets": 8, "wicket": true}
+      ]
+    },
+    {
+      "innings": 2,
+      "teamId": "335970",
+      "points": [
+        {"over": 0, "runs": 0, "wickets": 0, "wicket": false},
+        {"over": 1, "runs": 5, "wickets": 0, "wicket": false},
+        {"over": 2, "runs": 23, "wickets": 0, "wicket": false},
+        {"over": 3, "runs": 36, "wickets": 0, "wicket": false},
+        {"over": 4, "runs": 55, "wickets": 0, "wicket": false},
+        {"over": 5, "runs": 63, "wickets": 1, "wicket": true},
+        {"over": 6, "runs": 70, "wickets": 2, "wicket": true},
+        {"over": 7, "runs": 81, "wickets": 2, "wicket": false},
+        {"over": 8, "runs": 88, "wickets": 2, "wicket": false},
+        {"over": 9, "runs": 91, "wickets": 4, "wicket": true},
+        {"over": 10, "runs": 100, "wickets": 4, "wicket": false},
+        {"over": 11, "runs": 109, "wickets": 4, "wicket": false},
+        {"over": 12, "runs": 116, "wickets": 4, "wicket": false},
+        {"over": 13, "runs": 126, "wickets": 4, "wicket": false},
+        {"over": 14, "runs": 132, "wickets": 5, "wicket": true},
+        {"over": 15, "runs": 139, "wickets": 5, "wicket": false},
+        {"over": 16, "runs": 145, "wickets": 5, "wicket": false},
+        {"over": 17, "runs": 148, "wickets": 5, "wicket": false},
+        {"over": 18, "runs": 161, "wickets": 5, "wicket": false}
+      ]
+    }
+  ],
   "scorecard": [
     {
       "innings": 1,

@@ -133,6 +133,11 @@ class AppTheme {
   static const Color calendarSurface = Color(0xFF162235);
   static const Color skeletonFill = Color(0xFF111827);
   static const Color borderMuted = Color(0xFF243654);
+
+  /// Flat data surface used by the market/stat chart panels and the row shells
+  /// stacked on them. Slightly lighter than [backgroundSecondary] so a chart or
+  /// outcome row lifts off the page without needing a glow.
+  static const Color chartSurface = Color(0xFF10192D);
   static const Color gameCtaFill = Color(0xFF0F3E4F);
   static const Color gameCtaBorder = Color(0xFF087B95);
 
@@ -579,6 +584,7 @@ class Cyber {
   static const muted = AppTheme.textMedium;
   static const textPrimary = AppTheme.textPrimary;
   static const borderMuted = AppTheme.borderMuted;
+  static const chartSurface = AppTheme.chartSurface;
   static const blue = AppTheme.blueColor;
   static const arenaSky = AppTheme.arenaSky;
   static const arenaHorizon = AppTheme.arenaHorizon;

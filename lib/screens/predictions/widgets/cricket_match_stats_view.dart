@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -8,8 +6,10 @@ import '../../../data/team_palettes.dart';
 import '../../../models/cricket_match_data.dart';
 import '../../../models/sport_match.dart';
 import '../../../widgets/cricket_scorecard_view.dart';
+import '../../../widgets/cyber/cyber_chart.dart';
 import '../../../widgets/cyber/cyber_filter_chips.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
+import 'match_stats_shell.dart';
 
 class CricketMatchStatsView extends StatefulWidget {
   const CricketMatchStatsView({
@@ -27,6 +27,7 @@ class CricketMatchStatsView extends StatefulWidget {
 class _CricketMatchStatsViewState extends State<CricketMatchStatsView> {
   static const _tabs = [
     'OVERVIEW',
+    'RACE',
     'CHASE',
     'SCORECARD',
     'MATCH FEED',
@@ -56,6 +57,7 @@ class _CricketMatchStatsViewState extends State<CricketMatchStatsView> {
             child: KeyedSubtree(
               key: ValueKey(_selected),
               child: switch (_selected) {
+                'RACE' => _CricketRace(match: widget.match),
                 'CHASE' => _CricketChase(match: widget.match),
                 'SCORECARD' => _CricketScorecard(match: widget.match),
                 'MATCH FEED' => _CricketFeed(
@@ -83,13 +85,40 @@ class _CricketOverview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final details = match.cricketDetails;
+    final pulse = _chasePulse(match);
+
     return ListView(
       key: const ValueKey('cricket-stats-overview'),
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
       children: [
-        CyberHudPanel(
-          title: 'Match Intel',
-          code: 'SYS://CRICKET/REPORT',
+        MatchPulseHeader(
+          match: match,
+          title: '${match.home.name} vs ${match.away.name}',
+          statusLabel: details?.status ?? _matchStatus(match.status),
+          heroValue: pulse.value,
+          heroLabel: pulse.label,
+          heroCaption: pulse.caption,
+          heroColor: pulse.color,
+          delta: pulse.delta,
+          deltaSuffix: 'RUN RATE',
+          deltaDecimals: 2,
+          subtitle: details == null
+              ? _cricketStateMessage(match)
+              : '${details.stage} // ${details.formatName} // ${details.season}',
+          metrics: [
+            CyberMiniMetric(label: 'FORMAT', value: details?.format ?? '—'),
+            CyberMiniMetric(
+              label: 'TARGET',
+              value: pulse.target,
+              accent: Cyber.gold,
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        const CyberSectionHeading(label: 'MATCH INTEL'),
+        const SizedBox(height: 10),
+        StatsRowShell(
+          padding: const EdgeInsets.all(14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -97,26 +126,15 @@ class _CricketOverview extends StatelessWidget {
                 details?.league.toUpperCase() ?? match.leagueId.toUpperCase(),
                 style: Cyber.display(15, letterSpacing: 0.8),
               ),
-              const SizedBox(height: 4),
-              Text(
-                details == null
-                    ? _cricketStateMessage(match)
-                    : '${details.stage} // ${details.formatName} // ${details.season}',
-                style: Cyber.body(12, color: Cyber.muted),
-              ),
               const SizedBox(height: 12),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  _CricketChip(
-                    label: 'STATUS',
-                    value: details?.status ?? _matchStatus(match.status),
-                  ),
-                  _CricketChip(label: 'FORMAT', value: details?.format ?? '—'),
-                  _CricketChip(
+                  CyberStatPill(
                     label: 'SITE',
                     value: details?.neutralSite == true ? 'NEUTRAL' : 'HOME',
+                    color: Cyber.cyan,
                   ),
                 ],
               ),
@@ -139,11 +157,12 @@ class _CricketOverview extends StatelessWidget {
           ),
         ),
         if (details != null) ...[
-          const SizedBox(height: 12),
-          CyberHudPanel(
-            title: 'Final Result',
-            code: 'RESULT://LOCKED',
+          const SizedBox(height: 18),
+          const CyberSectionHeading(label: 'FINAL RESULT'),
+          const SizedBox(height: 10),
+          StatsRowShell(
             accent: Cyber.success,
+            padding: const EdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -161,22 +180,22 @@ class _CricketOverview extends StatelessWidget {
           ),
         ],
         if (details?.innings.isNotEmpty ?? false) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 18),
           _InningsSummaryPanel(match: match, innings: details!.innings),
         ],
         if (match.teamStats?.isNotEmpty ?? false) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 18),
           _CricketStatsPanel(match: match),
         ],
         if (details?.awards.isNotEmpty ?? false) ...[
-          const SizedBox(height: 12),
-          CyberHudPanel(
-            title: 'Honours',
-            code:
-                'AWARDS://${details!.awards.length.toString().padLeft(2, '0')}',
+          const SizedBox(height: 18),
+          const CyberSectionHeading(label: 'HONOURS'),
+          const SizedBox(height: 10),
+          StatsRowShell(
             accent: Cyber.gold,
+            padding: const EdgeInsets.all(14),
             child: Column(
-              children: details.awards
+              children: details!.awards
                   .map(
                     (award) => _CricketInfo(
                       label: award.award,
@@ -188,13 +207,13 @@ class _CricketOverview extends StatelessWidget {
           ),
         ],
         if (details?.officials.isNotEmpty ?? false) ...[
-          const SizedBox(height: 12),
-          CyberHudPanel(
-            title: 'Officials',
-            code:
-                'CREW://${details!.officials.length.toString().padLeft(2, '0')}',
+          const SizedBox(height: 18),
+          const CyberSectionHeading(label: 'OFFICIALS'),
+          const SizedBox(height: 10),
+          StatsRowShell(
+            padding: const EdgeInsets.all(14),
             child: Column(
-              children: details.officials
+              children: details!.officials
                   .map(
                     (official) => _CricketInfo(
                       label: official.role,
@@ -217,183 +236,380 @@ class _InningsSummaryPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CyberHudPanel(
-      title: 'Innings Grid',
-      code: 'INNINGS://${innings.length.toString().padLeft(2, '0')}',
-      accent: Cyber.magenta,
-      child: Column(
-        children: innings.map((item) {
-          final team = item.teamId == match.home.id ? match.home : match.away;
-          final accent = paletteForTeam(team, sport: match.sport).primary;
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 42,
-                  child: Text(
-                    item.abbreviation,
-                    style: Cyber.label(9, color: accent),
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.score,
-                        style: _cricketNumber(15, color: accent),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const CyberSectionHeading(label: 'INNINGS GRID'),
+        const SizedBox(height: 10),
+        StatsRowShell(
+          accent: Cyber.magenta,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+          child: Column(
+            children: innings.map((item) {
+              final team = item.teamId == match.home.id
+                  ? match.home
+                  : match.away;
+              final accent = paletteForTeam(team, sport: match.sport).primary;
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 42,
+                      child: Text(
+                        item.abbreviation,
+                        style: Cyber.label(9, color: accent),
                       ),
-                      Text(
-                        '${_overs(item.overs)} OV // ${item.fours}×4 // ${item.sixes}×6',
-                        style: Cyber.label(7.5, color: Cyber.muted),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.score,
+                            style: _cricketNumber(15, color: accent),
+                          ),
+                          Text(
+                            '${_overs(item.overs)} OV // ${item.fours}×4 // ${item.sixes}×6',
+                            style: Cyber.label(7.5, color: Cyber.muted),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    if (item.target != null)
+                      Text(
+                        'TARGET ${item.target}',
+                        style: Cyber.label(8, color: Cyber.gold),
+                      ),
+                  ],
                 ),
-                if (item.target != null)
-                  Text(
-                    'TARGET ${item.target}',
-                    style: Cyber.label(8, color: Cyber.gold),
-                  ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
+              );
+            }).toList(),
+          ),
+        ),
+      ],
     );
   }
 }
 
-class _CricketStatsPanel extends StatelessWidget {
+/// TEAM COMPARISON as market-style outcome rows — tap one to hold it lit.
+class _CricketStatsPanel extends StatefulWidget {
   const _CricketStatsPanel({required this.match});
   final SportMatch match;
 
   @override
+  State<_CricketStatsPanel> createState() => _CricketStatsPanelState();
+}
+
+class _CricketStatsPanelState extends State<_CricketStatsPanel> {
+  String? _selectedLabel;
+
+  @override
   Widget build(BuildContext context) {
+    final match = widget.match;
     final homeColor = paletteForTeam(match.home, sport: match.sport).primary;
     final awayColor = paletteForTeam(match.away, sport: match.sport).primary;
-    return CyberHudPanel(
-      title: 'Team Comparison',
-      code: 'COMPARE://${match.teamStats!.length.toString().padLeft(2, '0')}',
-      child: Column(
-        children: match.teamStats!.map((stat) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 56,
-                      child: Text(
-                        stat.homeDisplay,
-                        style: _cricketNumber(11, color: homeColor),
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        stat.label.toUpperCase(),
-                        textAlign: TextAlign.center,
-                        style: Cyber.label(8, color: Cyber.muted),
-                      ),
-                    ),
-                    SizedBox(
-                      width: 56,
-                      child: Text(
-                        stat.awayDisplay,
-                        textAlign: TextAlign.right,
-                        style: _cricketNumber(11, color: awayColor),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Expanded(
-                      flex: (stat.homeShare * 100).round().clamp(1, 99),
-                      child: Container(height: 3, color: homeColor),
-                    ),
-                    const SizedBox(width: 2),
-                    Expanded(
-                      flex: ((1 - stat.homeShare) * 100).round().clamp(1, 99),
-                      child: Container(height: 3, color: awayColor),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const CyberSectionHeading(label: 'TEAM COMPARISON'),
+        const SizedBox(height: 12),
+        TeamLegendRow(match: match),
+        const SizedBox(height: 12),
+        for (final stat in match.teamStats!) ...[
+          StatComparisonRow(
+            stat: stat,
+            homeColor: homeColor,
+            awayColor: awayColor,
+            selected: stat.label == _selectedLabel,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              setState(
+                () => _selectedLabel = stat.label == _selectedLabel
+                    ? null
+                    : stat.label,
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+        ],
+      ],
     );
   }
 }
 
-class _CricketChase extends StatelessWidget {
+/// RACE: both innings worms on one axis. Scrubbing reads out BOTH scores at the
+/// same over — the comparison the old static worm made you eyeball.
+class _CricketRace extends StatefulWidget {
+  const _CricketRace({required this.match});
+  final SportMatch match;
+
+  @override
+  State<_CricketRace> createState() => _CricketRaceState();
+}
+
+class _CricketRaceState extends State<_CricketRace> {
+  static const _ranges = ['20 OV', 'POWERPLAY', 'DEATH'];
+  String _range = _ranges.first;
+
+  @override
+  Widget build(BuildContext context) {
+    final match = widget.match;
+    final details = match.cricketDetails;
+    final timelines =
+        details?.inningsProgress ?? const <CricketInningsProgress>[];
+    final homeTimeline = timelines.where(
+      (item) => item.teamId == match.home.id,
+    );
+    final awayTimeline = timelines.where(
+      (item) => item.teamId == match.away.id,
+    );
+    if (homeTimeline.isEmpty ||
+        awayTimeline.isEmpty ||
+        homeTimeline.first.points.length < 2 ||
+        awayTimeline.first.points.length < 2) {
+      return const CyberNoDataState(
+        icon: Icons.show_chart,
+        title: 'Race data unavailable',
+        message: 'Both innings need published scoring samples for this race.',
+      );
+    }
+
+    final home = _pointsForRange(homeTimeline.first.points, _range);
+    final away = _pointsForRange(awayTimeline.first.points, _range);
+    final homeInnings = details!.innings.firstWhere(
+      (innings) => innings.teamId == match.home.id,
+    );
+    final awayInnings = details.innings.firstWhere(
+      (innings) => innings.teamId == match.away.id,
+    );
+    final homeColor = paletteForTeam(match.home, sport: match.sport).primary;
+    final awayColor = paletteForTeam(match.away, sport: match.sport).primary;
+    final chaserWon =
+        homeInnings.target != null && homeInnings.runs >= homeInnings.target!;
+    final winner = chaserWon ? match.home : match.away;
+    final ballsRemaining = homeInnings.target == null
+        ? null
+        : (120 - (homeTimeline.first.points.last.over * 6)).clamp(0, 120);
+
+    return ListView(
+      key: const ValueKey('cricket-stats-race'),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+      children: [
+        TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: const Duration(milliseconds: 760),
+          curve: Curves.easeOutCubic,
+          builder: (context, progress, _) => CyberChartPanel(
+            chartKey: const ValueKey('cricket-innings-race-graph'),
+            title: 'INNINGS RACE',
+            caption: '${home.length} OVERS',
+            height: 250,
+            yAxisLabels: true,
+            gridDivisions: 4,
+            glow: progress < 1,
+            revealProgress: progress,
+            ranges: _ranges,
+            activeRange: _range,
+            onRangeChanged: (range) => setState(() => _range = range),
+            markers: _wicketMarkers(home, away),
+            xAxisLabels: _overLabels(home),
+            contextLabelAt: (index) =>
+                '${home[index.clamp(0, home.length - 1)].over}.0 OV',
+            series: [
+              ChartSeries(
+                label: match.home.shortName.toUpperCase(),
+                color: homeColor,
+                fill: true,
+                readout: (value, index) => _scoreAt(home, index),
+                values: [for (final point in home) point.runs.toDouble()],
+              ),
+              ChartSeries(
+                label: match.away.shortName.toUpperCase(),
+                color: awayColor,
+                readout: (value, index) => _scoreAt(away, index),
+                values: [for (final point in away) point.runs.toDouble()],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+        const CyberSectionHeading(label: 'RACE VERDICT'),
+        const SizedBox(height: 10),
+        StatsRowShell(
+          accent: paletteForTeam(winner, sport: match.sport).primary,
+          padding: const EdgeInsets.all(14),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _CricketChip(label: 'WINNER', value: winner.shortName),
+              _CricketChip(
+                label: 'TARGET',
+                value: '${homeInnings.target ?? '—'}',
+              ),
+              _CricketChip(
+                label: match.home.shortName,
+                value: '${homeInnings.runs}/${homeInnings.wickets}',
+              ),
+              _CricketChip(
+                label: match.away.shortName,
+                value: '${awayInnings.runs}/${awayInnings.wickets}',
+              ),
+              if (ballsRemaining != null)
+                _CricketChip(label: 'BALLS LEFT', value: '$ballsRemaining'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// POWERPLAY is the first six overs, DEATH the last five — the two windows that
+/// usually decide a T20.
+List<CricketScoreProgressPoint> _pointsForRange(
+  List<CricketScoreProgressPoint> points,
+  String range,
+) {
+  if (range == '20 OV' || points.isEmpty) return points;
+  final filtered =
+      (range == 'POWERPLAY'
+              ? points.where((point) => point.over <= 6)
+              : points.where((point) => point.over >= 15))
+          .toList();
+  return filtered.length >= 2 ? filtered : points;
+}
+
+/// Runs/wickets at one over, so the legend reads like a scoreboard.
+String _scoreAt(List<CricketScoreProgressPoint> points, int index) {
+  if (points.isEmpty) return '—';
+  final point = points[index.clamp(0, points.length - 1)];
+  return '${point.runs}/${point.wickets}';
+}
+
+List<String> _overLabels(List<CricketScoreProgressPoint> points) {
+  if (points.length < 2) return const <String>[];
+  final first = points.first.over;
+  final last = points.last.over;
+  return [
+    for (var i = 0; i <= 4; i++) '${first + ((last - first) * i / 4).round()}',
+  ];
+}
+
+/// Wickets ride the plot as diamonds, the way the old worm drew them.
+List<ChartMarker> _wicketMarkers(
+  List<CricketScoreProgressPoint> home,
+  List<CricketScoreProgressPoint> away,
+) {
+  if (home.length < 2) return const <ChartMarker>[];
+  final markers = <ChartMarker>[];
+  for (var i = 0; i < home.length; i++) {
+    if (home[i].wicket) {
+      markers.add(
+        ChartMarker(
+          fraction: i / (home.length - 1),
+          color: Cyber.danger,
+          shape: ChartMarkerShape.diamond,
+        ),
+      );
+    }
+  }
+  for (var i = 0; i < away.length && away.length > 1; i++) {
+    if (away[i].wicket) {
+      markers.add(
+        ChartMarker(
+          fraction: i / (away.length - 1),
+          color: Cyber.danger,
+          shape: ChartMarkerShape.diamond,
+          alignTop: false,
+        ),
+      );
+    }
+  }
+  return markers;
+}
+
+/// CHASE: actual run rate against the rate the chase demanded, ball by ball.
+/// Where RACE shows who scored more, CHASE shows whether they were ever behind.
+class _CricketChase extends StatefulWidget {
   const _CricketChase({required this.match});
   final SportMatch match;
 
   @override
+  State<_CricketChase> createState() => _CricketChaseState();
+}
+
+class _CricketChaseState extends State<_CricketChase> {
+  static const _ranges = ['ALL BALLS', 'BOUNDARIES', 'FINAL OVER'];
+  String _range = _ranges.first;
+
+  @override
   Widget build(BuildContext context) {
-    final details = match.cricketDetails;
-    final balls = details?.commentary ?? const <CricketBallCommentary>[];
-    if (balls.isEmpty) {
+    final details = widget.match.cricketDetails;
+    final all = details?.commentary ?? const <CricketBallCommentary>[];
+    if (all.length < 2) {
       return const CyberNoDataState(
-        icon: Icons.show_chart,
+        icon: Icons.speed,
         title: 'Chase feed unavailable',
         message: 'Ball-level run-rate samples have not been published.',
       );
     }
+    final balls = _ballsForRange(all, _range);
     final chase = details!.innings.firstWhere(
       (innings) => innings.target != null,
       orElse: () => details.innings.last,
     );
     final boundaries = balls.where((ball) => ball.boundary).length;
     final wickets = balls.where((ball) => ball.wicket).length;
+
     return ListView(
       key: const ValueKey('cricket-stats-chase'),
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
       children: [
         TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0, end: 1),
+          tween: Tween(begin: 0.0, end: 1.0),
           duration: const Duration(milliseconds: 760),
           curve: Curves.easeOutCubic,
-          builder: (context, progress, _) => CyberHudPanel(
-            title: 'Late Chase',
-            code: 'BALLS://${balls.length.toString().padLeft(2, '0')}',
+          builder: (context, progress, _) => CyberChartPanel(
+            chartKey: const ValueKey('cricket-late-chase-graph'),
+            title: 'LATE CHASE',
+            caption: '${balls.length} BALLS',
+            height: 230,
+            yAxisLabels: true,
             glow: progress < 1,
-            child: Column(
-              children: [
-                SizedBox(
-                  height: 230,
-                  child: CustomPaint(
-                    key: const ValueKey('cricket-late-chase-graph'),
-                    painter: CricketChasePainter(
-                      balls: balls,
-                      progress: progress,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _Legend(color: Cyber.cyan, label: 'ACTUAL RR'),
-                    _Legend(color: Cyber.magenta, label: 'REQUIRED RR'),
-                    _Legend(color: Cyber.gold, label: 'BOUNDARY'),
-                  ],
-                ),
-              ],
-            ),
+            revealProgress: progress,
+            ranges: _ranges,
+            activeRange: _range,
+            onRangeChanged: (range) => setState(() => _range = range),
+            markers: _boundaryMarkers(balls),
+            contextLabelAt: (index) =>
+                balls[index.clamp(0, balls.length - 1)].over,
+            series: [
+              ChartSeries(
+                label: 'ACTUAL RR',
+                color: Cyber.cyan,
+                fill: true,
+                readout: (value, _) => value.toStringAsFixed(1),
+                values: [for (final ball in balls) ball.runRate],
+              ),
+              ChartSeries(
+                label: 'REQUIRED RR',
+                color: Cyber.magenta,
+                strokeWidth: 1.8,
+                readout: (value, _) => value.toStringAsFixed(1),
+                values: [for (final ball in balls) ball.required?.runRate ?? 0],
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
-        CyberHudPanel(
-          title: 'Chase Readout',
-          code: 'WINDOW://15.1-17.6',
+        const SizedBox(height: 18),
+        const CyberSectionHeading(label: 'CHASE READOUT'),
+        const SizedBox(height: 10),
+        StatsRowShell(
           accent: Cyber.gold,
+          padding: const EdgeInsets.all(14),
           child: Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -406,45 +622,75 @@ class _CricketChase extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        CyberHudPanel(
-          title: 'Ball Pressure',
-          code: 'CHASE://SEQUENCE',
-          child: Column(
-            children: balls.map((ball) {
-              final required = ball.required;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 42,
-                      child: Text(
-                        ball.over,
-                        style: _cricketNumber(10, color: Cyber.cyan),
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(ball.shortText, style: Cyber.body(11.5)),
-                    ),
-                    Text(
-                      required == null
-                          ? 'CHASE COMPLETE'
-                          : '${required.runs} OFF ${required.balls}',
-                      style: Cyber.label(
-                        7.5,
-                        color: ball.boundary ? Cyber.gold : Cyber.muted,
-                      ),
-                    ),
-                  ],
+        const SizedBox(height: 18),
+        const CyberSectionHeading(label: 'BALL PRESSURE'),
+        const SizedBox(height: 10),
+        for (final ball in balls) ...[
+          StatsRowShell(
+            accent: ball.wicket
+                ? Cyber.danger
+                : ball.boundary
+                ? Cyber.gold
+                : null,
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 42,
+                  child: Text(
+                    ball.over,
+                    style: _cricketNumber(10, color: Cyber.cyan),
+                  ),
                 ),
-              );
-            }).toList(),
+                Expanded(child: Text(ball.shortText, style: Cyber.body(11.5))),
+                Text(
+                  ball.required == null
+                      ? 'CHASE COMPLETE'
+                      : '${ball.required!.runs} OFF ${ball.required!.balls}',
+                  style: Cyber.label(
+                    7.5,
+                    color: ball.boundary ? Cyber.gold : Cyber.muted,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
+          const SizedBox(height: 8),
+        ],
       ],
     );
   }
+}
+
+List<CricketBallCommentary> _ballsForRange(
+  List<CricketBallCommentary> balls,
+  String range,
+) {
+  if (range == 'ALL BALLS' || balls.isEmpty) return balls;
+  if (range == 'BOUNDARIES') {
+    final hits = balls.where((ball) => ball.boundary || ball.wicket).toList();
+    return hits.length >= 2 ? hits : balls;
+  }
+  final lastOver = balls.last.overNumber;
+  final finalOver = balls.where((ball) => ball.overNumber == lastOver).toList();
+  return finalOver.length >= 2 ? finalOver : balls;
+}
+
+/// Boundaries mark the chase; the last wicket is the decisive beat.
+List<ChartMarker> _boundaryMarkers(List<CricketBallCommentary> balls) {
+  if (balls.length < 2) return const <ChartMarker>[];
+  final lastWicket = balls.lastIndexWhere((ball) => ball.wicket);
+  return [
+    for (var i = 0; i < balls.length; i++)
+      if (balls[i].boundary || balls[i].wicket)
+        ChartMarker(
+          fraction: i / (balls.length - 1),
+          color: balls[i].wicket ? Cyber.danger : Cyber.gold,
+          shape: balls[i].wicket
+              ? ChartMarkerShape.diamond
+              : ChartMarkerShape.dot,
+          focal: i == lastWicket,
+        ),
+  ];
 }
 
 class _CricketScorecard extends StatelessWidget {
@@ -469,6 +715,52 @@ class _CricketScorecard extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Cricket's hero number is the chase: the chasing side's score, with the swing
+/// between the required rate and what they were actually scoring at.
+({
+  String value,
+  String label,
+  String caption,
+  Color color,
+  double? delta,
+  String target,
+})
+_chasePulse(SportMatch match) {
+  final details = match.cricketDetails;
+  final innings = details?.innings ?? const <CricketInningsSummary>[];
+  if (innings.isEmpty) {
+    return (
+      value: '—',
+      label: match.home.name,
+      caption: 'CHASE',
+      color: Cyber.muted,
+      delta: null,
+      target: '—',
+    );
+  }
+  final chase = innings.firstWhere(
+    (item) => item.target != null,
+    orElse: () => innings.last,
+  );
+  final team = chase.teamId == match.home.id ? match.home : match.away;
+
+  double? delta;
+  final balls = details?.commentary ?? const <CricketBallCommentary>[];
+  if (balls.isNotEmpty) {
+    final required = balls.last.required?.runRate;
+    if (required != null) delta = balls.last.runRate - required;
+  }
+
+  return (
+    value: '${chase.runs}/${chase.wickets}',
+    label: team.name,
+    caption: chase.target == null ? 'INNINGS TOTAL' : 'CHASE',
+    color: paletteForTeam(team, sport: match.sport).primary,
+    delta: delta,
+    target: '${chase.target ?? '—'}',
+  );
 }
 
 class _CricketFeed extends StatefulWidget {
@@ -517,7 +809,7 @@ class _CricketFeedState extends State<_CricketFeed> {
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                 sliver: SliverToBoxAdapter(
-                  child: CyberPanel(
+                  child: StatsRowShell(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
                       vertical: 11,
@@ -566,7 +858,7 @@ class _BallCard extends StatelessWidget {
         : ball.boundary
         ? Cyber.gold
         : Cyber.cyan;
-    return CyberPanel(
+    return StatsRowShell(
       accent: accent,
       padding: const EdgeInsets.all(12),
       child: Row(
@@ -632,7 +924,7 @@ class _NoteCard extends StatelessWidget {
       'powerplay' => Cyber.cyan,
       _ => Cyber.muted,
     };
-    return CyberPanel(
+    return StatsRowShell(
       accent: accent,
       padding: const EdgeInsets.all(12),
       child: Row(
@@ -703,10 +995,11 @@ class _CricketSquadsState extends State<_CricketSquads> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
             children: [
-              CyberHudPanel(
-                title: squad.name,
-                code: 'SQUAD://${squad.playerCount}',
+              CyberSectionHeading(label: squad.name),
+              const SizedBox(height: 10),
+              StatsRowShell(
                 accent: accent,
+                padding: const EdgeInsets.all(14),
                 child: Column(
                   children: [
                     _CricketInfo(label: 'CAPTAIN', value: squad.captain),
@@ -746,7 +1039,7 @@ class _SquadPlayerCard extends StatelessWidget {
       if (player.subbedOut) 'SUBBED OUT',
       if (player.active) 'ACTIVE',
     ];
-    return CyberPanel(
+    return StatsRowShell(
       accent: accent,
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -859,108 +1152,6 @@ class _CricketInfo extends StatelessWidget {
       ),
     );
   }
-}
-
-class _Legend extends StatelessWidget {
-  const _Legend({required this.color, required this.label});
-  final Color color;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(width: 12, height: 2, color: color),
-        const SizedBox(width: 5),
-        Text(label, style: Cyber.label(7, color: Cyber.muted)),
-      ],
-    );
-  }
-}
-
-class CricketChasePainter extends CustomPainter {
-  const CricketChasePainter({required this.balls, required this.progress});
-  final List<CricketBallCommentary> balls;
-  final double progress;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (balls.length < 2) return;
-    final rect = Rect.fromLTRB(12, 18, size.width - 8, size.height - 26);
-    final maxRate = balls
-        .fold<double>(0, (peak, ball) {
-          return math.max(
-            peak,
-            math.max(ball.runRate, ball.required?.runRate ?? 0),
-          );
-        })
-        .ceilToDouble()
-        .clamp(1, double.infinity);
-    final grid = Paint()..color = Cyber.line.withValues(alpha: 0.55);
-    for (final fraction in [0.0, 0.25, 0.5, 0.75, 1.0]) {
-      final y = rect.bottom - rect.height * fraction;
-      canvas.drawLine(Offset(rect.left, y), Offset(rect.right, y), grid);
-    }
-    final count = math.max(2, (balls.length * progress).ceil());
-    Path lineFor(double Function(CricketBallCommentary ball) value) {
-      final path = Path();
-      for (var index = 0; index < count; index++) {
-        final ball = balls[index.clamp(0, balls.length - 1)];
-        final x = rect.left + rect.width * index / (balls.length - 1);
-        final y =
-            rect.bottom - rect.height * (value(ball) / maxRate).clamp(0, 1);
-        if (index == 0) {
-          path.moveTo(x, y);
-        } else {
-          path.lineTo(x, y);
-        }
-      }
-      return path;
-    }
-
-    canvas.drawPath(
-      lineFor((ball) => ball.runRate),
-      Paint()
-        ..color = Cyber.cyan
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.4,
-    );
-    canvas.drawPath(
-      lineFor((ball) => ball.required?.runRate ?? 0),
-      Paint()
-        ..color = Cyber.magenta
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.7,
-    );
-    for (var index = 0; index < count; index++) {
-      final ball = balls[index];
-      if (!ball.boundary && !ball.wicket) continue;
-      final x = rect.left + rect.width * index / (balls.length - 1);
-      final y =
-          rect.bottom - rect.height * (ball.runRate / maxRate).clamp(0, 1);
-      canvas.drawCircle(
-        Offset(x, y),
-        4,
-        Paint()..color = ball.wicket ? Cyber.danger : Cyber.gold,
-      );
-    }
-    for (final index in [0, balls.length ~/ 2, balls.length - 1]) {
-      final x = rect.left + rect.width * index / (balls.length - 1);
-      final text = TextPainter(
-        text: TextSpan(
-          text: balls[index].over,
-          style: Cyber.label(7, color: Cyber.muted),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      text.paint(canvas, Offset(x - text.width / 2, rect.bottom + 6));
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CricketChasePainter oldDelegate) =>
-      oldDelegate.progress != progress || oldDelegate.balls != balls;
 }
 
 TextStyle _cricketNumber(double size, {Color color = Colors.white}) =>

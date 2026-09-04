@@ -32,10 +32,14 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('MATCH INTEL'), findsOneWidget);
-    expect(find.text('TEAM CONTROL'), findsOneWidget);
-    expect(find.text('GOAL IMPACT'), findsOneWidget);
     expect(find.textContaining('Craven Cottage'), findsOneWidget);
     expect(find.text('27,461'), findsOneWidget);
+    // The pulse hero leads the overview, so the comparison and scorer blocks
+    // sit below the fold of the lazily-built list.
+    await _scrollTo(tester, find.text('TEAM CONTROL'));
+    expect(find.text('TEAM CONTROL'), findsOneWidget);
+    await _scrollTo(tester, find.text('GOAL IMPACT'));
+    expect(find.text('GOAL IMPACT'), findsOneWidget);
 
     _selectSection(tester, 'MOMENTUM');
     await _pumpAnimations(tester);
@@ -108,6 +112,15 @@ void _selectSection(WidgetTester tester, String section) {
     find.byType(CyberFilterChips).first,
   );
   chips.onSelect(section);
+}
+
+Future<void> _scrollTo(WidgetTester tester, Finder target) async {
+  await tester.scrollUntilVisible(
+    target,
+    260,
+    scrollable: find.byType(Scrollable).last,
+  );
+  await tester.pump();
 }
 
 Future<void> _pumpAnimations(WidgetTester tester) async {

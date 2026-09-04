@@ -12,7 +12,7 @@ import '../../../utils/sound_effects.dart';
 import 'penalty_keeper_rig.dart';
 
 /// Fraction of the result-scene timeline at which the ball reaches the goal.
-const _kSceneImpact = 0.55;
+const _kSceneImpact = 0.62;
 
 /// Shared goal-mouth geometry so the choose overlay, the painters and the
 /// result scene all agree on where posts, zones and the spot sit.
@@ -154,51 +154,6 @@ void _paintGoalFrame(
   );
 }
 
-/// Stylised angular keeper. [diveT] 0 = upright on the line, 1 = fully
-/// committed toward [dir] (a crouch-and-reach for center).
-void _paintKeeper(
-  Canvas canvas,
-  _GoalGeom g, {
-  required Color color,
-  required double diveT,
-  required PenaltyDirection dir,
-}) {
-  final kh = g.mouthH * 0.62;
-  final sign = _zoneSign(dir);
-  final centerX = g.left + g.width / 2;
-  final feetX = centerX + (g.zoneX(dir) - centerX) * 0.62 * diveT;
-  final crouch = sign == 0 ? diveT : 0.0;
-
-  canvas.save();
-  canvas.translate(feetX, g.groundY - kh * 0.10 * crouch);
-  canvas.rotate(sign * diveT * 1.0);
-
-  final stroke = Paint()
-    ..color = color
-    ..strokeWidth = 3.2
-    ..strokeCap = StrokeCap.round
-    ..style = PaintingStyle.stroke;
-
-  // Head.
-  canvas.drawCircle(Offset(0, -kh * 0.88), kh * 0.10, stroke);
-  // Torso.
-  canvas.drawLine(Offset(0, -kh * 0.76), Offset(0, -kh * 0.34), stroke);
-  // Arms: raised V at rest → straight reach when committed.
-  final armY = -kh * 0.68;
-  final reach = Offset.lerp(
-    Offset(kh * 0.28, -kh * 0.92),
-    Offset(kh * 0.12, -kh * 1.06),
-    crouch,
-  )!;
-  canvas.drawLine(Offset(0, armY), Offset(reach.dx, reach.dy), stroke);
-  canvas.drawLine(Offset(0, armY), Offset(-reach.dx, reach.dy), stroke);
-  // Legs.
-  canvas.drawLine(Offset(0, -kh * 0.34), Offset(kh * 0.14, 0), stroke);
-  canvas.drawLine(Offset(0, -kh * 0.34), Offset(-kh * 0.14, 0), stroke);
-
-  canvas.restore();
-}
-
 void _paintBall(Canvas canvas, Offset pos, double scale, {double alpha = 1}) {
   final r = 8.0 * scale;
   canvas.drawCircle(
@@ -221,192 +176,6 @@ void _paintBall(Canvas canvas, Offset pos, double scale, {double alpha = 1}) {
 }
 
 // ─── Choose phase: tappable goal mouth ───────────────────────────────────────
-
-/// Interactive goal mouth for the penalty choose phase: the three direction
-/// picks are tap zones on the goal itself. Selection still flows through the
-/// same callback the old direction buttons used — presentation only.
-class PenaltyGoalMouth extends StatelessWidget {
-  const PenaltyGoalMouth({
-    required this.playerTaking,
-    required this.selected,
-    required this.onSelect,
-    super.key,
-  });
-
-  final bool playerTaking;
-  final PenaltyDirection? selected;
-  final ValueChanged<PenaltyDirection> onSelect;
-
-  String _zoneLabel(PenaltyDirection d) => switch (d) {
-    PenaltyDirection.left => 'LEFT',
-    PenaltyDirection.center => 'CENTER',
-    PenaltyDirection.right => 'RIGHT',
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    final accent = playerTaking ? Cyber.cyan : Cyber.amber;
-    const goalHeight = 252.0;
-    return Container(
-      height: goalHeight,
-      decoration: BoxDecoration(
-        color: Cyber.bg.withValues(alpha: 0.28),
-        border: Border.all(color: accent.withValues(alpha: 0.16)),
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            accent.withValues(alpha: 0.05),
-            Cyber.bg.withValues(alpha: 0.10),
-            Colors.transparent,
-          ],
-        ),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final size = Size(constraints.maxWidth, goalHeight);
-          final g = _GoalGeom(size);
-          return Stack(
-            children: [
-              Positioned.fill(
-                child: CustomPaint(
-                  painter: _GoalMouthPainter(
-                    playerTaking: playerTaking,
-                    selected: selected,
-                  ),
-                ),
-              ),
-              // Reticles at the three aim points.
-              for (final dir in PenaltyDirection.values)
-                Positioned(
-                  left: g.zoneX(dir) - 30,
-                  top: g.targetY - 30,
-                  width: 60,
-                  height: 60,
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 160),
-                    opacity: selected == dir ? 1 : 0.42,
-                    child: CustomPaint(
-                      painter: _ZoneReticlePainter(
-                        accent: accent,
-                        active: selected == dir,
-                      ),
-                    ),
-                  ),
-                ),
-              for (final dir in PenaltyDirection.values)
-                Positioned(
-                  left: g.zoneX(dir) - 39,
-                  top: g.targetY + 33,
-                  width: 78,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 160),
-                    alignment: Alignment.center,
-                    padding: const EdgeInsets.symmetric(vertical: 5),
-                    decoration: BoxDecoration(
-                      color: selected == dir
-                          ? accent.withValues(alpha: 0.16)
-                          : Cyber.bg2.withValues(alpha: 0.34),
-                      border: Border.all(
-                        color: (selected == dir ? accent : Cyber.line)
-                            .withValues(alpha: selected == dir ? 0.45 : 0.18),
-                      ),
-                    ),
-                    child: Text(
-                      _zoneLabel(dir),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Cyber.label(
-                        9,
-                        color: selected == dir
-                            ? accent
-                            : Colors.white.withValues(alpha: 0.68),
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                  ),
-                ),
-              // Fat-finger hit zones: full-height thirds.
-              Row(
-                children: [
-                  for (final dir in PenaltyDirection.values)
-                    Expanded(
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          playSound(SoundEffect.penaltyTarget);
-                          onSelect(dir);
-                        },
-                        child: const SizedBox.expand(),
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _GoalMouthPainter extends CustomPainter {
-  _GoalMouthPainter({required this.playerTaking, required this.selected});
-
-  final bool playerTaking;
-  final PenaltyDirection? selected;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final g = _GoalGeom(size);
-
-    // Selected zone wash (behind the net).
-    final sel = selected;
-    if (sel != null) {
-      final accent = playerTaking ? Cyber.cyan : Cyber.amber;
-      final third = g.width / 3;
-      final index = PenaltyDirection.values.indexOf(sel);
-      canvas.drawRect(
-        Rect.fromLTRB(
-          g.left + third * index,
-          g.crossbarY,
-          g.left + third * (index + 1),
-          g.groundY,
-        ),
-        Paint()..color = accent.withValues(alpha: 0.14),
-      );
-    }
-
-    _paintGoalFrame(canvas, g);
-
-    // Opposing keeper guards the line when you shoot; your keeper (leaning
-    // toward your pick) when you dive.
-    if (playerTaking) {
-      _paintKeeper(
-        canvas,
-        g,
-        color: Cyber.amber.withValues(alpha: 0.9),
-        diveT: 0,
-        dir: PenaltyDirection.center,
-      );
-    } else {
-      _paintKeeper(
-        canvas,
-        g,
-        color: Cyber.cyan.withValues(alpha: 0.95),
-        diveT: selected == null ? 0 : 0.30,
-        dir: selected ?? PenaltyDirection.center,
-      );
-    }
-
-    _paintBall(canvas, g.spot, 1);
-  }
-
-  @override
-  bool shouldRepaint(covariant _GoalMouthPainter old) =>
-      old.selected != selected || old.playerTaking != playerTaking;
-}
 
 /// Corner ticks + crosshair ring marking an aim zone.
 class _ZoneReticlePainter extends CustomPainter {
@@ -460,6 +229,7 @@ class _ZoneReticlePainter extends CustomPainter {
 class PenaltyInteractionArena extends StatefulWidget {
   const PenaltyInteractionArena({
     required this.role,
+    required this.shooter,
     required this.keeper,
     required this.selected,
     required this.onSelect,
@@ -467,6 +237,7 @@ class PenaltyInteractionArena extends StatefulWidget {
   });
 
   final ShootoutTurnRole role;
+  final PlayerCard shooter;
   final PlayerCard keeper;
   final PenaltyDirection? selected;
   final ValueChanged<PenaltyDirection> onSelect;
@@ -514,7 +285,7 @@ class _PenaltyInteractionArenaState extends State<PenaltyInteractionArena>
   }
 
   void _syncMotion({required bool resetPreview}) {
-    if (_reduceMotion || _shooting) {
+    if (_reduceMotion) {
       _idle
         ..stop()
         ..value = 0;
@@ -567,6 +338,9 @@ class _PenaltyInteractionArenaState extends State<PenaltyInteractionArena>
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
+              key: ValueKey(
+                'penalty-characters-${widget.shooter.id}-${widget.keeper.id}',
+              ),
               height: goalHeight,
               decoration: BoxDecoration(
                 color: Cyber.bg.withValues(alpha: 0.28),
@@ -606,6 +380,7 @@ class _PenaltyInteractionArenaState extends State<PenaltyInteractionArena>
                                   : const ValueKey('penalty-arena-paint'),
                               painter: _InteractionArenaPainter(
                                 role: widget.role,
+                                shooter: widget.shooter,
                                 keeper: widget.keeper,
                                 selected: widget.selected,
                                 selectionT: selectionT,
@@ -820,6 +595,7 @@ class _DivePad extends StatelessWidget {
 class _InteractionArenaPainter extends CustomPainter {
   _InteractionArenaPainter({
     required this.role,
+    required this.shooter,
     required this.keeper,
     required this.selected,
     required this.selectionT,
@@ -828,6 +604,7 @@ class _InteractionArenaPainter extends CustomPainter {
   });
 
   final ShootoutTurnRole role;
+  final PlayerCard shooter;
   final PlayerCard keeper;
   final PenaltyDirection? selected;
   final double selectionT;
@@ -924,12 +701,22 @@ class _InteractionArenaPainter extends CustomPainter {
       canvas,
       anchor: Offset(goal.left + goal.width / 2, goal.groundY),
       height: goal.mouthH * 0.78,
-      visual: KeeperVisualSpec.fromCard(keeper, userSide: !shooting),
+      visual: PenaltyAthleteVisualSpec.fromCard(keeper, userSide: !shooting),
       pose: pose,
       direction: shooting ? PenaltyDirection.center : direction,
       progress: shooting ? 0 : selectionT,
       // The opposing keeper must stay completely still while the user aims.
       idlePhase: shooting ? 0 : idleT,
+    );
+    paintPenaltyKicker(
+      canvas,
+      anchor: goal.spot,
+      height: goal.mouthH * 0.52,
+      visual: PenaltyAthleteVisualSpec.fromCard(shooter, userSide: shooting),
+      pose: KickerPose.ready,
+      direction: direction,
+      progress: selectionT,
+      idlePhase: idleT,
     );
     if (shooting && selected != null) {
       _paintShotPreview(canvas, goal, direction);
@@ -941,6 +728,7 @@ class _InteractionArenaPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _InteractionArenaPainter old) =>
       old.role != role ||
+      old.shooter != shooter ||
       old.keeper != keeper ||
       old.selected != selected ||
       old.selectionT != selectionT ||
@@ -964,7 +752,7 @@ class _PenaltyGoalSceneState extends State<PenaltyGoalScene>
     with SingleTickerProviderStateMixin {
   late final AnimationController _c = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 1300),
+    duration: const Duration(milliseconds: 1500),
   );
   bool _started = false;
   bool _impactFired = false;
@@ -1128,11 +916,14 @@ class _PenaltyScenePainter extends CustomPainter {
       rippleCenter: goal ? target : null,
     );
 
-    // Keeper: the shooter's opponent. The procedural rig reaches the actual
-    // ball target on a save and lands beyond it when beaten.
-    final diveT = _seg(0.16, 0.58, Curves.easeOutCubic);
+    // Keeper: the shooter's opponent. The articulated rig commits after the
+    // taker's plant foot, reaches the real ball on a save, then recovers.
+    final diveT = _seg(0.30, _kSceneImpact, Curves.easeOutCubic);
+    final recoveryT = _seg(0.76, 1.0, Curves.easeOutCubic);
     final keeperPose = goal
         ? KeeperPose.beaten
+        : recoveryT > 0
+        ? KeeperPose.recover
         : (kick.diveDirection == PenaltyDirection.center
               ? KeeperPose.smother
               : KeeperPose.catching);
@@ -1140,15 +931,48 @@ class _PenaltyScenePainter extends CustomPainter {
       canvas,
       anchor: Offset(g.left + g.width / 2, g.groundY),
       height: g.mouthH * 0.78,
-      visual: KeeperVisualSpec.fromCard(kick.keeper, userSide: !kick.byPlayer),
+      visual: PenaltyAthleteVisualSpec.fromCard(
+        kick.keeper,
+        userSide: !kick.byPlayer,
+      ),
       pose: keeperPose,
       direction: kick.diveDirection,
-      progress: diveT,
-      intercept: goal ? null : target,
+      progress: recoveryT > 0 ? recoveryT : diveT,
+      intercept: goal || recoveryT > 0 ? null : target,
     );
 
-    // Ball flight: spot → target along a floaty arc, with a short trail.
-    final flightT = _seg(0.08, _kSceneImpact, Curves.easeIn);
+    final kickerPose = t < 0.18
+        ? KickerPose.runUp
+        : t < 0.33
+        ? KickerPose.strike
+        : t < _kSceneImpact
+        ? KickerPose.followThrough
+        : goal
+        ? KickerPose.celebrate
+        : KickerPose.dejected;
+    final kickerT = switch (kickerPose) {
+      KickerPose.runUp => _seg(0.0, 0.22, Curves.easeInCubic),
+      KickerPose.strike => _seg(0.18, 0.33, Curves.easeOutCubic),
+      KickerPose.followThrough => _seg(0.33, 0.52, Curves.easeOutCubic),
+      KickerPose.celebrate ||
+      KickerPose.dejected => _seg(_kSceneImpact, 1.0, Curves.easeOutBack),
+      KickerPose.ready => 1.0,
+    };
+    paintPenaltyKicker(
+      canvas,
+      anchor: g.spot,
+      height: g.mouthH * 0.56,
+      visual: PenaltyAthleteVisualSpec.fromCard(
+        kick.shooter,
+        userSide: kick.byPlayer,
+      ),
+      pose: kickerPose,
+      direction: kick.shootDirection,
+      progress: kickerT,
+    );
+
+    // Ball flight begins only once the taker's striking leg reaches the spot.
+    final flightT = _seg(0.30, _kSceneImpact, Curves.easeIn);
     final control = Offset(
       (g.spot.dx + target.dx) / 2,
       g.crossbarY + g.mouthH * 0.05,
@@ -1156,7 +980,9 @@ class _PenaltyScenePainter extends CustomPainter {
 
     Offset ballAt(double u) => _bezier(g.spot, control, target, u);
 
-    if (t < _kSceneImpact) {
+    if (t < 0.30) {
+      _paintBall(canvas, g.spot, 1);
+    } else if (t < _kSceneImpact) {
       if (flightT > 0) {
         // Motion-trail ghosts.
         for (final (lag, alpha) in [(0.16, 0.12), (0.08, 0.25)]) {

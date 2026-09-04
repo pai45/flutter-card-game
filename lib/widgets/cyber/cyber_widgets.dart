@@ -775,10 +775,174 @@ class SectionLabel extends StatelessWidget {
   }
 }
 
-/// Shared compact search input for cyber/HUD catalogue screens.
+/// A [SectionLabel] with a hairline rule running out to the right edge. The
+/// standard separator between the stacked sections of a data page (market
+/// detail, match stats) — quieter than a panel header, so a page can carry many.
+class CyberSectionHeading extends StatelessWidget {
+  const CyberSectionHeading({required this.label, this.trailing, super.key});
+
+  final String label;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        SectionLabel(label: label),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Container(height: 1, color: Cyber.line.withValues(alpha: 0.3)),
+        ),
+        if (trailing != null) ...[const SizedBox(width: 10), trailing!],
+      ],
+    );
+  }
+}
+
+/// Small labelled KPI cell — a muted caption over a tabular value. Sits in a
+/// [Row] of two or three; expands to share the width.
+class CyberMiniMetric extends StatelessWidget {
+  const CyberMiniMetric({
+    required this.label,
+    required this.value,
+    this.accent,
+    super.key,
+  });
+
+  final String label;
+  final String value;
+
+  /// Tints the value only. Left null the value stays white — most cells are
+  /// context, not emphasis.
+  final Color? accent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        height: 45,
+        padding: const EdgeInsets.symmetric(horizontal: 9),
+        decoration: BoxDecoration(
+          color: Cyber.bg.withValues(alpha: 0.42),
+          border: Border.all(color: Cyber.border),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label.toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Cyber.label(9, color: Cyber.muted),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Cyber.body(
+                11,
+                color: accent ?? Colors.white,
+                weight: FontWeight.w700,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Tinted outline pill for a status/type/telemetry token. Never glows — pills
+/// are secondary chrome.
+class CyberStatPill extends StatelessWidget {
+  const CyberStatPill({
+    required this.label,
+    required this.color,
+    this.value,
+    super.key,
+  });
+
+  final String label;
+  final Color color;
+
+  /// When set the pill reads `LABEL value`, with the value in white.
+  final String? value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        border: Border.all(color: color.withValues(alpha: 0.7)),
+      ),
+      child: value == null
+          ? Text(label.toUpperCase(), style: Cyber.label(9, color: color))
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(label.toUpperCase(), style: Cyber.label(9, color: color)),
+                const SizedBox(width: 6),
+                Text(
+                  value!,
+                  style: Cyber.label(
+                    9,
+                    color: Colors.white,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+}
+
+/// Movement chip — `▲6 TODAY` / `▼3 THIS QUARTER`. Green up, red down.
+class CyberDeltaChip extends StatelessWidget {
+  const CyberDeltaChip({
+    required this.delta,
+    this.suffix,
+    this.decimals = 0,
+    super.key,
+  });
+
+  final double delta;
+  final String? suffix;
+  final int decimals;
+
+  @override
+  Widget build(BuildContext context) {
+    final up = delta > 0;
+    final color = up ? Cyber.lime : Cyber.red;
+    final magnitude = delta.abs().toStringAsFixed(decimals);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        border: Border.all(color: color.withValues(alpha: 0.6)),
+      ),
+      child: Text(
+        '${up ? '▲' : '▼'}$magnitude${suffix == null ? '' : ' $suffix'}',
+        style: Cyber.label(
+          8,
+          color: color,
+          letterSpacing: 0.8,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shared search input for cyber/HUD catalogue screens.
 ///
 /// The surface stays calm and non-glowing because search is persistent chrome;
-/// callers can reserve the screen's live emphasis for results or progress.
+/// callers can reserve the screen's live emphasis for results or progress. Its
+/// rectangular silhouette keeps typing space visually clean and distinct from
+/// interactive chamfered cards and buttons.
 class CyberSearchField extends StatelessWidget {
   const CyberSearchField({
     required this.controller,
@@ -803,9 +967,14 @@ class CyberSearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CyberPanel(
-      accent: accent,
+    return Container(
+      key: const ValueKey('cyber-search-surface'),
+      height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: Cyber.panel,
+        border: Border.all(color: accent.withValues(alpha: 0.5)),
+      ),
       child: Row(
         children: [
           Icon(Icons.search_rounded, color: accent, size: 20),
@@ -823,10 +992,17 @@ class CyberSearchField extends StatelessWidget {
               style: Cyber.body(14),
               decoration: InputDecoration(
                 isDense: true,
+                filled: false,
+                fillColor: Colors.transparent,
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                focusedErrorBorder: InputBorder.none,
                 hintText: hintText,
                 hintStyle: Cyber.body(14, color: Cyber.muted),
-                contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                contentPadding: const EdgeInsets.symmetric(vertical: 18),
               ),
             ),
           ),

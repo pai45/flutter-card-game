@@ -153,7 +153,10 @@ Guess the Player entries share one implementation and one product page.
 
 The design contract is dark, fast, cyber-HUD, and reward-led. Shared UI is
 reused before new components are introduced, and every meaningful action must
-produce clear feedback or gratification.
+produce clear feedback or gratification. Data-dense surfaces share one language:
+[Picks](systems/picks.md) market detail and the [Predictions](systems/predictions.md)
+match STATS tab are built from the same chart system and data-page furniture, so
+a match report and a pick market read as one surface.
 
 ## Gratification and Feedback
 

@@ -23,8 +23,8 @@ class _FootballBingoTabContentState extends State<FootballBingoTabContent> {
   bool _showGrid = false;
   bool _showLogs = false;
 
-  Future<void> _openDay(BuildContext context, String dayKey) async {
-    await context.read<FootballBingoCubit>().openDay(dayKey);
+  Future<void> _openDay(FootballBingoCubit cubit, String dayKey) async {
+    await cubit.openDay(dayKey);
     if (!mounted) return;
     setState(() {
       _showGrid = true;
@@ -35,7 +35,7 @@ class _FootballBingoTabContentState extends State<FootballBingoTabContent> {
   Future<void> _openToday(BuildContext context) async {
     final cubit = context.read<FootballBingoCubit>();
     await cubit.load();
-    await _openDay(context, cubit.state.todayKey);
+    await _openDay(cubit, cubit.state.todayKey);
   }
 
   void _backHome() => setState(() => _showGrid = false);
@@ -58,7 +58,8 @@ class _FootballBingoTabContentState extends State<FootballBingoTabContent> {
             return FootballBingoLogsScreen(
               state: state,
               onBack: _closeLogs,
-              onOpenDay: (dayKey) => _openDay(context, dayKey),
+              onOpenDay: (dayKey) =>
+                  _openDay(context.read<FootballBingoCubit>(), dayKey),
             );
           }
           return FootballBingoHomeScreen(

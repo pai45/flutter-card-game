@@ -55,6 +55,15 @@ void main() {
     expect(match.cricketScorecard?.innings, hasLength(2));
     expect(details.notes, hasLength(25));
     expect(details.commentary, hasLength(18));
+    expect(details.inningsProgress, hasLength(2));
+    expect(details.inningsProgress[0].teamId, '1298769');
+    expect(details.inningsProgress[0].points.last.runs, 155);
+    expect(details.inningsProgress[0].points.last.wickets, 8);
+    expect(details.inningsProgress[0].points.last.over, 20);
+    expect(details.inningsProgress[1].teamId, '335970');
+    expect(details.inningsProgress[1].points.last.runs, 161);
+    expect(details.inningsProgress[1].points.last.wickets, 5);
+    expect(details.inningsProgress[1].points.last.over, 18);
     expect(details.officials, hasLength(6));
     expect(details.teams, hasLength(2));
     expect(details.teams[0].players, hasLength(12));
@@ -103,4 +112,37 @@ void main() {
       );
     },
   );
+
+  test('NBA Finals and RCB-GT stay on the local current day', () async {
+    var currentDay = DateTime(2032, 2, 28, 9, 15);
+    final repository = MockPredictionRepository(now: () => currentDay);
+
+    Future<List<SportMatch>> bundledToday() async {
+      final basketball = await repository.fixtures(sport: Sport.basketball);
+      final cricket = await repository.fixtures(sport: Sport.cricket);
+      return [
+        basketball.singleWhere(
+          (match) => match.id == BasketballMatchPackageService.bundledMatchId,
+        ),
+        cricket.singleWhere(
+          (match) => match.id == CricketMatchPackageService.bundledMatchId,
+        ),
+      ];
+    }
+
+    for (final match in await bundledToday()) {
+      expect(
+        DateTime(match.kickoff.year, match.kickoff.month, match.kickoff.day),
+        DateTime(2032, 2, 28),
+      );
+    }
+
+    currentDay = DateTime(2032, 2, 29, 0, 5);
+    for (final match in await bundledToday()) {
+      expect(
+        DateTime(match.kickoff.year, match.kickoff.month, match.kickoff.day),
+        DateTime(2032, 2, 29),
+      );
+    }
+  });
 }

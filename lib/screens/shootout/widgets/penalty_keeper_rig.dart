@@ -6,15 +6,21 @@ import '../../../config/theme.dart';
 import '../../../games/rig/athlete_rig.dart';
 import '../../../models/cards.dart';
 
+/// Penalty Shootout's football-specific extension of the shared articulated
+/// athlete language established by Hoop Duel. Both roles are drawn from the
+/// same card-derived identity and stay crisp: the live target/verdict owns the
+/// scene's glow, never the characters.
+enum KickerPose { ready, runUp, strike, followThrough, celebrate, dejected }
+
 /// Readable states for the procedural goalkeeper. The goal scene blends
 /// between these poses by passing a 0-1 [progress] value to
 /// [paintPenaltyKeeper].
-enum KeeperPose { ready, anticipate, dive, smother, catching, beaten }
+enum KeeperPose { ready, anticipate, dive, smother, catching, recover, beaten }
 
 /// Stable visual identity derived from a card. It intentionally suggests a
 /// character rather than attempting a real-player likeness at this scale.
-class KeeperVisualSpec {
-  const KeeperVisualSpec({
+class PenaltyAthleteVisualSpec {
+  const PenaltyAthleteVisualSpec({
     required this.primary,
     required this.secondary,
     required this.skin,
@@ -22,7 +28,7 @@ class KeeperVisualSpec {
     required this.gloves,
   });
 
-  factory KeeperVisualSpec.fromCard(
+  factory PenaltyAthleteVisualSpec.fromCard(
     PlayerCard? card, {
     required bool userSide,
   }) {
@@ -47,7 +53,7 @@ class KeeperVisualSpec {
       CardTier.gold => Cyber.gold,
       CardTier.platinum => Cyber.violet,
     };
-    return KeeperVisualSpec(
+    return PenaltyAthleteVisualSpec(
       primary: userSide ? Cyber.cyan : Cyber.amber,
       secondary: tierAccent,
       skin: skinTones[hash.abs() % skinTones.length],
@@ -63,6 +69,223 @@ class KeeperVisualSpec {
   final Color gloves;
 }
 
+/// Paints the penalty taker from the same goal-facing camera as the existing
+/// aiming UI. The slightly offset rear three-quarter view keeps the ball and
+/// all three goal targets readable while still giving the footballer the
+/// articulated limbs, kit volume and card identity used by Hoop Duel.
+void paintPenaltyKicker(
+  Canvas canvas, {
+  required Offset anchor,
+  required double height,
+  required PenaltyAthleteVisualSpec visual,
+  required KickerPose pose,
+  required PenaltyDirection direction,
+  double progress = 1,
+  double idlePhase = 0,
+}) {
+  final p = progress.clamp(0.0, 1.0);
+  final s = height / 150;
+  final sign = _sign(direction);
+  final idle = sin(idlePhase * pi * 2);
+
+  final runOffset = switch (pose) {
+    KickerPose.ready => -42.0,
+    KickerPose.runUp => -42.0 * (1 - p),
+    KickerPose.strike || KickerPose.followThrough => -4.0 * (1 - p),
+    KickerPose.celebrate || KickerPose.dejected => 2.0,
+  };
+  final bob = switch (pose) {
+    KickerPose.ready => idle * 1.2,
+    KickerPose.runUp => sin(p * pi * 5) * 2.8,
+    KickerPose.celebrate => sin(p * pi * 3).abs() * 4,
+    _ => 0.0,
+  };
+  final lean = switch (pose) {
+    KickerPose.runUp => 0.12 + p * 0.12,
+    KickerPose.strike => 0.28 - p * 0.46,
+    KickerPose.followThrough => -0.18 + p * 0.08,
+    KickerPose.celebrate => -0.12,
+    KickerPose.dejected => 0.28 * p,
+    KickerPose.ready => 0.04,
+  };
+
+  canvas.save();
+  canvas.translate(
+    anchor.dx + runOffset * s - sign * 5 * s,
+    anchor.dy - bob * s,
+  );
+  canvas.rotate(lean);
+
+  final outline = Paint()
+    ..color = Cyber.bg
+    ..strokeWidth = 12 * s
+    ..strokeCap = StrokeCap.round
+    ..strokeJoin = StrokeJoin.round
+    ..style = PaintingStyle.stroke;
+  final nearKit = Paint()
+    ..color = visual.primary
+    ..strokeWidth = 10 * s
+    ..strokeCap = StrokeCap.round;
+  final farKit = Paint()
+    ..color = rigDarken(visual.primary, 0.34)
+    ..strokeWidth = 9 * s
+    ..strokeCap = StrokeCap.round;
+  final skin = Paint()
+    ..color = visual.skin
+    ..strokeWidth = 7 * s
+    ..strokeCap = StrokeCap.round;
+  final shorts = Paint()
+    ..color = rigDarken(visual.primary, 0.22)
+    ..strokeWidth = 10 * s
+    ..strokeCap = StrokeCap.round;
+
+  final hip = Offset(0, -50 * s);
+  final shoulder = Offset(0, -94 * s);
+  final head = shoulder + Offset(sign * 2 * s, -20 * s);
+
+  var farFoot = Offset(-14 * s, 0);
+  var nearFoot = Offset(16 * s, 0);
+  var farHand = shoulder + Offset(-24 * s, 22 * s);
+  var nearHand = shoulder + Offset(25 * s, 20 * s);
+
+  switch (pose) {
+    case KickerPose.ready:
+      farFoot = Offset(-18 * s, 0);
+      nearFoot = Offset(15 * s, 0);
+      farHand += Offset(idle * 2 * s, 0);
+      nearHand -= Offset(idle * 2 * s, 0);
+      break;
+    case KickerPose.runUp:
+      final stride = sin(p * pi * 5);
+      farFoot = Offset((-12 - stride * 15) * s, max(0.0, stride) * 5 * s);
+      nearFoot = Offset((14 + stride * 16) * s, max(0.0, -stride) * 5 * s);
+      farHand += Offset(stride * 12 * s, -4 * s);
+      nearHand -= Offset(stride * 12 * s, 4 * s);
+      break;
+    case KickerPose.strike:
+      farFoot = Offset(-17 * s, 0);
+      nearFoot = Offset((12 + 30 * p) * s, (-2 - 7 * p) * s);
+      farHand += Offset(20 * p * s, -8 * p * s);
+      nearHand -= Offset(22 * p * s, 3 * p * s);
+      break;
+    case KickerPose.followThrough:
+      farFoot = Offset((-14 + 8 * p) * s, 0);
+      nearFoot = Offset((42 - 10 * p) * s, (-9 + 5 * p) * s);
+      farHand += Offset(17 * s, -8 * s);
+      nearHand -= Offset(24 * s, 2 * s);
+      break;
+    case KickerPose.celebrate:
+      farFoot = Offset(-16 * s, 0);
+      nearFoot = Offset(16 * s, 0);
+      farHand = shoulder + Offset(-20 * s, -28 * s - 8 * p * s);
+      nearHand = shoulder + Offset(20 * s, -30 * s - 10 * p * s);
+      break;
+    case KickerPose.dejected:
+      farFoot = Offset(-13 * s, 0);
+      nearFoot = Offset(13 * s, 0);
+      farHand = shoulder + Offset(-12 * s, 34 * s);
+      nearHand = shoulder + Offset(12 * s, 35 * s);
+      break;
+  }
+
+  canvas.drawOval(
+    Rect.fromCenter(center: Offset(0, 2 * s), width: 54 * s, height: 10 * s),
+    Paint()..color = Cyber.bg.withValues(alpha: 0.72),
+  );
+
+  rigLimb(
+    canvas,
+    hip + Offset(-5 * s, 0),
+    farFoot,
+    bend: -10 * s,
+    upper: shorts,
+    lower: farKit,
+    px: 36 * s,
+    lowerOverlay: visual.secondary,
+    shoe: Cyber.bg2,
+    shoeAccent: visual.secondary,
+  );
+  rigLimb(
+    canvas,
+    hip + Offset(5 * s, 0),
+    nearFoot,
+    bend: 10 * s,
+    upper: shorts,
+    lower: nearKit,
+    px: 36 * s,
+    lowerOverlay: visual.secondary,
+    shoe: Cyber.bg2,
+    shoeAccent: visual.secondary,
+  );
+
+  canvas.drawLine(shoulder + Offset(-12 * s, 0), farHand, outline);
+  canvas.drawLine(shoulder + Offset(12 * s, 0), nearHand, outline);
+  rigLimb(
+    canvas,
+    shoulder + Offset(-12 * s, 0),
+    farHand,
+    bend: -8 * s,
+    upper: farKit,
+    lower: skin,
+    px: 36 * s,
+  );
+  rigLimb(
+    canvas,
+    shoulder + Offset(12 * s, 0),
+    nearHand,
+    bend: 8 * s,
+    upper: nearKit,
+    lower: skin,
+    px: 36 * s,
+  );
+
+  final torso = Path()
+    ..moveTo(shoulder.dx - 17 * s, shoulder.dy - 3 * s)
+    ..lineTo(shoulder.dx + 17 * s, shoulder.dy - 3 * s)
+    ..lineTo(hip.dx + 14 * s, hip.dy + 5 * s)
+    ..lineTo(hip.dx - 14 * s, hip.dy + 5 * s)
+    ..close();
+  canvas.drawPath(
+    torso,
+    Paint()
+      ..color = Cyber.bg
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 5 * s
+      ..strokeJoin = StrokeJoin.round,
+  );
+  canvas.drawPath(torso, Paint()..color = visual.primary);
+  canvas.drawLine(
+    shoulder + Offset(-12 * s, 8 * s),
+    shoulder + Offset(12 * s, 8 * s),
+    Paint()
+      ..color = visual.secondary
+      ..strokeWidth = 3 * s
+      ..strokeCap = StrokeCap.round,
+  );
+  canvas.drawRRect(
+    RRect.fromRectAndRadius(
+      Rect.fromCenter(
+        center: hip + Offset(0, 4 * s),
+        width: 30 * s,
+        height: 17 * s,
+      ),
+      Radius.circular(4 * s),
+    ),
+    Paint()..color = rigDarken(visual.primary, 0.28),
+  );
+
+  canvas.drawCircle(head, 12 * s, Paint()..color = Cyber.bg);
+  canvas.drawCircle(head, 9.5 * s, Paint()..color = visual.skin);
+  canvas.drawArc(
+    Rect.fromCircle(center: head + Offset(0, -2 * s), radius: 9.5 * s),
+    pi,
+    pi,
+    true,
+    Paint()..color = visual.hair,
+  );
+  canvas.restore();
+}
+
 double _sign(PenaltyDirection direction) => switch (direction) {
   PenaltyDirection.left => -1,
   PenaltyDirection.center => 0,
@@ -76,23 +299,27 @@ void paintPenaltyKeeper(
   Canvas canvas, {
   required Offset anchor,
   required double height,
-  required KeeperVisualSpec visual,
+  required PenaltyAthleteVisualSpec visual,
   required KeeperPose pose,
   required PenaltyDirection direction,
   double progress = 1,
   double idlePhase = 0,
   Offset? intercept,
 }) {
-  final p = progress.clamp(0.0, 1.0);
+  final rawProgress = progress.clamp(0.0, 1.0);
+  final p = pose == KeeperPose.recover ? 1 - rawProgress : rawProgress;
   final s = height / 150;
   final sign = _sign(direction);
   final diving =
       pose == KeeperPose.dive ||
       pose == KeeperPose.catching ||
+      pose == KeeperPose.recover ||
       pose == KeeperPose.beaten;
   final centerAction =
       direction == PenaltyDirection.center &&
-      (pose == KeeperPose.smother || pose == KeeperPose.catching);
+      (pose == KeeperPose.smother ||
+          pose == KeeperPose.catching ||
+          pose == KeeperPose.recover);
   final anticipating = pose == KeeperPose.anticipate;
   final idle = pose == KeeperPose.ready ? sin(idlePhase * pi * 2) : 0.0;
 

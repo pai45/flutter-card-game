@@ -1,7 +1,7 @@
 # Predictions
 
 > **Status:** BUILT
-> **Last verified:** 2026-08-28
+> **Last verified:** 2026-08-30
 > **Scope:** Fixture quiz discovery, submission/editing, boosters, lock lifecycle, XP settlement, and paid Scoreline contest
 
 ## Product Purpose
@@ -63,13 +63,48 @@ delta chip when the leader's latest tick swings by 5+ percentage points on a
 market that hasn't already settled — reusing the shared `CyberProgressBar`/
 `CyberPulse` components rather than a bespoke meter.
 
-The match STATS tab uses sport-specific report HUDs. Football reveals momentum,
-events, confirmed lineups, and commentary; basketball reveals win probability,
-scoring coordinates, turning points, plays, box scores, rosters, and injuries;
-cricket reveals innings comparison, a supplied late-chase rate trace, complete
-scorecards, match notes, ball commentary, and published squads. Selection
-haptics and short graph reveals provide feedback while glow stays reserved for
-the active section or live reveal.
+The match STATS tab uses sport-specific report HUDs built on the **pick market
+detail language** (see `design/cyber-ui-design-system.md`), so a match report and
+a pick market read as one surface.
+
+Every sport's OVERVIEW opens with a **match pulse hero**: a chamfered header
+carrying sport/status pills, the fixture, and the match's single most important
+number as a large tabular figure in the leading side's colour, with a movement
+chip beside it — football shows territorial control and live pressure swing,
+cricket the chase score and the gap between actual and required run rate,
+basketball the favoured side's win chance and its swing inside the current
+quarter. Below it, sections are separated by hairline headings rather than
+repeated telemetry panels, and each home-vs-away metric is a tappable
+market-style outcome row with a split meter.
+
+Charts are interactive. Every graph can be **dragged to scrub**: a dashed
+playhead and marker follow the finger with selection haptics, and the legend
+reads every series out at that point plus its context — the minute, the over, or
+the game clock. Each chart carries range tabs and expands to a full-screen view.
+
+- **Football MOMENTUM** — two-sided pressure trace (FULL / 1ST HALF / 2ND HALF),
+  goals pinned as markers, peak-pressure KPIs. Scrubbing reads both sides'
+  pressure at a minute.
+- **Cricket RACE** — both innings worms on one axis (20 OV / POWERPLAY / DEATH)
+  with wicket markers; scrubbing reads *both* scoreboards at the same over.
+- **Cricket CHASE** — actual run rate against required run rate
+  (ALL BALLS / BOUNDARIES / FINAL OVER) with boundary and wicket markers, plus a
+  chase readout and ball-pressure log.
+- **Basketball FLOW** — win probability (GAME / H1 / H2 / CLUTCH) with turning
+  points as markers, and a scoring map filtered by ALL / HOME / AWAY / 3PT. The
+  scoring map plots every coordinate-bearing made field goal on a drawn NBA half
+  court (lane, free-throw circle, restricted arc, backboard and rim, and the
+  three-point line with its corner runs), cropped just past the arc because no
+  shot is taken from deeper. The feed normalises both sides onto one basket, so
+  the rim is the coordinate origin and team colour is what separates them: a
+  filled dot is a two, a hollow ring is a three, and a legend names both sides.
+  The court itself never glows — it is a static stat surface.
+
+Football also reveals events, confirmed lineups and commentary; basketball plays,
+box scores, rosters and injuries; cricket scorecards, match notes, ball
+commentary and published squads. Selection haptics, a marker-crossing click, a
+hero count-up and a one-shot graph reveal provide feedback, while glow stays
+reserved for the chart during its reveal — one focal element per tab.
 
 ## Visible States
 
@@ -98,7 +133,11 @@ Progression, wallet, ledgers, streaks, and achievements persist in their shared 
   are currently local/mock-backed. The bundled Fulham–Chelsea EPL,
   Spurs–Knicks NBA Finals, and RCB–Gujarat IPL Final packages are normalized
   reference fixtures; the same report views continue to accept partial ESPN
-  enrichment without treating these packages as live providers.
+  enrichment without treating these packages as live providers. The NBA Finals
+  Game 5 and RCB–Gujarat fixtures retain their supplied local start times but
+  rebase to the player's current local date whenever the fixture catalog is
+  read, keeping both completed reference matches in the TODAY basketball and
+  cricket boards across daily rollover.
 - **PLANNED:** Live feeds, server locks, authoritative results/contest ranks,
   and cross-device synchronization require backend scope.
 

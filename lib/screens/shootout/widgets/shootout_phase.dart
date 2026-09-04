@@ -112,6 +112,7 @@ class _ShootoutPhaseState extends State<ShootoutPhase> {
           spotlightKey: _arenaKey,
           child: PenaltyInteractionArena(
             role: s.turnRole,
+            shooter: s.currentShooter,
             keeper: s.currentKeeper,
             selected: selected,
             onSelect: (dir) => context.read<ShootoutBloc>().add(

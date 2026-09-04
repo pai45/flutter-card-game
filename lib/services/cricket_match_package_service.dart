@@ -27,6 +27,9 @@ class CricketMatchPackageService {
     final homeSquad = squads.firstWhere((team) => team.isHome);
     final awaySquad = squads.firstWhere((team) => !team.isHome);
     final innings = _list(root['innings']).map(_inningsSummary).toList();
+    final inningsProgress = _list(
+      root['inningsProgress'],
+    ).map(_inningsProgress).toList();
     final balls = _list(root['commentary']).map(_ballCommentary).toList()
       ..sort((a, b) => a.sequence.compareTo(b.sequence));
     final notes = _list(root['notes']).map(_note).toList();
@@ -70,6 +73,7 @@ class CricketMatchPackageService {
       }).toList(),
       notes: notes,
       commentary: balls,
+      inningsProgress: inningsProgress,
       teams: squads,
     );
 
@@ -248,6 +252,23 @@ class CricketMatchPackageService {
       score: _s(value['score']),
       description: _s(value['description']),
       current: _b(value['current']),
+    );
+  }
+
+  CricketInningsProgress _inningsProgress(Object? entry) {
+    final value = _map(entry);
+    return CricketInningsProgress(
+      innings: _i(value['innings']),
+      teamId: _s(value['teamId']),
+      points: _list(value['points']).map((point) {
+        final item = _map(point);
+        return CricketScoreProgressPoint(
+          over: _i(item['over']),
+          runs: _i(item['runs']),
+          wickets: _i(item['wickets']),
+          wicket: _b(item['wicket']),
+        );
+      }).toList(),
     );
   }
 
