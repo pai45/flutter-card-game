@@ -54,6 +54,17 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(cubit.loadAllCalls, 1);
+    expect(
+      tester.getSize(find.byKey(const ValueKey('cyber-search-surface'))).height,
+      56,
+    );
+    final searchField = tester.widget<TextField>(
+      find.byKey(const ValueKey('cyber-search-text-field')),
+    );
+    expect(searchField.decoration?.filled, isFalse);
+    expect(searchField.decoration?.border, InputBorder.none);
+    expect(searchField.decoration?.enabledBorder, InputBorder.none);
+    expect(searchField.decoration?.focusedBorder, InputBorder.none);
 
     await tester.enterText(
       find.byKey(const ValueKey('cyber-search-text-field')),

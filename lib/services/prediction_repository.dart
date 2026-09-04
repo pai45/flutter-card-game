@@ -73,13 +73,16 @@ class MockPredictionRepository
         const BasketballMatchPackageService(),
     CricketMatchPackageService cricketPackageService =
         const CricketMatchPackageService(),
+    DateTime Function() now = DateTime.now,
   }) : _footballPackageService = footballPackageService,
        _basketballPackageService = basketballPackageService,
-       _cricketPackageService = cricketPackageService;
+       _cricketPackageService = cricketPackageService,
+       _nowProvider = now;
 
   final FootballMatchPackageService _footballPackageService;
   final BasketballMatchPackageService _basketballPackageService;
   final CricketMatchPackageService _cricketPackageService;
+  final DateTime Function() _nowProvider;
   Future<SportMatch>? _bundledFootballFixture;
   Future<SportMatch>? _bundledBasketballFixture;
   Future<SportMatch>? _bundledCricketFixture;
@@ -1303,11 +1306,28 @@ class MockPredictionRepository
   );
 
   // Fixtures are built relative to "now" so statuses stay believable on launch.
-  late final DateTime _now = DateTime.now();
+  late final DateTime _now = _nowProvider();
   late final DateTime _today = DateTime(_now.year, _now.month, _now.day);
 
   DateTime _at(int dayOffset, int hour, [int minute = 0]) =>
       _today.add(Duration(days: dayOffset, hours: hour, minutes: minute));
+
+  SportMatch _keepBundledFixtureOnToday(SportMatch fixture) {
+    final today = _nowProvider().toLocal();
+    final sourceTime = fixture.kickoff.toLocal();
+    return fixture.copyWith(
+      kickoff: DateTime(
+        today.year,
+        today.month,
+        today.day,
+        sourceTime.hour,
+        sourceTime.minute,
+        sourceTime.second,
+        sourceTime.millisecond,
+        sourceTime.microsecond,
+      ),
+    );
+  }
 
   MatchStatus _fallbackStatusFor(DateTime kickoff) {
     if (_now.isBefore(kickoff)) return MatchStatus.upcoming;
@@ -3780,20 +3800,18 @@ class MockPredictionRepository
     }
     if (sport == null || sport == Sport.basketball) {
       try {
-        mockFixtures.add(
-          await (_bundledBasketballFixture ??= _basketballPackageService
-              .loadBundled()),
-        );
+        final bundled = await (_bundledBasketballFixture ??=
+            _basketballPackageService.loadBundled());
+        mockFixtures.add(_keepBundledFixtureOnToday(bundled));
       } catch (_) {
         // A missing prototype asset must not block live/seeded basketball.
       }
     }
     if (sport == null || sport == Sport.cricket) {
       try {
-        mockFixtures.add(
-          await (_bundledCricketFixture ??= _cricketPackageService
-              .loadBundled()),
-        );
+        final bundled = await (_bundledCricketFixture ??= _cricketPackageService
+            .loadBundled());
+        mockFixtures.add(_keepBundledFixtureOnToday(bundled));
       } catch (_) {
         // A missing prototype asset must not block live/seeded cricket.
       }
@@ -3832,16 +3850,18 @@ class MockPredictionRepository
     }
     if (matchId == BasketballMatchPackageService.bundledMatchId) {
       try {
-        return await (_bundledBasketballFixture ??= _basketballPackageService
-            .loadBundled());
+        final bundled = await (_bundledBasketballFixture ??=
+            _basketballPackageService.loadBundled());
+        return _keepBundledFixtureOnToday(bundled);
       } catch (_) {
         return null;
       }
     }
     if (matchId == CricketMatchPackageService.bundledMatchId) {
       try {
-        return await (_bundledCricketFixture ??= _cricketPackageService
+        final bundled = await (_bundledCricketFixture ??= _cricketPackageService
             .loadBundled());
+        return _keepBundledFixtureOnToday(bundled);
       } catch (_) {
         return null;
       }

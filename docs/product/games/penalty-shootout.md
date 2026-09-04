@@ -1,7 +1,7 @@
 # Penalty Shootout
 
 > **Status:** BUILT
-> **Last verified:** 2026-08-09
+> **Last verified:** 2026-09-01
 > **Scope:** Standalone direction duel, CPU scaling, sudden death, XP/coins, history, and streaks
 
 Penalty Shootout is StatOz's standalone spot-kick game mode. It gives users a faster football game loop than a full Pitch Duel match: use the active squad, trade penalties with a CPU opponent, and earn smaller XP and coin rewards from the result.
@@ -47,6 +47,15 @@ The action-card portion of the deck is not used during penalties. The actual sho
 9. Summary shows win/loss, penalty scoreline, XP progress, kick log, **PLAY AGAIN**, and **HOME**.
 
 Quitting during an active shootout asks for confirmation because current shootout progress is discarded.
+
+The live kick scene uses two card-derived procedural football characters: the
+active taker and the opposing goalkeeper. Both use the same articulated limb,
+kit-volume, skin, hair, and pose language as Hoop Duel's athletes while retaining
+the shootout's goal-facing camera and three readable target zones. The taker
+runs up, plants, strikes, follows through, and celebrates or reacts; the keeper
+idles, anticipates, dives, catches or smothers, and recovers. Player characters
+use cyan kits and CPU characters use amber kits, with card tier accents and no
+character glow.
 
 ## Squad And Opponent Rules
 
@@ -184,6 +193,7 @@ Match History identifies standalone shootouts separately from Pitch Duel matches
 | Standalone shootout screen shell | [`lib/screens/shootout/shootout_screen.dart`](../../../lib/screens/shootout/shootout_screen.dart) |
 | Lobby and shared deck entry gate | [`lib/screens/shootout/shootout_home_screen.dart`](../../../lib/screens/shootout/shootout_home_screen.dart) |
 | Kick-loop UI | [`lib/screens/shootout/widgets/shootout_phase.dart`](../../../lib/screens/shootout/widgets/shootout_phase.dart) |
+| Card-derived kicker and keeper rigs | [`lib/screens/shootout/widgets/penalty_keeper_rig.dart`](../../../lib/screens/shootout/widgets/penalty_keeper_rig.dart) |
 | Summary UI | [`lib/screens/shootout/widgets/shootout_result_phase.dart`](../../../lib/screens/shootout/widgets/shootout_result_phase.dart) |
 | XP, coins, CPU scaling, opponent generation | [`lib/models/progression.dart`](../../../lib/models/progression.dart) |
 | Reward, history, ledger, and streak application | [`lib/blocs/game/game_bloc.dart`](../../../lib/blocs/game/game_bloc.dart) |
@@ -199,9 +209,10 @@ Match History identifies standalone shootouts separately from Pitch Duel matches
 
 ## Gratification and Feedback
 
-Opponent reveal, kick suspense, save/goal impact, score ticks, early-win logic,
-sudden-death pressure, final verdict, reward count-up, and streak recording make
-the short session feel decisive.
+Opponent reveal, the taker's run-up and strike, the keeper's dive and recovery,
+both characters' goal/save reactions, save/goal impact, score ticks, early-win
+logic, sudden-death pressure, final verdict, reward count-up, and streak
+recording make the short session feel decisive.
 
 ## Visible States
 

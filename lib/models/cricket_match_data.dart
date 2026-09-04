@@ -21,6 +21,7 @@ class CricketMatchDetails {
     required this.officials,
     required this.notes,
     required this.commentary,
+    this.inningsProgress = const [],
     required this.teams,
   });
 
@@ -45,7 +46,38 @@ class CricketMatchDetails {
   final List<CricketOfficial> officials;
   final List<CricketMatchNote> notes;
   final List<CricketBallCommentary> commentary;
+  final List<CricketInningsProgress> inningsProgress;
   final List<CricketTeamSquad> teams;
+}
+
+/// Verified cumulative scoring samples for one innings. These live separately
+/// from the compact commentary feed so reports can render a full match race
+/// without inflating the player-facing ball feed.
+class CricketInningsProgress {
+  const CricketInningsProgress({
+    required this.innings,
+    required this.teamId,
+    required this.points,
+  });
+
+  final int innings;
+  final String teamId;
+  final List<CricketScoreProgressPoint> points;
+}
+
+/// The score at the end of one completed over.
+class CricketScoreProgressPoint {
+  const CricketScoreProgressPoint({
+    required this.over,
+    required this.runs,
+    required this.wickets,
+    required this.wicket,
+  });
+
+  final int over;
+  final int runs;
+  final int wickets;
+  final bool wicket;
 }
 
 class CricketToss {

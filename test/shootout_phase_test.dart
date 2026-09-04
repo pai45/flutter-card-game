@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:card_game/blocs/game/game_bloc.dart';
 import 'package:card_game/blocs/game/game_state.dart';
 import 'package:card_game/blocs/shootout/shootout_bloc.dart';
@@ -6,6 +8,7 @@ import 'package:card_game/config/enums.dart';
 import 'package:card_game/models/cards.dart';
 import 'package:card_game/models/match.dart';
 import 'package:card_game/screens/shootout/widgets/shootout_phase.dart';
+import 'package:card_game/screens/shootout/widgets/penalty_keeper_rig.dart';
 import 'package:card_game/services/secure_storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -54,6 +57,71 @@ void main() {
     cpuLevel: 1,
     opponentName: 'Maya Santos',
   );
+
+  test('penalty athlete identity is deterministic and side-aware', () {
+    final first = PenaltyAthleteVisualSpec.fromCard(
+      player.first,
+      userSide: true,
+    );
+    final repeated = PenaltyAthleteVisualSpec.fromCard(
+      player.first,
+      userSide: true,
+    );
+    final opponent = PenaltyAthleteVisualSpec.fromCard(
+      player.first,
+      userSide: false,
+    );
+
+    expect(repeated.skin, first.skin);
+    expect(repeated.hair, first.hair);
+    expect(repeated.secondary, first.secondary);
+    expect(repeated.primary, first.primary);
+    expect(opponent.primary, isNot(first.primary));
+    expect(opponent.gloves, isNot(first.gloves));
+  });
+
+  test('every kicker and keeper pose paints at both endpoints', () {
+    final visual = PenaltyAthleteVisualSpec.fromCard(
+      player.first,
+      userSide: true,
+    );
+    for (final progress in [0.0, 1.0]) {
+      for (final pose in KickerPose.values) {
+        final recorder = ui.PictureRecorder();
+        final canvas = ui.Canvas(recorder);
+        expect(
+          () => paintPenaltyKicker(
+            canvas,
+            anchor: const ui.Offset(100, 180),
+            height: 90,
+            visual: visual,
+            pose: pose,
+            direction: PenaltyDirection.right,
+            progress: progress,
+          ),
+          returnsNormally,
+        );
+        recorder.endRecording().dispose();
+      }
+      for (final pose in KeeperPose.values) {
+        final recorder = ui.PictureRecorder();
+        final canvas = ui.Canvas(recorder);
+        expect(
+          () => paintPenaltyKeeper(
+            canvas,
+            anchor: const ui.Offset(100, 180),
+            height: 110,
+            visual: visual,
+            pose: pose,
+            direction: PenaltyDirection.left,
+            progress: progress,
+          ),
+          returnsNormally,
+        );
+        recorder.endRecording().dispose();
+      }
+    }
+  });
 
   Future<ShootoutBloc> pumpPhase(
     WidgetTester tester,
@@ -124,6 +192,10 @@ void main() {
     // The active shooter (player's first attacker) is named with their OVR.
     expect(find.text('P-A1'), findsOneWidget);
     expect(find.textContaining('OVR 88'), findsWidgets);
+    expect(
+      find.byKey(const ValueKey('penalty-characters-p-a1-c-gk')),
+      findsOneWidget,
+    );
     // The confirm CTA prompts for a target before a side is selected.
     expect(find.text('CHOOSE SHOT TARGET'), findsOneWidget);
     expect(find.byKey(const ValueKey('shot-reticle-left')), findsOneWidget);
@@ -149,6 +221,10 @@ void main() {
     expect(find.text('DIVE LEFT'), findsOneWidget);
     expect(find.text('HOLD CENTER'), findsOneWidget);
     expect(find.text('DIVE RIGHT'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('penalty-characters-c-a1-p-gk')),
+      findsOneWidget,
+    );
     expect(find.byKey(const ValueKey('shot-reticle-left')), findsNothing);
     expect(find.byKey(const ValueKey('shoot-direction-left')), findsNothing);
 

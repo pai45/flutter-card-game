@@ -32,8 +32,9 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('GAME INTEL'), findsOneWidget);
-    expect(find.text('TEAM CONTROL'), findsOneWidget);
     expect(find.textContaining('NBA Finals - Game 5'), findsOneWidget);
+    await _scrollTo(tester, find.text('TEAM CONTROL'));
+    expect(find.text('TEAM CONTROL'), findsOneWidget);
 
     _selectOuter(tester, 'FLOW');
     await _pump(tester);
@@ -45,6 +46,7 @@ void main() {
       find.byKey(const ValueKey('basketball-scoring-map')),
       findsOneWidget,
     );
+    await _scrollTo(tester, find.text('TURNING POINTS'));
     expect(find.text('TURNING POINTS'), findsOneWidget);
 
     _selectOuter(tester, 'PLAYS');
@@ -67,7 +69,8 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('AVAILABILITY REPORT'), findsOneWidget);
-    expect(find.textContaining('15'), findsWidgets);
+    // Roster rows carry each player's stat line under the availability report.
+    expect(find.textContaining('PTS'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 
@@ -93,9 +96,28 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('MATCH INTEL'), findsOneWidget);
-    expect(find.text('TEAM COMPARISON'), findsOneWidget);
     expect(find.textContaining('Indian Premier League'), findsOneWidget);
+    await _scrollTo(tester, find.text('TEAM COMPARISON'));
+    expect(find.text('TEAM COMPARISON'), findsOneWidget);
 
+    _selectOuter(tester, 'RACE');
+    await _pump(tester);
+    expect(
+      find.byKey(const ValueKey('cricket-innings-race-graph')),
+      findsOneWidget,
+    );
+    expect(find.text('INNINGS RACE'), findsOneWidget);
+    expect(find.textContaining('RCB 161/5'), findsOneWidget);
+    expect(find.textContaining('GT 155/8'), findsOneWidget);
+
+    // Scrubbing the worm rewinds both innings to the same over.
+    final race = find.byKey(const ValueKey('cricket-innings-race-graph'));
+    await tester.tapAt(tester.getRect(race).centerLeft + const Offset(1, 0));
+    await tester.pump();
+    expect(find.textContaining('RCB 161/5'), findsNothing);
+    expect(find.textContaining('OV'), findsWidgets);
+
+    // CHASE is the second cricket chart: actual run rate against required.
     _selectOuter(tester, 'CHASE');
     await _pump(tester);
     expect(
@@ -103,7 +125,8 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('LATE CHASE'), findsOneWidget);
-    expect(find.text('18'), findsWidgets);
+    expect(find.textContaining('ACTUAL RR'), findsOneWidget);
+    expect(find.textContaining('REQUIRED RR'), findsOneWidget);
 
     _selectOuter(tester, 'SCORECARD');
     await _pump(tester);
@@ -162,9 +185,9 @@ void main() {
         ),
       ),
     );
-    _selectOuter(tester, 'CHASE');
+    _selectOuter(tester, 'RACE');
     await _pump(tester);
-    expect(find.text('CHASE FEED UNAVAILABLE'), findsOneWidget);
+    expect(find.text('RACE DATA UNAVAILABLE'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
@@ -186,6 +209,15 @@ void _selectInner(WidgetTester tester, String section) {
   tester
       .widget<CyberFilterChips>(find.byType(CyberFilterChips).last)
       .onSelect(section);
+}
+
+Future<void> _scrollTo(WidgetTester tester, Finder target) async {
+  await tester.scrollUntilVisible(
+    target,
+    260,
+    scrollable: find.byType(Scrollable).last,
+  );
+  await tester.pump();
 }
 
 Future<void> _pump(WidgetTester tester) async {

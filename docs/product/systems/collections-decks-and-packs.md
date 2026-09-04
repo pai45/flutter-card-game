@@ -1,7 +1,7 @@
 # Collections, Decks, Cards, Packs, Starter Packs, and Daily Drops
 
 > **Status:** BUILT
-> **Last verified:** 2026-08-17
+> **Last verified:** 2026-09-04
 > **Scope:** Card ownership, sport decks, pack opening, starter entitlement, duplicate handling, and daily drops
 
 ## Product Purpose
@@ -49,6 +49,37 @@ Cards carry sport/type/rarity and gameplay attributes. Deck validation is
 mode-specific. Starter packs are granted once per eligible mode/account state.
 Pack assembly controls slots and rarity rolls; the application step owns card
 unlocking, XP, ledgers, and duplicate handling.
+
+### Cricket card portraits
+
+Cricket player cards resolve their portrait from the player-card display name,
+using the canonical `assets/cricketer_images/<lowercase_name>.webp` path. The
+collection currently includes supplied portraits for Devdutt Padikkal, Romario
+Shepherd, Shardul Thakur, Jamie Overton, Washington Sundar, Ayush Badoni, Tom
+Banton, Finn Allen, Marco Jansen, Nitish Rana, Krunal Pandya, Mitchell Santner,
+Rahul Tripathi, Glenn Phillips, Jason Holder, Matthew Short, Azmatullah Omarzai,
+Shashank Singh, Ben Duckett, Dhruv Jurel, Vaibhav Sooryavanshi, Kamindu Mendis,
+Rovman Powell, Jitesh Sharma, Josh Inglis, Jonny Bairstow, Sanju Samson,
+Yashasvi Jaiswal, MS Dhoni, Travis Head, and 35 newly supplied IPL roster
+portraits. The archive labels match each player-card ID exactly and contain no
+duplicates; the canonical display-name resolver loads the art onto its matching
+card. Other cricket cards retain their existing resolved portrait or icon
+fallback.
+
+### Basketball player portraits
+
+Hoop Duel player cards use explicit current-roster ID mappings. The collection
+now includes 109 supplied player portraits, including 40 newly added labelled
+WebP portraits; cards outside the mapped set retain the existing icon fallback.
+The supplied archive had no duplicate labels.
+
+### Motorsport driver portraits
+
+Motorsport player cards use their stable roster ID as the portrait label. The
+collection ships 102 exact roster matches: the existing 22 F1 PNG portraits and
+80 supplied F2, NASCAR, and IndyCar WebP portraits. The archive's labels were
+unique, so its first-occurrence rule requires no conflict resolution. The three
+unmatched roster drivers retain the existing team-coloured initials fallback.
 
 ## Rewards and Progression
 
@@ -100,3 +131,6 @@ ledger records persist through `SecureGameStorage` and shared game state.
 - [`test/game_daily_drop_reveal_test.dart`](../../../test/game_daily_drop_reveal_test.dart)
 - [`test/shared_deck_locker_test.dart`](../../../test/shared_deck_locker_test.dart)
 - [`test/deck_locker_widget_test.dart`](../../../test/deck_locker_widget_test.dart)
+- [`test/basketball_portraits_test.dart`](../../../test/basketball_portraits_test.dart)
+- [`test/cricket_portraits_test.dart`](../../../test/cricket_portraits_test.dart)
+- [`test/racing_portraits_test.dart`](../../../test/racing_portraits_test.dart)
