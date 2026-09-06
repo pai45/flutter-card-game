@@ -183,12 +183,74 @@ the game clock. Each chart carries range tabs and expands to a full-screen view.
   filled dot is a two, a hollow ring is a three, and a legend names both sides.
   The court itself never glows — it is a static stat surface.
 
+### Player match dossier (football LINEUPS) — BUILT
+
+Every player on the football LINEUPS pitch is a tap target, and every node
+carries what that player earned in the match: a ball per goal, an assist mark, a
+yellow or red card, a substitution arrow. Only the goal badge glows, so the
+formation board reads as a match report at a glance without breaking glow
+scarcity. Players who did not come on are dimmed but stay tappable — their card
+is short and honest, and a dead tap target reads as a bug. Bench tiles behave the
+same way.
+
+Tapping one opens the **MATCH DOSSIER**, a bottom sheet that pages across the
+whole squad, so comparing two team-mates is a swipe rather than two taps and a
+scroll. Each page is:
+
+1. **Identity** — the shirt number blown up behind the plate as wallpaper, the
+   player image, name, `POSITION // #NUM // TEAM`, and STARTER / SUBBED OFF /
+   SUBSTITUTE / UNUSED plus minutes as status pills.
+2. **Impact strip** — TOUCHES, xG, FINAL 3RD and TERRITORY, each counting up
+   from zero on entry. These four are derived from the tracked coordinates and
+   are not published by ESPN at all; they are the payoff for having them.
+3. **HEAT MAP** — touch density on the true-proportion pitch, with a FULL / 1ST
+   / 2ND half filter and a BOX touch count.
+4. **MATCH SHEET** — ESPN's own numbers as loadout-style pills grouped under
+   ATTACK / INVOLVEMENT / DISCIPLINE / GOALKEEPING. Stats that do not apply to a
+   position are omitted rather than shown as zero; zeros are dimmed so the
+   numbers a player actually put on the board carry the eye; cards take amber
+   and red tints.
+
+The heatmap is drawn with **additive radial falloffs** — each live cell of a
+24×16 grid draws a soft circle at `BlendMode.plus` inside one `saveLayer`, so
+the cloud emerges from overlap with no blur filter, no offscreen bitmap and no
+new dependency. Density is a bilinear splat followed by two separable 1-2-1 blur
+passes, computed once per player and never inside `paint`. The ramp is fixed
+(cyan → lime → amber → white) rather than keyed to the team colour: a ramp has
+to be perceptually ordered, and a club whose accent is already white or amber
+would collapse both ends into the same colour. Team identity enters through the
+panel border and the chamfered outlines on the hottest cells, which is also what
+stops it reading as a generic weather map. One glow only, on the single hottest
+cell. The reveal is a left-to-right scan wipe that replays on every player swipe
+and half change. Every player attacks right, home or away — a single-player map
+is about that player's own pitch, and mirroring the away side would make their
+cards read backwards for no reader benefit.
+
+Player images degrade in three steps: a bundled portrait where one exists (the
+portrait library is the card game's roster, so it covers 2 of these 40 players),
+then ESPN's per-event kit render decoded downscaled, then the shirt-number
+octagon — the same badge the pitch draws, so card and formation board speak the
+same language. The number badge sits permanently *behind* the image, so a slow,
+missing or failed kit never leaves a blank plate. **ESPN publishes no headshots
+for soccer at all**; the kit render is the only player image its API offers.
+
+Data sources split by cost. The per-player stat sheet rides on the summary
+response the lineup already needs, so it is parsed on the live path and every
+football fixture gets a match sheet. Positional tracking lives in a separate
+~1.5 MB plays feed, so it is baked into the bundled Fulham v Chelsea package
+only; live fixtures show a "no tracked touches" state and keep the full stat
+sheet. See `data/football-match-player-field-inventory.md`.
+
 Football also reveals events, confirmed lineups and commentary; basketball plays,
 box scores, rosters and injuries; cricket scorecards and team-filtered ball
 commentary. Cricket's STATS navigation contains OVERVIEW, RACE, SCORECARD, and
 MATCH FEED; the standalone CHASE and SQUADS tabs are omitted. MATCH FEED uses one
 tab per batting team and open timeline rows rather than individual comment cards;
 an innings without published commentary receives its own contextual empty state.
+SCORECARD uses a cut-corner innings control and a compact innings command panel,
+then separates batting, partnership and bowling figures with open HUD rails and
+chamfered data tables. The active innings and score own cyan emphasis, while top
+run and wicket figures use score-semantic gold; static rows remain glow-free.
 Selection haptics,
 a marker-crossing click, a hero count-up and a one-shot graph reveal provide
 feedback. INNINGS RACE owns the tab's focal reveal glow; the run-rate panel uses
@@ -301,6 +363,71 @@ The goal, net and ball are drawn by the shared `paintGoalMouth` in
 `lib/widgets/cyber/goal_mouth.dart`, extracted from the penalty shootout so the
 two surfaces share one goal instead of each re-deriving it.
 
+## League hub data
+
+Tapping a league's standing strip opens the per-league hub, which carries five
+tabs: **TABLE**, **LEADERS**, **STATS**, **GAMES**, and **PICKS**.
+
+The persistent league lockup keeps its subtitle to the compact season token
+only (for example, `2026-27`). The league name already owns the primary line,
+so duplicated competition text and team count do not compete for header space.
+
+### Where the data comes from
+
+Both sources produce the same models, so the hub renders identically from
+either.
+
+Loading is **bundled-first**. `LeagueStatsCubit` renders the packaged snapshot at
+`assets/data/football-league-stats.json` immediately, then layers the live ESPN
+feed over it in the background; a failed or blocked request silently keeps the
+package rather than emptying the hub. The player never waits on the network to
+see a filled table.
+
+Club stats have a **live fallback**. When the package is unavailable — an older
+install, or any competition it doesn't cover — `EspnLeagueStatsService`
+fetches per-club season statistics directly from
+`.../seasons/{year}/types/1/teams/{id}/statistics`, one request per club at six
+in flight. That sweep is lazy: it runs the first time the STATS tab is opened,
+never on hub load, and no-ops when the package already answered. It is the same
+lazy contract the LEADERS boards use for resolving athlete names.
+
+The package (~300 KB, generated by `tool/generate_league_stats.dart`) holds, for
+the Premier League (`eng.1`) and LaLiga (`esp.1`): the 20-team table with
+qualification zones, all 12 ESPN leader categories with athlete identities
+already resolved (so LEADERS never shows a loading placeholder), and per-team
+season statistics — 112 stats per club across `offensive`, `defensive`,
+`general` and `goalKeeping`. Every field and its coverage is catalogued in the
+[league stats field inventory](../../data/league-stats-field-inventory.md).
+
+Leagues resolve by **alias**, never by a single id: the same competition reaches
+the hub as `eng.1` (curated repository league), `epl` (follow list), `700`
+(ESPN scoreboard) or `23` (ESPN standings), and league name and short code are
+consulted as a fallback. Before this, the id mismatch meant the EPL hub rendered
+`0 TEAMS` with empty TABLE and LEADERS tabs.
+
+### STATS tab
+
+Four category tabs — **ATTACK**, **DEFENCE**, **KEEPING**, **DISCIPLINE** — over
+a league-total pulse strip, a stat chip selector, and one board ranking all 20
+clubs. Accents follow the existing colour discipline: attack takes the league's
+own identity colour, defence violet, keeping success-green, discipline amber
+with red cards in danger red.
+
+Each board is the team-side twin of the LEADERS player boards — a glowing
+`#1` plate over calm chaser rows, so the two tabs read as one system. Boards
+where the *smallest* number wins (goals conceded, cards, fouls) rank ascending
+and are framed `LEAGUE BEST // FEWEST`.
+
+Neither board draws a progress meter behind its rows. Both carry short values
+already right-aligned in a tabular column, so a per-row bar added weight without
+adding information; rank, crest, name and number carry the comparison on their
+own. The leader plate keeps its glow and oversized number as the single focal
+element.
+
+Only stats verified as populated in both competitions are surfaced — 22 of the
+112 are zero league-wide. Explainer captions come from ESPN's own stat
+dictionary, overridden only where the feed's wording is ambiguous or misspelt.
+
 ## Persistence
 
 Predictions, answers, multipliers, contest entry/rank/prize, status, and
@@ -325,7 +452,11 @@ Progression, wallet, ledgers, streaks, and achievements persist in their shared 
   read (including direct detail lookup), keeping all three completed reference
   matches in their respective TODAY boards across daily rollover.
 - **PLANNED:** Live feeds, server locks, authoritative results/contest ranks,
-  and cross-device synchronization require backend scope.
+  and cross-device synchronization require backend scope. The bundled league
+  package is a point-in-time snapshot refreshed by re-running
+  `tool/generate_league_stats.dart`, not a live service; club stats fall back to
+  a live ESPN sweep when it is absent. STATS covers any competition in
+  `EspnLeagueStatsService`'s slug map, and shows an empty state for the rest.
 
 ## Implementation References
 
@@ -340,6 +471,10 @@ Progression, wallet, ledgers, streaks, and achievements persist in their shared 
 - [`lib/screens/predictions/widgets/basketball_match_stats_view.dart`](../../../lib/screens/predictions/widgets/basketball_match_stats_view.dart)
 - [`lib/screens/predictions/widgets/cricket_match_stats_view.dart`](../../../lib/screens/predictions/widgets/cricket_match_stats_view.dart)
 - [`lib/screens/predictions/trending_hub_catalog.dart`](../../../lib/screens/predictions/trending_hub_catalog.dart)
+- [`lib/screens/predictions/league_detail_screen.dart`](../../../lib/screens/predictions/league_detail_screen.dart)
+- [`lib/screens/predictions/widgets/team_stat_board.dart`](../../../lib/screens/predictions/widgets/team_stat_board.dart)
+- [`lib/services/league_stats_package_service.dart`](../../../lib/services/league_stats_package_service.dart)
+- [`lib/blocs/league_stats/league_stats_cubit.dart`](../../../lib/blocs/league_stats/league_stats_cubit.dart)
 
 ## Tests
 
@@ -348,6 +483,8 @@ Progression, wallet, ledgers, streaks, and achievements persist in their shared 
 - [`test/prediction_home_day_navigation_test.dart`](../../../test/prediction_home_day_navigation_test.dart)
 - [`test/match_search_screen_test.dart`](../../../test/match_search_screen_test.dart)
 - [`test/football_match_package_service_test.dart`](../../../test/football_match_package_service_test.dart)
+- [`test/league_stats_package_service_test.dart`](../../../test/league_stats_package_service_test.dart)
+- [`test/espn_league_team_stats_live_test.dart`](../../../test/espn_league_team_stats_live_test.dart) (skipped by default; hits the live ESPN API)
 - [`test/football_match_stats_view_test.dart`](../../../test/football_match_stats_view_test.dart)
 - [`test/basketball_cricket_match_package_service_test.dart`](../../../test/basketball_cricket_match_package_service_test.dart)
 - [`test/basketball_cricket_match_stats_view_test.dart`](../../../test/basketball_cricket_match_stats_view_test.dart)

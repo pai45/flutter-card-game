@@ -217,6 +217,24 @@ void main() {
       findsOneWidget,
     );
     expect(find.textContaining('Gujarat Titans Innings'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('scorecard-innings-selector')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('scorecard-innings-header')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('scorecard-batting-table')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('scorecard-bowling-table')),
+      findsOneWidget,
+    );
+    expect(find.text('BATTING CARD'), findsOneWidget);
+    expect(find.text('BOWLING CARD'), findsOneWidget);
 
     _selectOuter(tester, 'MATCH FEED');
     await _pump(tester);

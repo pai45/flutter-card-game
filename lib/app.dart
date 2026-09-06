@@ -644,7 +644,15 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => BlocProvider<LeagueStatsCubit>(
-          create: (_) => LeagueStatsCubit(league.id)..load(),
+          // Name and short code are passed alongside the id because the same
+          // competition reaches here under several ids (curated `eng.1`,
+          // follow-list `epl`, or ESPN's runtime numeric id) — the stats
+          // package resolves on whichever of the three matches.
+          create: (_) => LeagueStatsCubit(
+            league.id,
+            leagueName: league.name,
+            shortCode: league.shortCode,
+          )..load(),
           child: LeagueDetailScreen(
             league: league,
             openFixturesTab: openFixturesTab,

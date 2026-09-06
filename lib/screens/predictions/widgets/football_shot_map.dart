@@ -89,87 +89,8 @@ class FootballShotMapPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final frame = PitchFrame.fit(size);
-    _paintPitch(canvas, frame);
+    paintFootballPitch(canvas, frame);
     _paintShots(canvas, frame);
-  }
-
-  void _paintPitch(Canvas canvas, PitchFrame f) {
-    final turf = Paint()..color = Cyber.bg.withValues(alpha: 0.55);
-    final line = Paint()
-      ..color = Cyber.line
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-    final faint = Paint()
-      ..color = Cyber.borderSubtle
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-    final boxTint = Paint()..color = Cyber.cyan.withValues(alpha: 0.05);
-    // The goal frames are furniture, not the focus — kept dim so the scored
-    // goals stay the brightest thing on the pitch.
-    final goalPaint = Paint()
-      ..color = Cyber.amber.withValues(alpha: 0.38)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.1;
-
-    canvas.drawRect(f.rect, turf);
-    canvas.drawRect(f.rect, line);
-
-    const midX = PitchFrame.lengthM / 2;
-    const midY = PitchFrame.widthM / 2;
-
-    canvas.drawLine(f.p(midX, 0), f.p(midX, PitchFrame.widthM), line);
-    canvas.drawCircle(
-      f.p(midX, midY),
-      PitchFrame.centreCircleM * f.scale,
-      faint,
-    );
-    canvas.drawCircle(f.p(midX, midY), 1.4, Paint()..color = Cyber.line);
-
-    for (final atLeft in [true, false]) {
-      double x(double depth) => atLeft ? depth : PitchFrame.lengthM - depth;
-
-      Rect span(double depth, double halfWidth) => f.box(
-        math.min(x(0), x(depth)),
-        midY - halfWidth,
-        math.max(x(0), x(depth)),
-        midY + halfWidth,
-      );
-
-      final penalty = span(
-        PitchFrame.penaltyDepthM,
-        PitchFrame.penaltyWidthM / 2,
-      );
-      canvas.drawRect(penalty, boxTint);
-      canvas.drawRect(penalty, line);
-      canvas.drawRect(
-        span(PitchFrame.goalAreaDepthM, PitchFrame.goalAreaWidthM / 2),
-        faint,
-      );
-
-      final spot = f.p(x(PitchFrame.penaltySpotM), midY);
-      canvas.drawCircle(spot, 1.2, Paint()..color = Cyber.line);
-
-      // Only the arc standing outside the penalty area is drawn.
-      final sweep = math.acos(
-        (PitchFrame.penaltyDepthM - PitchFrame.penaltySpotM) /
-            PitchFrame.centreCircleM,
-      );
-      _dashedArc(
-        canvas,
-        Rect.fromCircle(
-          center: spot,
-          radius: PitchFrame.centreCircleM * f.scale,
-        ),
-        atLeft ? -sweep : math.pi - sweep,
-        sweep * 2,
-        faint,
-      );
-
-      canvas.drawRect(
-        span(-PitchFrame.goalDepthM, PitchFrame.goalWidthM / 2),
-        goalPaint,
-      );
-    }
   }
 
   void _paintShots(Canvas canvas, PitchFrame f) {
@@ -260,20 +181,6 @@ class FootballShotMapPainter extends CustomPainter {
             ..strokeWidth = 1.2,
         );
       }
-    }
-  }
-
-  void _dashedArc(
-    Canvas canvas,
-    Rect rect,
-    double start,
-    double sweep,
-    Paint paint,
-  ) {
-    const segments = 9;
-    final step = sweep / (segments * 2 - 1);
-    for (var i = 0; i < segments; i++) {
-      canvas.drawArc(rect, start + step * i * 2, step, false, paint);
     }
   }
 
@@ -771,4 +678,103 @@ class ShotNetPainter extends CustomPainter {
       old.shot.playId != shot.playId ||
       old.progress != progress ||
       old.accent != accent;
+}
+
+/// Draws the pitch itself — turf, markings and goal frames, to real
+/// proportions.
+///
+/// Shared by the shot map and the per-player heatmap: both plot tracked
+/// coordinates onto the same surface, so the surface is drawn in one place.
+void paintFootballPitch(Canvas canvas, PitchFrame f) {
+  final turf = Paint()..color = Cyber.bg.withValues(alpha: 0.55);
+  final line = Paint()
+    ..color = Cyber.line
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1;
+  final faint = Paint()
+    ..color = Cyber.borderSubtle
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1;
+  final boxTint = Paint()..color = Cyber.cyan.withValues(alpha: 0.05);
+  // The goal frames are furniture, not the focus — kept dim so the scored
+  // goals stay the brightest thing on the pitch.
+  final goalPaint = Paint()
+    ..color = Cyber.amber.withValues(alpha: 0.38)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.1;
+
+  canvas.drawRect(f.rect, turf);
+  canvas.drawRect(f.rect, line);
+
+  const midX = PitchFrame.lengthM / 2;
+  const midY = PitchFrame.widthM / 2;
+
+  canvas.drawLine(f.p(midX, 0), f.p(midX, PitchFrame.widthM), line);
+  canvas.drawCircle(
+    f.p(midX, midY),
+    PitchFrame.centreCircleM * f.scale,
+    faint,
+  );
+  canvas.drawCircle(f.p(midX, midY), 1.4, Paint()..color = Cyber.line);
+
+  for (final atLeft in [true, false]) {
+    double x(double depth) => atLeft ? depth : PitchFrame.lengthM - depth;
+
+    Rect span(double depth, double halfWidth) => f.box(
+      math.min(x(0), x(depth)),
+      midY - halfWidth,
+      math.max(x(0), x(depth)),
+      midY + halfWidth,
+    );
+
+    final penalty = span(
+      PitchFrame.penaltyDepthM,
+      PitchFrame.penaltyWidthM / 2,
+    );
+    canvas.drawRect(penalty, boxTint);
+    canvas.drawRect(penalty, line);
+    canvas.drawRect(
+      span(PitchFrame.goalAreaDepthM, PitchFrame.goalAreaWidthM / 2),
+      faint,
+    );
+
+    final spot = f.p(x(PitchFrame.penaltySpotM), midY);
+    canvas.drawCircle(spot, 1.2, Paint()..color = Cyber.line);
+
+    // Only the arc standing outside the penalty area is drawn.
+    final sweep = math.acos(
+      (PitchFrame.penaltyDepthM - PitchFrame.penaltySpotM) /
+          PitchFrame.centreCircleM,
+    );
+    _dashedArc(
+      canvas,
+      Rect.fromCircle(
+        center: spot,
+        radius: PitchFrame.centreCircleM * f.scale,
+      ),
+      atLeft ? -sweep : math.pi - sweep,
+      sweep * 2,
+      faint,
+    );
+
+    canvas.drawRect(
+      span(-PitchFrame.goalDepthM, PitchFrame.goalWidthM / 2),
+      goalPaint,
+    );
+  }
+}
+
+/// A dashed arc, used for the penalty-area arcs.
+void _dashedArc(
+  Canvas canvas,
+  Rect rect,
+  double start,
+  double sweep,
+  Paint paint,
+) {
+  const segments = 9;
+  final step = sweep / (segments * 2 - 1);
+  for (var i = 0; i < segments; i++) {
+    canvas.drawArc(rect, start + step * i * 2, step, false, paint);
+  }
 }

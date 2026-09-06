@@ -97,6 +97,7 @@ class MatchPlayer {
     this.shortName,
     this.formationPlace,
     this.source,
+    this.matchStats,
   });
   final String id;
   final String name;
@@ -108,6 +109,11 @@ class MatchPlayer {
   final String? shortName;
   final String? formationPlace;
   final String? source;
+
+  /// What this player actually did in this match. Null when the feed carries no
+  /// per-player sheet — every non-football sport, and football fixtures whose
+  /// summary has not been parsed.
+  final FootballPlayerMatchStats? matchStats;
 }
 
 class MatchLineup {

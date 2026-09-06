@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../config/theme.dart';
 import '../models/cricket_scorecard.dart';
+import 'cyber/cyber_filter_chips.dart';
+import 'cyber/cyber_widgets.dart';
 
 class CricketScorecardView extends StatefulWidget {
   const CricketScorecardView({
@@ -21,6 +24,14 @@ class _CricketScorecardViewState extends State<CricketScorecardView> {
   int _selectedIndex = 0;
 
   @override
+  void didUpdateWidget(covariant CricketScorecardView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_selectedIndex >= widget.scorecard.innings.length) {
+      _selectedIndex = 0;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     if (widget.scorecard.innings.isEmpty) {
       return Center(
@@ -36,487 +47,626 @@ class _CricketScorecardViewState extends State<CricketScorecardView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Innings Toggle
-        if (widget.scorecard.innings.length > 1)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: List.generate(widget.scorecard.innings.length, (
-                  index,
-                ) {
-                  final inn = widget.scorecard.innings[index];
-                  final isSelected = _selectedIndex == index;
-                  return GestureDetector(
-                    onTap: () => setState(() => _selectedIndex = index),
-                    child: Container(
-                      margin: const EdgeInsets.only(right: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? widget.accent.withValues(alpha: 0.2)
-                            : Cyber.card,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: isSelected ? widget.accent : Cyber.border,
-                        ),
-                      ),
-                      child: Text(
-                        inn.teamName,
-                        style: Cyber.body(13, color: AppTheme.whiteColor)
-                            .copyWith(
-                              color: isSelected ? widget.accent : Cyber.muted,
-                              fontWeight: isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
-                            ),
-                      ),
-                    ),
-                  );
-                }),
-              ),
+        if (widget.scorecard.innings.length > 1) ...[
+          CyberSectionHeading(
+            label: 'INNINGS CONTROL',
+            trailing: CyberStatPill(
+              label: '${_selectedIndex + 1}/${widget.scorecard.innings.length}',
+              color: widget.accent,
             ),
           ),
-
-        _buildInningsHeader(innings),
-        const SizedBox(height: 16),
-        if (innings.batters.isNotEmpty) _buildBattingTable(innings),
-        if (innings.didNotBat.isNotEmpty) _buildDidNotBat(innings.didNotBat),
-        if (innings.fow.isNotEmpty) _buildFow(innings.fow),
-        if (innings.partnerships.isNotEmpty)
-          _buildPartnerships(innings.partnerships),
-        if (innings.bowlers.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          CyberFilterChips(
+            key: const ValueKey('scorecard-innings-selector'),
+            labels: [
+              for (final item in widget.scorecard.innings)
+                item.teamName.toUpperCase(),
+            ],
+            selected: innings.teamName.toUpperCase(),
+            accent: widget.accent,
+            padding: EdgeInsets.zero,
+            onSelect: _selectInnings,
+          ),
           const SizedBox(height: 16),
-          _buildBowlingTable(innings.bowlers),
+        ],
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 240),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          transitionBuilder: (child, animation) => FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0.025, 0),
+                end: Offset.zero,
+              ).animate(animation),
+              child: child,
+            ),
+          ),
+          child: _InningsScorecard(
+            key: ValueKey(
+              'scorecard-innings-${innings.number ?? _selectedIndex}',
+            ),
+            innings: innings,
+            accent: widget.accent,
+            fallbackNumber: _selectedIndex + 1,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _selectInnings(String teamName) {
+    final index = widget.scorecard.innings.indexWhere(
+      (innings) => innings.teamName.toUpperCase() == teamName,
+    );
+    if (index < 0 || index == _selectedIndex) return;
+    HapticFeedback.selectionClick();
+    setState(() => _selectedIndex = index);
+  }
+}
+
+class _InningsScorecard extends StatelessWidget {
+  const _InningsScorecard({
+    required this.innings,
+    required this.accent,
+    required this.fallbackNumber,
+    super.key,
+  });
+
+  final CricketInnings innings;
+  final Color accent;
+  final int fallbackNumber;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildInningsHeader(),
+        if (innings.batters.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          CyberSectionHeading(
+            label: 'BATTING CARD',
+            trailing: Text(
+              '${innings.batters.length} BATTERS',
+              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildBattingTable(),
+        ],
+        if (innings.didNotBat.isNotEmpty || innings.fow.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          _buildInningsNotes(),
+        ],
+        if (innings.partnerships.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          CyberSectionHeading(
+            label: 'PARTNERSHIPS',
+            trailing: Text(
+              '${innings.partnerships.length} STANDS',
+              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildPartnerships(),
+        ],
+        if (innings.bowlers.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          CyberSectionHeading(
+            label: 'BOWLING CARD',
+            trailing: Text(
+              '${innings.bowlers.length} BOWLERS',
+              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildBowlingTable(),
         ],
       ],
     );
   }
 
-  Widget _buildInningsHeader(CricketInnings innings) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Cyber.panel,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Cyber.border),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildInningsHeader() {
+    final score = innings.runs != null && innings.wickets != null
+        ? '${innings.runs}/${innings.wickets}'
+        : innings.scoreText;
+    final inningsNumber = innings.number ?? fallbackNumber;
+    final boundaryCount = innings.batters.fold<int>(
+      0,
+      (total, batter) => total + batter.fours + batter.sixes,
+    );
+
+    return CyberPanel(
+      key: const ValueKey('scorecard-innings-header'),
+      accent: accent,
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Expanded(
-            child: Column(
+          Container(height: 2, color: accent),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '${innings.teamName} Innings',
-                  style: Cyber.body(13, color: AppTheme.whiteColor).copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.whiteColor,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'INNINGS ${inningsNumber.toString().padLeft(2, '0')} // SCORECARD',
+                        style: Cyber.label(
+                          8,
+                          color: accent,
+                          letterSpacing: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        '${innings.teamName} Innings',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Cyber.display(14, letterSpacing: 0.35),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        innings.target == null
+                            ? 'MATCH DATA // VERIFIED FIGURES'
+                            : 'CHASE TARGET // ${innings.target}',
+                        style: Cyber.label(
+                          7,
+                          color: Cyber.muted,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                if (innings.runRate != null)
-                  Text(
-                    'RR ${innings.runRate!.toStringAsFixed(2)}'
-                    '${innings.target == null ? '' : ' // TARGET ${innings.target}'}',
-                    style: Cyber.label(8, color: Cyber.muted),
-                  ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      score,
+                      textAlign: TextAlign.right,
+                      style: Cyber.display(25, color: accent, letterSpacing: 0)
+                          .copyWith(
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                    ),
+                    if (innings.overs != null)
+                      Text(
+                        '${_formatNumber(innings.overs!)} OVERS',
+                        style: Cyber.label(
+                          8,
+                          color: Cyber.muted,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                  ],
+                ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                innings.scoreText,
-                textAlign: TextAlign.right,
-                style: Cyber.display(
-                  13,
-                  color: widget.accent,
-                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-              ),
-              if (innings.overs != null)
-                Text(
-                  '${innings.overs!.toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '')} OV',
-                  style: Cyber.label(8, color: Cyber.muted),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            child: Row(
+              children: [
+                CyberMiniMetric(
+                  label: 'Run rate',
+                  value: innings.runRate == null
+                      ? '—'
+                      : innings.runRate!.toStringAsFixed(2),
+                  accent: accent,
                 ),
-            ],
+                const SizedBox(width: 6),
+                CyberMiniMetric(label: 'Boundaries', value: '$boundaryCount'),
+                const SizedBox(width: 6),
+                CyberMiniMetric(
+                  label: innings.target == null ? 'Wickets' : 'Target',
+                  value: '${innings.target ?? innings.wickets ?? '—'}',
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildBattingTable(CricketInnings innings) {
-    final batters = innings.batters;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          decoration: const BoxDecoration(
-            color: Cyber.card,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
-          ),
-          child: Row(
-            children: [
-              Expanded(flex: 3, child: _headerText('Batter')),
-              Expanded(child: _headerText('R', align: TextAlign.right)),
-              Expanded(child: _headerText('B', align: TextAlign.right)),
-              Expanded(child: _headerText('4s', align: TextAlign.right)),
-              Expanded(child: _headerText('6s', align: TextAlign.right)),
-              Expanded(
-                flex: 2,
-                child: _headerText('SR', align: TextAlign.right),
-              ),
-            ],
-          ),
-        ),
-        Container(
-          decoration: BoxDecoration(
-            color: Cyber.panel,
-            border: Border.all(color: Cyber.border),
-            borderRadius: const BorderRadius.vertical(
-              bottom: Radius.circular(8),
-            ),
-          ),
-          child: Column(
-            children: [
-              ...batters.map((b) {
-                final isOut =
-                    b.dismissalText != null && b.dismissalText!.isNotEmpty;
-                return Container(
-                  decoration: const BoxDecoration(
-                    border: Border(bottom: BorderSide(color: Cyber.border)),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 10,
-                    horizontal: 12,
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              b.name,
-                              style: Cyber.body(13, color: AppTheme.whiteColor)
-                                  .copyWith(
-                                    color: isOut
-                                        ? AppTheme.whiteColor
-                                        : widget.accent,
-                                    fontWeight: isOut
-                                        ? FontWeight.normal
-                                        : FontWeight.bold,
-                                  ),
-                            ),
-                            if (isOut)
-                              Text(
-                                b.dismissalText!,
-                                style: Cyber.body(
-                                  13,
-                                  color: AppTheme.whiteColor,
-                                ).copyWith(fontSize: 10, color: Cyber.muted),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            Text(
-                              '${b.position == null ? '' : 'POS ${b.position} // '}${b.minutes == null ? '' : '${b.minutes} MIN // '}${b.notOut ? 'NOT OUT' : ''}${b.milestone == null ? '' : ' // ${b.milestone}'}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Cyber.label(6.8, color: Cyber.muted),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          '${b.runs}',
-                          textAlign: TextAlign.right,
-                          style: Cyber.body(
-                            13,
-                            color: AppTheme.whiteColor,
-                            weight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                      Expanded(child: _valText('${b.balls}')),
-                      Expanded(child: _valText('${b.fours}')),
-                      Expanded(child: _valText('${b.sixes}')),
-                      Expanded(
-                        flex: 2,
-                        child: Text(
-                          b.strikeRate.toStringAsFixed(1),
-                          textAlign: TextAlign.right,
-                          style: Cyber.body(12, color: Cyber.muted),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-              if (innings.extras.isNotEmpty)
+  Widget _buildBattingTable() {
+    final best = innings.batters.fold<int>(
+      0,
+      (value, batter) => batter.runs > value ? batter.runs : value,
+    );
+    return _ScorecardTable(
+      key: const ValueKey('scorecard-batting-table'),
+      accent: accent,
+      header: _tableRow(
+        name: 'BATTER',
+        values: const ['R', 'B', '4', '6', 'SR'],
+      ),
+      rows: [
+        for (var index = 0; index < innings.batters.length; index++)
+          _batterRow(innings.batters[index], index: index, best: best),
+        if (innings.extras.isNotEmpty) _extrasRow(),
+      ],
+    );
+  }
+
+  Widget _batterRow(
+    CricketBatter batter, {
+    required int index,
+    required int best,
+  }) {
+    final dismissal = batter.dismissalText?.trim() ?? '';
+    final notOut = batter.notOut || dismissal.isEmpty;
+    final isTopScore = batter.runs == best && best > 0;
+    final details = <String>[
+      if (batter.position != null) 'POS ${batter.position}',
+      if (batter.minutes != null) '${batter.minutes} MIN',
+      if (notOut) 'NOT OUT',
+      if (batter.milestone != null && batter.milestone!.isNotEmpty)
+        batter.milestone!.toUpperCase(),
+    ];
+
+    return Container(
+      color: index.isEven ? Cyber.chartSurface : Cyber.panel,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 4,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 10,
-                    horizontal: 12,
-                  ),
-                  child: Row(
+                  width: 2,
+                  height: 32,
+                  color: notOut ? accent : Cyber.line,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        flex: 3,
-                        child: Text(
-                          'Extras',
-                          style: Cyber.body(
-                            13,
-                            color: AppTheme.whiteColor,
-                            weight: FontWeight.bold,
-                          ),
+                      Text(
+                        batter.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Cyber.body(
+                          12,
+                          color: notOut ? accent : AppTheme.whiteColor,
+                          weight: notOut ? FontWeight.w800 : FontWeight.w600,
                         ),
                       ),
-                      Expanded(
-                        flex: 6,
-                        child: Text(
-                          innings.extras,
-                          textAlign: TextAlign.right,
-                          style: Cyber.body(
-                            13,
-                            color: AppTheme.whiteColor,
-                            weight: FontWeight.bold,
+                      if (dismissal.isNotEmpty)
+                        Text(
+                          dismissal,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Cyber.body(8.5, color: Cyber.muted),
+                        ),
+                      if (details.isNotEmpty)
+                        Text(
+                          details.join(' // '),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Cyber.label(
+                            6.5,
+                            color: Cyber.muted.withValues(alpha: 0.82),
+                            letterSpacing: 0.7,
                           ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _numberCell(
+            '${batter.runs}',
+            color: isTopScore ? Cyber.gold : AppTheme.whiteColor,
+            weight: FontWeight.w900,
+          ),
+          _numberCell('${batter.balls}'),
+          _numberCell('${batter.fours}'),
+          _numberCell('${batter.sixes}'),
+          _numberCell(batter.strikeRate.toStringAsFixed(1), flex: 2),
+        ],
+      ),
+    );
+  }
+
+  Widget _extrasRow() {
+    return Container(
+      color: accent.withValues(alpha: 0.055),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'EXTRAS',
+              style: Cyber.label(9, color: accent, letterSpacing: 1.1),
+            ),
+          ),
+          Flexible(
+            child: Text(
+              innings.extras,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: Cyber.body(
+                11,
+                color: AppTheme.whiteColor,
+                weight: FontWeight.w800,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInningsNotes() {
+    return CyberPanel(
+      accent: Cyber.line,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (innings.didNotBat.isNotEmpty)
+            _telemetryLine(
+              label: 'YET TO BAT',
+              value: innings.didNotBat.join('  •  '),
+            ),
+          if (innings.didNotBat.isNotEmpty && innings.fow.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Container(
+                height: 1,
+                color: Cyber.line.withValues(alpha: 0.35),
+              ),
+            ),
+          if (innings.fow.isNotEmpty)
+            _telemetryLine(
+              label: 'FALL OF WICKETS',
+              value: innings.fow.join('  //  '),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _telemetryLine({required String label, required String value}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: Cyber.label(8, color: accent, letterSpacing: 1.1)),
+        const SizedBox(height: 5),
+        Text(value, style: Cyber.body(10.5, color: Cyber.muted)),
+      ],
+    );
+  }
+
+  Widget _buildPartnerships() {
+    return CyberPanel(
+      accent: Cyber.line,
+      padding: const EdgeInsets.fromLTRB(12, 6, 12, 8),
+      child: Column(
+        children: [
+          for (var index = 0; index < innings.partnerships.length; index++) ...[
+            if (index > 0)
+              Container(height: 1, color: Cyber.line.withValues(alpha: 0.3)),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 9),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 34,
+                    child: Text(
+                      innings.partnerships[index].wicket.toUpperCase(),
+                      style: Cyber.label(8, color: accent),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      innings.partnerships[index].batters
+                          .map((batter) => '${batter.name} ${batter.runs}')
+                          .join(' + '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Cyber.body(10.5, weight: FontWeight.w600),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${innings.partnerships[index].runs} / ${_formatNumber(innings.partnerships[index].overs)} OV',
+                    style: Cyber.label(
+                      8,
+                      color: Cyber.gold,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBowlingTable() {
+    final best = innings.bowlers.fold<int>(
+      0,
+      (value, bowler) => bowler.wickets > value ? bowler.wickets : value,
+    );
+    return _ScorecardTable(
+      key: const ValueKey('scorecard-bowling-table'),
+      accent: accent,
+      header: _tableRow(
+        name: 'BOWLER',
+        values: const ['O', 'M', 'R', 'W', 'ER'],
+      ),
+      rows: [
+        for (var index = 0; index < innings.bowlers.length; index++)
+          _bowlerRow(innings.bowlers[index], index: index, best: best),
+      ],
+    );
+  }
+
+  Widget _bowlerRow(
+    CricketBowler bowler, {
+    required int index,
+    required int best,
+  }) {
+    final isStrikeBowler = bowler.wickets == best && best > 0;
+    return Container(
+      color: index.isEven ? Cyber.chartSurface : Cyber.panel,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 4,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 2,
+                  height: 30,
+                  color: isStrikeBowler ? Cyber.gold : Cyber.line,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        bowler.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Cyber.body(
+                          12,
+                          weight: isStrikeBowler
+                              ? FontWeight.w800
+                              : FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        'DOT ${bowler.dots ?? '—'} // WD ${bowler.wides ?? '—'} // NB ${bowler.noBalls ?? '—'}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Cyber.label(
+                          6.5,
+                          color: Cyber.muted.withValues(alpha: 0.82),
+                          letterSpacing: 0.65,
                         ),
                       ),
                     ],
                   ),
                 ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+          _numberCell(_formatNumber(bowler.overs)),
+          _numberCell('${bowler.maidens}'),
+          _numberCell('${bowler.runs}'),
+          _numberCell(
+            '${bowler.wickets}',
+            color: isStrikeBowler ? Cyber.gold : accent,
+            weight: FontWeight.w900,
+          ),
+          _numberCell(bowler.economyRate.toStringAsFixed(1), flex: 2),
+        ],
+      ),
     );
   }
 
-  Widget _buildDidNotBat(List<String> dnb) {
+  Widget _tableRow({required String name, required List<String> values}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      child: RichText(
-        text: TextSpan(
-          style: Cyber.body(12, color: Cyber.muted),
-          children: [
-            TextSpan(
-              text: 'Yet to bat: ',
-              style: Cyber.body(
-                12,
-                color: Cyber.muted,
-                weight: FontWeight.bold,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 4,
+            child: Text(
+              name,
+              style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1),
+            ),
+          ),
+          for (var index = 0; index < values.length; index++)
+            Expanded(
+              flex: index == values.length - 1 ? 2 : 1,
+              child: Text(
+                values[index],
+                textAlign: TextAlign.right,
+                style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.8),
               ),
             ),
-            TextSpan(text: dnb.join(', ')),
-          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _numberCell(
+    String value, {
+    int flex = 1,
+    Color? color,
+    FontWeight weight = FontWeight.w600,
+  }) {
+    return Expanded(
+      flex: flex,
+      child: Text(
+        value,
+        maxLines: 1,
+        textAlign: TextAlign.right,
+        style: Cyber.body(
+          10.5,
+          color: color ?? Cyber.muted,
+          weight: weight,
+          fontFeatures: const [FontFeature.tabularFigures()],
         ),
       ),
     );
   }
 
-  Widget _buildFow(List<String> fow) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-      child: RichText(
-        text: TextSpan(
-          style: Cyber.body(12, color: Cyber.muted),
-          children: [
-            TextSpan(
-              text: 'Fall of wickets: ',
-              style: Cyber.body(
-                12,
-                color: Cyber.muted,
-                weight: FontWeight.bold,
-              ),
-            ),
-            TextSpan(text: fow.join(', ')),
+  String _formatNumber(double value) =>
+      value.toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '');
+}
+
+class _ScorecardTable extends StatelessWidget {
+  const _ScorecardTable({
+    required this.accent,
+    required this.header,
+    required this.rows,
+    super.key,
+  });
+
+  final Color accent;
+  final Widget header;
+  final List<Widget> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    return CyberPanel(
+      accent: Cyber.line,
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          ColoredBox(color: accent.withValues(alpha: 0.065), child: header),
+          Container(height: 1, color: accent.withValues(alpha: 0.45)),
+          for (var index = 0; index < rows.length; index++) ...[
+            rows[index],
+            if (index != rows.length - 1)
+              Container(height: 1, color: Cyber.line.withValues(alpha: 0.28)),
           ],
-        ),
+          const SizedBox(height: CyberClipper.cut),
+        ],
       ),
-    );
-  }
-
-  Widget _buildPartnerships(List<CricketPartnership> partnerships) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Cyber.panel,
-          border: Border.all(color: Cyber.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'PARTNERSHIPS',
-              style: Cyber.label(9, color: widget.accent, letterSpacing: 1),
-            ),
-            const SizedBox(height: 8),
-            for (final partnership in partnerships)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 5),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 36,
-                      child: Text(
-                        partnership.wicket,
-                        style: Cyber.label(8, color: Cyber.muted),
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        partnership.batters
-                            .map((batter) => '${batter.name} ${batter.runs}')
-                            .join(' + '),
-                        style: Cyber.body(11),
-                      ),
-                    ),
-                    Text(
-                      '${partnership.runs} (${partnership.overs.toStringAsFixed(1)} ov)',
-                      style: Cyber.display(9, color: widget.accent).copyWith(
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBowlingTable(List<CricketBowler> bowlers) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          decoration: const BoxDecoration(
-            color: Cyber.card,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
-          ),
-          child: Row(
-            children: [
-              Expanded(flex: 3, child: _headerText('Bowler')),
-              Expanded(child: _headerText('O', align: TextAlign.right)),
-              Expanded(child: _headerText('M', align: TextAlign.right)),
-              Expanded(child: _headerText('R', align: TextAlign.right)),
-              Expanded(child: _headerText('W', align: TextAlign.right)),
-              Expanded(
-                flex: 2,
-                child: _headerText('ER', align: TextAlign.right),
-              ),
-            ],
-          ),
-        ),
-        Container(
-          decoration: BoxDecoration(
-            color: Cyber.panel,
-            border: Border.all(color: Cyber.border),
-            borderRadius: const BorderRadius.vertical(
-              bottom: Radius.circular(8),
-            ),
-          ),
-          child: Column(
-            children: bowlers.map((b) {
-              return Container(
-                decoration: const BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Cyber.border)),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  vertical: 10,
-                  horizontal: 12,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            b.name,
-                            style: Cyber.body(13, color: AppTheme.whiteColor),
-                          ),
-                          Text(
-                            'DOT ${b.dots ?? '-'} // WD ${b.wides ?? '-'} // NB ${b.noBalls ?? '-'} // 4C ${b.foursConceded ?? '-'} // 6C ${b.sixesConceded ?? '-'}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Cyber.label(6.5, color: Cyber.muted),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        b.overs
-                            .toStringAsFixed(1)
-                            .replaceAll(RegExp(r'\.0$'), ''),
-                        textAlign: TextAlign.right,
-                        style: Cyber.body(13, color: AppTheme.whiteColor),
-                      ),
-                    ),
-                    Expanded(child: _valText('${b.maidens}')),
-                    Expanded(child: _valText('${b.runs}')),
-                    Expanded(
-                      child: Text(
-                        '${b.wickets}',
-                        textAlign: TextAlign.right,
-                        style: Cyber.body(
-                          13,
-                          color: widget.accent,
-                          weight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        b.economyRate.toStringAsFixed(1),
-                        textAlign: TextAlign.right,
-                        style: Cyber.body(12, color: Cyber.muted),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _headerText(String text, {TextAlign align = TextAlign.left}) {
-    return Text(
-      text,
-      textAlign: align,
-      style: Cyber.body(
-        13,
-        color: AppTheme.whiteColor,
-      ).copyWith(fontSize: 11, color: Cyber.muted, fontWeight: FontWeight.w600),
-    );
-  }
-
-  Widget _valText(String text) {
-    return Text(
-      text,
-      textAlign: TextAlign.right,
-      style: Cyber.body(12, color: Cyber.muted),
     );
   }
 }

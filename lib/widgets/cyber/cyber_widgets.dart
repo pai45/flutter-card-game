@@ -4571,3 +4571,33 @@ class CyberSearchButton extends StatelessWidget {
     icon: Icon(Icons.search_rounded, color: accent, size: 22),
   );
 }
+
+/// A small state tag — CONFIRMED, STARTER, UNUSED — as a tinted plate.
+///
+/// Never glows: these label a state rather than mark the live or selected
+/// thing, and there are usually several on screen at once.
+class CyberStatusPill extends StatelessWidget {
+  const CyberStatusPill({
+    required this.label,
+    required this.color,
+    super.key,
+  });
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
+      ),
+      child: Text(
+        label,
+        style: Cyber.label(8, color: color, letterSpacing: 0.8),
+      ),
+    );
+  }
+}

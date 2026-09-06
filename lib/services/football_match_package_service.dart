@@ -47,6 +47,10 @@ class FootballMatchPackageService {
         ? MatchStatus.live
         : MatchStatus.upcoming;
     final winner = _nullableString(score['winner']);
+    // Hoisted once: every player's `stats` array is positional against this.
+    final statKeys = _list(json['playerStatKeys'])
+        .map((key) => key.toString())
+        .toList(growable: false);
 
     return SportMatch(
       id: bundledMatchId,
@@ -63,10 +67,14 @@ class FootballMatchPackageService {
           : '$winner won ${_string(score['display'])}',
       teamStats: _parseStats(json['topStats']),
       timelineEvents: _parseTimeline(json['timeline']),
-      homeLineup: _parseLineup(homeTeamData),
-      awayLineup: _parseLineup(awayTeamData),
+      homeLineup: _parseLineup(homeTeamData, statKeys),
+      awayLineup: _parseLineup(awayTeamData, statKeys),
       commentary: _parseCommentary(json['commentary']),
-      footballDetails: _parseDetails(details, json['commentary']),
+      footballDetails: _parseDetails(
+        details,
+        json['commentary'],
+        _nullableString(json['espnEventId']),
+      ),
       footballMomentum: _parseMomentum(json['momentum']),
       rewardXp: 40,
     );
@@ -92,6 +100,7 @@ class FootballMatchPackageService {
   FootballMatchDetails _parseDetails(
     Map<String, dynamic> details,
     dynamic commentary,
+    String? espnEventId,
   ) {
     final location = _map(details['location']);
     final score = _map(details['score']);
@@ -123,6 +132,7 @@ class FootballMatchPackageService {
           )
           .toList(growable: false),
       shots: _parseShots(commentary),
+      espnEventId: espnEventId,
     );
   }
 
@@ -262,17 +272,17 @@ class FootballMatchPackageService {
       })
       .toList(growable: false);
 
-  MatchLineup _parseLineup(Map<String, dynamic> team) {
+  MatchLineup _parseLineup(Map<String, dynamic> team, List<String> statKeys) {
     final players = _maps(team['players']);
     return MatchLineup(
       formation: _string(team['formation']),
       startingXI: players
           .where((player) => player['starter'] == true)
-          .map(_parsePlayer)
+          .map((player) => _parsePlayer(player, statKeys))
           .toList(growable: false),
       substitutes: players
           .where((player) => player['starter'] != true)
-          .map(_parsePlayer)
+          .map((player) => _parsePlayer(player, statKeys))
           .toList(growable: false),
       confirmed: team['lineupsConfirmed'] == true,
       source: _nullableString(team['source']),
@@ -280,7 +290,7 @@ class FootballMatchPackageService {
     );
   }
 
-  MatchPlayer _parsePlayer(Map<String, dynamic> player) {
+  MatchPlayer _parsePlayer(Map<String, dynamic> player, List<String> statKeys) {
     final formationPlace = _nullableString(player['formationPlace']);
     return MatchPlayer(
       id: _string(player['id']),
@@ -292,8 +302,61 @@ class FootballMatchPackageService {
           _nullableString(player['position']),
       formationPlace: formationPlace == '0' ? null : formationPlace,
       source: _nullableString(player['source']),
+      matchStats: _parsePlayerStats(player, statKeys),
     );
   }
+
+  /// The per-player match layer added by
+  /// `tool/generate_football_match_players.dart`. Absent in an older asset, in
+  /// which case every consumer degrades to "no tracking" rather than breaking.
+  FootballPlayerMatchStats? _parsePlayerStats(
+    Map<String, dynamic> player,
+    List<String> statKeys,
+  ) {
+    final raw = player['stats'];
+    if (statKeys.isEmpty || raw is! List) return null;
+    final values = <String, num>{};
+    // Positional: `stats[i]` is the value for `playerStatKeys[i]`. A null entry
+    // means the stat does not apply to this position, so it is left out rather
+    // than stored as zero.
+    for (var i = 0; i < statKeys.length && i < raw.length; i++) {
+      final value = raw[i];
+      if (value is num) values[statKeys[i]] = value;
+    }
+    return FootballPlayerMatchStats(
+      values: values,
+      firstHalfTouches: _touches(player['t1']),
+      secondHalfTouches: _touches(player['t2']),
+      subInMinute: player['subIn'] == null ? null : _int(player['subIn']),
+      subOutMinute: player['subOut'] == null ? null : _int(player['subOut']),
+      starter: player['starter'] == true,
+      expectedGoals: _nullableDouble(player['xg']),
+      expectedGoalsOnTarget: _nullableDouble(player['xgot']),
+    );
+  }
+
+  /// Reads a flat `[x, y, x, y, ...]` coordinate array into normalised pairs.
+  ///
+  /// The feed overflows its own 0..100 frame on events that leave the pitch
+  /// (observed x 101.8, y -1.6), so both axes are clamped. A trailing odd
+  /// element is dropped rather than paired with a default.
+  List<(double, double)> _touches(dynamic value) {
+    if (value is! List) return const [];
+    final out = <(double, double)>[];
+    for (var i = 0; i + 1 < value.length; i += 2) {
+      final x = value[i];
+      final y = value[i + 1];
+      if (x is! num || y is! num) continue;
+      out.add((
+        (x / 100).clamp(0.0, 1.0).toDouble(),
+        (y / 100).clamp(0.0, 1.0).toDouble(),
+      ));
+    }
+    return List.unmodifiable(out);
+  }
+
+  double? _nullableDouble(dynamic value) =>
+      value is num ? value.toDouble() : null;
 
   List<MatchCommentary> _parseCommentary(dynamic value) => _maps(value)
       .where((item) => _string(item['text']).isNotEmpty)

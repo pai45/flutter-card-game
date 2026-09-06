@@ -103,6 +103,7 @@ Guess the Player entries share one implementation and one product page.
 | System | Status | Product page |
 |---|---|---|
 | Match discovery/search, predictions, sport STATS (including Cricket innings race/run-rate), quizzes, scoreline contests, and settlement | BUILT / PROTOTYPE DATA | [Predictions](systems/predictions.md) |
+| League hub: standings TABLE, player LEADERS, and club STATS (EPL and LaLiga) | BUILT / SNAPSHOT DATA | [Predictions](systems/predictions.md) |
 | Prediction feedback, rewards, and future quests | BUILT / PLANNED | [Prediction Gamification](systems/prediction-gamification.md) |
 | Outcome markets, positions, settlement, and payouts | BUILT / PROTOTYPE DATA | [Picks](systems/picks.md) |
 | Per-mode XP tracks and aggregate player level | BUILT | [Progression and Leveling](systems/progression-and-leveling.md) |
@@ -241,3 +242,4 @@ session-only presentation and identify mock/seeded data that is not a remote ser
 - [Round resolution and match settlement](../technical/round-resolution.md)
 - [Audio cue catalog](../audio/CUE_CATALOG.md)
 - [IPL player data sheet](../data/ipl_players.md)
+- [League stats field inventory (EPL and LaLiga)](../data/league-stats-field-inventory.md)
