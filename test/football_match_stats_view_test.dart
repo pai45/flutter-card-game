@@ -1,5 +1,8 @@
 import 'package:card_game/config/theme.dart';
+import 'package:card_game/data/team_palettes.dart';
 import 'package:card_game/screens/predictions/widgets/football_match_stats_view.dart';
+import 'package:card_game/screens/predictions/widgets/football_player_match_sheet.dart';
+import 'package:card_game/screens/predictions/widgets/match_stats_shell.dart';
 import 'package:card_game/services/football_match_package_service.dart';
 import 'package:card_game/widgets/cyber/cyber_filter_chips.dart';
 import 'package:flutter/material.dart';
@@ -32,12 +35,34 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('MATCH INTEL'), findsOneWidget);
+    expect(find.byType(MatchPulseHeader), findsNothing);
     expect(find.textContaining('Craven Cottage'), findsOneWidget);
     expect(find.text('27,461'), findsOneWidget);
-    // The pulse hero leads the overview, so the comparison and scorer blocks
-    // sit below the fold of the lazily-built list.
+    // The comparison and scorer blocks sit below the fold of the lazy list.
     await _scrollTo(tester, find.text('TEAM CONTROL'));
     expect(find.text('TEAM CONTROL'), findsOneWidget);
+    final homeIdentity = paletteForTeam(
+      match.home,
+      sport: match.sport,
+      competition: match.leagueId,
+    ).secondaryTextColor;
+    final awayIdentity = paletteForTeam(
+      match.away,
+      sport: match.sport,
+      competition: match.leagueId,
+    ).secondaryTextColor;
+    expect(
+      tester
+          .widgetList<Text>(find.text(match.home.shortName.toUpperCase()))
+          .any((text) => text.style?.color == homeIdentity),
+      isTrue,
+    );
+    expect(
+      tester
+          .widgetList<Text>(find.text(match.away.shortName.toUpperCase()))
+          .any((text) => text.style?.color == awayIdentity),
+      isTrue,
+    );
     await _scrollTo(tester, find.text('GOAL IMPACT'));
     expect(find.text('GOAL IMPACT'), findsOneWidget);
 
@@ -48,12 +73,17 @@ void main() {
       findsOneWidget,
     );
     expect(find.textContaining('98/SAMPLES'), findsOneWidget);
+    // The shot map sits between the graph and the goal markers, so the
+    // scorer chips now start below the fold of the lazy list.
+    expect(find.text('SHOT MAP'), findsOneWidget);
+    await _scrollTo(tester, find.textContaining('João Pedro'));
     expect(find.textContaining('João Pedro'), findsOneWidget);
 
     _selectSection(tester, 'EVENTS');
     await _pumpAnimations(tester);
     expect(find.byKey(const ValueKey('football-stats-events')), findsOneWidget);
     expect(find.text('023 EVENTS'), findsOneWidget);
+    expect(find.byType(StatsRowShell), findsNothing);
 
     _selectSection(tester, 'LINEUPS');
     await _pumpAnimations(tester);
@@ -68,6 +98,7 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('104 ENTRIES'), findsOneWidget);
+    expect(find.byType(StatsRowShell), findsNothing);
     expect(
       find.text('Lineups are announced and players are warming up.'),
       findsOneWidget,
@@ -85,6 +116,7 @@ void main() {
       teamStats: const [],
       timelineEvents: const [],
       commentary: const [],
+      clearFootballDetails: true,
     );
 
     await tester.pumpWidget(
@@ -95,6 +127,23 @@ void main() {
     );
     await _pumpAnimations(tester);
     expect(find.text('MATCH INTEL'), findsOneWidget);
+    final overview = tester.widget<ListView>(
+      find.byKey(const ValueKey('football-stats-overview')),
+    );
+    final overviewChildren =
+        (overview.childrenDelegate as SliverChildListDelegate).children;
+    expect(
+      overviewChildren.indexWhere(
+        (child) => child.key == const ValueKey('football-match-intel-heading'),
+      ),
+      lessThan(
+        overviewChildren.indexWhere(
+          (child) =>
+              child.key ==
+              const ValueKey('football-scoreboard-channel-heading'),
+        ),
+      ),
+    );
 
     _selectSection(tester, 'EVENTS');
     await _pumpAnimations(tester);
@@ -103,6 +152,118 @@ void main() {
     _selectSection(tester, 'COMMENTARY');
     await _pumpAnimations(tester);
     expect(find.text('MATCH COMMS SILENT'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('tapping a player on the pitch opens their match dossier', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final match = (await tester.runAsync(
+      () => const FootballMatchPackageService().loadBundled(),
+    ))!;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.darkTheme,
+        home: Scaffold(body: FootballMatchStatsView(match: match)),
+      ),
+    );
+    await _pumpAnimations(tester);
+    _selectSection(tester, 'LINEUPS');
+    await _pumpAnimations(tester);
+
+    // Bernd Leno, Fulham's keeper.
+    await tester.tap(find.byKey(const ValueKey('pitch-player-153765')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(FootballPlayerMatchSheet), findsOneWidget);
+    expect(find.text('BERND LENO'), findsOneWidget);
+    expect(find.text('STARTER'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('football-player-heatmap')),
+      findsOneWidget,
+    );
+    // A keeper's sheet carries the goalkeeping board.
+    expect(find.text('GOALKEEPING'), findsOneWidget);
+    expect(find.text('SAVES'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the dossier pages across the squad', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final match = (await tester.runAsync(
+      () => const FootballMatchPackageService().loadBundled(),
+    ))!;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.darkTheme,
+        home: Scaffold(body: FootballMatchStatsView(match: match)),
+      ),
+    );
+    await _pumpAnimations(tester);
+    _selectSection(tester, 'LINEUPS');
+    await _pumpAnimations(tester);
+
+    await tester.tap(find.byKey(const ValueKey('pitch-player-153765')));
+    await tester.pumpAndSettle();
+    expect(find.text('BERND LENO'), findsOneWidget);
+    expect(find.textContaining('1 OF 20'), findsOneWidget);
+
+    await tester.fling(
+      find.byType(PageView),
+      const Offset(-400, 0),
+      1000,
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('BERND LENO'), findsNothing);
+    expect(find.textContaining('2 OF 20'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('an unused substitute gets an honest card, not an empty pitch', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final match = (await tester.runAsync(
+      () => const FootballMatchPackageService().loadBundled(),
+    ))!;
+    final unused = match.homeLineup!.substitutes.firstWhere(
+      (player) => !player.matchStats!.played,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.darkTheme,
+        home: Scaffold(body: FootballMatchStatsView(match: match)),
+      ),
+    );
+    await _pumpAnimations(tester);
+    _selectSection(tester, 'LINEUPS');
+    await _pumpAnimations(tester);
+
+    await _scrollTo(tester, find.byKey(ValueKey('bench-player-${unused.id}')));
+    await tester.tap(find.byKey(ValueKey('bench-player-${unused.id}')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(FootballPlayerMatchSheet), findsOneWidget);
+    expect(find.text('UNUSED'), findsOneWidget);
+    expect(find.text('UNUSED SUBSTITUTE'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('football-player-heatmap')),
+      findsNothing,
+    );
     expect(tester.takeException(), isNull);
   });
 }

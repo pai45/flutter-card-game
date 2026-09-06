@@ -97,6 +97,7 @@ class MatchPlayer {
     this.shortName,
     this.formationPlace,
     this.source,
+    this.matchStats,
   });
   final String id;
   final String name;
@@ -108,6 +109,11 @@ class MatchPlayer {
   final String? shortName;
   final String? formationPlace;
   final String? source;
+
+  /// What this player actually did in this match. Null when the feed carries no
+  /// per-player sheet — every non-football sport, and football fixtures whose
+  /// summary has not been parsed.
+  final FootballPlayerMatchStats? matchStats;
 }
 
 class MatchLineup {
@@ -348,6 +354,7 @@ class SportMatch {
     bool clearResultLine = false,
     bool clearLiveLastUpdated = false,
     bool clearLiveStatusNote = false,
+    bool clearFootballDetails = false,
     bool clearBasketballDetails = false,
     bool clearCricketDetails = false,
   }) => SportMatch(
@@ -377,7 +384,9 @@ class SportMatch {
     tennisScorecard: tennisScorecard ?? this.tennisScorecard,
     commentary: commentary ?? this.commentary,
     teamStats: teamStats ?? this.teamStats,
-    footballDetails: footballDetails ?? this.footballDetails,
+    footballDetails: clearFootballDetails
+        ? null
+        : footballDetails ?? this.footballDetails,
     footballMomentum: footballMomentum ?? this.footballMomentum,
     basketballDetails: clearBasketballDetails
         ? null

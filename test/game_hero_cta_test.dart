@@ -1,5 +1,6 @@
 import 'package:card_game/blocs/game/game_bloc.dart';
 import 'package:card_game/blocs/prediction/prediction_cubit.dart';
+import 'package:card_game/config/theme.dart';
 import 'package:card_game/models/sport_match.dart';
 import 'package:card_game/screens/predictions/prediction_home_screen.dart';
 import 'package:card_game/services/prediction_repository.dart';
@@ -117,6 +118,14 @@ void main() {
     expect(find.text('PENALTY'), findsOneWidget);
     expect(find.text('SHOOTOUT'), findsOneWidget);
     expect(find.text('SUDDEN-DEATH SPOT KICKS'), findsOneWidget);
+    expect(
+      tester.widget<Text>(find.text('SUDDEN-DEATH SPOT KICKS')).style?.color,
+      Cyber.cyan,
+    );
+    expect(
+      tester.widget<Text>(find.text('FEATURED // SUDDEN DEATH')).style?.color,
+      Cyber.cyan,
+    );
     expect(find.text('TAKE THE SHOT'), findsNothing);
     await tester.tap(find.byKey(const ValueKey('penalty-shootout-hero-card')));
     expect(penaltyShootoutOpens, 1);
@@ -129,6 +138,14 @@ void main() {
     expect(find.text('5V5 FOOTBALL'), findsOneWidget);
     expect(find.text('CHESS'), findsOneWidget);
     expect(find.text('TACTICAL SQUAD DUEL'), findsOneWidget);
+    expect(
+      tester.widget<Text>(find.text('TACTICAL SQUAD DUEL')).style?.color,
+      Cyber.cyan,
+    );
+    expect(
+      tester.widget<Text>(find.text('FEATURED // 5V5')).style?.color,
+      Cyber.cyan,
+    );
     expect(find.text('MAKE YOUR MOVE'), findsNothing);
     await tester.drag(find.byType(Scrollable).last, const Offset(0, -140));
     await tester.pumpAndSettle();

@@ -110,7 +110,6 @@ class _ShootoutResultPhaseState extends State<ShootoutResultPhase>
         return GameScaffold(
           title: 'Shootout Over',
           showTitle: true,
-          grain: true,
           compactHeader: true,
           rightSlot: MatchHeaderScore(
             label: 'PEN ${s.playerScore}-${s.opponentScore}',

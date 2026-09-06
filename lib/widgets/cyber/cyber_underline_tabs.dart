@@ -25,9 +25,11 @@ class CyberUnderlineTabs extends StatelessWidget {
     this.accent = Cyber.cyan,
     this.height = 50,
     this.icons,
+    this.iconColors,
     this.minTabWidth,
     super.key,
-  }) : assert(icons == null || icons.length == labels.length);
+  }) : assert(icons == null || icons.length == labels.length),
+       assert(iconColors == null || iconColors.length == labels.length);
 
   final List<String> labels;
   final int activeIndex;
@@ -35,6 +37,11 @@ class CyberUnderlineTabs extends StatelessWidget {
   final Color accent;
   final double height;
   final List<IconData>? icons;
+
+  /// Optional identity color for each icon. Inactive icons keep a subdued
+  /// version of their color while the active icon renders at full strength.
+  /// Labels and the live underline continue to use [accent].
+  final List<Color>? iconColors;
 
   /// When set, each tab is at least this wide. Overflow scrolls horizontally.
   final double? minTabWidth;
@@ -72,6 +79,7 @@ class CyberUnderlineTabs extends StatelessWidget {
                         child: _UnderlineTab(
                           label: labels[i],
                           icon: icons?[i],
+                          iconColor: iconColors?[i],
                           active: activeIndex == i,
                           accent: accent,
                           onTap: () {
@@ -127,6 +135,7 @@ class _UnderlineTab extends StatefulWidget {
   const _UnderlineTab({
     required this.label,
     required this.icon,
+    required this.iconColor,
     required this.active,
     required this.accent,
     required this.onTap,
@@ -134,6 +143,7 @@ class _UnderlineTab extends StatefulWidget {
 
   final String label;
   final IconData? icon;
+  final Color? iconColor;
   final bool active;
   final Color accent;
   final VoidCallback onTap;
@@ -147,7 +157,10 @@ class _UnderlineTabState extends State<_UnderlineTab> {
 
   @override
   Widget build(BuildContext context) {
-    final color = widget.active ? widget.accent : Cyber.muted;
+    final labelColor = widget.active ? widget.accent : Cyber.muted;
+    final iconColor = widget.iconColor == null
+        ? labelColor
+        : widget.iconColor!.withValues(alpha: widget.active ? 1 : 0.58);
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTapDown: (_) => setState(() => _pressed = true),
@@ -177,7 +190,7 @@ class _UnderlineTabState extends State<_UnderlineTab> {
                           widget.label,
                           maxLines: 1,
                           style: TextStyle(
-                            color: color,
+                            color: labelColor,
                             fontFamily: Cyber.displayFont,
                             fontSize: 10,
                             fontWeight: FontWeight.w900,
@@ -187,7 +200,7 @@ class _UnderlineTabState extends State<_UnderlineTab> {
                       )
                     : Tooltip(
                         message: widget.label,
-                        child: Icon(widget.icon, color: color, size: 21),
+                        child: Icon(widget.icon, color: iconColor, size: 21),
                       ),
               ),
             ),

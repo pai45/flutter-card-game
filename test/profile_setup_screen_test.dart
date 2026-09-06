@@ -1,11 +1,25 @@
+import 'package:card_game/config/theme.dart';
 import 'package:card_game/models/sport_match.dart';
 import 'package:card_game/screens/onboarding/profile_setup_screen.dart';
 import 'package:card_game/utils/sound_effects.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   setUp(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('xyz.luan/audioplayers.global'),
+          (_) async => null,
+        );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('xyz.luan/audioplayers'),
+          (_) async => null,
+        );
     AudioController.instance.muted.value = true;
   });
 
@@ -28,6 +42,26 @@ void main() {
     );
     expect(find.byKey(const ValueKey('onboarding_team_grid')), findsOneWidget);
     expect(_sportPill(Icons.sports_soccer), findsOneWidget);
+    expect(
+      tester.widget<Icon>(_sportPill(Icons.sports_soccer)).color,
+      Cyber.cyan,
+    );
+    expect(
+      tester.widget<Icon>(_sportPill(Icons.sports_cricket)).color,
+      AppTheme.whiteColor.withValues(alpha: 0.62),
+    );
+    expect(
+      tester.widget<Icon>(_sportPill(Icons.sports_basketball)).color,
+      Cyber.gold.withValues(alpha: 0.62),
+    );
+    expect(
+      tester.widget<Icon>(_sportPill(Icons.sports_tennis)).color,
+      Cyber.lime.withValues(alpha: 0.62),
+    );
+    expect(
+      tester.widget<Icon>(_sportPill(Icons.sports_motorsports)).color,
+      Cyber.f1Red.withValues(alpha: 0.62),
+    );
     expect(find.text('EPL'), findsOneWidget);
     expect(find.text('LIVERPOOL'), findsOneWidget);
 
@@ -67,6 +101,25 @@ void main() {
     expect(result!.primarySport, Sport.motorsport);
     expect(result!.followedLeagueIds, contains('formula1'));
     expect(result!.favoriteTeams['formula1'], 'fer');
+  });
+
+  testWidgets('selected onboarding sport keeps its canonical full color', (
+    tester,
+  ) async {
+    await _pumpProfileSetup(tester, (_) {});
+    await _openClubsStep(tester);
+
+    await tester.tap(_sportPill(Icons.sports_cricket));
+    await tester.pump(const Duration(milliseconds: 220));
+
+    expect(
+      tester.widget<Icon>(_sportPill(Icons.sports_cricket)).color,
+      AppTheme.whiteColor,
+    );
+    expect(
+      tester.widget<Icon>(_sportPill(Icons.sports_soccer)).color,
+      Cyber.cyan.withValues(alpha: 0.62),
+    );
   });
 }
 

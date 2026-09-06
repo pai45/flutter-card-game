@@ -3,6 +3,7 @@ import 'package:card_game/blocs/game/game_bloc.dart';
 import 'package:card_game/blocs/picks/picks_cubit.dart';
 import 'package:card_game/blocs/prediction/prediction_cubit.dart';
 import 'package:card_game/blocs/prediction/prediction_state.dart';
+import 'package:card_game/config/theme.dart';
 import 'package:card_game/models/league.dart';
 import 'package:card_game/models/prediction.dart';
 import 'package:card_game/models/sport_match.dart';
@@ -189,6 +190,155 @@ void main() {
     expect(find.text('VOL 0 OZ'), findsOneWidget);
   });
 
+  testWidgets(
+    'football and basketball match cards suppress redundant result summaries',
+    (tester) async {
+      const footballResult = 'Chelsea won 2-3';
+      const basketballResult = 'Knicks won 108-102';
+      const cricketResult = 'India won by 5 wickets';
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Column(
+              children: [
+                MatchPredictionCard(
+                  match: _franceParaguayFinished.copyWith(
+                    resultLine: footballResult,
+                  ),
+                  prediction: null,
+                ),
+                MatchPredictionCard(
+                  match: _franceParaguayFinished.copyWith(
+                    sport: Sport.basketball,
+                    resultLine: basketballResult,
+                  ),
+                  prediction: null,
+                ),
+                MatchPredictionCard(
+                  match: _franceParaguayFinished.copyWith(
+                    sport: Sport.cricket,
+                    resultLine: cricketResult,
+                  ),
+                  prediction: null,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text(footballResult), findsNothing);
+      expect(find.text(basketballResult), findsNothing);
+      expect(find.text(cricketResult), findsOneWidget);
+    },
+  );
+
+  testWidgets('completed football and basketball cards emphasize the winner', (
+    tester,
+  ) async {
+    Future<void> expectResultTone({
+      required Sport sport,
+      required String homeScore,
+      required String awayScore,
+      required Color homeColor,
+      required Color awayColor,
+    }) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: MatchPredictionCard(
+              match: _franceParaguayFinished.copyWith(
+                sport: sport,
+                homeScore: homeScore,
+                awayScore: awayScore,
+              ),
+              prediction: null,
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.widget<Text>(find.text('France')).style?.color, homeColor);
+      expect(
+        tester.widget<Text>(find.text('Paraguay')).style?.color,
+        awayColor,
+      );
+      final score = tester
+          .widgetList<RichText>(find.byType(RichText))
+          .singleWhere(
+            (widget) =>
+                widget.text.toPlainText() == '$homeScore  -  $awayScore',
+          );
+      final scoreSpans = <TextSpan>[];
+      void collectScoreSpans(TextSpan span) {
+        if (span.text != null) scoreSpans.add(span);
+        for (final child in span.children ?? const <InlineSpan>[]) {
+          if (child is TextSpan) collectScoreSpans(child);
+        }
+      }
+
+      collectScoreSpans(score.text as TextSpan);
+      expect(
+        scoreSpans.singleWhere((span) => span.text == homeScore).style?.color,
+        homeColor,
+      );
+      expect(
+        scoreSpans.singleWhere((span) => span.text == awayScore).style?.color,
+        awayColor,
+      );
+    }
+
+    await expectResultTone(
+      sport: Sport.football,
+      homeScore: '2',
+      awayScore: '3',
+      homeColor: Cyber.muted,
+      awayColor: Colors.white,
+    );
+    await expectResultTone(
+      sport: Sport.basketball,
+      homeScore: '108',
+      awayScore: '102',
+      homeColor: Colors.white,
+      awayColor: Cyber.muted,
+    );
+  });
+
+  testWidgets(
+    'completed cricket cards pin scores to crests and retain innings context',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: MatchPredictionCard(
+              match: _franceParaguayFinished.copyWith(
+                sport: Sport.cricket,
+                homeScore: '161/5 (18/20 ov, target 156)',
+                awayScore: '155/8 (20/20 ov)',
+              ),
+              prediction: null,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('161/5'), findsOneWidget);
+      expect(find.text('(18/20 ov, target 156)'), findsOneWidget);
+      expect(find.text('155/8'), findsOneWidget);
+      expect(find.text('(20/20 ov)'), findsOneWidget);
+      expect(find.text('161/5 (18/20 ov, target 156)'), findsNothing);
+      expect(
+        tester.widget<Text>(find.text('France')).style?.color,
+        Colors.white,
+      );
+      expect(
+        tester.widget<Text>(find.text('Paraguay')).style?.color,
+        Cyber.muted,
+      );
+    },
+  );
+
   testWidgets('picks tab only shows markets for the selected match', (
     tester,
   ) async {
@@ -344,18 +494,16 @@ void main() {
     expect(find.byType(PickMarketCard), findsAtLeastNWidgets(2));
   });
 
-  testWidgets('scoreboard renders upcoming live and finished states', (
+  testWidgets('football scoreboards route every match state to the stats HUD', (
     tester,
   ) async {
     final scoreboardMatch = _match.copyWith(id: 'fifa_scoreboard_test');
 
     await _pumpScoreboard(tester, scoreboardMatch);
-    expect(find.text('PRE-MATCH'), findsOneWidget);
     expect(
-      find.text('Scoreboard opens when the match starts.'),
+      find.byKey(const ValueKey('football-stats-overview')),
       findsOneWidget,
     );
-    expect(find.text('Unavailable'), findsOneWidget);
 
     await _pumpScoreboard(
       tester,
@@ -367,9 +515,10 @@ void main() {
         liveLastUpdated: DateTime(2026, 7, 5, 3, 15),
       ),
     );
-    expect(find.text('LIVE NOW'), findsOneWidget);
-    expect(find.text('Live clock: 67 minutes.'), findsOneWidget);
-    expect(find.text('2026-07-05 03:15'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('football-stats-overview')),
+      findsOneWidget,
+    );
 
     await _pumpScoreboard(
       tester,
@@ -380,13 +529,10 @@ void main() {
         resultLine: 'France won 2-1',
       ),
     );
-    await tester.scrollUntilVisible(
-      find.text('FULL TIME'),
-      120,
-      scrollable: find.byType(Scrollable).last,
+    expect(
+      find.byKey(const ValueKey('football-stats-overview')),
+      findsOneWidget,
     );
-    expect(find.text('FULL TIME'), findsOneWidget);
-    expect(find.text('France won 2-1'), findsWidgets);
 
     await _pumpScoreboard(
       tester,
@@ -394,12 +540,11 @@ void main() {
         liveStatusNote: 'Live score temporarily unavailable.',
       ),
     );
-    await tester.scrollUntilVisible(
-      find.text('Live score temporarily unavailable.'),
-      120,
-      scrollable: find.byType(Scrollable).last,
+    expect(
+      find.byKey(const ValueKey('football-stats-overview')),
+      findsOneWidget,
     );
-    expect(find.text('Live score temporarily unavailable.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }
 

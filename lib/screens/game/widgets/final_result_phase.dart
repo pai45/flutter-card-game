@@ -165,7 +165,6 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
     return GameScaffold(
       title: 'Full Time',
       showTitle: true,
-      grain: true,
       compactHeader: true,
       rightSlot: MatchHeaderScore(
         playerScore: state.playerScore,

@@ -6,6 +6,31 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  test('Fulham Chelsea stays on today across cached daily rollover', () async {
+    var now = DateTime(2032, 2, 28, 23, 59);
+    final repository = MockPredictionRepository(now: () => now);
+    final source = await const FootballMatchPackageService().loadBundled();
+    for (final day in [28, 29]) {
+      now = DateTime(2032, 2, day, 23, 59);
+      final fixtures = await repository.fixtures(sport: Sport.football);
+      final listed = fixtures.singleWhere(
+        (match) => match.id == FootballMatchPackageService.bundledMatchId,
+      );
+      final detail = await repository.fixtureById(listed.id);
+      for (final match in [listed, detail!]) {
+        expect(
+          match.kickoff,
+          DateTime(2032, 2, day, source.kickoff.hour, source.kickoff.minute),
+        );
+        expect(match.status, MatchStatus.finished);
+        expect(match.homeScore, source.homeScore);
+        expect(match.awayScore, source.awayScore);
+        expect(match.commentary, hasLength(104));
+        expect(match.footballMomentum?.series, hasLength(98));
+      }
+    }
+  });
+
   test(
     'bundled football package preserves every supplied data section',
     () async {

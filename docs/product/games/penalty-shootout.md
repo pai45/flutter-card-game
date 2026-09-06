@@ -209,6 +209,10 @@ Match History identifies standalone shootouts separately from Pitch Duel matches
 
 ## Gratification and Feedback
 
+The Games and Trending hero cards use Football's canonical cyan identity for
+their frame, badge, subtitle, goal net, target, and shot trail. This card-level
+styling does not replace success green or the player/CPU colors inside gameplay.
+
 Opponent reveal, the taker's run-up and strike, the keeper's dive and recovery,
 both characters' goal/save reactions, save/goal impact, score ticks, early-win
 logic, sudden-death pressure, final verdict, reward count-up, and streak

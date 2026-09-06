@@ -14,6 +14,7 @@ import '../../widgets/avatar_frame_ring.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
 import '../../widgets/team_logo.dart' show OctagonClipper;
+import '../friends/widgets/friend_request_sent_animation.dart';
 import 'achievements_screen.dart';
 import 'widgets/achievement_grid.dart';
 import 'widgets/level_progress.dart';
@@ -65,13 +66,15 @@ class RivalProfileScreen extends StatelessWidget {
     if (!context.mounted) return;
     playSound(SoundEffect.uiTap);
     HapticFeedback.selectionClick();
+    if (nowFriend) {
+      await showFriendRequestSentAnimation(context, friendName: name);
+      return;
+    }
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text(
-            nowFriend ? '$name added to friends' : '$name removed from friends',
-          ),
+          content: Text('$name removed from friends'),
           duration: const Duration(milliseconds: 1400),
         ),
       );
@@ -299,7 +302,7 @@ class _ActionRow extends StatelessWidget {
         final isFriend = state.contains(name);
         return HudPagerButton(
           label: isFriend ? 'FRIEND ✓' : 'ADD FRIEND',
-          leadingIcon: isFriend ? Icons.check : Icons.person_add_alt_1,
+          leadingIcon: isFriend ? null : Icons.person_add_alt_1,
           focal: false,
           enabled: true,
           onTap: onToggleFriend,

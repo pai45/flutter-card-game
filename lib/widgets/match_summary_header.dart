@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/theme.dart';
+import '../data/team_palettes.dart';
 import '../models/sport_match.dart';
 import 'team_logo.dart';
 
@@ -35,6 +36,16 @@ class _TeamMatchSummaryHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final homeColor = paletteForTeam(
+      match.home,
+      sport: match.sport,
+      competition: match.leagueId,
+    ).secondaryTextColor;
+    final awayColor = paletteForTeam(
+      match.away,
+      sport: match.sport,
+      competition: match.leagueId,
+    ).secondaryTextColor;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
       child: CustomPaint(
@@ -61,6 +72,7 @@ class _TeamMatchSummaryHeader extends StatelessWidget {
                     height: 44,
                     cutBottomRight: true,
                     sport: match.sport,
+                    competition: match.leagueId,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -116,22 +128,16 @@ class _TeamMatchSummaryHeader extends StatelessWidget {
                     height: 44,
                     cutBottomRight: false,
                     sport: match.sport,
+                    competition: match.leagueId,
                   ),
                 ],
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(
-                    child: Container(height: 3, color: match.home.color),
-                  ),
+                  Expanded(child: Container(height: 3, color: homeColor)),
                   const SizedBox(width: 3),
-                  Expanded(
-                    child: Container(
-                      height: 3,
-                      color: match.away.color.withValues(alpha: 0.92),
-                    ),
-                  ),
+                  Expanded(child: Container(height: 3, color: awayColor)),
                 ],
               ),
             ],
@@ -168,7 +174,7 @@ class _TeamDetails extends StatelessWidget {
           textAlign: alignEnd ? TextAlign.end : TextAlign.start,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: Cyber.body(14, weight: FontWeight.w800),
+          style: Cyber.body(14, color: Colors.white, weight: FontWeight.w800),
         ),
         if (sport == Sport.cricket && score != null && score!.isNotEmpty) ...[
           const SizedBox(height: 2),

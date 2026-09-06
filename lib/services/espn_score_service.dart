@@ -8,6 +8,7 @@ import '../data/team_colors.dart';
 import '../models/basketball_scorecard.dart';
 import '../models/tennis_scorecard.dart';
 import '../utils/tennis_country_map.dart';
+import 'espn_soccer_lineup_parser.dart';
 
 class EspnScoreService {
   /// Leagues discovered from live ESPN payloads whose real competition isn't
@@ -91,7 +92,8 @@ class EspnScoreService {
       }
       if (sport == Sport.football) {
         // usa.1 = MLS; mapped to curated league id `mls` in _fetchFootballDay.
-        for (final league in ['eng.1', 'uefa.euro', 'usa.1']) {
+        // esp.1 = LaLiga, which the league hub ships full season stats for.
+        for (final league in ['eng.1', 'esp.1', 'uefa.euro', 'usa.1']) {
           tasks.add(_fetchFootballDay(league, dateStr));
         }
       }
@@ -878,7 +880,9 @@ class EspnScoreService {
 
     try {
       final summaryUrl = fixture.sport == Sport.football
-          ? 'https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary?event=${event['id']}'
+          ? 'https://site.api.espn.com/apis/site/v2/sports/soccer/'
+                '${soccerSummarySlug(fixture.leagueId)}'
+                '/summary?event=${event['id']}'
           : fixture.sport == Sport.basketball
           ? 'https://site.api.espn.com/apis/site/v2/sports/basketball/${fixture.leagueId}/summary?event=${event['id']}'
           : fixture.sport == Sport.tennis
@@ -900,8 +904,8 @@ class EspnScoreService {
           final homeRoster = r1IsHome ? r1 : r2;
           final awayRoster = r1IsHome ? r2 : r1;
 
-          homeLineupData = _parseLineup(homeRoster);
-          awayLineupData = _parseLineup(awayRoster);
+          homeLineupData = _parseLineup(homeRoster, isHomeTeam: true);
+          awayLineupData = _parseLineup(awayRoster, isHomeTeam: false);
         }
 
         if (fixture.sport == Sport.cricket) {
@@ -1384,49 +1388,13 @@ class EspnScoreService {
     return null;
   }
 
-  MatchLineup _parseLineup(dynamic rosterData) {
-    final formation = rosterData['formation']?.toString() ?? '4-3-3';
-    final rosterList = rosterData['roster'] as List? ?? [];
-
-    final starters = rosterList.where((p) => p['starter'] == true).toList();
-    final bench = rosterList.where((p) => p['starter'] == false).toList();
-
-    List<MatchPlayer> startingXI = [];
-    for (var p in starters) {
-      final athlete = p['athlete'];
-      if (athlete == null) continue;
-      startingXI.add(
-        MatchPlayer(
-          id: athlete['id']?.toString() ?? '',
-          name: _getAthleteName(athlete),
-          number: int.tryParse(p['jersey']?.toString() ?? '') ?? 0,
-          role: p['position']?['name']?.toString(),
-          rating: 6.0,
-        ),
+  /// Football lineups, including the per-player match stat sheet the summary
+  /// feed already carries. See [parseSoccerRosterLineup].
+  MatchLineup _parseLineup(dynamic rosterData, {required bool isHomeTeam}) =>
+      parseSoccerRosterLineup(
+        Map<String, dynamic>.from(rosterData as Map),
+        isHomeTeam: isHomeTeam,
       );
-    }
-
-    List<MatchPlayer> substitutes = [];
-    for (var p in bench) {
-      final athlete = p['athlete'];
-      if (athlete == null) continue;
-      substitutes.add(
-        MatchPlayer(
-          id: athlete['id']?.toString() ?? '',
-          name: _getAthleteName(athlete),
-          number: int.tryParse(p['jersey']?.toString() ?? '') ?? 0,
-          role: p['position']?['name']?.toString(),
-          rating: 6.0,
-        ),
-      );
-    }
-
-    return MatchLineup(
-      formation: formation,
-      startingXI: startingXI,
-      substitutes: substitutes,
-    );
-  }
 
   MatchLineup _parseBasketballLineup(dynamic playersData) {
     final statsList = playersData['statistics'] as List?;

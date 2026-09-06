@@ -383,17 +383,23 @@ class TeamLegendMark extends StatelessWidget {
   const TeamLegendMark({
     required this.team,
     required this.sport,
+    this.competition,
     this.alignEnd = false,
     super.key,
   });
 
   final SportTeam team;
   final Sport sport;
+  final String? competition;
   final bool alignEnd;
 
   @override
   Widget build(BuildContext context) {
-    final color = paletteForTeam(team, sport: sport).primary;
+    final color = paletteForTeam(
+      team,
+      sport: sport,
+      competition: competition,
+    ).secondaryTextColor;
     final swatch = Container(width: 4, height: 30, color: color);
     final copy = Column(
       crossAxisAlignment: alignEnd
@@ -436,13 +442,18 @@ class TeamLegendRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: TeamLegendMark(team: match.home, sport: match.sport),
+          child: TeamLegendMark(
+            team: match.home,
+            sport: match.sport,
+            competition: match.leagueId,
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: TeamLegendMark(
             team: match.away,
             sport: match.sport,
+            competition: match.leagueId,
             alignEnd: true,
           ),
         ),

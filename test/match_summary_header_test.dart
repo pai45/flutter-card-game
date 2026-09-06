@@ -40,6 +40,14 @@ void main() {
     expect(find.text('198-8 (20 ov)'), findsOneWidget);
     expect(find.text('vs'), findsOneWidget);
     expect(find.text('221-4 (20 ov) - 198-8 (20 ov)'), findsNothing);
+    expect(
+      tester.widget<Text>(find.text('Home United')).style?.color,
+      Colors.white,
+    );
+    expect(
+      tester.widget<Text>(find.text('Away City')).style?.color,
+      Colors.white,
+    );
   });
 
   testWidgets('F1 header shows weekend status and Grand Prix name', (

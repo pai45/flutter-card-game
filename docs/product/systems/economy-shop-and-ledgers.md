@@ -34,6 +34,27 @@ prediction settlement is XP-only, but the paid Scoreline prediction-contest
 path is an explicit Oz Coin exception. Picks persist stakes/positions and can
 settle payouts. The first-run welcome reward is 1,000 coins and is idempotent.
 
+### Shop search ? BUILT
+
+The Shop sport-strip search icon opens a dedicated search route across all sports
+and all seven categories. Results match player full/short names, available
+team/country names and codes, item names, sport, role/position, and tier.
+Search requires two characters, ignores case and repeated whitespace, and
+matches every query word against the item's metadata. Tennis country codes
+also match their full country names. Missing player affiliations are not inferred.
+
+Results group by category and sport, with exact-name and prefix matches first
+inside each group. Search covers the complete card catalogue, including cards
+beyond the normal browsing tab's 48-card display limit. Shared coin tiers and
+standard packs appear once. Standard packs retain their existing shared purchase
+behavior across non-racing sports; racing packs remain separate.
+
+Result tiles reuse Shop prices, ownership/equipped states, confirmations,
+purchase events, insufficient-funds feedback, acquisition reveals, and pack
+opening. Ownership updates without clearing the query. Clear resets the input;
+Back restores the Shop's previous selection. Search has no persisted history,
+remote catalogue, or fuzzy typo matching.
+
 ## Rewards and Progression
 
 XP routes to a mode track and contributes to aggregate level. Coins do not set
@@ -83,3 +104,5 @@ protect one-time rewards.
 - [`test/onboarding_reward_storage_test.dart`](../../../test/onboarding_reward_storage_test.dart)
 - [`test/oz_coin_tracker_widget_test.dart`](../../../test/oz_coin_tracker_widget_test.dart)
 - [`test/xp_history_widget_test.dart`](../../../test/xp_history_widget_test.dart)
+
+- Search verification: `test/shop_user_search_test.dart`.

@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:card_game/models/sport_match.dart';
 import 'package:card_game/services/basketball_match_package_service.dart';
 import 'package:card_game/services/cricket_match_package_service.dart';
 import 'package:card_game/services/prediction_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -64,6 +67,36 @@ void main() {
     expect(details.inningsProgress[1].points.last.runs, 161);
     expect(details.inningsProgress[1].points.last.wickets, 5);
     expect(details.inningsProgress[1].points.last.over, 18);
+    expect(details.inningsRateProgress, hasLength(2));
+    final firstRate = details.inningsRateProgress[0];
+    final secondRate = details.inningsRateProgress[1];
+    expect(firstRate.points, hasLength(120));
+    expect(secondRate.points, hasLength(108));
+    expect(firstRate.points.last.runs, 155);
+    expect(secondRate.points.last.runs, 161);
+    expect(
+      firstRate.points.where((point) => point.boundary == 4),
+      hasLength(15),
+    );
+    expect(
+      firstRate.points.where((point) => point.boundary == 6),
+      hasLength(3),
+    );
+    expect(
+      secondRate.points.where((point) => point.boundary == 4),
+      hasLength(18),
+    );
+    expect(
+      secondRate.points.where((point) => point.boundary == 6),
+      hasLength(7),
+    );
+    expect(firstRate.points[59].runRate, closeTo(6.3, 0.001));
+    expect(secondRate.points[59].runRate, closeTo(10, 0.001));
+    expect(
+      secondRate.points.first.requiredRunRate(target: 156),
+      closeTo(7.815, 0.001),
+    );
+    expect(secondRate.points.last.requiredRunRate(target: 156), 0);
     expect(details.officials, hasLength(6));
     expect(details.teams, hasLength(2));
     expect(details.teams[0].players, hasLength(12));
@@ -77,6 +110,28 @@ void main() {
       hasLength(6),
     );
   });
+
+  test(
+    'cricket decoder rejects boundary totals that drift from the innings',
+    () async {
+      final source = await rootBundle.loadString(
+        CricketMatchPackageService.assetPath,
+      );
+      final root = jsonDecode(source) as Map<String, dynamic>;
+      final timelines = root['inningsRateProgress'] as List<dynamic>;
+      final first = timelines.first as Map<String, dynamic>;
+      final points = first['points'] as List<dynamic>;
+      final boundary = points.cast<Map<String, dynamic>>().firstWhere(
+        (point) => point['boundary'] == 4,
+      );
+      boundary.remove('boundary');
+
+      expect(
+        () => const CricketMatchPackageService().decode(jsonEncode(root)),
+        throwsFormatException,
+      );
+    },
+  );
 
   test(
     'NBA and IPL prototypes are registered in the fixture catalog',

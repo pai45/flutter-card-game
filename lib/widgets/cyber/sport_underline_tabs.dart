@@ -12,21 +12,29 @@ class SportUnderlineTabs extends StatelessWidget {
     required this.activeIndex,
     required this.selectedSport,
     required this.onTap,
+    this.trailingAction,
     super.key,
   });
 
   final int activeIndex;
   final Sport selectedSport;
   final ValueChanged<int> onTap;
+  final Widget? trailingAction;
 
   @override
   Widget build(BuildContext context) {
-    return CyberUnderlineTabs(
+    final tabs = CyberUnderlineTabs(
       labels: sportTabLabels,
       icons: sportTabIcons,
+      iconColors: sportTabColors,
       activeIndex: activeIndex,
       accent: sportModuleFor(selectedSport).accent,
       onTap: onTap,
+    );
+    return CyberUnderlineTabsWithAction(
+      tabs: tabs,
+      accent: sportModuleFor(selectedSport).accent,
+      action: trailingAction,
     );
   }
 }
@@ -66,6 +74,12 @@ class SportHubTabs extends StatelessWidget {
     Icons.more_horiz_rounded,
   ];
 
+  static final _iconColors = <Color>[
+    Cyber.cyan,
+    for (final sport in _visibleSports) sportModuleFor(sport).accent,
+    Cyber.muted,
+  ];
+
   @override
   Widget build(BuildContext context) {
     final selectedSport = sportForHubIndex(activeIndex);
@@ -84,6 +98,7 @@ class SportHubTabs extends StatelessWidget {
     final tabs = CyberUnderlineTabs(
       labels: _labels,
       icons: _icons,
+      iconColors: _iconColors,
       activeIndex: visibleActiveIndex,
       accent: accent,
       onTap: (index) {
@@ -98,9 +113,32 @@ class SportHubTabs extends StatelessWidget {
         onTap(hubIndexForSport(_visibleSports[index - 1]));
       },
     );
-    final action = trailingAction;
-    if (action == null) return tabs;
+    return CyberUnderlineTabsWithAction(
+      tabs: tabs,
+      accent: accent,
+      action: trailingAction,
+    );
+  }
+}
 
+/// Keeps the optional catalogue action in the same bordered cell across sport
+/// strips. It deliberately stays calm: the selected tab retains the strip's
+/// only persistent glow.
+class CyberUnderlineTabsWithAction extends StatelessWidget {
+  const CyberUnderlineTabsWithAction({
+    required this.tabs,
+    required this.accent,
+    required this.action,
+    super.key,
+  });
+
+  final Widget tabs;
+  final Color accent;
+  final Widget? action;
+
+  @override
+  Widget build(BuildContext context) {
+    if (action == null) return tabs;
     return SizedBox(
       height: 50,
       child: Row(

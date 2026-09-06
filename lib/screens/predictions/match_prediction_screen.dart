@@ -12,6 +12,7 @@ import '../../blocs/picks/picks_cubit.dart';
 import '../../blocs/prediction/prediction_cubit.dart';
 import '../../blocs/prediction/prediction_state.dart';
 import '../../config/theme.dart';
+import '../../data/team_palettes.dart';
 import '../../models/oz_coin_ledger.dart';
 import '../../models/picks.dart';
 import '../../models/prediction.dart';
@@ -1775,6 +1776,16 @@ class _QuizHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final homeColor = paletteForTeam(
+      match.home,
+      sport: match.sport,
+      competition: match.leagueId,
+    ).secondaryTextColor;
+    final awayColor = paletteForTeam(
+      match.away,
+      sport: match.sport,
+      competition: match.leagueId,
+    ).secondaryTextColor;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 2, 20, 0),
       child: CustomPaint(
@@ -1799,6 +1810,7 @@ class _QuizHeader extends StatelessWidget {
                     team: match.home,
                     cutBottomRight: true,
                     sport: match.sport,
+                    competition: match.leagueId,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1806,7 +1818,11 @@ class _QuizHeader extends StatelessWidget {
                       match.home.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.body(15, weight: FontWeight.w700),
+                      style: Cyber.body(
+                        15,
+                        color: homeColor,
+                        weight: FontWeight.w700,
+                      ),
                     ),
                   ),
                   Text('-', style: Cyber.display(16, color: Cyber.muted)),
@@ -1816,7 +1832,11 @@ class _QuizHeader extends StatelessWidget {
                       textAlign: TextAlign.end,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Cyber.body(15, weight: FontWeight.w700),
+                      style: Cyber.body(
+                        15,
+                        color: awayColor,
+                        weight: FontWeight.w700,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1824,22 +1844,16 @@ class _QuizHeader extends StatelessWidget {
                     team: match.away,
                     cutBottomRight: false,
                     sport: match.sport,
+                    competition: match.leagueId,
                   ),
                 ],
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(
-                    child: Container(height: 4, color: match.home.color),
-                  ),
+                  Expanded(child: Container(height: 4, color: homeColor)),
                   const SizedBox(width: 2),
-                  Expanded(
-                    child: Container(
-                      height: 4,
-                      color: match.away.color.withValues(alpha: 0.9),
-                    ),
-                  ),
+                  Expanded(child: Container(height: 4, color: awayColor)),
                 ],
               ),
             ],
@@ -1855,10 +1869,12 @@ class _HeaderBadge extends StatelessWidget {
     required this.team,
     required this.cutBottomRight,
     this.sport,
+    this.competition,
   });
   final SportTeam team;
   final bool cutBottomRight;
   final Sport? sport;
+  final String? competition;
 
   @override
   Widget build(BuildContext context) {
@@ -1868,6 +1884,7 @@ class _HeaderBadge extends StatelessWidget {
       height: 44,
       cutBottomRight: cutBottomRight,
       sport: sport,
+      competition: competition,
     );
   }
 }
@@ -2439,6 +2456,16 @@ class _QuizSetHubCardState extends State<_QuizSetHubCard>
       widget.prediction,
       coins: coins,
     );
+    final homeColor = paletteForTeam(
+      widget.match.home,
+      sport: widget.match.sport,
+      competition: widget.match.leagueId,
+    ).secondaryTextColor;
+    final awayColor = paletteForTeam(
+      widget.match.away,
+      sport: widget.match.sport,
+      competition: widget.match.leagueId,
+    ).secondaryTextColor;
 
     // Only the reward-reveal moment breathes; everything else is still.
     if (v.pulse && !_pulse.isAnimating) {
@@ -2524,11 +2551,11 @@ class _QuizSetHubCardState extends State<_QuizSetHubCard>
                     end: Alignment.bottomRight,
                     colors: [
                       Color.alphaBlend(
-                        widget.match.home.color.withValues(alpha: 0.16),
+                        homeColor.withValues(alpha: 0.16),
                         _hubCardBase,
                       ),
                       Color.alphaBlend(
-                        widget.match.away.color.withValues(alpha: 0.16),
+                        awayColor.withValues(alpha: 0.16),
                         _hubCardBase,
                       ),
                     ],

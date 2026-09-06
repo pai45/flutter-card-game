@@ -1391,7 +1391,11 @@
         "João Pedro",
         "Cole Palmer"
       ],
-      "playId": "51402631"
+      "playId": "51402631",
+      "fieldPositionX": 87.2,
+      "fieldPositionY": 39.7,
+      "shotZone": "the centre of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 3,
@@ -1436,7 +1440,11 @@
         "Morgan Rogers",
         "Cole Palmer"
       ],
-      "playId": "51402774"
+      "playId": "51402774",
+      "fieldPositionX": 75.8,
+      "fieldPositionY": 48.7,
+      "shotZone": "outside the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 6,
@@ -1463,7 +1471,11 @@
         "Reece James",
         "Morgan Rogers"
       ],
-      "playId": "51402780"
+      "playId": "51402780",
+      "fieldPositionX": 82.0,
+      "fieldPositionY": 39.4,
+      "shotZone": "outside the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 8,
@@ -1521,7 +1533,11 @@
       "players": [
         "Levi Colwill"
       ],
-      "playId": "51402906"
+      "playId": "51402906",
+      "fieldPositionX": 88.8,
+      "fieldPositionY": 74.7,
+      "shotZone": "the left side of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 12,
@@ -1536,7 +1552,11 @@
         "Cole Palmer",
         "Morgan Rogers"
       ],
-      "playId": "51402961"
+      "playId": "51402961",
+      "fieldPositionX": 92.1,
+      "fieldPositionY": 27.9,
+      "shotZone": "the right side of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 13,
@@ -1619,7 +1639,11 @@
         "Cole Palmer",
         "Morgan Rogers"
       ],
-      "playId": "51403562"
+      "playId": "51403562",
+      "fieldPositionX": 85.6,
+      "fieldPositionY": 45.5,
+      "shotZone": "the centre of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 19,
@@ -1634,7 +1658,11 @@
         "Josh King",
         "Sander Berge"
       ],
-      "playId": "51403600"
+      "playId": "51403600",
+      "fieldPositionX": 76.2,
+      "fieldPositionY": 35.7,
+      "shotZone": "outside the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 20,
@@ -1661,7 +1689,11 @@
         "César Palacios",
         "Josh King"
       ],
-      "playId": "51403607"
+      "playId": "51403607",
+      "fieldPositionX": 81.1,
+      "fieldPositionY": 52.6,
+      "shotZone": "outside the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 22,
@@ -1675,7 +1707,11 @@
       "players": [
         "Sander Berge"
       ],
-      "playId": "51403711"
+      "playId": "51403711",
+      "fieldPositionX": 83.1,
+      "fieldPositionY": 34.0,
+      "shotZone": "the right side of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 23,
@@ -1690,7 +1726,11 @@
         "Josh King",
         "Timothy Castagne"
       ],
-      "playId": "51403758"
+      "playId": "51403758",
+      "fieldPositionX": 88.9,
+      "fieldPositionY": 29.0,
+      "shotZone": "the right side of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 24,
@@ -1719,7 +1759,11 @@
         "César Palacios",
         "Timothy Castagne"
       ],
-      "playId": "51403951"
+      "playId": "51403951",
+      "fieldPositionX": 92.1,
+      "fieldPositionY": 55.1,
+      "shotZone": "the centre of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 26,
@@ -1734,7 +1778,11 @@
         "Gonzalo García",
         "Oscar Bobb"
       ],
-      "playId": "51404012"
+      "playId": "51404012",
+      "fieldPositionX": 91.4,
+      "fieldPositionY": 48.6,
+      "shotZone": "the centre of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 27,
@@ -1821,7 +1869,11 @@
         "João Pedro",
         "Cole Palmer"
       ],
-      "playId": "51404122"
+      "playId": "51404122",
+      "fieldPositionX": 89.4,
+      "fieldPositionY": 49.3,
+      "shotZone": "the centre of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 33,
@@ -1836,7 +1888,11 @@
         "Morgan Rogers",
         "João Pedro"
       ],
-      "playId": "51404267"
+      "playId": "51404267",
+      "fieldPositionX": 80.3,
+      "fieldPositionY": 54.6,
+      "shotZone": "outside the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 34,
@@ -1850,7 +1906,11 @@
       "players": [
         "Reece James"
       ],
-      "playId": "51404268"
+      "playId": "51404268",
+      "fieldPositionX": 84.0,
+      "fieldPositionY": 35.8,
+      "shotZone": "the right side of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 35,
@@ -1877,7 +1937,11 @@
         "Jorrel Hato",
         "Reece James"
       ],
-      "playId": "51404381"
+      "playId": "51404381",
+      "fieldPositionX": 91.5,
+      "fieldPositionY": 61.7,
+      "shotZone": "the centre of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 37,
@@ -1892,7 +1956,11 @@
         "Romeo Lavia",
         "Jorrel Hato"
       ],
-      "playId": "51404383"
+      "playId": "51404383",
+      "fieldPositionX": 95.4,
+      "fieldPositionY": 54.1,
+      "shotZone": "very close range",
+      "positionSource": "espn"
     },
     {
       "sequence": 38,
@@ -1949,7 +2017,11 @@
         "Calvin Bassey",
         "Sander Berge"
       ],
-      "playId": "51404536"
+      "playId": "51404536",
+      "fieldPositionX": 75.2,
+      "fieldPositionY": 38.8,
+      "shotZone": "outside the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 42,
@@ -1994,7 +2066,11 @@
         "Morgan Rogers",
         "Maxence Lacroix"
       ],
-      "playId": "51404619"
+      "playId": "51404619",
+      "fieldPositionX": 91.1,
+      "fieldPositionY": 54.7,
+      "shotZone": "the centre of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 45,
@@ -2009,7 +2085,11 @@
         "Cole Palmer",
         "Morgan Rogers"
       ],
-      "playId": "51404717"
+      "playId": "51404717",
+      "fieldPositionX": 80.0,
+      "fieldPositionY": 32.5,
+      "shotZone": "outside the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 46,
@@ -2090,7 +2170,11 @@
         "João Pedro",
         "Romeo Lavia"
       ],
-      "playId": "51405642"
+      "playId": "51405642",
+      "fieldPositionX": 89.8,
+      "fieldPositionY": 63.4,
+      "shotZone": "the left side of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 52,
@@ -2135,7 +2219,11 @@
         "Cole Palmer",
         "Romeo Lavia"
       ],
-      "playId": "51405693"
+      "playId": "51405693",
+      "fieldPositionX": 88.2,
+      "fieldPositionY": 32.3,
+      "shotZone": "the right side of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 55,
@@ -2150,7 +2238,11 @@
         "Cole Palmer",
         "João Pedro"
       ],
-      "playId": "51405757"
+      "playId": "51405757",
+      "fieldPositionX": 96.9,
+      "fieldPositionY": 65.0,
+      "shotZone": "a difficult angle on the left",
+      "positionSource": "espn"
     },
     {
       "sequence": 56,
@@ -2194,7 +2286,11 @@
       "players": [
         "Timothy Castagne"
       ],
-      "playId": "51405933"
+      "playId": "51405933",
+      "fieldPositionX": 88.8,
+      "fieldPositionY": 43.3,
+      "shotZone": "the centre of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 59,
@@ -2208,7 +2304,11 @@
       "players": [
         "Gonzalo García"
       ],
-      "playId": "51405934"
+      "playId": "51405934",
+      "fieldPositionX": 95.5,
+      "fieldPositionY": 48.4,
+      "shotZone": "very close range",
+      "positionSource": "espn"
     },
     {
       "sequence": 60,
@@ -2265,7 +2365,11 @@
         "João Pedro",
         "Morgan Rogers"
       ],
-      "playId": "51406338"
+      "playId": "51406338",
+      "fieldPositionX": 76.4,
+      "fieldPositionY": 50.7,
+      "shotZone": "outside the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 64,
@@ -2399,7 +2503,11 @@
         "Josh King",
         "Antonee Robinson"
       ],
-      "playId": "51406732"
+      "playId": "51406732",
+      "fieldPositionX": 81.8,
+      "fieldPositionY": 61.6,
+      "shotZone": "outside the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 73,
@@ -2559,7 +2667,11 @@
         "Antonee Robinson",
         "Jorge Cuenca"
       ],
-      "playId": "51406944"
+      "playId": "51406944",
+      "fieldPositionX": 80.8,
+      "fieldPositionY": 56.8,
+      "shotZone": "outside the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 84,
@@ -2649,7 +2761,11 @@
         "Ryan Sessegnon",
         "Jorge Cuenca"
       ],
-      "playId": "51407335"
+      "playId": "51407335",
+      "fieldPositionX": 95.3,
+      "fieldPositionY": 68.8,
+      "shotZone": "a difficult angle on the left",
+      "positionSource": "espn"
     },
     {
       "sequence": 90,
@@ -2788,7 +2904,11 @@
         "Gonzalo García",
         "Rodrigo Muniz"
       ],
-      "playId": "51407787"
+      "playId": "51407787",
+      "fieldPositionX": 75.0,
+      "fieldPositionY": 51.0,
+      "shotZone": "outside the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 100,
@@ -2803,7 +2923,11 @@
         "Pedro Neto",
         "Enzo Fernández"
       ],
-      "playId": "51407852"
+      "playId": "51407852",
+      "fieldPositionX": 96.8,
+      "fieldPositionY": 30.4,
+      "shotZone": "a difficult angle on the right",
+      "positionSource": "espn"
     },
     {
       "sequence": 101,
@@ -2817,7 +2941,11 @@
       "players": [
         "Rodrigo Muniz"
       ],
-      "playId": "51407879"
+      "playId": "51407879",
+      "fieldPositionX": 73.4,
+      "fieldPositionY": 58.2,
+      "shotZone": "outside the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 102,
@@ -2864,7 +2992,10 @@
           "positionName": "Goalkeeper",
           "starter": true,
           "formationPlace": "1",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 0, 0, 0, 3, null, 0, 0, 3, 0, 0, 0, 0, 0, 0],
+          "t1": [10, 51, 24, 44, 9, 47, 5, 52, 1, 52, 9, 49, 9, 49, 13, 57, 3, 51, 5, 49, 24, 64, 31, 55, 27, 53, 19, 62, 10, 40, 7, 34, 7, 66, 27, 50, 12, 49, 9, 45, 8, 54, 5, 50, 6, 78, 2, 51, 5, 50, 5, 50, 2, 48, 3, 53, 20, 51, 5, 53, 15, 47],
+          "t2": [15, 49, 28, 51, 5, 51, 13, 50, 10, 54, 5, 50, 15, 51, 14, 72, 5, 52, 5, 44, 4, 48, 5, 47, 20, 62, 5, 50, 5, 50, 23, 64, 28, 52, 12, 24, 27, 54, 25, 49, 5, 45, 17, 50]
         },
         {
           "id": "252031",
@@ -2875,7 +3006,10 @@
           "positionName": "Center Left Defender",
           "starter": true,
           "formationPlace": "6",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 0, 0, 0, 3, 0, 0, 0, null, 0, 0, 0, 0, 0, 0],
+          "t1": [19, 89, 23, 65, 45, 58, 53, 80, 32, 75, 15, 76, 41, 89, 45, 87, 42, 21, 31, 75, 42, 92, 30, 94, 57, 71, 31, 74, 35, 64, 45, 68, 44, 73, 25, 65, 26, 60, 22, 45, 18, 43, 11, 54, 32, 50, 29, 66, 36, 54, 37, 73, 34, 75, 23, 79, 10, 87, 18, 73, 32, 69, 30, 70, 29, 75, 25, 69, 20, 65, 13, 83, 29, 62, 31, 61, 19, 83, 47, 64, 53, 64, 15, 48, 30, 52, 38, 72, 47, 70, 34, 70, 34, 61, 33, 77, 24, 78, 15, 50, 15, 82, 37, 79, 55, 90, 56, 88, 54, 80],
+          "t2": [34, 84, 8, 39, 29, 78, 25, 62, 27, 78, 27, 81, 40, 89, 52, 77, 54, 53, 38, 91, 36, 100, 19, 79, 20, 91, 20, 100, 11, 74, 15, 87, 64, 68, 53, 72, 13, 52, 8, 59, 6, 62, 8, 81, 61, 76, 31, 69, 31, 69, 43, 74, 39, 76, 23, 88, 29, 64, 30, 71, 56, 63, 58, 67, 35, 65, 47, 64, 100, 29, 45, 81, 31, 59, 31, 59, 36, 58, 38, 77, 28, 94, 54, 57, 14, 71, 36, 95, 32, 78, 38, 69, 57, 63, 36, 77, 30, 61]
         },
         {
           "id": "263110",
@@ -2886,7 +3020,11 @@
           "positionName": "Center Right Defender",
           "starter": true,
           "formationPlace": "5",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 1, 1, 0, 3, 0, 0, 0, null, 0, 0, 0, 0, 1, 1],
+          "xg": 0.017,
+          "t1": [19, 15, 27, 22, 55, 8, 28, 21, 10, 17, 6, 32, 31, 27, 48, 18, 42, 24, 14, 24, 24, 9, 12, 7, 12, 8, 14, 14, 9, 13, 10, 9, 32, 0, 44, 33, 36, 13, 31, 11, 25, 32, 17, 13, 22, 44, 12, 45, 31, 21, 67, 18, 53, 19, 62, 36, 59, 26, 61, 45, 31, 34, 70, 9, 57, 0, 32, 27, 24, 13, 62, 59, 61, 65, 66, 86, 26, 16, 57, 37, 55, 23, 63, 37, 26, 30, 75, 39, 54, 11, 44, 33, 54, 33, 53, 14, 45, 21, 51, 33, 48, 30, 43, 25],
+          "t2": [31, 56, 36, 26, 9, 18, 36, 28, 32, 18, 27, 68, 39, 32, 53, 44, 66, 28, 60, 31, 12, 7, 35, 63, 57, 31, 65, 22, 20, 13, 53, 33, 53, 35, 54, 22, 67, 31, 79, 20, 100, 68, 39, 31, 22, 38, 9, 14, 54, 36, 57, 40, 67, 18, 82, 32, 40, 21, 45, 23, 34, 20, 43, 51, 65, 27, 60, 30, 59, 24, 55, 31, 35, 26, 28, 31, 68, 50, 57, 9, 9, 17, 54, 41, 44, 83, 38, 27, 37, 30, 34, 24]
         },
         {
           "id": "222396",
@@ -2897,7 +3035,12 @@
           "positionName": "Left Back",
           "starter": true,
           "formationPlace": "3",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 0, 0, 0, 3, 0, 0, 0, null, 0, 0, 0, 0, 1, 0],
+          "subOut": 82,
+          "xg": 0.133,
+          "t1": [64, 97, 14, 51, 60, 63, 45, 97, 59, 98, 43, 39, 46, 98, 55, 95, 64, 100, 38, 74, 26, 60, 14, 51, 47, 89, 71, 96, 74, 96, 52, 87, 72, 26, 82, 91, 72, 79, 47, 95, 75, 86, 79, 100, 68, 95, 95, 89, 81, 72, 84, 86, 89, 75, 32, 96, 31, 96, 19, 89, 10, 94, 68, 99, 70, 97, 61, 97, 61, 96],
+          "t2": [70, 86, 15, 74, 80, 97, 81, 100, 10, 46, 80, 95, 58, 100, 86, 86, 51, 87, 42, 77, 39, 72, 82, 96, 80, 95, 92, 100, 11, 51, 70, 98, 41, 96, 11, 56, 16, 90, 5, 70, 20, 90, 82, 96, 76, 93, 73, 95, 36, 53, 16, 81, 14, 74, 81, 57, 100, 49, 40, 88, 74, 95, 83, 79, 34, 69, 54, 93, 51, 96, 88, 80]
         },
         {
           "id": "197163",
@@ -2908,7 +3051,12 @@
           "positionName": "Right Back",
           "starter": true,
           "formationPlace": "2",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 2, 2, 1, 3, 0, 0, 0, null, 0, 1, 0, 0, 1, 1],
+          "xg": 0.179,
+          "xgot": 0.111,
+          "t1": [33, 0, 40, 6, 13, 96, 13, 100, 10, 23, 88, 32, 85, 34, 12, 13, 25, 11, 87, 0, 79, 5, 40, 33, 39, 5, 83, 6, 78, 5, 75, 5, 74, 10, 95, 28, 76, 5, 32, 25, 6, 47, 10, 42, 65, 22, 71, 0, 86, 8, 19, 46, 29, 48, 39, 11, 53, 28, 72, 0, 61, 8, 76, 12, 76, 12, 66, 7],
+          "t2": [21, 3, 41, 7, 63, 11, 75, 5, 71, 3, 65, 30, 67, 4, 89, 43, 26, 0, 82, 18, 46, 25, 78, 3, 29, 9, 35, 0, 35, 0, 73, 2, 88, 13, 32, 22, 29, 21, 29, 21, 19, 26, 94, 18, 37, 7, 37, 7, 36, 66, 64, 14, 52, 7, 9, 33, 28, 0, 23, 3, 67, 29, 58, 18, 65, 27, 41, 29, 31, 42]
         },
         {
           "id": "409541",
@@ -2919,7 +3067,12 @@
           "positionName": "Attacking Midfielder",
           "starter": true,
           "formationPlace": "10",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 2, 1, 0, 3, 0, 0, 0, null, 0, 2, 0, 1, 3, 0],
+          "xg": 0.161,
+          "xgot": 0.064,
+          "t1": [50, 50, 71, 4, 66, 7, 44, 0, 21, 19, 53, 28, 92, 25, 94, 19, 79, 14, 71, 61, 23, 59, 76, 36, 85, 36, 48, 16, 95, 25, 76, 11, 71, 7, 67, 16, 89, 29, 47, 33, 21, 97, 24, 100, 74, 20, 88, 34, 83, 18, 42, 18, 98, 24, 90, 26, 91, 22, 70, 8, 57, 7, 67, 15, 86, 12, 35, 29, 50, 50, 65, 76, 57, 96, 64, 14, 53, 22],
+          "t2": [50, 50, 31, 6, 69, 8, 50, 50, 80, 8, 56, 96, 73, 19, 94, 33, 32, 93, 32, 89, 27, 94, 64, 5, 89, 17, 42, 12, 83, 85, 85, 70, 82, 62, 100, 58, 41, 69, 29, 82, 72, 23, 67, 24, 78, 0, 15, 31]
         },
         {
           "id": "175063",
@@ -2930,7 +3083,10 @@
           "positionName": "Left Midfielder",
           "starter": true,
           "formationPlace": "4",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 0, 0, 0, 3, 0, 0, 0, null, 0, 0, 0, 0, 0, 0],
+          "t1": [55, 93, 46, 88, 44, 81, 60, 19, 53, 32, 59, 98, 27, 49, 29, 65, 18, 32, 6, 12, 59, 14, 55, 37, 45, 76, 49, 66, 64, 87, 55, 65, 56, 55, 33, 32, 38, 26, 33, 61, 26, 50, 20, 58, 32, 75, 100, 1, 41, 76, 65, 81, 66, 78, 47, 57, 45, 85, 36, 87, 12, 68, 12, 82, 13, 83, 58, 80, 61, 100, 41, 84, 39, 84, 90, 8, 44, 70, 48, 55, 48, 53, 35, 81, 39, 80, 45, 75, 64, 75, 68, 87, 57, 86, 58, 84, 74, 71, 24, 96, 45, 49, 57, 84, 48, 70],
+          "t2": [48, 91, 66, 71, 44, 72, 55, 73, 55, 79, 58, 72, 52, 73, 70, 90, 69, 66, 54, 82, 72, 94, 68, 88, 35, 29, 52, 29, 77, 95, 36, 68, 66, 82, 72, 89, 67, 87, 27, 73, 18, 89, 11, 92, 59, 89, 47, 90, 43, 35, 39, 66, 65, 80, 65, 89, 44, 67, 48, 67, 49, 79, 69, 83, 33, 89, 60, 73, 53, 80, 31, 52, 38, 71, 68, 69, 65, 57, 64, 92, 72, 73, 34, 64, 42, 83, 49, 82, 55, 76, 30, 77, 62, 75, 64, 89]
         },
         {
           "id": "218998",
@@ -2941,7 +3097,12 @@
           "positionName": "Right Midfielder",
           "starter": true,
           "formationPlace": "8",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 0, 0, 0, 3, 0, 0, 0, null, 0, 0, 0, 0, 1, 0],
+          "subOut": 73,
+          "xg": 0.029,
+          "t1": [60, 67, 43, 40, 47, 53, 27, 56, 14, 59, 36, 63, 49, 69, 46, 48, 25, 19, 58, 61, 48, 44, 56, 79, 28, 57, 36, 45, 34, 54, 62, 65, 83, 34, 71, 21, 63, 68, 62, 60, 61, 68, 35, 31, 55, 44, 36, 62, 57, 61, 70, 24, 28, 50, 19, 37, 46, 44, 30, 36, 66, 67, 61, 63, 57, 36, 39, 58, 82, 28, 77, 62, 56, 74, 46, 55, 51, 62, 36, 36, 33, 59, 62, 56, 55, 69, 52, 56, 43, 68, 57, 71],
+          "t2": [33, 51, 30, 63, 34, 28, 61, 32, 31, 59, 48, 33, 56, 27, 57, 10, 26, 12, 75, 33, 45, 44, 55, 53, 62, 36, 61, 28, 80, 25, 70, 29, 35, 44, 39, 62, 36, 21, 24, 23, 30, 64, 53, 34]
         },
         {
           "id": "87297",
@@ -2952,7 +3113,12 @@
           "positionName": "Forward",
           "starter": true,
           "formationPlace": "9",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 2, 2, 0, 3, 0, 0, 0, null, 0, 1, 0, 1, 3, 0],
+          "xg": 0.716,
+          "xgot": 0.94,
+          "t1": [62, 74, 62, 74, 62, 72, 40, 39, 64, 36, 64, 36, 56, 47, 59, 76, 54, 39, 57, 33, 37, 92, 69, 74, 69, 90, 38, 88, 63, 72, 66, 79, 33, 73, 91, 49, 47, 85, 59, 49, 47, 33, 71, 68, 71, 68, 68, 73, 30, 85, 73, 96, 80, 74, 62, 49],
+          "t2": [68, 51, 69, 51, 96, 48, 47, 34, 58, 51, 25, 80, 66, 79, 42, 89, 92, 20, 87, 86, 79, 85, 58, 27, 35, 21, 42, 89, 73, 0, 87, 87, 52, 79, 62, 73, 75, 51]
         },
         {
           "id": "12172",
@@ -2963,7 +3129,12 @@
           "positionName": "Attacking Midfielder Left",
           "starter": true,
           "formationPlace": "11",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 2, 0, 0, 3, 0, 0, 0, null, 0, 0, 0, 0, 2, 0],
+          "subOut": 73,
+          "xg": 0.156,
+          "t1": [65, 74, 56, 73, 39, 51, 37, 50, 14, 61, 82, 37, 67, 91, 84, 100, 63, 77, 66, 41, 56, 91, 81, 53, 100, 48, 69, 79, 71, 62, 57, 46, 44, 66, 92, 55, 40, 71, 41, 92, 41, 90, 41, 91, 43, 94, 57, 67, 72, 79, 8, 78, 32, 94, 38, 23, 40, 36, 65, 80, 86, 65, 28, 92, 36, 92, 29, 84, 39, 79, 73, 81, 63, 64, 65, 81, 69, 84],
+          "t2": [67, 90, 29, 84, 29, 84, 29, 84, 84, 92, 47, 47, 72, 16, 74, 12, 38, 76, 55, 88, 65, 92, 65, 82, 48, 79, 69, 36, 34, 52, 41, 93, 67, 88, 70, 100, 28, 56, 59, 15, 67, 4, 40, 66, 39, 67, 67, 23, 70, 78]
         },
         {
           "id": "307111",
@@ -2974,7 +3145,11 @@
           "positionName": "Attacking Midfielder Right",
           "starter": true,
           "formationPlace": "7",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 1, 1, 0, 3, 0, 0, 0, null, 0, 0, 0, 0, 0, 0],
+          "subOut": 67,
+          "t1": [73, 4, 54, 0, 33, 3, 37, 37, 45, 36, 77, 19, 100, 1, 100, 1, 60, 7, 31, 38, 34, 37, 55, 4, 78, 22, 69, 22, 62, 15, 80, 7, 82, 5, 93, 7, 92, 30, 100, 1, 80, 17, 64, 9, 76, 17, 75, 43, 76, 12, 61, 6],
+          "t2": [26, 20, 38, 23, 68, 28, 58, 8, 65, 12, 87, 21, 85, 37, 72, 9, 100, 1, 69, 22, 65, 15, 73, 5, 70, 20, 88, 31, 35, 38]
         },
         {
           "id": "190974",
@@ -2985,7 +3160,8 @@
           "positionName": "Substitute",
           "starter": false,
           "formationPlace": "0",
-          "source": "roster"
+          "source": "roster",
+          "stats": [0, 0, 0, 0, 0, 0, 0, 0, null, 0, 0, 0, 0, 0, 0]
         },
         {
           "id": "365345",
@@ -2996,7 +3172,8 @@
           "positionName": "Substitute",
           "starter": false,
           "formationPlace": "0",
-          "source": "roster"
+          "source": "roster",
+          "stats": [0, 0, 0, 0, 0, 0, 0, 0, null, 0, 0, 0, 0, 0, 0]
         },
         {
           "id": "193246",
@@ -3007,7 +3184,8 @@
           "positionName": "Substitute",
           "starter": false,
           "formationPlace": "0",
-          "source": "roster"
+          "source": "roster",
+          "stats": [0, 0, 0, 0, 0, 0, 0, 0, null, 0, 0, 0, 0, 0, 0]
         },
         {
           "id": "324164",
@@ -3018,7 +3196,10 @@
           "positionName": "Substitute",
           "starter": false,
           "formationPlace": "0",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 0, 0, 0, 0, 0, 0, 0, null, 0, 0, 1, 0, 0, 0],
+          "subIn": 67,
+          "t2": [54, 12, 56, 0, 23, 7, 58, 19, 60, 17, 60, 20, 44, 17, 50, 0, 39, 43, 36, 35, 33, 34, 67, 34, 62, 44, 62, 41, 37, 52, 40, 36, 47, 48, 44, 66, 33, 68, 29, 68, 56, 22, 46, 64, 26, 9, 43, 51, 55, 95, 76, 68, 39, 41, 66, 57, 72, 43, 37, 36, 30, 39, 31, 45]
         },
         {
           "id": "330764",
@@ -3029,7 +3210,10 @@
           "positionName": "Substitute",
           "starter": false,
           "formationPlace": "0",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 2, 0, 0, 0, 0, 0, 0, null, 0, 0, 1, 0, 0, 0],
+          "subIn": 73,
+          "t2": [87, 89, 83, 93, 27, 92, 45, 93, 42, 93, 43, 66, 77, 87, 83, 92, 78, 86, 66, 93, 87, 92, 81, 70, 81, 72, 34, 82, 28, 80, 61, 93, 100, 100, 90, 85, 82, 87, 65, 89, 3, 97, 76, 93, 80, 100]
         },
         {
           "id": "266697",
@@ -3040,7 +3224,8 @@
           "positionName": "Substitute",
           "starter": false,
           "formationPlace": "0",
-          "source": "roster"
+          "source": "roster",
+          "stats": [0, 0, 0, 0, 0, 0, 0, 0, null, 0, 0, 0, 0, 0, 0]
         },
         {
           "id": "149517",
@@ -3051,7 +3236,8 @@
           "positionName": "Substitute",
           "starter": false,
           "formationPlace": "0",
-          "source": "roster"
+          "source": "roster",
+          "stats": [0, 0, 0, 0, 0, null, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         },
         {
           "id": "241328",
@@ -3062,7 +3248,12 @@
           "positionName": "Substitute",
           "starter": false,
           "formationPlace": "0",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 0, 0, 0, 0, 0, 0, 0, null, 0, 1, 1, 0, 1, 0],
+          "subIn": 73,
+          "xg": 0.033,
+          "xgot": 0.091,
+          "t2": [51, 6, 82, 13, 13, 94, 53, 89, 96, 70, 95, 69, 69, 66, 72, 74, 60, 75, 56, 86, 92, 100, 91, 100, 5, 96, 14, 100, 8, 78, 8, 91, 79, 90, 54, 57, 9, 90, 8, 83, 43, 86, 43, 86]
         },
         {
           "id": "301525",
@@ -3073,7 +3264,12 @@
           "positionName": "Substitute",
           "starter": false,
           "formationPlace": "0",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 0, 0, 0, 0, 0, 0, 0, null, 0, 1, 1, 0, 1, 0],
+          "subIn": 82,
+          "xg": 0.02,
+          "xgot": 0.011,
+          "t2": [20, 40, 37, 89, 76, 66, 76, 66, 64, 76, 75, 53, 75, 53, 69, 68, 69, 68, 73, 58]
         }
       ]
     },
@@ -3096,7 +3292,10 @@
           "positionName": "Goalkeeper",
           "starter": true,
           "formationPlace": "1",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 0, 0, 0, 2, null, 0, 0, 4, 0, 0, 0, 0, 0, 0],
+          "t1": [21, 57, 67, 100, 4, 50, 12, 49, 7, 52, 7, 54, 2, 52, 4, 56, 24, 53, 15, 58, 13, 71, 8, 49, 8, 41, 24, 49, 6, 44, 15, 46],
+          "t2": [13, 54, 2, 50, 25, 54, 2, 46, 11, 44, 2, 47, 13, 43, 18, 48, 5, 41, 16, 72, 4, 57, 19, 10, 11, 40, 9, 60, 5, 44, 5, 39, 24, 39, 0, 45, 19, 42, 19, 35, 35, 26, 8, 57, 1, 49]
         },
         {
           "id": "265918",
@@ -3107,7 +3306,10 @@
           "positionName": "Center Defender",
           "starter": true,
           "formationPlace": "5",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 1, 1, 1, 2, 0, 0, 0, null, 0, 0, 0, 0, 0, 0],
+          "t1": [41, 29, 26, 44, 54, 67, 54, 67, 44, 37, 56, 57, 39, 57, 53, 47, 53, 40, 36, 47, 35, 43, 14, 68, 35, 59, 38, 71, 25, 47, 46, 56, 40, 60, 33, 42, 39, 51, 60, 59, 69, 62, 66, 63, 72, 77, 31, 26, 29, 23, 28, 37, 7, 78, 12, 66, 5, 69, 40, 38, 31, 86, 36, 91, 49, 95, 52, 61, 60, 56, 53, 50, 45, 55, 31, 41, 61, 45, 59, 27, 98, 34, 33, 46, 46, 31, 39, 43, 27, 44, 36, 45],
+          "t2": [44, 28, 26, 45, 29, 45, 35, 16, 9, 51, 45, 48, 45, 56, 58, 10, 42, 30, 42, 73, 37, 74, 31, 67, 33, 42, 38, 56, 54, 52, 34, 46, 24, 64, 26, 59, 52, 8, 54, 8, 20, 36, 14, 44, 19, 34, 27, 22, 40, 8, 19, 49]
         },
         {
           "id": "296410",
@@ -3118,7 +3320,11 @@
           "positionName": "Center Left Defender",
           "starter": true,
           "formationPlace": "4",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 1, 1, 0, 2, 0, 0, 0, null, 0, 0, 0, 0, 1, 1],
+          "xg": 0.013,
+          "t1": [29, 96, 39, 71, 40, 74, 89, 75, 90, 78, 58, 76, 59, 91, 6, 65, 8, 81, 11, 90, 23, 42, 38, 80, 61, 79, 78, 66, 42, 70, 62, 39, 8, 94, 60, 79, 34, 65, 61, 69, 39, 73],
+          "t2": [31, 61, 35, 69, 62, 73, 70, 89, 10, 95, 32, 66, 11, 70, 38, 58, 50, 87, 43, 100, 33, 97, 57, 74, 49, 94, 52, 100, 56, 92, 22, 61, 18, 53, 31, 77, 51, 80, 31, 66]
         },
         {
           "id": "368317",
@@ -3129,7 +3335,10 @@
           "positionName": "Center Right Defender",
           "starter": true,
           "formationPlace": "6",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 0, 1, 0, 2, 1, 0, 0, null, 0, 0, 0, 0, 0, 0],
+          "t1": [60, 16, 40, 24, 65, 11, 52, 21, 46, 32, 36, 10, 5, 76, 10, 17, 38, 39, 28, 25, 24, 50, 45, 33, 60, 22, 65, 38, 46, 38, 37, 57, 29, 20, 6, 46, 6, 51, 37, 39, 17, 18, 57, 32, 77, 10, 66, 5, 93, 19, 14, 35, 60, 24, 30, 11, 41, 5, 62, 5, 63, 22, 68, 11, 49, 20, 31, 7, 24, 23],
+          "t2": [37, 22, 29, 21, 42, 26, 19, 26, 19, 26, 35, 5, 68, 11, 9, 15, 7, 0, 62, 29, 56, 46, 69, 7, 60, 17, 65, 17, 97, 27, 59, 7, 77, 10, 38, 32, 65, 8, 16, 20, 15, 12, 30, 9, 52, 8, 6, 51, 23, 30, 27, 16, 34, 8, 5, 38, 10, 15, 13, 0, 23, 30, 34, 26, 61, 20, 45, 44, 22, 35]
         },
         {
           "id": "308217",
@@ -3140,7 +3349,13 @@
           "positionName": "Center Left Midfielder",
           "starter": true,
           "formationPlace": "8",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 1, 0, 0, 2, 0, 0, 0, null, 0, 1, 0, 0, 1, 1],
+          "subOut": 65,
+          "xg": 0.233,
+          "xgot": 0.34,
+          "t1": [60, 61, 54, 54, 66, 92, 58, 86, 53, 90, 64, 33, 40, 54, 18, 62, 69, 93, 40, 44, 65, 54, 64, 57, 46, 62, 63, 39, 10, 55, 44, 53, 39, 37, 95, 54, 67, 90, 32, 26, 40, 28, 48, 57, 64, 29, 65, 46, 63, 45, 59, 26, 18, 79],
+          "t2": [68, 74, 68, 62, 34, 77, 42, 47, 6, 67, 23, 77, 12, 69, 59, 26]
         },
         {
           "id": "189007",
@@ -3151,7 +3366,12 @@
           "positionName": "Center Right Midfielder",
           "starter": true,
           "formationPlace": "7",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 1, 0, 0, 2, 0, 0, 0, null, 0, 1, 0, 0, 2, 1],
+          "xg": 0.103,
+          "xgot": 0.097,
+          "t1": [61, 44, 55, 46, 82, 39, 87, 4, 60, 69, 60, 38, 61, 44, 59, 35, 58, 29, 55, 57, 38, 75, 46, 47, 47, 34, 93, 90, 100, 84, 3, 63, 9, 100, 56, 64, 45, 72, 43, 14, 36, 29, 40, 35, 52, 29, 70, 40, 68, 42, 63, 42, 70, 31, 14, 60, 45, 51, 42, 36, 16, 92, 10, 60, 37, 100, 25, 47, 28, 22, 84, 36, 54, 47, 47, 44, 66, 41, 51, 40, 48, 31, 77, 26, 100, 100, 63, 5, 45, 33, 20, 59, 60, 70, 47, 32, 40, 60, 58, 86, 62, 44, 63, 68, 61, 60, 35, 63],
+          "t2": [64, 56, 47, 36, 20, 3, 26, 25, 78, 36, 55, 28, 45, 24, 44, 29, 65, 16, 62, 46, 31, 14, 58, 35, 63, 23, 35, 37, 57, 22, 45, 26, 55, 35, 40, 14, 34, 18, 39, 29, 30, 28, 15, 6, 31, 4, 43, 12, 42, 25]
         },
         {
           "id": "353951",
@@ -3162,7 +3382,12 @@
           "positionName": "Left Midfielder",
           "starter": true,
           "formationPlace": "3",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 0, 2, 0, 2, 0, 0, 0, null, 0, 0, 0, 0, 1, 0],
+          "subOut": 65,
+          "xg": 0.014,
+          "t1": [29, 95, 31, 96, 29, 99, 27, 100, 76, 100, 91, 93, 68, 96, 68, 89, 62, 96, 3, 76, 6, 74, 16, 96, 61, 100, 43, 67, 45, 74, 44, 75, 66, 72, 77, 55, 67, 95, 96, 70, 22, 78, 9, 91, 20, 69, 92, 62, 94, 60, 63, 85, 25, 81, 64, 85, 45, 86, 26, 100],
+          "t2": [41, 92, 61, 94, 82, 93, 78, 96, 78, 92, 64, 89, 29, 95, 90, 65, 55, 81, 59, 70, 63, 100, 10, 70]
         },
         {
           "id": "308947",
@@ -3173,7 +3398,11 @@
           "positionName": "Right Midfielder",
           "starter": true,
           "formationPlace": "2",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 1, 0, 0, 2, 0, 0, 0, null, 0, 0, 0, 0, 0, 0],
+          "subOut": 76,
+          "t1": [81, 0, 74, 6, 73, 4, 64, 24, 11, 0, 39, 11, 34, 5, 35, 0, 20, 21, 54, 9, 89, 10, 85, 18, 72, 7, 8, 43, 70, 0, 41, 38, 41, 38, 41, 0, 57, 6, 59, 5, 58, 8, 58, 34, 14, 28, 22, 19, 13, 2, 36, 0, 65, 31, 61, 23, 55, 65, 65, 13, 60, 30, 69, 17, 69, 21, 54, 4],
+          "t2": [25, 28, 17, 11, 12, 13, 32, 0, 44, 4, 48, 0, 42, 18, 42, 18, 61, 0, 81, 0, 90, 33, 36, 0, 92, 25, 95, 27, 100, 42, 64, 30, 83, 19]
         },
         {
           "id": "284960",
@@ -3184,7 +3413,12 @@
           "positionName": "Forward",
           "starter": true,
           "formationPlace": "9",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 1, 1, 1, 2, 0, 0, 0, null, 0, 1, 0, 1, 4, 0],
+          "xg": 0.433,
+          "xgot": 0.396,
+          "t1": [87, 40, 66, 61, 67, 48, 15, 53, 29, 89, 67, 97, 65, 61, 90, 73, 70, 57, 69, 60, 87, 63, 50, 50, 89, 49, 100, 43, 60, 47, 60, 58, 62, 59, 64, 79, 54, 44, 36, 33],
+          "t2": [90, 63, 80, 95, 85, 62, 46, 20, 50, 51, 86, 24, 76, 51, 100, 51, 66, 36, 90, 94, 100, 87, 63, 44, 47, 27, 66, 34, 66, 16, 85, 6, 100, 22, 38, 46, 37, 58, 91, 58, 97, 3, 98, 2, 96, 0, 72, 37, 72, 37, 43, 3, 85, 6, 63, 65]
         },
         {
           "id": "265653",
@@ -3195,7 +3429,13 @@
           "positionName": "Center Left Forward",
           "starter": true,
           "formationPlace": "11",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 1, 1, 0, 2, 0, 0, 0, null, 0, 1, 0, 1, 3, 0],
+          "subOut": 82,
+          "xg": 0.636,
+          "xgot": 0.2,
+          "t1": [36, 92, 76, 49, 87, 90, 60, 86, 61, 55, 36, 72, 36, 72, 88, 93, 78, 92, 37, 28, 69, 62, 80, 61, 81, 57, 87, 55, 17, 82, 80, 55, 57, 79, 100, 1, 70, 95, 36, 82, 31, 100, 46, 89, 58, 93, 91, 55, 66, 38, 82, 27, 19, 86],
+          "t2": [67, 85, 91, 97, 37, 92, 64, 95, 64, 95, 74, 100, 28, 80, 90, 76, 64, 61, 63, 60, 62, 39, 68, 88, 65, 48, 65, 48, 85, 24, 17, 85, 56, 45]
         },
         {
           "id": "296395",
@@ -3206,7 +3446,13 @@
           "positionName": "Center Right Forward",
           "starter": true,
           "formationPlace": "10",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 0, 3, 1, 2, 1, 0, 0, null, 0, 2, 0, 1, 5, 0],
+          "subOut": 83,
+          "xg": 0.24,
+          "xgot": 0.186,
+          "t1": [50, 50, 65, 29, 63, 44, 100, 100, 71, 20, 68, 25, 67, 60, 61, 78, 100, 87, 92, 28, 33, 9, 49, 59, 74, 10, 70, 8, 52, 25, 74, 50, 80, 42, 81, 19, 75, 51, 86, 46, 87, 54, 92, 21, 39, 35, 29, 19, 46, 39, 67, 12, 67, 32, 71, 44, 43, 29, 69, 4, 81, 11, 74, 12, 80, 33, 100, 64, 28, 18, 47, 12],
+          "t2": [49, 10, 68, 5, 86, 32, 88, 32, 100, 62, 97, 65, 24, 33, 24, 58, 36, 19, 53, 18, 61, 5, 80, 9, 56, 18, 98, 26, 69, 15, 76, 24, 67, 13, 75, 8, 77, 37, 42, 24, 57, 19, 67, 7, 73, 8, 67, 37, 88, 5, 69, 54]
         },
         {
           "id": "339879",
@@ -3217,7 +3463,8 @@
           "positionName": "Substitute",
           "starter": false,
           "formationPlace": "0",
-          "source": "roster"
+          "source": "roster",
+          "stats": [0, 0, 0, 0, 0, 0, 0, 0, null, 0, 0, 0, 0, 0, 0]
         },
         {
           "id": "256115",
@@ -3228,7 +3475,11 @@
           "positionName": "Substitute",
           "starter": false,
           "formationPlace": "0",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 0, 0, 0, 0, 0, 0, 0, null, 0, 0, 1, 0, 1, 0],
+          "subIn": 76,
+          "xg": 0.028,
+          "t2": [34, 6, 63, 5, 47, 7, 71, 6, 71, 6, 84, 19, 13, 16, 11, 0, 9, 12, 19, 13, 24, 14, 21, 5, 22, 0, 22, 10, 91, 9, 92, 15, 97, 14, 97, 30, 100, 43, 32, 8]
         },
         {
           "id": "285450",
@@ -3239,7 +3490,10 @@
           "positionName": "Substitute",
           "starter": false,
           "formationPlace": "0",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 0, 1, 0, 0, 0, 0, 0, null, 0, 0, 1, 0, 0, 0],
+          "subIn": 65,
+          "t2": [65, 79, 60, 93, 48, 65, 46, 31, 64, 47, 65, 37, 36, 60, 55, 36, 44, 41, 58, 56, 65, 39, 60, 32, 23, 63, 53, 44, 57, 42, 69, 67, 100, 36, 35, 61, 25, 59, 32, 3, 53, 83, 48, 95, 58, 16, 55, 81, 66, 41]
         },
         {
           "id": "115271",
@@ -3250,7 +3504,8 @@
           "positionName": "Substitute",
           "starter": false,
           "formationPlace": "0",
-          "source": "roster"
+          "source": "roster",
+          "stats": [0, 0, 0, 0, 0, 0, 0, 0, null, 0, 0, 0, 0, 0, 0]
         },
         {
           "id": "376481",
@@ -3261,7 +3516,10 @@
           "positionName": "Substitute",
           "starter": false,
           "formationPlace": "0",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 0, 0, 0, 0, 0, 0, 0, null, 0, 0, 1, 0, 0, 0],
+          "subIn": 83,
+          "t2": [74, 11, 55, 65, 13, 11, 15, 15, 44, 3, 100, 1, 66, 30]
         },
         {
           "id": "300331",
@@ -3272,7 +3530,10 @@
           "positionName": "Substitute",
           "starter": false,
           "formationPlace": "0",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 0, 0, 0, 0, 0, 0, 0, null, 0, 0, 1, 0, 0, 0],
+          "subIn": 65,
+          "t2": [89, 69, 46, 91, 62, 97, 47, 61, 36, 85, 62, 89, 62, 93, 21, 70, 23, 100, 69, 100, 31, 57, 20, 81, 12, 53]
         },
         {
           "id": "332343",
@@ -3283,7 +3544,8 @@
           "positionName": "Substitute",
           "starter": false,
           "formationPlace": "0",
-          "source": "roster"
+          "source": "roster",
+          "stats": [0, 0, 0, 0, 0, null, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         },
         {
           "id": "320760",
@@ -3294,7 +3556,8 @@
           "positionName": "Substitute",
           "starter": false,
           "formationPlace": "0",
-          "source": "roster"
+          "source": "roster",
+          "stats": [0, 0, 0, 0, 0, 0, 0, 0, null, 0, 0, 0, 0, 0, 0]
         },
         {
           "id": "376274",
@@ -3305,9 +3568,31 @@
           "positionName": "Substitute",
           "starter": false,
           "formationPlace": "0",
-          "source": "roster"
+          "source": "roster",
+          "stats": [1, 0, 0, 0, 0, 1, 0, 0, null, 0, 0, 1, 0, 0, 0],
+          "subIn": 82,
+          "t2": [16, 68, 35, 100, 39, 91, 86, 74, 67, 95, 56, 13, 44, 84]
         }
       ]
     }
-  ]
+  ],
+  "espnEventId": "401879318",
+  "playerStatKeys": [
+    "appearances",
+    "foulsCommitted",
+    "foulsSuffered",
+    "goalAssists",
+    "goalsConceded",
+    "offsides",
+    "ownGoals",
+    "redCards",
+    "saves",
+    "shotsFaced",
+    "shotsOnTarget",
+    "subIns",
+    "totalGoals",
+    "totalShots",
+    "yellowCards"
+  ],
+  "playerStatsGeneratedAt": "2026-09-06T15:54:26.866056Z"
 }

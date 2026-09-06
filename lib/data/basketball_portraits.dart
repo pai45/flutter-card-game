@@ -129,6 +129,90 @@ const basketballPortraitAssets = <String, String>{
   'bkn-tyler-bilodeau': 'assets/basketball_player_images/tyler_bilodeau.webp',
   'atl-zaccharie-risacher':
       'assets/basketball_player_images/zaccharie_risacher.webp',
+  'mil-alex-antetokounmpo':
+      'assets/basketball_player_images/alex_antetokounmpo.webp',
+  'okc-alex-caruso': 'assets/basketball_player_images/alex_caruso.webp',
+  'orl-anthony-black': 'assets/basketball_player_images/anthony_black.webp',
+  'mia-bam-adebayo': 'assets/basketball_player_images/bam_adebayo.webp',
+  'lac-bogdan-bogdanovic':
+      'assets/basketball_player_images/bogdan_bogdanovic.webp',
+  'okc-brooks-barnhizer':
+      'assets/basketball_player_images/brooks_barnhizer.webp',
+  'mem-cameron-boozer': 'assets/basketball_player_images/cameron_boozer.webp',
+  'okc-chet-holmgren': 'assets/basketball_player_images/chet_holmgren.webp',
+  'mil-cole-anthony': 'assets/basketball_player_images/cole_anthony.webp',
+  'mia-davion-mitchell': 'assets/basketball_player_images/davion_mitchell.webp',
+  'nop-dejounte-murray': 'assets/basketball_player_images/dejounte_murray.webp',
+  'orl-desmond-bane': 'assets/basketball_player_images/desmond_bane.webp',
+  'orl-goga-bitadze': 'assets/basketball_player_images/goga_bitadze.webp',
+  'nop-herb-jones': 'assets/basketball_player_images/herb_jones.webp',
+  'lac-ivica-zubac': 'assets/basketball_player_images/ivica_zubac.webp',
+  'mem-ja-morant': 'assets/basketball_player_images/ja_morant.webp',
+  'min-jaden-mcdaniels': 'assets/basketball_player_images/jaden_mcdaniels.webp',
+  'mia-jaime-jaquez-jr': 'assets/basketball_player_images/jaime_jaquez_jr.webp',
+  'orl-jalen-suggs': 'assets/basketball_player_images/jalen_suggs.webp',
+  'phi-jared-mccain': 'assets/basketball_player_images/jared_mccain.webp',
+  'mem-jaren-jackson-jr':
+      'assets/basketball_player_images/jaren_jackson_jr.webp',
+  'lal-jaxson-hayes': 'assets/basketball_player_images/jaxson_hayes.webp',
+  'nop-jordan-hawkins': 'assets/basketball_player_images/jordan_hawkins.webp',
+  'nyk-jose-alvarado': 'assets/basketball_player_images/jose_alvarado.webp',
+  'nyk-josh-hart': 'assets/basketball_player_images/josh_hart.webp',
+  'mia-kelel-ware': 'assets/basketball_player_images/kelel_ware.webp',
+  'mil-kevin-porter-jr': 'assets/basketball_player_images/kevin_porter_jr.webp',
+  'okc-lu-dort': 'assets/basketball_player_images/lu_dort.webp',
+  'lal-marcus-smart': 'assets/basketball_player_images/marcus_smart.webp',
+  'mil-nate-ament': 'assets/basketball_player_images/nate_ament.webp',
+  'min-naz-reid': 'assets/basketball_player_images/naz_reid.webp',
+  'lac-nicolas-batum': 'assets/basketball_player_images/nicolas_batum.webp',
+  'min-rob-dillingham': 'assets/basketball_player_images/rob_dillingham.webp',
+  'mem-santi-aldama': 'assets/basketball_player_images/santi_aldama.webp',
+  'mem-scotty-pippen-jr':
+      'assets/basketball_player_images/scotty_pippen_jr.webp',
+  'okc-shai-gilgeous-alexander':
+      'assets/basketball_player_images/shai_gilgeous_alexander.webp',
+  'nop-trey-murphy-iii': 'assets/basketball_player_images/trey_murphy_iii.webp',
+  'phi-tyrese-maxey': 'assets/basketball_player_images/tyrese_maxey.webp',
+  'nop-yves-missi': 'assets/basketball_player_images/yves_missi.webp',
+  'mem-zach-edey': 'assets/basketball_player_images/zach_edey.webp',
+  'uta-tamar-bates': 'assets/basketball_player_images/uta-tamar-bates.webp',
+  'uta-trey-alexander':
+      'assets/basketball_player_images/uta-trey-alexander.webp',
+  'uta-walker-kessler':
+      'assets/basketball_player_images/uta-walker-kessler.webp',
+  'was-alex-sarr': 'assets/basketball_player_images/was-alex-sarr.webp',
+  'was-anthony-davis': 'assets/basketball_player_images/was-anthony-davis.webp',
+  'was-bilal-coulibaly':
+      'assets/basketball_player_images/was-bilal-coulibaly.webp',
+  'was-bub-carrington':
+      'assets/basketball_player_images/was-bub-carrington.webp',
+  'was-tre-johnson': 'assets/basketball_player_images/was-tre-johnson.webp',
+  'sac-demar-derozan': 'assets/basketball_player_images/demar_derozan.webp',
+  'sac-precious-achiuwa':
+      'assets/basketball_player_images/precious_achiuwa.webp',
+  'sac-darius-acuff-jr': 'assets/basketball_player_images/darius_acuff_jr.webp',
+  'sas-victor-wembanyama':
+      'assets/basketball_player_images/victor_wembanyama.webp',
+  'sas-stephon-castle': 'assets/basketball_player_images/stephon_castle.webp',
+  'sas-devin-vassell': 'assets/basketball_player_images/devin_vassell.webp',
+  'sas-harrison-barnes': 'assets/basketball_player_images/harrison_barnes.webp',
+  'sas-bismack-biyombo': 'assets/basketball_player_images/bismack_biyombo.webp',
+  'tor-jakob-poeltl': 'assets/basketball_player_images/jakob_poeltl.webp',
+  'tor-gradey-dick': 'assets/basketball_player_images/gradey_dick.webp',
+  'phi-adem-bona': 'assets/basketball_player_images/adem_bona.webp',
+  'phi-dominick-barlow': 'assets/basketball_player_images/dominick_barlow.webp',
+  'phx-dillon-brooks': 'assets/basketball_player_images/dillon_brooks.webp',
+  'phx-ryan-dunn': 'assets/basketball_player_images/ryan_dunn.webp',
+  'phx-oso-ighodaro': 'assets/basketball_player_images/oso_ighodaro.webp',
+  'por-deni-avdija': 'assets/basketball_player_images/deni_avdija.webp',
+  'por-scoot-henderson': 'assets/basketball_player_images/scoot_henderson.webp',
+  'por-shaedon-sharpe': 'assets/basketball_player_images/shaedon_sharpe.webp',
+  'por-donovan-clingan': 'assets/basketball_player_images/donovan_clingan.webp',
+  'por-robert-williams-iii':
+      'assets/basketball_player_images/robert_williams_iii.webp',
+  'uta-ace-bailey': 'assets/basketball_player_images/ace_bailey.webp',
+  'uta-keyonte-george': 'assets/basketball_player_images/keyonte_george.webp',
+  'uta-lauri-markkanen': 'assets/basketball_player_images/lauri_markkanen.webp',
 };
 
 String? basketballPortraitAssetFor(String athleteId) =>

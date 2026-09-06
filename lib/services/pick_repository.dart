@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/team_palettes.dart';
 import '../models/picks.dart';
 import '../models/sport_match.dart';
 import 'market_archetypes.dart';
@@ -73,15 +74,17 @@ class MockPickRepository implements PickRepository {
     return markets;
   }
 
-  PickMarketStatus _statusForFixture(SportMatch fixture) => switch (fixture.status) {
-    MatchStatus.upcoming => PickMarketStatus.upcoming,
-    MatchStatus.live => PickMarketStatus.live,
-    MatchStatus.finished => PickMarketStatus.closed,
-  };
+  PickMarketStatus _statusForFixture(SportMatch fixture) =>
+      switch (fixture.status) {
+        MatchStatus.upcoming => PickMarketStatus.upcoming,
+        MatchStatus.live => PickMarketStatus.live,
+        MatchStatus.finished => PickMarketStatus.closed,
+      };
 
   PickMarket? _generatedWinnerMarket(SportMatch fixture) {
     final seed = _stableSeed(fixture.id);
-    final hasDraw = fixture.sport == Sport.football || fixture.sport == Sport.cricket;
+    final hasDraw =
+        fixture.sport == Sport.football || fixture.sport == Sport.cricket;
     final homeWin = hasDraw ? 40 + seed % 20 : 46 + seed % 20;
     final draw = hasDraw ? 16 + seed % 10 : 0;
     final awayWin = 100 - homeWin - draw;
@@ -90,7 +93,11 @@ class MockPickRepository implements PickRepository {
         id: 'home',
         label: fixture.home.name,
         probabilityPercent: homeWin,
-        color: fixture.home.color,
+        color: paletteForTeam(
+          fixture.home,
+          sport: fixture.sport,
+          competition: fixture.leagueId,
+        ).secondaryTextColor,
       ),
       if (hasDraw)
         PickOutcome(
@@ -103,7 +110,11 @@ class MockPickRepository implements PickRepository {
         id: 'away',
         label: fixture.away.name,
         probabilityPercent: awayWin,
-        color: fixture.away.color,
+        color: paletteForTeam(
+          fixture.away,
+          sport: fixture.sport,
+          competition: fixture.leagueId,
+        ).secondaryTextColor,
       ),
     ];
     return PickMarket(

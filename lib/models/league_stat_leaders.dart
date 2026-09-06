@@ -128,8 +128,6 @@ class StatLeaderCategory {
 
   bool get isResolved => leaders.every((l) => l.isResolved);
 
-  double get topValue => leaders.isEmpty ? 0 : leaders.first.value;
-
   StatLeaderCategory withLeaders(List<StatLeader> next) => StatLeaderCategory(
     key: key,
     label: label,
@@ -139,12 +137,97 @@ class StatLeaderCategory {
   );
 }
 
-/// Everything the league hub shows from the live ESPN feed for one league.
+/// What one team recorded for one stat across the season.
+@immutable
+class TeamStatValue {
+  const TeamStatValue({required this.value, required this.display});
+
+  final double value;
+
+  /// The feed's own formatting, e.g. "61.5" or "3".
+  final String display;
+}
+
+/// ESPN's description of a stat, hoisted out of the per-team payload so the
+/// same metadata isn't repeated 40 times. Drives labels and the explainer line
+/// under each board.
+@immutable
+class LeagueStatDefinition {
+  const LeagueStatDefinition({
+    required this.name,
+    required this.category,
+    required this.displayName,
+    this.shortDisplayName,
+    this.abbreviation,
+    this.description,
+  });
+
+  /// ESPN stat key, e.g. `avgExpectedGoals`.
+  final String name;
+
+  /// Owning group: `offensive`, `defensive`, `general` or `goalKeeping`.
+  final String category;
+
+  final String displayName;
+  final String? shortDisplayName;
+  final String? abbreviation;
+
+  /// ESPN's own prose explanation, shown as the board's caption.
+  final String? description;
+}
+
+/// One team's full season statistics, flattened across ESPN's four categories
+/// so a stat can be read by name without knowing which group it belongs to.
+@immutable
+class TeamSeasonStats {
+  const TeamSeasonStats({required this.team, required this.values});
+
+  final SportTeam team;
+  final Map<String, TeamStatValue> values;
+
+  TeamStatValue? operator [](String stat) => values[stat];
+}
+
+/// A league's per-club season statistics plus the stat metadata they share.
+/// Produced by either source — the bundled package or a live ESPN sweep — so
+/// the STATS tab renders identically whichever one answered.
+@immutable
+class LeagueTeamStats {
+  const LeagueTeamStats({required this.teams, required this.definitions});
+
+  static const empty = LeagueTeamStats(teams: [], definitions: {});
+
+  final List<TeamSeasonStats> teams;
+  final Map<String, LeagueStatDefinition> definitions;
+
+  bool get isEmpty => teams.isEmpty;
+}
+
+/// One team on a team-stat board — the team equivalent of [StatLeader].
+@immutable
+class TeamStatEntry {
+  const TeamStatEntry({
+    required this.rank,
+    required this.team,
+    required this.value,
+    required this.display,
+  });
+
+  final int rank;
+  final SportTeam team;
+  final double value;
+  final String display;
+}
+
+/// Everything the league hub shows for one league. [groups] and [categories]
+/// drive the TABLE and LEADERS tabs; [teamStats] drives STATS.
 @immutable
 class LeagueStatsSnapshot {
   const LeagueStatsSnapshot({
     required this.groups,
     required this.categories,
+    this.teamStats = const [],
+    this.statDefinitions = const {},
     this.seasonLabel,
   });
 
@@ -155,13 +238,57 @@ class LeagueStatsSnapshot {
 
   final List<StatLeaderCategory> categories;
 
+  /// Per-team season statistics — 112 stats per team from the bundled package.
+  /// Empty for competitions the package doesn't cover.
+  final List<TeamSeasonStats> teamStats;
+
+  /// Stat metadata keyed by ESPN stat name.
+  final Map<String, LeagueStatDefinition> statDefinitions;
+
   /// Season headline, e.g. "2026 MLS".
   final String? seasonLabel;
 
-  bool get isEmpty => groups.isEmpty && categories.isEmpty;
+  bool get isEmpty =>
+      groups.isEmpty && categories.isEmpty && teamStats.isEmpty;
+
+  bool get hasTeamStats => teamStats.isNotEmpty;
 
   /// Every standings row across all groups.
   List<TeamStanding> get allRows => [for (final g in groups) ...g.rows];
+
+  /// Every team ranked by [stat], best first. [lowerIsBetter] flips the order
+  /// for stats where a small number is the good outcome (goals conceded,
+  /// cards). Teams missing the stat are dropped rather than ranked as zero.
+  List<TeamStatEntry> boardFor(String stat, {bool lowerIsBetter = false}) {
+    final scored = <(TeamSeasonStats, TeamStatValue)>[];
+    for (final team in teamStats) {
+      final value = team[stat];
+      if (value != null) scored.add((team, value));
+    }
+    scored.sort(
+      (a, b) => lowerIsBetter
+          ? a.$2.value.compareTo(b.$2.value)
+          : b.$2.value.compareTo(a.$2.value),
+    );
+    return [
+      for (var i = 0; i < scored.length; i++)
+        TeamStatEntry(
+          rank: i + 1,
+          team: scored[i].$1.team,
+          value: scored[i].$2.value,
+          display: scored[i].$2.display,
+        ),
+    ];
+  }
+
+  /// League-wide total of [stat] across every team.
+  double totalOf(String stat) {
+    var sum = 0.0;
+    for (final team in teamStats) {
+      sum += team[stat]?.value ?? 0;
+    }
+    return sum;
+  }
 
   LeagueStatsSnapshot withCategory(int index, StatLeaderCategory category) {
     final next = [...categories];
@@ -169,6 +296,36 @@ class LeagueStatsSnapshot {
     return LeagueStatsSnapshot(
       groups: groups,
       categories: next,
+      teamStats: teamStats,
+      statDefinitions: statDefinitions,
+      seasonLabel: seasonLabel,
+    );
+  }
+
+  /// Layers live feed data over the bundled package, keeping whichever side
+  /// actually has content — an empty live section never blanks a filled one.
+  LeagueStatsSnapshot mergedWith(LeagueStatsSnapshot live) {
+    if (live.isEmpty) return this;
+    return LeagueStatsSnapshot(
+      groups: live.groups.isEmpty ? groups : live.groups,
+      categories: live.categories.isEmpty ? categories : live.categories,
+      teamStats: live.teamStats.isEmpty ? teamStats : live.teamStats,
+      statDefinitions: live.statDefinitions.isEmpty
+          ? statDefinitions
+          : live.statDefinitions,
+      seasonLabel: live.seasonLabel ?? seasonLabel,
+    );
+  }
+
+  /// Attaches per-club season statistics fetched after the fact — the STATS
+  /// tab pulls them lazily, so they arrive later than the rest of the hub.
+  LeagueStatsSnapshot withTeamStats(LeagueTeamStats stats) {
+    if (stats.isEmpty) return this;
+    return LeagueStatsSnapshot(
+      groups: groups,
+      categories: categories,
+      teamStats: stats.teams,
+      statDefinitions: stats.definitions,
       seasonLabel: seasonLabel,
     );
   }

@@ -200,7 +200,9 @@ class _MatchScreenState extends State<MatchScreen> {
         final showIntro = state.phase == MatchPhase.toss && !_introShown;
         final opponentName = state.opponentName ?? 'Rival';
         final playerAvatar = avatarOptionById(_selectedAvatarId);
-        final equippedFrame = avatarFrameOptionById(state.equippedAvatarFrameId);
+        final equippedFrame = avatarFrameOptionById(
+          state.equippedAvatarFrameId,
+        );
         final level = state.progression.levelFor(ProgressTrack.pitchDuel);
 
         final Widget phaseWidget = showIntro
@@ -246,7 +248,6 @@ class _MatchScreenState extends State<MatchScreen> {
                 MatchPhase.idle => GameScaffold(
                   title: 'Match',
                   subtitle: '// Match Terminal',
-                  grain: true,
                   leading: IconButton(
                     onPressed: () => _quit(context),
                     icon: const Icon(Icons.close),

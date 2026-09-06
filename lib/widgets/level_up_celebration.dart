@@ -28,6 +28,7 @@ class LevelUpCelebration extends StatefulWidget {
   final PlayerProgression progression;
   final int xpEarned;
   final VoidCallback onDismissed;
+
   /// Optional mastery track name shown under the LEVEL UP headline.
   final String? trackLabel;
 
@@ -176,7 +177,6 @@ class _LevelUpCelebrationState extends State<LevelUpCelebration>
               Opacity(
                 opacity: backdrop,
                 child: CyberBackground(
-                  grain: true,
                   child: Stack(
                     fit: StackFit.expand,
                     children: [

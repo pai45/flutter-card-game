@@ -7,6 +7,46 @@ import 'package:flutter/material.dart';
 class TennisCountryMap {
   TennisCountryMap._();
 
+  /// Country names for searching the codes used by this catalogue.
+  static String? countryNameFor(String code) =>
+      _countryNames[code.toUpperCase()];
+  static const _countryNames = <String, String>{
+    'ESP': 'Spain',
+    'SRB': 'Serbia',
+    'ITA': 'Italy',
+    'RUS': 'Russia',
+    'GER': 'Germany',
+    'NOR': 'Norway',
+    'USA': 'United States',
+    'AUS': 'Australia',
+    'POL': 'Poland',
+    'GRE': 'Greece',
+    'DEN': 'Denmark',
+    'BUL': 'Bulgaria',
+    'GBR': 'United Kingdom Great Britain',
+    'CAN': 'Canada',
+    'FRA': 'France',
+    'CHI': 'Chile',
+    'ARG': 'Argentina',
+    'CZE': 'Czech Republic Czechia',
+    'KAZ': 'Kazakhstan',
+    'JPN': 'Japan',
+    'SUI': 'Switzerland',
+    'BLR': 'Belarus',
+    'CHN': 'China',
+    'TUN': 'Tunisia',
+    'LAT': 'Latvia',
+    'BRA': 'Brazil',
+    'UKR': 'Ukraine',
+    'MON': 'Monaco',
+    'PER': 'Peru',
+    'BEL': 'Belgium',
+    'ROU': 'Romania',
+    'CRO': 'Croatia',
+    'INA': 'Indonesia',
+    'TUR': 'Turkey',
+  };
+
   /// Returns the 3-letter country code for a tennis player, or null if unknown.
   ///
   /// Keys are matched longest-first: several surnames contain a shorter key as

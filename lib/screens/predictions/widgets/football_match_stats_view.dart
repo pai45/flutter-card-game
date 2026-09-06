@@ -10,6 +10,7 @@ import '../../../widgets/cyber/cyber_chart.dart';
 import '../../../widgets/cyber/cyber_filter_chips.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../../widgets/match_pitch_view.dart';
+import 'football_shot_map.dart';
 import 'match_stats_shell.dart';
 
 class FootballMatchStatsView extends StatefulWidget {
@@ -79,49 +80,26 @@ class _OverviewSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final details = match.footballDetails;
     final stats = match.teamStats ?? const <TeamStatLine>[];
-    final pulse = _controlPulse(match, stats);
 
     return ListView(
       key: const ValueKey('football-stats-overview'),
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
       children: [
-        MatchPulseHeader(
-          match: match,
-          title: '${match.home.name} vs ${match.away.name}',
-          statusLabel: details?.status ?? _statusLabel(match.status),
-          heroValue: pulse.value,
-          heroLabel: pulse.label,
-          heroCaption: pulse.caption,
-          heroColor: pulse.color,
-          delta: pulse.delta,
-          deltaSuffix: 'PRESSURE',
-          deltaDecimals: 1,
-          subtitle: details?.season ?? 'Live competition feed',
-          metrics: [
-            CyberMiniMetric(
-              label: 'SCORE',
-              value:
-                  details?.scoreDisplay ??
-                  '${match.homeScore ?? '-'} - ${match.awayScore ?? '-'}',
-            ),
-            CyberMiniMetric(
-              label: 'KICKOFF',
-              value: _clockLabel(match.kickoff),
-            ),
-          ],
+        const CyberSectionHeading(
+          key: ValueKey('football-match-intel-heading'),
+          label: 'MATCH INTEL',
         ),
-        // With no report feed, the channel state is the most useful thing on
-        // the page, so it leads rather than trailing the league card.
+        const SizedBox(height: 10),
+        _MatchIntelPanel(match: match),
         if (details == null) ...[
           const SizedBox(height: 18),
-          const CyberSectionHeading(label: 'SCOREBOARD CHANNEL'),
+          const CyberSectionHeading(
+            key: ValueKey('football-scoreboard-channel-heading'),
+            label: 'SCOREBOARD CHANNEL',
+          ),
           const SizedBox(height: 10),
           _FeedStatePanel(match: match),
         ],
-        const SizedBox(height: 18),
-        const CyberSectionHeading(label: 'MATCH INTEL'),
-        const SizedBox(height: 10),
-        _MatchIntelPanel(match: match),
         if (stats.isNotEmpty) ...[
           const SizedBox(height: 18),
           _TeamControlPanel(match: match, stats: stats),
@@ -361,8 +339,16 @@ class _TeamControlPanelState extends State<_TeamControlPanel> {
   @override
   Widget build(BuildContext context) {
     final match = widget.match;
-    final homeColor = paletteForTeam(match.home, sport: match.sport).primary;
-    final awayColor = paletteForTeam(match.away, sport: match.sport).primary;
+    final homeColor = paletteForTeam(
+      match.home,
+      sport: match.sport,
+      competition: match.leagueId,
+    ).secondaryTextColor;
+    final awayColor = paletteForTeam(
+      match.away,
+      sport: match.sport,
+      competition: match.leagueId,
+    ).secondaryTextColor;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -401,8 +387,16 @@ class _GoalImpactPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final homeColor = paletteForTeam(match.home, sport: match.sport).primary;
-    final awayColor = paletteForTeam(match.away, sport: match.sport).primary;
+    final homeColor = paletteForTeam(
+      match.home,
+      sport: match.sport,
+      competition: match.leagueId,
+    ).secondaryTextColor;
+    final awayColor = paletteForTeam(
+      match.away,
+      sport: match.sport,
+      competition: match.leagueId,
+    ).secondaryTextColor;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -520,9 +514,18 @@ class _MomentumSectionState extends State<_MomentumSection> {
       );
     }
 
-    final homeColor = paletteForTeam(match.home, sport: match.sport).primary;
-    final awayColor = paletteForTeam(match.away, sport: match.sport).primary;
+    final homeColor = paletteForTeam(
+      match.home,
+      sport: match.sport,
+      competition: match.leagueId,
+    ).secondaryTextColor;
+    final awayColor = paletteForTeam(
+      match.away,
+      sport: match.sport,
+      competition: match.leagueId,
+    ).secondaryTextColor;
     final samples = _samplesForRange(momentum, _range);
+    final shots = match.footballDetails?.shots ?? const <FootballShot>[];
     final homePeak = momentum.homePeak!;
     final awayPeak = momentum.awayPeak!;
 
@@ -567,6 +570,15 @@ class _MomentumSectionState extends State<_MomentumSection> {
             ],
           ),
         ),
+        if (shots.isNotEmpty) ...[
+          const SizedBox(height: 18),
+          FootballShotMapPanel(
+            match: match,
+            shots: shots,
+            homeColor: homeColor,
+            awayColor: awayColor,
+          ),
+        ],
         const SizedBox(height: 18),
         const CyberSectionHeading(label: 'PEAK PRESSURE'),
         const SizedBox(height: 10),
@@ -698,8 +710,16 @@ class _EventsSection extends StatelessWidget {
         spark: Icons.sports_soccer,
       );
     }
-    final homeColor = paletteForTeam(match.home, sport: match.sport).primary;
-    final awayColor = paletteForTeam(match.away, sport: match.sport).primary;
+    final homeColor = paletteForTeam(
+      match.home,
+      sport: match.sport,
+      competition: match.leagueId,
+    ).secondaryTextColor;
+    final awayColor = paletteForTeam(
+      match.away,
+      sport: match.sport,
+      competition: match.leagueId,
+    ).secondaryTextColor;
     return ListView.separated(
       key: const ValueKey('football-stats-events'),
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
@@ -713,7 +733,7 @@ class _EventsSection extends StatelessWidget {
             suffix: 'EVENTS',
           );
         }
-        return _EventCard(
+        return _EventLogRow(
           event: events[index - 1],
           homeColor: homeColor,
           awayColor: awayColor,
@@ -723,8 +743,8 @@ class _EventsSection extends StatelessWidget {
   }
 }
 
-class _EventCard extends StatelessWidget {
-  const _EventCard({
+class _EventLogRow extends StatelessWidget {
+  const _EventLogRow({
     required this.event,
     required this.homeColor,
     required this.awayColor,
@@ -756,9 +776,8 @@ class _EventCard extends StatelessWidget {
     final secondaryPrefix = event.type == MatchEventType.substitution
         ? 'OUT'
         : 'ASSIST';
-    return StatsRowShell(
-      accent: teamColor,
-      padding: const EdgeInsets.all(12),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: DecoratedBox(
         decoration: BoxDecoration(
           border: Border(left: BorderSide(color: teamColor, width: 3)),
@@ -910,7 +929,7 @@ class _CommentarySection extends StatelessWidget {
           sliver: SliverList.separated(
             itemCount: commentary.length,
             separatorBuilder: (_, _) => const SizedBox(height: 8),
-            itemBuilder: (context, index) => _CommentaryCard(
+            itemBuilder: (context, index) => _CommentaryRow(
               item: commentary[index],
               fallbackSequence: index,
             ),
@@ -921,8 +940,8 @@ class _CommentarySection extends StatelessWidget {
   }
 }
 
-class _CommentaryCard extends StatelessWidget {
-  const _CommentaryCard({required this.item, required this.fallbackSequence});
+class _CommentaryRow extends StatelessWidget {
+  const _CommentaryRow({required this.item, required this.fallbackSequence});
 
   final MatchCommentary item;
   final int fallbackSequence;
@@ -930,8 +949,8 @@ class _CommentaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sequence = item.sequence ?? fallbackSequence;
-    return StatsRowShell(
-      padding: const EdgeInsets.all(12),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1032,54 +1051,6 @@ class _LogHeader extends StatelessWidget {
   }
 }
 
-/// Football's hero number is territorial control — the leading side's share of
-/// the headline possession metric, with live pressure as the movement.
-({String value, String label, String caption, Color color, double? delta})
-_controlPulse(SportMatch match, List<TeamStatLine> stats) {
-  final momentum = match.footballMomentum;
-  final control = stats
-      .where(
-        (stat) =>
-            stat.label.toLowerCase().contains('possession') ||
-            stat.label.toLowerCase().contains('control'),
-      )
-      .firstOrNull;
-  final stat = control ?? (stats.isEmpty ? null : stats.first);
-  if (stat == null) {
-    return (
-      value: '—',
-      label: match.home.name,
-      caption: 'MATCH CONTROL',
-      color: Cyber.muted,
-      delta: null,
-    );
-  }
-  final homeLeads = stat.homeShare >= 0.5;
-  final leader = homeLeads ? match.home : match.away;
-  final display = homeLeads ? stat.homeDisplay : stat.awayDisplay;
-
-  double? delta;
-  if (momentum != null && momentum.series.length >= 2) {
-    final window = momentum.series.length < 10
-        ? momentum.series
-        : momentum.series.sublist(momentum.series.length - 10);
-    var total = 0.0;
-    for (final point in window) {
-      total += point.value;
-    }
-    final average = total / window.length;
-    delta = homeLeads ? average : -average;
-  }
-
-  return (
-    value: display,
-    label: leader.name,
-    caption: stat.label.toUpperCase(),
-    color: paletteForTeam(leader, sport: match.sport).primary,
-    delta: delta,
-  );
-}
-
 bool _isPeriodMarker(MatchEventType type) => switch (type) {
   MatchEventType.kickoff ||
   MatchEventType.halftime ||
@@ -1097,12 +1068,6 @@ String _eventLabel(MatchEventType type) => switch (type) {
   MatchEventType.yellowCard => 'Yellow card',
   MatchEventType.redCard => 'Red card',
   MatchEventType.substitution => 'Substitution',
-};
-
-String _statusLabel(MatchStatus status) => switch (status) {
-  MatchStatus.upcoming => 'Pre-match',
-  MatchStatus.live => 'Live now',
-  MatchStatus.finished => 'Full time',
 };
 
 String _feedMessage(SportMatch match) {
@@ -1127,12 +1092,6 @@ String _formatFeedDateTime(DateTime? value) {
   String twoDigits(int number) => number.toString().padLeft(2, '0');
   return '${local.year}-${twoDigits(local.month)}-${twoDigits(local.day)} '
       '${twoDigits(local.hour)}:${twoDigits(local.minute)}';
-}
-
-String _clockLabel(DateTime value) {
-  final local = value.toLocal();
-  String two(int number) => number.toString().padLeft(2, '0');
-  return '${two(local.hour)}:${two(local.minute)}';
 }
 
 String _compactNumber(int value) {

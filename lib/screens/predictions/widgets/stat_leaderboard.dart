@@ -9,8 +9,10 @@ import '../../../widgets/team_logo.dart';
 /// One stat leaderboard: a glowing champion plate on top of calm ranked rows.
 ///
 /// The `#1` card is the screen's single focal glow (glow rule) — everything
-/// below it is a flat plate with a scaled [CyberProgressBar] so the drop-off
-/// from the leader reads at a glance.
+/// below it is a flat plate carrying rank, identity and the number. The rows
+/// are deliberately bar-free: the values are short and already right-aligned in
+/// a tabular column, so a meter behind each one added weight without adding
+/// information.
 class StatLeaderboard extends StatelessWidget {
   const StatLeaderboard({
     required this.category,
@@ -41,7 +43,6 @@ class StatLeaderboard extends StatelessWidget {
 
     final champion = leaders.first;
     final chasers = leaders.skip(1).toList(growable: false);
-    final top = category.topValue <= 0 ? 1.0 : category.topValue;
 
     return Column(
       key: ValueKey(category.key),
@@ -66,7 +67,6 @@ class StatLeaderboard extends StatelessWidget {
                 rank: i + 2,
                 leader: chasers[i],
                 accent: _accent,
-                fraction: (chasers[i].value / top).clamp(0.04, 1.0),
                 resolving: resolving,
               ),
             ),
@@ -163,10 +163,8 @@ class _ChampionCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          CyberProgressBar(value: 1, accent: accent, height: 6),
           if (detail != null) ...[
-            const SizedBox(height: 9),
+            const SizedBox(height: 12),
             Text(
               detail,
               style: Cyber.label(8.5, color: Cyber.muted, letterSpacing: 1.2),
@@ -178,20 +176,18 @@ class _ChampionCard extends StatelessWidget {
   }
 }
 
-/// Ranks 2+: a flat chamfered plate with a bar scaled against the leader.
+/// Ranks 2+: a flat chamfered plate — rank, crest, name, value.
 class _ChaserRow extends StatelessWidget {
   const _ChaserRow({
     required this.rank,
     required this.leader,
     required this.accent,
-    required this.fraction,
     required this.resolving,
   });
 
   final int rank;
   final StatLeader leader;
   final Color accent;
-  final double fraction;
   final bool resolving;
 
   @override
@@ -222,26 +218,11 @@ class _ChaserRow extends StatelessWidget {
             _LeaderCrest(leader: leader, size: 26),
             const SizedBox(width: 10),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _nameOf(leader, resolving),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Cyber.body(
-                      13,
-                      weight: FontWeight.w700,
-                      height: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 7),
-                  CyberProgressBar(
-                    value: fraction,
-                    accent: accent.withValues(alpha: 0.85),
-                    height: 4,
-                  ),
-                ],
+              child: Text(
+                _nameOf(leader, resolving),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Cyber.body(13, weight: FontWeight.w700, height: 1),
               ),
             ),
             const SizedBox(width: 12),

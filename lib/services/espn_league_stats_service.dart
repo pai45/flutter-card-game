@@ -31,12 +31,27 @@ class EspnLeagueStatsService {
   /// references a lazy category resolve has to fetch).
   static const leaderCount = 10;
 
-  /// Curated league id to ESPN competition slug. Leagues discovered at runtime
-  /// carry ESPN's numeric id rather than a slug and simply resolve to null —
-  /// the hub then falls back to the repository's own standings.
+  /// League identifier to ESPN competition slug.
+  ///
+  /// The same competition reaches this service under several different ids
+  /// depending on where the [League] came from: the curated repository entry
+  /// (`eng.1`), the follow list (`epl`), or runtime discovery from an ESPN
+  /// payload, which supplies ESPN's own numeric league id — and the scoreboard
+  /// and standings feeds disagree about that number (700 vs 23 for the Premier
+  /// League). Every spelling is mapped so the hub resolves whichever arrives;
+  /// anything still unknown resolves to null and the hub falls back to the
+  /// repository's own standings.
   static const _slugs = <String, String>{
     'mls': 'usa.1',
+    'usa.1': 'usa.1',
     'epl': 'eng.1',
+    'eng.1': 'eng.1',
+    '700': 'eng.1',
+    '23': 'eng.1',
+    'laliga': 'esp.1',
+    'esp.1': 'esp.1',
+    '740': 'esp.1',
+    '15': 'esp.1',
     'fifa': 'fifa.world',
     'uclq': 'uefa.champions_qual',
     'brasileirao': 'bra.1',
@@ -77,9 +92,16 @@ class EspnLeagueStatsService {
     _CategorySpec('redCards', 'RED', 'RED CARDS', StatAccent.danger),
   ];
 
+  /// Per-team season statistics are fetched one request per club, so they are
+  /// pulled lazily the first time the STATS tab is opened rather than on every
+  /// hub open. Six in flight at once keeps a 20-club league to a few
+  /// round-trips without tripping ESPN's throttling.
+  static const _teamStatsConcurrency = 6;
+
   static final Map<String, LeagueStatsSnapshot> _snapshotCache = {};
   static final Map<String, _LeagueContext> _contextCache = {};
   static final Map<String, _ResolvedAthlete> _athleteCache = {};
+  static final Map<String, LeagueTeamStats> _teamStatsCache = {};
 
   /// True when [leagueId] maps to a competition ESPN can serve stats for.
   static bool supports(String leagueId) => _slugs.containsKey(leagueId);
@@ -89,6 +111,7 @@ class EspnLeagueStatsService {
     _snapshotCache.clear();
     _contextCache.clear();
     _athleteCache.clear();
+    _teamStatsCache.clear();
   }
 
   /// Standings plus every leaderboard for [leagueId]. Goals and assists come
@@ -202,6 +225,105 @@ class EspnLeagueStatsService {
     final next = category.withLeaders(resolved);
     _replaceCachedCategory(leagueId, next);
     return next;
+  }
+
+  /// Per-team season statistics for [leagueId] — the 112-stat block behind the
+  /// hub's STATS tab, straight from ESPN rather than the bundled package.
+  ///
+  /// Requires [fetchSnapshot] to have run first: the club directory and season
+  /// year both come from the standings/statistics pass it caches. Returns
+  /// [LeagueTeamStats.empty] when the competition is unsupported or every
+  /// request failed, which the UI reads as "not published".
+  Future<LeagueTeamStats> fetchTeamStats(String leagueId) async {
+    final cached = _teamStatsCache[leagueId];
+    if (cached != null) return cached;
+
+    var context = _contextCache[leagueId];
+    if (context == null) {
+      // The STATS tab can be opened before the snapshot finished (or when it
+      // came from the bundled package), so build the context on demand.
+      await fetchSnapshot(leagueId);
+      context = _contextCache[leagueId];
+      if (context == null) return LeagueTeamStats.empty;
+    }
+
+    final definitions = <String, LeagueStatDefinition>{};
+    final teamStats = <TeamSeasonStats>[];
+    final ids = context.teams.keys.toList();
+
+    var next = 0;
+    Future<void> worker() async {
+      while (true) {
+        final index = next++;
+        if (index >= ids.length) return;
+        final teamId = ids[index];
+        final team = context!.teams[teamId];
+        if (team == null) continue;
+        final values = await _fetchOneTeamStats(context, teamId, definitions);
+        if (values.isNotEmpty) {
+          teamStats.add(TeamSeasonStats(team: team, values: values));
+        }
+      }
+    }
+
+    await Future.wait([
+      for (var i = 0; i < _teamStatsConcurrency && i < ids.length; i++)
+        worker(),
+    ]);
+
+    if (teamStats.isEmpty) return LeagueTeamStats.empty;
+    // Standings order, so the boards rank from a stable base.
+    teamStats.sort((a, b) => a.team.name.compareTo(b.team.name));
+    final result = LeagueTeamStats(
+      teams: teamStats,
+      definitions: definitions,
+    );
+    _teamStatsCache[leagueId] = result;
+    return result;
+  }
+
+  /// One club's season statistics, flattened across ESPN's four categories.
+  /// Stat metadata is identical for every club, so it is recorded once into
+  /// the shared [definitions] map rather than per team.
+  Future<Map<String, TeamStatValue>> _fetchOneTeamStats(
+    _LeagueContext context,
+    String teamId,
+    Map<String, LeagueStatDefinition> definitions,
+  ) async {
+    final data = await _get(
+      'https://sports.core.api.espn.com/v2/sports/soccer/leagues/${context.slug}'
+      '/seasons/${context.seasonYear}/types/1/teams/$teamId/statistics',
+    );
+    final categories =
+        (data?['splits'] as Map?)?['categories'] as List? ?? const [];
+    final values = <String, TeamStatValue>{};
+
+    for (final category in categories) {
+      if (category is! Map) continue;
+      final categoryName = category['name']?.toString() ?? 'general';
+      for (final stat in category['stats'] as List? ?? const []) {
+        if (stat is! Map) continue;
+        final name = stat['name']?.toString();
+        final value = (stat['value'] as num?)?.toDouble();
+        if (name == null || value == null) continue;
+        values[name] = TeamStatValue(
+          value: value,
+          display: stat['displayValue']?.toString() ?? '',
+        );
+        definitions.putIfAbsent(
+          name,
+          () => LeagueStatDefinition(
+            name: name,
+            category: categoryName,
+            displayName: stat['displayName']?.toString() ?? name,
+            shortDisplayName: stat['shortDisplayName']?.toString(),
+            abbreviation: stat['abbreviation']?.toString(),
+            description: stat['description']?.toString(),
+          ),
+        );
+      }
+    }
+    return values;
   }
 
   void _replaceCachedCategory(String leagueId, StatLeaderCategory category) {

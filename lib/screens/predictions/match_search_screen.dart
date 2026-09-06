@@ -8,6 +8,7 @@ import '../../blocs/prediction/prediction_cubit.dart';
 import '../../blocs/prediction/prediction_state.dart';
 import '../../config/sport_modules.dart';
 import '../../config/theme.dart';
+import '../../data/team_palettes.dart';
 import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
@@ -181,6 +182,9 @@ class _MatchSearchScreenState extends State<MatchSearchScreen> {
                                   state,
                                   groups[groupIndex].fixtures[matchIndex],
                                 ),
+                                favorite: state.favoriteSideFor(
+                                  groups[groupIndex].fixtures[matchIndex],
+                                ),
                                 onTap: () => _openMatch(
                                   groups[groupIndex].fixtures[matchIndex],
                                 ),
@@ -299,7 +303,11 @@ List<_MatchSearchGroup> _groupsForQuery(
         title: candidate.team.name,
         code: candidate.team.shortName,
         sport: candidate.sport,
-        accent: candidate.team.color,
+        accent: paletteForTeam(
+          candidate.team,
+          sport: candidate.sport,
+          competition: fixtures.isEmpty ? null : fixtures.first.leagueId,
+        ).secondaryTextColor,
         fixtures: fixtures,
         rank: rank,
       ),

@@ -9,6 +9,7 @@ import '../../../models/cards.dart';
 import '../../../models/match.dart';
 import '../../../utils/game_audio_mappings.dart';
 import '../../../utils/sound_effects.dart';
+import '../../../widgets/cyber/goal_mouth.dart';
 import 'penalty_keeper_rig.dart';
 
 /// Fraction of the result-scene timeline at which the ball reaches the goal.
@@ -54,126 +55,30 @@ double _zoneSign(PenaltyDirection d) => switch (d) {
 
 /// Posts, crossbar, net grid and ground. On a goal, the net bulges outward
 /// around [rippleCenter] while [rippleT] runs 0→1.
+///
+/// Thin adapter over the shared [paintGoalMouth], which this drawing was
+/// extracted into so the shot map could reuse the same goal instead of
+/// re-deriving it. Verified pixel-identical to the original before switching.
 void _paintGoalFrame(
   Canvas canvas,
   _GoalGeom g, {
   double rippleT = 0,
   Offset? rippleCenter,
-}) {
-  final netPaint = Paint()
-    ..color = Cyber.cyan.withValues(alpha: 0.20)
-    ..strokeWidth = 1
-    ..style = PaintingStyle.stroke;
+}) => paintGoalMouth(
+  canvas,
+  GoalMouthFrame(
+    left: g.left,
+    right: g.right,
+    crossbarY: g.crossbarY,
+    groundY: g.groundY,
+  ),
+  rippleT: rippleT,
+  rippleCenter: rippleCenter,
+  spot: g.spot,
+);
 
-  Offset displace(Offset p) {
-    final c = rippleCenter;
-    if (c == null || rippleT <= 0 || rippleT >= 1) return p;
-    final d = (p - c).distance;
-    if (d < 1) return p;
-    final amp = 11 * sin(rippleT * pi) * exp(-(d * d) / (2 * 42 * 42));
-    return p + (p - c) / d * amp;
-  }
-
-  Path netLine(List<Offset> pts) {
-    final path = Path()..moveTo(pts.first.dx, pts.first.dy);
-    for (final p in pts.skip(1)) {
-      path.lineTo(p.dx, p.dy);
-    }
-    return path;
-  }
-
-  List<Offset> sample(Offset a, Offset b) => [
-    for (var i = 0; i <= 10; i++) displace(Offset.lerp(a, b, i / 10)!),
-  ];
-
-  // Net verticals + horizontals (drawn as displaceable polylines).
-  const cols = 9;
-  const rows = 5;
-  for (var i = 1; i < cols; i++) {
-    final x = g.left + g.width * i / cols;
-    canvas.drawPath(
-      netLine(sample(Offset(x, g.crossbarY), Offset(x, g.groundY))),
-      netPaint,
-    );
-  }
-  for (var i = 1; i < rows; i++) {
-    final y = g.crossbarY + g.mouthH * i / rows;
-    canvas.drawPath(
-      netLine(sample(Offset(g.left, y), Offset(g.right, y))),
-      netPaint,
-    );
-  }
-
-  // Expanding impact ring while the net ripples.
-  final c = rippleCenter;
-  if (c != null && rippleT > 0 && rippleT < 1) {
-    canvas.drawCircle(
-      c,
-      8 + 34 * rippleT,
-      Paint()
-        ..color = Cyber.lime.withValues(alpha: 0.5 * (1 - rippleT))
-        ..strokeWidth = 2
-        ..style = PaintingStyle.stroke,
-    );
-  }
-
-  // Frame: posts + crossbar over the net, ground line, penalty spot.
-  final framePaint = Paint()
-    ..color = Colors.white.withValues(alpha: 0.92)
-    ..strokeWidth = 4
-    ..strokeCap = StrokeCap.round
-    ..style = PaintingStyle.stroke;
-  canvas.drawLine(
-    Offset(g.left, g.groundY),
-    Offset(g.left, g.crossbarY),
-    framePaint,
-  );
-  canvas.drawLine(
-    Offset(g.right, g.groundY),
-    Offset(g.right, g.crossbarY),
-    framePaint,
-  );
-  canvas.drawLine(
-    Offset(g.left, g.crossbarY),
-    Offset(g.right, g.crossbarY),
-    framePaint,
-  );
-
-  final groundPaint = Paint()
-    ..color = Cyber.cyan.withValues(alpha: 0.35)
-    ..strokeWidth = 1.5;
-  canvas.drawLine(
-    Offset(0, g.groundY),
-    Offset(g.left + g.width + g.left, g.groundY),
-    groundPaint,
-  );
-  canvas.drawCircle(
-    g.spot,
-    2.5,
-    Paint()..color = Colors.white.withValues(alpha: 0.7),
-  );
-}
-
-void _paintBall(Canvas canvas, Offset pos, double scale, {double alpha = 1}) {
-  final r = 8.0 * scale;
-  canvas.drawCircle(
-    pos,
-    r,
-    Paint()..color = Colors.white.withValues(alpha: 0.95 * alpha),
-  );
-  final seam = Paint()
-    ..color = Cyber.bg2.withValues(alpha: 0.85 * alpha)
-    ..strokeWidth = 1.2
-    ..style = PaintingStyle.stroke;
-  canvas.drawCircle(pos, r * 0.45, seam);
-  canvas.drawArc(
-    Rect.fromCircle(center: pos, radius: r * 0.85),
-    0.6,
-    1.6,
-    false,
-    seam,
-  );
-}
+void _paintBall(Canvas canvas, Offset pos, double scale, {double alpha = 1}) =>
+    paintGoalBall(canvas, pos, scale, alpha: alpha);
 
 // ─── Choose phase: tappable goal mouth ───────────────────────────────────────
 

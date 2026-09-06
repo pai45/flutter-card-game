@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../config/theme.dart';
+import '../../../data/team_palettes.dart';
 import '../../../models/league.dart';
 import '../../../models/sport_match.dart';
 import '../../../models/team_standing.dart';
@@ -144,6 +145,7 @@ class StandingsTable extends StatelessWidget {
     required this.onTapTeam,
     this.accent = Cyber.cyan,
     this.showGoals = false,
+    this.competition,
     super.key,
   });
 
@@ -154,6 +156,7 @@ class StandingsTable extends StatelessWidget {
   /// Adds the F/A columns. Off by default so the narrow mock tables are
   /// unaffected.
   final bool showGoals;
+  final String? competition;
 
   @override
   Widget build(BuildContext context) {
@@ -194,7 +197,8 @@ class StandingsTable extends StatelessWidget {
             colors: [Color(0xff121b30), Color(0xff0e1628)],
           ),
           border: Border.all(
-            color: Color.lerp(const Color(0xff243654), accent, 0.22) ??
+            color:
+                Color.lerp(const Color(0xff243654), accent, 0.22) ??
                 const Color(0xff243654),
           ),
         ),
@@ -204,6 +208,7 @@ class StandingsTable extends StatelessWidget {
             for (var i = 0; i < rows.length; i++) ...[
               _DataRow(
                 row: rows[i],
+                competition: competition,
                 cols: cols,
                 last: i == rows.length - 1 && _zoneAfter(i) == null,
                 onTap: () => onTapTeam(rows[i].team),
@@ -273,10 +278,7 @@ class _QualificationLine extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Text(
-            label,
-            style: Cyber.label(7.5, color: tint, letterSpacing: 1.1),
-          ),
+          Text(label, style: Cyber.label(7.5, color: tint, letterSpacing: 1.1)),
         ],
       ),
     );
@@ -320,12 +322,14 @@ class _HeaderRow extends StatelessWidget {
 class _DataRow extends StatelessWidget {
   const _DataRow({
     required this.row,
+    required this.competition,
     required this.cols,
     required this.last,
     required this.onTap,
   });
 
   final TeamStanding row;
+  final String? competition;
   final List<_Col> cols;
   final bool last;
   final VoidCallback onTap;
@@ -333,6 +337,10 @@ class _DataRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rankColor = row.rank == 1 ? Cyber.gold : Cyber.muted;
+    final teamColor = paletteForTeam(
+      row.team,
+      competition: competition,
+    ).secondaryTextColor;
     final move = row.rankChange ?? 0;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -364,14 +372,24 @@ class _DataRow extends StatelessWidget {
             ),
             _RankMove(change: move),
             const SizedBox(width: 6),
-            TeamLogo(team: row.team, width: 26, height: 24),
+            TeamLogo(
+              team: row.team,
+              competition: competition,
+              width: 26,
+              height: 24,
+            ),
             const SizedBox(width: 9),
             Expanded(
               child: Text(
                 row.tableName ?? row.team.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.body(13, weight: FontWeight.w700, height: 1),
+                style: Cyber.body(
+                  13,
+                  color: teamColor,
+                  weight: FontWeight.w700,
+                  height: 1,
+                ),
               ),
             ),
             for (final c in cols)
@@ -419,17 +437,27 @@ class _RankMove extends StatelessWidget {
 
 /// Team lockup for the team detail header: badge + name + rank/points + form.
 class TeamHeader extends StatelessWidget {
-  const TeamHeader({required this.team, required this.standing, super.key});
+  const TeamHeader({
+    required this.team,
+    required this.standing,
+    this.competition,
+    super.key,
+  });
 
   final SportTeam team;
   final TeamStanding? standing;
+  final String? competition;
 
   @override
   Widget build(BuildContext context) {
     final s = standing;
+    final teamColor = paletteForTeam(
+      team,
+      competition: competition,
+    ).secondaryTextColor;
     return Row(
       children: [
-        TeamLogo(team: team, width: 54, height: 54),
+        TeamLogo(team: team, competition: competition, width: 54, height: 54),
         const SizedBox(width: 14),
         Expanded(
           child: Column(
@@ -437,11 +465,7 @@ class TeamHeader extends StatelessWidget {
             children: [
               Text(
                 team.name,
-                style: Cyber.display(
-                  19,
-                  color: Colors.white,
-                  letterSpacing: 0.4,
-                ),
+                style: Cyber.display(19, color: teamColor, letterSpacing: 0.4),
               ),
               const SizedBox(height: 5),
               if (s != null)

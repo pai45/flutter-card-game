@@ -79,41 +79,11 @@ class _BasketballOverview extends StatelessWidget {
   Widget build(BuildContext context) {
     final details = match.basketballDetails;
     final scorecard = match.basketballScorecard;
-    final plays = details?.plays ?? const <BasketballPlay>[];
-    final pulse = _winPulse(match, plays);
 
     return ListView(
       key: const ValueKey('basketball-stats-overview'),
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
       children: [
-        MatchPulseHeader(
-          match: match,
-          title: '${match.home.name} vs ${match.away.name}',
-          statusLabel: details?.status ?? _status(match.status),
-          heroValue: pulse.value,
-          heroLabel: pulse.label,
-          heroCaption: pulse.caption,
-          heroColor: pulse.color,
-          delta: pulse.delta,
-          deltaSuffix: pulse.deltaSuffix,
-          deltaDecimals: 1,
-          subtitle: details == null
-              ? _stateMessage(match)
-              : '${details.gameNote} // ${details.season}',
-          metrics: [
-            CyberMiniMetric(
-              label: 'SCORE',
-              value: '${match.awayScore ?? '-'} - ${match.homeScore ?? '-'}',
-            ),
-            CyberMiniMetric(
-              label: 'ATTENDANCE',
-              value: details == null || details.attendance <= 0
-                  ? '—'
-                  : _commas(details.attendance),
-            ),
-          ],
-        ),
-        const SizedBox(height: 18),
         const CyberSectionHeading(label: 'GAME INTEL'),
         const SizedBox(height: 10),
         StatsRowShell(
@@ -219,14 +189,22 @@ class _QuarterPanel extends StatelessWidget {
             label: match.away.shortName,
             values: lines.awayScores,
             total: lines.awayTotal,
-            accent: paletteForTeam(match.away, sport: match.sport).primary,
+            accent: paletteForTeam(
+              match.away,
+              sport: match.sport,
+              competition: match.leagueId,
+            ).secondaryTextColor,
           ),
           const HudLine(),
           _QuarterRow(
             label: match.home.shortName,
             values: lines.homeScores,
             total: lines.homeTotal,
-            accent: paletteForTeam(match.home, sport: match.sport).primary,
+            accent: paletteForTeam(
+              match.home,
+              sport: match.sport,
+              competition: match.leagueId,
+            ).secondaryTextColor,
           ),
         ],
       ),
@@ -300,8 +278,16 @@ class _BasketballStatPanelState extends State<_BasketballStatPanel> {
   Widget build(BuildContext context) {
     final match = widget.match;
     final stats = match.teamStats!;
-    final homeColor = paletteForTeam(match.home, sport: match.sport).primary;
-    final awayColor = paletteForTeam(match.away, sport: match.sport).primary;
+    final homeColor = paletteForTeam(
+      match.home,
+      sport: match.sport,
+      competition: match.leagueId,
+    ).secondaryTextColor;
+    final awayColor = paletteForTeam(
+      match.away,
+      sport: match.sport,
+      competition: match.leagueId,
+    ).secondaryTextColor;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -351,7 +337,8 @@ class _LeaderPanel extends StatelessWidget {
               final accent = paletteForTeam(
                 isHome ? match.home : match.away,
                 sport: match.sport,
-              ).primary;
+                competition: match.leagueId,
+              ).secondaryTextColor;
               return StatsRowShell(
                 accent: accent,
                 padding: const EdgeInsets.all(12),
@@ -405,14 +392,23 @@ class _BasketballFlowState extends State<_BasketballFlow> {
       return const CyberNoDataState(
         icon: Icons.show_chart,
         title: 'Flow feed unavailable',
-        message: 'Win probability and scoring coordinates have not arrived.',
+        message: 'Scoring progression and shot coordinates have not arrived.',
       );
     }
 
-    final homeColor = paletteForTeam(match.home, sport: match.sport).primary;
-    final awayColor = paletteForTeam(match.away, sport: match.sport).primary;
+    final homeColor = paletteForTeam(
+      match.home,
+      sport: match.sport,
+      competition: match.leagueId,
+    ).secondaryTextColor;
+    final awayColor = paletteForTeam(
+      match.away,
+      sport: match.sport,
+      competition: match.leagueId,
+    ).secondaryTextColor;
     final plays = _playsForRange(details.plays, _flowRange);
     final mapped = _mappedPlays(details.plays, _mapRange);
+    final edge = _ScoringEdge.from(details.plays);
 
     return ListView(
       key: const ValueKey('basketball-stats-flow'),
@@ -423,17 +419,20 @@ class _BasketballFlowState extends State<_BasketballFlow> {
           duration: const Duration(milliseconds: 760),
           curve: Curves.easeOutCubic,
           builder: (context, progress, _) => CyberChartPanel(
-            chartKey: const ValueKey('basketball-win-probability-graph'),
-            title: 'WIN PROBABILITY',
+            chartKey: const ValueKey('basketball-scoring-run-graph'),
+            title: 'SCORING RUN',
             caption: '${plays.length} PLAYS',
             height: 220,
-            percentScale: true,
+            stepped: true,
+            yAxisLabels: true,
+            gridDivisions: 4,
             glow: progress < 1,
             revealProgress: progress,
             ranges: _flowRanges,
             activeRange: _flowRange,
             onRangeChanged: (range) => setState(() => _flowRange = range),
-            markers: _turningPointMarkers(details.turningPoints, plays),
+            markers: _leadChangeMarkers(plays, homeColor, awayColor),
+            xAxisLabels: _periodLabels(plays),
             contextLabelAt: (index) {
               final play = plays[index.clamp(0, plays.length - 1)];
               return 'Q${play.period} ${play.clock}';
@@ -443,24 +442,42 @@ class _BasketballFlowState extends State<_BasketballFlow> {
                 label: match.home.shortName.toUpperCase(),
                 color: homeColor,
                 fill: true,
-                readout: (value, _) => '${value.round()}%',
-                values: [
-                  for (final play in plays)
-                    (play.homeWinPercentage.clamp(0.0, 1.0)) * 100,
-                ],
+                readout: (value, _) => value.round().toString(),
+                values: [for (final play in plays) play.homeScore.toDouble()],
               ),
               ChartSeries(
                 label: match.away.shortName.toUpperCase(),
                 color: awayColor,
-                strokeWidth: 1.5,
-                readout: (value, _) => '${value.round()}%',
-                values: [
-                  for (final play in plays)
-                    (1 - play.homeWinPercentage.clamp(0.0, 1.0)) * 100,
-                ],
+                strokeWidth: 1.8,
+                readout: (value, _) => value.round().toString(),
+                values: [for (final play in plays) play.awayScore.toDouble()],
               ),
             ],
           ),
+        ),
+        const SizedBox(height: 18),
+        const CyberSectionHeading(label: 'SCORING EDGE'),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            CyberMiniMetric(
+              label: 'BIGGEST LEAD',
+              value: edge.biggestLead == 0
+                  ? 'LEVEL'
+                  : '${edge.leadIsHome ? match.home.shortName : match.away.shortName} +${edge.biggestLead}',
+              accent: edge.biggestLead == 0
+                  ? null
+                  : (edge.leadIsHome ? homeColor : awayColor),
+            ),
+            const SizedBox(width: 10),
+            CyberMiniMetric(
+              label: 'LEAD CHANGES',
+              value: '${edge.leadChanges}',
+              accent: Cyber.cyan,
+            ),
+            const SizedBox(width: 10),
+            CyberMiniMetric(label: 'TIES', value: '${edge.ties}'),
+          ],
         ),
         const SizedBox(height: 14),
         _ScoringMapPanel(
@@ -478,7 +495,7 @@ class _BasketballFlowState extends State<_BasketballFlow> {
         const SizedBox(height: 10),
         for (final point in details.turningPoints) ...[
           StatsRowShell(
-            accent: point.swing >= 0 ? homeColor : awayColor,
+            accent: point.homeScore >= point.awayScore ? homeColor : awayColor,
             padding: const EdgeInsets.all(12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -497,14 +514,28 @@ class _BasketballFlowState extends State<_BasketballFlow> {
                       Text(point.text, style: Cyber.body(12)),
                       const SizedBox(height: 3),
                       Text(
-                        '${point.awayScore}-${point.homeScore} // HOME ${(point.homeWinPercentage * 100).toStringAsFixed(1)}%',
+                        '${match.away.shortName} ${point.awayScore} // ${match.home.shortName} ${point.homeScore}',
                         style: Cyber.label(7.5, color: Cyber.muted),
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(width: 8),
-                CyberDeltaChip(delta: point.swing * 100, decimals: 1),
+                // Team code + margin, not an up/down delta: at this moment one
+                // side is simply ahead, and colour is what says which.
+                if (point.homeScore == point.awayScore)
+                  const CyberStatPill(label: 'LEVEL', color: Cyber.muted)
+                else
+                  CyberStatPill(
+                    label: point.homeScore > point.awayScore
+                        ? match.home.shortName
+                        : match.away.shortName,
+                    value:
+                        '+${(point.homeScore - point.awayScore).abs()}',
+                    color: point.homeScore > point.awayScore
+                        ? homeColor
+                        : awayColor,
+                  ),
               ],
             ),
           ),
@@ -644,7 +675,11 @@ class _BasketballPlays extends StatelessWidget {
             itemBuilder: (context, index) {
               final play = plays[index];
               final team = play.isHomeTeam ? match.home : match.away;
-              final accent = paletteForTeam(team, sport: match.sport).primary;
+              final accent = paletteForTeam(
+                team,
+                sport: match.sport,
+                competition: match.leagueId,
+              ).secondaryTextColor;
               return StatsRowShell(
                 accent: accent,
                 padding: const EdgeInsets.all(12),
@@ -675,7 +710,7 @@ class _BasketballPlays extends StatelessWidget {
                           Text(play.text, style: Cyber.body(12)),
                           const SizedBox(height: 5),
                           Text(
-                            '${match.away.shortName} ${play.awayScore} // ${match.home.shortName} ${play.homeScore}  •  HOME ${(play.homeWinPercentage * 100).toStringAsFixed(1)}%',
+                            '${match.away.shortName} ${play.awayScore} // ${match.home.shortName} ${play.homeScore}',
                             style: Cyber.label(7.2, color: Cyber.muted),
                           ),
                         ],
@@ -751,7 +786,8 @@ class _BasketballTeamsState extends State<_BasketballTeams> {
     final accent = paletteForTeam(
       _home ? widget.match.home : widget.match.away,
       sport: widget.match.sport,
-    ).primary;
+      competition: widget.match.leagueId,
+    ).secondaryTextColor;
 
     return Column(
       key: const ValueKey('basketball-stats-teams'),
@@ -1022,7 +1058,8 @@ class _CourtFrame {
   static const double freeThrowFt = 13.75; // 19ft from the baseline
   static const double freeThrowRadiusFt = 6;
   static const double threePointRadiusFt = 23.75;
-  static const double cornerInsetFt = 3; // corner line sits 3ft off the sideline
+  static const double cornerInsetFt =
+      3; // corner line sits 3ft off the sideline
   static const double cornerBreakFt = 8.75; // where the corner meets the arc
   static const double restrictedRadiusFt = 4;
   static const double backboardFt = -1.25;
@@ -1245,52 +1282,6 @@ class BasketballScoringMapPainter extends CustomPainter {
       oldDelegate.awayColor != awayColor;
 }
 
-/// The hero readout: who the model favours right now, and how far that has
-/// moved inside the current period.
-({
-  String value,
-  String label,
-  String caption,
-  Color color,
-  double? delta,
-  String deltaSuffix,
-})
-_winPulse(SportMatch match, List<BasketballPlay> plays) {
-  if (plays.isEmpty) {
-    return (
-      value: '—',
-      label: match.home.shortName,
-      caption: 'WIN CHANCE',
-      color: Cyber.muted,
-      delta: null,
-      deltaSuffix: '',
-    );
-  }
-  final last = plays.last;
-  final homeChance = last.homeWinPercentage.clamp(0.0, 1.0) * 100;
-  final homeLeads = homeChance >= 50;
-  final leaderChance = homeLeads ? homeChance : 100 - homeChance;
-  final leader = homeLeads ? match.home : match.away;
-
-  final periodStart = plays.firstWhere(
-    (play) => play.period == last.period,
-    orElse: () => plays.first,
-  );
-  final startChance = periodStart.homeWinPercentage.clamp(0.0, 1.0) * 100;
-  final delta = homeLeads
-      ? homeChance - startChance
-      : (100 - homeChance) - (100 - startChance);
-
-  return (
-    value: '${leaderChance.round()}%',
-    label: leader.name,
-    caption: 'WIN CHANCE',
-    color: paletteForTeam(leader, sport: match.sport).primary,
-    delta: delta,
-    deltaSuffix: 'THIS QUARTER',
-  );
-}
-
 /// Filters the win-probability trace. CLUTCH is the final five minutes of the
 /// last regulation quarter — the stretch that decided it.
 List<BasketballPlay> _playsForRange(List<BasketballPlay> plays, String range) {
@@ -1316,33 +1307,96 @@ List<BasketballPlay> _mappedPlays(List<BasketballPlay> plays, String range) {
   }.toList();
 }
 
-/// Turning points sit on the plot as rings; the biggest swing is the focal one.
-List<ChartMarker> _turningPointMarkers(
-  List<BasketballTurningPoint> points,
+/// Lead changes ride the plot as rings in the colour of the team that took the
+/// lead. Only the last flip is focal — the one the game never came back from.
+List<ChartMarker> _leadChangeMarkers(
   List<BasketballPlay> plays,
+  Color homeColor,
+  Color awayColor,
 ) {
-  if (points.isEmpty || plays.length < 2) return const <ChartMarker>[];
-  var biggest = 0.0;
-  for (final point in points) {
-    biggest = math.max(biggest, point.swing.abs());
+  if (plays.length < 2) return const <ChartMarker>[];
+  final indices = <int>[];
+  var lastLead = 0;
+  for (var i = 0; i < plays.length; i++) {
+    final lead = (plays[i].homeScore - plays[i].awayScore).sign;
+    if (lead == 0) continue;
+    if (lastLead != 0 && lead != lastLead) indices.add(i);
+    lastLead = lead;
   }
-  final markers = <ChartMarker>[];
-  for (final point in points) {
-    final index = plays.indexWhere(
-      (play) => play.period == point.period && play.clock == point.clock,
-    );
-    if (index < 0) continue;
-    markers.add(
+  // A see-saw game flips twenty times, and every ring drawn builds a cage across
+  // the plot, so only the closing stretch of flips gets marked.
+  final recent = indices.length > 12
+      ? indices.sublist(indices.length - 12)
+      : indices;
+  return [
+    for (final index in recent)
       ChartMarker(
         fraction: index / (plays.length - 1),
-        color: point.swing >= 0 ? Cyber.success : Cyber.danger,
+        color: plays[index].homeScore > plays[index].awayScore
+            ? homeColor
+            : awayColor,
         shape: ChartMarkerShape.ring,
-        alignTop: point.swing >= 0,
-        focal: point.swing.abs() >= biggest,
+        alignTop: plays[index].homeScore > plays[index].awayScore,
+        focal: index == recent.last,
       ),
+  ];
+}
+
+/// The axis paints labels at even fractions of the plot, so each one samples the
+/// real play sitting at that fraction rather than assuming even quarters.
+List<String> _periodLabels(List<BasketballPlay> plays) {
+  if (plays.length < 2) return const <String>[];
+  return [
+    for (var i = 0; i <= 4; i++)
+      'Q${plays[((plays.length - 1) * i / 4).round()].period}',
+  ];
+}
+
+/// One pass over the running scoreboard gives the three numbers that describe a
+/// game's shape: how far ahead it ever got, how often the lead flipped, and how
+/// often it levelled again.
+class _ScoringEdge {
+  const _ScoringEdge({
+    required this.biggestLead,
+    required this.leadIsHome,
+    required this.leadChanges,
+    required this.ties,
+  });
+
+  factory _ScoringEdge.from(List<BasketballPlay> plays) {
+    var biggest = 0;
+    var leadIsHome = true;
+    var changes = 0;
+    var ties = 0;
+    var previous = 0;
+    var lastLead = 0;
+    for (final play in plays) {
+      final margin = play.homeScore - play.awayScore;
+      if (margin.abs() > biggest) {
+        biggest = margin.abs();
+        leadIsHome = margin > 0;
+      }
+      final lead = margin.sign;
+      if (lead == 0) {
+        if (previous != 0) ties++;
+      } else {
+        if (lastLead != 0 && lead != lastLead) changes++;
+        lastLead = lead;
+      }
+      previous = lead;
+    }
+    return _ScoringEdge(
+      biggestLead: biggest,
+      leadIsHome: leadIsHome,
+      leadChanges: changes,
+      ties: ties,
     );
   }
-  return markers;
+
+  final int biggestLead;
+  final bool leadIsHome;
+  final int leadChanges;
+  final int ties;
 }
 
 int _clockSeconds(String clock) {
@@ -1360,32 +1414,6 @@ TextStyle _numberStyle(double size, {Color color = Colors.white}) =>
     ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
 String _fallback(String? value) =>
     value == null || value.trim().isEmpty ? 'Unavailable' : value;
-String _status(MatchStatus status) => switch (status) {
-  MatchStatus.upcoming => 'Pre-match',
-  MatchStatus.live => 'Live now',
-  MatchStatus.finished => 'Final',
-};
-String _stateMessage(SportMatch match) =>
-    match.liveStatusNote ??
-    switch (match.status) {
-      MatchStatus.upcoming => 'Scoreboard opens when the match starts.',
-      MatchStatus.live =>
-        match.liveMinute == null
-            ? 'Live game data is active.'
-            : 'Live clock: ${match.liveMinute} minutes.',
-      MatchStatus.finished =>
-        match.resultLine ?? 'Final score has been recorded.',
-    };
-String _commas(int value) {
-  final digits = value.toString();
-  final output = StringBuffer();
-  for (var index = 0; index < digits.length; index++) {
-    if (index > 0 && (digits.length - index) % 3 == 0) output.write(',');
-    output.write(digits[index]);
-  }
-  return output.toString();
-}
-
 String _shortDate(DateTime value) {
   final local = value.toLocal();
   String two(int number) => number.toString().padLeft(2, '0');

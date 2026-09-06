@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import '../../config/sport_modules.dart';
 import '../../config/theme.dart';
 import '../../data/followable_leagues.dart';
+import '../../data/team_palettes.dart';
 import '../../models/avatar_option.dart';
 import '../../models/profile_banner_option.dart';
 import '../../models/sport_match.dart';
@@ -714,6 +715,8 @@ class _ClubsStep extends StatelessWidget {
                 final team = activeLeague.teams[index];
                 return _ClubTeamTile(
                   team: team,
+                  sport: activeLeague.sport,
+                  competition: activeLeague.league.id,
                   selected: team.id == selectedTeamId,
                   enabled: followedIds.contains(activeLeague.league.id),
                   onTap: () => onSelectTeam(activeLeague, team.id),
@@ -740,7 +743,7 @@ class _ClubSportPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? Cyber.lime : module.accent;
+    final color = module.accent.withValues(alpha: selected ? 1 : 0.62);
     return Semantics(
       button: true,
       selected: selected,
@@ -761,7 +764,7 @@ class _ClubSportPill extends StatelessWidget {
               width: selected ? 2 : 1,
             ),
             boxShadow: selected
-                ? Cyber.glow(Cyber.lime, alpha: 0.14, blur: 12, spread: -3)
+                ? Cyber.glow(module.accent, alpha: 0.14, blur: 12, spread: -3)
                 : null,
           ),
           child: AnimatedScale(
@@ -857,12 +860,16 @@ class _ClubLeaguePill extends StatelessWidget {
 class _ClubTeamTile extends StatelessWidget {
   const _ClubTeamTile({
     required this.team,
+    required this.sport,
+    required this.competition,
     required this.selected,
     required this.enabled,
     required this.onTap,
   });
 
   final SportTeam team;
+  final Sport sport;
+  final String competition;
   final bool selected;
   final bool enabled;
   final VoidCallback onTap;
@@ -870,6 +877,11 @@ class _ClubTeamTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final borderColor = selected ? Cyber.lime : AppTheme.onboardingPanelBorder;
+    final teamColor = paletteForTeam(
+      team,
+      sport: sport,
+      competition: competition,
+    ).secondaryTextColor;
     return Semantics(
       button: true,
       selected: selected,
@@ -894,7 +906,12 @@ class _ClubTeamTile extends StatelessWidget {
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  TeamLogo(team: team, width: 40, height: 44),
+                  TeamLogo(
+                    team: team,
+                    competition: competition,
+                    width: 40,
+                    height: 44,
+                  ),
                   const SizedBox(height: 7),
                   Text(
                     team.name.toUpperCase(),
@@ -903,7 +920,7 @@ class _ClubTeamTile extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: Cyber.label(
                       8,
-                      color: selected ? Colors.white : Cyber.muted,
+                      color: selected ? Colors.white : teamColor,
                       letterSpacing: 0.3,
                     ),
                   ),

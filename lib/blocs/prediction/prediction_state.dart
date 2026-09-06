@@ -1,3 +1,4 @@
+import '../../data/favorite_team_matcher.dart';
 import '../../models/league.dart';
 import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
@@ -14,6 +15,8 @@ class PredictionState {
     this.questionIntel = const {},
     this.loadedSports = const {},
     this.loadingSports = const {},
+    this.followedLeagueIds = const [],
+    this.favoriteTeams = const {},
   });
 
   final bool loading;
@@ -34,6 +37,24 @@ class PredictionState {
   /// matchId::quizId::questionId → latest ESPN-derived status for a locked
   /// prediction question. Crowd percentages remain repository-backed.
   final Map<String, LiveQuestionIntel> questionIntel;
+
+  /// Leagues the player followed during onboarding (or from the profile's
+  /// clubs editor), in the order they were stored.
+  final List<String> followedLeagueIds;
+
+  /// leagueId → the player's favourite team id in that league. Empty when the
+  /// player skipped the clubs step.
+  final Map<String, String> favoriteTeams;
+
+  /// The side of [match] that is one of the player's clubs, or null.
+  ///
+  /// Delegates to [favoriteSideOf], which matches on team identity scoped by
+  /// sport — the existing [fixturesForTeam] below is NOT a substitute, since it
+  /// assumes exact league + team ids that live ESPN fixtures do not carry.
+  FavoriteSide? favoriteSideFor(SportMatch match) =>
+      favoriteTeams.isEmpty ? null : favoriteSideOf(match, favoriteTeams);
+
+  bool isFavoriteMatch(SportMatch match) => favoriteSideFor(match) != null;
 
   /// Fixtures grouped under their league, preserving league order.
   Map<League, List<SportMatch>> get fixturesByLeague {
@@ -103,6 +124,8 @@ class PredictionState {
     Map<String, List<TeamStanding>>? standingsByLeague,
     Map<String, PredictionQuiz>? quizzes,
     Map<String, LiveQuestionIntel>? questionIntel,
+    List<String>? followedLeagueIds,
+    Map<String, String>? favoriteTeams,
   }) => PredictionState(
     loading: loading ?? this.loading,
     loadedSports: loadedSports ?? this.loadedSports,
@@ -113,6 +136,8 @@ class PredictionState {
     standingsByLeague: standingsByLeague ?? this.standingsByLeague,
     quizzes: quizzes ?? this.quizzes,
     questionIntel: questionIntel ?? this.questionIntel,
+    followedLeagueIds: followedLeagueIds ?? this.followedLeagueIds,
+    favoriteTeams: favoriteTeams ?? this.favoriteTeams,
   );
 }
 

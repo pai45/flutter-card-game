@@ -1659,8 +1659,16 @@ class _TeamStatsPanel extends StatelessWidget {
     final stats = match.teamStats;
     if (stats == null || stats.isEmpty) return const SizedBox.shrink();
 
-    final homeColor = paletteForTeam(match.home, sport: match.sport).primary;
-    final awayColor = paletteForTeam(match.away, sport: match.sport).primary;
+    final homeColor = paletteForTeam(
+      match.home,
+      sport: match.sport,
+      competition: match.leagueId,
+    ).secondaryTextColor;
+    final awayColor = paletteForTeam(
+      match.away,
+      sport: match.sport,
+      competition: match.leagueId,
+    ).secondaryTextColor;
 
     return _Panel(
       title: 'TEAM STATS',

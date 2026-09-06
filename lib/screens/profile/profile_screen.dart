@@ -15,6 +15,7 @@ import '../../config/sport_modules.dart';
 import '../../config/theme.dart';
 import '../../data/followable_leagues.dart';
 import '../../data/rival_roster.dart';
+import '../../data/team_palettes.dart';
 import '../../models/avatar_frame_option.dart';
 import '../../models/avatar_option.dart';
 import '../../models/picks.dart';
@@ -283,8 +284,7 @@ class ProfileScreen extends StatelessWidget {
                                 label: 'Talk to StatOz 1:1',
                                 onTap: () => _push(
                                   context,
-                                  (nav) =>
-                                      TalkToStatozScreen(onNavigate: nav),
+                                  (nav) => TalkToStatozScreen(onNavigate: nav),
                                 ),
                               ),
                               _NavRow(
@@ -2175,8 +2175,8 @@ class _FollowingBand extends StatefulWidget {
 class _FollowingBandState extends State<_FollowingBand> {
   final SecureGameStorage _storage = SecureGameStorage();
 
-  /// (team, leagueCode) pairs for each followed league with a favourite team.
-  List<(SportTeam, String)> _favourites = const [];
+  /// (team, league) pairs for each followed league with a favourite team.
+  List<(SportTeam, FollowableLeague)> _favourites = const [];
   List<String> _followedLeagueIds = const [];
   Map<String, String> _favoriteTeams = const {};
   Sport _primarySport = Sport.football;
@@ -2193,13 +2193,13 @@ class _FollowingBandState extends State<_FollowingBand> {
     );
     final followed = await _storage.loadFollowedLeagueIds();
     final teams = await _storage.loadFavoriteTeams();
-    final result = <(SportTeam, String)>[];
+    final result = <(SportTeam, FollowableLeague)>[];
     for (final leagueId in followed) {
       final entry = followableLeagueById(leagueId);
       final teamId = teams[leagueId];
       if (entry == null || teamId == null) continue;
       final team = followableTeam(leagueId, teamId);
-      if (team != null) result.add((team, entry.league.shortCode));
+      if (team != null) result.add((team, entry));
     }
     if (!mounted) return;
     setState(() {
@@ -2224,6 +2224,9 @@ class _FollowingBandState extends State<_FollowingBand> {
     );
     if (changed == true) {
       await _load();
+      if (!mounted) return;
+      // Keep the match feed's YOUR CLUB pin in step with the new picks.
+      await context.read<PredictionCubit>().refreshFollowing();
     }
   }
 
@@ -2249,8 +2252,8 @@ class _FollowingBandState extends State<_FollowingBand> {
                       spacing: 10,
                       runSpacing: 10,
                       children: [
-                        for (final (team, code) in _favourites)
-                          _FollowedTeamChip(team: team, leagueCode: code),
+                        for (final (team, entry) in _favourites)
+                          _FollowedTeamChip(team: team, entry: entry),
                       ],
                     ),
             ),
@@ -2306,13 +2309,18 @@ class _PrimarySportChip extends StatelessWidget {
 }
 
 class _FollowedTeamChip extends StatelessWidget {
-  const _FollowedTeamChip({required this.team, required this.leagueCode});
+  const _FollowedTeamChip({required this.team, required this.entry});
 
   final SportTeam team;
-  final String leagueCode;
+  final FollowableLeague entry;
 
   @override
   Widget build(BuildContext context) {
+    final teamColor = paletteForTeam(
+      team,
+      sport: entry.sport,
+      competition: entry.league.id,
+    ).secondaryTextColor;
     return Container(
       constraints: const BoxConstraints(minWidth: 86),
       padding: const EdgeInsets.fromLTRB(9, 8, 10, 8),
@@ -2323,7 +2331,12 @@ class _FollowedTeamChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          TeamLogo(team: team, width: 30, height: 32),
+          TeamLogo(
+            team: team,
+            competition: entry.league.id,
+            width: 30,
+            height: 32,
+          ),
           const SizedBox(width: 8),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 58),
@@ -2335,11 +2348,11 @@ class _FollowedTeamChip extends StatelessWidget {
                   team.shortName.toUpperCase(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.display(12, color: Colors.white),
+                  style: Cyber.display(12, color: teamColor),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  leagueCode,
+                  entry.league.shortCode,
                   style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.1),
                 ),
               ],
@@ -2552,6 +2565,8 @@ class _FollowingEditorSheetState extends State<_FollowingEditorSheet> {
                     final team = _activeLeague.teams[index];
                     return _EditableFollowTeamTile(
                       team: team,
+                      sport: _activeLeague.sport,
+                      competition: _activeLeague.league.id,
                       selected: team.id == selectedTeamId,
                       enabled: _followedLeagueIds.contains(
                         _activeLeague.league.id,
@@ -2599,7 +2614,7 @@ class _EditableSportPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? Cyber.lime : module.accent;
+    final color = module.accent.withValues(alpha: selected ? 1 : 0.62);
     return Semantics(
       button: true,
       selected: selected,
@@ -2617,7 +2632,7 @@ class _EditableSportPill extends StatelessWidget {
               width: selected ? 2 : 1,
             ),
             boxShadow: selected
-                ? Cyber.glow(Cyber.lime, alpha: 0.14, blur: 12, spread: -3)
+                ? Cyber.glow(module.accent, alpha: 0.14, blur: 12, spread: -3)
                 : null,
           ),
           child: Row(
@@ -2714,12 +2729,16 @@ class _EditableLeaguePill extends StatelessWidget {
 class _EditableFollowTeamTile extends StatelessWidget {
   const _EditableFollowTeamTile({
     required this.team,
+    required this.sport,
+    required this.competition,
     required this.selected,
     required this.enabled,
     required this.onTap,
   });
 
   final SportTeam team;
+  final Sport sport;
+  final String competition;
   final bool selected;
   final bool enabled;
   final VoidCallback onTap;
@@ -2727,6 +2746,11 @@ class _EditableFollowTeamTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final borderColor = selected ? Cyber.lime : Cyber.line;
+    final teamColor = paletteForTeam(
+      team,
+      sport: sport,
+      competition: competition,
+    ).secondaryTextColor;
     return Semantics(
       button: true,
       selected: selected,
@@ -2748,7 +2772,12 @@ class _EditableFollowTeamTile extends StatelessWidget {
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  TeamLogo(team: team, width: 40, height: 44),
+                  TeamLogo(
+                    team: team,
+                    competition: competition,
+                    width: 40,
+                    height: 44,
+                  ),
                   const SizedBox(height: 7),
                   Text(
                     team.name.toUpperCase(),
@@ -2757,7 +2786,7 @@ class _EditableFollowTeamTile extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: Cyber.label(
                       8,
-                      color: selected ? Colors.white : Cyber.muted,
+                      color: selected ? Colors.white : teamColor,
                       letterSpacing: 0.3,
                     ),
                   ),

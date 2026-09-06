@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,6 +11,8 @@ import '../../blocs/prediction/prediction_state.dart';
 import '../../config/enums.dart';
 import '../../config/sport_modules.dart';
 import '../../config/theme.dart';
+import '../../data/favorite_team_matcher.dart';
+import '../../data/team_palettes.dart';
 import '../../models/league.dart';
 import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
@@ -19,6 +23,7 @@ import '../../widgets/cyber/sport_signal_painters.dart';
 import '../../widgets/cyber/sport_underline_tabs.dart';
 import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/staggered_card_entrance.dart';
+import '../../widgets/team_logo.dart';
 import '../../widgets/stat_oz_top_bar.dart';
 import '../../widgets/streak_widgets.dart';
 import '../profile/widgets/profile_card.dart';
@@ -278,31 +283,6 @@ class _PredictionBackground extends StatelessWidget {
   }
 }
 
-class _MatchSearchButton extends StatelessWidget {
-  const _MatchSearchButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: 'Search teams and leagues',
-      child: Tooltip(
-        message: 'Search teams and leagues',
-        child: IconButton(
-          key: const ValueKey('match-search-button'),
-          constraints: const BoxConstraints.tightFor(width: 44, height: 44),
-          padding: EdgeInsets.zero,
-          visualDensity: VisualDensity.compact,
-          onPressed: onTap,
-          icon: const Icon(Icons.search_rounded, color: Cyber.cyan, size: 22),
-        ),
-      ),
-    );
-  }
-}
-
 class _TrendingMatchesTab extends StatelessWidget {
   const _TrendingMatchesTab({
     required this.activeSportTab,
@@ -332,7 +312,11 @@ class _TrendingMatchesTab extends StatelessWidget {
           activeIndex: activeSportTab,
           onTap: onSportTabChanged,
           onMore: onMore,
-          trailingAction: _MatchSearchButton(onTap: onSearch),
+          trailingAction: CyberSearchButton(
+            key: const ValueKey('match-search-button'),
+            onTap: onSearch,
+            label: 'Search teams and leagues',
+          ),
         ),
         Expanded(
           child: TrendingMatchesView(
@@ -416,6 +400,11 @@ class _MatchesTabState extends State<_MatchesTab> {
   bool _showNewGamesCallout = false;
   bool _hasAutoSelectedDay = false;
 
+  /// Which followed club the YOUR CLUB pin is showing. Null = pick the most
+  /// relevant one automatically; set only when the player taps a crest in
+  /// [_ClubCrestSwitcher].
+  String? _pinnedClubTeamId;
+
   @override
   void initState() {
     super.initState();
@@ -431,6 +420,7 @@ class _MatchesTabState extends State<_MatchesTab> {
       _slideFromLeft = true;
       _dayGeneration++;
       _hasAutoSelectedDay = false;
+      _pinnedClubTeamId = null;
     }
   }
 
@@ -563,7 +553,11 @@ class _MatchesTabState extends State<_MatchesTab> {
           activeIndex: widget.activeSportTab,
           onTap: widget.onSportTabChanged,
           onMore: widget.onMore,
-          trailingAction: _MatchSearchButton(onTap: widget.onSearch),
+          trailingAction: CyberSearchButton(
+            key: const ValueKey('match-search-button'),
+            onTap: widget.onSearch,
+            label: 'Search teams and leagues',
+          ),
         ),
         Expanded(
           child: BlocBuilder<PredictionCubit, PredictionState>(
@@ -668,6 +662,37 @@ class _MatchesTabState extends State<_MatchesTab> {
                     : (days.isNotEmpty ? days.first : today);
               }
 
+              // ── YOUR CLUB pin ───────────────────────────────────────────
+              // Deliberately day-scoped: the pin exists only when one of the
+              // player's clubs plays inside the window the navigator is
+              // showing, so it never contradicts the selected day.
+              final pinWindowStart = weekMode
+                  ? mondayOf(_selectedDay)
+                  : _selectedDay;
+              final pinWindowEnd = weekMode
+                  ? sundayOf(pinWindowStart)
+                  : _selectedDay;
+              final clubFixtures = sportFixtures.where((fixture) {
+                final day = _startOfDay(fixture.kickoff);
+                return !day.isBefore(pinWindowStart) &&
+                    !day.isAfter(pinWindowEnd) &&
+                    state.isFavoriteMatch(fixture);
+              }).toList();
+              final clubOptions = _clubPinOptions(state, clubFixtures);
+              // A club the player un-followed mid-session must not keep the pin.
+              final activeClubTeamId =
+                  clubOptions.any((c) => c.teamId == _pinnedClubTeamId)
+                  ? _pinnedClubTeamId
+                  : null;
+              final pinnedMatch = _choosePinnedMatch(
+                clubFixtures,
+                state,
+                activeClubTeamId,
+              );
+              final pinnedSide = pinnedMatch == null
+                  ? null
+                  : state.favoriteSideFor(pinnedMatch);
+
               final DateTime navigatorAnchor;
               final int matchCount;
               final String dayLabel;
@@ -693,10 +718,18 @@ class _MatchesTabState extends State<_MatchesTab> {
                 onNext = () => _moveWeek(weeks, 1);
                 for (final day in weekDays(weekStart)) {
                   final dayFixtures = sportFixtures
-                      .where((fixture) => _sameDay(fixture.kickoff, day))
+                      .where(
+                        (fixture) =>
+                            _sameDay(fixture.kickoff, day) &&
+                            fixture.id != pinnedMatch?.id,
+                      )
                       .toList();
                   if (dayFixtures.isEmpty) continue;
-                  final grouped = _groupByLeague(state.leagues, dayFixtures);
+                  final grouped = _groupByLeague(
+                    state.leagues,
+                    dayFixtures,
+                    isFavorite: state.isFavoriteMatch,
+                  );
                   if (grouped.isNotEmpty) {
                     groupedByDay[day] = grouped;
                   }
@@ -717,10 +750,18 @@ class _MatchesTabState extends State<_MatchesTab> {
                     .toList();
                 for (final day in upcomingDays) {
                   final dayFixtures = sportFixtures
-                      .where((fixture) => _sameDay(fixture.kickoff, day))
+                      .where(
+                        (fixture) =>
+                            _sameDay(fixture.kickoff, day) &&
+                            fixture.id != pinnedMatch?.id,
+                      )
                       .toList();
                   if (dayFixtures.isNotEmpty) {
-                    final grouped = _groupByLeague(state.leagues, dayFixtures);
+                    final grouped = _groupByLeague(
+                      state.leagues,
+                      dayFixtures,
+                      isFavorite: state.isFavoriteMatch,
+                    );
                     if (grouped.isNotEmpty) {
                       groupedByDay[day] = grouped;
                     }
@@ -782,7 +823,45 @@ class _MatchesTabState extends State<_MatchesTab> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    if (groupedByDay.isEmpty)
+                    if (pinnedMatch != null && pinnedSide != null) ...[
+                      if (clubOptions.length > 1) ...[
+                        _ClubCrestSwitcher(
+                          clubs: clubOptions,
+                          activeTeamId: pinnedSide.teamId,
+                          onSelect: (teamId) {
+                            playSound(SoundEffect.uiTap);
+                            setState(() => _pinnedClubTeamId = teamId);
+                          },
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                      StaggeredCardEntrance(
+                        key: ValueKey('club-pin-$_dayGeneration'),
+                        index: cardEntranceIndex++,
+                        animate: animateCards,
+                        slideFromLeft: _slideFromLeft,
+                        child: _YourClubPin(
+                          match: pinnedMatch,
+                          side: pinnedSide,
+                          prediction: state.predictionSummaryForMatch(
+                            pinnedMatch.id,
+                          ),
+                          quiz:
+                              state.quizzes[predictionStorageKey(
+                                pinnedMatch.id,
+                                state
+                                        .predictionSummaryForMatch(
+                                          pinnedMatch.id,
+                                        )
+                                        ?.quizId ??
+                                    kDefaultPredictionQuizId,
+                              )],
+                          onTap: () => widget.onOpenMatch(pinnedMatch),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                    ],
+                    if (groupedByDay.isEmpty && pinnedMatch == null)
                       _EmptyMatchDay(day: navigatorAnchor, weekMode: weekMode)
                     else
                       for (final dayEntry in groupedByDay.entries) ...[
@@ -867,6 +946,7 @@ class _MatchesTabState extends State<_MatchesTab> {
                                               ?.quizId ??
                                           kDefaultPredictionQuizId,
                                     )],
+                                favorite: state.favoriteSideFor(match),
                                 onTap: () => widget.onOpenMatch(match),
                               ),
                             ),
@@ -1438,16 +1518,112 @@ class _EmptyMatchDay extends StatelessWidget {
   }
 }
 
+/// Groups a day's fixtures under their league, preserving league order.
+///
+/// When [isFavorite] is supplied, a followed club's fixture is lifted to the
+/// front of its league and that league is lifted to the front of the day, so
+/// "your team first, then the rest" holds at both levels — and, crucially, the
+/// club's game can never be truncated behind [_LeagueViewMoreRow] by the
+/// [_kLeaguePreviewCount] cap.
 Map<League, List<SportMatch>> _groupByLeague(
   List<League> leagues,
-  List<SportMatch> fixtures,
-) {
+  List<SportMatch> fixtures, {
+  bool Function(SportMatch)? isFavorite,
+}) {
   final grouped = <League, List<SportMatch>>{};
   for (final league in leagues) {
     final matches = fixtures.where((m) => m.leagueId == league.id).toList();
-    if (matches.isNotEmpty) grouped[league] = matches;
+    if (matches.isEmpty) continue;
+    if (isFavorite == null) {
+      grouped[league] = matches;
+      continue;
+    }
+    // Partition rather than sort: Dart's List.sort is not stable, and the
+    // repository's own fixture order is meaningful for everything else.
+    final favorites = <SportMatch>[];
+    final rest = <SportMatch>[];
+    for (final match in matches) {
+      (isFavorite(match) ? favorites : rest).add(match);
+    }
+    grouped[league] = [...favorites, ...rest];
   }
-  return grouped;
+  if (isFavorite == null || grouped.isEmpty) return grouped;
+
+  final withFavorite = <League, List<SportMatch>>{};
+  final withoutFavorite = <League, List<SportMatch>>{};
+  for (final entry in grouped.entries) {
+    (isFavorite(entry.value.first) ? withFavorite : withoutFavorite)[entry.key] =
+        entry.value;
+  }
+  if (withFavorite.isEmpty) return grouped;
+  return {...withFavorite, ...withoutFavorite};
+}
+
+/// The distinct followed clubs with a fixture in the pin window, ordered by
+/// how soon they play — the order the crest switcher offers them in.
+List<FavoriteClub> _clubPinOptions(
+  PredictionState state,
+  List<SportMatch> clubFixtures,
+) {
+  if (clubFixtures.isEmpty) return const [];
+  final soonestByTeam = <String, DateTime>{};
+  for (final match in clubFixtures) {
+    final side = state.favoriteSideFor(match);
+    if (side == null) continue;
+    final current = soonestByTeam[side.teamId];
+    if (current == null || match.kickoff.isBefore(current)) {
+      soonestByTeam[side.teamId] = match.kickoff;
+    }
+  }
+  final clubs = favoriteClubsForSport(
+    // Every fixture in the window shares the tab's sport.
+    clubFixtures.first.sport,
+    state.favoriteTeams,
+  ).where((club) => soonestByTeam.containsKey(club.teamId)).toList();
+  clubs.sort(
+    (a, b) => soonestByTeam[a.teamId]!.compareTo(soonestByTeam[b.teamId]!),
+  );
+  return clubs;
+}
+
+/// The one club fixture that earns the pin: live first (it's happening now),
+/// then the next kickoff, then the most recent finished game (whose result —
+/// and any pending reward — is what the player came back for).
+SportMatch? _choosePinnedMatch(
+  List<SportMatch> clubFixtures,
+  PredictionState state,
+  String? preferredTeamId,
+) {
+  if (clubFixtures.isEmpty) return null;
+  var candidates = clubFixtures;
+  if (preferredTeamId != null) {
+    final preferred = clubFixtures
+        .where((m) => state.favoriteSideFor(m)?.teamId == preferredTeamId)
+        .toList();
+    if (preferred.isNotEmpty) candidates = preferred;
+  }
+
+  SportMatch? best;
+  for (final match in candidates) {
+    if (best == null || _pinRank(match, best) < 0) best = match;
+  }
+  return best;
+}
+
+/// Negative when [a] outranks [b] for the pin.
+int _pinRank(SportMatch a, SportMatch b) {
+  int tier(SportMatch m) => switch (m.status) {
+    MatchStatus.live => 0,
+    MatchStatus.upcoming => 1,
+    MatchStatus.finished => 2,
+  };
+  final tierDelta = tier(a).compareTo(tier(b));
+  if (tierDelta != 0) return tierDelta;
+  // Within a tier: the soonest kickoff, except finished games where the most
+  // recent one is the interesting one.
+  return a.status == MatchStatus.finished
+      ? b.kickoff.compareTo(a.kickoff)
+      : a.kickoff.compareTo(b.kickoff);
 }
 
 /// Number of a league's games shown per match day before the feed collapses
@@ -1458,6 +1634,244 @@ List<SportMatch> _visibleLeagueMatches(List<SportMatch> matches) =>
     matches.length > _kLeaguePreviewCount
     ? matches.sublist(0, _kLeaguePreviewCount)
     : matches;
+
+/// The player's own club, lifted to the top of the match day.
+///
+/// A titled block rather than a bare card: the header names the club and
+/// counts down to kickoff (or pulses while the game is live), and the fixture
+/// itself reuses [MatchPredictionCard] with its YOUR CLUB marker set, so the
+/// pin never drifts from how the same match looks further down the feed.
+class _YourClubPin extends StatefulWidget {
+  const _YourClubPin({
+    required this.match,
+    required this.side,
+    required this.prediction,
+    required this.quiz,
+    required this.onTap,
+  });
+
+  final SportMatch match;
+  final FavoriteSide side;
+  final UserPrediction? prediction;
+  final PredictionQuiz? quiz;
+  final VoidCallback onTap;
+
+  @override
+  State<_YourClubPin> createState() => _YourClubPinState();
+}
+
+class _YourClubPinState extends State<_YourClubPin> {
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncTicker();
+  }
+
+  @override
+  void didUpdateWidget(covariant _YourClubPin oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.match.id != widget.match.id ||
+        oldWidget.match.status != widget.match.status) {
+      _syncTicker();
+    }
+  }
+
+  /// The second-by-second countdown only runs inside the last day before
+  /// kickoff — a rebuild per second is pointless for a game three days out.
+  void _syncTicker() {
+    _ticker?.cancel();
+    _ticker = null;
+    if (widget.match.status != MatchStatus.upcoming) return;
+    final remaining = widget.match.kickoff.difference(DateTime.now());
+    if (remaining.isNegative || remaining.inHours >= 24) return;
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = paletteForTeam(
+      widget.side.team,
+      sport: widget.match.sport,
+      competition: widget.match.leagueId,
+    ).secondaryTextColor;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.star_rounded, size: 13, color: accent),
+            const SizedBox(width: 5),
+            // Expanded, not Flexible: the club's name owns whatever the
+            // readout leaves. A Flexible here would split the free space with
+            // a second flex child and ellipse the name away.
+            Expanded(
+              child: Text(
+                'YOUR CLUB · ${widget.side.team.name.toUpperCase()}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Cyber.label(10, color: accent, letterSpacing: 1.6),
+              ),
+            ),
+            const SizedBox(width: 10),
+            _ClubPinReadout(match: widget.match, accent: accent),
+          ],
+        ),
+        const SizedBox(height: 10),
+        MatchPredictionCard(
+          match: widget.match,
+          prediction: widget.prediction,
+          quiz: widget.quiz,
+          favorite: widget.side,
+          onTap: widget.onTap,
+        ),
+      ],
+    );
+  }
+}
+
+/// The pin header's right-hand status readout.
+class _ClubPinReadout extends StatelessWidget {
+  const _ClubPinReadout({required this.match, required this.accent});
+
+  final SportMatch match;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    if (match.status == MatchStatus.live) {
+      // The one live signal in the block — the glow rule's focal element.
+      return CyberPulse(
+        builder: (context, t) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Cyber.danger,
+                boxShadow: Cyber.glow(
+                  Cyber.danger,
+                  alpha: 0.35 + 0.45 * t,
+                  blur: 8,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'LIVE NOW',
+              style: Cyber.label(9.5, color: Cyber.danger, letterSpacing: 1.2),
+            ),
+          ],
+        ),
+      );
+    }
+    if (match.status == MatchStatus.finished) {
+      return Text(
+        'FULL TIME',
+        style: Cyber.label(9.5, color: Cyber.muted, letterSpacing: 1.2),
+      );
+    }
+    final remaining = match.kickoff.difference(DateTime.now());
+    if (remaining.isNegative) {
+      return Text(
+        'KICKING OFF',
+        style: Cyber.label(9.5, color: accent, letterSpacing: 1.2),
+      );
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          'KICKS OFF',
+          style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.2),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          _formatCountdown(remaining),
+          style: Cyber.label(11, color: accent, letterSpacing: 1).copyWith(
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// `2D 04H` beyond a day out, `04:12:33` inside it.
+String _formatCountdown(Duration remaining) {
+  String two(int value) => value.toString().padLeft(2, '0');
+  if (remaining.inHours >= 24) {
+    return '${remaining.inDays}D ${two(remaining.inHours % 24)}H';
+  }
+  return '${two(remaining.inHours)}:'
+      '${two(remaining.inMinutes % 60)}:'
+      '${two(remaining.inSeconds % 60)}';
+}
+
+/// Crest row shown when the player follows more than one club playing in the
+/// current match window — it picks which club the pin above is showing.
+class _ClubCrestSwitcher extends StatelessWidget {
+  const _ClubCrestSwitcher({
+    required this.clubs,
+    required this.activeTeamId,
+    required this.onSelect,
+  });
+
+  final List<FavoriteClub> clubs;
+  final String activeTeamId;
+  final ValueChanged<String> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 38,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: clubs.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final club = clubs[index];
+          final active = club.teamId == activeTeamId;
+          final accent = paletteForTeam(club.team).secondaryTextColor;
+          return Semantics(
+            button: true,
+            selected: active,
+            label: 'Show ${club.team.name} fixture',
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: active ? null : () => onSelect(club.teamId),
+              child: Opacity(
+                opacity: active ? 1 : 0.45,
+                child: Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: active
+                          ? accent.withValues(alpha: 0.75)
+                          : Colors.transparent,
+                    ),
+                  ),
+                  child: TeamLogo(team: club.team, width: 26, height: 26),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
 
 /// Secondary "collapsed list" link shown once a league has more games on a
 /// match day than the preview count. Right-aligned flat text + chevron, no
@@ -1693,7 +2107,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         subtitle: 'SUDDEN-DEATH SPOT KICKS',
         badgeLabel: 'SUDDEN DEATH',
         ctaLabel: 'TAKE THE SHOT',
-        accent: Cyber.lime,
+        accent: sportModuleFor(Sport.football).accent,
         streak: streaks.penalty,
         layout: GameHeroLayout.portrait,
         emphasis: false,
@@ -1711,7 +2125,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         subtitle: 'TACTICAL SQUAD DUEL',
         badgeLabel: 'FEATURED // 5V5',
         ctaLabel: 'MAKE YOUR MOVE',
-        accent: Cyber.gold,
+        accent: sportModuleFor(Sport.football).accent,
         layout: GameHeroLayout.portrait,
         emphasis: false,
         tightContent: true,
@@ -1757,7 +2171,7 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         subtitle: 'SIX-BALL CRICKET CHASE',
         badgeLabel: 'FEATURED // SIX BALLS',
         ctaLabel: 'START THE CHASE',
-        accent: Cyber.cyan,
+        accent: sportModuleFor(Sport.cricket).accent,
         emphasis: false,
         tightContent: true,
         largeType: true,
@@ -2040,7 +2454,7 @@ class _GamesTabState extends State<_GamesTab> {
             subtitle: 'SIX-BALL CRICKET CHASE',
             badgeLabel: 'FEATURED // SIX BALLS',
             ctaLabel: 'START THE CHASE',
-            accent: Cyber.cyan,
+            accent: sportModuleFor(Sport.cricket).accent,
             background: const CustomPaint(
               painter: _FinalOverMiniPitchPainter(),
             ),
@@ -2111,7 +2525,7 @@ class _GamesTabState extends State<_GamesTab> {
             subtitle: 'SUDDEN-DEATH SPOT KICKS',
             badgeLabel: 'FEATURED // SUDDEN DEATH',
             ctaLabel: 'TAKE THE SHOT',
-            accent: Cyber.lime,
+            accent: sportModuleFor(Sport.football).accent,
             streak: streaks.penalty,
             background: const CustomPaint(
               painter: _PenaltyShootoutMiniGoalPainter(),
@@ -2130,7 +2544,7 @@ class _GamesTabState extends State<_GamesTab> {
             subtitle: 'TACTICAL SQUAD DUEL',
             badgeLabel: 'FEATURED // 5V5',
             ctaLabel: 'MAKE YOUR MOVE',
-            accent: Cyber.gold,
+            accent: sportModuleFor(Sport.football).accent,
             background: const CustomPaint(
               painter: _FootballChessMiniBoardPainter(),
             ),
@@ -2669,7 +3083,7 @@ class _FinalOverMiniPitchPainter extends CustomPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.2
-        ..color = Cyber.cyan.withValues(alpha: 0.48),
+        ..color = AppTheme.whiteColor.withValues(alpha: 0.48),
     );
     final crease = Paint()
       ..strokeWidth = 1.3
@@ -2688,7 +3102,7 @@ class _FinalOverMiniPitchPainter extends CustomPainter {
         Paint()
           ..strokeWidth = 2.2
           ..strokeCap = StrokeCap.round
-          ..color = Cyber.cyan,
+          ..color = AppTheme.whiteColor,
       );
     }
     canvas.drawLine(
@@ -2696,7 +3110,7 @@ class _FinalOverMiniPitchPainter extends CustomPainter {
       Offset(wicketX + 7, size.height * 0.30),
       Paint()
         ..strokeWidth = 2
-        ..color = Cyber.cyan,
+        ..color = AppTheme.whiteColor,
     );
 
     final ball = Offset(size.width * 0.88, size.height * 0.65);
@@ -2705,7 +3119,7 @@ class _FinalOverMiniPitchPainter extends CustomPainter {
       ball,
       Paint()
         ..strokeWidth = 2
-        ..color = Cyber.cyan.withValues(alpha: 0.28),
+        ..color = AppTheme.whiteColor.withValues(alpha: 0.28),
     );
     canvas.drawCircle(ball, 7, Paint()..color = const Color(0xfff3f6f8));
     canvas.drawArc(
@@ -2811,7 +3225,7 @@ class _PenaltyShootoutMiniGoalPainter extends CustomPainter {
         ..shader = const LinearGradient(
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
-          colors: [Color(0x00101825), Color(0xd10c3021)],
+          colors: [Color(0x00101825), Color(0xd10b2b39)],
           stops: [0.36, 1],
         ).createShader(Offset.zero & size),
     );
@@ -2829,7 +3243,7 @@ class _PenaltyShootoutMiniGoalPainter extends CustomPainter {
     canvas.drawRect(goal, frame);
     final net = Paint()
       ..strokeWidth = 0.8
-      ..color = Cyber.lime.withValues(alpha: 0.28);
+      ..color = Cyber.cyan.withValues(alpha: 0.28);
     for (var i = 1; i < 5; i++) {
       final x = goal.left + goal.width * i / 5;
       canvas.drawLine(Offset(x, goal.top), Offset(x, goal.bottom), net);
@@ -2847,7 +3261,7 @@ class _PenaltyShootoutMiniGoalPainter extends CustomPainter {
         Paint()
           ..style = radius == 6 ? PaintingStyle.fill : PaintingStyle.stroke
           ..strokeWidth = 1.4
-          ..color = Cyber.lime.withValues(alpha: radius == 6 ? 0.92 : 0.55),
+          ..color = Cyber.cyan.withValues(alpha: radius == 6 ? 0.92 : 0.55),
       );
     }
 
@@ -2871,7 +3285,7 @@ class _PenaltyShootoutMiniGoalPainter extends CustomPainter {
       target.translate(-8, 8),
       Paint()
         ..strokeWidth = 2
-        ..color = Cyber.lime.withValues(alpha: 0.34),
+        ..color = Cyber.cyan.withValues(alpha: 0.34),
     );
   }
 
@@ -2890,7 +3304,7 @@ class _FootballChessMiniBoardPainter extends CustomPainter {
         ..shader = const LinearGradient(
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
-          colors: [Color(0x00101825), Color(0xd12f290b)],
+          colors: [Color(0x00101825), Color(0xd10b2b39)],
           stops: [0.36, 1],
         ).createShader(Offset.zero & size),
     );
@@ -2916,8 +3330,11 @@ class _FootballChessMiniBoardPainter extends CustomPainter {
           rect,
           Paint()
             ..color = (row + column).isEven
-                ? const Color(0xff514718)
-                : const Color(0xff202b31),
+                ? Color.alphaBlend(
+                    Cyber.cyan.withValues(alpha: 0.20),
+                    Cyber.panel2,
+                  )
+                : Cyber.panel2,
         );
       }
     }
@@ -2926,15 +3343,15 @@ class _FootballChessMiniBoardPainter extends CustomPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.4
-        ..color = Cyber.gold.withValues(alpha: 0.72),
+        ..color = Cyber.cyan.withValues(alpha: 0.72),
     );
 
     final pieces = [
       (Offset(size.width * 0.69, size.height * 0.74), Cyber.cyan),
       (Offset(size.width * 0.84, size.height * 0.74), Cyber.cyan),
       (Offset(size.width * 0.76, size.height * 0.55), Cyber.cyan),
-      (Offset(size.width * 0.91, size.height * 0.36), Cyber.gold),
-      (Offset(size.width * 0.69, size.height * 0.27), Cyber.gold),
+      (Offset(size.width * 0.91, size.height * 0.36), AppTheme.whiteColor),
+      (Offset(size.width * 0.69, size.height * 0.27), AppTheme.whiteColor),
     ];
     for (final piece in pieces) {
       canvas.drawCircle(piece.$1, 9, Paint()..color = piece.$2);
@@ -2952,7 +3369,7 @@ class _FootballChessMiniBoardPainter extends CustomPainter {
       pieces[3].$1,
       Paint()
         ..strokeWidth = 2
-        ..color = Cyber.gold.withValues(alpha: 0.58),
+        ..color = Cyber.cyan.withValues(alpha: 0.58),
     );
   }
 

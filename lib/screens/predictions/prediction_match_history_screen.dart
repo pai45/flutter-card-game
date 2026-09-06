@@ -6,6 +6,7 @@ import '../../blocs/prediction/prediction_cubit.dart';
 import '../../blocs/prediction/prediction_state.dart';
 import '../../config/sport_modules.dart';
 import '../../config/theme.dart';
+import '../../data/team_palettes.dart';
 import '../../models/league.dart';
 import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
@@ -117,8 +118,9 @@ class _PredictionMatchHistoryScreenState
                 final accuracy = totalAnswers == 0
                     ? 0
                     : (correctAnswers / totalAnswers * 100).round();
-                final sportLabel =
-                    sportModuleFor(_selectedSport).label.toUpperCase();
+                final sportLabel = sportModuleFor(
+                  _selectedSport,
+                ).label.toUpperCase();
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -455,21 +457,56 @@ class _TeamsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final homeColor = paletteForTeam(
+      match.home,
+      sport: match.sport,
+      competition: match.leagueId,
+    ).secondaryTextColor;
+    final awayColor = paletteForTeam(
+      match.away,
+      sport: match.sport,
+      competition: match.leagueId,
+    ).secondaryTextColor;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: _TeamColumn(team: match.home, alignEnd: false)),
+        Expanded(
+          child: _TeamColumn(
+            team: match.home,
+            competition: match.leagueId,
+            sport: match.sport,
+            color: homeColor,
+            alignEnd: false,
+          ),
+        ),
         _ScoreCentre(match: match),
-        Expanded(child: _TeamColumn(team: match.away, alignEnd: true)),
+        Expanded(
+          child: _TeamColumn(
+            team: match.away,
+            competition: match.leagueId,
+            sport: match.sport,
+            color: awayColor,
+            alignEnd: true,
+          ),
+        ),
       ],
     );
   }
 }
 
 class _TeamColumn extends StatelessWidget {
-  const _TeamColumn({required this.team, required this.alignEnd});
+  const _TeamColumn({
+    required this.team,
+    required this.competition,
+    required this.sport,
+    required this.color,
+    required this.alignEnd,
+  });
 
   final SportTeam team;
+  final String competition;
+  final Sport sport;
+  final Color color;
   final bool alignEnd;
 
   @override
@@ -480,13 +517,20 @@ class _TeamColumn extends StatelessWidget {
           : CrossAxisAlignment.start,
       children: [
         // Mirror the badge chamfer toward the centre of the card.
-        TeamLogo(team: team, width: 46, height: 46, cutBottomRight: !alignEnd),
+        TeamLogo(
+          team: team,
+          width: 46,
+          height: 46,
+          cutBottomRight: !alignEnd,
+          sport: sport,
+          competition: competition,
+        ),
         const SizedBox(height: 8),
         Text(
           team.name,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: Cyber.body(15, weight: FontWeight.w700),
+          style: Cyber.body(15, color: color, weight: FontWeight.w700),
         ),
       ],
     );

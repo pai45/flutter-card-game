@@ -1,4 +1,9 @@
 import 'dart:math';
+import 'package:flutter/services.dart';
+import '../../data/followable_leagues.dart';
+import '../../utils/catalogue_search.dart';
+import '../../utils/tennis_country_map.dart';
+import '../../widgets/catalogue_search_scaffold.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,6 +12,7 @@ import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_event.dart';
 import '../../blocs/game/game_state.dart';
 import '../../config/enums.dart';
+import '../../config/theme.dart';
 import '../../config/sport_modules.dart';
 import '../../data/basketball_teams.dart';
 import '../../data/f1_team_codes.dart';
@@ -22,6 +28,7 @@ import '../../utils/sound_effects.dart';
 import '../../widgets/avatar_frame_ring.dart';
 import '../../widgets/card_unpack_animation.dart';
 import '../../widgets/cyber/cyber_filter_chips.dart';
+import '../../widgets/cyber/sport_underline_tabs.dart';
 import '../../widgets/cyber/cyber_underline_tabs.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/landing_bottom_navigation.dart';
@@ -36,6 +43,9 @@ import 'widgets/shop_card.dart';
 // CoinIcon now lives in shop_card.dart; re-export so the many screens that
 // import it from here keep working unchanged.
 export 'widgets/shop_card.dart' show CoinIcon;
+
+part 'shop_search_screen.dart';
+part 'shop_search_catalogue.dart';
 
 String _tierString(CardTier t) => t.name;
 
@@ -94,6 +104,10 @@ final _shopSportLabels = _shopSports
 
 final _shopSportIcons = _shopSports
     .map((sport) => sportModuleFor(sport).icon)
+    .toList(growable: false);
+
+final _shopSportColors = _shopSports
+    .map((sport) => sportModuleFor(sport).accent)
     .toList(growable: false);
 
 String _shopSportCode(Sport sport) => switch (sport) {
@@ -460,6 +474,14 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                       activeIndex: _activeSportTab,
                       selectedSport: _selectedSport,
                       onTap: (index) => setState(() => _activeSportTab = index),
+                      onSearch: () {
+                        HapticFeedback.selectionClick();
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const ShopSearchScreen(),
+                          ),
+                        );
+                      },
                     ),
                     CyberUnderlineTabs(
                       labels: const [
@@ -538,21 +560,33 @@ class _ShopSportsTabs extends StatelessWidget {
     required this.activeIndex,
     required this.selectedSport,
     required this.onTap,
+    required this.onSearch,
   });
 
   final int activeIndex;
   final Sport selectedSport;
   final ValueChanged<int> onTap;
+  final VoidCallback onSearch;
 
   @override
   Widget build(BuildContext context) {
-    return CyberUnderlineTabs(
+    final tabs = CyberUnderlineTabs(
       labels: _shopSportLabels,
       icons: _shopSportIcons,
+      iconColors: _shopSportColors,
       activeIndex: activeIndex,
       accent: sportModuleFor(selectedSport).accent,
       onTap: onTap,
       minTabWidth: 80,
+    );
+    return CyberUnderlineTabsWithAction(
+      tabs: tabs,
+      accent: sportModuleFor(selectedSport).accent,
+      action: CyberSearchButton(
+        key: const ValueKey('shop-search-button'),
+        onTap: onSearch,
+        label: 'Search Shop',
+      ),
     );
   }
 }
@@ -1565,7 +1599,11 @@ class _AvatarShopTile extends StatelessWidget {
       alignment: Alignment.topCenter,
       errorBuilder: (_, _, _) => Container(
         color: _surface,
-        child: Icon(Icons.person, color: _cyan.withValues(alpha: 0.3), size: 32),
+        child: Icon(
+          Icons.person,
+          color: _cyan.withValues(alpha: 0.3),
+          size: 32,
+        ),
       ),
     );
   }

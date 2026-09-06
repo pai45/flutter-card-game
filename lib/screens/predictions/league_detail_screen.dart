@@ -13,7 +13,9 @@ import '../../models/league.dart';
 import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
 import '../../models/team_standing.dart';
+import '../../models/league_stat_leaders.dart';
 import '../../utils/sound_effects.dart';
+import '../../widgets/cyber/cyber_filter_chips.dart';
 import '../../widgets/cyber/cyber_underline_tabs.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import 'market_detail_screen.dart';
@@ -24,17 +26,19 @@ import 'widgets/pick_trade_sheet.dart';
 import 'widgets/match_prediction_card.dart';
 import 'widgets/stat_leaderboard.dart';
 import 'widgets/standings_table.dart';
+import 'widgets/team_stat_board.dart';
 
-enum _HubTab { table, leaders, fixtures, picks }
+enum _HubTab { table, leaders, stats, fixtures, picks }
 
 /// Per-league hub reached by tapping a league's STANDING strip on the
-/// prediction home. Four tabs: the live standings table, the ESPN stat
-/// leaderboards, the league's fixtures ("PREDICTION CENTER") and its quick
-/// markets ("PICKS CENTER"). Tapping a team drills into [TeamDetailScreen].
+/// prediction home. Five tabs: the standings table, the player stat
+/// leaderboards, the club STATS boards, the league's fixtures ("PREDICTION
+/// CENTER") and its quick markets ("PICKS CENTER"). Tapping a team drills into
+/// [TeamDetailScreen].
 ///
-/// Standings and leaderboards come from [LeagueStatsCubit] (live ESPN); when a
-/// competition has no ESPN slug the table falls back to the repository-backed
-/// standings on [PredictionCubit].
+/// Data comes from [LeagueStatsCubit], which renders the bundled package first
+/// and layers live ESPN over it. When a competition is in neither source, the
+/// table falls back to the repository-backed standings on [PredictionCubit].
 class LeagueDetailScreen extends StatefulWidget {
   const LeagueDetailScreen({
     required this.league,
@@ -53,9 +57,7 @@ class LeagueDetailScreen extends StatefulWidget {
 }
 
 class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
-  late _HubTab _tab = widget.openFixturesTab
-      ? _HubTab.fixtures
-      : _HubTab.table;
+  late _HubTab _tab = widget.openFixturesTab ? _HubTab.fixtures : _HubTab.table;
 
   League get _league => widget.league;
   Color get _accent => _league.accent;
@@ -117,14 +119,21 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
                         child: LeagueHeader(
                           league: _league,
                           teamCount: teamCount,
-                          subtitle: _headerSubtitle(stats, teamCount),
+                          subtitle: _headerSubtitle(stats),
                         ),
                       ),
                       CyberUnderlineTabs(
-                        labels: const ['TABLE', 'LEADERS', 'GAMES', 'PICKS'],
+                        labels: const [
+                          'TABLE',
+                          'LEADERS',
+                          'STATS',
+                          'GAMES',
+                          'PICKS',
+                        ],
                         icons: const [
                           Icons.table_rows_outlined,
                           Icons.military_tech_outlined,
+                          Icons.query_stats_outlined,
                           Icons.sports_soccer_outlined,
                           Icons.insights_outlined,
                         ],
@@ -149,10 +158,10 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
     );
   }
 
-  String? _headerSubtitle(LeagueStatsState stats, int teamCount) {
+  String? _headerSubtitle(LeagueStatsState stats) {
     final season = stats.snapshot.seasonLabel;
     if (season == null) return null;
-    return '${season.toUpperCase()} // $teamCount TEAMS';
+    return RegExp(r'\d{4}(?:-\d{2})?').firstMatch(season)?.group(0);
   }
 
   Widget _buildTab(
@@ -167,10 +176,16 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
         stats: stats,
         fallback: fallback,
         accent: _accent,
+        competition: _league.id,
         onTapTeam: _openTeam,
       ),
       _HubTab.leaders => _LeadersTab(
         key: const ValueKey('hub-leaders'),
+        stats: stats,
+        accent: _accent,
+      ),
+      _HubTab.stats => _StatsTab(
+        key: const ValueKey('hub-stats'),
         stats: stats,
         accent: _accent,
       ),
@@ -196,6 +211,7 @@ class _TableTab extends StatelessWidget {
     required this.stats,
     required this.fallback,
     required this.accent,
+    required this.competition,
     required this.onTapTeam,
     super.key,
   });
@@ -203,6 +219,7 @@ class _TableTab extends StatelessWidget {
   final LeagueStatsState stats;
   final List<TeamStanding> fallback;
   final Color accent;
+  final String competition;
   final ValueChanged<SportTeam> onTapTeam;
 
   @override
@@ -228,6 +245,7 @@ class _TableTab extends StatelessWidget {
           StandingsTable(
             rows: fallback,
             accent: accent,
+            competition: competition,
             onTapTeam: onTapTeam,
           ),
         ],
@@ -258,6 +276,7 @@ class _TableTab extends StatelessWidget {
           key: ValueKey('standings-${group.label}'),
           rows: group.rows,
           accent: accent,
+          competition: competition,
           showGoals: true,
           onTapTeam: onTapTeam,
         ),
@@ -323,6 +342,178 @@ class _LeadersTab extends StatelessWidget {
   }
 }
 
+/// Club STATS tab: four category tabs (ATTACK / DEFENCE / KEEPING /
+/// DISCIPLINE) over a league-total pulse strip, a stat chip selector, and one
+/// [TeamStatBoard] ranking every club.
+///
+/// Fed entirely by the bundled package — the live ESPN feed carries no per-team
+/// season statistics, so a competition outside the package shows the locked
+/// state rather than an empty board.
+class _StatsTab extends StatefulWidget {
+  const _StatsTab({required this.stats, required this.accent, super.key});
+
+  final LeagueStatsState stats;
+  final Color accent;
+
+  @override
+  State<_StatsTab> createState() => _StatsTabState();
+}
+
+class _StatsTabState extends State<_StatsTab> {
+  @override
+  void initState() {
+    super.initState();
+    // Club stats cost one request per team, so they are pulled the first time
+    // this tab is opened rather than on hub load. No-ops when the bundled
+    // package already supplied them.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<LeagueStatsCubit>().ensureTeamStats();
+    });
+  }
+
+  LeagueStatsState get stats => widget.stats;
+  Color get accent => widget.accent;
+
+  @override
+  Widget build(BuildContext context) {
+    if (stats.status == LeagueStatsStatus.loading) {
+      return const _HubLoader(label: 'READING SEASON STATS');
+    }
+    if (!stats.hasTeamStats) {
+      if (stats.loadingTeamStats) {
+        return const _HubLoader(label: 'PULLING CLUB STATS');
+      }
+      return const CyberNoDataState(
+        icon: Icons.query_stats_outlined,
+        title: 'NO CLUB STATS',
+        message:
+            'This competition has not published season statistics yet. '
+            'Check back once the season is under way.',
+      );
+    }
+
+    final snapshot = stats.snapshot;
+    final groupIndex = stats.statGroupIndex.clamp(
+      0,
+      footballStatGroups.length - 1,
+    );
+    final group = footballStatGroups[groupIndex];
+    final groupAccent = group.accent ?? accent;
+
+    final statIndex = stats.statIndex.clamp(0, group.boards.length - 1);
+    final spec = group.boards[statIndex];
+    final boardAccent = spec.accent ?? groupAccent;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Labels, not icons: the hub's own tab bar directly above is already
+        // icon-only, and a second icon row under it reads as chrome rather
+        // than as a choice. This also matches the LEADERS sub-tabs.
+        CyberUnderlineTabs(
+          labels: [for (final g in footballStatGroups) g.label],
+          activeIndex: groupIndex,
+          accent: groupAccent,
+          height: 44,
+          minTabWidth: 92,
+          onTap: (i) {
+            HapticFeedback.selectionClick();
+            context.read<LeagueStatsCubit>().selectStatGroup(i);
+          },
+        ),
+        CyberFilterChips(
+          labels: [for (final b in group.boards) b.label],
+          selected: spec.label,
+          accent: groupAccent,
+          onSelect: (label) {
+            final next = group.boards.indexWhere((b) => b.label == label);
+            if (next < 0) return;
+            HapticFeedback.selectionClick();
+            context.read<LeagueStatsCubit>().selectStat(next);
+          },
+        ),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
+            children: [
+              _StatPulseStrip(
+                snapshot: snapshot,
+                group: group,
+                accent: groupAccent,
+              ),
+              const SizedBox(height: 16),
+              TeamStatBoard(
+                key: ValueKey('${group.label}-${spec.stat}'),
+                entries: snapshot.boardFor(
+                  spec.stat,
+                  lowerIsBetter: spec.lowerIsBetter,
+                ),
+                spec: spec,
+                definition: snapshot.statDefinitions[spec.stat],
+                accent: boardAccent,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// League-wide totals for the selected group — the context the per-club
+/// rankings below are measured against. Calm cells; no glow (glow rule).
+class _StatPulseStrip extends StatelessWidget {
+  const _StatPulseStrip({
+    required this.snapshot,
+    required this.group,
+    required this.accent,
+  });
+
+  final LeagueStatsSnapshot snapshot;
+  final StatBoardGroup group;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    if (group.pulse.isEmpty) return const SizedBox.shrink();
+    final teamCount = snapshot.teamStats.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        CyberSectionHeading(label: '${group.label} // LEAGUE TOTAL'),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            for (var i = 0; i < group.pulse.length; i++) ...[
+              if (i > 0) const SizedBox(width: 8),
+              Builder(
+                builder: (context) {
+                  final pulse = group.pulse[i];
+                  final total = snapshot.totalOf(pulse.stat);
+                  final value = pulse.perTeam && teamCount > 0
+                      ? total / teamCount
+                      : total;
+                  return CyberMiniMetric(
+                    label: pulse.label,
+                    value: value == value.roundToDouble()
+                        ? value.round().toString()
+                        : value.toStringAsFixed(1),
+                    // Only the first cell is tinted, so the strip reads as
+                    // context with one anchor rather than three equal claims.
+                    accent: i == 0 ? accent : null,
+                  );
+                },
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+}
+
 /// Fixtures tab — the league's prediction center, unchanged in behaviour.
 class _FixturesTab extends StatelessWidget {
   const _FixturesTab({
@@ -354,11 +545,13 @@ class _FixturesTab extends StatelessWidget {
           MatchPredictionCard(
             match: match,
             prediction: state.predictionSummaryForMatch(match.id),
-            quiz: state.quizzes[predictionStorageKey(
-              match.id,
-              state.predictionSummaryForMatch(match.id)?.quizId ??
-                  kDefaultPredictionQuizId,
-            )],
+            quiz:
+                state.quizzes[predictionStorageKey(
+                  match.id,
+                  state.predictionSummaryForMatch(match.id)?.quizId ??
+                      kDefaultPredictionQuizId,
+                )],
+            favorite: state.favoriteSideFor(match),
             onTap: () => onOpenMatch(match),
           ),
           const SizedBox(height: 12),
@@ -432,10 +625,7 @@ class _HubLoader extends StatelessWidget {
           const SizedBox(
             width: 26,
             height: 26,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: Cyber.cyan,
-            ),
+            child: CircularProgressIndicator(strokeWidth: 2, color: Cyber.cyan),
           ),
           const SizedBox(height: 14),
           Text(
