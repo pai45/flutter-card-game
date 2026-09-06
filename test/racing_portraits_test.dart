@@ -19,8 +19,8 @@ void main() {
 
   test('all shipped motorsport portraits map to current roster drivers', () {
     expect(kRacingPngPortraitArtIds, hasLength(22));
-    expect(kRacingWebpPortraitArtIds, hasLength(80));
-    expect(racingPortraitArtCount, 102);
+    expect(kRacingWebpPortraitArtIds, hasLength(83));
+    expect(racingPortraitArtCount, 105);
     for (final id in kRacingPortraitArtIds) {
       expect(racingPortraitHasArt(id), isTrue);
       expect(allRacingDrivers.any((driver) => driver.id == id), isTrue);

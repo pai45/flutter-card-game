@@ -1,7 +1,7 @@
 # Profile, Onboarding, Identity, and Settings
 
 > **Status:** BUILT
-> **Last verified:** 2026-08-11
+> **Last verified:** 2026-09-06
 > **Scope:** First-run identity, welcome reward, Profile hub, followed competitions/teams, cosmetics, and settings
 
 ## Product Purpose
@@ -35,9 +35,22 @@ showing a dead-end message (see
 ## Mechanics and Rules
 
 League following is optional; favorite teams are selected only for followed
-competitions. Seeded identifiers align with fixture/team data where available
-but do not automatically filter or reorder content. The welcome reward has its
+competitions — one favorite per followed league, and changing the primary sport
+clears both, so in practice every stored favorite belongs to the primary sport.
+
+The favorite is not decoration. It orders and marks the Predictions match feed:
+on any day a followed club plays, that fixture is pinned above the rest of the
+day as **YOUR CLUB** and marked wherever its card appears. Editing clubs from
+Profile takes effect immediately, without an app restart. Nothing is filtered
+out — the rest of the day still follows underneath. See
+[`systems/predictions.md`](predictions.md) for the feed behavior. The welcome reward has its
 own persisted status and ledger source so reload/re-entry cannot pay it twice.
+
+The onboarding sport selector and Profile's editable Following selector share
+the canonical sport identity palette: Football cyan, Cricket white, Basketball
+yellow, Tennis green, and Motorsport red. Inactive icons remain recognizable at
+reduced intensity; the selected sport uses full color with the only selector
+glow. Changing this presentation does not alter the persisted primary sport.
 
 The current Profile settings sheet contains the logout action. Tennis owns a
 separate, mode-specific accessibility/control/audio settings surface documented

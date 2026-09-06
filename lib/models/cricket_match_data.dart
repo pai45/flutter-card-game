@@ -22,6 +22,7 @@ class CricketMatchDetails {
     required this.notes,
     required this.commentary,
     this.inningsProgress = const [],
+    this.inningsRateProgress = const [],
     required this.teams,
   });
 
@@ -47,6 +48,7 @@ class CricketMatchDetails {
   final List<CricketMatchNote> notes;
   final List<CricketBallCommentary> commentary;
   final List<CricketInningsProgress> inningsProgress;
+  final List<CricketInningsRateProgress> inningsRateProgress;
   final List<CricketTeamSquad> teams;
 }
 
@@ -78,6 +80,48 @@ class CricketScoreProgressPoint {
   final int runs;
   final int wickets;
   final bool wicket;
+}
+
+/// Complete legal-delivery progression for one batting innings. The compact
+/// match feed can stay editorial while charts still have every plotted ball.
+class CricketInningsRateProgress {
+  const CricketInningsRateProgress({
+    required this.innings,
+    required this.teamId,
+    required this.points,
+  });
+
+  final int innings;
+  final String teamId;
+  final List<CricketInningsRatePoint> points;
+}
+
+class CricketInningsRatePoint {
+  const CricketInningsRatePoint({
+    required this.innings,
+    required this.teamId,
+    required this.over,
+    required this.legalBall,
+    required this.runs,
+    this.boundary,
+  });
+
+  final int innings;
+  final String teamId;
+  final String over;
+  final int legalBall;
+  final int runs;
+  final int? boundary;
+
+  double get runRate => legalBall == 0 ? 0 : runs * 6 / legalBall;
+
+  double requiredRunRate({required int target, int totalLegalBalls = 120}) {
+    final remainingRuns = (target - runs).clamp(0, target);
+    if (remainingRuns == 0) return 0;
+    final remainingBalls = totalLegalBalls - legalBall;
+    if (remainingBalls <= 0) return double.infinity;
+    return remainingRuns * 6 / remainingBalls;
+  }
 }
 
 class CricketToss {

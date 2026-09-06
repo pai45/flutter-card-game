@@ -9,11 +9,13 @@ import '../../models/sport_match.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_underline_tabs.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/cyber/sport_underline_tabs.dart';
 import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/stat_oz_top_bar.dart';
 import '../../widgets/staggered_card_entrance.dart';
 import '../profile/rival_profile_screen.dart';
 import 'widgets/rank_board.dart';
+import 'user_search_screen.dart';
 import 'widgets/rank_widgets.dart';
 
 // ─── Domain ──────────────────────────────────────────────────────────────────
@@ -44,6 +46,10 @@ final _leaderboardSportLabels = _leaderboardSports
 
 final _leaderboardSportIcons = _leaderboardSports
     .map((sport) => sportModuleFor(sport).icon)
+    .toList(growable: false);
+
+final _leaderboardSportColors = _leaderboardSports
+    .map((sport) => sportModuleFor(sport).accent)
     .toList(growable: false);
 
 enum TournamentBoard { players, teams }
@@ -235,7 +241,6 @@ ScoreMeta _scoreMeta(LeaderboardType type) => switch (type) {
   LeaderboardType.tournament => (unit: 'XP'),
   LeaderboardType.games => (unit: 'W'),
 };
-
 
 int _scoreFor(
   LeaderboardType type,
@@ -472,7 +477,18 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                     _LeaderboardSportsTabs(
                       activeIndex: activeSportIndex < 0 ? 0 : activeSportIndex,
                       selectedSport: _sport,
-                      onTap: (index) => setState(() => _sport = _leaderboardSports[index]),
+                      onTap: (index) =>
+                          setState(() => _sport = _leaderboardSports[index]),
+                      onSearch: () {
+                        HapticFeedback.selectionClick();
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => UserSearchScreen(
+                              onChallenge: widget.onChallenge,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     _LeaderboardTabs(
                       activeTab: _typeTabOrder.indexOf(_type),
@@ -511,7 +527,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                                 type: _type,
                                 accent: accent,
                                 compact: compact,
-                                onTapEntry: isTeamTournament ? null : _openRival,
+                                onTapEntry: isTeamTournament
+                                    ? null
+                                    : _openRival,
                               ),
                       ),
                     ),
@@ -717,20 +735,32 @@ class _LeaderboardSportsTabs extends StatelessWidget {
     required this.activeIndex,
     required this.selectedSport,
     required this.onTap,
+    required this.onSearch,
   });
 
   final int activeIndex;
   final Sport selectedSport;
   final ValueChanged<int> onTap;
+  final VoidCallback onSearch;
 
   @override
   Widget build(BuildContext context) {
-    return CyberUnderlineTabs(
+    final tabs = CyberUnderlineTabs(
       labels: _leaderboardSportLabels,
       icons: _leaderboardSportIcons,
+      iconColors: _leaderboardSportColors,
       activeIndex: activeIndex,
       accent: sportModuleFor(selectedSport).accent,
       onTap: onTap,
+    );
+    return CyberUnderlineTabsWithAction(
+      tabs: tabs,
+      accent: sportModuleFor(selectedSport).accent,
+      action: CyberSearchButton(
+        key: const ValueKey('leaderboard-search-button'),
+        onTap: onSearch,
+        label: 'Search Leaderboard',
+      ),
     );
   }
 }
@@ -761,11 +791,10 @@ class _FilterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final showCountdownInline =
-        type == LeaderboardType.matchDay && MediaQuery.sizeOf(context).width >= 360;
-    final showCountdownBelow =
         type == LeaderboardType.matchDay &&
-        !showCountdownInline &&
-        !compact;
+        MediaQuery.sizeOf(context).width >= 360;
+    final showCountdownBelow =
+        type == LeaderboardType.matchDay && !showCountdownInline && !compact;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

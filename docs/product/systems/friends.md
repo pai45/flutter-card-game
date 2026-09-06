@@ -1,7 +1,7 @@
 # Friends
 
 > **Status:** BUILT
-> **Last verified:** 2026-08-09
+> **Last verified:** 2026-09-05
 > **Scope:** Friends Arena, friend relationships, activity summaries, and social entry points
 
 ## Product Purpose
@@ -29,7 +29,9 @@ referral screen.
 `FriendsCubit` owns an on-device set of rival display names. Search resolves
 against the seeded rival roster; membership is idempotent and supports add,
 remove, and toggle. Challenge launches local CPU play themed as the selected
-rival. This is not a production account search or real-time presence service.
+rival. The **REQUEST SENT** animation confirms that immediate local bookmark;
+it does not create a pending/accepted request lifecycle. This is not a
+production account search or real-time presence service.
 
 ## Rewards and Progression
 
@@ -40,7 +42,11 @@ settled separately in [Referrals](referrals.md).
 
 Avatar identity, online/activity signals, rivalry copy, and animated arena
 cards provide game-like social energy without presenting an enterprise contact
-list.
+list. Adding a rival from either Friends Arena or the Rival Dossier now triggers
+a short cyber transmission moment: the outbound signal travels to a destination
+node, resolves into one confirmation tick, announces **REQUEST SENT**, and pairs
+the landing beat with confirm audio and haptics. Removing a friend remains an
+immediate, calm snackbar action.
 
 ## Visible States
 
@@ -55,7 +61,8 @@ reload. There is no remote social graph or cross-device relationship sync.
 ## Planned Scope and Current Limitations
 
 - **BUILT:** Local searchable rival bookmarks, secure persistence, dossier,
-  add/remove feedback, and CPU-themed challenge route.
+  animated request-sent/add feedback, remove feedback, and CPU-themed challenge
+  route.
 - **PROTOTYPE:** Search identities and ranks use the seeded rival catalog.
 - **PLANNED:** Production identity lookup, requests, blocks, presence, privacy,
   remote persistence, and multiplayer invitations require backend scope.
@@ -64,7 +71,10 @@ reload. There is no remote social graph or cross-device relationship sync.
 
 - [`lib/blocs/friends/friends_cubit.dart`](../../../lib/blocs/friends/friends_cubit.dart)
 - [`lib/screens/friends/friends_arena_screen.dart`](../../../lib/screens/friends/friends_arena_screen.dart)
+- [`lib/screens/friends/widgets/friend_request_sent_animation.dart`](../../../lib/screens/friends/widgets/friend_request_sent_animation.dart)
+- [`lib/screens/profile/rival_profile_screen.dart`](../../../lib/screens/profile/rival_profile_screen.dart)
 
 ## Tests
 
 - [`test/friends_cubit_test.dart`](../../../test/friends_cubit_test.dart)
+- [`test/friend_request_sent_animation_test.dart`](../../../test/friend_request_sent_animation_test.dart)

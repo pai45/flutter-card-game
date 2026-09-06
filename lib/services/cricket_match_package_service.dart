@@ -30,6 +30,10 @@ class CricketMatchPackageService {
     final inningsProgress = _list(
       root['inningsProgress'],
     ).map(_inningsProgress).toList();
+    final inningsRateProgress = _list(
+      root['inningsRateProgress'],
+    ).map(_inningsRateProgress).toList();
+    _validateInningsRateProgress(innings, inningsRateProgress);
     final balls = _list(root['commentary']).map(_ballCommentary).toList()
       ..sort((a, b) => a.sequence.compareTo(b.sequence));
     final notes = _list(root['notes']).map(_note).toList();
@@ -74,6 +78,7 @@ class CricketMatchPackageService {
       notes: notes,
       commentary: balls,
       inningsProgress: inningsProgress,
+      inningsRateProgress: inningsRateProgress,
       teams: squads,
     );
 
@@ -270,6 +275,65 @@ class CricketMatchPackageService {
         );
       }).toList(),
     );
+  }
+
+  CricketInningsRateProgress _inningsRateProgress(Object? entry) {
+    final value = _map(entry);
+    final innings = _i(value['innings']);
+    final teamId = _s(value['teamId']);
+    return CricketInningsRateProgress(
+      innings: innings,
+      teamId: teamId,
+      points: _list(value['points']).map((point) {
+        final item = _map(point);
+        return CricketInningsRatePoint(
+          innings: _i(item['innings']),
+          teamId: _s(item['teamId']),
+          over: _s(item['over']),
+          legalBall: _i(item['legalBall']),
+          runs: _i(item['runs']),
+          boundary: item['boundary'] == null ? null : _i(item['boundary']),
+        );
+      }).toList(),
+    );
+  }
+
+  void _validateInningsRateProgress(
+    List<CricketInningsSummary> innings,
+    List<CricketInningsRateProgress> timelines,
+  ) {
+    for (final timeline in timelines) {
+      final summary = innings.where(
+        (item) =>
+            item.number == timeline.innings && item.teamId == timeline.teamId,
+      );
+      if (summary.isEmpty || timeline.points.isEmpty) {
+        throw const FormatException('Invalid innings run-rate identity');
+      }
+      for (var i = 0; i < timeline.points.length; i++) {
+        final point = timeline.points[i];
+        if (point.innings != timeline.innings ||
+            point.teamId != timeline.teamId ||
+            point.legalBall != i + 1 ||
+            (point.boundary != null &&
+                point.boundary != 4 &&
+                point.boundary != 6)) {
+          throw const FormatException('Invalid innings run-rate progression');
+        }
+      }
+      final expected = summary.first;
+      final fours = timeline.points
+          .where((point) => point.boundary == 4)
+          .length;
+      final sixes = timeline.points
+          .where((point) => point.boundary == 6)
+          .length;
+      if (timeline.points.last.runs != expected.runs ||
+          fours != expected.fours ||
+          sixes != expected.sixes) {
+        throw const FormatException('Run-rate boundaries do not match innings');
+      }
+    }
   }
 
   CricketBallCommentary _ballCommentary(Object? entry) {

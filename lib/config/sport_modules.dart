@@ -39,7 +39,7 @@ const sportModules = <SportModule>[
     shortLabel: 'CRKT',
     systemCode: 'SPORT://CRICKET',
     icon: Icons.sports_cricket,
-    accent: Cyber.lime,
+    accent: AppTheme.whiteColor,
     availableModules: ['MATCHES', 'PICKS', 'FOLLOWING'],
   ),
   SportModule(
@@ -66,7 +66,7 @@ const sportModules = <SportModule>[
     shortLabel: 'TENNIS',
     systemCode: 'SPORT://TENNIS',
     icon: Icons.sports_tennis,
-    accent: Cyber.cyan,
+    accent: Cyber.lime,
     availableModules: ['FOLLOWING', 'COMING SOON'],
   ),
 ];
@@ -86,6 +86,11 @@ final sportTabLabels = sportTabOrder
 
 final sportTabIcons = sportTabOrder
     .map((sport) => sportModuleFor(sport).icon)
+    .toList(growable: false);
+
+/// Canonical identity colors for sport tabs, in [sportTabOrder].
+final sportTabColors = sportTabOrder
+    .map((sport) => sportModuleFor(sport).accent)
     .toList(growable: false);
 
 /// MATCH / GAMES hub index contract.

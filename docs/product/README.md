@@ -61,8 +61,10 @@ awards an idempotent 1,000 Oz Coin welcome bonus with a reward animation. The
 main app then opens the sports hub with four persistent destinations:
 
 - **Sports**: PREDICT, PICK, and GAMES tabs, each with sport filters.
-- **Shop**: avatars, frames, banners, kits/liveries, coins, packs, and cards.
-- **Top**: leaderboard, podium, rival, and challenge surfaces.
+- **Shop**: avatars, frames, banners, kits/liveries, coins, packs, and cards,
+  with cross-sport catalogue search and shopping directly from results.
+- **Top**: leaderboard, podium, rival, and challenge surfaces, plus username
+  search across the existing local rival roster.
 - **Profile**: progression, achievements, activity history, decks, collection,
   friends, following preferences, tutorials, support, and settings.
 
@@ -100,7 +102,7 @@ Guess the Player entries share one implementation and one product page.
 
 | System | Status | Product page |
 |---|---|---|
-| Match discovery/search, predictions, quizzes, scoreline contests, and settlement | BUILT / PROTOTYPE DATA | [Predictions](systems/predictions.md) |
+| Match discovery/search, predictions, sport STATS (including Cricket innings race/run-rate), quizzes, scoreline contests, and settlement | BUILT / PROTOTYPE DATA | [Predictions](systems/predictions.md) |
 | Prediction feedback, rewards, and future quests | BUILT / PLANNED | [Prediction Gamification](systems/prediction-gamification.md) |
 | Outcome markets, positions, settlement, and payouts | BUILT / PROTOTYPE DATA | [Picks](systems/picks.md) |
 | Per-mode XP tracks and aggregate player level | BUILT | [Progression and Leveling](systems/progression-and-leveling.md) |
@@ -109,7 +111,7 @@ Guess the Player entries share one implementation and one product page.
 | Cards, decks, packs, starter packs, and daily drops | BUILT | [Collections, Decks, and Packs](systems/collections-decks-and-packs.md) |
 | Oz Coins, shop, cosmetics, XP/coin ledgers, and settlement | BUILT / PROTOTYPE COMMERCE | [Economy, Shop, and Ledgers](systems/economy-shop-and-ledgers.md) |
 | Leaderboards, rivals, challenges, and activity history | BUILT / PROTOTYPE DATA | [Leaderboards, Rivals, and History](systems/leaderboards-rivals-and-history.md) |
-| Identity, onboarding, followed leagues, teams, and settings | BUILT | [Profile, Onboarding, and Settings](systems/profile-onboarding-and-settings.md) |
+| Identity, onboarding, followed leagues, favorite clubs, and settings | BUILT | [Profile, Onboarding, and Settings](systems/profile-onboarding-and-settings.md) |
 | Local friend bookmarks and CPU-themed challenges | BUILT / PROTOTYPE SOCIAL DATA | [Friends](systems/friends.md) |
 | Invite links and demo referral rewards | PROTOTYPE | [Referrals](systems/referrals.md) |
 | Tutorials, How to Play, and support | BUILT / PARTIAL COVERAGE | [Tutorials, How to Play, and Support](systems/tutorials-how-to-play-and-support.md) |
@@ -153,10 +155,29 @@ Guess the Player entries share one implementation and one product page.
 
 The design contract is dark, fast, cyber-HUD, and reward-led. Shared UI is
 reused before new components are introduced, and every meaningful action must
-produce clear feedback or gratification. Data-dense surfaces share one language:
+produce clear feedback or gratification. Sport identity is consistent across
+tabs, onboarding, Trending, collections, shop, and leaderboards: Football is
+cyan, Cricket white, Basketball yellow, Tennis green, and Motorsport red.
+Semantic state, reward, team, and game-mode colors remain separate. Data-dense
+surfaces share one language:
+
+Team identity comes from the checked-in competition-scoped palette. Logos use
+the supplied primary, secondary, and label colors without substitution, while
+team-related UI uses a generated hue-related `secondaryTextColor` that reaches
+at least 4.5:1 on every standard dark surface. Match context selects the exact
+competition variant before deterministic aliases and closest-color fallback;
+semantic LIVE, danger, success, reward, and selected states still win.
+
 [Picks](systems/picks.md) market detail and the [Predictions](systems/predictions.md)
 match STATS tab are built from the same chart system and data-page furniture, so
 a match report and a pick market read as one surface.
+
+The favorite club chosen in
+[Profile and onboarding](systems/profile-onboarding-and-settings.md) orders and
+marks the [Predictions](systems/predictions.md) match feed: the club's fixture is
+pinned above the rest of its match day and marked wherever its card renders.
+Nothing is filtered away, and a player who follows no club sees the feed
+unchanged.
 
 ## Gratification and Feedback
 

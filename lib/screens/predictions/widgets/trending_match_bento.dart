@@ -167,6 +167,7 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
                 match.leagueId.toUpperCase(),
             potentialXp: quiz?.maxReward ?? match.rewardXp,
             volumeOz: seededMatchVolumeOz(match.id),
+            isFavorite: predictionState.isFavoriteMatch(match),
             onTap: () => widget.onOpenMatch(match),
           );
         }
@@ -207,6 +208,7 @@ class _TrendingMatchCard extends StatelessWidget {
     required this.leagueLabel,
     required this.potentialXp,
     required this.volumeOz,
+    required this.isFavorite,
     required this.onTap,
   });
 
@@ -214,6 +216,10 @@ class _TrendingMatchCard extends StatelessWidget {
   final String leagueLabel;
   final int potentialXp;
   final int volumeOz;
+
+  /// Whether one of the player's followed clubs is in this fixture — it takes
+  /// over the tile's corner tag (LIVE still wins).
+  final bool isFavorite;
   final VoidCallback onTap;
 
   @override
@@ -238,6 +244,8 @@ class _TrendingMatchCard extends StatelessWidget {
       accent: live ? Cyber.success : module.accent,
       tag: live
           ? 'LIVE MATCH'
+          : isFavorite
+          ? 'YOUR CLUB'
           : finished
           ? 'RESULT'
           : 'MATCH',
@@ -283,7 +291,11 @@ class _TrendingMatchCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      _TeamLockup(team: match.home, sport: match.sport),
+                      _TeamLockup(
+                        team: match.home,
+                        sport: match.sport,
+                        competition: match.leagueId,
+                      ),
                       Expanded(
                         child: Column(
                           children: [
@@ -321,6 +333,7 @@ class _TrendingMatchCard extends StatelessWidget {
                       _TeamLockup(
                         team: match.away,
                         sport: match.sport,
+                        competition: match.leagueId,
                         alignEnd: true,
                       ),
                     ],
@@ -412,11 +425,13 @@ class _TeamLockup extends StatelessWidget {
   const _TeamLockup({
     required this.team,
     required this.sport,
+    this.competition,
     this.alignEnd = false,
   });
 
   final SportTeam team;
   final Sport sport;
+  final String? competition;
   final bool alignEnd;
 
   @override
@@ -428,7 +443,13 @@ class _TeamLockup extends StatelessWidget {
             ? CrossAxisAlignment.end
             : CrossAxisAlignment.start,
         children: [
-          TeamLogo(team: team, width: 34, height: 34, sport: sport),
+          TeamLogo(
+            team: team,
+            width: 34,
+            height: 34,
+            sport: sport,
+            competition: competition,
+          ),
           const SizedBox(height: 4),
           Text(
             team.shortName,
@@ -495,6 +516,7 @@ class _TrendingPredictCard extends StatelessWidget {
                   width: 30,
                   height: 30,
                   sport: match.sport,
+                  competition: match.leagueId,
                 ),
                 Text('VS', style: Cyber.display(10, color: Cyber.violet)),
                 TeamLogo(
@@ -502,6 +524,7 @@ class _TrendingPredictCard extends StatelessWidget {
                   width: 30,
                   height: 30,
                   sport: match.sport,
+                  competition: match.leagueId,
                 ),
               ],
             ),
@@ -718,7 +741,12 @@ class _OutcomeSignal extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 3),
-        CyberProgressBar(value: value / 100, accent: accent, height: 4, radius: 2),
+        CyberProgressBar(
+          value: value / 100,
+          accent: accent,
+          height: 4,
+          radius: 2,
+        ),
       ],
     );
   }
@@ -735,9 +763,10 @@ class _DeltaBadge extends StatelessWidget {
     final color = delta >= 0 ? Cyber.success : Cyber.danger;
     final text = Text(
       '${delta >= 0 ? '+' : ''}$delta',
-      style: Cyber.label(10, color: color).copyWith(
-        fontFeatures: const [FontFeature.tabularFigures()],
-      ),
+      style: Cyber.label(
+        10,
+        color: color,
+      ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
     );
     if (!hot) return text;
     return CyberPulse(
@@ -782,6 +811,7 @@ class _TrendSignalShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const chromeColor = Cyber.cyan;
     return Semantics(
       button: true,
       label: semanticsLabel,
@@ -793,7 +823,7 @@ class _TrendSignalShell extends StatelessWidget {
         },
         child: CustomPaint(
           painter: _TrendSignalPainter(
-            accent: accent,
+            accent: chromeColor,
             hardElevated: hardElevated,
           ),
           child: ClipPath(
@@ -803,7 +833,7 @@ class _TrendSignalShell extends StatelessWidget {
               children: [
                 ColoredBox(
                   color: Color.alphaBlend(
-                    accent.withValues(alpha: 0.045),
+                    chromeColor.withValues(alpha: 0.08),
                     Cyber.panel,
                   ),
                 ),
@@ -813,7 +843,7 @@ class _TrendSignalShell extends StatelessWidget {
                   right: 14,
                   child: Container(
                     height: 2,
-                    color: accent.withValues(alpha: 0.8),
+                    color: chromeColor.withValues(alpha: 0.8),
                   ),
                 ),
                 Positioned(
@@ -885,13 +915,16 @@ class _TrendingSkeleton extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomPaint(
       painter: const _TrendSignalPainter(
-        accent: Cyber.line,
+        accent: Cyber.cyan,
         hardElevated: true,
       ),
       child: ClipPath(
         clipper: const _TrendSignalClipper(),
         child: ColoredBox(
-          color: Cyber.panel,
+          color: Color.alphaBlend(
+            Cyber.cyan.withValues(alpha: 0.08),
+            Cyber.panel,
+          ),
           child: Padding(
             padding: const EdgeInsets.all(14),
             child: Column(

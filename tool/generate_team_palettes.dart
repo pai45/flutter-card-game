@@ -1,0 +1,421 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math' as math;
+
+const _compactPath = 'tool/data/team_palettes.json';
+const _dartPath = 'lib/data/team_palette_data.g.dart';
+const _minimumContrast = 4.5;
+const _darkSurfaces = <int>[
+  0xFF0D111A, // Cyber.bg
+  0xFF0F172B, // Cyber.card
+  0xFF1D293D, // Cyber.panel
+  0xFF10192D, // Cyber.chartSurface
+];
+
+void main(List<String> arguments) {
+  final mutableArguments = arguments.toList();
+  final check = mutableArguments.remove('--check');
+  final writeInput = mutableArguments.remove('--write-input');
+  if (mutableArguments.length != 1) {
+    stderr.writeln(
+      'Usage: dart run tool/generate_team_palettes.dart '
+      '<teams.json> [--write-input] [--check]',
+    );
+    exitCode = 64;
+    return;
+  }
+
+  final input = File(mutableArguments.single);
+  if (!input.existsSync()) {
+    stderr.writeln('Palette input does not exist: ${input.path}');
+    exitCode = 66;
+    return;
+  }
+
+  final decoded = jsonDecode(input.readAsStringSync());
+  if (decoded is! List) {
+    throw const FormatException('Team palette input must be a JSON array.');
+  }
+
+  final rawRecords = decoded.cast<Object?>();
+  final compact = <Map<String, Object?>>[];
+  final enrichedRaw = <Map<String, Object?>>[];
+  for (var index = 0; index < rawRecords.length; index++) {
+    final raw = _stringMap(rawRecords[index], 'record $index');
+    final primary = _readHex(raw, 'primaryColor', index);
+    final secondary = _readHex(raw, 'secondaryColor', index);
+    final text = _readHex(raw, 'textColor', index);
+    final secondaryText = _deriveSecondaryText(primary, secondary);
+    final suppliedSecondaryText = raw['secondaryTextColor'];
+    if (suppliedSecondaryText != null &&
+        _normaliseHex(suppliedSecondaryText.toString()) != secondaryText) {
+      throw FormatException(
+        'record $index has stale secondaryTextColor '
+        '$suppliedSecondaryText; expected $secondaryText',
+      );
+    }
+
+    final id = _recordId(raw, index);
+    final name = _requiredString(raw, 'name', index);
+    final displayName = _optionalString(raw['displayName']) ?? name;
+    final abbreviation = _requiredString(raw, 'abbreviation', index);
+    final tournament = _requiredString(raw, 'tournament', index);
+    compact.add(<String, Object?>{
+      'id': id,
+      'name': name,
+      'displayName': displayName,
+      'abbreviation': abbreviation,
+      'tournament': tournament,
+      'sport': _sportForTournament(tournament),
+      'primaryColor': primary,
+      'secondaryColor': secondary,
+      'textColor': text,
+      'secondaryTextColor': secondaryText,
+    });
+    enrichedRaw.add(<String, Object?>{
+      ...raw,
+      'secondaryTextColor': secondaryText,
+    });
+  }
+
+  final compactText =
+      '${const JsonEncoder.withIndent('  ').convert(compact)}\n';
+  final dartText = _buildDart(compact);
+
+  if (check) {
+    _checkFile(_compactPath, compactText);
+    _checkFile(_dartPath, dartText);
+  } else {
+    Directory('tool/data').createSync(recursive: true);
+    File(_compactPath).writeAsStringSync(compactText);
+    File(_dartPath).writeAsStringSync(dartText);
+  }
+
+  if (writeInput) {
+    if (check) {
+      final expected =
+          '${const JsonEncoder.withIndent('  ').convert(enrichedRaw)}\n';
+      if (input.readAsStringSync() != expected) {
+        throw StateError('${input.path} is not canonically enriched.');
+      }
+    } else {
+      input.writeAsStringSync(
+        '${const JsonEncoder.withIndent('  ').convert(enrichedRaw)}\n',
+      );
+    }
+  }
+
+  stdout.writeln(
+    '${check ? 'Verified' : 'Generated'} ${compact.length} team records; '
+    '${_uniqueCompetitionTeamCount(compact)} competition/team palettes.',
+  );
+}
+
+String _buildDart(List<Map<String, Object?>> records) {
+  final byCompetition = <String, List<int>>{};
+  final variants = <String, List<String>>{};
+  for (final record in records) {
+    final sport = record['sport']! as String;
+    final competition = _normaliseKey(record['tournament']! as String);
+    final team = _normaliseKey(record['name']! as String);
+    final exactKey = '$sport:$competition:$team';
+    final values = <int>[
+      _argb(record['primaryColor']! as String),
+      _argb(record['textColor']! as String),
+      _argb(record['secondaryColor']! as String),
+      _argb(record['secondaryTextColor']! as String),
+    ];
+    final previous = byCompetition[exactKey];
+    if (previous != null && !_sameValues(previous, values)) {
+      throw StateError('Conflicting duplicate competition/team key: $exactKey');
+    }
+    byCompetition[exactKey] = values;
+    final fallbackKey = '$sport:$team';
+    final keys = variants.putIfAbsent(fallbackKey, () => <String>[]);
+    if (!keys.contains(exactKey)) keys.add(exactKey);
+  }
+
+  final buffer = StringBuffer()
+    ..writeln('// GENERATED FILE - DO NOT EDIT.')
+    ..writeln('// Generated by tool/generate_team_palettes.dart from')
+    ..writeln('// tool/data/team_palettes.json.')
+    ..writeln()
+    ..writeln('const int kGeneratedTeamPaletteRecordCount = ${records.length};')
+    ..writeln()
+    ..writeln('const Map<String, List<int>> kGeneratedTeamPaletteValues =')
+    ..writeln('    <String, List<int>>{');
+  final exactKeys = byCompetition.keys.toList()..sort();
+  for (final key in exactKeys) {
+    final values = byCompetition[key]!;
+    buffer.writeln(
+      "  ${jsonEncode(key)}: <int>[${values.map(_dartHex).join(', ')}],",
+    );
+  }
+  buffer
+    ..writeln('};')
+    ..writeln()
+    ..writeln('const Map<String, List<String>> kGeneratedTeamPaletteVariants =')
+    ..writeln('    <String, List<String>>{');
+  final fallbackKeys = variants.keys.toList()..sort();
+  for (final key in fallbackKeys) {
+    final keys = variants[key]!..sort();
+    buffer.writeln(
+      "  ${jsonEncode(key)}: <String>[${keys.map(jsonEncode).join(', ')}],",
+    );
+  }
+  buffer.writeln('};');
+  return buffer.toString();
+}
+
+String _deriveSecondaryText(String primaryHex, String secondaryHex) {
+  final inputs = <_Candidate>[
+    _Candidate(_argb(primaryHex), 0),
+    _Candidate(_argb(secondaryHex), 1),
+  ];
+  final chromatic = inputs
+      .where((candidate) => candidate.hsl.s >= 0.15)
+      .toList();
+  final pool = chromatic.isEmpty ? inputs : chromatic;
+  final adjusted =
+      <_AdjustedCandidate>[
+        for (final candidate in pool) _makeAccessible(candidate),
+      ]..sort((a, b) {
+        final lift = a.lightnessLift.compareTo(b.lightnessLift);
+        return lift != 0 ? lift : a.source.index.compareTo(b.source.index);
+      });
+  return _hex(adjusted.first.color);
+}
+
+_AdjustedCandidate _makeAccessible(_Candidate candidate) {
+  if (_minimumSurfaceContrast(candidate.color) >= _minimumContrast) {
+    return _AdjustedCandidate(candidate, candidate.color, 0);
+  }
+  var low = candidate.hsl.l;
+  var high = 1.0;
+  for (var i = 0; i < 32; i++) {
+    final mid = (low + high) / 2;
+    final color = _hslToArgb(candidate.hsl.h, candidate.hsl.s, mid);
+    if (_minimumSurfaceContrast(color) >= _minimumContrast) {
+      high = mid;
+    } else {
+      low = mid;
+    }
+  }
+  var color = _hslToArgb(candidate.hsl.h, candidate.hsl.s, high);
+  // Integer channel rounding can land a hair below the target. Nudge the
+  // generated lightness upward deterministically until every surface clears.
+  var lightness = high;
+  while (_minimumSurfaceContrast(color) < _minimumContrast && lightness < 1) {
+    lightness = math.min(1, lightness + 0.0001);
+    color = _hslToArgb(candidate.hsl.h, candidate.hsl.s, lightness);
+  }
+  return _AdjustedCandidate(candidate, color, lightness - candidate.hsl.l);
+}
+
+double _minimumSurfaceContrast(int color) =>
+    _darkSurfaces.map((surface) => _contrast(color, surface)).reduce(math.min);
+
+double _contrast(int a, int b) {
+  final first = _luminance(a);
+  final second = _luminance(b);
+  return (math.max(first, second) + 0.05) / (math.min(first, second) + 0.05);
+}
+
+double _luminance(int argb) {
+  double linear(int channel) {
+    final value = channel / 255;
+    return value <= 0.04045
+        ? value / 12.92
+        : math.pow((value + 0.055) / 1.055, 2.4).toDouble();
+  }
+
+  final r = linear((argb >> 16) & 0xff);
+  final g = linear((argb >> 8) & 0xff);
+  final b = linear(argb & 0xff);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+_Hsl _rgbToHsl(int argb) {
+  final r = ((argb >> 16) & 0xff) / 255;
+  final g = ((argb >> 8) & 0xff) / 255;
+  final b = (argb & 0xff) / 255;
+  final maxValue = math.max(r, math.max(g, b));
+  final minValue = math.min(r, math.min(g, b));
+  final delta = maxValue - minValue;
+  final lightness = (maxValue + minValue) / 2;
+  if (delta == 0) return _Hsl(0, 0, lightness);
+  final saturation = delta / (1 - (2 * lightness - 1).abs());
+  double hue;
+  if (maxValue == r) {
+    hue = 60 * (((g - b) / delta) % 6);
+  } else if (maxValue == g) {
+    hue = 60 * (((b - r) / delta) + 2);
+  } else {
+    hue = 60 * (((r - g) / delta) + 4);
+  }
+  if (hue < 0) hue += 360;
+  return _Hsl(hue, saturation, lightness);
+}
+
+int _hslToArgb(double hue, double saturation, double lightness) {
+  final chroma = (1 - (2 * lightness - 1).abs()) * saturation;
+  final x = chroma * (1 - ((hue / 60) % 2 - 1).abs());
+  final m = lightness - chroma / 2;
+  double r;
+  double g;
+  double b;
+  if (hue < 60) {
+    (r, g, b) = (chroma, x, 0);
+  } else if (hue < 120) {
+    (r, g, b) = (x, chroma, 0);
+  } else if (hue < 180) {
+    (r, g, b) = (0, chroma, x);
+  } else if (hue < 240) {
+    (r, g, b) = (0, x, chroma);
+  } else if (hue < 300) {
+    (r, g, b) = (x, 0, chroma);
+  } else {
+    (r, g, b) = (chroma, 0, x);
+  }
+  int channel(double value) => ((value + m) * 255).round().clamp(0, 255);
+  return 0xff000000 | channel(r) << 16 | channel(g) << 8 | channel(b);
+}
+
+String _sportForTournament(String tournament) {
+  final lower = tournament.toLowerCase();
+  if (lower == 'f1') return 'motorsport';
+  if (lower == 'ipl' || lower == 'icc' || lower.startsWith('eca ')) {
+    return 'cricket';
+  }
+  if (lower.contains('basketball') ||
+      lower.contains('nba') ||
+      lower.contains('wnba') ||
+      lower.contains('fiba') ||
+      lower.contains('summer league') ||
+      lower == 'national basketball league') {
+    return 'basketball';
+  }
+  return 'football';
+}
+
+Map<String, Object?> _stringMap(Object? value, String label) {
+  if (value is! Map) throw FormatException('$label must be an object.');
+  return value.map((key, item) => MapEntry(key.toString(), item));
+}
+
+String _recordId(Map<String, Object?> record, int index) {
+  final direct = _optionalString(record['id']);
+  if (direct != null) return direct;
+  final mongo = record['_id'];
+  if (mongo is Map) {
+    final oid = _optionalString(mongo[r'$oid']);
+    if (oid != null) return oid;
+  }
+  throw FormatException('record $index has no id/_id.\$oid.');
+}
+
+String _requiredString(Map<String, Object?> record, String key, int index) {
+  final value = _optionalString(record[key]);
+  if (value == null) throw FormatException('record $index is missing $key.');
+  return value;
+}
+
+String? _optionalString(Object? value) {
+  final text = value?.toString().trim();
+  return text == null || text.isEmpty ? null : text;
+}
+
+String _readHex(Map<String, Object?> record, String key, int index) {
+  final value = _requiredString(record, key, index);
+  try {
+    return _normaliseHex(value);
+  } on FormatException catch (error) {
+    throw FormatException('record $index $key: ${error.message}');
+  }
+}
+
+String _normaliseHex(String value) {
+  final match = RegExp(r'^#?([0-9a-fA-F]{6})$').firstMatch(value.trim());
+  if (match == null) throw FormatException('invalid #RRGGBB color "$value"');
+  return '#${match.group(1)!.toUpperCase()}';
+}
+
+int _argb(String hex) => 0xff000000 | int.parse(hex.substring(1), radix: 16);
+
+String _hex(int argb) =>
+    '#${(argb & 0xffffff).toRadixString(16).padLeft(6, '0').toUpperCase()}';
+
+String _dartHex(int value) =>
+    '0x${value.toRadixString(16).padLeft(8, '0').toUpperCase()}';
+
+String _normaliseKey(String value) {
+  const replacements = <String, String>{
+    'ø': 'o',
+    'Ø': 'o',
+    'æ': 'ae',
+    'Æ': 'ae',
+    'ß': 'ss',
+    'ð': 'd',
+    'þ': 'th',
+    'ł': 'l',
+  };
+  const accents = 'áàâäãåçćčďéèêëěíìîïñňóòôöõřšśťúùûüýÿžźż';
+  const plain = 'aaaaaacccdeeeeeiiiinnnooooorusstuuuuyyzzz';
+  final buffer = StringBuffer();
+  for (final rune in value.runes) {
+    final character = String.fromCharCode(rune);
+    var mapped = replacements[character] ?? character.toLowerCase();
+    final accentIndex = accents.indexOf(mapped);
+    if (accentIndex >= 0) mapped = plain[accentIndex];
+    for (final code in mapped.codeUnits) {
+      final digit = code >= 0x30 && code <= 0x39;
+      final letter = code >= 0x61 && code <= 0x7a;
+      if (digit || letter) buffer.writeCharCode(code);
+    }
+  }
+  return buffer.toString();
+}
+
+int _uniqueCompetitionTeamCount(List<Map<String, Object?>> records) => records
+    .map(
+      (record) =>
+          '${record['sport']}:${_normaliseKey(record['tournament']! as String)}:'
+          '${_normaliseKey(record['name']! as String)}',
+    )
+    .toSet()
+    .length;
+
+bool _sameValues(List<int> a, List<int> b) =>
+    a.length == b.length &&
+    Iterable<int>.generate(a.length).every((index) => a[index] == b[index]);
+
+void _checkFile(String path, String expected) {
+  final file = File(path);
+  if (!file.existsSync() || file.readAsStringSync() != expected) {
+    throw StateError('$path is stale; regenerate team palettes.');
+  }
+}
+
+class _Hsl {
+  const _Hsl(this.h, this.s, this.l);
+
+  final double h;
+  final double s;
+  final double l;
+}
+
+class _Candidate {
+  _Candidate(this.color, this.index) : hsl = _rgbToHsl(color);
+
+  final int color;
+  final int index;
+  final _Hsl hsl;
+}
+
+class _AdjustedCandidate {
+  const _AdjustedCandidate(this.source, this.color, this.lightnessLift);
+
+  final _Candidate source;
+  final int color;
+  final double lightnessLift;
+}

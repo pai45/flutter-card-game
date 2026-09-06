@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../config/theme.dart';
+import '../../../data/team_palettes.dart';
 import '../../../models/sport_match.dart';
 
 /// Split-bar score entry matching the reference: home team colour on the left
@@ -32,7 +33,6 @@ class ScorePredictionPicker extends StatelessWidget {
   final int? correctAway;
 
   static const _maxGoals = 15;
-  static const _awayBg = Color(0xff141418);
   static const _barHeight = 104.0;
 
   bool get _homeCorrect =>
@@ -40,38 +40,48 @@ class ScorePredictionPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final homeColor = paletteForTeam(
+      match.home,
+      sport: match.sport,
+      competition: match.leagueId,
+    ).secondaryTextColor;
+    final awayColor = paletteForTeam(
+      match.away,
+      sport: match.sport,
+      competition: match.leagueId,
+    ).secondaryTextColor;
     return SizedBox(
       height: _barHeight,
       child: Row(
-          children: [
-            Expanded(
-              child: _TeamHalf(
-                teamName: match.home.name,
-                teamColor: match.home.color,
-                score: homeScore,
-                nameAlign: TextAlign.start,
-                controlsOnRight: true,
-                enabled: enabled,
-                settled: settled,
-                isCorrect: _homeCorrect,
-                onChanged: onHomeChanged,
-              ),
+        children: [
+          Expanded(
+            child: _TeamHalf(
+              teamName: match.home.name,
+              teamColor: homeColor,
+              score: homeScore,
+              nameAlign: TextAlign.start,
+              controlsOnRight: true,
+              enabled: enabled,
+              settled: settled,
+              isCorrect: _homeCorrect,
+              onChanged: onHomeChanged,
             ),
-            Expanded(
-              child: _TeamHalf(
-                teamName: match.away.name,
-                teamColor: _awayBg,
-                score: awayScore,
-                nameAlign: TextAlign.end,
-                controlsOnRight: false,
-                enabled: enabled,
-                settled: settled,
-                isCorrect: _homeCorrect,
-                onChanged: onAwayChanged,
-              ),
+          ),
+          Expanded(
+            child: _TeamHalf(
+              teamName: match.away.name,
+              teamColor: awayColor,
+              score: awayScore,
+              nameAlign: TextAlign.end,
+              controlsOnRight: false,
+              enabled: enabled,
+              settled: settled,
+              isCorrect: _homeCorrect,
+              onChanged: onAwayChanged,
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -99,7 +109,8 @@ class _TeamHalf extends StatelessWidget {
   final bool isCorrect;
   final ValueChanged<int> onChanged;
 
-  Color get _buttonBg => Color.lerp(teamColor, Colors.black, 0.38)!;
+  Color get _buttonBg =>
+      Color.alphaBlend(teamColor.withValues(alpha: 0.22), Cyber.panel2);
 
   @override
   Widget build(BuildContext context) {
@@ -122,12 +133,18 @@ class _TeamHalf extends StatelessWidget {
         textAlign: nameAlign,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: Cyber.body(15, weight: FontWeight.w700),
+        style: Cyber.body(15, color: teamColor, weight: FontWeight.w700),
       ),
     );
 
-    return ColoredBox(
-      color: teamColor,
+    return Container(
+      decoration: BoxDecoration(
+        color: Color.alphaBlend(
+          teamColor.withValues(alpha: 0.14),
+          Cyber.panel2,
+        ),
+        border: Border(top: BorderSide(color: teamColor, width: 3)),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

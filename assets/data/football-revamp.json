@@ -1391,7 +1391,11 @@
         "João Pedro",
         "Cole Palmer"
       ],
-      "playId": "51402631"
+      "playId": "51402631",
+      "fieldPositionX": 87.2,
+      "fieldPositionY": 39.7,
+      "shotZone": "the centre of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 3,
@@ -1436,7 +1440,11 @@
         "Morgan Rogers",
         "Cole Palmer"
       ],
-      "playId": "51402774"
+      "playId": "51402774",
+      "fieldPositionX": 75.8,
+      "fieldPositionY": 48.7,
+      "shotZone": "outside the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 6,
@@ -1463,7 +1471,11 @@
         "Reece James",
         "Morgan Rogers"
       ],
-      "playId": "51402780"
+      "playId": "51402780",
+      "fieldPositionX": 82.0,
+      "fieldPositionY": 39.4,
+      "shotZone": "outside the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 8,
@@ -1521,7 +1533,11 @@
       "players": [
         "Levi Colwill"
       ],
-      "playId": "51402906"
+      "playId": "51402906",
+      "fieldPositionX": 88.8,
+      "fieldPositionY": 74.7,
+      "shotZone": "the left side of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 12,
@@ -1536,7 +1552,11 @@
         "Cole Palmer",
         "Morgan Rogers"
       ],
-      "playId": "51402961"
+      "playId": "51402961",
+      "fieldPositionX": 92.1,
+      "fieldPositionY": 27.9,
+      "shotZone": "the right side of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 13,
@@ -1619,7 +1639,11 @@
         "Cole Palmer",
         "Morgan Rogers"
       ],
-      "playId": "51403562"
+      "playId": "51403562",
+      "fieldPositionX": 85.6,
+      "fieldPositionY": 45.5,
+      "shotZone": "the centre of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 19,
@@ -1634,7 +1658,11 @@
         "Josh King",
         "Sander Berge"
       ],
-      "playId": "51403600"
+      "playId": "51403600",
+      "fieldPositionX": 76.2,
+      "fieldPositionY": 35.7,
+      "shotZone": "outside the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 20,
@@ -1661,7 +1689,11 @@
         "César Palacios",
         "Josh King"
       ],
-      "playId": "51403607"
+      "playId": "51403607",
+      "fieldPositionX": 81.1,
+      "fieldPositionY": 52.6,
+      "shotZone": "outside the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 22,
@@ -1675,7 +1707,11 @@
       "players": [
         "Sander Berge"
       ],
-      "playId": "51403711"
+      "playId": "51403711",
+      "fieldPositionX": 83.1,
+      "fieldPositionY": 34.0,
+      "shotZone": "the right side of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 23,
@@ -1690,7 +1726,11 @@
         "Josh King",
         "Timothy Castagne"
       ],
-      "playId": "51403758"
+      "playId": "51403758",
+      "fieldPositionX": 88.9,
+      "fieldPositionY": 29.0,
+      "shotZone": "the right side of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 24,
@@ -1719,7 +1759,11 @@
         "César Palacios",
         "Timothy Castagne"
       ],
-      "playId": "51403951"
+      "playId": "51403951",
+      "fieldPositionX": 92.1,
+      "fieldPositionY": 55.1,
+      "shotZone": "the centre of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 26,
@@ -1734,7 +1778,11 @@
         "Gonzalo García",
         "Oscar Bobb"
       ],
-      "playId": "51404012"
+      "playId": "51404012",
+      "fieldPositionX": 91.4,
+      "fieldPositionY": 48.6,
+      "shotZone": "the centre of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 27,
@@ -1821,7 +1869,11 @@
         "João Pedro",
         "Cole Palmer"
       ],
-      "playId": "51404122"
+      "playId": "51404122",
+      "fieldPositionX": 89.4,
+      "fieldPositionY": 49.3,
+      "shotZone": "the centre of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 33,
@@ -1836,7 +1888,11 @@
         "Morgan Rogers",
         "João Pedro"
       ],
-      "playId": "51404267"
+      "playId": "51404267",
+      "fieldPositionX": 80.3,
+      "fieldPositionY": 54.6,
+      "shotZone": "outside the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 34,
@@ -1850,7 +1906,11 @@
       "players": [
         "Reece James"
       ],
-      "playId": "51404268"
+      "playId": "51404268",
+      "fieldPositionX": 84.0,
+      "fieldPositionY": 35.8,
+      "shotZone": "the right side of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 35,
@@ -1877,7 +1937,11 @@
         "Jorrel Hato",
         "Reece James"
       ],
-      "playId": "51404381"
+      "playId": "51404381",
+      "fieldPositionX": 91.5,
+      "fieldPositionY": 61.7,
+      "shotZone": "the centre of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 37,
@@ -1892,7 +1956,11 @@
         "Romeo Lavia",
         "Jorrel Hato"
       ],
-      "playId": "51404383"
+      "playId": "51404383",
+      "fieldPositionX": 95.4,
+      "fieldPositionY": 54.1,
+      "shotZone": "very close range",
+      "positionSource": "espn"
     },
     {
       "sequence": 38,
@@ -1949,7 +2017,11 @@
         "Calvin Bassey",
         "Sander Berge"
       ],
-      "playId": "51404536"
+      "playId": "51404536",
+      "fieldPositionX": 75.2,
+      "fieldPositionY": 38.8,
+      "shotZone": "outside the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 42,
@@ -1994,7 +2066,11 @@
         "Morgan Rogers",
         "Maxence Lacroix"
       ],
-      "playId": "51404619"
+      "playId": "51404619",
+      "fieldPositionX": 91.1,
+      "fieldPositionY": 54.7,
+      "shotZone": "the centre of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 45,
@@ -2009,7 +2085,11 @@
         "Cole Palmer",
         "Morgan Rogers"
       ],
-      "playId": "51404717"
+      "playId": "51404717",
+      "fieldPositionX": 80.0,
+      "fieldPositionY": 32.5,
+      "shotZone": "outside the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 46,
@@ -2090,7 +2170,11 @@
         "João Pedro",
         "Romeo Lavia"
       ],
-      "playId": "51405642"
+      "playId": "51405642",
+      "fieldPositionX": 89.8,
+      "fieldPositionY": 63.4,
+      "shotZone": "the left side of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 52,
@@ -2135,7 +2219,11 @@
         "Cole Palmer",
         "Romeo Lavia"
       ],
-      "playId": "51405693"
+      "playId": "51405693",
+      "fieldPositionX": 88.2,
+      "fieldPositionY": 32.3,
+      "shotZone": "the right side of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 55,
@@ -2150,7 +2238,11 @@
         "Cole Palmer",
         "João Pedro"
       ],
-      "playId": "51405757"
+      "playId": "51405757",
+      "fieldPositionX": 96.9,
+      "fieldPositionY": 65.0,
+      "shotZone": "a difficult angle on the left",
+      "positionSource": "espn"
     },
     {
       "sequence": 56,
@@ -2194,7 +2286,11 @@
       "players": [
         "Timothy Castagne"
       ],
-      "playId": "51405933"
+      "playId": "51405933",
+      "fieldPositionX": 88.8,
+      "fieldPositionY": 43.3,
+      "shotZone": "the centre of the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 59,
@@ -2208,7 +2304,11 @@
       "players": [
         "Gonzalo García"
       ],
-      "playId": "51405934"
+      "playId": "51405934",
+      "fieldPositionX": 95.5,
+      "fieldPositionY": 48.4,
+      "shotZone": "very close range",
+      "positionSource": "espn"
     },
     {
       "sequence": 60,
@@ -2265,7 +2365,11 @@
         "João Pedro",
         "Morgan Rogers"
       ],
-      "playId": "51406338"
+      "playId": "51406338",
+      "fieldPositionX": 76.4,
+      "fieldPositionY": 50.7,
+      "shotZone": "outside the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 64,
@@ -2399,7 +2503,11 @@
         "Josh King",
         "Antonee Robinson"
       ],
-      "playId": "51406732"
+      "playId": "51406732",
+      "fieldPositionX": 81.8,
+      "fieldPositionY": 61.6,
+      "shotZone": "outside the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 73,
@@ -2559,7 +2667,11 @@
         "Antonee Robinson",
         "Jorge Cuenca"
       ],
-      "playId": "51406944"
+      "playId": "51406944",
+      "fieldPositionX": 80.8,
+      "fieldPositionY": 56.8,
+      "shotZone": "outside the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 84,
@@ -2649,7 +2761,11 @@
         "Ryan Sessegnon",
         "Jorge Cuenca"
       ],
-      "playId": "51407335"
+      "playId": "51407335",
+      "fieldPositionX": 95.3,
+      "fieldPositionY": 68.8,
+      "shotZone": "a difficult angle on the left",
+      "positionSource": "espn"
     },
     {
       "sequence": 90,
@@ -2788,7 +2904,11 @@
         "Gonzalo García",
         "Rodrigo Muniz"
       ],
-      "playId": "51407787"
+      "playId": "51407787",
+      "fieldPositionX": 75.0,
+      "fieldPositionY": 51.0,
+      "shotZone": "outside the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 100,
@@ -2803,7 +2923,11 @@
         "Pedro Neto",
         "Enzo Fernández"
       ],
-      "playId": "51407852"
+      "playId": "51407852",
+      "fieldPositionX": 96.8,
+      "fieldPositionY": 30.4,
+      "shotZone": "a difficult angle on the right",
+      "positionSource": "espn"
     },
     {
       "sequence": 101,
@@ -2817,7 +2941,11 @@
       "players": [
         "Rodrigo Muniz"
       ],
-      "playId": "51407879"
+      "playId": "51407879",
+      "fieldPositionX": 73.4,
+      "fieldPositionY": 58.2,
+      "shotZone": "outside the box",
+      "positionSource": "espn"
     },
     {
       "sequence": 102,

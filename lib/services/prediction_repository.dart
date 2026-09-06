@@ -3792,7 +3792,7 @@ class MockPredictionRepository
       try {
         final bundled = await (_bundledFootballFixture ??=
             _footballPackageService.loadBundled());
-        mockFixtures.add(bundled);
+        mockFixtures.add(_keepBundledFixtureOnToday(bundled));
       } catch (_) {
         // Keep the rest of the fixture board available if the prototype asset
         // cannot be loaded in a constrained embedder.
@@ -3842,8 +3842,9 @@ class MockPredictionRepository
   Future<SportMatch?> fixtureById(String matchId) async {
     if (matchId == FootballMatchPackageService.bundledMatchId) {
       try {
-        return await (_bundledFootballFixture ??= _footballPackageService
+        final bundled = await (_bundledFootballFixture ??= _footballPackageService
             .loadBundled());
+        return _keepBundledFixtureOnToday(bundled);
       } catch (_) {
         return null;
       }

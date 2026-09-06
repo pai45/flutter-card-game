@@ -170,6 +170,8 @@ class PredictionCubit extends Cubit<PredictionState> {
     final stored = await _storage.loadPredictions();
     final storedQuizzes = await _storage.loadPredictionQuizzes();
     final checkpoints = await _storage.loadPredictionSettlementCheckpoints();
+    final followedLeagueIds = await _storage.loadFollowedLeagueIds();
+    final favoriteTeams = await _storage.loadFavoriteTeams();
     final predictions = {for (final p in stored) p.key: p};
     final quizzes = {
       for (final quiz in storedQuizzes)
@@ -195,11 +197,30 @@ class PredictionCubit extends Cubit<PredictionState> {
         predictions: predictions,
         quizzes: quizzes,
         standingsByLeague: const {},
+        followedLeagueIds: followedLeagueIds,
+        favoriteTeams: favoriteTeams,
       ),
     );
 
     // Fetch slow network data asynchronously
     _loadLiveStandings(leagues);
+  }
+
+  /// Re-reads the player's followed leagues + favourite clubs from storage.
+  ///
+  /// Called after onboarding completes and after the profile's clubs editor
+  /// saves, so the match feed's club pin follows a mid-session change without
+  /// an app restart.
+  Future<void> refreshFollowing() async {
+    final followedLeagueIds = await _storage.loadFollowedLeagueIds();
+    final favoriteTeams = await _storage.loadFavoriteTeams();
+    if (isClosed) return;
+    emit(
+      state.copyWith(
+        followedLeagueIds: followedLeagueIds,
+        favoriteTeams: favoriteTeams,
+      ),
+    );
   }
 
   Future<void> _loadLiveStandings(List<League> leagues) async {

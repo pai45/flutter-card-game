@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import '../models/rival_dossier.dart';
+import '../utils/catalogue_search.dart';
 
 /// One fabricated leaderboard rival. There is no backend — a rival is just a
 /// display name + canonical XP (their `base`), from which the dossier, avatar,
@@ -120,9 +121,29 @@ RivalSeed? resolveRival(String query) {
 }
 
 /// The fabricated level for a rival seed (drives the search result + rows).
-int rivalLevelFor(RivalSeed seed) =>
-    RivalDossier.fromSeed(name: seed.name, xp: seed.base, pro: seed.isPro).level;
+int rivalLevelFor(RivalSeed seed) => RivalDossier.fromSeed(
+  name: seed.name,
+  xp: seed.base,
+  pro: seed.isPro,
+).level;
 
 /// Deterministic "online now" flag for a rival, so the friends online count is
 /// stable per session without any backend (~55% of rivals read as online).
 bool rivalIsOnline(String name) => _seedHash(name) % 20 < 11;
+
+/// All matching rivals, independent of leaderboard selections and rank.
+List<RivalSeed> searchRivals(String query) {
+  final matches = kRivalRoster
+      .where((seed) => !seed.isUser && catalogueMatches(query, [seed.name]))
+      .toList();
+  matches.sort((a, b) {
+    final priority = catalogueMatchPriority(
+      a.name,
+      query,
+    ).compareTo(catalogueMatchPriority(b.name, query));
+    return priority != 0
+        ? priority
+        : a.name.toLowerCase().compareTo(b.name.toLowerCase());
+  });
+  return matches;
+}

@@ -37,7 +37,11 @@ class _MatchPitchViewState extends State<MatchPitchView> {
 
     final lineup = _showHome ? homeLineup : awayLineup;
     final team = _showHome ? widget.match.home : widget.match.away;
-    final teamColor = paletteForTeam(team, sport: widget.match.sport).primary;
+    final teamColor = paletteForTeam(
+      team,
+      sport: widget.match.sport,
+      competition: widget.match.leagueId,
+    ).secondaryTextColor;
     return Column(
       children: [
         CyberFilterChips(
@@ -62,6 +66,7 @@ class _MatchPitchViewState extends State<MatchPitchView> {
                   team: team,
                   lineup: lineup,
                   sport: widget.match.sport,
+                  competition: widget.match.leagueId,
                   teamColor: teamColor,
                 ),
                 const SizedBox(height: 12),
@@ -106,12 +111,14 @@ class _LineupIdentityPanel extends StatelessWidget {
     required this.team,
     required this.lineup,
     required this.sport,
+    required this.competition,
     required this.teamColor,
   });
 
   final SportTeam team;
   final MatchLineup lineup;
   final Sport sport;
+  final String competition;
   final Color teamColor;
 
   @override
@@ -124,13 +131,22 @@ class _LineupIdentityPanel extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       child: Row(
         children: [
-          TeamLogo(team: team, width: 48, height: 48, sport: sport),
+          TeamLogo(
+            team: team,
+            width: 48,
+            height: 48,
+            sport: sport,
+            competition: competition,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(team.name.toUpperCase(), style: Cyber.display(15)),
+                Text(
+                  team.name.toUpperCase(),
+                  style: Cyber.display(15, color: teamColor),
+                ),
                 const SizedBox(height: 4),
                 Text(
                   '${lineup.formation} FORMATION // $playerCount PLAYER SQUAD',

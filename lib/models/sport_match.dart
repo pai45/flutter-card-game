@@ -348,6 +348,7 @@ class SportMatch {
     bool clearResultLine = false,
     bool clearLiveLastUpdated = false,
     bool clearLiveStatusNote = false,
+    bool clearFootballDetails = false,
     bool clearBasketballDetails = false,
     bool clearCricketDetails = false,
   }) => SportMatch(
@@ -377,7 +378,9 @@ class SportMatch {
     tennisScorecard: tennisScorecard ?? this.tennisScorecard,
     commentary: commentary ?? this.commentary,
     teamStats: teamStats ?? this.teamStats,
-    footballDetails: footballDetails ?? this.footballDetails,
+    footballDetails: clearFootballDetails
+        ? null
+        : footballDetails ?? this.footballDetails,
     footballMomentum: footballMomentum ?? this.footballMomentum,
     basketballDetails: clearBasketballDetails
         ? null

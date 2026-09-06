@@ -65,6 +65,11 @@ interrupt the rhythm, completed overs introduce a new bowler, and OVERDRIVE
 gets a live charge state. The result reveals verdict, reason, ball ledger,
 box score, grade, XP, level progress, and career record in stages.
 
+The Games and Trending hero cards use Cricket's canonical white identity for
+their frame, badge, subtitle, wicket, pitch outline, and delivery trail. The
+green outfield and gold-brown pitch remain illustration colors rather than
+interactive accents.
+
 ## Visible States
 
 - Loading and starter-pack gate

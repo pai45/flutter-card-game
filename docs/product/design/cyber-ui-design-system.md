@@ -1,7 +1,7 @@
 # Cyber UI Design System
 
 > **Status:** BUILT
-> **Last verified:** 2026-08-09
+> **Last verified:** 2026-09-06
 > **Scope:** Theme tokens, typography, shape language, glow hierarchy, layout, and shared cyber components
 
 ## Product Purpose
@@ -31,8 +31,27 @@ clear state/result feedback, and a reward/next-action handoff.
   rounded white cards and excessive pills.
 - Cyan is the dominant live/action signal; gold identifies rewards; red signals
   danger/failure; violet is reserved for elite/special rarity.
+- **BUILT:** Cross-sport identity uses one canonical palette: Football cyan,
+  Cricket white, Basketball yellow, Tennis green, and Motorsport red. Sport
+  icons keep a subdued form of their own color in inactive tabs; the selected
+  sport uses full color and owns the tab's single glowing underline. These
+  identity colors do not replace semantic LIVE, reward, danger, rarity, team,
+  or game-mode colors.
+- **BUILT:** Team identity uses a four-role, competition-scoped palette. The
+  supplied `primaryColor`, `secondaryColor`, and `textColor` are reserved for
+  exact octagonal logo rendering. `secondaryTextColor` is the full-strength
+  team color for names, comparison bars, chart/map marks, timeline rails,
+  controls, and avatar frames on dark surfaces; every generated value clears
+  WCAG AA (4.5:1) on `Cyber.bg`, `Cyber.card`, `Cyber.panel`, and
+  `Cyber.chartSurface`. Translucent team washes are decorative and must be
+  paired with a full-strength identity label, marker, or border. LIVE, danger,
+  success, reward, and selected-state semantics override team color, and team
+  identity never creates a persistent glow.
 - **Glow rule:** glow means live, selected, primary, or a genuine moment. Keep it
   scarce; inactive secondary content should not glow.
+- **BUILT:** Backgrounds use the calm blueprint grid, scanlines, and optional
+  vignette only. Procedural film-grain/noise is retired across every screen so
+  match and reward moments stay crisp without visual speckling.
 - Reuse `GameScaffold`, `CyberPanel`, `CyberProgressBar`, `HudCtaButton`,
   `CyberCtaButton`, and `CyberSegmentedTabs`. If a visual pattern repeats, extend
   the shared cyber catalog rather than duplicate it.
@@ -115,6 +134,8 @@ widget must not become the authoritative store for durable state.
 - [`lib/widgets/cyber/cyber_cta_button.dart`](../../../lib/widgets/cyber/cyber_cta_button.dart)
 - [`lib/widgets/cyber/cyber_segmented_tabs.dart`](../../../lib/widgets/cyber/cyber_segmented_tabs.dart)
 - [`lib/widgets/cyber/cyber_chart.dart`](../../../lib/widgets/cyber/cyber_chart.dart)
+- [`lib/data/team_palettes.dart`](../../../lib/data/team_palettes.dart)
+- [`lib/widgets/team_logo.dart`](../../../lib/widgets/team_logo.dart)
 - [`lib/screens/predictions/widgets/match_stats_shell.dart`](../../../lib/screens/predictions/widgets/match_stats_shell.dart)
 
 ## Tests

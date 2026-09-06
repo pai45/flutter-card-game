@@ -14,6 +14,8 @@ import '../../widgets/game_scaffold.dart';
 import '../leaderboard/leaderboard_screen.dart' show showRivalDossier;
 import '../leaderboard/widgets/rank_widgets.dart';
 import 'referral_screen.dart';
+import 'widgets/friend_request_sent_animation.dart';
+import 'widgets/rival_search_result_card.dart';
 import 'widgets/referral_invite_card.dart';
 
 /// FRIENDS ARENA — search the rival network by tag or username, then add and
@@ -68,9 +70,9 @@ class _FriendsArenaScreenState extends State<FriendsArenaScreen> {
 
   void _openReferrals() {
     HapticFeedback.selectionClick();
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const ReferralScreen()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const ReferralScreen()));
   }
 
   Future<void> _toggleFriend(String name) async {
@@ -79,13 +81,15 @@ class _FriendsArenaScreenState extends State<FriendsArenaScreen> {
     if (!mounted) return;
     playSound(SoundEffect.uiTap);
     HapticFeedback.selectionClick();
+    if (nowFriend) {
+      await showFriendRequestSentAnimation(context, friendName: name);
+      return;
+    }
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text(
-            nowFriend ? '$name added to friends' : '$name removed from friends',
-          ),
+          content: Text('$name removed from friends'),
           duration: const Duration(milliseconds: 1400),
         ),
       );
@@ -223,7 +227,7 @@ class _FriendsArenaScreenState extends State<FriendsArenaScreen> {
       );
     }
     final isFriend = friends.contains(seed.name);
-    return _SearchResultCard(
+    return RivalSearchResultCard(
       seed: seed,
       isFriend: isFriend,
       onView: () => _openDossier(seed.name),
@@ -257,7 +261,9 @@ class _SearchNotice extends StatelessWidget {
         children: [
           Icon(icon, color: accent, size: 20),
           const SizedBox(width: 12),
-          Expanded(child: Text(message, style: Cyber.body(13, color: Cyber.muted))),
+          Expanded(
+            child: Text(message, style: Cyber.body(13, color: Cyber.muted)),
+          ),
         ],
       ),
     );
@@ -266,89 +272,6 @@ class _SearchNotice extends StatelessWidget {
 
 /// The resolved-player card: avatar, identity, level + tag, and the VIEW /
 /// ADD-FRIEND actions. The ADD-FRIEND CTA is the screen's one focal glow.
-class _SearchResultCard extends StatelessWidget {
-  const _SearchResultCard({
-    required this.seed,
-    required this.isFriend,
-    required this.onView,
-    required this.onToggleFriend,
-  });
-
-  final RivalSeed seed;
-  final bool isFriend;
-  final VoidCallback onView;
-  final VoidCallback onToggleFriend;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: cutCornerDecoration(
-        color: Cyber.panel.withValues(alpha: 0.5),
-        borderColor: Cyber.cyan.withValues(alpha: 0.45),
-        cut: 14,
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              RivalAvatar(name: seed.name, size: 54),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            seed.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Cyber.display(18, letterSpacing: 0.5),
-                          ),
-                        ),
-                        if (seed.isPro) ...[
-                          const SizedBox(width: 8),
-                          const _ProTag(),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      'LVL ${rivalLevelFor(seed)}  //  ${playerTagForName(seed.name)}',
-                      style: Cyber.label(
-                        10,
-                        color: Cyber.muted,
-                        letterSpacing: 1.2,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(child: CyberCtaButton(label: 'View', onPressed: onView)),
-              const SizedBox(width: 10),
-              Expanded(
-                child: CyberCtaButton(
-                  label: isFriend ? 'Friend ✓' : 'Add Friend',
-                  primary: !isFriend,
-                  onPressed: onToggleFriend,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 /// One row of the friends leaderboard: rank · avatar · identity · score, plus an
 /// inline CHALLENGE for friends (the user's own row shows no challenge and gets
 /// the one row glow).
@@ -480,7 +403,11 @@ class _ChallengeChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.sports_kabaddi_rounded, color: Cyber.cyan, size: 15),
+            const Icon(
+              Icons.sports_kabaddi_rounded,
+              color: Cyber.cyan,
+              size: 15,
+            ),
             const SizedBox(width: 6),
             Text(
               'VS',
@@ -513,13 +440,6 @@ class _MiniTag extends StatelessWidget {
       ),
     );
   }
-}
-
-class _ProTag extends StatelessWidget {
-  const _ProTag();
-
-  @override
-  Widget build(BuildContext context) => const _MiniTag(label: 'PRO', color: Cyber.violet);
 }
 
 String _formatInt(int value) {

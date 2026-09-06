@@ -33,6 +33,23 @@ local profiles built from seeded identity/XP. Game history stores bounded match
 entries and round detail where a mode writes it. Predictions, picks, XP, and
 coins use their dedicated records and filters.
 
+### User search ? BUILT / PROTOTYPE DATA
+
+The Top sport-strip search icon opens USER SEARCH. It searches the complete local
+`kRivalRoster` by username, excluding the self entry and ignoring sport, board,
+team/player, and scope filters. It is not a live account directory.
+
+Two or more characters trigger case-insensitive matching; surrounding/repeated
+whitespace is normalized and every query word must match the username. All
+matching users appear, ordered by exact name, prefix, then substring, with
+alphabetical ties. Result cards reuse Friends Arena identity presentation,
+showing avatar, username, level, and player tag without a search-specific rank.
+VIEW opens the existing rival dossier and preserves its available challenge flow.
+
+The route includes result counts, initial/short-query/no-result states, and
+clear. Back restores the leaderboard selection. Queries are session-only;
+search does not create users, change ranking, or add friends automatically.
+
 ## Rewards and Progression
 
 These surfaces display competitive and progression outcomes; they do not mint
@@ -81,3 +98,5 @@ are seeded; they are not server-authoritative or cross-device.
 
 - [`test/rival_dossier_test.dart`](../../../test/rival_dossier_test.dart)
 - [`test/xp_history_widget_test.dart`](../../../test/xp_history_widget_test.dart)
+
+- Search verification: `test/shop_user_search_test.dart`.

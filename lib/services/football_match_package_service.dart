@@ -66,7 +66,7 @@ class FootballMatchPackageService {
       homeLineup: _parseLineup(homeTeamData),
       awayLineup: _parseLineup(awayTeamData),
       commentary: _parseCommentary(json['commentary']),
-      footballDetails: _parseDetails(details),
+      footballDetails: _parseDetails(details, json['commentary']),
       footballMomentum: _parseMomentum(json['momentum']),
       rewardXp: 40,
     );
@@ -89,7 +89,10 @@ class FootballMatchPackageService {
     );
   }
 
-  FootballMatchDetails _parseDetails(Map<String, dynamic> details) {
+  FootballMatchDetails _parseDetails(
+    Map<String, dynamic> details,
+    dynamic commentary,
+  ) {
     final location = _map(details['location']);
     final score = _map(details['score']);
     return FootballMatchDetails(
@@ -119,7 +122,101 @@ class FootballMatchPackageService {
             ),
           )
           .toList(growable: false),
+      shots: _parseShots(commentary),
     );
+  }
+
+  /// Shots ride on the commentary entries, because that is where the feed
+  /// publishes their tracked positions. An entry without a usable coordinate is
+  /// dropped rather than defaulted — the feed reports a missing position as
+  /// `0/0`, which would otherwise plot on the goal line.
+  List<FootballShot> _parseShots(dynamic value) {
+    final shots = <FootballShot>[];
+    for (final item in _maps(value)) {
+      final kind = _string(item['kind']);
+      if (!kind.startsWith('shot') && !kind.startsWith('goal')) continue;
+      if (item['fieldPositionX'] == null || item['fieldPositionY'] == null) {
+        continue;
+      }
+      final x = _double(item['fieldPositionX']);
+      final y = _double(item['fieldPositionY']);
+      if (x == 0 && y == 0) continue;
+
+      final players = _list(item['players'])
+          .map((player) => player is Map ? _string(player['name']) : _string(player))
+          .where((name) => name.isNotEmpty)
+          .toList(growable: false);
+      final text = _string(item['text']);
+      final minuteLabel = _nullableString(item['minute']) ?? '';
+
+      shots.add(
+        FootballShot(
+          playId: _nullableString(item['playId']) ?? '${shots.length}',
+          minuteLabel: minuteLabel,
+          minute: int.tryParse(RegExp(r'\d+').stringMatch(minuteLabel) ?? '') ?? 0,
+          period: _int(item['period']),
+          isHomeTeam: item['side'] == 'home',
+          team: _string(item['team']),
+          shooter: players.isEmpty ? '' : players.first,
+          assist: players.length > 1 ? players[1] : null,
+          outcome: _shotOutcome(kind),
+          zone: _nullableString(item['shotZone']),
+          fieldX: x / 100,
+          fieldY: y / 100,
+          isHeader: text.toLowerCase().contains('header'),
+          netPlacement: _netPlacement(text),
+        ),
+      );
+    }
+    return List.unmodifiable(shots);
+  }
+
+  /// Where the attempt finished, read out of the commentary prose.
+  ///
+  /// The feed publishes no goal-mouth coordinate — `goalPosition*` is zero
+  /// throughout — but it does describe the placement in words for every attempt
+  /// that reached the frame, and the miss direction for every one that did not.
+  /// Anything unrecognised returns null so it is drawn as "no placement" rather
+  /// than guessed into the middle of the goal.
+  static (double, double)? _netPlacement(String text) {
+    final lower = text.toLowerCase();
+
+    // On target: a corner of the goal, or straight down the middle.
+    const inFrame = <String, (double, double)>{
+      'top left': (0.18, 0.24),
+      'top right': (0.82, 0.24),
+      'top centre': (0.50, 0.22),
+      'bottom left': (0.18, 0.78),
+      'bottom right': (0.82, 0.78),
+      'bottom centre': (0.50, 0.80),
+    };
+    for (final entry in inFrame.entries) {
+      if (lower.contains('${entry.key} corner') ||
+          lower.contains('${entry.key} of the goal')) {
+        return entry.value;
+      }
+    }
+    if (lower.contains('centre of the goal')) return (0.50, 0.55);
+
+    // Off target: placed outside the frame in the direction described.
+    // Kept just beyond the posts: these read as "off the frame" while still
+    // fitting inside the diagram alongside their marker.
+    if (lower.contains('high and wide to the right')) return (1.10, -0.08);
+    if (lower.contains('high and wide to the left')) return (-0.10, -0.08);
+    if (lower.contains('too high') || lower.contains('is high')) {
+      return (0.50, -0.12);
+    }
+    if (lower.contains('misses to the right')) return (1.10, 0.50);
+    if (lower.contains('misses to the left')) return (-0.10, 0.50);
+
+    return null;
+  }
+
+  static FootballShotOutcome _shotOutcome(String kind) {
+    if (kind.startsWith('goal')) return FootballShotOutcome.goal;
+    if (kind.contains('on-target')) return FootballShotOutcome.onTarget;
+    if (kind.contains('blocked')) return FootballShotOutcome.blocked;
+    return FootballShotOutcome.offTarget;
   }
 
   List<TeamStatLine> _parseStats(dynamic value) => _maps(value)

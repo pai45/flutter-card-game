@@ -48,6 +48,62 @@ void main() {
       expect(seriesValueAt(series, 1), 20);
       expect(seriesValueAt(series, 42), 30);
     });
+
+    test(
+      'value markers use the shared y-axis while legacy markers stay pinned',
+      () {
+        const plot = Rect.fromLTWH(10, 20, 200, 100);
+        const plotted = ChartMarker(
+          fraction: 0.25,
+          color: Cyber.gold,
+          label: '4',
+          value: 50,
+        );
+        const top = ChartMarker(fraction: 0.5, color: Cyber.cyan);
+        const bottom = ChartMarker(
+          fraction: 0.5,
+          color: Cyber.cyan,
+          alignTop: false,
+        );
+
+        expect(
+          chartMarkerPosition(
+            marker: plotted,
+            plot: plot,
+            minValue: 0,
+            spread: 100,
+          ),
+          const Offset(60, 70),
+        );
+        expect(
+          chartMarkerPosition(
+            marker: top,
+            plot: plot,
+            minValue: 0,
+            spread: 100,
+          ).dy,
+          27,
+        );
+        expect(
+          chartMarkerPosition(
+            marker: bottom,
+            plot: plot,
+            minValue: 0,
+            spread: 100,
+          ).dy,
+          113,
+        );
+      },
+    );
+
+    test('nearby plotted labels alternate around their exact anchors', () {
+      const markers = [
+        ChartMarker(fraction: 0.1, color: Cyber.gold, label: '4', value: 8),
+        ChartMarker(fraction: 0.12, color: Cyber.gold, label: '6', value: 9),
+      ];
+      expect(chartMarkerLabelOffset(markers, 0, plotWidth: 300), -13);
+      expect(chartMarkerLabelOffset(markers, 1, plotWidth: 300), 13);
+    });
   });
 
   group('legend readout', () {

@@ -63,7 +63,11 @@ class TeamDetailScreen extends StatelessWidget {
                     child: ListView(
                       padding: const EdgeInsets.fromLTRB(16, 6, 16, 28),
                       children: [
-                        TeamHeader(team: team, standing: standing),
+                        TeamHeader(
+                          team: team,
+                          standing: standing,
+                          competition: league.id,
+                        ),
                         const SizedBox(height: 24),
                         const _Heading(label: 'PREDICTION CENTER'),
                         const SizedBox(height: 12),
@@ -86,6 +90,7 @@ class TeamDetailScreen extends StatelessWidget {
                                             ?.quizId ??
                                         kDefaultPredictionQuizId,
                                   )],
+                              favorite: state.favoriteSideFor(match),
                               onTap: () => _openMatch(context, match),
                             ),
                             const SizedBox(height: 12),

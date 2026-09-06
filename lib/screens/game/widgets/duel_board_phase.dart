@@ -354,7 +354,6 @@ class _DuelBoardPhaseState extends State<DuelBoardPhase>
       subtitle: null,
       showShop: false,
       compactHeader: true,
-      grain: true,
       safeAreaBottom: false,
       titleUnderlay: round >= 1 && round <= 4
           ? RoundProgressMeter(currentRound: round)

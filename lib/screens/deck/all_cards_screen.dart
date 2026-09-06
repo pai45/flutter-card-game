@@ -33,6 +33,10 @@ final _collectionSportIcons = _collectionSports
     .map((sport) => sportModuleFor(sport).icon)
     .toList(growable: false);
 
+final _collectionSportColors = _collectionSports
+    .map((sport) => sportModuleFor(sport).accent)
+    .toList(growable: false);
+
 class AllCardsScreen extends StatefulWidget {
   const AllCardsScreen({
     required this.onNavigate,
@@ -119,6 +123,7 @@ class _AllCardsSportsTabs extends StatelessWidget {
     return CyberUnderlineTabs(
       labels: _collectionSportLabels,
       icons: _collectionSportIcons,
+      iconColors: _collectionSportColors,
       activeIndex: activeIndex,
       accent: sportModuleFor(selectedSport).accent,
       onTap: onTap,

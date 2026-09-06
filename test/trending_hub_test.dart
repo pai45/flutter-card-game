@@ -3,6 +3,7 @@ import 'package:card_game/blocs/picks/picks_cubit.dart';
 import 'package:card_game/blocs/prediction/prediction_cubit.dart';
 import 'package:card_game/config/enums.dart';
 import 'package:card_game/config/sport_modules.dart';
+import 'package:card_game/config/theme.dart';
 import 'package:card_game/models/league.dart';
 import 'package:card_game/models/sport_match.dart';
 import 'package:card_game/screens/predictions/all_sports_screen.dart';
@@ -70,12 +71,14 @@ void main() {
     }.entries) {
       final tile = find.byKey(entry.key);
       expect(tile, findsOneWidget);
+      final sportIcon = find.descendant(
+        of: tile,
+        matching: find.byIcon(sportModuleFor(entry.value).icon),
+      );
+      expect(sportIcon, findsOneWidget);
       expect(
-        find.descendant(
-          of: tile,
-          matching: find.byIcon(sportModuleFor(entry.value).icon),
-        ),
-        findsOneWidget,
+        tester.widget<Icon>(sportIcon).color,
+        sportModuleFor(entry.value).accent,
       );
     }
 
@@ -252,6 +255,19 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
 
     final matchFeed = find.byKey(const ValueKey('match-trending-feed'));
+    final cyanBackground = Color.alphaBlend(
+      Cyber.cyan.withValues(alpha: 0.08),
+      Cyber.panel,
+    );
+    expect(
+      find.descendant(
+        of: matchFeed,
+        matching: find.byWidgetPredicate(
+          (widget) => widget is ColoredBox && widget.color == cyanBackground,
+        ),
+      ),
+      findsWidgets,
+    );
     _expectMinimumStyledType(tester, matchFeed);
     final matchText = tester.widgetList<Text>(
       find.descendant(of: matchFeed, matching: find.byType(Text)),

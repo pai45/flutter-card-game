@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/followable_leagues.dart';
+import '../data/team_palettes.dart';
 
 /// A purchasable avatar frame ring, mapped 1:1 to a real team. The ring uses
 /// the team's [primary] colour; the multi-colour band and the raised inner edge
@@ -71,7 +72,11 @@ final List<AvatarFrameOption> avatarFrameOptions = [
         label: team.name,
         leagueId: entry.league.id,
         sports: _sportsFor(entry.league.id, team.id),
-        primary: team.color,
+        primary: paletteForTeam(
+          team,
+          sport: entry.sport,
+          competition: entry.league.id,
+        ).secondaryTextColor,
         coinPrice: _framePrice,
       ),
 ];

@@ -53,9 +53,7 @@ class LeagueDetailScreen extends StatefulWidget {
 }
 
 class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
-  late _HubTab _tab = widget.openFixturesTab
-      ? _HubTab.fixtures
-      : _HubTab.table;
+  late _HubTab _tab = widget.openFixturesTab ? _HubTab.fixtures : _HubTab.table;
 
   League get _league => widget.league;
   Color get _accent => _league.accent;
@@ -167,6 +165,7 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
         stats: stats,
         fallback: fallback,
         accent: _accent,
+        competition: _league.id,
         onTapTeam: _openTeam,
       ),
       _HubTab.leaders => _LeadersTab(
@@ -196,6 +195,7 @@ class _TableTab extends StatelessWidget {
     required this.stats,
     required this.fallback,
     required this.accent,
+    required this.competition,
     required this.onTapTeam,
     super.key,
   });
@@ -203,6 +203,7 @@ class _TableTab extends StatelessWidget {
   final LeagueStatsState stats;
   final List<TeamStanding> fallback;
   final Color accent;
+  final String competition;
   final ValueChanged<SportTeam> onTapTeam;
 
   @override
@@ -228,6 +229,7 @@ class _TableTab extends StatelessWidget {
           StandingsTable(
             rows: fallback,
             accent: accent,
+            competition: competition,
             onTapTeam: onTapTeam,
           ),
         ],
@@ -258,6 +260,7 @@ class _TableTab extends StatelessWidget {
           key: ValueKey('standings-${group.label}'),
           rows: group.rows,
           accent: accent,
+          competition: competition,
           showGoals: true,
           onTapTeam: onTapTeam,
         ),
@@ -354,11 +357,13 @@ class _FixturesTab extends StatelessWidget {
           MatchPredictionCard(
             match: match,
             prediction: state.predictionSummaryForMatch(match.id),
-            quiz: state.quizzes[predictionStorageKey(
-              match.id,
-              state.predictionSummaryForMatch(match.id)?.quizId ??
-                  kDefaultPredictionQuizId,
-            )],
+            quiz:
+                state.quizzes[predictionStorageKey(
+                  match.id,
+                  state.predictionSummaryForMatch(match.id)?.quizId ??
+                      kDefaultPredictionQuizId,
+                )],
+            favorite: state.favoriteSideFor(match),
             onTap: () => onOpenMatch(match),
           ),
           const SizedBox(height: 12),
@@ -432,10 +437,7 @@ class _HubLoader extends StatelessWidget {
           const SizedBox(
             width: 26,
             height: 26,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: Cyber.cyan,
-            ),
+            child: CircularProgressIndicator(strokeWidth: 2, color: Cyber.cyan),
           ),
           const SizedBox(height: 14),
           Text(

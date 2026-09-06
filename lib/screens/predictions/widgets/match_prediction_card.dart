@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../config/theme.dart';
+import '../../../data/favorite_team_matcher.dart';
+import '../../../data/team_palettes.dart';
 import '../../../models/prediction.dart';
 import '../../../models/sport_match.dart';
 import '../../../utils/sound_effects.dart';
@@ -27,6 +29,11 @@ import 'pick_status_style.dart';
 ///       - finished + revealed → "+N XP" | coins P&L ("±N OZ") if the player
 ///         staked, else "VOL … OZ",
 ///       - finished, no engagement → "FULL TIME" | "VOL … OZ".
+///
+/// When [favorite] is set, the fixture involves one of the player's clubs: the
+/// club's name is written in its identity colour and that colour takes over the
+/// card's resting border, so the player's team reads as theirs without a badge
+/// competing with the status tag.
 class MatchPredictionCard extends StatelessWidget {
   const MatchPredictionCard({
     required this.match,
@@ -34,6 +41,7 @@ class MatchPredictionCard extends StatelessWidget {
     this.quiz,
     this.volumeOz = 0,
     this.picks,
+    this.favorite,
     this.onTap,
     super.key,
   });
@@ -41,6 +49,11 @@ class MatchPredictionCard extends StatelessWidget {
   final SportMatch match;
   final UserPrediction? prediction;
   final PredictionQuiz? quiz;
+
+  /// The side of this fixture that is one of the player's followed clubs, or
+  /// null when neither side is. Resolve it with
+  /// `PredictionState.favoriteSideFor(match)`.
+  final FavoriteSide? favorite;
 
   /// Total trading volume (Oz) for the fixture — real linked-market volume, or a
   /// seeded fallback. Shown as the "VOL … OZ" readout in the bottom strip.
@@ -55,10 +68,32 @@ class MatchPredictionCard extends StatelessWidget {
 
   bool get _predicted => prediction != null;
   bool get _finished => match.status == MatchStatus.finished;
+  bool get _showsResultSummary =>
+      match.resultLine != null &&
+      match.sport != Sport.football &&
+      match.sport != Sport.basketball;
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = _stateBorderColor(match, prediction);
+    final favorite = this.favorite;
+    // The club's WCAG-checked identity colour, from the same palette table the
+    // badge itself uses — not the raw catalogue hex, which can be unreadable
+    // on the dark card.
+    final clubAccent = favorite == null
+        ? null
+        : paletteForTeam(
+            favorite.team,
+            sport: match.sport,
+            competition: match.leagueId,
+          ).secondaryTextColor;
+    final stateColor = _stateBorderColor(match, prediction);
+    // Live / reward-pending lifecycle colours keep priority; the club tint only
+    // takes over the two neutral resting edges.
+    final borderColor =
+        clubAccent != null &&
+            (stateColor == _borderPredicted || stateColor == _borderCol)
+        ? clubAccent
+        : stateColor;
     final body = DecoratedBox(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -76,8 +111,13 @@ class MatchPredictionCard extends StatelessWidget {
           children: [
             match.sport == Sport.motorsport
                 ? _RaceIdentityRow(match: match, dim: _finished)
-                : _TeamsRow(match: match, dimNames: _finished),
-            if (match.resultLine != null) ...[
+                : _TeamsRow(
+                    match: match,
+                    dimNames: _finished,
+                    favoriteIsHome: favorite?.isHome,
+                    clubAccent: clubAccent,
+                  ),
+            if (_showsResultSummary) ...[
               const SizedBox(height: 12),
               Text(
                 match.resultLine!,
@@ -228,7 +268,13 @@ class _RaceIdentityRow extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        TeamLogo(team: match.home, width: 46, height: 46, sport: match.sport),
+        TeamLogo(
+          team: match.home,
+          width: 46,
+          height: 46,
+          sport: match.sport,
+          competition: match.leagueId,
+        ),
         const SizedBox(height: _namePad),
         Text(
           match.home.name,
@@ -248,16 +294,33 @@ class _RaceIdentityRow extends StatelessWidget {
 
 // ── Teams + score row ─────────────────────────────────────────────────────────
 class _TeamsRow extends StatelessWidget {
-  const _TeamsRow({required this.match, required this.dimNames});
+  const _TeamsRow({
+    required this.match,
+    required this.dimNames,
+    this.favoriteIsHome,
+    this.clubAccent,
+  });
   final SportMatch match;
   final bool dimNames;
 
+  /// Which side is the player's club (null when neither is).
+  final bool? favoriteIsHome;
+  final Color? clubAccent;
+
   @override
   Widget build(BuildContext context) {
-    // Cricket shows each side's innings under the team name; football/
-    // basketball/tennis keep the score centred. Motorsport never reaches this
-    // widget (see _RaceIdentityRow).
+    // Cricket pins each score to its crest and its innings context below the
+    // team name; football/basketball/tennis keep the score centred. Motorsport
+    // never reaches this widget (see _RaceIdentityRow).
     final perTeamScores = match.sport == Sport.cricket && match.hasScore;
+    final homeCricketScore = perTeamScores
+        ? _cricketScoreDisplay(match.homeScore)
+        : null;
+    final awayCricketScore = perTeamScores
+        ? _cricketScoreDisplay(match.awayScore)
+        : null;
+    final keepCricketResultTone =
+        match.sport == Sport.cricket && match.status == MatchStatus.finished;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -265,9 +328,18 @@ class _TeamsRow extends StatelessWidget {
           child: _TeamColumn(
             team: match.home,
             alignEnd: false,
-            dim: dimNames,
+            nameColor: _teamResultColor(
+              match,
+              isHome: true,
+              fallbackDim: dimNames,
+            ),
             sport: match.sport,
-            scoreLine: perTeamScores ? match.homeScore : null,
+            competition: match.leagueId,
+            score: homeCricketScore?.score,
+            scoreContext: homeCricketScore?.context,
+            clubAccent: favoriteIsHome == true && !keepCricketResultTone
+                ? clubAccent
+                : null,
           ),
         ),
         _ScoreCentre(match: match),
@@ -275,9 +347,18 @@ class _TeamsRow extends StatelessWidget {
           child: _TeamColumn(
             team: match.away,
             alignEnd: true,
-            dim: dimNames,
+            nameColor: _teamResultColor(
+              match,
+              isHome: false,
+              fallbackDim: dimNames,
+            ),
             sport: match.sport,
-            scoreLine: perTeamScores ? match.awayScore : null,
+            competition: match.leagueId,
+            score: awayCricketScore?.score,
+            scoreContext: awayCricketScore?.context,
+            clubAccent: favoriteIsHome == false && !keepCricketResultTone
+                ? clubAccent
+                : null,
           ),
         ),
       ],
@@ -289,16 +370,25 @@ class _TeamColumn extends StatelessWidget {
   const _TeamColumn({
     required this.team,
     required this.alignEnd,
-    required this.dim,
+    required this.nameColor,
     this.sport,
-    this.scoreLine,
+    this.competition,
+    this.score,
+    this.scoreContext,
+    this.clubAccent,
   });
 
   final SportTeam team;
   final bool alignEnd;
-  final bool dim;
+  final Color nameColor;
   final Sport? sport;
-  final String? scoreLine;
+  final String? competition;
+  final String? score;
+  final String? scoreContext;
+
+  /// Set only on the player's own club, which writes its name in this identity
+  /// colour so the side that is "yours" is readable at a glance.
+  final Color? clubAccent;
 
   @override
   Widget build(BuildContext context) {
@@ -308,7 +398,23 @@ class _TeamColumn extends StatelessWidget {
           : CrossAxisAlignment.start,
       children: [
         // Mirror the badge chamfer toward the centre of the card.
-        _TeamBadge(team: team, cutBottomRight: !alignEnd, sport: sport),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (alignEnd && score != null)
+              _CricketScore(value: score!, color: nameColor),
+            if (alignEnd && score != null) const SizedBox(width: 8),
+            _TeamBadge(
+              team: team,
+              cutBottomRight: !alignEnd,
+              sport: sport,
+              competition: competition,
+            ),
+            if (!alignEnd && score != null) const SizedBox(width: 8),
+            if (!alignEnd && score != null)
+              _CricketScore(value: score!, color: nameColor),
+          ],
+        ),
         const SizedBox(height: _namePad),
         // Long club names (cricket especially — "Los Angeles Knight Riders")
         // wrap onto a second line and grow the card rather than ellipsing.
@@ -319,16 +425,16 @@ class _TeamColumn extends StatelessWidget {
           textAlign: alignEnd ? TextAlign.end : TextAlign.start,
           style: Cyber.body(
             14.5,
-            color: dim ? _dimName : Colors.white,
-            weight: FontWeight.w700,
+            color: clubAccent ?? nameColor,
+            weight: clubAccent != null ? FontWeight.w800 : FontWeight.w700,
           ),
         ),
-        if (scoreLine != null) ...[
+        if (scoreContext != null) ...[
           const SizedBox(height: 3),
           // Cricket's chase line ("172/4 (19.1/20 ov, target 172)") is long —
           // wrap it rather than ellipse away the target.
           Text(
-            scoreLine!,
+            scoreContext!,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             textAlign: alignEnd ? TextAlign.end : TextAlign.start,
@@ -344,11 +450,36 @@ class _TeamColumn extends StatelessWidget {
   }
 }
 
+class _CricketScore extends StatelessWidget {
+  const _CricketScore({required this.value, required this.color});
+
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Text(
+    value,
+    maxLines: 1,
+    overflow: TextOverflow.ellipsis,
+    style: Cyber.display(
+      20,
+      color: color,
+      letterSpacing: 0,
+    ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+  );
+}
+
 class _TeamBadge extends StatelessWidget {
-  const _TeamBadge({required this.team, required this.cutBottomRight, this.sport});
+  const _TeamBadge({
+    required this.team,
+    required this.cutBottomRight,
+    this.sport,
+    this.competition,
+  });
   final SportTeam team;
   final bool cutBottomRight;
   final Sport? sport;
+  final String? competition;
 
   @override
   Widget build(BuildContext context) {
@@ -358,6 +489,7 @@ class _TeamBadge extends StatelessWidget {
       height: 46,
       cutBottomRight: cutBottomRight,
       sport: sport,
+      competition: competition,
     );
   }
 }
@@ -368,21 +500,51 @@ class _ScoreCentre extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if ((match.sport == Sport.football || match.sport == Sport.basketball || match.sport == Sport.tennis) && match.hasScore) {
+    if ((match.sport == Sport.football ||
+            match.sport == Sport.basketball ||
+            match.sport == Sport.tennis) &&
+        match.hasScore) {
       final isTennis = match.sport == Sport.tennis;
       final sets = match.tennisScorecard?.sets;
+      final scoreStyle = Cyber.display(
+        21,
+        color: Colors.white,
+        letterSpacing: 0.5,
+      ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]);
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              '${match.homeScore ?? '-'}  -  ${match.awayScore ?? '-'}',
-              style: Cyber.display(
-                21,
-                color: Colors.white,
-                letterSpacing: 0.5,
-              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: match.homeScore ?? '-',
+                    style: scoreStyle.copyWith(
+                      color: _teamResultColor(
+                        match,
+                        isHome: true,
+                        fallbackDim: false,
+                      ),
+                    ),
+                  ),
+                  TextSpan(
+                    text: '  -  ',
+                    style: scoreStyle.copyWith(color: Cyber.muted),
+                  ),
+                  TextSpan(
+                    text: match.awayScore ?? '-',
+                    style: scoreStyle.copyWith(
+                      color: _teamResultColor(
+                        match,
+                        isHome: false,
+                        fallbackDim: false,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
             // Tennis set scores row (e.g. 6-4  6-2  6-1)
             if (isTennis && sets != null && sets.isNotEmpty) ...[
@@ -392,7 +554,10 @@ class _ScoreCentre extends StatelessWidget {
                 children: [
                   for (int i = 0; i < sets.length; i++) ...[
                     if (i > 0) const SizedBox(width: 6),
-                    _SetScoreChip(homeScore: sets[i].homeScore, awayScore: sets[i].awayScore),
+                    _SetScoreChip(
+                      homeScore: sets[i].homeScore,
+                      awayScore: sets[i].awayScore,
+                    ),
                   ],
                 ],
               ),
@@ -431,22 +596,16 @@ class _SetScoreChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(
-          color: Cyber.cyan.withValues(alpha: 0.35),
-          width: 1,
-        ),
+        border: Border.all(color: Cyber.cyan.withValues(alpha: 0.35), width: 1),
         color: Cyber.cyan.withValues(alpha: 0.06),
       ),
       child: Text(
         '$homeScore-$awayScore',
-        style: Cyber.body(
-          10.5,
-          color: Cyber.cyan,
-          weight: FontWeight.w700,
-        ).copyWith(
-          fontFeatures: const [FontFeature.tabularFigures()],
-          letterSpacing: 0.5,
-        ),
+        style: Cyber.body(10.5, color: Cyber.cyan, weight: FontWeight.w700)
+            .copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+              letterSpacing: 0.5,
+            ),
       ),
     );
   }
@@ -481,10 +640,7 @@ class _StatusStrip extends StatelessWidget {
     switch (match.status) {
       // Live — in-play beacon + the market's running volume.
       case MatchStatus.live:
-        return _InfoStrip(
-          left: const _LiveInPlay(),
-          right: _VolText(volText),
-        );
+        return _InfoStrip(left: const _LiveInPlay(), right: _VolText(volText));
 
       // Upcoming — the two-figure market row the redesign leads with.
       case MatchStatus.upcoming:
@@ -514,12 +670,12 @@ class _StatusStrip extends StatelessWidget {
             ),
             left: isWon
                 ? _XpWon(prediction!.rewardEarned)
-                : _MutedLabel(total > 0 ? '$correct/$total CORRECT' : 'SETTLED'),
+                : _MutedLabel(
+                    total > 0 ? '$correct/$total CORRECT' : 'SETTLED',
+                  ),
             // Coins P&L only when the player actually staked Oz on this match;
             // otherwise fall back to the market's final volume.
-            right: picks != null
-                ? _CoinsPnl(picks!.pnl)
-                : _VolText(volText),
+            right: picks != null ? _CoinsPnl(picks!.pnl) : _VolText(volText),
           );
         }
 
@@ -924,6 +1080,68 @@ Color _stateBorderColor(SportMatch match, UserPrediction? prediction) {
                 .cyan // cyan — revealed
           : _timeGold; // gold — results ready
   }
+}
+
+/// Finished fixture cards spotlight the winner in white and reduce the losing
+/// side with the shared muted token. A draw has no losing side, so both teams
+/// remain white.
+Color _teamResultColor(
+  SportMatch match, {
+  required bool isHome,
+  required bool fallbackDim,
+}) {
+  final supportsWinLossTone =
+      match.status == MatchStatus.finished &&
+      (match.sport == Sport.football ||
+          match.sport == Sport.basketball ||
+          match.sport == Sport.cricket);
+  if (match.sport == Sport.cricket) {
+    final homeWon = _cricketHomeWon(match);
+    if (!supportsWinLossTone || homeWon == null) {
+      return fallbackDim ? _dimName : Colors.white;
+    }
+    return isHome == homeWon ? Colors.white : Cyber.muted;
+  }
+  final homeScore = int.tryParse(match.homeScore ?? '');
+  final awayScore = int.tryParse(match.awayScore ?? '');
+  if (!supportsWinLossTone || homeScore == null || awayScore == null) {
+    return fallbackDim ? _dimName : Colors.white;
+  }
+  if (homeScore == awayScore) return Colors.white;
+  final won = isHome ? homeScore > awayScore : awayScore > homeScore;
+  return won ? Colors.white : Cyber.muted;
+}
+
+({String? score, String? context}) _cricketScoreDisplay(String? value) {
+  if (value == null || value.trim().isEmpty) {
+    return (score: null, context: null);
+  }
+  final match = RegExp(r'^(.+?)(?:\s*(\(.+\)))?$').firstMatch(value.trim());
+  return (
+    score: match?.group(1)?.trim() ?? value.trim(),
+    context: match?.group(2),
+  );
+}
+
+bool? _cricketHomeWon(SportMatch match) {
+  final homeInnings = match.cricketDetails?.innings
+      .where((innings) => innings.teamId == match.home.id)
+      .firstOrNull;
+  final awayInnings = match.cricketDetails?.innings
+      .where((innings) => innings.teamId == match.away.id)
+      .firstOrNull;
+  if (homeInnings != null && awayInnings != null) {
+    if (homeInnings.runs == awayInnings.runs) return null;
+    return homeInnings.runs > awayInnings.runs;
+  }
+  final homeRuns = int.tryParse(
+    _cricketScoreDisplay(match.homeScore).score?.split('/').first ?? '',
+  );
+  final awayRuns = int.tryParse(
+    _cricketScoreDisplay(match.awayScore).score?.split('/').first ?? '',
+  );
+  if (homeRuns == null || awayRuns == null || homeRuns == awayRuns) return null;
+  return homeRuns > awayRuns;
 }
 
 String _formatTime(DateTime dt) {

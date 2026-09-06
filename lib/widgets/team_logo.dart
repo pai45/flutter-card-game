@@ -85,6 +85,7 @@ class TeamLogo extends StatelessWidget {
     required this.height,
     this.cutBottomRight = true,
     this.sport,
+    this.competition,
     super.key,
   });
 
@@ -92,16 +93,25 @@ class TeamLogo extends StatelessWidget {
   final double width;
   final double height;
   final bool cutBottomRight;
+
   /// When [Sport.tennis], the logo shows the player's country abbreviation
   /// (e.g. "ESP") tinted with the country's primary flag colour.
   final Sport? sport;
+
+  /// League id or tournament name used to select competition-specific brand
+  /// palettes when the same team has variants in multiple competitions.
+  final String? competition;
 
   @override
   Widget build(BuildContext context) {
     String label = team.shortName;
     // Colours come from the shared team database (fill + contrast-checked label
     // + accent edge), which also covers teams the ESPN sweep never saw.
-    TeamPalette palette = paletteForTeam(team, sport: sport);
+    TeamPalette palette = paletteForTeam(
+      team,
+      sport: sport,
+      competition: competition,
+    );
 
     // For tennis, resolve nationality: a real flag image when the feed
     // carries one (ESPN's athlete.flag.href), else a flag-emoji badge tinted
@@ -130,7 +140,7 @@ class TeamLogo extends StatelessWidget {
       width: width,
       height: height,
       child: CustomPaint(
-        painter: _TeamLogoPainter(label: label, palette: palette),
+        painter: TeamLogoPainter(label: label, palette: palette),
       ),
     );
   }
@@ -169,7 +179,10 @@ class _TennisFlagBadge extends StatelessWidget {
               url,
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) => CustomPaint(
-                painter: _TeamLogoPainter(label: fallbackLabel, palette: palette),
+                painter: TeamLogoPainter(
+                  label: fallbackLabel,
+                  palette: palette,
+                ),
               ),
             ),
             Align(
@@ -187,8 +200,9 @@ class _TennisFlagBadge extends StatelessWidget {
   }
 }
 
-class _TeamLogoPainter extends CustomPainter {
-  const _TeamLogoPainter({required this.label, required this.palette});
+@visibleForTesting
+class TeamLogoPainter extends CustomPainter {
+  const TeamLogoPainter({required this.label, required this.palette});
 
   final String label;
   final TeamPalette palette;
@@ -200,7 +214,10 @@ class _TeamLogoPainter extends CustomPainter {
     final shadowOffset = size.height - bodyHeight;
     final cut = size.shortestSide * 0.15;
     final bodyRect = Rect.fromLTWH(0, 0, size.width, bodyHeight);
-    final bodyPath = buildOctagonPath(bodyRect, cutRatio: cut / bodyRect.shortestSide);
+    final bodyPath = buildOctagonPath(
+      bodyRect,
+      cutRatio: cut / bodyRect.shortestSide,
+    );
 
     canvas.drawPath(
       bodyPath.shift(Offset(0, shadowOffset)),
@@ -254,7 +271,7 @@ class _TeamLogoPainter extends CustomPainter {
   };
 
   @override
-  bool shouldRepaint(covariant _TeamLogoPainter oldDelegate) =>
+  bool shouldRepaint(covariant TeamLogoPainter oldDelegate) =>
       oldDelegate.label != label ||
       oldDelegate.palette.primary != palette.primary ||
       oldDelegate.palette.text != palette.text ||

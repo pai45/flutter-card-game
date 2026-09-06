@@ -1,7 +1,7 @@
 # Collections, Decks, Cards, Packs, Starter Packs, and Daily Drops
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-04
+> **Last verified:** 2026-09-05
 > **Scope:** Card ownership, sport decks, pack opening, starter entitlement, duplicate handling, and daily drops
 
 ## Product Purpose
@@ -69,17 +69,32 @@ fallback.
 ### Basketball player portraits
 
 Hoop Duel player cards use explicit current-roster ID mappings. The collection
-now includes 109 supplied player portraits, including 40 newly added labelled
+now includes 180 supplied player portraits, including three newly added labelled
 WebP portraits; cards outside the mapped set retain the existing icon fallback.
-The supplied archive had no duplicate labels.
+The supplied basketball labels were unique, so the first-occurrence policy did
+not need conflict resolution.
+
+### Tennis player portraits
+
+Tennis player cards use explicit roster-ID mappings. Fifty-three supplied tennis
+portraits are available from the current archives. Diana Shnaider had two labelled
+files; the first archive entry (`diana-shnaider-2.webp`) is used for her one
+canonical card, as required. Other tennis cards retain the existing icon
+fallback when no portrait is mapped.
 
 ### Motorsport driver portraits
 
 Motorsport player cards use their stable roster ID as the portrait label. The
-collection ships 102 exact roster matches: the existing 22 F1 PNG portraits and
-80 supplied F2, NASCAR, and IndyCar WebP portraits. The archive's labels were
-unique, so its first-occurrence rule requires no conflict resolution. The three
-unmatched roster drivers retain the existing team-coloured initials fallback.
+collection ships 105 exact roster matches: the existing 22 F1 PNG portraits and
+83 supplied F2, NASCAR, and IndyCar WebP portraits. The archive's labels were
+unique, so its first-occurrence rule requires no conflict resolution.
+
+### Football player portraits
+
+Football player cards resolve portraits from their short labels. The supplied
+portraits for Ederson Moraes, Aurélien Tchouaméni, Bart Verbruggen, and Vinícius
+Júnior are mapped to their exact current card IDs. Their archive labels are
+unique; the first-occurrence policy therefore required no conflict resolution.
 
 ## Rewards and Progression
 
@@ -132,5 +147,6 @@ ledger records persist through `SecureGameStorage` and shared game state.
 - [`test/shared_deck_locker_test.dart`](../../../test/shared_deck_locker_test.dart)
 - [`test/deck_locker_widget_test.dart`](../../../test/deck_locker_widget_test.dart)
 - [`test/basketball_portraits_test.dart`](../../../test/basketball_portraits_test.dart)
+- [`test/football_portraits_test.dart`](../../../test/football_portraits_test.dart)
 - [`test/cricket_portraits_test.dart`](../../../test/cricket_portraits_test.dart)
 - [`test/racing_portraits_test.dart`](../../../test/racing_portraits_test.dart)

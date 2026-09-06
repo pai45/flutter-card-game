@@ -249,6 +249,11 @@ MVP is chosen from the user's goal scorers by highest goal count.
 
 ## Gratification and Feedback
 
+The Games and Trending hero cards use Football's canonical cyan identity for
+their frame, badge, subtitle, board tint, outline, pieces, and move trail. White
+opponent pieces retain board readability without reintroducing a competing
+sport accent; live-match team and result colors remain unchanged.
+
 The squad faceoff, toss, legal-action highlights, duel/shot resolution, momentum
 meter, goal log, full-time verdict, MVP, and XP count-up stage tactical cause and effect.
 

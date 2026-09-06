@@ -63,6 +63,7 @@ class ChartMarker {
     required this.color,
     this.shape = ChartMarkerShape.dot,
     this.label,
+    this.value,
     this.alignTop = true,
     this.focal = false,
   });
@@ -72,6 +73,10 @@ class ChartMarker {
   final Color color;
   final ChartMarkerShape shape;
   final String? label;
+
+  /// Optional y-axis value. When present the marker sits on the plotted trace;
+  /// otherwise it keeps the existing top/bottom edge placement.
+  final double? value;
 
   /// Whether the marker rides the top or the bottom edge of the plot.
   final bool alignTop;
@@ -175,8 +180,8 @@ class CyberChartPainter extends CustomPainter {
     for (var s = 0; s < series.length; s++) {
       _paintSeries(canvas, rect, series[s], minValue, spread);
     }
-    for (final marker in markers) {
-      _paintMarker(canvas, rect, marker);
+    for (var i = 0; i < markers.length; i++) {
+      _paintMarker(canvas, rect, markers[i], minValue, spread, markerIndex: i);
     }
     canvas.restore();
 
@@ -304,9 +309,27 @@ class CyberChartPainter extends CustomPainter {
       ),
   ];
 
-  void _paintMarker(Canvas canvas, Rect rect, ChartMarker marker) {
-    final x = rect.left + rect.width * marker.fraction.clamp(0.0, 1.0);
-    final y = marker.alignTop ? rect.top + 7 : rect.bottom - 7;
+  void _paintMarker(
+    Canvas canvas,
+    Rect rect,
+    ChartMarker marker,
+    double minValue,
+    double spread, {
+    required int markerIndex,
+  }) {
+    final center = chartMarkerPosition(
+      marker: marker,
+      plot: rect,
+      minValue: minValue,
+      spread: spread,
+    );
+    if (marker.value != null) {
+      _paintValueMarker(canvas, rect, center, marker, markerIndex);
+      return;
+    }
+
+    final x = center.dx;
+    final y = center.dy;
     final stubEnd = marker.focal
         ? (marker.alignTop ? rect.bottom : rect.top)
         : (marker.alignTop ? y + 16 : y - 16);
@@ -317,7 +340,6 @@ class CyberChartPainter extends CustomPainter {
         ..color = marker.color.withValues(alpha: marker.focal ? 0.34 : 0.22)
         ..strokeWidth = 1,
     );
-    final center = Offset(x, y);
     final fill = Paint()..color = marker.color;
 
     switch (marker.shape) {
@@ -350,6 +372,51 @@ class CyberChartPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1
         ..color = marker.color.withValues(alpha: marker.focal ? 0.75 : 0.48),
+    );
+  }
+
+  void _paintValueMarker(
+    Canvas canvas,
+    Rect rect,
+    Offset point,
+    ChartMarker marker,
+    int markerIndex,
+  ) {
+    canvas.drawCircle(point, 2.6, Paint()..color = marker.color);
+    final label = marker.label;
+    if (label == null || label.isEmpty) return;
+
+    final labelDy = chartMarkerLabelOffset(
+      markers,
+      markerIndex,
+      plotWidth: rect.width,
+    );
+    final badge = Offset(
+      point.dx.clamp(rect.left + 7, rect.right - 7).toDouble(),
+      (point.dy + labelDy).clamp(rect.top + 7, rect.bottom - 7).toDouble(),
+    );
+    canvas.drawLine(
+      point,
+      badge,
+      Paint()
+        ..color = marker.color.withValues(alpha: 0.44)
+        ..strokeWidth = 0.8,
+    );
+    canvas.drawCircle(badge, 7, Paint()..color = marker.color);
+    canvas.drawCircle(
+      badge,
+      7,
+      Paint()
+        ..color = Cyber.bg.withValues(alpha: 0.42)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
+    );
+    _paintText(
+      canvas,
+      label,
+      Cyber.label(7, color: Cyber.bg),
+      Offset(badge.dx, badge.dy - 4),
+      centered: true,
     );
   }
 
@@ -996,6 +1063,48 @@ double seriesValueAt(ChartSeries series, int? selectedIndex) {
   if (series.values.isEmpty) return 0;
   final index = selectedIndex ?? series.values.length - 1;
   return series.values[index.clamp(0, series.values.length - 1)];
+}
+
+/// Resolves a marker without changing the legacy edge-pinned contract.
+Offset chartMarkerPosition({
+  required ChartMarker marker,
+  required Rect plot,
+  required double minValue,
+  required double spread,
+}) {
+  final x = plot.left + plot.width * marker.fraction.clamp(0.0, 1.0);
+  final value = marker.value;
+  if (value == null) {
+    return Offset(x, marker.alignTop ? plot.top + 7 : plot.bottom - 7);
+  }
+  final y =
+      plot.bottom - ((value - minValue) / math.max(1, spread)) * plot.height;
+  return Offset(x, y.clamp(plot.top, plot.bottom).toDouble());
+}
+
+/// Alternates close labels above and below their exact plotted points. The
+/// small anchor stays on the data value while only the numbered badge moves.
+double chartMarkerLabelOffset(
+  List<ChartMarker> markers,
+  int markerIndex, {
+  required double plotWidth,
+}) {
+  if (markerIndex <= 0 || markerIndex >= markers.length) return -13;
+  final marker = markers[markerIndex];
+  var neighbours = 0;
+  for (var i = markerIndex - 1; i >= 0; i--) {
+    final previous = markers[i];
+    if (previous.value == null || previous.label == null) continue;
+    final gap = (marker.fraction - previous.fraction).abs() * plotWidth;
+    if (gap > 18) break;
+    neighbours++;
+  }
+  return switch (neighbours % 4) {
+    0 => -13,
+    1 => 13,
+    2 => -25,
+    _ => 25,
+  };
 }
 
 void drawDashedLine(Canvas canvas, Offset start, Offset end, Paint paint) {

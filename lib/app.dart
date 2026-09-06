@@ -294,6 +294,8 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     if (rewardPending) {
       context.read<GameBloc>().add(OnboardingRewardClaimed());
     }
+    // The clubs just picked drive the match feed's YOUR CLUB pin.
+    await context.read<PredictionCubit>().refreshFollowing();
   }
 
   Future<void> _dismissOnboardingReward() async {

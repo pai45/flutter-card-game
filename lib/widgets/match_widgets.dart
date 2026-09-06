@@ -162,7 +162,6 @@ class MatchPhaseScaffold extends StatelessWidget {
       subtitle: null,
       showShop: false,
       compactHeader: true,
-      grain: true,
       safeAreaBottom: false,
       titleUnderlay:
           scoreLabel == null &&

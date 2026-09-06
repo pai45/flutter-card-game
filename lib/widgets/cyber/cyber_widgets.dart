@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:typed_data';
 import 'dart:ui';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -238,56 +236,10 @@ class PackBurst extends StatelessWidget {
   }
 }
 
-// ── Film-grain texture ───────────────────────────────────────────────────────
-// A small procedural noise tile, generated once and shared by every
-// [CyberBackground]. Tiled + additive at very low intensity it de-flattens the
-// dark surfaces so they read as filmed/printed rather than computer-flat.
-ui.Image? _cyberNoise;
-Future<ui.Image>? _cyberNoiseFuture;
-
-final Float64List _kIdentity4 = Float64List.fromList(<double>[
-  1, 0, 0, 0, //
-  0, 1, 0, 0, //
-  0, 0, 1, 0, //
-  0, 0, 0, 1, //
-]);
-
-Future<ui.Image> _loadCyberNoise() {
-  final cached = _cyberNoise;
-  if (cached != null) return Future<ui.Image>.value(cached);
-  return _cyberNoiseFuture ??= _buildCyberNoise(256).then((image) {
-    _cyberNoise = image;
-    return image;
-  });
-}
-
-Future<ui.Image> _buildCyberNoise(int size) {
-  final rnd = Random(7);
-  final pixels = Uint8List(size * size * 4);
-  for (var i = 0; i < size * size; i++) {
-    final v = rnd.nextInt(20); // grey grain, added over near-black surfaces
-    final o = i * 4;
-    pixels[o] = v;
-    pixels[o + 1] = v;
-    pixels[o + 2] = v;
-    pixels[o + 3] = 255;
-  }
-  final completer = Completer<ui.Image>();
-  ui.decodeImageFromPixels(
-    pixels,
-    size,
-    size,
-    ui.PixelFormat.rgba8888,
-    completer.complete,
-  );
-  return completer.future;
-}
-
 class CyberBackground extends StatefulWidget {
   const CyberBackground({
     required this.child,
     this.animated = false,
-    this.grain = false,
     super.key,
   });
 
@@ -295,9 +247,6 @@ class CyberBackground extends StatefulWidget {
 
   /// When true, the radial glow slowly drifts (used on the home screen).
   final bool animated;
-
-  /// Film-grain noise overlay — reserved for the in-match (card game) screens.
-  final bool grain;
 
   @override
   State<CyberBackground> createState() => _CyberBackgroundState();
@@ -349,7 +298,7 @@ class _CyberBackgroundState extends State<CyberBackground>
     return Stack(
       children: [
         const Positioned.fill(child: CustomPaint(painter: CyberGridPainter())),
-        Positioned.fill(child: CyberTextureOverlay(grain: widget.grain)),
+        const Positioned.fill(child: CyberTextureOverlay()),
         if (_controller == null)
           _glow(0)
         else
@@ -625,16 +574,10 @@ class CyberGridPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-/// Paints the shared HUD texture layers — CRT scanlines, tiled film-grain and an
-/// edge vignette — over whatever is already on the canvas. Shared by the full
+/// Paints the shared HUD texture layers — CRT scanlines and an edge vignette —
+/// over whatever is already on the canvas. Shared by the full
 /// [CyberBackground] and the standalone [CyberTextureOverlay].
-void _paintCyberTexture(
-  Canvas canvas,
-  Size size,
-  ui.Image? grainImage, {
-  bool vignette = true,
-  bool grain = true,
-}) {
+void _paintCyberTexture(Canvas canvas, Size size, {bool vignette = true}) {
   final rect = Offset.zero & size;
 
   // CRT scanlines — faint dark rows every 3px, crisp (no anti-alias).
@@ -644,21 +587,6 @@ void _paintCyberTexture(
     ..isAntiAlias = false;
   for (var y = 0.0; y < size.height; y += 3) {
     canvas.drawLine(Offset(0, y), Offset(size.width, y), scan);
-  }
-
-  // Film grain — tiled noise, additive. Reserved for the in-match screens.
-  if (grain && grainImage != null) {
-    canvas.drawRect(
-      rect,
-      Paint()
-        ..shader = ui.ImageShader(
-          grainImage,
-          ui.TileMode.repeated,
-          ui.TileMode.repeated,
-          _kIdentity4,
-        )
-        ..blendMode = BlendMode.plus,
-    );
   }
 
   // Vignette — darken the edges to pull focus to the centre.
@@ -678,53 +606,26 @@ void _paintCyberTexture(
   }
 }
 
-/// A transparent overlay of the shared HUD texture (scanlines + film-grain +
-/// optional vignette) for screens that draw their own background instead of
+/// A transparent overlay of the shared HUD texture (scanlines + optional
+/// vignette) for screens that draw their own background instead of
 /// using [CyberBackground] (e.g. the home stadium, the shop). Drop it into a
 /// Stack above the background and below the content:
 /// `const Positioned.fill(child: CyberTextureOverlay())`.
 class CyberTextureOverlay extends StatefulWidget {
-  const CyberTextureOverlay({
-    this.vignette = true,
-    this.grain = false,
-    super.key,
-  });
+  const CyberTextureOverlay({this.vignette = true, super.key});
 
   final bool vignette;
-
-  /// Film-grain noise is reserved for the in-match (card game) screens.
-  final bool grain;
 
   @override
   State<CyberTextureOverlay> createState() => _CyberTextureOverlayState();
 }
 
 class _CyberTextureOverlayState extends State<CyberTextureOverlay> {
-  ui.Image? _noise;
-
-  @override
-  void initState() {
-    super.initState();
-    if (!widget.grain) return;
-    final cached = _cyberNoise;
-    if (cached != null) {
-      _noise = cached;
-    } else {
-      _loadCyberNoise().then((image) {
-        if (mounted) setState(() => _noise = image);
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return IgnorePointer(
       child: CustomPaint(
-        painter: _CyberOverlayPainter(
-          noise: _noise,
-          vignette: widget.vignette,
-          grain: widget.grain,
-        ),
+        painter: _CyberOverlayPainter(vignette: widget.vignette),
         size: Size.infinite,
       ),
     );
@@ -732,27 +633,19 @@ class _CyberTextureOverlayState extends State<CyberTextureOverlay> {
 }
 
 class _CyberOverlayPainter extends CustomPainter {
-  const _CyberOverlayPainter({
-    required this.noise,
-    required this.vignette,
-    required this.grain,
-  });
+  const _CyberOverlayPainter({required this.vignette});
 
-  final ui.Image? noise;
   final bool vignette;
-  final bool grain;
 
   @override
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
-    _paintCyberTexture(canvas, size, noise, vignette: vignette, grain: grain);
+    _paintCyberTexture(canvas, size, vignette: vignette);
   }
 
   @override
   bool shouldRepaint(covariant _CyberOverlayPainter oldDelegate) =>
-      oldDelegate.noise != noise ||
-      oldDelegate.vignette != vignette ||
-      oldDelegate.grain != grain;
+      oldDelegate.vignette != vignette;
 }
 
 class SectionLabel extends StatelessWidget {
@@ -4655,4 +4548,26 @@ _CyberBentoLayout _packBentoTiles(List<CyberBentoTile> tiles) {
     rowCount--;
   }
   return _CyberBentoLayout(cells: cells, rowCount: rowCount);
+}
+
+/// Shared, calm search action for catalogue headers.
+class CyberSearchButton extends StatelessWidget {
+  const CyberSearchButton({
+    required this.onTap,
+    required this.label,
+    this.accent = Cyber.cyan,
+    super.key,
+  });
+  final VoidCallback onTap;
+  final String label;
+  final Color accent;
+  @override
+  Widget build(BuildContext context) => IconButton(
+    tooltip: label,
+    constraints: const BoxConstraints.tightFor(width: 44, height: 44),
+    padding: EdgeInsets.zero,
+    visualDensity: VisualDensity.compact,
+    onPressed: onTap,
+    icon: Icon(Icons.search_rounded, color: accent, size: 22),
+  );
 }
