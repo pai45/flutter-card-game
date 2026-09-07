@@ -18,6 +18,7 @@ class StatLeaderboard extends StatelessWidget {
     required this.category,
     required this.leagueAccent,
     this.resolving = false,
+    this.onTapLeader,
     super.key,
   });
 
@@ -26,6 +27,9 @@ class StatLeaderboard extends StatelessWidget {
 
   /// True while athlete names are still being fetched for this board.
   final bool resolving;
+
+  /// Opens the full season dossier for the tapped athlete.
+  final ValueChanged<StatLeader>? onTapLeader;
 
   Color get _accent => switch (category.accent) {
     StatAccent.league => leagueAccent,
@@ -50,11 +54,14 @@ class StatLeaderboard extends StatelessWidget {
       children: [
         CyberSlideUpFadeIn(
           offset: 18,
-          child: _ChampionCard(
-            leader: champion,
-            category: category,
-            accent: _accent,
-            resolving: resolving,
+          child: PressableScale(
+            onTap: onTapLeader == null ? null : () => onTapLeader!(champion),
+            child: _ChampionCard(
+              leader: champion,
+              category: category,
+              accent: _accent,
+              resolving: resolving,
+            ),
           ),
         ),
         if (chasers.isNotEmpty) ...[
@@ -63,11 +70,16 @@ class StatLeaderboard extends StatelessWidget {
             CyberSlideUpFadeIn(
               offset: 14,
               delay: Duration(milliseconds: 40 * (i + 1)),
-              child: _ChaserRow(
-                rank: i + 2,
-                leader: chasers[i],
-                accent: _accent,
-                resolving: resolving,
+              child: PressableScale(
+                onTap: onTapLeader == null
+                    ? null
+                    : () => onTapLeader!(chasers[i]),
+                child: _ChaserRow(
+                  rank: i + 2,
+                  leader: chasers[i],
+                  accent: _accent,
+                  resolving: resolving,
+                ),
               ),
             ),
             const SizedBox(height: 8),

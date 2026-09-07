@@ -16,17 +16,20 @@ class FollowableLeague {
     required this.sport,
     required this.league,
     required this.teams,
+    this.aliases = const [],
   });
 
   final Sport sport;
   final League league;
   final List<SportTeam> teams;
+  final List<String> aliases;
 }
 
 const List<FollowableLeague> followableLeagues = [
   // ── English Premier League (football) — mirrors repository ids ────────────
   FollowableLeague(
     sport: Sport.football,
+    aliases: ['eng.1', '700', '23'],
     league: League(
       id: 'epl',
       name: 'English Premier League',
@@ -88,6 +91,7 @@ const List<FollowableLeague> followableLeagues = [
   // ── La Liga (football) — seeded ───────────────────────────────────────────
   FollowableLeague(
     sport: Sport.football,
+    aliases: ['esp.1', '740', '15', 'lal'],
     league: League(
       id: 'laliga',
       name: 'La Liga',
@@ -414,11 +418,34 @@ List<FollowableLeague> followableLeaguesForSport(Sport sport) => [
 
 /// The followable league with [id], or null when unknown.
 FollowableLeague? followableLeagueById(String id) {
+  final key = _normaliseLeagueIdentity(id);
   for (final entry in followableLeagues) {
-    if (entry.league.id == id) return entry;
+    if (_normaliseLeagueIdentity(entry.league.id) == key ||
+        entry.aliases.any((alias) => _normaliseLeagueIdentity(alias) == key)) {
+      return entry;
+    }
   }
   return null;
 }
+
+/// Resolves a league arriving from the prediction repository or ESPN back to
+/// the canonical followable entry stored by onboarding/Profile.
+FollowableLeague? followableLeagueFor(League league) {
+  final byId = followableLeagueById(league.id);
+  if (byId != null) return byId;
+  final name = _normaliseLeagueIdentity(league.name);
+  final code = _normaliseLeagueIdentity(league.shortCode);
+  for (final entry in followableLeagues) {
+    if (_normaliseLeagueIdentity(entry.league.name) == name ||
+        _normaliseLeagueIdentity(entry.league.shortCode) == code) {
+      return entry;
+    }
+  }
+  return null;
+}
+
+String _normaliseLeagueIdentity(String value) =>
+    value.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
 
 /// The team with [teamId] inside league [leagueId], or null when unknown.
 SportTeam? followableTeam(String leagueId, String teamId) {

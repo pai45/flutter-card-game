@@ -3,47 +3,91 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../models/league_stat_leaders.dart';
+import '../../services/cricket_league_stats_package_service.dart';
 import '../../services/espn_league_stats_service.dart';
+import '../../services/espn_score_service.dart';
 import '../../services/league_stats_package_service.dart';
 import 'league_stats_state.dart';
 
-/// Owns the league hub's data — the grouped standings table, the player stat
-/// leaderboards, and the per-team season statistics behind the STATS tab.
-/// Scoped to the hub route rather than the app-wide [PredictionCubit] so
-/// opening one league never triggers a league-wide sweep.
-///
-/// Loading is **bundled-first**: the packaged snapshot
-/// (`assets/data/football-league-stats.json`) renders immediately, then the
-/// live ESPN feed is layered over it in the background. The player never waits
-/// on the network to see a filled table, and a failed request degrades to the
-/// package rather than to an empty state.
+/// Route-scoped controller for every season-aware league-hub surface.
 class LeagueStatsCubit extends Cubit<LeagueStatsState> {
   LeagueStatsCubit(
     this._leagueId, {
     this.leagueName,
     this.shortCode,
     EspnLeagueStatsService service = const EspnLeagueStatsService(),
+    EspnScoreService? scoreService,
   }) : _service = service,
+       _scoreService = scoreService ?? EspnScoreService(),
        super(const LeagueStatsState());
 
   final String _leagueId;
-
-  /// Passed through to the package lookup so a league discovered at runtime
-  /// under an unexpected id still resolves by name or short code.
   final String? leagueName;
   final String? shortCode;
-
   final EspnLeagueStatsService _service;
+  final EspnScoreService _scoreService;
+  int _requestGeneration = 0;
 
   Future<void> load() async {
+    final generation = ++_requestGeneration;
     emit(state.copyWith(status: LeagueStatsStatus.loading));
+
+    // Cricket first, and terminally. ESPN's core API rejects the sport, so
+    // there is no live leaders or team-statistics feed to layer over the
+    // package and no season archive to offer — everything the IPL hub shows is
+    // aggregated offline from the season's match summaries.
+    final cricket = await CricketLeagueStatsPackageService.snapshotFor(
+      _leagueId,
+      leagueName: leagueName,
+      shortCode: shortCode,
+    );
+    if (!_isCurrent(generation)) return;
+    if (cricket != null && !cricket.isEmpty) {
+      emit(
+        state.copyWith(
+          status: LeagueStatsStatus.loaded,
+          snapshot: cricket,
+          categoryIndex: 0,
+          groupIndex: 0,
+          statGroupIndex: 0,
+          statIndex: 0,
+        ),
+      );
+      // No season list is emitted, so the archive picker stays hidden.
+      // `archiveUnavailable` is NOT set: that flag replaces the whole table
+      // with a "use mobile" empty state, which is not what "this sport has no
+      // archive" means.
+      return;
+    }
 
     final bundled = await LeagueStatsPackageService.snapshotFor(
       _leagueId,
       leagueName: leagueName,
       shortCode: shortCode,
     );
-    if (isClosed) return;
+    var seasons = await LeagueStatsPackageService.seasonsFor(
+      _leagueId,
+      leagueName: leagueName,
+      shortCode: shortCode,
+    );
+    if (!_isCurrent(generation)) return;
+    if (seasons.isEmpty && !kIsWeb) {
+      seasons = await _service.fetchAvailableSeasons(_leagueId);
+      if (!_isCurrent(generation)) return;
+    }
+
+    final initialYear =
+        bundled?.seasonYear ??
+        _currentSeasonYear(seasons) ??
+        DateTime.now().year;
+    emit(
+      state.copyWith(
+        seasons: seasons,
+        selectedSeasonYear: initialYear,
+        archiveUnavailable: false,
+      ),
+    );
 
     if (bundled != null && !bundled.isEmpty) {
       emit(
@@ -56,39 +100,95 @@ class LeagueStatsCubit extends Cubit<LeagueStatsState> {
           statIndex: 0,
         ),
       );
-      // The package already answers every tab, so the live pass is a quiet
-      // freshness top-up rather than the thing the hub is waiting on.
-      unawaited(_refreshLive());
+      if (!kIsWeb) unawaited(_refreshSeasonCatalog(generation));
+      unawaited(_refreshLive(generation, initialYear));
+      return;
+    }
+    await _loadSeason(initialYear, generation);
+  }
+
+  Future<void> selectSeason(int year) async {
+    if (year == state.selectedSeasonYear) return;
+    final generation = ++_requestGeneration;
+    final webArchive = kIsWeb && !_isCurrentSeasonYear(year, state.seasons);
+    emit(
+      state.copyWith(
+        status: LeagueStatsStatus.loading,
+        snapshot: LeagueStatsSnapshot.empty,
+        selectedSeasonYear: year,
+        seasonFixtures: const [],
+        fixturesStatus: webArchive
+            ? LeagueFixturesStatus.unavailable
+            : LeagueFixturesStatus.idle,
+        archiveUnavailable: webArchive,
+        categoryIndex: 0,
+        groupIndex: 0,
+        statGroupIndex: 0,
+        statIndex: 0,
+        resolvingCategory: false,
+        refreshingLive: false,
+        loadingTeamStats: false,
+      ),
+    );
+    if (webArchive) {
+      emit(state.copyWith(status: LeagueStatsStatus.error));
+      return;
+    }
+    await _loadSeason(year, generation);
+  }
+
+  Future<void> _loadSeason(int year, int generation) async {
+    final bundled = await LeagueStatsPackageService.snapshotFor(
+      _leagueId,
+      leagueName: leagueName,
+      shortCode: shortCode,
+      seasonYear: year,
+    );
+    if (!_isCurrent(generation, year)) return;
+    if (bundled != null && !bundled.isEmpty) {
+      emit(
+        state.copyWith(
+          status: LeagueStatsStatus.loaded,
+          snapshot: bundled,
+          archiveUnavailable: false,
+        ),
+      );
+      unawaited(_refreshLive(generation, year));
       return;
     }
 
     try {
-      final snapshot = await _service.fetchSnapshot(_leagueId);
-      if (isClosed) return;
+      final snapshot = await _service.fetchSnapshot(
+        _leagueId,
+        seasonYear: year,
+      );
+      if (!_isCurrent(generation, year)) return;
       emit(
         state.copyWith(
-          status: LeagueStatsStatus.loaded,
+          status: snapshot.isEmpty
+              ? LeagueStatsStatus.error
+              : LeagueStatsStatus.loaded,
           snapshot: snapshot,
-          categoryIndex: 0,
-          groupIndex: 0,
         ),
       );
-      await _resolveSelected();
-    } catch (e) {
-      debugPrint('LeagueStatsCubit: failed to load $_leagueId: $e');
-      if (isClosed) return;
-      emit(state.copyWith(status: LeagueStatsStatus.error));
+      if (!snapshot.isEmpty) await _resolveSelected();
+    } catch (error) {
+      debugPrint('LeagueStatsCubit: failed to load $_leagueId/$year: $error');
+      if (_isCurrent(generation, year)) {
+        emit(state.copyWith(status: LeagueStatsStatus.error));
+      }
     }
   }
 
-  /// Layers the live feed over the bundled snapshot already on screen. Failure
-  /// is silent by design — the player is looking at a complete hub either way.
-  Future<void> _refreshLive() async {
+  Future<void> _refreshLive(int generation, int seasonYear) async {
     if (!EspnLeagueStatsService.supports(_leagueId)) return;
     emit(state.copyWith(refreshingLive: true));
     try {
-      final live = await _service.fetchSnapshot(_leagueId);
-      if (isClosed) return;
+      final live = await _service.fetchSnapshot(
+        _leagueId,
+        seasonYear: seasonYear,
+      );
+      if (!_isCurrent(generation, seasonYear)) return;
       emit(
         state.copyWith(
           snapshot: state.snapshot.mergedWith(live),
@@ -96,56 +196,89 @@ class LeagueStatsCubit extends Cubit<LeagueStatsState> {
         ),
       );
       await _resolveSelected();
-    } catch (e) {
-      debugPrint('LeagueStatsCubit: live refresh failed for $_leagueId: $e');
-      if (isClosed) return;
-      emit(state.copyWith(refreshingLive: false));
+    } catch (error) {
+      debugPrint(
+        'LeagueStatsCubit: live refresh failed for $_leagueId/$seasonYear: $error',
+      );
+      if (_isCurrent(generation, seasonYear)) {
+        emit(state.copyWith(refreshingLive: false));
+      }
     }
   }
 
-  /// Pulls per-club season statistics for the STATS tab. Called the first time
-  /// that tab is opened rather than on hub load, because it costs one request
-  /// per club — the same lazy contract [_resolveSelected] uses for athletes.
-  ///
-  /// No-ops when the bundled package already supplied them, so the common case
-  /// is free and this only pays off for leagues outside the package (or when
-  /// the package failed to load).
   Future<void> ensureTeamStats() async {
     if (state.snapshot.hasTeamStats || state.loadingTeamStats) return;
+    final seasonYear = state.selectedSeasonYear;
+    if (seasonYear == null || state.archiveUnavailable) return;
     if (!EspnLeagueStatsService.supports(_leagueId)) return;
-
+    final generation = _requestGeneration;
     emit(state.copyWith(loadingTeamStats: true));
     try {
-      final stats = await _service.fetchTeamStats(_leagueId);
-      if (isClosed) return;
+      final stats = await _service.fetchTeamStats(
+        _leagueId,
+        seasonYear: seasonYear,
+      );
+      if (!_isCurrent(generation, seasonYear)) return;
       emit(
         state.copyWith(
           snapshot: state.snapshot.withTeamStats(stats),
           loadingTeamStats: false,
         ),
       );
-    } catch (e) {
-      debugPrint('LeagueStatsCubit: team stats failed for $_leagueId: $e');
-      if (isClosed) return;
-      emit(state.copyWith(loadingTeamStats: false));
+    } catch (error) {
+      debugPrint('LeagueStatsCubit: team stats failed for $_leagueId: $error');
+      if (_isCurrent(generation, seasonYear)) {
+        emit(state.copyWith(loadingTeamStats: false));
+      }
+    }
+  }
+
+  Future<void> ensureSeasonFixtures() async {
+    if (state.fixturesStatus == LeagueFixturesStatus.loading ||
+        state.fixturesStatus == LeagueFixturesStatus.loaded ||
+        state.fixturesStatus == LeagueFixturesStatus.unavailable) {
+      return;
+    }
+    final seasonYear = state.selectedSeasonYear;
+    if (seasonYear == null) return;
+    if (state.archiveUnavailable) {
+      emit(state.copyWith(fixturesStatus: LeagueFixturesStatus.unavailable));
+      return;
+    }
+    final generation = _requestGeneration;
+    emit(state.copyWith(fixturesStatus: LeagueFixturesStatus.loading));
+    try {
+      final fixtures = await _scoreService.fetchFootballSeasonMatches(
+        _leagueId,
+        seasonYear,
+      );
+      if (!_isCurrent(generation, seasonYear)) return;
+      emit(
+        state.copyWith(
+          fixturesStatus: LeagueFixturesStatus.loaded,
+          seasonFixtures: fixtures,
+        ),
+      );
+    } catch (error) {
+      debugPrint('LeagueStatsCubit: season fixtures failed: $error');
+      if (_isCurrent(generation, seasonYear)) {
+        emit(state.copyWith(fixturesStatus: LeagueFixturesStatus.error));
+      }
     }
   }
 
   void selectGroup(int index) {
-    if (index == state.groupIndex) return;
-    emit(state.copyWith(groupIndex: index));
+    if (index != state.groupIndex) emit(state.copyWith(groupIndex: index));
   }
 
-  /// Switching STATS category resets to that category's first board, so the
-  /// player never lands on a stale index from the previous group.
   void selectStatGroup(int index) {
-    if (index == state.statGroupIndex) return;
-    emit(state.copyWith(statGroupIndex: index, statIndex: 0));
+    if (index != state.statGroupIndex) {
+      emit(state.copyWith(statGroupIndex: index, statIndex: 0));
+    }
   }
 
   void selectStat(int index) {
-    if (index == state.statIndex) return;
-    emit(state.copyWith(statIndex: index));
+    if (index != state.statIndex) emit(state.copyWith(statIndex: index));
   }
 
   Future<void> selectCategory(int index) async {
@@ -154,29 +287,52 @@ class LeagueStatsCubit extends Cubit<LeagueStatsState> {
     await _resolveSelected();
   }
 
-  /// Fetches athlete names for the board on screen. Boards sourced from the
-  /// bundled package arrive fully named, so this is a no-op for them.
   Future<void> _resolveSelected() async {
     final category = state.selectedCategory;
     if (category == null || category.isResolved) return;
-
     final index = state.categoryIndex;
+    final seasonYear = state.selectedSeasonYear;
+    final generation = _requestGeneration;
     emit(state.copyWith(resolvingCategory: true));
     try {
-      final resolved = await _service.resolveCategory(_leagueId, category);
-      if (isClosed) return;
-      // The player may have moved on while the request was in flight; only the
-      // board they left behind gets patched, never the selection itself.
+      final resolved = await _service.resolveCategory(
+        _leagueId,
+        category,
+        seasonYear: seasonYear,
+      );
+      if (!_isCurrent(generation, seasonYear)) return;
       emit(
         state.copyWith(
           snapshot: state.snapshot.withCategory(index, resolved),
           resolvingCategory: false,
         ),
       );
-    } catch (e) {
-      debugPrint('LeagueStatsCubit: failed to resolve ${category.key}: $e');
-      if (isClosed) return;
-      emit(state.copyWith(resolvingCategory: false));
+    } catch (error) {
+      debugPrint('LeagueStatsCubit: failed to resolve ${category.key}: $error');
+      if (_isCurrent(generation, seasonYear)) {
+        emit(state.copyWith(resolvingCategory: false));
+      }
     }
   }
+
+  Future<void> _refreshSeasonCatalog(int generation) async {
+    final live = await _service.fetchAvailableSeasons(_leagueId);
+    if (!_isCurrent(generation) || live.isEmpty) return;
+    emit(state.copyWith(seasons: live));
+  }
+
+  int? _currentSeasonYear(List<LeagueSeasonOption> seasons) {
+    for (final season in seasons) {
+      if (season.isCurrent) return season.year;
+    }
+    return seasons.isEmpty ? null : seasons.first.year;
+  }
+
+  bool _isCurrentSeasonYear(int year, List<LeagueSeasonOption> seasons) =>
+      _currentSeasonYear(seasons) == year;
+
+  bool _isCurrent(int generation, [int? seasonYear]) =>
+      !isClosed &&
+      generation == _requestGeneration &&
+      (seasonYear == null || state.selectedSeasonYear == seasonYear);
 }

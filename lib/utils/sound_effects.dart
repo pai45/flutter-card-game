@@ -616,7 +616,17 @@ class AudioController with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
   }
 
-  static final AudioController instance = AudioController();
+  static AudioController? _instance;
+
+  static AudioController get instance => _instance ??= AudioController();
+
+  /// Replaces the process-wide controller before widget construction so
+  /// screenshot and golden tests never initialize platform audio players.
+  @visibleForTesting
+  static void debugUseBackend(AudioPlaybackBackend backend) {
+    _instance = AudioController(backend: backend);
+  }
+
   static const _mutePreferenceKey = 'audio_muted';
 
   final AudioPlaybackBackend _backend;

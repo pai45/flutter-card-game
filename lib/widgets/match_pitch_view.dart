@@ -595,12 +595,18 @@ class _PitchSurfacePainter extends CustomPainter {
       ..color = accent.withValues(alpha: 0.12)
       ..style = PaintingStyle.fill;
 
-    const grid = 32.0;
-    for (double x = 0; x < size.width; x += grid) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), linePaint);
-    }
-    for (double y = 0; y < size.height; y += grid) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), linePaint);
+    // No blueprint grid on the football pitch: the panel already sits on the
+    // app's textured background, so a second grid inside it was texture on
+    // texture and competed with the markings and the player nodes. The
+    // basketball court keeps its grid until that board is looked at too.
+    if (basketball) {
+      const grid = 32.0;
+      for (double x = 0; x < size.width; x += grid) {
+        canvas.drawLine(Offset(x, 0), Offset(x, size.height), linePaint);
+      }
+      for (double y = 0; y < size.height; y += grid) {
+        canvas.drawLine(Offset(0, y), Offset(size.width, y), linePaint);
+      }
     }
     canvas.drawRect(Offset.zero & size, linePaint);
     canvas.drawLine(

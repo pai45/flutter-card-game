@@ -8,6 +8,7 @@ import 'package:card_game/services/basketball_match_package_service.dart';
 import 'package:card_game/services/cricket_match_package_service.dart';
 import 'package:card_game/widgets/cyber/cyber_chart.dart';
 import 'package:card_game/widgets/cyber/cyber_filter_chips.dart';
+import 'package:card_game/widgets/cyber/player_match_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -319,7 +320,120 @@ void main() {
     expect(find.text('RUN-RATE DATA UNAVAILABLE'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('tapping a scorecard row opens that player dossier', (
+    tester,
+  ) async {
+    _mobile(tester);
+    final match = (await tester.runAsync(
+      () => const CricketMatchPackageService().loadBundled(),
+    ))!;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.darkTheme,
+        home: Scaffold(
+          body: CricketMatchStatsView(match: match, enableFeedback: false),
+        ),
+      ),
+    );
+    await _pump(tester);
+    _selectOuter(tester, 'SCORECARD');
+    await _pump(tester);
+    _selectInner(tester, 'ROYAL CHALLENGERS BENGALURU');
+    await _pump(tester);
+
+    // Virat Kohli, 75* off 42 in the RCB chase.
+    final kohli = find.byKey(const ValueKey('scorecard-batter-253802'));
+    await _scrollTo(tester, kohli);
+    await tester.tap(kohli);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(PlayerMatchSheetScaffold), findsOneWidget);
+    expect(_inSheet(find.text('VIRAT KOHLI')), findsOneWidget);
+    expect(_inSheet(find.text('75* (42)')), findsOneWidget);
+    expect(_inSheet(find.text('INNINGS TAPE')), findsOneWidget);
+    // The phase strip only exists because of the ball-by-ball feed.
+    expect(_inSheet(find.text('POWERPLAY')), findsOneWidget);
+    expect(_inSheet(find.text('DEATH')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the cricket dossier pages across the squad', (tester) async {
+    _mobile(tester);
+    final match = (await tester.runAsync(
+      () => const CricketMatchPackageService().loadBundled(),
+    ))!;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.darkTheme,
+        home: Scaffold(
+          body: CricketMatchStatsView(match: match, enableFeedback: false),
+        ),
+      ),
+    );
+    await _pump(tester);
+    _selectOuter(tester, 'SCORECARD');
+    await _pump(tester);
+    _selectInner(tester, 'ROYAL CHALLENGERS BENGALURU');
+    await _pump(tester);
+
+    final kohli = find.byKey(const ValueKey('scorecard-batter-253802'));
+    await _scrollTo(tester, kohli);
+    await tester.tap(kohli);
+    await tester.pumpAndSettle();
+    expect(_inSheet(find.text('VIRAT KOHLI')), findsOneWidget);
+
+    await tester.fling(find.byType(PageView), const Offset(-400, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(_inSheet(find.text('VIRAT KOHLI')), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a bowler opens on their spell, not an empty tape', (
+    tester,
+  ) async {
+    _mobile(tester);
+    final match = (await tester.runAsync(
+      () => const CricketMatchPackageService().loadBundled(),
+    ))!;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.darkTheme,
+        home: Scaffold(
+          body: CricketMatchStatsView(match: match, enableFeedback: false),
+        ),
+      ),
+    );
+    await _pump(tester);
+    _selectOuter(tester, 'SCORECARD');
+    await _pump(tester);
+
+    // Bhuvneshwar Kumar, 2/29 bowling in the GT innings.
+    final bowler = find.byKey(const ValueKey('scorecard-bowler-326016'));
+    await _scrollTo(tester, bowler);
+    await tester.tap(bowler);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(PlayerMatchSheetScaffold), findsOneWidget);
+    expect(_inSheet(find.text('BHUVNESHWAR KUMAR')), findsOneWidget);
+    expect(_inSheet(find.text('INNINGS TAPE')), findsOneWidget);
+    // Opens on the bowling side, so the strip is a bowler's headline.
+    expect(_inSheet(find.text('ECONOMY')), findsOneWidget);
+    expect(_inSheet(find.text('DOTS')), findsOneWidget);
+    expect(_inSheet(find.text('WICKETS')), findsOneWidget);
+    // The stat sheet must not repeat what the strip already said.
+    expect(_inSheet(find.text('OVERS')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
+
+/// Scopes a finder to the open dossier. The scorecard stays mounted behind the
+/// modal, and it uses some of the same labels (WICKETS, ECONOMY), so an
+/// unscoped `find.text` matches twice.
+Finder _inSheet(Finder matching) => find.descendant(
+  of: find.byType(PlayerMatchSheetScaffold),
+  matching: matching,
+);
 
 void _mobile(WidgetTester tester) {
   tester.view.physicalSize = const Size(390, 844);

@@ -5178,15 +5178,52 @@ const cricketPlayerCards = [...cricketBattingCards, ...cricketBowlingCards];
 
 const batsmen = cricketBattingCards;
 
+/// Cricket portraits whose filenames never matched the slug convention, so the
+/// resolver could not reach them.
+///
+/// Twenty of the 180 bundled images arrived either Title_Cased or with a
+/// ranking prefix (`10_Tim_David.webp`). The resolver lowercases, so every one
+/// of them was dead weight in the bundle — including Tim David, Bhuvneshwar
+/// Kumar, Sai Sudharsan and Rahul Tewatia, all of whom play in the bundled IPL
+/// final. Renaming the files would break the explicit `portraitAsset:` entries
+/// that already point at them, so the aliases live here instead.
+const cricketPortraitAliases = <String, String>{
+  'harshal_patel': '01_Harshal_Patel.webp',
+  'shimron_hetmyer': '02_Shimron_Hetmyer.webp',
+  'sandeep_sharma': '03_Sandeep_Sharma.webp',
+  'pathum_nissanka': '04_Pathum_Nissanka.webp',
+  'avesh_khan': '05_Avesh_Khan.webp',
+  'anrich_nortje': '06_Anrich_Nortje.webp',
+  'rahul_tewatia': '07_Rahul_Tewatia.webp',
+  'noor_ahmad': '08_Noor_Ahmad.webp',
+  'deepak_chahar': '09_Deepak_Chahar.webp',
+  'tim_david': '10_Tim_David.webp',
+  'bhuvneshwar_kumar': 'Bhuvneshwar_Kumar.webp',
+  'david_miller': 'David_Miller.webp',
+  'ishan_kishan': 'Ishan_Kishan.webp',
+  'liam_livingstone': 'Liam_Livingstone.webp',
+  'marcus_stoinis': 'Marcus_Stoinis.webp',
+  'mayank_yadav': 'Mayank_Yadav.webp',
+  'sai_sudharsan': 'Sai_Sudharsan.webp',
+  'tilak_varma': 'Tilak_Varma.webp',
+  'varun_chakaravarthy': 'Varun_Chakaravarthy.webp',
+  'wanindu_hasaranga': 'Wanindu_Hasaranga.webp',
+};
+
+/// Slugifies a display name the way the portrait files are named.
+String cricketPortraitSlug(String name) => name
+    .trim()
+    .toLowerCase()
+    .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
+    .replaceAll(RegExp(r'^_+|_+$'), '');
+
 /// Canonical cricket portrait path from a player display name
-/// (`Virat Kohli` → `assets/cricketer_images/virat_kohli.webp`).
+/// (`Virat Kohli` → `assets/cricketer_images/virat_kohli.webp`), falling back
+/// to [cricketPortraitAliases] for the odd-named files.
 String cricketPortraitAssetForName(String name) {
-  final slug = name
-      .trim()
-      .toLowerCase()
-      .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
-      .replaceAll(RegExp(r'^_+|_+$'), '');
-  return 'assets/cricketer_images/$slug.webp';
+  final slug = cricketPortraitSlug(name);
+  final alias = cricketPortraitAliases[slug];
+  return 'assets/cricketer_images/${alias ?? '$slug.webp'}';
 }
 
 final List<PlayerCard> basketballPlayerCards = [

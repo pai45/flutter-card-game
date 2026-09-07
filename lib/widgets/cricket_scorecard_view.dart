@@ -5,16 +5,23 @@ import '../config/theme.dart';
 import '../models/cricket_scorecard.dart';
 import 'cyber/cyber_filter_chips.dart';
 import 'cyber/cyber_widgets.dart';
+import 'cyber/player_match_sheet.dart';
 
 class CricketScorecardView extends StatefulWidget {
   const CricketScorecardView({
     super.key,
     required this.scorecard,
     required this.accent,
+    this.onTapPlayer,
   });
 
   final CricketScorecard scorecard;
   final Color accent;
+
+  /// Opens a player's match dossier. Null when the caller has no squad data to
+  /// resolve an id against — a live scorecard, for instance — in which case the
+  /// rows stay untappable rather than opening an empty card.
+  final void Function(String playerId)? onTapPlayer;
 
   @override
   State<CricketScorecardView> createState() => _CricketScorecardViewState();
@@ -84,6 +91,7 @@ class _CricketScorecardViewState extends State<CricketScorecardView> {
             ),
           ),
           child: _InningsScorecard(
+            onTapPlayer: widget.onTapPlayer,
             key: ValueKey(
               'scorecard-innings-${innings.number ?? _selectedIndex}',
             ),
@@ -111,12 +119,36 @@ class _InningsScorecard extends StatelessWidget {
     required this.innings,
     required this.accent,
     required this.fallbackNumber,
+    this.onTapPlayer,
     super.key,
   });
 
   final CricketInnings innings;
   final Color accent;
   final int fallbackNumber;
+  final void Function(String playerId)? onTapPlayer;
+
+  /// Makes a scorecard row open its player's dossier.
+  ///
+  /// The join key was already decoded and unused: `CricketBatter.id` and
+  /// `CricketBowler.id` have shipped since the package landed but nothing read
+  /// them. A row without an id, or a caller without squads, simply stays flat.
+  Widget _tappable({
+    required String? playerId,
+    required String keyPrefix,
+    required Widget child,
+  }) {
+    final handler = onTapPlayer;
+    if (handler == null || playerId == null || playerId.isEmpty) return child;
+    return TapPunch(
+      key: ValueKey('scorecard-$keyPrefix-$playerId'),
+      onTap: () {
+        HapticFeedback.selectionClick();
+        handler(playerId);
+      },
+      child: child,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -290,7 +322,15 @@ class _InningsScorecard extends StatelessWidget {
       ),
       rows: [
         for (var index = 0; index < innings.batters.length; index++)
-          _batterRow(innings.batters[index], index: index, best: best),
+          _tappable(
+            playerId: innings.batters[index].id,
+            keyPrefix: 'batter',
+            child: _batterRow(
+              innings.batters[index],
+              index: index,
+              best: best,
+            ),
+          ),
         if (innings.extras.isNotEmpty) _extrasRow(),
       ],
     );
@@ -514,7 +554,15 @@ class _InningsScorecard extends StatelessWidget {
       ),
       rows: [
         for (var index = 0; index < innings.bowlers.length; index++)
-          _bowlerRow(innings.bowlers[index], index: index, best: best),
+          _tappable(
+            playerId: innings.bowlers[index].id,
+            keyPrefix: 'bowler',
+            child: _bowlerRow(
+              innings.bowlers[index],
+              index: index,
+              best: best,
+            ),
+          ),
       ],
     );
   }

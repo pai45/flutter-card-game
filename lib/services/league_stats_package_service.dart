@@ -26,17 +26,77 @@ class LeagueStatsPackageService {
   const LeagueStatsPackageService();
 
   static const assetPath = 'assets/data/football-league-stats.json';
+  static const seasonsAssetPath = 'assets/data/football-league-seasons.json';
 
   /// Decoded once per app run and shared by every hub route.
   static Future<Map<String, LeagueStatsSnapshot>>? _pending;
+  static Future<Map<String, List<LeagueSeasonOption>>>? _seasonsPending;
 
   @visibleForTesting
-  static void clearCache() => _pending = null;
+  static void clearCache() {
+    _pending = null;
+    _seasonsPending = null;
+  }
 
   /// Every league in the package, keyed by each of its normalised aliases.
   static Future<Map<String, LeagueStatsSnapshot>> _load() {
     return _pending ??= _decodeAsset();
   }
+
+  /// Lightweight offline season catalogue. Historical snapshots still come
+  /// from ESPN; this keeps the selector useful when the live catalogue cannot
+  /// be reached (notably in browser builds blocked by CORS).
+  static Future<List<LeagueSeasonOption>> seasonsFor(
+    String leagueId, {
+    String? leagueName,
+    String? shortCode,
+  }) async {
+    final byAlias = await (_seasonsPending ??= _decodeSeasonsAsset());
+    for (final candidate in [leagueId, shortCode, leagueName]) {
+      final key = _normalise(candidate);
+      if (key == null) continue;
+      final seasons = byAlias[key];
+      if (seasons != null) return seasons;
+    }
+    return const [];
+  }
+
+  static Future<Map<String, List<LeagueSeasonOption>>>
+  _decodeSeasonsAsset() async {
+    try {
+      final source = await rootBundle.loadString(seasonsAssetPath);
+      final root = jsonDecode(source) as Map<String, dynamic>;
+      final byAlias = <String, List<LeagueSeasonOption>>{};
+      for (final raw in root['leagues'] as List? ?? const []) {
+        if (raw is! Map) continue;
+        final years = [
+          for (final year in raw['seasons'] as List? ?? const [])
+            if (year is num) year.toInt(),
+        ];
+        final seasons = List<LeagueSeasonOption>.unmodifiable([
+          for (var index = 0; index < years.length; index++)
+            LeagueSeasonOption(
+              year: years[index],
+              label: _seasonLabel(years[index]),
+              isCurrent: index == 0,
+            ),
+        ]);
+        for (final alias in raw['aliases'] as List? ?? const []) {
+          final key = _normalise(alias.toString());
+          if (key != null) byAlias[key] = seasons;
+        }
+      }
+      return byAlias;
+    } catch (e) {
+      debugPrint(
+        'LeagueStatsPackageService: could not load $seasonsAssetPath: $e',
+      );
+      return const {};
+    }
+  }
+
+  static String _seasonLabel(int year) =>
+      '$year-${((year + 1) % 100).toString().padLeft(2, '0')}';
 
   static Future<Map<String, LeagueStatsSnapshot>> _decodeAsset() async {
     try {
@@ -55,6 +115,7 @@ class LeagueStatsPackageService {
     String leagueId, {
     String? leagueName,
     String? shortCode,
+    int? seasonYear,
   }) async {
     final byAlias = await _load();
     if (byAlias.isEmpty) return null;
@@ -62,7 +123,9 @@ class LeagueStatsPackageService {
       final key = _normalise(candidate);
       if (key == null) continue;
       final hit = byAlias[key];
-      if (hit != null) return hit;
+      if (hit != null && (seasonYear == null || hit.seasonYear == seasonYear)) {
+        return hit;
+      }
     }
     return null;
   }
@@ -79,7 +142,9 @@ class LeagueStatsPackageService {
   Map<String, LeagueStatsSnapshot> decode(String source) {
     final root = jsonDecode(source);
     if (root is! Map<String, dynamic>) {
-      throw const FormatException('League stats package root must be an object.');
+      throw const FormatException(
+        'League stats package root must be an object.',
+      );
     }
 
     final definitions = <String, LeagueStatDefinition>{};
@@ -131,6 +196,7 @@ class LeagueStatsPackageService {
       teamStats: _decodeTeamStats(league['teamStats'], teams),
       statDefinitions: definitions,
       seasonLabel: (league['season'] as Map?)?['displayName']?.toString(),
+      seasonYear: ((league['season'] as Map?)?['year'] as num?)?.toInt(),
     );
   }
 
@@ -170,8 +236,9 @@ class LeagueStatsPackageService {
 
       double? value(String name) {
         final pair = stats[name];
-        return pair is List && pair.isNotEmpty ? (pair.first as num?)
-            ?.toDouble() : null;
+        return pair is List && pair.isNotEmpty
+            ? (pair.first as num?)?.toDouble()
+            : null;
       }
 
       String display(String name) {
@@ -184,26 +251,28 @@ class LeagueStatsPackageService {
 
       final note = raw['note'] as Map?;
       final group = raw['group']?.toString() ?? '';
-      byGroup.putIfAbsent(group, () => <TeamStanding>[]).add(
-        TeamStanding(
-          team: team,
-          rank: (raw['rank'] as num?)?.toInt() ?? intOf('rank'),
-          played: intOf('gamesPlayed'),
-          won: intOf('wins'),
-          drawn: intOf('ties'),
-          lost: intOf('losses'),
-          points: intOf('points'),
-          diffLabel: display('pointDifferential'),
-          form: '',
-          group: group,
-          tableName: team.name,
-          goalsFor: intOf('pointsFor'),
-          goalsAgainst: intOf('pointsAgainst'),
-          zoneNote: note?['description']?.toString(),
-          zoneColor: _parseHexColor(note?['color']?.toString()),
-          rankChange: intOf('rankChange'),
-        ),
-      );
+      byGroup
+          .putIfAbsent(group, () => <TeamStanding>[])
+          .add(
+            TeamStanding(
+              team: team,
+              rank: (raw['rank'] as num?)?.toInt() ?? intOf('rank'),
+              played: intOf('gamesPlayed'),
+              won: intOf('wins'),
+              drawn: intOf('ties'),
+              lost: intOf('losses'),
+              points: intOf('points'),
+              diffLabel: display('pointDifferential'),
+              form: '',
+              group: group,
+              tableName: team.name,
+              goalsFor: intOf('pointsFor'),
+              goalsAgainst: intOf('pointsAgainst'),
+              zoneNote: note?['description']?.toString(),
+              zoneColor: _parseHexColor(note?['color']?.toString()),
+              rankChange: intOf('rankChange'),
+            ),
+          );
     }
 
     final groups = <StandingsGroup>[];
@@ -318,7 +387,11 @@ class _LeaderSpec {
 const _leaderSpecs = <String, _LeaderSpec>{
   'goalsLeaders': _LeaderSpec('GOALS', 'GOALS SCORED', StatAccent.league),
   'assistsLeaders': _LeaderSpec('ASSISTS', 'ASSISTS', StatAccent.league),
-  'shotsOnTarget': _LeaderSpec('ON TARGET', 'SHOTS ON TARGET', StatAccent.league),
+  'shotsOnTarget': _LeaderSpec(
+    'ON TARGET',
+    'SHOTS ON TARGET',
+    StatAccent.league,
+  ),
   'totalShots': _LeaderSpec('SHOTS', 'TOTAL SHOTS', StatAccent.league),
   'accuratePasses': _LeaderSpec('PASSES', 'ACCURATE PASSES', StatAccent.league),
   'saves': _LeaderSpec('SAVES', 'SAVES MADE', StatAccent.success),

@@ -23,7 +23,12 @@ class CricketMatchPackageService {
     final score = _map(match['score']);
     final homeScore = _map(score['home']);
     final awayScore = _map(score['away']);
-    final squads = _list(root['teams']).map(_teamSquad).toList();
+    // The generated per-player layer lives at the root, keyed by athlete id,
+    // so the hand-authored `teams[]` block stays untouched by its generator.
+    final playerLayer = _CricketPlayerLayer.from(root);
+    final squads = _list(
+      root['teams'],
+    ).map((entry) => _teamSquad(entry, playerLayer)).toList();
     final homeSquad = squads.firstWhere((team) => team.isHome);
     final awaySquad = squads.firstWhere((team) => !team.isHome);
     final innings = _list(root['innings']).map(_inningsSummary).toList();
@@ -390,7 +395,7 @@ class CricketMatchPackageService {
     );
   }
 
-  CricketTeamSquad _teamSquad(Object? entry) {
+  CricketTeamSquad _teamSquad(Object? entry, _CricketPlayerLayer layer) {
     final value = _map(entry);
     return CricketTeamSquad(
       id: _s(value['id']),
@@ -401,11 +406,13 @@ class CricketMatchPackageService {
       keeper: _s(value['keeper']),
       squadPublished: _b(value['squadPublished']),
       playerCount: _i(value['playerCount']),
-      players: _list(value['players']).map(_squadPlayer).toList(),
+      players: _list(
+        value['players'],
+      ).map((player) => _squadPlayer(player, layer)).toList(),
     );
   }
 
-  CricketSquadPlayer _squadPlayer(Object? entry) {
+  CricketSquadPlayer _squadPlayer(Object? entry, _CricketPlayerLayer layer) {
     final value = _map(entry);
     final performances = <int, CricketPlayerPerformance>{};
     for (final entry in _list(value['batting'])) {
@@ -457,6 +464,7 @@ class CricketMatchPackageService {
       battingStyle: _s(value['battingStyle']),
       bowlingStyle: _s(value['bowlingStyle']),
       performances: sorted,
+      matchStats: layer.statsFor(_s(value['id'])),
     );
   }
 
@@ -505,4 +513,108 @@ String _displayNumber(Object? value) {
             .toStringAsFixed(2)
             .replaceFirst(RegExp(r'0+$'), '')
             .replaceFirst(RegExp(r'\.$'), '');
+}
+
+/// Decodes the generated per-player block once per package load.
+///
+/// It sits at the asset root rather than inside `teams[].players[]` because its
+/// generator splices text and never re-encodes the hand-authored body — see
+/// `tool/generate_cricket_match_players.dart`. Everything here is optional: an
+/// older asset without the block yields null stats and the UI degrades to its
+/// "no ball-by-ball" state rather than breaking.
+class _CricketPlayerLayer {
+  const _CricketPlayerLayer._({
+    required this.statKeys,
+    required this.rawStats,
+    required this.faced,
+    required this.bowled,
+  });
+
+  final List<String> statKeys;
+  final Map<String, List<Object?>> rawStats;
+  final Map<String, List<CricketDelivery>> faced;
+  final Map<String, List<CricketDelivery>> bowled;
+
+  static const empty = _CricketPlayerLayer._(
+    statKeys: [],
+    rawStats: {},
+    faced: {},
+    bowled: {},
+  );
+
+  factory _CricketPlayerLayer.from(Map<String, dynamic> root) {
+    final keys = root['playerStatKeys'];
+    if (keys is! List) return empty;
+
+    final rawStats = <String, List<Object?>>{};
+    final stats = root['playerStats'];
+    if (stats is Map) {
+      for (final entry in stats.entries) {
+        final value = entry.value;
+        if (value is List) rawStats[entry.key.toString()] = value;
+      }
+    }
+
+    final athletes = (root['deliveryAthletes'] as List? ?? const [])
+        .map((a) => a.toString())
+        .toList();
+    final outcomes = (root['deliveryOutcomes'] as List? ?? const [])
+        .map((o) => cricketBallOutcomeFor(o.toString()))
+        .toList();
+
+    final faced = <String, List<CricketDelivery>>{};
+    final bowled = <String, List<CricketDelivery>>{};
+    for (final row in (root['deliveries'] as List? ?? const [])) {
+      // [innings, over, ball, batterIdx, bowlerIdx, runs, outcomeIdx, wicket]
+      if (row is! List || row.length < 8) continue;
+      final batterIdx = (row[3] as num).toInt();
+      final bowlerIdx = (row[4] as num).toInt();
+      final outcomeIdx = (row[6] as num).toInt();
+      if (batterIdx >= athletes.length || bowlerIdx >= athletes.length) continue;
+      final batterId = athletes[batterIdx];
+      final bowlerId = athletes[bowlerIdx];
+      final delivery = CricketDelivery(
+        innings: (row[0] as num).toInt(),
+        over: (row[1] as num).toInt(),
+        ball: (row[2] as num).toInt(),
+        batterId: batterId,
+        bowlerId: bowlerId,
+        runs: (row[5] as num).toInt(),
+        outcome: outcomeIdx < outcomes.length
+            ? outcomes[outcomeIdx]
+            : CricketBallOutcome.other,
+        isWicket: (row[7] as num).toInt() == 1,
+      );
+      (faced[batterId] ??= <CricketDelivery>[]).add(delivery);
+      (bowled[bowlerId] ??= <CricketDelivery>[]).add(delivery);
+    }
+
+    return _CricketPlayerLayer._(
+      statKeys: keys.map((k) => k.toString()).toList(growable: false),
+      rawStats: rawStats,
+      faced: faced,
+      bowled: bowled,
+    );
+  }
+
+  CricketPlayerMatchStats? statsFor(String id) {
+    final raw = rawStats[id];
+    if (raw == null && !faced.containsKey(id) && !bowled.containsKey(id)) {
+      return null;
+    }
+    final values = <String, num>{};
+    // Positional: `stats[i]` belongs to `playerStatKeys[i]`. Never read one
+    // without the other.
+    if (raw != null) {
+      for (var i = 0; i < statKeys.length && i < raw.length; i++) {
+        final value = raw[i];
+        if (value is num) values[statKeys[i]] = value;
+      }
+    }
+    return CricketPlayerMatchStats(
+      values: values,
+      faced: List.unmodifiable(faced[id] ?? const []),
+      bowled: List.unmodifiable(bowled[id] ?? const []),
+    );
+  }
 }

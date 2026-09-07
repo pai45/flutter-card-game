@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../config/theme.dart';
 import '../../../data/team_palettes.dart';
 import '../../../models/league.dart';
+import '../../../models/league_stat_leaders.dart';
 import '../../../models/sport_match.dart';
 import '../../../models/team_standing.dart';
 import '../../../utils/sound_effects.dart';
@@ -52,6 +53,12 @@ class LeagueHeader extends StatelessWidget {
     required this.league,
     required this.teamCount,
     this.subtitle,
+    this.seasons = const [],
+    this.selectedSeasonYear,
+    this.onSeasonSelected,
+    this.followed = false,
+    this.followBusy = false,
+    this.onToggleFollow,
     super.key,
   });
 
@@ -61,6 +68,12 @@ class LeagueHeader extends StatelessWidget {
   /// Overrides the default "N TEAMS · SEASON STANDINGS" strapline, e.g. with
   /// the live season label from the feed.
   final String? subtitle;
+  final List<LeagueSeasonOption> seasons;
+  final int? selectedSeasonYear;
+  final ValueChanged<int>? onSeasonSelected;
+  final bool followed;
+  final bool followBusy;
+  final VoidCallback? onToggleFollow;
 
   @override
   Widget build(BuildContext context) {
@@ -103,25 +116,208 @@ class LeagueHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                league.name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Cyber.display(
-                  19,
-                  color: Colors.white,
-                  letterSpacing: 0.4,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      league.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Cyber.display(
+                        19,
+                        color: Colors.white,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                  ),
+                  if (onToggleFollow != null) ...[
+                    const SizedBox(width: 8),
+                    _LeagueFollowButton(
+                      followed: followed,
+                      busy: followBusy,
+                      onTap: onToggleFollow!,
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 8),
+              if (seasons.isNotEmpty)
+                _LeagueSeasonMenu(
+                  seasons: seasons,
+                  selectedYear: selectedSeasonYear,
+                  accent: accent,
+                  onSelected: onSeasonSelected,
+                )
+              else
+                Text(
+                  subtitle ?? '$teamCount TEAMS // SEASON STANDINGS',
+                  style: Cyber.label(
+                    10,
+                    color: Cyber.muted,
+                    letterSpacing: 1.2,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle ?? '$teamCount TEAMS // SEASON STANDINGS',
-                style: Cyber.label(10, color: Cyber.muted, letterSpacing: 1.2),
-              ),
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+class _LeagueSeasonMenu extends StatelessWidget {
+  const _LeagueSeasonMenu({
+    required this.seasons,
+    required this.selectedYear,
+    required this.accent,
+    required this.onSelected,
+  });
+
+  final List<LeagueSeasonOption> seasons;
+  final int? selectedYear;
+  final Color accent;
+  final ValueChanged<int>? onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = seasons.firstWhere(
+      (season) => season.year == selectedYear,
+      orElse: () => seasons.first,
+    );
+    return Semantics(
+      button: true,
+      label: 'Select season, ${selected.shortLabel}',
+      child: PopupMenuButton<int>(
+        enabled: onSelected != null && seasons.length > 1,
+        color: Cyber.panel2,
+        elevation: 10,
+        shape: const BeveledRectangleBorder(
+          side: BorderSide(color: Cyber.line),
+          borderRadius: BorderRadius.all(Radius.circular(8)),
+        ),
+        onSelected: onSelected,
+        itemBuilder: (context) => [
+          for (final season in seasons)
+            PopupMenuItem<int>(
+              value: season.year,
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 18,
+                    child: season.year == selectedYear
+                        ? Icon(Icons.check, size: 15, color: accent)
+                        : null,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    season.shortLabel,
+                    style: Cyber.display(
+                      11,
+                      color: season.year == selectedYear
+                          ? accent
+                          : Colors.white,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  if (season.isCurrent) ...[
+                    const Spacer(),
+                    Text('LIVE', style: Cyber.label(8, color: Cyber.cyan)),
+                  ],
+                ],
+              ),
+            ),
+        ],
+        child: ClipPath(
+          clipper: const HudChamferClipper(bigCut: 8, smallCut: 3),
+          child: Container(
+            height: 30,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(
+              color: Cyber.panel,
+              border: Border.all(color: accent.withValues(alpha: 0.62)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  selected.shortLabel,
+                  style: Cyber.display(10, color: accent, letterSpacing: 0.8),
+                ),
+                const SizedBox(width: 6),
+                Icon(Icons.expand_more, color: accent, size: 16),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LeagueFollowButton extends StatelessWidget {
+  const _LeagueFollowButton({
+    required this.followed,
+    required this.busy,
+    required this.onTap,
+  });
+
+  final bool followed;
+  final bool busy;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = followed ? Cyber.success : Cyber.cyan;
+    return Semantics(
+      button: true,
+      enabled: !busy,
+      selected: followed,
+      label: followed ? 'Unfollow league' : 'Follow league',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: busy ? null : onTap,
+        child: ClipPath(
+          clipper: const HudChamferClipper(bigCut: 8, smallCut: 3),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            height: 30,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: followed ? 0.16 : 0.08),
+              border: Border.all(color: color.withValues(alpha: 0.72)),
+            ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 160),
+              child: Row(
+                key: ValueKey('$followed/$busy'),
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    busy
+                        ? Icons.more_horiz
+                        : followed
+                        ? Icons.check
+                        : Icons.add,
+                    size: 14,
+                    color: color,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    busy
+                        ? 'SAVING'
+                        : followed
+                        ? 'FOLLOWING'
+                        : 'FOLLOW',
+                    style: Cyber.label(8, color: color, letterSpacing: 0.8),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -337,10 +533,6 @@ class _DataRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rankColor = row.rank == 1 ? Cyber.gold : Cyber.muted;
-    final teamColor = paletteForTeam(
-      row.team,
-      competition: competition,
-    ).secondaryTextColor;
     final move = row.rankChange ?? 0;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -386,7 +578,7 @@ class _DataRow extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: Cyber.body(
                   13,
-                  color: teamColor,
+                  color: AppTheme.whiteColor,
                   weight: FontWeight.w700,
                   height: 1,
                 ),

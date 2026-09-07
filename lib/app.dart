@@ -101,7 +101,7 @@ class PitchDuelApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
-        title: 'Pitch Duel',
+        title: 'StatOz',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
         // Watch the three source blocs and float the achievement-unlock reveal

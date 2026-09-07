@@ -23,6 +23,11 @@ class MatchSummaryHeader extends StatelessWidget {
   }
 }
 
+const double _crestSize = 44;
+
+/// Distance from the screen edge to the header frame and to each team block.
+const double _edgeInset = 16;
+
 class _TeamMatchSummaryHeader extends StatelessWidget {
   const _TeamMatchSummaryHeader({required this.match});
 
@@ -47,11 +52,11 @@ class _TeamMatchSummaryHeader extends StatelessWidget {
       competition: match.leagueId,
     ).secondaryTextColor;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      padding: const EdgeInsets.fromLTRB(_edgeInset, 0, _edgeInset, 12),
       child: CustomPaint(
         painter: const _HeaderBracketsPainter(),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 10, 8, 0),
+          padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
           child: Column(
             children: [
               Text(
@@ -64,71 +69,63 @@ class _TeamMatchSummaryHeader extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TeamLogo(
-                    team: match.home,
-                    width: 44,
-                    height: 44,
-                    cutBottomRight: true,
-                    sport: match.sport,
-                    competition: match.leagueId,
-                  ),
-                  const SizedBox(width: 10),
                   Expanded(
-                    child: _TeamDetails(
+                    child: _TeamIdentity(
                       team: match.home,
                       score: match.homeScore,
                       sport: match.sport,
+                      competition: match.leagueId,
+                      cutBottomRight: true,
                     ),
                   ),
                   if (match.sport != Sport.cricket)
                     SizedBox(
                       width: match.hasScore ? 72 : 22,
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          _headerScoreText(match),
-                          maxLines: 1,
-                          style:
-                              Cyber.display(
-                                match.hasScore ? 16 : 17,
-                                color: match.hasScore
-                                    ? Colors.white
-                                    : Cyber.muted,
-                                letterSpacing: 0,
-                              ).copyWith(
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures(),
-                                ],
-                              ),
+                      height: _crestSize,
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            _headerScoreText(match),
+                            maxLines: 1,
+                            style:
+                                Cyber.display(
+                                  match.hasScore ? 16 : 17,
+                                  color: match.hasScore
+                                      ? Colors.white
+                                      : Cyber.muted,
+                                  letterSpacing: 0,
+                                ).copyWith(
+                                  fontFeatures: const [
+                                    FontFeature.tabularFigures(),
+                                  ],
+                                ),
+                          ),
                         ),
                       ),
                     )
                   else
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Text(
-                        'vs',
-                        style: Cyber.display(12, color: Cyber.muted),
+                    SizedBox(
+                      width: 40,
+                      height: _crestSize,
+                      child: Center(
+                        child: Text(
+                          'vs',
+                          style: Cyber.display(12, color: Cyber.muted),
+                        ),
                       ),
                     ),
                   Expanded(
-                    child: _TeamDetails(
+                    child: _TeamIdentity(
                       team: match.away,
                       score: match.awayScore,
                       sport: match.sport,
+                      competition: match.leagueId,
+                      cutBottomRight: false,
                       alignEnd: true,
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  TeamLogo(
-                    team: match.away,
-                    width: 44,
-                    height: 44,
-                    cutBottomRight: false,
-                    sport: match.sport,
-                    competition: match.leagueId,
                   ),
                 ],
               ),
@@ -148,47 +145,127 @@ class _TeamMatchSummaryHeader extends StatelessWidget {
   }
 }
 
-class _TeamDetails extends StatelessWidget {
-  const _TeamDetails({
+/// Crest above the club name, so each side of the scoreline reads as one
+/// stacked identity block instead of a logo with the name floating beside it.
+///
+/// The block hugs its own outer edge of the header — home to the left, away to
+/// the right (via [alignEnd]) — so both crests sit [_edgeInset] from the screen
+/// edge and the score reads between them.
+class _TeamIdentity extends StatelessWidget {
+  const _TeamIdentity({
     required this.team,
     required this.score,
     required this.sport,
+    required this.competition,
+    required this.cutBottomRight,
     this.alignEnd = false,
   });
 
   final SportTeam team;
   final String? score;
   final Sport sport;
+  final String competition;
+  final bool cutBottomRight;
   final bool alignEnd;
 
   @override
   Widget build(BuildContext context) {
+    final align = alignEnd ? TextAlign.end : TextAlign.start;
+    // Cricket carries its runs/wickets beside the crest and the innings
+    // qualifier (overs, chase target) as a muted line under the club name, the
+    // same split the SCORECARD innings header uses.
+    final innings = sport == Sport.cricket
+        ? _splitCricketScore(score)
+        : const (runs: null, detail: null);
+    final crest = TeamLogo(
+      team: team,
+      width: _crestSize,
+      height: _crestSize,
+      cutBottomRight: cutBottomRight,
+      sport: sport,
+      competition: competition,
+    );
+    final runs = innings.runs;
+
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: alignEnd
           ? CrossAxisAlignment.end
           : CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        if (runs == null)
+          crest
+        else
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!alignEnd) crest,
+              if (!alignEnd) const SizedBox(width: 10),
+              Flexible(
+                child: Text(
+                  runs,
+                  textAlign: align,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style:
+                      Cyber.display(
+                        15,
+                        color: Colors.white,
+                        letterSpacing: 0,
+                      ).copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                ),
+              ),
+              if (alignEnd) const SizedBox(width: 10),
+              if (alignEnd) crest,
+            ],
+          ),
+        const SizedBox(height: 8),
         Text(
           team.name,
-          textAlign: alignEnd ? TextAlign.end : TextAlign.start,
+          textAlign: align,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: Cyber.body(14, color: Colors.white, weight: FontWeight.w800),
+          softWrap: false,
+          style: Cyber.body(13, color: Colors.white, weight: FontWeight.w800),
         ),
-        if (sport == Sport.cricket && score != null && score!.isNotEmpty) ...[
-          const SizedBox(height: 2),
+        if (innings.detail != null) ...[
+          const SizedBox(height: 4),
           Text(
-            score!,
-            textAlign: alignEnd ? TextAlign.end : TextAlign.start,
+            innings.detail!.toUpperCase(),
+            textAlign: align,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: Cyber.display(12, color: Colors.white, letterSpacing: 0),
+            style:
+                Cyber.label(
+                  8.5,
+                  color: Cyber.muted,
+                  letterSpacing: 1,
+                ).copyWith(
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
           ),
         ],
       ],
     );
   }
+}
+
+/// Splits a cricket score such as `161/5 (18/20 ov, target 156)` into the
+/// runs/wickets figure shown beside the crest and the parenthesised innings
+/// qualifier shown under the club name. Either half may be absent.
+({String? runs, String? detail}) _splitCricketScore(String? score) {
+  final raw = score?.trim() ?? '';
+  if (raw.isEmpty) return const (runs: null, detail: null);
+  final open = raw.indexOf('(');
+  if (open < 0) return (runs: raw, detail: null);
+  final close = raw.lastIndexOf(')');
+  final detail = (close > open ? raw.substring(open + 1, close) : raw.substring(open + 1))
+      .trim();
+  final runs = raw.substring(0, open).trim();
+  if (runs.isEmpty) return (runs: raw, detail: null);
+  return (runs: runs, detail: detail.isEmpty ? null : detail);
 }
 
 class _GrandPrixSummaryHeader extends StatelessWidget {

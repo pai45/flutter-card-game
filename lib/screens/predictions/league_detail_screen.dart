@@ -9,6 +9,7 @@ import '../../blocs/picks/picks_state.dart';
 import '../../blocs/prediction/prediction_cubit.dart';
 import '../../blocs/prediction/prediction_state.dart';
 import '../../config/theme.dart';
+import '../../data/followable_leagues.dart';
 import '../../models/league.dart';
 import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
@@ -18,8 +19,10 @@ import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_filter_chips.dart';
 import '../../widgets/cyber/cyber_underline_tabs.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/team_logo.dart';
 import 'market_detail_screen.dart';
 import 'match_detail_screen.dart';
+import 'football_player_profile_screen.dart';
 import 'team_detail_screen.dart';
 import 'widgets/pick_market_card.dart';
 import 'widgets/pick_trade_sheet.dart';
@@ -58,9 +61,20 @@ class LeagueDetailScreen extends StatefulWidget {
 
 class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
   late _HubTab _tab = widget.openFixturesTab ? _HubTab.fixtures : _HubTab.table;
+  bool _followBusy = false;
 
   League get _league => widget.league;
   Color get _accent => _league.accent;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.openFixturesTab) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) context.read<LeagueStatsCubit>().ensureSeasonFixtures();
+      });
+    }
+  }
 
   void _openMatch(SportMatch match) {
     Navigator.of(context).push(
@@ -85,11 +99,98 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
     );
   }
 
+  void _openPlayerProfile(StatLeader leader, LeagueStatsSnapshot snapshot) {
+    playSound(SoundEffect.uiTap);
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => FootballPlayerProfileScreen(
+          league: _league,
+          leader: leader,
+          seasonYear: snapshot.seasonYear,
+        ),
+      ),
+    );
+  }
+
   void _selectTab(int index) {
     final next = _HubTab.values[index];
     if (next == _tab) return;
     HapticFeedback.selectionClick();
     setState(() => _tab = next);
+    if (next == _HubTab.fixtures || next == _HubTab.picks) {
+      context.read<LeagueStatsCubit>().ensureSeasonFixtures();
+    }
+  }
+
+  Future<void> _selectSeason(int year) async {
+    HapticFeedback.selectionClick();
+    await context.read<LeagueStatsCubit>().selectSeason(year);
+    if (!mounted) return;
+    if (_tab == _HubTab.fixtures || _tab == _HubTab.picks) {
+      await context.read<LeagueStatsCubit>().ensureSeasonFixtures();
+    }
+  }
+
+  Future<void> _toggleFollow(
+    FollowableLeague followable,
+    PredictionState prediction,
+  ) async {
+    if (_followBusy) return;
+    final leagueId = followable.league.id;
+    final followed = prediction.followedLeagueIds.contains(leagueId);
+    final favoriteId = prediction.favoriteTeams[leagueId];
+    if (followed && favoriteId != null) {
+      final favorite = followableTeam(leagueId, favoriteId);
+      final confirmed = await showCyberConfirmDialog(
+        context,
+        title: 'UNFOLLOW ${followable.league.shortCode}?',
+        message: favorite == null
+            ? 'This removes the league and its saved favourite club.'
+            : 'This also removes ${favorite.name} as your favourite club.',
+        confirmLabel: 'UNFOLLOW',
+        destructive: true,
+      );
+      if (!confirmed || !mounted) return;
+    }
+
+    setState(() => _followBusy = true);
+    HapticFeedback.mediumImpact();
+    try {
+      await context.read<PredictionCubit>().setLeagueFollowed(
+        leagueId,
+        !followed,
+      );
+      if (!mounted) return;
+      playSound(SoundEffect.uiTap);
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Cyber.panel2,
+            content: Text(
+              followed
+                  ? '${followable.league.shortCode} REMOVED FROM FOLLOWING'
+                  : '${followable.league.shortCode} ADDED TO FOLLOWING',
+              style: Cyber.label(9, color: Cyber.success, letterSpacing: 1.0),
+            ),
+          ),
+        );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Cyber.panel2,
+          content: Text(
+            'COULD NOT UPDATE FOLLOWING',
+            style: Cyber.label(9, color: Cyber.danger),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _followBusy = false);
+    }
   }
 
   @override
@@ -101,8 +202,12 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
           child: BlocBuilder<PredictionCubit, PredictionState>(
             builder: (context, state) {
               final fixtures = state.fixtures
-                  .where((m) => m.leagueId == _league.id)
+                  .where((m) => _matchesLeague(m.leagueId))
                   .toList();
+              final followable = followableLeagueFor(_league);
+              final followed =
+                  followable != null &&
+                  state.followedLeagueIds.contains(followable.league.id);
 
               return BlocBuilder<LeagueStatsCubit, LeagueStatsState>(
                 builder: (context, stats) {
@@ -120,6 +225,16 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
                           league: _league,
                           teamCount: teamCount,
                           subtitle: _headerSubtitle(stats),
+                          seasons: stats.seasons,
+                          selectedSeasonYear: stats.selectedSeasonYear,
+                          onSeasonSelected: stats.seasons.length > 1
+                              ? _selectSeason
+                              : null,
+                          followed: followed,
+                          followBusy: _followBusy,
+                          onToggleFollow: followable == null
+                              ? null
+                              : () => _toggleFollow(followable, state),
                         ),
                       ),
                       CyberUnderlineTabs(
@@ -158,6 +273,13 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
     );
   }
 
+  bool _matchesLeague(String leagueId) {
+    if (leagueId == _league.id) return true;
+    final target = followableLeagueFor(_league);
+    final candidate = followableLeagueById(leagueId);
+    return target != null && identical(target, candidate);
+  }
+
   String? _headerSubtitle(LeagueStatsState stats) {
     final season = stats.snapshot.seasonLabel;
     if (season == null) return null;
@@ -170,6 +292,21 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
     List<SportMatch> fixtures,
     List<TeamStanding> fallback,
   ) {
+    if (stats.archiveUnavailable) {
+      return const CyberNoDataState(
+        key: ValueKey('archive-unavailable'),
+        icon: Icons.desktop_windows_outlined,
+        title: 'ARCHIVE UNAVAILABLE ON WEB',
+        message: 'Open Pitch Duel on mobile or desktop to load ESPN archives.',
+      );
+    }
+    final seasonFixtures = _mergeSeasonFixtures(stats, fixtures);
+    final followable = followableLeagueFor(_league);
+    final leagueIds = <String>{
+      _league.id,
+      if (followable != null) followable.league.id,
+      if (followable != null) ...followable.aliases,
+    };
     return switch (_tab) {
       _HubTab.table => _TableTab(
         key: const ValueKey('hub-table'),
@@ -183,6 +320,7 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
         key: const ValueKey('hub-leaders'),
         stats: stats,
         accent: _accent,
+        onTapPlayer: (leader) => _openPlayerProfile(leader, stats.snapshot),
       ),
       _HubTab.stats => _StatsTab(
         key: const ValueKey('hub-stats'),
@@ -192,15 +330,55 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
       _HubTab.fixtures => _FixturesTab(
         key: const ValueKey('hub-fixtures'),
         state: state,
-        fixtures: fixtures,
+        stats: stats,
+        fixtures: seasonFixtures,
         onOpenMatch: _openMatch,
+        onRetry: context.read<LeagueStatsCubit>().ensureSeasonFixtures,
       ),
       _HubTab.picks => _PicksTab(
         key: const ValueKey('hub-picks'),
-        leagueId: _league.id,
+        leagueIds: leagueIds,
+        stats: stats,
+        fixtures: seasonFixtures,
         onOpenMarket: _openPickMarket,
+        onOpenMatch: _openMatch,
+        onRetry: context.read<LeagueStatsCubit>().ensureSeasonFixtures,
       ),
     };
+  }
+
+  List<SportMatch> _mergeSeasonFixtures(
+    LeagueStatsState stats,
+    List<SportMatch> rolling,
+  ) {
+    final byId = <String, SportMatch>{
+      for (final match in stats.seasonFixtures) match.id: match,
+    };
+    if (stats.isCurrentSeason) {
+      for (final match in rolling) {
+        byId[match.id] = match;
+      }
+    }
+    if (byId.isEmpty && stats.isCurrentSeason) return rolling;
+    final matches = byId.values.toList();
+    matches.sort((a, b) {
+      if (!stats.isCurrentSeason) return b.kickoff.compareTo(a.kickoff);
+      final aRank = a.status == MatchStatus.live
+          ? 0
+          : a.status == MatchStatus.upcoming
+          ? 1
+          : 2;
+      final bRank = b.status == MatchStatus.live
+          ? 0
+          : b.status == MatchStatus.upcoming
+          ? 1
+          : 2;
+      if (aRank != bRank) return aRank.compareTo(bRank);
+      return aRank == 2
+          ? b.kickoff.compareTo(a.kickoff)
+          : a.kickoff.compareTo(b.kickoff);
+    });
+    return matches;
   }
 }
 
@@ -287,10 +465,16 @@ class _TableTab extends StatelessWidget {
 
 /// Leaders tab: horizontally scrolling category tabs over one [StatLeaderboard].
 class _LeadersTab extends StatelessWidget {
-  const _LeadersTab({required this.stats, required this.accent, super.key});
+  const _LeadersTab({
+    required this.stats,
+    required this.accent,
+    required this.onTapPlayer,
+    super.key,
+  });
 
   final LeagueStatsState stats;
   final Color accent;
+  final ValueChanged<StatLeader> onTapPlayer;
 
   @override
   Widget build(BuildContext context) {
@@ -333,6 +517,7 @@ class _LeadersTab extends StatelessWidget {
                 category: category,
                 leagueAccent: accent,
                 resolving: stats.resolvingCategory,
+                onTapLeader: onTapPlayer,
               ),
             ],
           ),
@@ -394,11 +579,11 @@ class _StatsTabState extends State<_StatsTab> {
     }
 
     final snapshot = stats.snapshot;
-    final groupIndex = stats.statGroupIndex.clamp(
-      0,
-      footballStatGroups.length - 1,
-    );
-    final group = footballStatGroups[groupIndex];
+    // Cricket and football share no stat keys, so the board set follows the
+    // package that filled the hub rather than being hardcoded to football.
+    final statGroups = statGroupsFor(snapshot.statDefinitions);
+    final groupIndex = stats.statGroupIndex.clamp(0, statGroups.length - 1);
+    final group = statGroups[groupIndex];
     final groupAccent = group.accent ?? accent;
 
     final statIndex = stats.statIndex.clamp(0, group.boards.length - 1);
@@ -412,7 +597,7 @@ class _StatsTabState extends State<_StatsTab> {
         // icon-only, and a second icon row under it reads as chrome rather
         // than as a choice. This also matches the LEADERS sub-tabs.
         CyberUnderlineTabs(
-          labels: [for (final g in footballStatGroups) g.label],
+          labels: [for (final g in statGroups) g.label],
           activeIndex: groupIndex,
           accent: groupAccent,
           height: 44,
@@ -518,45 +703,76 @@ class _StatPulseStrip extends StatelessWidget {
 class _FixturesTab extends StatelessWidget {
   const _FixturesTab({
     required this.state,
+    required this.stats,
     required this.fixtures,
     required this.onOpenMatch,
+    required this.onRetry,
     super.key,
   });
 
   final PredictionState state;
+  final LeagueStatsState stats;
   final List<SportMatch> fixtures;
   final ValueChanged<SportMatch> onOpenMatch;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
-    if (fixtures.isEmpty) {
-      return const CyberNoDataState(
-        icon: Icons.event_busy_outlined,
-        title: 'NO FIXTURES',
-        message: 'No games scheduled for this league right now.',
+    if (!stats.isCurrentSeason &&
+        stats.fixturesStatus == LeagueFixturesStatus.loading) {
+      return const _HubLoader(label: 'SYNCING SEASON SCHEDULE');
+    }
+    if (stats.fixturesStatus == LeagueFixturesStatus.error &&
+        fixtures.isEmpty) {
+      return CyberNoDataState(
+        icon: Icons.sync_problem_outlined,
+        title: 'SCHEDULE LINK LOST',
+        message: 'The selected season could not be loaded.',
+        actionLabel: 'RETRY SYNC',
+        actionIcon: Icons.refresh,
+        onAction: onRetry,
       );
     }
-    return ListView(
+    if (fixtures.isEmpty) {
+      return CyberNoDataState(
+        icon: Icons.event_busy_outlined,
+        title: 'NO FIXTURES',
+        message: stats.isCurrentSeason
+            ? 'No games scheduled for this league right now.'
+            : 'No matches were returned for this season.',
+      );
+    }
+    return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-      children: [
-        const _Heading(label: 'PREDICTION CENTER'),
-        const SizedBox(height: 12),
-        for (final match in fixtures) ...[
-          MatchPredictionCard(
+      itemCount: fixtures.length + 1,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _Heading(
+              label: stats.isCurrentSeason
+                  ? 'PREDICTION CENTER'
+                  : 'SEASON MATCH ARCHIVE',
+            ),
+          );
+        }
+        final match = fixtures[index - 1];
+        final prediction = state.predictionSummaryForMatch(match.id);
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: MatchPredictionCard(
             match: match,
-            prediction: state.predictionSummaryForMatch(match.id),
+            prediction: prediction,
             quiz:
                 state.quizzes[predictionStorageKey(
                   match.id,
-                  state.predictionSummaryForMatch(match.id)?.quizId ??
-                      kDefaultPredictionQuizId,
+                  prediction?.quizId ?? kDefaultPredictionQuizId,
                 )],
             favorite: state.favoriteSideFor(match),
             onTap: () => onOpenMatch(match),
           ),
-          const SizedBox(height: 12),
-        ],
-      ],
+        );
+      },
     );
   }
 }
@@ -564,20 +780,36 @@ class _FixturesTab extends StatelessWidget {
 /// Picks tab — the league's quick markets, unchanged in behaviour.
 class _PicksTab extends StatelessWidget {
   const _PicksTab({
-    required this.leagueId,
+    required this.leagueIds,
+    required this.stats,
+    required this.fixtures,
     required this.onOpenMarket,
+    required this.onOpenMatch,
+    required this.onRetry,
     super.key,
   });
 
-  final String leagueId;
+  final Set<String> leagueIds;
+  final LeagueStatsState stats;
+  final List<SportMatch> fixtures;
   final ValueChanged<String> onOpenMarket;
+  final ValueChanged<SportMatch> onOpenMatch;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
+    if (!stats.isCurrentSeason) {
+      return _HistoricalPickArchive(
+        fixtures: fixtures,
+        status: stats.fixturesStatus,
+        onOpenMatch: onOpenMatch,
+        onRetry: onRetry,
+      );
+    }
     return BlocBuilder<PicksCubit, PicksState>(
       builder: (context, picksState) {
         final markets = picksState.markets
-            .where((m) => m.leagueId == leagueId)
+            .where((m) => leagueIds.contains(m.leagueId))
             .toList();
         if (markets.isEmpty) {
           return const CyberNoDataState(
@@ -609,6 +841,190 @@ class _PicksTab extends StatelessWidget {
       },
     );
   }
+}
+
+class _HistoricalPickArchive extends StatelessWidget {
+  const _HistoricalPickArchive({
+    required this.fixtures,
+    required this.status,
+    required this.onOpenMatch,
+    required this.onRetry,
+  });
+
+  final List<SportMatch> fixtures;
+  final LeagueFixturesStatus status;
+  final ValueChanged<SportMatch> onOpenMatch;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    if (status == LeagueFixturesStatus.loading ||
+        status == LeagueFixturesStatus.idle) {
+      return const _HubLoader(label: 'UNLOCKING RESULT ARCHIVE');
+    }
+    if (status == LeagueFixturesStatus.error) {
+      return CyberNoDataState(
+        icon: Icons.sync_problem_outlined,
+        title: 'RESULT ARCHIVE OFFLINE',
+        message: 'Final scores for this season could not be loaded.',
+        actionLabel: 'RETRY SYNC',
+        actionIcon: Icons.refresh,
+        onAction: onRetry,
+      );
+    }
+    final results =
+        fixtures
+            .where(
+              (match) => match.status == MatchStatus.finished && match.hasScore,
+            )
+            .toList()
+          ..sort((a, b) => b.kickoff.compareTo(a.kickoff));
+    if (results.isEmpty) {
+      return const CyberNoDataState(
+        icon: Icons.fact_check_outlined,
+        title: 'NO FINAL RESULTS',
+        message: 'This season has no completed score records yet.',
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+      itemCount: results.length + 1,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: _Heading(label: 'READ-ONLY RESULT ARCHIVE'),
+          );
+        }
+        final match = results[index - 1];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: _ArchivedPickResultCard(
+            match: match,
+            onTap: () => onOpenMatch(match),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ArchivedPickResultCard extends StatelessWidget {
+  const _ArchivedPickResultCard({required this.match, required this.onTap});
+
+  final SportMatch match;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final home = int.tryParse(match.homeScore ?? '');
+    final away = int.tryParse(match.awayScore ?? '');
+    final result = home == null || away == null
+        ? 'FINAL'
+        : home == away
+        ? 'DRAW'
+        : home > away
+        ? '${match.home.shortName} WIN'
+        : '${match.away.shortName} WIN';
+    return Semantics(
+      button: true,
+      label:
+          '${match.home.name} ${match.homeScore}, ${match.away.name} ${match.awayScore}, $result',
+      child: PressableScale(
+        onTap: onTap,
+        child: CyberPanel(
+          accent: Cyber.line,
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  const CyberStatusPill(
+                    label: 'RESULT LOCKED',
+                    color: Cyber.success,
+                  ),
+                  const Spacer(),
+                  Text(
+                    _archiveDate(match.kickoff),
+                    style: Cyber.label(8, color: Cyber.muted),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(child: _ArchiveTeam(team: match.home)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Column(
+                      children: [
+                        Text(
+                          '${match.homeScore ?? '-'}  -  ${match.awayScore ?? '-'}',
+                          style: Cyber.display(20, color: Colors.white),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          result,
+                          style: Cyber.label(8, color: Cyber.success),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: _ArchiveTeam(team: match.away, alignEnd: true),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ArchiveTeam extends StatelessWidget {
+  const _ArchiveTeam({required this.team, this.alignEnd = false});
+
+  final SportTeam team;
+  final bool alignEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: alignEnd
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      children: [
+        TeamLogo(team: team, width: 34, height: 34),
+        const SizedBox(height: 6),
+        Text(
+          team.shortName,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Cyber.display(10, color: Colors.white),
+        ),
+      ],
+    );
+  }
+}
+
+String _archiveDate(DateTime value) {
+  const months = [
+    'JAN',
+    'FEB',
+    'MAR',
+    'APR',
+    'MAY',
+    'JUN',
+    'JUL',
+    'AUG',
+    'SEP',
+    'OCT',
+    'NOV',
+    'DEC',
+  ];
+  return '${value.day.toString().padLeft(2, '0')} ${months[value.month - 1]} ${value.year}';
 }
 
 class _HubLoader extends StatelessWidget {

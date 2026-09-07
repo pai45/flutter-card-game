@@ -48,9 +48,9 @@ class FootballMatchPackageService {
         : MatchStatus.upcoming;
     final winner = _nullableString(score['winner']);
     // Hoisted once: every player's `stats` array is positional against this.
-    final statKeys = _list(json['playerStatKeys'])
-        .map((key) => key.toString())
-        .toList(growable: false);
+    final statKeys = _list(
+      json['playerStatKeys'],
+    ).map((key) => key.toString()).toList(growable: false);
 
     return SportMatch(
       id: bundledMatchId,
@@ -153,7 +153,10 @@ class FootballMatchPackageService {
       if (x == 0 && y == 0) continue;
 
       final players = _list(item['players'])
-          .map((player) => player is Map ? _string(player['name']) : _string(player))
+          .map(
+            (player) =>
+                player is Map ? _string(player['name']) : _string(player),
+          )
           .where((name) => name.isNotEmpty)
           .toList(growable: false);
       final text = _string(item['text']);
@@ -163,7 +166,8 @@ class FootballMatchPackageService {
         FootballShot(
           playId: _nullableString(item['playId']) ?? '${shots.length}',
           minuteLabel: minuteLabel,
-          minute: int.tryParse(RegExp(r'\d+').stringMatch(minuteLabel) ?? '') ?? 0,
+          minute:
+              int.tryParse(RegExp(r'\d+').stringMatch(minuteLabel) ?? '') ?? 0,
           period: _int(item['period']),
           isHomeTeam: item['side'] == 'home',
           team: _string(item['team']),
@@ -244,7 +248,12 @@ class FootballMatchPackageService {
       })
       .toList(growable: false);
 
+  /// A half's closing score is the meaningful transition for a match report.
+  /// ESPN/package feeds can also publish a same-clock "start 2nd half" marker;
+  /// suppress it so EVENTS shows one clean `HALFTIME 1 - 2` rail instead of two
+  /// duplicate period markers with the identical score.
   List<MatchEvent> _parseTimeline(dynamic value) => _maps(value)
+      .where((event) => _string(event['kind']) != 'start-2nd-half')
       .map((event) {
         final kind = _string(event['kind']);
         final side = _nullableString(event['side']);

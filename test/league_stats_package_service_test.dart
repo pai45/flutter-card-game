@@ -48,39 +48,87 @@ void main() {
     }
   });
 
-  test('every league id the app can produce resolves to the right league', () async {
-    // The same competition reaches the hub under a curated id, the follow-list
-    // id, ESPN's scoreboard id and ESPN's standings id — plus its name.
-    const epl = ['eng.1', 'epl', 'EPL', '700', '23', 'English Premier League'];
-    const laliga = ['esp.1', 'laliga', 'LALIGA', '740', '15', 'La Liga'];
+  test(
+    'offline season catalog is labelled, current-first, and alias-safe',
+    () async {
+      final canonical = await LeagueStatsPackageService.seasonsFor('epl');
+      final espnAlias = await LeagueStatsPackageService.seasonsFor('eng.1');
 
-    for (final id in epl) {
-      final snapshot = await LeagueStatsPackageService.snapshotFor(id);
+      expect(canonical, isNotEmpty);
       expect(
-        snapshot?.seasonLabel,
-        contains('Premier League'),
-        reason: '$id should resolve to the EPL',
+        espnAlias.map((season) => season.year),
+        canonical.map((season) => season.year),
       );
-    }
-    for (final id in laliga) {
-      final snapshot = await LeagueStatsPackageService.snapshotFor(id);
-      expect(
-        snapshot?.seasonLabel,
-        contains('LALIGA'),
-        reason: '$id should resolve to LaLiga',
+      expect(canonical.first.isCurrent, isTrue);
+      expect(canonical.first.shortLabel, '2026-27');
+      for (var index = 1; index < canonical.length; index++) {
+        expect(canonical[index - 1].year, greaterThan(canonical[index].year));
+        expect(canonical[index].isCurrent, isFalse);
+      }
+    },
+  );
+
+  test(
+    'bundled current snapshot never leaks into a historical season',
+    () async {
+      final current = await LeagueStatsPackageService.snapshotFor(
+        'eng.1',
+        seasonYear: 2026,
       );
-    }
+      final historical = await LeagueStatsPackageService.snapshotFor(
+        'eng.1',
+        seasonYear: 2025,
+      );
 
-    // Name/short-code fallback for a league discovered under an id nobody
-    // predicted.
-    final byName = await LeagueStatsPackageService.snapshotFor(
-      '99999',
-      leagueName: 'Spanish LALIGA',
-    );
-    expect(byName?.seasonLabel, contains('LALIGA'));
+      expect(current, isNotNull);
+      expect(current!.seasonYear, 2026);
+      expect(historical, isNull);
+    },
+  );
 
-    expect(await LeagueStatsPackageService.snapshotFor('nba'), isNull);
-  });
+  test(
+    'every league id the app can produce resolves to the right league',
+    () async {
+      // The same competition reaches the hub under a curated id, the follow-list
+      // id, ESPN's scoreboard id and ESPN's standings id — plus its name.
+      const epl = [
+        'eng.1',
+        'epl',
+        'EPL',
+        '700',
+        '23',
+        'English Premier League',
+      ];
+      const laliga = ['esp.1', 'laliga', 'LALIGA', '740', '15', 'La Liga'];
+
+      for (final id in epl) {
+        final snapshot = await LeagueStatsPackageService.snapshotFor(id);
+        expect(
+          snapshot?.seasonLabel,
+          contains('Premier League'),
+          reason: '$id should resolve to the EPL',
+        );
+      }
+      for (final id in laliga) {
+        final snapshot = await LeagueStatsPackageService.snapshotFor(id);
+        expect(
+          snapshot?.seasonLabel,
+          contains('LALIGA'),
+          reason: '$id should resolve to LaLiga',
+        );
+      }
+
+      // Name/short-code fallback for a league discovered under an id nobody
+      // predicted.
+      final byName = await LeagueStatsPackageService.snapshotFor(
+        '99999',
+        leagueName: 'Spanish LALIGA',
+      );
+      expect(byName?.seasonLabel, contains('LALIGA'));
+
+      expect(await LeagueStatsPackageService.snapshotFor('nba'), isNull);
+    },
+  );
 
   test('every curated STATS board resolves and ranks correctly', () async {
     final snapshot = await LeagueStatsPackageService.snapshotFor('eng.1');
@@ -119,54 +167,57 @@ void main() {
     }
   });
 
-  test('a live snapshot layers over the package without losing team stats', () async {
-    final bundled = await LeagueStatsPackageService.snapshotFor('eng.1');
-    expect(bundled, isNotNull);
+  test(
+    'a live snapshot layers over the package without losing team stats',
+    () async {
+      final bundled = await LeagueStatsPackageService.snapshotFor('eng.1');
+      expect(bundled, isNotNull);
 
-    // A live pass that refreshed the table but carries no team stats of its
-    // own — the shape every real ESPN refresh has.
-    final live = LeagueStatsSnapshot(
-      groups: [
-        StandingsGroup(
-          label: '',
-          rows: [
-            TeamStanding(
-              team: const SportTeam(
-                id: '359',
-                name: 'Arsenal',
-                shortName: 'ARS',
-                color: Color(0xffef0107),
+      // A live pass that refreshed the table but carries no team stats of its
+      // own — the shape every real ESPN refresh has.
+      final live = LeagueStatsSnapshot(
+        groups: [
+          StandingsGroup(
+            label: '',
+            rows: [
+              TeamStanding(
+                team: const SportTeam(
+                  id: '359',
+                  name: 'Arsenal',
+                  shortName: 'ARS',
+                  color: Color(0xffef0107),
+                ),
+                rank: 1,
+                played: 4,
+                won: 4,
+                lost: 0,
+                points: 12,
+                diffLabel: '+9',
+                form: '',
               ),
-              rank: 1,
-              played: 4,
-              won: 4,
-              lost: 0,
-              points: 12,
-              diffLabel: '+9',
-              form: '',
-            ),
-          ],
-        ),
-      ],
-      categories: const [],
-      seasonLabel: '2026-27 LIVE',
-    );
+            ],
+          ),
+        ],
+        categories: const [],
+        seasonLabel: '2026-27 LIVE',
+      );
 
-    final merged = bundled!.mergedWith(live);
-    // The package is the only source of team stats, so they must survive.
-    expect(merged.teamStats, hasLength(20));
-    expect(merged.statDefinitions, hasLength(112));
-    // The live table replaces the package's.
-    expect(merged.allRows, hasLength(1));
-    expect(merged.seasonLabel, '2026-27 LIVE');
-    // Live carried no leaderboards, so the package's are kept rather than
-    // blanking the LEADERS tab mid-refresh.
-    expect(merged.categories, isNotEmpty);
+      final merged = bundled!.mergedWith(live);
+      // The package is the only source of team stats, so they must survive.
+      expect(merged.teamStats, hasLength(20));
+      expect(merged.statDefinitions, hasLength(112));
+      // The live table replaces the package's.
+      expect(merged.allRows, hasLength(1));
+      expect(merged.seasonLabel, '2026-27 LIVE');
+      // Live carried no leaderboards, so the package's are kept rather than
+      // blanking the LEADERS tab mid-refresh.
+      expect(merged.categories, isNotEmpty);
 
-    // An entirely empty live result is ignored outright — a failed refresh
-    // must never downgrade a filled hub.
-    final ignored = bundled.mergedWith(LeagueStatsSnapshot.empty);
-    expect(ignored.allRows, hasLength(20));
-    expect(ignored.seasonLabel, bundled.seasonLabel);
-  });
+      // An entirely empty live result is ignored outright — a failed refresh
+      // must never downgrade a filled hub.
+      final ignored = bundled.mergedWith(LeagueStatsSnapshot.empty);
+      expect(ignored.allRows, hasLength(20));
+      expect(ignored.seasonLabel, bundled.seasonLabel);
+    },
+  );
 }

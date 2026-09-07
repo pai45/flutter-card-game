@@ -5,6 +5,7 @@ import '../../models/league.dart';
 import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
 import '../../models/team_standing.dart';
+import '../../data/followable_leagues.dart';
 import '../../services/prediction_repository.dart';
 import '../../services/quiz_archetypes.dart';
 import '../../services/secure_storage_service.dart';
@@ -221,6 +222,45 @@ class PredictionCubit extends Cubit<PredictionState> {
         favoriteTeams: favoriteTeams,
       ),
     );
+  }
+
+  /// Persists a league-hub FOLLOW/FOLLOWING change immediately. Following a
+  /// competition does not invent a favourite club; unfollowing removes any
+  /// favourite already scoped to that competition.
+  Future<void> setLeagueFollowed(String leagueId, bool followed) async {
+    final followable = followableLeagueById(leagueId);
+    final canonicalId = followable?.league.id ?? leagueId;
+    final identities = <String>{
+      leagueId,
+      canonicalId,
+      if (followable != null) ...followable.aliases,
+    };
+    final ids = [...state.followedLeagueIds];
+    final favorites = Map<String, String>.from(state.favoriteTeams);
+    ids.removeWhere((id) => identities.contains(id));
+    if (followed) {
+      ids.add(canonicalId);
+      String? existingFavorite;
+      for (final id in identities) {
+        existingFavorite ??= favorites[id];
+      }
+      for (final id in identities) {
+        if (id != canonicalId) favorites.remove(id);
+      }
+      if (existingFavorite != null) {
+        favorites[canonicalId] = existingFavorite;
+      }
+    } else {
+      for (final id in identities) {
+        favorites.remove(id);
+      }
+    }
+    await Future.wait([
+      _storage.saveFollowedLeagueIds(ids),
+      _storage.saveFavoriteTeams(favorites),
+    ]);
+    if (isClosed) return;
+    emit(state.copyWith(followedLeagueIds: ids, favoriteTeams: favorites));
   }
 
   Future<void> _loadLiveStandings(List<League> leagues) async {
