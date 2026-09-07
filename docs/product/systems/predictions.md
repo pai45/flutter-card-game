@@ -1,7 +1,7 @@
 # Predictions
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-06
+> **Last verified:** 2026-09-07
 > **Scope:** Fixture quiz discovery, submission/editing, boosters, lock lifecycle, XP settlement, and paid Scoreline contest
 
 ## Product Purpose
@@ -37,8 +37,20 @@ exactly; surrounding team-coded UI uses the generated `secondaryTextColor`,
 which clears WCAG AA against all standard dark StatOz surfaces. This applies to
 fixture and search cards, prediction controls and outcomes, legends, comparison
 bars, charts/maps, lineups, timelines, and team-derived frames. The persistent
-match-page summary header keeps both full team names white for a stable reading
-hierarchy; crests and the split score rail carry the team identity colour.
+match-page summary header stacks each team name directly beneath its own crest,
+so each side of the scoreline reads as a single identity block with the score
+centred between them on the crest line. Each block hugs its own outer edge, 16px
+from the screen edge, matching the header's corner-bracket frame — home left
+aligned, away right aligned. Team names render on one line and truncate with an
+ellipsis rather than wrapping, so the crest-to-name stack keeps a fixed height
+across fixtures. Both names stay white for a stable reading hierarchy, and crests
+and the split score rail carry the team identity colour. Cricket splits its
+innings score across that stack the way the SCORECARD innings header does: the
+runs/wickets figure sits beside the crest on the crest line (inside it, so the
+crest keeps the outer edge), and the parenthesised qualifier — overs faced and
+any chase target — becomes a muted uppercase line under the club name. An
+innings with no qualifier shows only the runs, and a fixture with no score shows
+only the crest and name.
 Status and reward semantics continue to take priority and team identity adds no
 persistent glow.
 
@@ -136,7 +148,10 @@ a pick market read as one surface.
 Football and cricket OVERVIEW begin directly at **MATCH INTEL**, and basketball
 at **GAME INTEL**, since the persistent match header already carries the fixture
 and score. The redundant overview match-pulse headers and their summary metrics
-are removed for all three sports. Cricket's INNINGS GRID is also omitted from
+are removed for all three sports. Football's MATCH INTEL panel lists VENUE and
+ATTENDANCE as two full-width stacked rows so long venue strings read in full,
+and it carries no winner/result line — the result already lives in the match
+header and the settlement surfaces. Cricket's INNINGS GRID is also omitted from
 OVERVIEW; innings detail remains in RACE and SCORECARD. Below, sections are
 separated by hairline headings rather than repeated telemetry panels, and each
 home-vs-away metric is a tappable market-style outcome row with a split meter.
@@ -193,6 +208,13 @@ scarcity. Players who did not come on are dimmed but stay tappable — their car
 is short and honest, and a dead tap target reads as a bug. Bench tiles behave the
 same way.
 
+The pitch behind the formation carries only real markings — outline, halfway
+line, centre circle, penalty and goal boxes. The decorative 32px blueprint grid
+was removed: the panel already sits on the app's textured background, so a
+second grid inside it was texture on texture and competed with both the markings
+and the player nodes. The basketball lineup board shares the painter and keeps
+its grid for now.
+
 Tapping one opens the **MATCH DOSSIER**, a bottom sheet that pages across the
 whole squad, so comparing two team-mates is a swipe rather than two taps and a
 scroll. Each page is:
@@ -247,6 +269,75 @@ commentary. Cricket's STATS navigation contains OVERVIEW, RACE, SCORECARD, and
 MATCH FEED; the standalone CHASE and SQUADS tabs are omitted. MATCH FEED uses one
 tab per batting team and open timeline rows rather than individual comment cards;
 an innings without published commentary receives its own contextual empty state.
+### IPL hub (league TABLE / LEADERS / STATS) — BUILT
+
+The IPL hub used to open on a six-team mock table with NO STAT LEADERS and NO
+CLUB STATS. It now shows the real 2026 season: a ten-team table with net run
+rate and a playoff cut line, nine leader boards, and four STATS board groups.
+
+Cricket cannot reach that data the way football does. ESPN's core API rejects
+the sport outright, so there is **no season leaders feed and no per-team
+statistics feed** — the two feeds the football hub is built on — and the site
+statistics endpoint 403s. Only standings works. Everything else is therefore
+**aggregated offline from all 74 match summaries of the season** into
+`assets/data/cricket-league-stats.json`, which makes the package the hub's only
+source rather than a first-render optimisation: there is nothing to layer over
+it, and no season archive to offer.
+
+- **TABLE** reuses `StandingsTable`'s existing cricket layout — P/W/L/NRR/PTS
+  instead of football's P/W/D/L/GD — which it selects when a row's `drawn` is
+  null. Net run rate carries its sign, and the top four are marked PLAYOFFS.
+- **LEADERS** carries nine boards: runs, wickets, sixes, fours, fifties, dot
+  balls, catches, strike rate and economy. The two rate boards state their
+  qualifying minimum in the headline (100 balls faced, 120 bowled), because a
+  rate board without one is topped by whoever bowled a single tidy over.
+- **STATS** uses `cricketStatGroups` — BATTING / BOWLING / FIELDING / EXTRAS —
+  picked from the package's own stat-dictionary categories rather than a sport
+  flag, so the hub does not need to know what sport it is showing. The two
+  sports share no stat keys at all, which is why one merged list would have
+  rendered a page of NOT PUBLISHED.
+
+### Player match dossier (cricket SCORECARD) — BUILT
+
+Every batting and bowling row on the cricket SCORECARD is a tap target, opening
+the same **MATCH DOSSIER** shell the football pitch uses. The join key was
+already there and unused: `CricketBatter.id` and `CricketBowler.id` have shipped
+since the package landed but nothing read them, and `CricketSquadPlayer` was
+decoded and rendered nowhere after the SQUADS tab was removed. The card pages
+across the tapped player's own squad.
+
+1. **Identity** — portrait, name, `ROLE // TEAM`, the headline figure
+   (`75* (42)` or `3/27`), CAPTAIN / KEEPER / NOT OUT pills, and the batting and
+   bowling styles ("LEFT-HAND BAT // RIGHT-ARM OFFBREAK") that had been decoded
+   and never shown.
+2. **Impact strip** — RUNS · BALLS · SR · BOUNDARY for a batter, WICKETS · RUNS
+   · ECONOMY · DOTS for a bowler, counting up on entry.
+3. **INNINGS TAPE** — the hero, with POWERPLAY / MIDDLE / DEATH splits and a
+   BAT/BOWL switch for an all-rounder.
+4. **MATCH SHEET** — ESPN's own numbers as pills grouped BATTING / BOWLING /
+   FIELDING. A board is dropped entirely unless the player played that way, and
+   the four figures already in the impact strip are not repeated.
+
+**The tape is a sequence, not a map, and that is a data constraint.** ESPN
+publishes no coordinates for cricket at all — no wagon wheel, no pitch map, no
+line and length — and the core plays feed that gives football its coordinates
+does not exist for the sport. What it does publish is every delivery with the
+batter and bowler named, so a batter's tape is one chip per ball in bowling
+order (dot hollow and muted, runs cyan, four lime, six amber, wicket in danger
+and the only glow), and a bowler's is over-by-over spell bars. Both stagger in
+ball by ball on open, replaying on every swipe.
+
+Like the football heatmap ramp, **the tape's colours are semantic rather than
+team-keyed**: a club whose accent is red or gold would otherwise render an
+ordinary single as an alert and a tidy over as a warning. Team identity lives in
+the panel border and the headline figure.
+
+Data splits by cost, as football's does. The 46-stat sheet rides on the summary
+response the scorecard already needs, so it is parsed on the live path and every
+cricket fixture gets a card; ball-by-ball is a separate request and is baked into
+the bundled IPL final only, with live cards showing a "no ball-by-ball" state and
+the full stat sheet. See `data/ipl-match-player-field-inventory.md`.
+
 SCORECARD uses a cut-corner innings control and a compact innings command panel,
 then separates batting, partnership and bowling figures with open HUD rails and
 chamfered data tables. The active innings and score own cyan emphasis, while top
@@ -258,7 +349,9 @@ only its brief line reveal.
 
 Football EVENTS and COMMENTARY use open log rows without individual panel fills
 or four-sided borders. Event rows retain their team-colour timeline rail and
-semantic icon, while commentary retains its minute/sequence divider.
+semantic icon, while commentary retains its minute/sequence divider. At the
+interval, EVENTS keeps only the `HALFTIME` score marker; the same-clock `START
+2ND HALF` feed marker is intentionally suppressed as redundant.
 
 ## Visible States
 
@@ -371,6 +464,9 @@ tabs: **TABLE**, **LEADERS**, **STATS**, **GAMES**, and **PICKS**.
 The persistent league lockup keeps its subtitle to the compact season token
 only (for example, `2026-27`). The league name already owns the primary line,
 so duplicated competition text and team count do not compete for header space.
+In the TABLE standings, club names stay white for a consistent readable text
+hierarchy; club identity colour remains on the crest rather than tinting the
+row label.
 
 ### Where the data comes from
 
@@ -404,6 +500,62 @@ the hub as `eng.1` (curated repository league), `epl` (follow list), `700`
 (ESPN scoreboard) or `23` (ESPN standings), and league name and short code are
 consulted as a fallback. Before this, the id mismatch meant the EPL hub rendered
 `0 TEAMS` with empty TABLE and LEADERS tabs.
+
+### Season selection, games, and archive
+
+**BUILT:** ESPN-backed football league hubs expose a compact season selector in
+the existing league lockup. Each route starts on the current campaign; changing
+the year resets local board selections and makes TABLE, LEADERS, STATS, GAMES,
+PICKS, and player season dossiers read from that one selected snapshot. Requests
+are generation-guarded so a slow older season cannot overwrite a newer choice.
+Club statistics and the complete match calendar stay lazy until their tabs need
+them, and every cache includes the season year.
+
+Season metadata comes from ESPN core and is backed by the lightweight bundled
+`assets/data/football-league-seasons.json`, keeping the selector populated
+offline. Historical standings use `season={year}` and leaderboards use ESPN core.
+The site statistics response is never trusted for a requested historical year
+because ESPN returns its current campaign there. A season schedule joins the
+selected start year and following calendar year, filters on each event's embedded
+ESPN season year, and deduplicates event IDs. For the current campaign, the app's
+rolling fixture feed replaces matching archive events so LIVE state remains the
+richest available copy.
+
+PICKS remains tradable only for the current season. A historical season becomes
+a clearly labelled, read-only result archive built from final scores: it contains
+no generated price, buy action, stake, or wallet mutation. Flutter web retains
+the bundled current campaign and reports that archive data requires mobile or
+desktop because ESPN blocks browser JSON requests and the product has no proxy.
+
+The same header can FOLLOW or UNFOLLOW a supported league. The action persists
+immediately through prediction storage and never invents a favourite club.
+Unfollowing a league that owns a favourite club requires confirmation and removes
+that favourite; follow aliases resolve to the canonical stored league identity.
+
+### Player season dossier
+
+**BUILT:** Every player plate in **LEADERS** opens a full-screen player season
+dossier. It begins with the bundled leaderboard identity so the route opens
+instantly, then lazily requests ESPN's public core athlete profile and matching
+regular-season stat split for the exact `seasonYear` carried by the leaderboard.
+The dossier presents verified bio intel (position, shirt, age/date of birth,
+height, weight, citizenship and active status), a compact GOALS / ASSISTS / APPS
+/ MINUTES impact strip, and expandable ESPN stat families for ATTACK, DEFENCE,
+GENERAL and KEEPING. Non-zero active signals appear first; the player can then
+unfold the complete raw ESPN family.
+
+This is a scouting moment, not a static admin profile: the identity plate is the
+one live/glowing focal point, `SCOUT COMPLETE` confirms a loaded scan, and the
+remaining intelligence stays in calm cut-corner data surfaces. The screen never
+fabricates fields ESPN does not send. Preferred foot, contract end, transfer
+value and a reliable soccer headshot are intentionally absent; a jersey/flag
+identity glyph replaces a broken portrait. If the public feed is unavailable
+(including browser CORS restrictions), the leaderboard identity remains visible
+with a clear cached-data notice rather than a blank route.
+
+The SCOUTING REPORT deliberately has no enclosing panel: its independent
+cut-corner stat tiles carry the information hierarchy without adding a second,
+heavy box around the report.
 
 ### STATS tab
 
@@ -472,8 +624,10 @@ Progression, wallet, ledgers, streaks, and achievements persist in their shared 
 - [`lib/screens/predictions/widgets/cricket_match_stats_view.dart`](../../../lib/screens/predictions/widgets/cricket_match_stats_view.dart)
 - [`lib/screens/predictions/trending_hub_catalog.dart`](../../../lib/screens/predictions/trending_hub_catalog.dart)
 - [`lib/screens/predictions/league_detail_screen.dart`](../../../lib/screens/predictions/league_detail_screen.dart)
+- [`lib/screens/predictions/football_player_profile_screen.dart`](../../../lib/screens/predictions/football_player_profile_screen.dart)
 - [`lib/screens/predictions/widgets/team_stat_board.dart`](../../../lib/screens/predictions/widgets/team_stat_board.dart)
 - [`lib/services/league_stats_package_service.dart`](../../../lib/services/league_stats_package_service.dart)
+- [`lib/services/espn_football_player_profile_service.dart`](../../../lib/services/espn_football_player_profile_service.dart)
 - [`lib/blocs/league_stats/league_stats_cubit.dart`](../../../lib/blocs/league_stats/league_stats_cubit.dart)
 
 ## Tests

@@ -243,6 +243,7 @@ class SportMatch {
     this.footballMomentum,
     this.basketballDetails,
     this.cricketDetails,
+    this.cricketSquads,
     this.f1Sessions,
     this.f1DriverStandings,
     this.f1WeekendEndDate,
@@ -300,6 +301,11 @@ class SportMatch {
   final BasketballMatchDetails? basketballDetails;
   final CricketMatchDetails? cricketDetails;
 
+  /// Squads with per-player match stats, for fixtures that have them but no
+  /// full [cricketDetails] — the live ESPN path, which produces a stat sheet
+  /// but not the narrative blocks the bundled package carries.
+  final List<CricketTeamSquad>? cricketSquads;
+
   /// F1 Driver Standings.
   final List<String>? f1DriverStandings;
 
@@ -344,6 +350,7 @@ class SportMatch {
     FootballMomentum? footballMomentum,
     BasketballMatchDetails? basketballDetails,
     CricketMatchDetails? cricketDetails,
+    List<CricketTeamSquad>? cricketSquads,
     List<F1SessionResult>? f1Sessions,
     List<String>? f1DriverStandings,
     DateTime? f1WeekendEndDate,
@@ -391,6 +398,7 @@ class SportMatch {
     basketballDetails: clearBasketballDetails
         ? null
         : basketballDetails ?? this.basketballDetails,
+    cricketSquads: cricketSquads ?? this.cricketSquads,
     cricketDetails: clearCricketDetails
         ? null
         : cricketDetails ?? this.cricketDetails,

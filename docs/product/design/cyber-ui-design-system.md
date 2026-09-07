@@ -1,7 +1,7 @@
 # Cyber UI Design System
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-06
+> **Last verified:** 2026-09-07
 > **Scope:** Theme tokens, typography, shape language, glow hierarchy, layout, and shared cyber components
 
 ## Product Purpose
@@ -27,8 +27,14 @@ clear state/result feedback, and a reward/next-action handoff.
 - Dark theme only; use `AppTheme`/`Cyber` tokens rather than raw screen-local colors.
 - Orbitron is the display/HUD face; Onest is the body and utility face. Numeric
   HUD values use tabular figures where comparison matters.
-- Panels are flat and layered with chamfered/diagonal corner cuts; avoid generic
-  rounded white cards and excessive pills.
+- **PLANNED:** Standard boxes, panels, and cards use opposing diagonal cuts at the
+  top-left and bottom-right; the top-right and bottom-left remain square. Two clipped
+  bottom corners are not the reference silhouette. Specialized buttons, badges, tabs,
+  and decorative silhouettes may retain their established geometry.
+- **BUILT / LEGACY:** `CyberClipper` and `CyberPanel` still use bottom-left +
+  bottom-right cuts. Until the shared primitive and matching border painters are migrated,
+  this runtime shape is an implementation mismatch rather than the design precedent.
+- Keep panels flat and layered; avoid generic rounded white cards and excessive pills.
 - Cyan is the dominant live/action signal; gold identifies rewards; red signals
   danger/failure; violet is reserved for elite/special rarity.
 - **BUILT:** Cross-sport identity uses one canonical palette: Football cyan,
@@ -123,6 +129,8 @@ widget must not become the authoritative store for durable state.
 
 - **BUILT:** Tokenized dark palette, Orbitron/Onest typography, chamfer language,
   cyber scaffolds/panels/progress/CTA/tab components, and established HUD patterns.
+- **PLANNED:** Migrate the shared standard panel/card primitive from two bottom cuts to
+  the top-left + bottom-right silhouette, including every painter that traces its border.
 - **PLANNED:** Add a new shared primitive only after verifying no current
   component can be extended; update this page when the public component contract changes.
 

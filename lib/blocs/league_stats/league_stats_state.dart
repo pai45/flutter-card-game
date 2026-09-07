@@ -1,6 +1,9 @@
 import '../../models/league_stat_leaders.dart';
+import '../../models/sport_match.dart';
 
 enum LeagueStatsStatus { loading, loaded, error }
+
+enum LeagueFixturesStatus { idle, loading, loaded, error, unavailable }
 
 class LeagueStatsState {
   const LeagueStatsState({
@@ -13,6 +16,11 @@ class LeagueStatsState {
     this.resolvingCategory = false,
     this.refreshingLive = false,
     this.loadingTeamStats = false,
+    this.seasons = const [],
+    this.selectedSeasonYear,
+    this.seasonFixtures = const [],
+    this.fixturesStatus = LeagueFixturesStatus.idle,
+    this.archiveUnavailable = false,
   });
 
   final LeagueStatsStatus status;
@@ -41,9 +49,24 @@ class LeagueStatsState {
   /// Only ever true for leagues the bundled package doesn't already cover.
   final bool loadingTeamStats;
 
+  final List<LeagueSeasonOption> seasons;
+  final int? selectedSeasonYear;
+  final List<SportMatch> seasonFixtures;
+  final LeagueFixturesStatus fixturesStatus;
+  final bool archiveUnavailable;
+
   bool get hasStandings => snapshot.groups.isNotEmpty;
   bool get hasLeaders => snapshot.categories.isNotEmpty;
   bool get hasTeamStats => snapshot.hasTeamStats;
+
+  LeagueSeasonOption? get selectedSeason {
+    for (final season in seasons) {
+      if (season.year == selectedSeasonYear) return season;
+    }
+    return null;
+  }
+
+  bool get isCurrentSeason => selectedSeason?.isCurrent ?? true;
 
   StandingsGroup? get selectedGroup {
     if (groupIndex < 0 || groupIndex >= snapshot.groups.length) return null;
@@ -67,6 +90,11 @@ class LeagueStatsState {
     bool? resolvingCategory,
     bool? refreshingLive,
     bool? loadingTeamStats,
+    List<LeagueSeasonOption>? seasons,
+    int? selectedSeasonYear,
+    List<SportMatch>? seasonFixtures,
+    LeagueFixturesStatus? fixturesStatus,
+    bool? archiveUnavailable,
   }) => LeagueStatsState(
     status: status ?? this.status,
     snapshot: snapshot ?? this.snapshot,
@@ -77,5 +105,10 @@ class LeagueStatsState {
     resolvingCategory: resolvingCategory ?? this.resolvingCategory,
     refreshingLive: refreshingLive ?? this.refreshingLive,
     loadingTeamStats: loadingTeamStats ?? this.loadingTeamStats,
+    seasons: seasons ?? this.seasons,
+    selectedSeasonYear: selectedSeasonYear ?? this.selectedSeasonYear,
+    seasonFixtures: seasonFixtures ?? this.seasonFixtures,
+    fixturesStatus: fixturesStatus ?? this.fixturesStatus,
+    archiveUnavailable: archiveUnavailable ?? this.archiveUnavailable,
   );
 }

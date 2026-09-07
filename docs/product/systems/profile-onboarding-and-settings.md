@@ -1,7 +1,7 @@
 # Profile, Onboarding, Identity, and Settings
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-06
+> **Last verified:** 2026-09-07
 > **Scope:** First-run identity, welcome reward, Profile hub, followed competitions/teams, cosmetics, and settings
 
 ## Product Purpose
@@ -37,6 +37,12 @@ showing a dead-end message (see
 League following is optional; favorite teams are selected only for followed
 competitions — one favorite per followed league, and changing the primary sport
 clears both, so in practice every stored favorite belongs to the primary sport.
+
+A football league can also be followed directly from its league hub. This path
+persists the canonical competition identity immediately and deliberately leaves
+the favourite club unset. Profile's existing Following band represents that
+state with a league-only **NO CLUB** chip. Unfollowing from the hub removes an
+existing favourite only after the shared confirmation dialog.
 
 The favorite is not decoration. It orders and marks the Predictions match feed:
 on any day a followed club plays, that fixture is pinned above the rest of the
@@ -103,5 +109,6 @@ onboarding-complete flag, and onboarding-reward status persist through
 ## Tests
 
 - [`test/profile_setup_screen_test.dart`](../../../test/profile_setup_screen_test.dart)
+- [`test/league_follow_test.dart`](../../../test/league_follow_test.dart)
 - [`test/onboarding_reward_storage_test.dart`](../../../test/onboarding_reward_storage_test.dart)
 - [`test/onboarding_coin_reward_animation_test.dart`](../../../test/onboarding_coin_reward_animation_test.dart)

@@ -9,6 +9,7 @@ import '../../../widgets/cricket_scorecard_view.dart';
 import '../../../widgets/cyber/cyber_chart.dart';
 import '../../../widgets/cyber/cyber_filter_chips.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
+import 'cricket_player_match_sheet.dart';
 import 'match_stats_shell.dart';
 
 class CricketMatchStatsView extends StatefulWidget {
@@ -541,13 +542,51 @@ class _CricketScorecard extends StatelessWidget {
         message: 'Batting and bowling figures have not been published.',
       );
     }
+    // The bundled package carries squads on cricketDetails; the live ESPN path
+    // produces no cricketDetails at all but does carry cricketSquads.
+    final squads =
+        match.cricketDetails?.teams ??
+        match.cricketSquads ??
+        const <CricketTeamSquad>[];
     return ListView(
       key: const ValueKey('cricket-stats-scorecard'),
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
       children: [
-        CricketScorecardView(scorecard: scorecard, accent: Cyber.cyan),
+        CricketScorecardView(
+          scorecard: scorecard,
+          accent: Cyber.cyan,
+          // Only tappable when there are squads to resolve an id against.
+          onTapPlayer: squads.isEmpty
+              ? null
+              : (playerId) => _openPlayer(context, squads, playerId),
+        ),
       ],
     );
+  }
+
+  /// Resolves a scorecard row's athlete id to the squad player it belongs to,
+  /// then opens that player's dossier paging their own side.
+  void _openPlayer(
+    BuildContext context,
+    List<CricketTeamSquad> squads,
+    String playerId,
+  ) {
+    for (final squad in squads) {
+      for (final player in squad.players) {
+        if (player.id != playerId) continue;
+        showCricketPlayerMatchSheet(
+          context: context,
+          squad: squad,
+          player: player,
+          accent: paletteForTeam(
+            squad.isHome ? match.home : match.away,
+            sport: match.sport,
+            competition: match.leagueId,
+          ).secondaryTextColor,
+        );
+        return;
+      }
+    }
   }
 }
 

@@ -459,3 +459,91 @@ String formatStat(double value, String display, StatFormat format) {
           : value.toStringAsFixed(1);
   }
 }
+
+/// Cricket's STATS boards.
+///
+/// Deliberately a separate list rather than extra entries on
+/// [footballStatGroups]: the two sports share no stat keys at all, so a single
+/// merged list would render a full page of "NOT PUBLISHED" for whichever sport
+/// was not selected — which is exactly what the IPL hub did before this existed.
+///
+/// Every stat here is a season total aggregated from the match summaries by
+/// `tool/generate_cricket_league_stats.dart`; ESPN publishes no team-level
+/// cricket statistics feed of its own.
+const cricketStatGroups = <StatBoardGroup>[
+  StatBoardGroup(
+    label: 'BATTING',
+    pulse: [
+      StatPulseSpec('runs', 'RUNS'),
+      StatPulseSpec('sixes', 'SIXES'),
+      StatPulseSpec('fours', 'FOURS'),
+    ],
+    boards: [
+      StatBoardSpec('runs', 'RUNS'),
+      StatBoardSpec('sixes', 'SIXES'),
+      StatBoardSpec('fours', 'FOURS'),
+      StatBoardSpec('fiftyPlus', 'FIFTIES'),
+      StatBoardSpec('ballsFaced', 'BALLS FACED'),
+    ],
+  ),
+  StatBoardGroup(
+    label: 'BOWLING',
+    accent: Cyber.success,
+    pulse: [
+      StatPulseSpec('wickets', 'WICKETS'),
+      StatPulseSpec('dots', 'DOT BALLS'),
+      StatPulseSpec('maidens', 'MAIDENS'),
+    ],
+    boards: [
+      StatBoardSpec('wickets', 'WICKETS'),
+      StatBoardSpec('dots', 'DOT BALLS'),
+      StatBoardSpec('maidens', 'MAIDENS'),
+      // Fewest runs given away is the bowling attack's headline.
+      StatBoardSpec('conceded', 'RUNS CONCEDED', lowerIsBetter: true),
+      StatBoardSpec('foursConceded', 'FOURS GIVEN', lowerIsBetter: true),
+      StatBoardSpec('sixesConceded', 'SIXES GIVEN', lowerIsBetter: true),
+    ],
+  ),
+  StatBoardGroup(
+    label: 'FIELDING',
+    accent: Cyber.violet,
+    pulse: [
+      StatPulseSpec('caught', 'CATCHES'),
+      StatPulseSpec('stumped', 'STUMPINGS'),
+      StatPulseSpec('dismissals', 'DISMISSALS'),
+    ],
+    boards: [
+      StatBoardSpec('caught', 'CATCHES'),
+      StatBoardSpec('stumped', 'STUMPINGS'),
+      StatBoardSpec('dismissals', 'DISMISSALS'),
+    ],
+  ),
+  StatBoardGroup(
+    label: 'EXTRAS',
+    accent: Cyber.amber,
+    pulse: [
+      StatPulseSpec('wides', 'WIDES'),
+      StatPulseSpec('noballs', 'NO BALLS'),
+    ],
+    boards: [
+      StatBoardSpec('wides', 'WIDES', lowerIsBetter: true),
+      StatBoardSpec('noballs', 'NO BALLS', lowerIsBetter: true),
+    ],
+  ),
+];
+
+/// Picks the board set a league's stats belong to.
+///
+/// Keyed off the stat dictionary's own categories rather than a sport enum, so
+/// the hub does not need to know what sport it is showing — the package that
+/// filled it already said.
+List<StatBoardGroup> statGroupsFor(Map<String, LeagueStatDefinition> defs) {
+  for (final definition in defs.values) {
+    if (definition.category == 'batting' ||
+        definition.category == 'bowling' ||
+        definition.category == 'fielding') {
+      return cricketStatGroups;
+    }
+  }
+  return footballStatGroups;
+}

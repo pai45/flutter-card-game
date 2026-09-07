@@ -87,7 +87,12 @@ class EspnLeagueStatsService {
       'FOULS SUFFERED',
       StatAccent.amber,
     ),
-    _CategorySpec('foulsCommitted', 'FOULS', 'FOULS COMMITTED', StatAccent.amber),
+    _CategorySpec(
+      'foulsCommitted',
+      'FOULS',
+      'FOULS COMMITTED',
+      StatAccent.amber,
+    ),
     _CategorySpec('yellowCards', 'YELLOW', 'YELLOW CARDS', StatAccent.amber),
     _CategorySpec('redCards', 'RED', 'RED CARDS', StatAccent.danger),
   ];
@@ -102,9 +107,15 @@ class EspnLeagueStatsService {
   static final Map<String, _LeagueContext> _contextCache = {};
   static final Map<String, _ResolvedAthlete> _athleteCache = {};
   static final Map<String, LeagueTeamStats> _teamStatsCache = {};
+  static final Map<String, List<LeagueSeasonOption>> _seasonCache = {};
 
   /// True when [leagueId] maps to a competition ESPN can serve stats for.
   static bool supports(String leagueId) => _slugs.containsKey(leagueId);
+
+  /// ESPN competition slug for a repository/follow-list/scoreboard league id.
+  /// The player dossier shares this alias contract instead of maintaining a
+  /// second lookup table that could silently drift.
+  static String? slugFor(String leagueId) => _slugs[leagueId];
 
   @visibleForTesting
   static void clearCache() {
@@ -112,45 +123,130 @@ class EspnLeagueStatsService {
     _contextCache.clear();
     _athleteCache.clear();
     _teamStatsCache.clear();
+    _seasonCache.clear();
+  }
+
+  /// Seasons ESPN exposes for [leagueId], newest first.
+  Future<List<LeagueSeasonOption>> fetchAvailableSeasons(
+    String leagueId,
+  ) async {
+    final slug = _slugs[leagueId];
+    if (slug == null) return const [];
+    final cached = _seasonCache[slug];
+    if (cached != null) return cached;
+
+    final data = await _get(
+      'https://sports.core.api.espn.com/v2/sports/soccer/leagues/$slug'
+      '/seasons?limit=100',
+    );
+    final refs = data?['items'] as List? ?? const [];
+    final years = <int>[];
+    for (final item in refs) {
+      final year = int.tryParse(_idFromRef((item as Map?)?[r'$ref']) ?? '');
+      if (year != null) years.add(year);
+    }
+    years.sort((a, b) => b.compareTo(a));
+    if (years.isEmpty) return const [];
+
+    final now = DateTime.now().toUtc();
+    final fetched = await Future.wait([
+      for (final year in years)
+        _get(
+          'https://sports.core.api.espn.com/v2/sports/soccer/leagues/$slug'
+          '/seasons/$year?lang=en&region=us',
+        ),
+    ]);
+    final options = <LeagueSeasonOption>[];
+    for (var index = 0; index < years.length; index++) {
+      final season = fetched[index];
+      if (season == null) continue;
+      final year = years[index];
+      final start = DateTime.tryParse(season['startDate']?.toString() ?? '');
+      final end = DateTime.tryParse(season['endDate']?.toString() ?? '');
+      options.add(
+        LeagueSeasonOption(
+          year: year,
+          label:
+              season['abbreviation']?.toString() ??
+              season['displayName']?.toString() ??
+              year.toString(),
+          startDate: start,
+          endDate: end,
+          isCurrent:
+              start != null &&
+              end != null &&
+              !now.isBefore(start) &&
+              now.isBefore(end),
+        ),
+      );
+    }
+    if (options.isNotEmpty && !options.any((season) => season.isCurrent)) {
+      options[0] = options[0].copyWith(isCurrent: true);
+    }
+    final result = List<LeagueSeasonOption>.unmodifiable(options);
+    _seasonCache[slug] = result;
+    return result;
   }
 
   /// Standings plus every leaderboard for [leagueId]. Goals and assists come
   /// back fully resolved; the rest carry values only until [resolveCategory]
   /// fills in the names.
-  Future<LeagueStatsSnapshot> fetchSnapshot(String leagueId) async {
-    final cached = _snapshotCache[leagueId];
-    if (cached != null) return cached;
-
+  Future<LeagueStatsSnapshot> fetchSnapshot(
+    String leagueId, {
+    int? seasonYear,
+  }) async {
     final slug = _slugs[leagueId];
     if (slug == null) return LeagueStatsSnapshot.empty;
+    final requestedKey = _cacheKey(slug, seasonYear);
+    final cached = _snapshotCache[requestedKey];
+    if (cached != null) return cached;
 
+    final standingsUrl =
+        'https://site.web.api.espn.com/apis/v2/sports/soccer/$slug/standings'
+        '${seasonYear == null ? '' : '?season=$seasonYear'}';
     final results = await Future.wait([
-      _get('https://site.web.api.espn.com/apis/v2/sports/soccer/$slug/standings'),
-      _get(
-        'https://site.api.espn.com/apis/site/v2/sports/soccer/$slug/statistics',
-      ),
+      _get(standingsUrl),
+      if (seasonYear == null)
+        _get(
+          'https://site.api.espn.com/apis/site/v2/sports/soccer/$slug/statistics',
+        )
+      else
+        _get(
+          'https://sports.core.api.espn.com/v2/sports/soccer/leagues/$slug'
+          '/seasons/$seasonYear?lang=en&region=us',
+        ),
     ]);
 
     final standingsData = results[0];
-    final statsData = results[1];
+    final contextData = results[1];
 
     final teams = <String, SportTeam>{};
     final groups = _parseStandings(standingsData, teams);
 
-    final season = statsData?['season'] as Map<String, dynamic>?;
-    final seasonYear = (season?['year'] as num?)?.toInt();
-    final seasonLabel = season?['displayName']?.toString();
+    final Map<String, dynamic>? season = seasonYear == null
+        ? (contextData?['season'] as Map<String, dynamic>?)
+        : contextData;
+    final resolvedYear = seasonYear ?? (season?['year'] as num?)?.toInt();
+    final seasonLabel =
+        season?['displayName']?.toString() ??
+        season?['abbreviation']?.toString();
 
-    final inline = _parseInlineLeaders(statsData, teams);
-    final core = seasonYear == null
+    // ESPN's site statistics endpoint always returns the current campaign even
+    // when a historical `season=` parameter is supplied. Only use it on the
+    // current/no-explicit-year path; historical boards come from core.
+    final inline = seasonYear == null
+        ? _parseInlineLeaders(contextData, teams)
+        : const <String, List<StatLeader>>{};
+    final core = resolvedYear == null
         ? const <String, List<StatLeader>>{}
-        : await _fetchCoreLeaders(slug, seasonYear, teams);
+        : await _fetchCoreLeaders(slug, resolvedYear, teams);
 
     final categories = <StatLeaderCategory>[];
     for (final spec in _categorySpecs) {
       // The inline feed only carries goals/assists, but its athletes arrive
       // named, so prefer it and fall back to the reference-based feed.
-      final leaders = inline[spec.key] ?? core[spec.key] ?? const <StatLeader>[];
+      final leaders =
+          inline[spec.key] ?? core[spec.key] ?? const <StatLeader>[];
       if (leaders.isEmpty) continue;
       categories.add(
         StatLeaderCategory(
@@ -167,13 +263,16 @@ class EspnLeagueStatsService {
       groups: groups,
       categories: categories,
       seasonLabel: seasonLabel,
+      seasonYear: resolvedYear,
     );
     if (!snapshot.isEmpty) {
-      _snapshotCache[leagueId] = snapshot;
-      if (seasonYear != null) {
-        _contextCache[leagueId] = _LeagueContext(
+      final resolvedKey = _cacheKey(slug, resolvedYear);
+      _snapshotCache[requestedKey] = snapshot;
+      _snapshotCache[resolvedKey] = snapshot;
+      if (resolvedYear != null) {
+        _contextCache[resolvedKey] = _LeagueContext(
           slug: slug,
-          seasonYear: seasonYear,
+          seasonYear: resolvedYear,
           teams: teams,
         );
       }
@@ -186,14 +285,21 @@ class EspnLeagueStatsService {
   /// tops several categories, so most resolves are already warm.
   Future<StatLeaderCategory> resolveCategory(
     String leagueId,
-    StatLeaderCategory category,
-  ) async {
+    StatLeaderCategory category, {
+    int? seasonYear,
+  }) async {
     if (category.isResolved) return category;
-    final context = _contextCache[leagueId];
+    final slug = _slugs[leagueId];
+    if (slug == null) return category;
+    final context = _contextCache[_cacheKey(slug, seasonYear)];
     if (context == null) return category;
 
     final pending = category.leaders
-        .where((l) => !l.isResolved && !_athleteCache.containsKey(l.athleteId))
+        .where(
+          (l) =>
+              !l.isResolved &&
+              !_athleteCache.containsKey(_athleteKey(context, l.athleteId)),
+        )
         .map((l) => l.athleteId)
         .toSet();
 
@@ -202,13 +308,15 @@ class EspnLeagueStatsService {
         pending.map((id) => _fetchAthlete(context, id)),
       );
       for (final athlete in fetched) {
-        if (athlete != null) _athleteCache[athlete.id] = athlete;
+        if (athlete != null) {
+          _athleteCache[_athleteKey(context, athlete.id)] = athlete;
+        }
       }
     }
 
     final resolved = <StatLeader>[];
     for (final leader in category.leaders) {
-      final athlete = _athleteCache[leader.athleteId];
+      final athlete = _athleteCache[_athleteKey(context, leader.athleteId)];
       if (athlete == null) {
         resolved.add(leader);
         continue;
@@ -223,7 +331,7 @@ class EspnLeagueStatsService {
       );
     }
     final next = category.withLeaders(resolved);
-    _replaceCachedCategory(leagueId, next);
+    _replaceCachedCategory(_cacheKey(slug, context.seasonYear), next);
     return next;
   }
 
@@ -234,16 +342,22 @@ class EspnLeagueStatsService {
   /// year both come from the standings/statistics pass it caches. Returns
   /// [LeagueTeamStats.empty] when the competition is unsupported or every
   /// request failed, which the UI reads as "not published".
-  Future<LeagueTeamStats> fetchTeamStats(String leagueId) async {
-    final cached = _teamStatsCache[leagueId];
+  Future<LeagueTeamStats> fetchTeamStats(
+    String leagueId, {
+    int? seasonYear,
+  }) async {
+    final slug = _slugs[leagueId];
+    if (slug == null) return LeagueTeamStats.empty;
+    final cacheKey = _cacheKey(slug, seasonYear);
+    final cached = _teamStatsCache[cacheKey];
     if (cached != null) return cached;
 
-    var context = _contextCache[leagueId];
+    var context = _contextCache[cacheKey];
     if (context == null) {
       // The STATS tab can be opened before the snapshot finished (or when it
       // came from the bundled package), so build the context on demand.
-      await fetchSnapshot(leagueId);
-      context = _contextCache[leagueId];
+      final snapshot = await fetchSnapshot(leagueId, seasonYear: seasonYear);
+      context = _contextCache[_cacheKey(slug, snapshot.seasonYear)];
       if (context == null) return LeagueTeamStats.empty;
     }
 
@@ -274,11 +388,8 @@ class EspnLeagueStatsService {
     if (teamStats.isEmpty) return LeagueTeamStats.empty;
     // Standings order, so the boards rank from a stable base.
     teamStats.sort((a, b) => a.team.name.compareTo(b.team.name));
-    final result = LeagueTeamStats(
-      teams: teamStats,
-      definitions: definitions,
-    );
-    _teamStatsCache[leagueId] = result;
+    final result = LeagueTeamStats(teams: teamStats, definitions: definitions);
+    _teamStatsCache[_cacheKey(slug, context.seasonYear)] = result;
     return result;
   }
 
@@ -326,12 +437,12 @@ class EspnLeagueStatsService {
     return values;
   }
 
-  void _replaceCachedCategory(String leagueId, StatLeaderCategory category) {
-    final snapshot = _snapshotCache[leagueId];
+  void _replaceCachedCategory(String cacheKey, StatLeaderCategory category) {
+    final snapshot = _snapshotCache[cacheKey];
     if (snapshot == null) return;
     final index = snapshot.categories.indexWhere((c) => c.key == category.key);
     if (index < 0) return;
-    _snapshotCache[leagueId] = snapshot.withCategory(index, category);
+    _snapshotCache[cacheKey] = snapshot.withCategory(index, category);
   }
 
   // ── Standings ─────────────────────────────────────────────────────────────
@@ -346,7 +457,8 @@ class EspnLeagueStatsService {
 
     for (final child in children) {
       if (child is! Map) continue;
-      final entries = (child['standings'] as Map?)?['entries'] as List? ?? const [];
+      final entries =
+          (child['standings'] as Map?)?['entries'] as List? ?? const [];
       final rows = <TeamStanding>[];
       final groupLabel = child['name']?.toString() ?? '';
 
@@ -490,7 +602,7 @@ class EspnLeagueStatsService {
         final athleteId = _idFromRef((entry['athlete'] as Map?)?[r'$ref']);
         if (athleteId == null) continue;
         final teamId = _idFromRef((entry['team'] as Map?)?[r'$ref']);
-        final cached = _athleteCache[athleteId];
+        final cached = _athleteCache['$slug/$seasonYear/$athleteId'];
         leaders.add(
           StatLeader(
             athleteId: athleteId,
@@ -530,6 +642,12 @@ class EspnLeagueStatsService {
   }
 
   // ── Plumbing ──────────────────────────────────────────────────────────────
+
+  static String _cacheKey(String slug, int? seasonYear) =>
+      '$slug/${seasonYear ?? 'current'}';
+
+  static String _athleteKey(_LeagueContext context, String athleteId) =>
+      '${context.slug}/${context.seasonYear}/$athleteId';
 
   Future<Map<String, dynamic>?> _get(String url) async {
     try {

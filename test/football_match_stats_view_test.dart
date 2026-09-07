@@ -1,7 +1,7 @@
 import 'package:card_game/config/theme.dart';
 import 'package:card_game/data/team_palettes.dart';
 import 'package:card_game/screens/predictions/widgets/football_match_stats_view.dart';
-import 'package:card_game/screens/predictions/widgets/football_player_match_sheet.dart';
+import 'package:card_game/widgets/cyber/player_match_sheet.dart';
 import 'package:card_game/screens/predictions/widgets/match_stats_shell.dart';
 import 'package:card_game/services/football_match_package_service.dart';
 import 'package:card_game/widgets/cyber/cyber_filter_chips.dart';
@@ -82,7 +82,12 @@ void main() {
     _selectSection(tester, 'EVENTS');
     await _pumpAnimations(tester);
     expect(find.byKey(const ValueKey('football-stats-events')), findsOneWidget);
-    expect(find.text('023 EVENTS'), findsOneWidget);
+    expect(
+      find.text(
+        '${(match.timelineEvents?.length ?? 0).toString().padLeft(3, '0')} EVENTS',
+      ),
+      findsOneWidget,
+    );
     expect(find.byType(StatsRowShell), findsNothing);
 
     _selectSection(tester, 'LINEUPS');
@@ -105,6 +110,33 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'match intel stacks venue above attendance without a winner tag',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final match = (await tester.runAsync(
+        () => const FootballMatchPackageService().loadBundled(),
+      ))!;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: Scaffold(body: FootballMatchStatsView(match: match)),
+        ),
+      );
+      await _pumpAnimations(tester);
+
+      final venue = tester.getRect(find.text('VENUE'));
+      final attendance = tester.getRect(find.text('ATTENDANCE'));
+      expect(attendance.top, greaterThan(venue.bottom));
+      expect(attendance.left, closeTo(venue.left, 1));
+      expect(find.textContaining('SECURED THE RESULT'), findsNothing);
+    },
+  );
 
   testWidgets('football stats render safe empty states for partial feeds', (
     tester,
@@ -180,7 +212,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('pitch-player-153765')));
     await tester.pumpAndSettle();
 
-    expect(find.byType(FootballPlayerMatchSheet), findsOneWidget);
+    expect(find.byType(PlayerMatchSheetScaffold), findsOneWidget);
     expect(find.text('BERND LENO'), findsOneWidget);
     expect(find.text('STARTER'), findsOneWidget);
     expect(
@@ -217,11 +249,7 @@ void main() {
     expect(find.text('BERND LENO'), findsOneWidget);
     expect(find.textContaining('1 OF 20'), findsOneWidget);
 
-    await tester.fling(
-      find.byType(PageView),
-      const Offset(-400, 0),
-      1000,
-    );
+    await tester.fling(find.byType(PageView), const Offset(-400, 0), 1000);
     await tester.pumpAndSettle();
     expect(find.text('BERND LENO'), findsNothing);
     expect(find.textContaining('2 OF 20'), findsOneWidget);
@@ -257,13 +285,10 @@ void main() {
     await tester.tap(find.byKey(ValueKey('bench-player-${unused.id}')));
     await tester.pumpAndSettle();
 
-    expect(find.byType(FootballPlayerMatchSheet), findsOneWidget);
+    expect(find.byType(PlayerMatchSheetScaffold), findsOneWidget);
     expect(find.text('UNUSED'), findsOneWidget);
     expect(find.text('UNUSED SUBSTITUTE'), findsOneWidget);
-    expect(
-      find.byKey(const ValueKey('football-player-heatmap')),
-      findsNothing,
-    );
+    expect(find.byKey(const ValueKey('football-player-heatmap')), findsNothing);
     expect(tester.takeException(), isNull);
   });
 }

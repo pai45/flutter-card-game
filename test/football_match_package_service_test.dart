@@ -45,7 +45,17 @@ void main() {
       expect(match.awayScore, '3');
 
       expect(match.teamStats, hasLength(7));
-      expect(match.timelineEvents, hasLength(23));
+      expect(match.timelineEvents, hasLength(22));
+      final halftime = match.timelineEvents!.singleWhere(
+        (event) => event.type == MatchEventType.halftime,
+      );
+      expect(halftime.scoreDisplay, '1 - 2');
+      expect(
+        match.timelineEvents!.any(
+          (event) => event.type == MatchEventType.secondHalf,
+        ),
+        isFalse,
+      );
       expect(match.commentary, hasLength(104));
       expect(match.footballMomentum?.series, hasLength(98));
       expect(match.footballMomentum?.goals, hasLength(5));

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../models/cricket_match_data.dart';
 import '../models/cricket_scorecard.dart';
 import '../models/league.dart';
 import '../models/sport_match.dart';
@@ -9,6 +10,7 @@ import '../models/basketball_scorecard.dart';
 import '../models/tennis_scorecard.dart';
 import '../utils/tennis_country_map.dart';
 import 'espn_soccer_lineup_parser.dart';
+import 'espn_cricket_roster_parser.dart';
 
 class EspnScoreService {
   /// Leagues discovered from live ESPN payloads whose real competition isn't
@@ -59,6 +61,72 @@ class EspnScoreService {
   }
 
   static const _fetchTimeout = Duration(seconds: 8);
+
+  /// Complete football schedule for one ESPN season. Soccer seasons cross a
+  /// calendar boundary, so both years are requested and filtered by the
+  /// event's embedded season id before de-duplicating.
+  Future<List<SportMatch>> fetchFootballSeasonMatches(
+    String leagueId,
+    int seasonYear,
+  ) async {
+    final slug = soccerSummarySlug(leagueId);
+    final results = await Future.wait([
+      _fetchFootballCalendar(slug, leagueId, seasonYear, seasonYear),
+      _fetchFootballCalendar(slug, leagueId, seasonYear + 1, seasonYear),
+    ]);
+    return mergeFootballSeasonMatches(results);
+  }
+
+  @visibleForTesting
+  static List<SportMatch> mergeFootballSeasonMatches(
+    Iterable<List<SportMatch>> calendarFeeds,
+  ) {
+    final byId = <String, SportMatch>{};
+    for (final matches in calendarFeeds) {
+      for (final match in matches) {
+        byId[match.id] = match;
+      }
+    }
+    final matches = byId.values.toList()
+      ..sort((a, b) => a.kickoff.compareTo(b.kickoff));
+    return matches;
+  }
+
+  Future<List<SportMatch>> _fetchFootballCalendar(
+    String slug,
+    String leagueId,
+    int calendarYear,
+    int seasonYear,
+  ) async {
+    try {
+      final res = await http
+          .get(
+            Uri.parse(
+              'https://site.api.espn.com/apis/site/v2/sports/soccer/$slug/'
+              'scoreboard?dates=$calendarYear&limit=1000',
+            ),
+          )
+          .timeout(_fetchTimeout);
+      if (res.statusCode != 200) {
+        throw StateError('ESPN schedule returned ${res.statusCode}');
+      }
+      final data = json.decode(res.body) as Map<String, dynamic>;
+      final matches = <SportMatch>[];
+      for (final event in data['events'] as List? ?? const []) {
+        if (event is! Map || (event['season'] as Map?)?['year'] != seasonYear) {
+          continue;
+        }
+        final match = _parseEventToMatch(event, Sport.football, leagueId);
+        if (match != null) matches.add(match);
+      }
+      return matches;
+    } catch (e) {
+      debugPrint(
+        'EspnScoreService: season fetch failed for $slug/$seasonYear: $e',
+      );
+      rethrow;
+    }
+  }
 
   /// Fetches every ESPN scoreboard this sport needs, across the whole day
   /// window, CONCURRENTLY rather than one request at a time. The previous
@@ -319,7 +387,9 @@ class EspnScoreService {
           final typeAbbr = comp['type']?['abbreviation']?.toString().trim();
           final compName = (typeText != null && typeText.isNotEmpty)
               ? typeText
-              : (typeAbbr != null && typeAbbr.isNotEmpty ? typeAbbr : 'Session');
+              : (typeAbbr != null && typeAbbr.isNotEmpty
+                    ? typeAbbr
+                    : 'Session');
           final competitors = comp['competitors'] as List?;
           final results = <String>[];
           if (competitors != null && competitors.isNotEmpty) {
@@ -875,6 +945,7 @@ class EspnScoreService {
     MatchLineup? awayLineupData;
     List<MatchCommentary>? parsedCommentary;
     CricketScorecard? parsedScorecard;
+    List<CricketTeamSquad>? parsedCricketSquads;
     BasketballScorecard? parsedBasketballScorecard;
     TennisScorecard? parsedTennisScorecard;
 
@@ -910,6 +981,17 @@ class EspnScoreService {
 
         if (fixture.sport == Sport.cricket) {
           parsedScorecard = _parseCricketScorecard(summaryData);
+          // The same response carries a 46-stat sheet per player. It costs
+          // nothing extra, so every live cricket fixture gets a player dossier
+          // — minus the ball-by-ball tape, which is a separate request.
+          final cricketRosters = summaryData['rosters'];
+          if (cricketRosters is List && cricketRosters.isNotEmpty) {
+            parsedCricketSquads = [
+              for (final roster in cricketRosters)
+                if (roster is Map)
+                  parseCricketRosterSquad(Map<String, dynamic>.from(roster)),
+            ];
+          }
 
           final pbpUrl =
               'https://site.api.espn.com/apis/site/v2/sports/cricket/${fixture.leagueId}/playbyplay?event=${event['id']}&limit=1000';
@@ -996,6 +1078,7 @@ class EspnScoreService {
           _getMockLineup(false, fixture.sport),
       commentary: parsedCommentary ?? fixture.commentary,
       cricketScorecard: parsedScorecard,
+      cricketSquads: parsedCricketSquads ?? fixture.cricketSquads,
       basketballScorecard: parsedBasketballScorecard,
       tennisScorecard: parsedTennisScorecard ?? fixture.tennisScorecard,
       clearHomeScore: homeScore == null,
@@ -1135,6 +1218,9 @@ class EspnScoreService {
                 if (b == 1 || statInt(general['stats'], 'runs') > 0) {
                   batters.add(
                     CricketBatter(
+                      // The dossier joins a scorecard row to a squad player by
+                      // this id; without it a live row cannot open a card.
+                      id: player['athlete']?['id']?.toString(),
                       name: name,
                       runs: statInt(general['stats'], 'runs'),
                       balls: statInt(general['stats'], 'ballsFaced'),
@@ -1170,6 +1256,7 @@ class EspnScoreService {
                   if (bowled == 1) {
                     bowlers.add(
                       CricketBowler(
+                        id: player['athlete']?['id']?.toString(),
                         name: _getAthleteName(player['athlete']),
                         overs: statDouble(general['stats'], 'overs'),
                         maidens: statInt(general['stats'], 'maidens'),

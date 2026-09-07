@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../../config/theme.dart';
 import '../../../data/football_match_portraits.dart';
@@ -7,6 +6,7 @@ import '../../../models/football_match_data.dart';
 import '../../../models/sport_match.dart';
 import '../../../widgets/cyber/cyber_chart.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
+import '../../../widgets/cyber/player_match_sheet.dart';
 import 'football_player_heatmap.dart';
 
 /// Opens the per-player match card, seeded at [player].
@@ -23,161 +23,20 @@ Future<void> showFootballPlayerMatchSheet({
 }) {
   final squad = [...lineup.startingXI, ...lineup.substitutes];
   final index = squad.indexWhere((p) => p.id == player.id);
-  return showModalBottomSheet<void>(
+  final team = isHomeTeam ? match.home : match.away;
+  return showPlayerMatchSheet(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    backgroundColor: Colors.transparent,
-    barrierColor: Colors.black.withValues(alpha: 0.72),
-    builder: (_) => FootballPlayerMatchSheet(
-      match: match,
-      squad: squad,
-      initialIndex: index < 0 ? 0 : index,
-      isHomeTeam: isHomeTeam,
+    accent: accent,
+    itemCount: squad.length,
+    initialIndex: index < 0 ? 0 : index,
+    itemBuilder: (context, page) => FootballPlayerMatchCard(
+      player: squad[page],
+      team: team,
       accent: accent,
+      eventId: match.footballDetails?.espnEventId,
+      leagueSlug: match.leagueId,
     ),
   );
-}
-
-class FootballPlayerMatchSheet extends StatefulWidget {
-  const FootballPlayerMatchSheet({
-    required this.match,
-    required this.squad,
-    required this.initialIndex,
-    required this.isHomeTeam,
-    required this.accent,
-    super.key,
-  });
-
-  final SportMatch match;
-  final List<MatchPlayer> squad;
-  final int initialIndex;
-  final bool isHomeTeam;
-  final Color accent;
-
-  @override
-  State<FootballPlayerMatchSheet> createState() =>
-      _FootballPlayerMatchSheetState();
-}
-
-class _FootballPlayerMatchSheetState extends State<FootballPlayerMatchSheet> {
-  late final PageController _controller = PageController(
-    initialPage: widget.initialIndex,
-  );
-  late int _index = widget.initialIndex;
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final team = widget.isHomeTeam ? widget.match.home : widget.match.away;
-    return FractionallySizedBox(
-      heightFactor: 0.9,
-      child: ClipPath(
-        clipper: CyberClipper(),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Cyber.bg,
-            border: Border.all(color: widget.accent.withValues(alpha: 0.4)),
-          ),
-          child: Column(
-            children: [
-              _SheetGrip(accent: widget.accent),
-              Expanded(
-                child: PageView.builder(
-                  controller: _controller,
-                  itemCount: widget.squad.length,
-                  onPageChanged: (page) {
-                    HapticFeedback.selectionClick();
-                    setState(() => _index = page);
-                  },
-                  itemBuilder: (context, page) => FootballPlayerMatchCard(
-                    player: widget.squad[page],
-                    team: team,
-                    accent: widget.accent,
-                    eventId: widget.match.footballDetails?.espnEventId,
-                    leagueSlug: widget.match.leagueId,
-                  ),
-                ),
-              ),
-              _SquadPager(
-                count: widget.squad.length,
-                index: _index,
-                accent: widget.accent,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The drag handle plus the sheet's only always-on chrome.
-class _SheetGrip extends StatelessWidget {
-  const _SheetGrip({required this.accent});
-
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
-      child: Row(
-        children: [
-          Text(
-            'MATCH DOSSIER',
-            style: Cyber.label(8.5, color: Cyber.muted, letterSpacing: 1.8),
-          ),
-          const Spacer(),
-          Container(width: 36, height: 3, color: accent.withValues(alpha: 0.5)),
-          const Spacer(),
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            behavior: HitTestBehavior.opaque,
-            child: Icon(Icons.close, size: 16, color: Cyber.muted),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Position in the squad, and the hint that the card is swipeable at all.
-class _SquadPager extends StatelessWidget {
-  const _SquadPager({
-    required this.count,
-    required this.index,
-    required this.accent,
-  });
-
-  final int count;
-  final int index;
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.chevron_left, size: 13, color: Cyber.muted),
-          const SizedBox(width: 8),
-          Text(
-            'SWIPE FOR NEXT PLAYER  //  ${index + 1} OF $count',
-            style: Cyber.label(7.5, color: Cyber.muted, letterSpacing: 1.4),
-          ),
-          const SizedBox(width: 8),
-          Icon(Icons.chevron_right, size: 13, color: Cyber.muted),
-        ],
-      ),
-    );
-  }
 }
 
 /// One player's match card.
@@ -373,59 +232,32 @@ class _ImpactStrip extends StatelessWidget {
     final territory = stats.territory;
     return Row(
       children: [
-        _CountUpMetric(
+        CountUpMetric(
           label: 'TOUCHES',
           value: stats.touchCount.toDouble(),
           format: (v) => v.round().toString(),
           accent: stats.hasTracking ? accent : null,
         ),
         const SizedBox(width: 8),
-        _CountUpMetric(
+        CountUpMetric(
           label: 'xG',
           value: xg ?? 0,
           format: (v) => xg == null ? '—' : v.toStringAsFixed(2),
           accent: (xg ?? 0) >= 0.5 ? Cyber.amber : null,
         ),
         const SizedBox(width: 8),
-        _CountUpMetric(
+        CountUpMetric(
           label: 'FINAL 3RD',
           value: stats.finalThirdTouches.toDouble(),
           format: (v) => stats.hasTracking ? v.round().toString() : '—',
         ),
         const SizedBox(width: 8),
-        _CountUpMetric(
+        CountUpMetric(
           label: 'TERRITORY',
           value: (territory ?? 0) * 100,
           format: (v) => territory == null ? '—' : '${v.round()}%',
         ),
       ],
-    );
-  }
-}
-
-/// A [CyberMiniMetric] whose number counts up on entry — the small
-/// gratification beat that fires again on every swipe.
-class _CountUpMetric extends StatelessWidget {
-  const _CountUpMetric({
-    required this.label,
-    required this.value,
-    required this.format,
-    this.accent,
-  });
-
-  final String label;
-  final double value;
-  final String Function(double) format;
-  final Color? accent;
-
-  @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: value),
-      duration: const Duration(milliseconds: 600),
-      curve: Curves.easeOutCubic,
-      builder: (context, animated, _) =>
-          CyberMiniMetric(label: label, value: format(animated), accent: accent),
     );
   }
 }

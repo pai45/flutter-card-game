@@ -2175,10 +2175,6 @@ class _FollowingBand extends StatefulWidget {
 class _FollowingBandState extends State<_FollowingBand> {
   final SecureGameStorage _storage = SecureGameStorage();
 
-  /// (team, league) pairs for each followed league with a favourite team.
-  List<(SportTeam, FollowableLeague)> _favourites = const [];
-  List<String> _followedLeagueIds = const [];
-  Map<String, String> _favoriteTeams = const {};
   Sport _primarySport = Sport.football;
 
   @override
@@ -2191,26 +2187,14 @@ class _FollowingBandState extends State<_FollowingBand> {
     final primarySport = sportFromStorage(
       await _storage.loadPrimarySportName(),
     );
-    final followed = await _storage.loadFollowedLeagueIds();
-    final teams = await _storage.loadFavoriteTeams();
-    final result = <(SportTeam, FollowableLeague)>[];
-    for (final leagueId in followed) {
-      final entry = followableLeagueById(leagueId);
-      final teamId = teams[leagueId];
-      if (entry == null || teamId == null) continue;
-      final team = followableTeam(leagueId, teamId);
-      if (team != null) result.add((team, entry));
-    }
     if (!mounted) return;
     setState(() {
-      _favourites = result;
-      _followedLeagueIds = followed;
-      _favoriteTeams = teams;
       _primarySport = primarySport;
     });
   }
 
   Future<void> _openEditor() async {
+    final prediction = context.read<PredictionCubit>().state;
     final changed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -2218,8 +2202,8 @@ class _FollowingBandState extends State<_FollowingBand> {
       builder: (context) => _FollowingEditorSheet(
         storage: _storage,
         primarySport: _primarySport,
-        followedLeagueIds: _followedLeagueIds,
-        favoriteTeams: _favoriteTeams,
+        followedLeagueIds: prediction.followedLeagueIds,
+        favoriteTeams: prediction.favoriteTeams,
       ),
     );
     if (changed == true) {
@@ -2233,34 +2217,103 @@ class _FollowingBandState extends State<_FollowingBand> {
   @override
   Widget build(BuildContext context) {
     final module = sportModuleFor(_primarySport);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: ProfileCard(
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            _PrimarySportChip(module: module),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _favourites.isEmpty
-                  ? Text(
-                      'Pick the teams and clubs you follow.',
-                      style: Cyber.body(13, color: Cyber.muted),
-                    )
-                  : Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: [
-                        for (final (team, entry) in _favourites)
-                          _FollowedTeamChip(team: team, entry: entry),
-                      ],
-                    ),
+    return BlocBuilder<PredictionCubit, PredictionState>(
+      builder: (context, prediction) {
+        final entries = _followingEntries(
+          prediction.followedLeagueIds,
+          prediction.favoriteTeams,
+        );
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: ProfileCard(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _PrimarySportChip(module: module),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: entries.isEmpty
+                      ? Text(
+                          'Pick the teams and clubs you follow.',
+                          style: Cyber.body(13, color: Cyber.muted),
+                        )
+                      : Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: [
+                            for (final (entry, team) in entries)
+                              if (team == null)
+                                _FollowedLeagueChip(entry: entry)
+                              else
+                                _FollowedTeamChip(team: team, entry: entry),
+                          ],
+                        ),
+                ),
+                const SizedBox(width: 10),
+                _FollowingEditButton(onTap: _openEditor),
+              ],
             ),
-            const SizedBox(width: 10),
-            _FollowingEditButton(onTap: _openEditor),
-          ],
-        ),
+          ),
+        );
+      },
+    );
+  }
+
+  List<(FollowableLeague, SportTeam?)> _followingEntries(
+    List<String> followed,
+    Map<String, String> favorites,
+  ) {
+    final result = <(FollowableLeague, SportTeam?)>[];
+    for (final leagueId in followed) {
+      final entry = followableLeagueById(leagueId);
+      if (entry == null) continue;
+      final teamId = favorites[entry.league.id] ?? favorites[leagueId];
+      result.add((
+        entry,
+        teamId == null ? null : followableTeam(leagueId, teamId),
+      ));
+    }
+    return result;
+  }
+}
+
+class _FollowedLeagueChip extends StatelessWidget {
+  const _FollowedLeagueChip({required this.entry});
+
+  final FollowableLeague entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = entry.league.accent;
+    return Container(
+      constraints: const BoxConstraints(minWidth: 86),
+      padding: const EdgeInsets.fromLTRB(9, 8, 10, 8),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.08),
+        border: Border.all(color: accent.withValues(alpha: 0.5)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.bookmark_added_outlined, color: accent, size: 22),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                entry.league.shortCode,
+                style: Cyber.display(12, color: Colors.white),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'NO CLUB',
+                style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.8),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

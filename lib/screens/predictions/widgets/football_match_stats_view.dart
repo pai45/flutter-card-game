@@ -149,46 +149,18 @@ class _MatchIntelPanel extends StatelessWidget {
             style: Cyber.body(12, color: Cyber.muted),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _IntelCell(
-                  icon: Icons.stadium_outlined,
-                  label: 'VENUE',
-                  value: venue,
-                ),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 96,
-                child: _IntelCell(
-                  icon: Icons.groups_outlined,
-                  label: 'ATTENDANCE',
-                  value: attendance,
-                  numeric: true,
-                ),
-              ),
-            ],
+          _IntelCell(
+            icon: Icons.stadium_outlined,
+            label: 'VENUE',
+            value: venue,
           ),
-          if (details?.winner != null) ...[
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Icon(Icons.flag_outlined, size: 16, color: Cyber.cyan),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '${details!.winner!.toUpperCase()} SECURED THE RESULT // ${details.scoreDisplay}',
-                    style: Cyber.label(
-                      9.5,
-                      color: Cyber.muted,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+          const SizedBox(height: 8),
+          _IntelCell(
+            icon: Icons.groups_outlined,
+            label: 'ATTENDANCE',
+            value: attendance,
+            numeric: true,
+          ),
         ],
       ),
     );

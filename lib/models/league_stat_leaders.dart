@@ -3,6 +3,39 @@ import 'package:flutter/material.dart';
 import 'sport_match.dart';
 import 'team_standing.dart';
 
+/// One ESPN competition season offered by the league hub selector.
+@immutable
+class LeagueSeasonOption {
+  const LeagueSeasonOption({
+    required this.year,
+    required this.label,
+    this.startDate,
+    this.endDate,
+    this.isCurrent = false,
+  });
+
+  final int year;
+  final String label;
+  final DateTime? startDate;
+  final DateTime? endDate;
+  final bool isCurrent;
+
+  /// Compact HUD copy such as `2024-25`, without repeating the league name.
+  String get shortLabel {
+    final match = RegExp(r'\d{4}(?:[-/]\d{2,4})?').firstMatch(label);
+    if (match != null) return match.group(0)!.replaceAll('/', '-');
+    return year.toString();
+  }
+
+  LeagueSeasonOption copyWith({bool? isCurrent}) => LeagueSeasonOption(
+    year: year,
+    label: label,
+    startDate: startDate,
+    endDate: endDate,
+    isCurrent: isCurrent ?? this.isCurrent,
+  );
+}
+
 /// One sub-table of a league standings page — a conference (MLS East/West),
 /// a group, or the single flat table most leagues use.
 @immutable
@@ -229,6 +262,7 @@ class LeagueStatsSnapshot {
     this.teamStats = const [],
     this.statDefinitions = const {},
     this.seasonLabel,
+    this.seasonYear,
   });
 
   static const empty = LeagueStatsSnapshot(groups: [], categories: []);
@@ -248,8 +282,11 @@ class LeagueStatsSnapshot {
   /// Season headline, e.g. "2026 MLS".
   final String? seasonLabel;
 
-  bool get isEmpty =>
-      groups.isEmpty && categories.isEmpty && teamStats.isEmpty;
+  /// ESPN's numeric season, kept so a player dossier can request the exact
+  /// campaign represented by this leaderboard rather than guessing a year.
+  final int? seasonYear;
+
+  bool get isEmpty => groups.isEmpty && categories.isEmpty && teamStats.isEmpty;
 
   bool get hasTeamStats => teamStats.isNotEmpty;
 
@@ -299,6 +336,7 @@ class LeagueStatsSnapshot {
       teamStats: teamStats,
       statDefinitions: statDefinitions,
       seasonLabel: seasonLabel,
+      seasonYear: seasonYear,
     );
   }
 
@@ -306,14 +344,21 @@ class LeagueStatsSnapshot {
   /// actually has content — an empty live section never blanks a filled one.
   LeagueStatsSnapshot mergedWith(LeagueStatsSnapshot live) {
     if (live.isEmpty) return this;
+    final keepResolvedCategories =
+        categories.isNotEmpty &&
+        categories.every((category) => category.isResolved) &&
+        live.categories.any((category) => !category.isResolved);
     return LeagueStatsSnapshot(
       groups: live.groups.isEmpty ? groups : live.groups,
-      categories: live.categories.isEmpty ? categories : live.categories,
+      categories: live.categories.isEmpty || keepResolvedCategories
+          ? categories
+          : live.categories,
       teamStats: live.teamStats.isEmpty ? teamStats : live.teamStats,
       statDefinitions: live.statDefinitions.isEmpty
           ? statDefinitions
           : live.statDefinitions,
       seasonLabel: live.seasonLabel ?? seasonLabel,
+      seasonYear: live.seasonYear ?? seasonYear,
     );
   }
 
@@ -327,6 +372,7 @@ class LeagueStatsSnapshot {
       teamStats: stats.teams,
       statDefinitions: stats.definitions,
       seasonLabel: seasonLabel,
+      seasonYear: seasonYear,
     );
   }
 }
