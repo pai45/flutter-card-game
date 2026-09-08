@@ -28,14 +28,21 @@ void main() {
     expect(sportModuleFor(Sport.football).accent, Cyber.cyan);
     expect(sportModuleFor(Sport.cricket).accent, AppTheme.whiteColor);
     expect(sportModuleFor(Sport.basketball).accent, Cyber.gold);
-    expect(sportModuleFor(Sport.tennis).accent, Cyber.lime);
     expect(sportModuleFor(Sport.motorsport).accent, Cyber.f1Red);
+    expect(sportModuleFor(Sport.tennis).accent, Cyber.lime);
     expect(sportTabColors, const [
       Cyber.cyan,
       AppTheme.whiteColor,
       Cyber.gold,
-      Cyber.lime,
       Cyber.f1Red,
+      Cyber.lime,
+    ]);
+    expect(sportTabOrder, const [
+      Sport.football,
+      Sport.cricket,
+      Sport.basketball,
+      Sport.motorsport,
+      Sport.tennis,
     ]);
   });
 }

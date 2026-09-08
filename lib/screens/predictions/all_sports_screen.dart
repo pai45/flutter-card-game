@@ -16,8 +16,8 @@ const _gameCounts = <Sport, int>{
   Sport.football: 6,
   Sport.cricket: 3,
   Sport.basketball: 3,
-  Sport.tennis: 3,
   Sport.motorsport: 3,
+  Sport.tennis: 3,
 };
 
 class AllSportsScreen extends StatefulWidget {

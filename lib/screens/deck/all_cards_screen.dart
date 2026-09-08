@@ -17,8 +17,8 @@ const _collectionSports = <Sport>[
   Sport.football,
   Sport.cricket,
   Sport.basketball,
-  Sport.tennis,
   Sport.motorsport,
+  Sport.tennis,
 ];
 
 final _collectionSportLabels = _collectionSports

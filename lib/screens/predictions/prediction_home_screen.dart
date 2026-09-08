@@ -1711,12 +1711,12 @@ class _YourClubPinState extends State<_YourClubPin> {
           children: [
             Icon(Icons.star_rounded, size: 13, color: accent),
             const SizedBox(width: 5),
-            // Expanded, not Flexible: the club's name owns whatever the
-            // readout leaves. A Flexible here would split the free space with
-            // a second flex child and ellipse the name away.
+            // Expanded, not Flexible: the label owns whatever the readout
+            // leaves. A Flexible here would split the free space with a
+            // second flex child and ellipse the label away.
             Expanded(
               child: Text(
-                'YOUR CLUB · ${widget.side.team.name.toUpperCase()}',
+                'YOUR CLUB',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Cyber.label(10, color: accent, letterSpacing: 1.6),
@@ -1776,12 +1776,8 @@ class _ClubPinReadout extends StatelessWidget {
         ),
       );
     }
-    if (match.status == MatchStatus.finished) {
-      return Text(
-        'FULL TIME',
-        style: Cyber.label(9.5, color: Cyber.muted, letterSpacing: 1.2),
-      );
-    }
+    // A finished fixture says so on the card itself; the header stays quiet.
+    if (match.status == MatchStatus.finished) return const SizedBox.shrink();
     final remaining = match.kickoff.difference(DateTime.now());
     if (remaining.isNegative) {
       return Text(

@@ -600,17 +600,6 @@ class _MatchTimelinePanel extends StatelessWidget {
           suffix: 'EVENTS',
         ),
         const SizedBox(height: 12),
-        _TimelineSides(
-          match: match,
-          homeColor: homeColor,
-          awayColor: awayColor,
-        ),
-        const SizedBox(height: 5),
-        Text(
-          'TAP A MOMENT FOR THE FULL REPORT',
-          textAlign: TextAlign.center,
-          style: Cyber.label(7.5, color: Cyber.muted, letterSpacing: 1.1),
-        ),
         for (final event in events)
           if (_isPeriodMarker(event.type))
             _PeriodMarker(event: event)
@@ -627,53 +616,6 @@ class _MatchTimelinePanel extends StatelessWidget {
 /// Width of the centre column. Sized for the longest stoppage-time label
 /// ("90'+5'") so the spine never shifts sideways between rows.
 const double _kSpineWidth = 60;
-
-/// Names the two sides of the spine and labels the centre column, so the
-/// left/right split is stated once rather than inferred from colour.
-class _TimelineSides extends StatelessWidget {
-  const _TimelineSides({
-    required this.match,
-    required this.homeColor,
-    required this.awayColor,
-  });
-
-  final SportMatch match;
-  final Color homeColor;
-  final Color awayColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            match.home.shortName.toUpperCase(),
-            textAlign: TextAlign.right,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Cyber.display(12, color: homeColor),
-          ),
-        ),
-        SizedBox(
-          width: _kSpineWidth,
-          child: Text(
-            'MIN',
-            textAlign: TextAlign.center,
-            style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.4),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            match.away.shortName.toUpperCase(),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Cyber.display(12, color: awayColor),
-          ),
-        ),
-      ],
-    );
-  }
-}
 
 /// One moment on the spine: the minute in the centre, the event pushed out to
 /// its own team's side. Tapping expands the feed's own report on the moment.

@@ -77,9 +77,25 @@ void main() {
       ),
       findsOneWidget,
     );
-    // The minute column is the axis: both sides read off the same centre line.
-    final spine = tester.getRect(find.text('MIN'));
-    expect(spine.center.dx, closeTo(390 / 2, 1));
+    // The compact timeline relies on its centre spine rather than a repeated
+    // team/minute legend or an instructional caption.
+    expect(find.text('MIN'), findsNothing);
+    expect(find.text('TAP A MOMENT FOR THE FULL REPORT'), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('football-match-timeline')),
+        matching: find.text(match.home.shortName.toUpperCase()),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('football-match-timeline')),
+        matching: find.text(match.away.shortName.toUpperCase()),
+      ),
+      findsNothing,
+    );
+    final timelineCentre = tester.view.physicalSize.width / 2;
     final homeMark = find.descendant(
       of: find.byKey(const ValueKey('football-match-timeline')),
       matching: find.text('JOSH KING'),
@@ -89,9 +105,9 @@ void main() {
       matching: find.text('JOÃO PEDRO'),
     );
     await _scrollTo(tester, homeMark);
-    expect(tester.getRect(homeMark).right, lessThan(spine.center.dx));
+    expect(tester.getRect(homeMark).right, lessThan(timelineCentre));
     await _scrollTo(tester, awayMark);
-    expect(tester.getRect(awayMark).left, greaterThan(spine.center.dx));
+    expect(tester.getRect(awayMark).left, greaterThan(timelineCentre));
 
     _selectSection(tester, 'MOMENTUM');
     await _pumpAnimations(tester);

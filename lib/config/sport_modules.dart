@@ -71,13 +71,18 @@ const sportModules = <SportModule>[
   ),
 ];
 
-/// Tab order for the MATCH / GAMES / archive sport strip (Football → … → Motorsport).
+/// Tab order for the MATCH / GAMES / archive sport strip
+/// (Football → Cricket → Basketball → Motorsport → Tennis).
+///
+/// Every other sport strip in the app mirrors this order — the collection,
+/// leaderboard and shop each keep their own list because they show different
+/// subsets, so a change here has to be made in all four.
 const sportTabOrder = <Sport>[
   Sport.football,
   Sport.cricket,
   Sport.basketball,
-  Sport.tennis,
   Sport.motorsport,
+  Sport.tennis,
 ];
 
 final sportTabLabels = sportTabOrder

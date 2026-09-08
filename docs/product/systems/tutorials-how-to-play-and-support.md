@@ -28,6 +28,11 @@ Tutorial steps define target copy and ordering. Completion/dismissal controls
 repeat behavior where a mode wires persistence. How to Play is explanatory and
 must follow implemented mechanics; it does not override game code.
 
+Talk to StatOz provides direct Bug, Feature Request, Score / Data Mismatch, and
+Shoutout channels. The same screen includes a Follow Us On panel for Instagram,
+Reddit, and YouTube, keeping the community destinations visible without
+competing with the support actions.
+
 ## Rewards and Progression
 
 Help surfaces do not directly award XP or coins. Their payoff is lower friction,
@@ -52,7 +57,8 @@ state; support delivery depends on the current Talk to StatOz implementation.
 ## Planned Scope and Current Limitations
 
 - **BUILT:** Shared tutorial widget/config, How to Play hub/detail screens, and
-  Talk to StatOz profile surface.
+  Talk to StatOz profile surface with four support channels and Instagram,
+  Reddit, and YouTube follow options.
 - **PLANNED:** Every newly shipped mode should add or explicitly waive tutorial
   and guide coverage; no automated content synchronization exists.
 
