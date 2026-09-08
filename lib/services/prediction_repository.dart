@@ -12,6 +12,7 @@ import '../models/tennis_scorecard.dart';
 import 'espn_score_service.dart';
 import 'basketball_match_package_service.dart';
 import 'cricket_match_package_service.dart';
+import 'f1_race_package_service.dart';
 import 'football_match_package_service.dart';
 import 'football_question_bank.dart';
 
@@ -86,6 +87,7 @@ class MockPredictionRepository
   Future<SportMatch>? _bundledFootballFixture;
   Future<SportMatch>? _bundledBasketballFixture;
   Future<SportMatch>? _bundledCricketFixture;
+  Future<List<SportMatch>>? _bundledF1Fixtures;
 
   // ── Leagues (EPL first to match the reference order) ─────────────────────────
   static const _intl = League(
@@ -2772,7 +2774,7 @@ class MockPredictionRepository
       status: MatchStatus.finished,
       homeScore: 'P1',
       awayScore: 'P3',
-      resultLine: 'British Grand Prix: Hamilton takes the chequered flag',
+      resultLine: 'P1 : Hamilton',
       rewardXp: 150,
       timelineEvents: const [
         MatchEvent(
@@ -2864,8 +2866,57 @@ class MockPredictionRepository
     ),
   ];
 
+  /// The 2026 Italian GP, settled against the bundled result package rather
+  /// than the generic `_f1Quizzes` options: Antonelli won from P19, Gasly took
+  /// pole, and Antonelli set the only recorded fastest lap (1:23.504). See
+  /// assets/data/f1-italian-gp.json.
+  static List<PredictionQuiz> _italianGpQuizzes(String matchId) => [
+    PredictionQuiz(
+      id: 'main',
+      matchId: matchId,
+      title: 'Race Predictions',
+      questions: [
+        const QuizQuestion(
+          id: 'q1',
+          text: 'Who won at Monza?',
+          options: [
+            'Pierre Gasly',
+            'George Russell',
+            'Kimi Antonelli',
+            'Lando Norris',
+          ],
+          reward: 100,
+          settledOptionIndex: 2,
+        ),
+        const QuizQuestion(
+          id: 'q2',
+          text: 'Who took pole in qualifying?',
+          options: ['Kimi Antonelli', 'Pierre Gasly', 'George Russell'],
+          reward: 50,
+          settledOptionIndex: 1,
+        ),
+      ],
+    ),
+    PredictionQuiz(
+      id: 'bonus',
+      matchId: matchId,
+      title: 'Bonus Predictions',
+      questions: [
+        const QuizQuestion(
+          id: 'b1',
+          text: 'Who set the fastest lap?',
+          options: ['George Russell', 'Kimi Antonelli', 'Charles Leclerc'],
+          reward: 75,
+          settledOptionIndex: 1,
+        ),
+      ],
+    ),
+  ];
+
   late final Map<String, List<PredictionQuiz>> _quizSets = {
     'fifa_fra_par': _franceParaguayQuizzes(),
+    // The bundled Italian GP weekend (ESPN event id).
+    '600057442': _italianGpQuizzes('600057442'),
     // British GP is settled (reveal-ready); the two upcoming GPs are open.
     'f1_british_gp': _f1Quizzes(
       'f1_british_gp',
@@ -3816,6 +3867,20 @@ class MockPredictionRepository
         // A missing prototype asset must not block live/seeded cricket.
       }
     }
+    if (sport == null || sport == Sport.motorsport) {
+      try {
+        // Kept on their real dates, unlike the three prototype fixtures above:
+        // a Grand Prix is a dated event, and the motorsport week picker already
+        // opens on the closest race week. Without this the bundled weekend is
+        // only reachable through the live ESPN scoreboard, which a web build
+        // cannot call.
+        mockFixtures.addAll(
+          await (_bundledF1Fixtures ??= F1RacePackageService.bundledFixtures()),
+        );
+      } catch (_) {
+        // A missing package must not block the seeded race weekends.
+      }
+    }
 
     return List.unmodifiable(mockFixtures);
   }
@@ -3867,7 +3932,18 @@ class MockPredictionRepository
         return null;
       }
     }
-    return _fixtureFor(matchId);
+    final seeded = _fixtureFor(matchId);
+    if (seeded != null) return seeded;
+    try {
+      final races = await (_bundledF1Fixtures ??=
+          F1RacePackageService.bundledFixtures());
+      for (final race in races) {
+        if (race.id == matchId) return race;
+      }
+    } catch (_) {
+      // Fall through to "no such fixture".
+    }
+    return null;
   }
 
   @override

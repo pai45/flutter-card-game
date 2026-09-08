@@ -27,9 +27,15 @@ Sports appear in one canonical order everywhere they are tabbed —
 **Football, Cricket, Basketball, Motorsport, Tennis** — defined by
 `sportTabOrder` in `lib/config/sport_modules.dart` and mirrored by the
 collection, leaderboard and shop strips, which keep their own lists because each
-shows a different subset. The compact MATCH/GAMES strip is the one exception: it
-shows four sports plus an **ALL SPORTS** overflow and deliberately omits
-Motorsport, which is reached through that overflow.
+shows a different subset.
+
+The compact MATCH/GAMES strip shows a **curated** subset — TRENDING, Football,
+Cricket, Basketball, the **ALL SPORTS** overflow and search — because it also
+carries the overflow and the search action, so only a few sports fit before the
+icons crowd. Motorsport and Tennis are reached through ALL SPORTS, which lists
+every sport in the canonical order. Which sports earn a shortcut is a product
+call held in `_shortcutSports`, so the strip does not silently grow when a sport
+is added to `sportTabOrder`.
 
 MATCH/GAMES sport tabs, the All Sports router, and Trending sport markers use
 the canonical sport identity palette: Football cyan, Cricket white, Basketball
@@ -552,11 +558,33 @@ consulted as a fallback. Before this, the id mismatch meant the EPL hub rendered
 (`--race italian`, verified with `--check`). The reference capture is the 2026
 Pirelli Italian Grand Prix at Monza.
 
-The package now drives the **motorsport STATS tab**, which was the last sport
-still falling through the legacy scoreboard branch. Races the package does not
-cover keep that branch: they render ESPN's pre-formatted result strings from
+The package drives the **motorsport STATS tab**, which was the last sport still
+falling through the legacy scoreboard branch. Races the package does not cover
+keep that branch: they render ESPN's pre-formatted result strings from
 `SportMatch.f1Sessions` / `f1DriverStandings`, which is exactly why they cannot
 be charted.
+
+The package also **seeds the race onto the board**. Live motorsport reaches the
+feed only through the ESPN scoreboard, which a web build cannot call, so the
+bundled weekend existed with no way to open it. `F1RacePackageService`
+`.bundledFixtures()` maps it to a fixture the Predict feed lists, rebuilding each
+session line in ESPN's own `"1. Driver · Constructor (time)"` display format so
+the starting-grid parser reads it exactly as it reads a live response, and
+matching the home/away shape `_parseMotorsportEventToMatch` builds so a live
+response for the same race de-duplicates rather than doubling. Unlike the
+football, cricket and basketball prototype fixtures it keeps its **real dates**
+rather than being pinned to today — a Grand Prix is a dated event, and the
+motorsport week picker already opens on the closest race week. Its quizzes are
+settled against the result package: Antonelli won, Gasly took pole, Antonelli set
+the only recorded fastest lap.
+
+On the feed card, the Grand Prix title stays **white regardless of finish
+state** — unlike a team name, which dims once a match ends, the race title is
+the card's one identity line rather than a side that "loses" the match. The
+result line beneath it reads only **`P1 : <driver>`**, matching the seeded GP
+fixtures rather than a prose sentence ("<Race>: <driver> wins" / "takes the
+chequered flag") — the title already names the race, so the line states only
+the fact the title doesn't.
 
 It holds the full weekend rather than a results list: the circuit (5.793 km, 53
 laps, 11 turns, clockwise, established 1950, lap record 1:20.901) with six SVG

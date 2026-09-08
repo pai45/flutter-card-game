@@ -64,6 +64,28 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
 
   Future<void> _loadConfiguredSports() async {
     final cubit = context.read<PredictionCubit>();
+    final catalogFixtureIds = matchTrendingCatalog
+        .where(
+          (item) =>
+              item.enabled &&
+              (item.kind == TrendingTileKind.match ||
+                  item.kind == TrendingTileKind.predict),
+        )
+        .map((item) => item.sourceId)
+        .toList(growable: false);
+
+    // Paint the curated feature tiles as soon as their known IDs resolve. The
+    // wider sport scan can include sizeable bundled ESPN snapshots, and should
+    // not hold the first Trends row in a skeleton state while it completes.
+    final initialCatalogFixtures = await cubit.resolveCatalogFixtures(
+      catalogFixtureIds,
+    );
+    if (!mounted) return;
+    setState(() {
+      _catalogFixtures = initialCatalogFixtures;
+      _fixtureScanRunning = false;
+    });
+
     // PredictionCubit merges each sport result into its current fixture
     // snapshot. Keep these catalog-scoped loads ordered so concurrent
     // completions cannot replace fixtures added by another sport.
@@ -71,18 +93,11 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
       await cubit.loadSport(sport);
     }
     final catalogFixtures = await cubit.resolveCatalogFixtures(
-      matchTrendingCatalog
-          .where(
-            (item) =>
-                item.enabled &&
-                (item.kind == TrendingTileKind.match ||
-                    item.kind == TrendingTileKind.predict),
-          )
-          .map((item) => item.sourceId),
+      catalogFixtureIds,
     );
     if (!mounted) return;
     setState(() {
-      _catalogFixtures = catalogFixtures;
+      _catalogFixtures = {..._catalogFixtures, ...catalogFixtures};
       _fixtureScanRunning = false;
     });
   }
@@ -481,7 +496,7 @@ class _TrendingPredictCard extends StatelessWidget {
     final module = sportModuleFor(match.sport);
     return _TrendSignalShell(
       semanticsLabel: 'Predict ${match.home.name} versus ${match.away.name}',
-      accent: Cyber.violet,
+      accent: Cyber.cyan,
       tag: 'PREDICT',
       onTap: onTap,
       child: Padding(
@@ -518,7 +533,7 @@ class _TrendingPredictCard extends StatelessWidget {
                   sport: match.sport,
                   competition: match.leagueId,
                 ),
-                Text('VS', style: Cyber.display(10, color: Cyber.violet)),
+                Text('VS', style: Cyber.display(10, color: Cyber.cyan)),
                 TeamLogo(
                   team: match.away,
                   width: 30,
@@ -528,7 +543,7 @@ class _TrendingPredictCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            const Spacer(),
             Text(
               '${match.home.shortName} // ${match.away.shortName}',
               maxLines: 1,
@@ -545,7 +560,7 @@ class _TrendingPredictCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: Cyber.body(
                 10,
-                color: hasPrediction ? Cyber.success : Cyber.violet,
+                color: hasPrediction ? Cyber.success : Cyber.cyan,
                 weight: FontWeight.w700,
                 letterSpacing: 0.2,
                 height: 1.1,
@@ -576,7 +591,7 @@ class _TrendingMarketCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final future = kind == TrendingTileKind.future;
-    final accent = future ? Cyber.gold : Cyber.lime;
+    final marketAccent = future ? Cyber.gold : Cyber.lime;
     final module = sportModuleFor(sport);
     final leader = market.leadingOutcome;
     final delta = market.latestDeltaFor(leader.id);
@@ -586,7 +601,10 @@ class _TrendingMarketCard extends StatelessWidget {
         !market.isResultKnown;
     return _TrendSignalShell(
       semanticsLabel: market.question,
-      accent: accent,
+      // Type tags are navigational chrome, so FUTURE and PICK follow the
+      // shared cyan action treatment. Market values retain their own signal
+      // colour below.
+      accent: Cyber.cyan,
       tag: future ? 'FUTURE' : 'PICK',
       onTap: onTap,
       child: LayoutBuilder(
@@ -610,7 +628,7 @@ class _TrendingMarketCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: Cyber.label(
                           10,
-                          color: accent,
+                          color: Cyber.muted,
                           letterSpacing: 0.7,
                         ),
                       ),
@@ -632,23 +650,20 @@ class _TrendingMarketCard extends StatelessWidget {
                     height: 1.12,
                   ),
                 ),
-                SizedBox(
-                  height: compact
-                      ? 4
-                      : tall
-                      ? 16
-                      : 12,
-                ),
                 if (tall) ...[
+                  const SizedBox(height: 16),
                   for (final outcome in market.outcomes.take(4)) ...[
                     _OutcomeSignal(
                       label: outcome.label,
                       value: outcome.probabilityPercent,
-                      accent: outcome.id == leader.id ? accent : Cyber.muted,
+                      accent: outcome.id == leader.id
+                          ? marketAccent
+                          : Cyber.muted,
                     ),
                     const SizedBox(height: 7),
                   ],
                 ] else ...[
+                  const Spacer(),
                   Text(
                     leader.label.toUpperCase(),
                     maxLines: 1,
@@ -664,7 +679,7 @@ class _TrendingMarketCard extends StatelessWidget {
                         style:
                             Cyber.display(
                               compact ? 18 : 22,
-                              color: accent,
+                              color: marketAccent,
                               letterSpacing: 0,
                             ).copyWith(
                               fontFeatures: const [
