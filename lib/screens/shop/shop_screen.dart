@@ -90,8 +90,8 @@ const _shopSports = <Sport>[
   Sport.football,
   Sport.cricket,
   Sport.basketball,
-  Sport.tennis,
   Sport.motorsport,
+  Sport.tennis,
 ];
 
 final _shopSportLabels = _shopSports

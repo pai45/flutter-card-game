@@ -18,7 +18,7 @@ mode-specific deck builders, home starter-pack onboarding, daily drops, shop
 packs, and pack reveal flows.
 
 The Deck Locker (Profile → **ALL DECKS**) is sport-tabbed, matching the GAMES
-tab's sport strip (Football, Cricket, Basketball, Tennis, Motorsport — one
+tab's sport strip (Football, Cricket, Basketball, Motorsport, Tennis — one
 tab per sport, sliding accent-coloured underline). Each tab shows that sport's
 real equipped squad as cards (attack/defence/keeper/action-deck groups for
 Football, batting order for Cricket, rotation for Basketball, a hero athlete

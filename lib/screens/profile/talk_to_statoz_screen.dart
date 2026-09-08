@@ -39,6 +39,8 @@ class TalkToStatozScreen extends StatelessWidget {
             _ChannelCard(channel: _channels[i], index: i),
             if (i < _channels.length - 1) const SizedBox(height: 12),
           ],
+          const SizedBox(height: 24),
+          const _FollowUsPanel(),
         ],
       ),
     );
@@ -154,6 +156,78 @@ class _IconTile extends StatelessWidget {
 }
 
 // ── Compose transmission ─────────────────────────────────────────────────────
+
+class _FollowUsPanel extends StatelessWidget {
+  const _FollowUsPanel();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'FOLLOW US ON',
+          style: Cyber.label(11, color: Cyber.cyan, letterSpacing: 2),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Highlights, hot takes, and the next drop.',
+          style: Cyber.body(12.5, color: AppTheme.text2, height: 1.4),
+        ),
+        const SizedBox(height: 12),
+        const Row(
+          children: [
+            Expanded(
+              child: _SocialOption(
+                label: 'INSTAGRAM',
+                icon: Icons.camera_alt_outlined,
+              ),
+            ),
+            SizedBox(width: 8),
+            Expanded(
+              child: _SocialOption(label: 'REDDIT', icon: Icons.forum_outlined),
+            ),
+            SizedBox(width: 8),
+            Expanded(
+              child: _SocialOption(
+                label: 'YOUTUBE',
+                icon: Icons.play_circle_outline,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _SocialOption extends StatelessWidget {
+  const _SocialOption({required this.label, required this.icon});
+
+  final String label;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return CyberPanel(
+      accent: Cyber.border,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Cyber.muted, size: 22),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Cyber.label(7.5, color: AppTheme.text2, letterSpacing: 0.7),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _ComposeTransmissionScreen extends StatefulWidget {
   const _ComposeTransmissionScreen({required this.channel});
@@ -577,21 +651,10 @@ const _channels = <_Channel>[
     accent: Cyber.cyan,
   ),
   _Channel(
-    id: 'feedback',
-    title: 'Feedback & Enhancements',
-    tagline: 'Polish, friction, or UX that could hit harder.',
-    composeSubtitle: '// Channel 03 · Tuning Pass',
-    composeHint: 'Call out what feels off — or what almost nails it.',
-    summaryHint: 'What should we tune?',
-    detailsHint: 'Where in the app? What would feel better?',
-    icon: Icons.tune,
-    accent: Cyber.violet,
-  ),
-  _Channel(
     id: 'mismatch',
     title: 'Score / Data Mismatch',
     tagline: 'Wrong score, odds, lineup, or live feed drift.',
-    composeSubtitle: '// Channel 04 · Data Sync',
+    composeSubtitle: '// Channel 03 · Data Sync',
     composeHint:
         'Flag the fixture, market, or stat that doesn\'t match reality.',
     summaryHint: 'Match / market that looks wrong',
@@ -603,7 +666,7 @@ const _channels = <_Channel>[
     id: 'shoutout',
     title: 'Shoutout',
     tagline: 'Love a moment, mode, or beat? Send it up.',
-    composeSubtitle: '// Channel 05 · Fan Signal',
+    composeSubtitle: '// Channel 04 · Fan Signal',
     composeHint: 'Tell us what slapped. We live for these.',
     summaryHint: 'What made you cheer?',
     detailsHint: 'Share the moment — mode, card, streak, vibe…',

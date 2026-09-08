@@ -99,6 +99,7 @@ class CyberChartPainter extends CustomPainter {
     this.revealProgress = 1,
     this.xAxisLabels = const <String>[],
     this.yAxisLabels = false,
+    this.yAxisFormatter,
     this.gridDivisions = 2,
   });
 
@@ -127,6 +128,13 @@ class CyberChartPainter extends CustomPainter {
 
   final List<String> xAxisLabels;
   final bool yAxisLabels;
+
+  /// Formats each y-axis gridline value. Left null the axis prints the rounded
+  /// number, which is right for scores and percentages but not for a series
+  /// plotted in a different unit to the one it reads in — a race position chart
+  /// is plotted inverted so P1 sits at the top, and a lap-time chart is plotted
+  /// in milliseconds but reads as `1:22.6`.
+  final String Function(double value)? yAxisFormatter;
   final int gridDivisions;
 
   @override
@@ -199,7 +207,7 @@ class CyberChartPainter extends CustomPainter {
         final value = minValue + spread * (1 - i / gridDivisions);
         _paintText(
           canvas,
-          value.round().toString(),
+          yAxisFormatter?.call(value) ?? value.round().toString(),
           Cyber.label(7, color: Cyber.muted),
           Offset(rect.left - 5, y - 4),
           alignRight: true,
@@ -515,6 +523,7 @@ class CyberChartPanel extends StatefulWidget {
     this.glow = false,
     this.xAxisLabels = const <String>[],
     this.yAxisLabels = false,
+    this.yAxisFormatter,
     this.gridDivisions = 2,
     this.markerSound = true,
     this.chartKey,
@@ -547,6 +556,9 @@ class CyberChartPanel extends StatefulWidget {
 
   final List<String> xAxisLabels;
   final bool yAxisLabels;
+
+  /// Formats each y-axis gridline value; see [CyberChartPainter.yAxisFormatter].
+  final String Function(double value)? yAxisFormatter;
   final int gridDivisions;
 
   /// Clicks when the scrub crosses a marker, so dragging over a goal or wicket
@@ -655,6 +667,7 @@ class _CyberChartPanelState extends State<CyberChartPanel> {
     revealProgress: widget.revealProgress,
     xAxisLabels: widget.xAxisLabels,
     yAxisLabels: widget.yAxisLabels,
+    yAxisFormatter: widget.yAxisFormatter,
     gridDivisions: widget.gridDivisions,
   );
 
@@ -700,6 +713,7 @@ class _CyberChartPanelState extends State<CyberChartPanel> {
           percentScale: widget.percentScale,
           xAxisLabels: widget.xAxisLabels,
           yAxisLabels: widget.yAxisLabels,
+          yAxisFormatter: widget.yAxisFormatter,
           gridDivisions: widget.gridDivisions,
         ),
       ),
@@ -776,6 +790,7 @@ class CyberChartFullScreen extends StatefulWidget {
     this.percentScale = false,
     this.xAxisLabels = const <String>[],
     this.yAxisLabels = false,
+    this.yAxisFormatter,
     this.gridDivisions = 2,
     super.key,
   });
@@ -794,6 +809,9 @@ class CyberChartFullScreen extends StatefulWidget {
   final bool percentScale;
   final List<String> xAxisLabels;
   final bool yAxisLabels;
+
+  /// Formats each y-axis gridline value; see [CyberChartPainter.yAxisFormatter].
+  final String Function(double value)? yAxisFormatter;
   final int gridDivisions;
 
   @override
@@ -880,6 +898,7 @@ class _CyberChartFullScreenState extends State<CyberChartFullScreen> {
                       percentScale: widget.percentScale,
                       xAxisLabels: widget.xAxisLabels,
                       yAxisLabels: widget.yAxisLabels,
+                      yAxisFormatter: widget.yAxisFormatter,
                       gridDivisions: widget.gridDivisions,
                     ),
                   ),

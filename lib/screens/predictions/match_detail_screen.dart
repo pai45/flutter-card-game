@@ -40,6 +40,7 @@ import 'widgets/pick_trade_sheet.dart';
 import 'widgets/football_match_stats_view.dart';
 import 'widgets/basketball_match_stats_view.dart';
 import 'widgets/cricket_match_stats_view.dart';
+import 'widgets/motorsport_match_stats_view.dart';
 import 'widgets/standings_table.dart' show DetailTopBar;
 import '../../widgets/match_pitch_view.dart';
 
@@ -921,6 +922,9 @@ class _ScoreboardTabState extends State<_ScoreboardTab> {
     if (widget.match.sport == Sport.cricket) {
       return CricketMatchStatsView(match: widget.match);
     }
+    if (widget.match.sport == Sport.motorsport) {
+      return MotorsportMatchStatsView(match: widget.match);
+    }
     return Column(
       children: [
         CyberFilterChips(
@@ -986,18 +990,6 @@ class _ScoreboardTabState extends State<_ScoreboardTab> {
                         padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
                         children: [
                           _MatchFactPanel(match: widget.match),
-                          if (widget.match.sport == Sport.motorsport &&
-                              _f1NonQualifyingSessions(
-                                widget.match.f1Sessions,
-                              ).isNotEmpty) ...[
-                            const SizedBox(height: 14),
-                            _F1SessionsPanel(match: widget.match),
-                          ],
-                          if (widget.match.sport == Sport.motorsport &&
-                              widget.match.f1DriverStandings != null) ...[
-                            const SizedBox(height: 14),
-                            _DriverStandingsPanel(match: widget.match),
-                          ],
                           if (widget.match.teamStats?.isNotEmpty ?? false) ...[
                             const SizedBox(height: 14),
                             _TeamStatsPanel(match: widget.match),
@@ -1154,7 +1146,7 @@ class _LineupsTab extends StatelessWidget {
       return CricketLineupView(match: match);
     }
     if (match.sport == Sport.motorsport) {
-      return _F1QualifyingLineupView(match: match);
+      return F1QualifyingLineupView(match: match);
     }
     return MatchPitchView(match: match);
   }
@@ -1250,336 +1242,6 @@ class _MatchFactPanel extends StatelessWidget {
       ),
     );
   }
-}
-
-class _DriverStandingsPanel extends StatelessWidget {
-  const _DriverStandingsPanel({required this.match});
-  final SportMatch match;
-
-  @override
-  Widget build(BuildContext context) {
-    final standings = match.f1DriverStandings;
-    if (standings == null || standings.isEmpty) return const SizedBox.shrink();
-
-    return _Panel(
-      title: 'DRIVER STANDINGS',
-      accent: Cyber.gold,
-      child: Column(
-        children: [
-          for (var i = 0; i < standings.length; i++) ...[
-            if (i > 0)
-              Divider(
-                height: 1,
-                thickness: 1,
-                color: Cyber.line.withValues(alpha: 0.1),
-              ),
-            Container(
-              height: 48,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 32,
-                    child: Text(
-                      '${i + 1}',
-                      style:
-                          Cyber.display(
-                            14,
-                            color: i < 3 ? Cyber.gold : Cyber.muted,
-                          ).copyWith(
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                          ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      standings[i],
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Cyber.body(
-                        14,
-                        weight: i < 3 ? FontWeight.w800 : FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _F1SessionsPanel extends StatelessWidget {
-  const _F1SessionsPanel({required this.match});
-  final SportMatch match;
-
-  @override
-  Widget build(BuildContext context) {
-    // Qualifying lives on the LINEUP tab as the starting grid.
-    final sessions = _f1NonQualifyingSessions(match.f1Sessions);
-    if (sessions.isEmpty) return const SizedBox.shrink();
-
-    return _Panel(
-      title: 'SESSION RESULTS',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (var s = 0; s < sessions.length; s++) ...[
-            if (s > 0) ...[
-              const SizedBox(height: 10),
-              Divider(
-                height: 1,
-                thickness: 1,
-                color: Cyber.line.withValues(alpha: 0.1),
-              ),
-              const SizedBox(height: 10),
-            ],
-            Text(
-              sessions[s].name.toUpperCase(),
-              style: Cyber.label(11, color: Cyber.cyan, letterSpacing: 1.2),
-            ),
-            const SizedBox(height: 6),
-            if (sessions[s].results.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Text(
-                  'Not yet run.',
-                  style: Cyber.body(12, color: Cyber.muted),
-                ),
-              )
-            else
-              for (final result in sessions[s].results)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 3),
-                  child: Text(
-                    result,
-                    style: Cyber.body(13, color: Colors.white),
-                  ),
-                ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-/// F1 LINEUP tab — ESPN qualifying order as the starting grid.
-class _F1QualifyingLineupView extends StatelessWidget {
-  const _F1QualifyingLineupView({required this.match});
-  final SportMatch match;
-
-  @override
-  Widget build(BuildContext context) {
-    final sessions = _f1QualifyingSessions(match.f1Sessions);
-    if (sessions.isEmpty) {
-      return const CyberNoDataState(
-        icon: Icons.grid_view_outlined,
-        title: 'Grid not set',
-        message:
-            'Qualifying results will lock the starting grid here once the session runs.',
-        accent: Cyber.cyan,
-        spark: Icons.flag_outlined,
-      );
-    }
-
-    final hasAnyResults = sessions.any((s) => s.results.isNotEmpty);
-    if (!hasAnyResults) {
-      return const CyberNoDataState(
-        icon: Icons.timer_outlined,
-        title: 'Qualifying pending',
-        message:
-            'The session is on the schedule — grid order drops here when times are in.',
-        accent: Cyber.gold,
-        spark: Icons.electric_bolt,
-      );
-    }
-
-    return ListView(
-      key: const ValueKey('f1-qualifying-lineup'),
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
-      children: [
-        for (var s = 0; s < sessions.length; s++) ...[
-          if (s > 0) const SizedBox(height: 14),
-          _F1QualifyingGridPanel(session: sessions[s]),
-        ],
-      ],
-    );
-  }
-}
-
-class _F1QualifyingGridPanel extends StatelessWidget {
-  const _F1QualifyingGridPanel({required this.session});
-  final F1SessionResult session;
-
-  @override
-  Widget build(BuildContext context) {
-    final isSprint = session.isSprintQualifying;
-    final title = isSprint ? 'SPRINT QUALIFYING' : 'STARTING GRID';
-    final accent = isSprint ? Cyber.magenta : Cyber.cyan;
-
-    return _Panel(
-      title: title,
-      accent: accent,
-      child: Column(
-        children: [
-          if (session.results.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Text(
-                'Not yet run.',
-                style: Cyber.body(13, color: Cyber.muted),
-              ),
-            )
-          else
-            for (var i = 0; i < session.results.length; i++) ...[
-              if (i > 0)
-                Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: Cyber.line.withValues(alpha: 0.1),
-                ),
-              _F1GridRow(
-                entry: session.results[i],
-                index: i,
-                isPole: i == 0 && !isSprint,
-              ),
-            ],
-        ],
-      ),
-    );
-  }
-}
-
-class _F1GridRow extends StatelessWidget {
-  const _F1GridRow({
-    required this.entry,
-    required this.index,
-    required this.isPole,
-  });
-
-  final String entry;
-  final int index;
-  final bool isPole;
-
-  @override
-  Widget build(BuildContext context) {
-    final parsed = _parseF1ResultEntry(entry);
-    final posColor = isPole
-        ? Cyber.gold
-        : (index < 3 ? Cyber.cyan : Cyber.muted);
-    final nameWeight = isPole || index < 3 ? FontWeight.w800 : FontWeight.w600;
-
-    return Container(
-      height: 52,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: isPole
-          ? BoxDecoration(
-              color: Color.alphaBlend(
-                Cyber.gold.withValues(alpha: 0.08),
-                Cyber.panel,
-              ),
-            )
-          : null,
-      child: Row(
-        children: [
-          SizedBox(
-            width: 36,
-            child: Text(
-              'P${parsed.position ?? (index + 1)}',
-              style: Cyber.display(
-                13,
-                color: posColor,
-              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-            ),
-          ),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  parsed.driver,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Cyber.body(14, weight: nameWeight),
-                ),
-                if (parsed.constructor != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    parsed.constructor!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Cyber.label(
-                      9,
-                      color: Cyber.muted,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          if (isPole) ...[
-            const SizedBox(width: 8),
-            Text(
-              'POLE',
-              style: Cyber.label(9, color: Cyber.gold, letterSpacing: 1.4),
-            ),
-          ],
-          if (parsed.time != null) ...[
-            const SizedBox(width: 10),
-            Text(
-              parsed.time!,
-              style: Cyber.display(
-                12,
-                color: isPole ? Cyber.gold : Cyber.muted,
-              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-List<F1SessionResult> _f1QualifyingSessions(List<F1SessionResult>? sessions) {
-  if (sessions == null || sessions.isEmpty) return const [];
-  return sessions.where((s) => s.isQualifying).toList(growable: false);
-}
-
-List<F1SessionResult> _f1NonQualifyingSessions(
-  List<F1SessionResult>? sessions,
-) {
-  if (sessions == null || sessions.isEmpty) return const [];
-  return sessions.where((s) => !s.isQualifying).toList(growable: false);
-}
-
-({int? position, String driver, String? constructor, String? time})
-_parseF1ResultEntry(String entry) {
-  final positionMatch = RegExp(r'^\s*(\d+)[.)]\s*').firstMatch(entry);
-  final int? position = positionMatch == null
-      ? null
-      : int.tryParse(positionMatch.group(1)!);
-  final stripped = entry.replaceFirst(RegExp(r'^\s*\d+[.)]\s*'), '').trim();
-  final timeMatch = RegExp(r'\(([^)]+)\)\s*$').firstMatch(stripped);
-  final String? time = timeMatch?.group(1)?.trim();
-  final withoutTime = timeMatch == null
-      ? stripped
-      : stripped.substring(0, timeMatch.start).trim();
-  final parts = withoutTime.split(' · ');
-  final driver = parts.first.trim();
-  final constructor = parts.length > 1 ? parts[1].trim() : null;
-  return (
-    position: position,
-    driver: driver.isEmpty ? entry : driver,
-    constructor: constructor == null || constructor.isEmpty
-        ? null
-        : constructor,
-    time: time == null || time.isEmpty ? null : time,
-  );
 }
 
 class _StatePanel extends StatelessWidget {

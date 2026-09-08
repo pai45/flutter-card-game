@@ -101,9 +101,11 @@ void main() {
 
       await _pumpHome(tester, cubit);
 
-      // The pin header names the club; the card itself carries no badge.
-      expect(find.text('YOUR CLUB · LIVERPOOL'), findsOneWidget);
-      expect(find.text('YOUR CLUB'), findsNothing);
+      // The header reads YOUR CLUB alone: the card directly beneath it already
+      // names the club in its own identity colour, so repeating it there was
+      // redundant. The card still carries no badge of its own.
+      expect(find.text('YOUR CLUB'), findsOneWidget);
+      expect(find.text('YOUR CLUB · LIVERPOOL'), findsNothing);
 
       final cards = tester
           .widgetList<MatchPredictionCard>(find.byType(MatchPredictionCard))

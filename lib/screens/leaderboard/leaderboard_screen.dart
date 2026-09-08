@@ -36,8 +36,8 @@ const List<Sport> _leaderboardSports = [
   Sport.football,
   Sport.cricket,
   Sport.basketball,
-  Sport.tennis,
   Sport.motorsport,
+  Sport.tennis,
 ];
 
 final _leaderboardSportLabels = _leaderboardSports
