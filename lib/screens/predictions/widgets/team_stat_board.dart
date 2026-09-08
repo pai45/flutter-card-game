@@ -213,6 +213,9 @@ class TeamStatBoard extends StatelessWidget {
     required this.spec,
     required this.definition,
     required this.accent,
+    required this.sport,
+    required this.onTapTeam,
+    this.competition,
     super.key,
   });
 
@@ -220,6 +223,9 @@ class TeamStatBoard extends StatelessWidget {
   final StatBoardSpec spec;
   final LeagueStatDefinition? definition;
   final Color accent;
+  final Sport sport;
+  final String? competition;
+  final ValueChanged<SportTeam> onTapTeam;
 
   @override
   Widget build(BuildContext context) {
@@ -240,11 +246,17 @@ class TeamStatBoard extends StatelessWidget {
       children: [
         CyberSlideUpFadeIn(
           offset: 18,
-          child: _LeaderPlate(
-            entry: leader,
-            spec: spec,
-            definition: definition,
-            accent: accent,
+          child: _TeamStatTapTarget(
+            team: leader.team,
+            onTap: () => onTapTeam(leader.team),
+            child: _LeaderPlate(
+              entry: leader,
+              spec: spec,
+              definition: definition,
+              accent: accent,
+              sport: sport,
+              competition: competition,
+            ),
           ),
         ),
         const SizedBox(height: 12),
@@ -252,10 +264,16 @@ class TeamStatBoard extends StatelessWidget {
           CyberSlideUpFadeIn(
             offset: 14,
             delay: Duration(milliseconds: 28 * (i + 1)),
-            child: _ChaserRow(
-              entry: chasers[i],
-              spec: spec,
-              accent: accent,
+            child: _TeamStatTapTarget(
+              team: chasers[i].team,
+              onTap: () => onTapTeam(chasers[i].team),
+              child: _ChaserRow(
+                entry: chasers[i],
+                spec: spec,
+                accent: accent,
+                sport: sport,
+                competition: competition,
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -272,12 +290,16 @@ class _LeaderPlate extends StatelessWidget {
     required this.spec,
     required this.definition,
     required this.accent,
+    required this.sport,
+    required this.competition,
   });
 
   final TeamStatEntry entry;
   final StatBoardSpec spec;
   final LeagueStatDefinition? definition;
   final Color accent;
+  final Sport sport;
+  final String? competition;
 
   @override
   Widget build(BuildContext context) {
@@ -320,7 +342,8 @@ class _LeaderPlate extends StatelessWidget {
                 team: entry.team,
                 width: 42,
                 height: 39,
-                sport: Sport.football,
+                sport: sport,
+                competition: competition,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -381,11 +404,15 @@ class _ChaserRow extends StatelessWidget {
     required this.entry,
     required this.spec,
     required this.accent,
+    required this.sport,
+    required this.competition,
   });
 
   final TeamStatEntry entry;
   final StatBoardSpec spec;
   final Color accent;
+  final Sport sport;
+  final String? competition;
 
   @override
   Widget build(BuildContext context) {
@@ -416,7 +443,8 @@ class _ChaserRow extends StatelessWidget {
               team: entry.team,
               width: 26,
               height: 24,
-              sport: Sport.football,
+              sport: sport,
+              competition: competition,
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -441,6 +469,31 @@ class _ChaserRow extends StatelessWidget {
       ),
     );
   }
+}
+
+class _TeamStatTapTarget extends StatelessWidget {
+  const _TeamStatTapTarget({
+    required this.team,
+    required this.onTap,
+    required this.child,
+  });
+
+  final SportTeam team;
+  final VoidCallback onTap;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    label: 'Open ${team.name} team hub',
+    child: PressableScale(
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 44),
+        child: child,
+      ),
+    ),
+  );
 }
 
 /// Renders a stat value the way its unit reads. The feed's own `display` is

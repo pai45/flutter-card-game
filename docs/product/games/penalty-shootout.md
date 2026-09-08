@@ -57,6 +57,16 @@ idles, anticipates, dives, catches or smothers, and recovers. Player characters
 use cyan kits and CPU characters use amber kits, with card tier accents and no
 character glow.
 
+The scene is composed for depth rather than as a flat face-on goal. The goal
+mouth occupies the upper part of the arena and the penalty spot sits far below
+it, so the taker stands well clear of the net instead of overlapping it. The
+approach between the goal line and the spot is drawn with receding penalty-area
+lines, the arc, and contact shadows under both figures; the taker is scaled to
+the scene rather than to the goal mouth so he reads as the nearer, foreground
+figure while the keeper stays sized to the mouth he defends. These are flat
+low-alpha lines and never glow, keeping the scene's only live glow on the
+selected target reticle and the result verdict.
+
 ## Squad And Opponent Rules
 
 The user's five takers are built from the active squad in this order:

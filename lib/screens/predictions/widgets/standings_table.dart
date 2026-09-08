@@ -534,71 +534,75 @@ class _DataRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final rankColor = row.rank == 1 ? Cyber.gold : Cyber.muted;
     final move = row.rankChange ?? 0;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
-        decoration: BoxDecoration(
-          border: last
-              ? null
-              : Border(
-                  bottom: BorderSide(
-                    color: const Color(0xff243654).withValues(alpha: 0.45),
+    return Semantics(
+      button: true,
+      label: 'Open ${row.team.name} team hub',
+      child: PressableScale(
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 44),
+          padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+          decoration: BoxDecoration(
+            border: last
+                ? null
+                : Border(
+                    bottom: BorderSide(
+                      color: const Color(0xff243654).withValues(alpha: 0.45),
+                    ),
                   ),
-                ),
-        ),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 22,
-              child: Text(
-                '${row.rank}',
-                style: Cyber.label(
-                  12,
-                  color: rankColor,
-                  letterSpacing: 0.2,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-            ),
-            _RankMove(change: move),
-            const SizedBox(width: 6),
-            TeamLogo(
-              team: row.team,
-              competition: competition,
-              width: 26,
-              height: 24,
-            ),
-            const SizedBox(width: 9),
-            Expanded(
-              child: Text(
-                row.tableName ?? row.team.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Cyber.body(
-                  13,
-                  color: AppTheme.whiteColor,
-                  weight: FontWeight.w700,
-                  height: 1,
-                ),
-              ),
-            ),
-            for (final c in cols)
+          ),
+          child: Row(
+            children: [
               SizedBox(
-                width: c.width,
+                width: 22,
                 child: Text(
-                  c.value(row),
-                  textAlign: TextAlign.center,
+                  '${row.rank}',
                   style: Cyber.label(
-                    11,
-                    color: c.label == 'PTS' ? Colors.white : Cyber.muted,
+                    12,
+                    color: rankColor,
                     letterSpacing: 0.2,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ),
-          ],
+              _RankMove(change: move),
+              const SizedBox(width: 6),
+              TeamLogo(
+                team: row.team,
+                competition: competition,
+                width: 26,
+                height: 24,
+              ),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Text(
+                  row.tableName ?? row.team.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Cyber.body(
+                    13,
+                    color: AppTheme.whiteColor,
+                    weight: FontWeight.w700,
+                    height: 1,
+                  ),
+                ),
+              ),
+              for (final c in cols)
+                SizedBox(
+                  width: c.width,
+                  child: Text(
+                    c.value(row),
+                    textAlign: TextAlign.center,
+                    style: Cyber.label(
+                      11,
+                      color: c.label == 'PTS' ? Colors.white : Cyber.muted,
+                      letterSpacing: 0.2,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

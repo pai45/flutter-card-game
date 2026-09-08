@@ -15,16 +15,29 @@ import 'penalty_keeper_rig.dart';
 /// Fraction of the result-scene timeline at which the ball reaches the goal.
 const _kSceneImpact = 0.62;
 
+/// Height of the choose-phase arena, and of the result cinematic.
+///
+/// The result scene keeps a little extra headroom over the choose arena for the
+/// celebrate/dejected poses, which reach higher than the ready stance.
+const _kArenaHeight = 278.0;
+const _kResultSceneHeight = 290.0;
+
 /// Shared goal-mouth geometry so the choose overlay, the painters and the
 /// result scene all agree on where posts, zones and the spot sit.
+///
+/// The gap between [groundY] (the goal line, where the keeper stands) and the
+/// [spot] is the scene's sense of depth: it is deliberately large so the taker
+/// stands well clear of the mouth instead of overlapping the net.
 class _GoalGeom {
   _GoalGeom(Size s)
-    : left = s.width * 0.10,
+    : sceneH = s.height,
+      left = s.width * 0.10,
       right = s.width * 0.90,
-      crossbarY = s.height * 0.16,
-      groundY = s.height * 0.80,
-      spot = Offset(s.width / 2, s.height * 0.93);
+      crossbarY = s.height * 0.11,
+      groundY = s.height * 0.616,
+      spot = Offset(s.width / 2, s.height * 0.945);
 
+  final double sceneH;
   final double left;
   final double right;
   final double crossbarY;
@@ -33,6 +46,10 @@ class _GoalGeom {
 
   double get width => right - left;
   double get mouthH => groundY - crossbarY;
+
+  /// The taker is the foreground figure, so his scale tracks the scene depth
+  /// rather than the goal mouth — he reads as nearer the camera than the keeper.
+  double get kickerH => sceneH * 0.33;
 
   double zoneX(PenaltyDirection d) => switch (d) {
     PenaltyDirection.left => left + width * 0.17,
@@ -79,6 +96,64 @@ void _paintGoalFrame(
 
 void _paintBall(Canvas canvas, Offset pos, double scale, {double alpha = 1}) =>
     paintGoalBall(canvas, pos, scale, alpha: alpha);
+
+/// The approach between the goal line and the penalty spot: penalty-area lines
+/// receding toward the goal, the arc, and turf contact marks under both figures.
+///
+/// Without this the long gap that separates the taker from the mouth reads as
+/// dead space rather than distance. Static chrome, so it never glows — flat
+/// low-alpha lines only.
+void _paintApproach(Canvas canvas, _GoalGeom g) {
+  final depth = g.spot.dy - g.groundY;
+  final line = Paint()
+    ..color = Cyber.cyan.withValues(alpha: 0.10)
+    ..strokeWidth = 1
+    ..style = PaintingStyle.stroke;
+
+  // Penalty-area sides, splaying outward as they come toward the camera.
+  final nearY = g.groundY + depth * 1.18;
+  for (final sign in [-1.0, 1.0]) {
+    final postX = g.spot.dx + sign * g.width * 0.5;
+    canvas.drawLine(
+      Offset(postX - sign * g.width * 0.06, g.groundY),
+      Offset(postX + sign * g.width * 0.34, nearY),
+      line,
+    );
+  }
+
+  // The D, squashed by the camera angle and clipped to the half above the spot.
+  canvas.drawArc(
+    Rect.fromCenter(
+      center: Offset(g.spot.dx, g.spot.dy - depth * 0.16),
+      width: g.width * 0.52,
+      height: depth * 0.44,
+    ),
+    pi,
+    pi,
+    false,
+    Paint()
+      ..color = Cyber.cyan.withValues(alpha: 0.09)
+      ..strokeWidth = 1
+      ..style = PaintingStyle.stroke,
+  );
+
+  // Turf scuffs so the keeper and the taker are planted, not floating. A dark
+  // shadow is invisible on this near-black ground, so the contact mark reads as
+  // a faint scuff in the same cyan as the pitch lines.
+  final shadow = Paint()..color = Cyber.cyan.withValues(alpha: 0.08);
+  canvas.drawOval(
+    Rect.fromCenter(
+      center: Offset(g.spot.dx, g.groundY + 1),
+      width: 22,
+      height: 6,
+    ),
+    shadow,
+  );
+  canvas.drawOval(
+    Rect.fromCenter(center: g.spot + const Offset(0, 1), width: 26, height: 7),
+    shadow,
+  );
+}
 
 // ─── Choose phase: tappable goal mouth ───────────────────────────────────────
 
@@ -228,7 +303,7 @@ class _PenaltyInteractionArenaState extends State<PenaltyInteractionArena>
 
   @override
   Widget build(BuildContext context) {
-    const goalHeight = 220.0;
+    const goalHeight = _kArenaHeight;
     final stateAccent = _shooting ? Cyber.cyan : Cyber.amber;
     return Semantics(
       container: true,
@@ -597,6 +672,7 @@ class _InteractionArenaPainter extends CustomPainter {
     }
 
     _paintGoalFrame(canvas, goal);
+    _paintApproach(canvas, goal);
     final pose = !shooting && selected != null
         ? (direction == PenaltyDirection.center
               ? KeeperPose.smother
@@ -616,7 +692,7 @@ class _InteractionArenaPainter extends CustomPainter {
     paintPenaltyKicker(
       canvas,
       anchor: goal.spot,
-      height: goal.mouthH * 0.52,
+      height: goal.kickerH,
       visual: PenaltyAthleteVisualSpec.fromCard(shooter, userSide: shooting),
       pose: KickerPose.ready,
       direction: direction,
@@ -736,7 +812,7 @@ class _PenaltyGoalSceneState extends State<PenaltyGoalScene>
           return Transform.translate(
             offset: Offset(shakeX, 0),
             child: SizedBox(
-              height: 232,
+              height: _kResultSceneHeight,
               child: Stack(
                 children: [
                   Positioned.fill(
@@ -820,6 +896,7 @@ class _PenaltyScenePainter extends CustomPainter {
       rippleT: rippleT,
       rippleCenter: goal ? target : null,
     );
+    _paintApproach(canvas, g);
 
     // Keeper: the shooter's opponent. The articulated rig commits after the
     // taker's plant foot, reaches the real ball on a save, then recovers.
@@ -866,7 +943,7 @@ class _PenaltyScenePainter extends CustomPainter {
     paintPenaltyKicker(
       canvas,
       anchor: g.spot,
-      height: g.mouthH * 0.56,
+      height: g.kickerH * 1.06,
       visual: PenaltyAthleteVisualSpec.fromCard(
         kick.shooter,
         userSide: kick.byPlayer,

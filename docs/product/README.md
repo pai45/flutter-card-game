@@ -103,7 +103,7 @@ Guess the Player entries share one implementation and one product page.
 | System | Status | Product page |
 |---|---|---|
 | Match discovery/search, predictions, sport STATS (including Cricket innings race/run-rate), quizzes, scoreline contests, and settlement | BUILT / PROTOTYPE DATA | [Predictions](systems/predictions.md) |
-| Season-aware league hub: TABLE, player LEADERS/dossiers, club STATS, GAMES, current PICKS and read-only result archives (EPL and LaLiga) | BUILT / SNAPSHOT + LIVE ESPN DATA | [Predictions](systems/predictions.md) |
+| Season-aware league and team hubs: TABLE, player LEADERS/dossiers, tappable club STATS, GAMES, PICKS, plus per-club MATCHES/PREDICTIONS/PLAYERS (EPL, LaLiga, IPL) | BUILT / SNAPSHOT + LIVE ESPN DATA | [Predictions](systems/predictions.md) |
 | Prediction feedback, rewards, and future quests | BUILT / PLANNED | [Prediction Gamification](systems/prediction-gamification.md) |
 | Outcome markets, positions, settlement, and payouts | BUILT / PROTOTYPE DATA | [Picks](systems/picks.md) |
 | Per-mode XP tracks and aggregate player level | BUILT | [Progression and Leveling](systems/progression-and-leveling.md) |

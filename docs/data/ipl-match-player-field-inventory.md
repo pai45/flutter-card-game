@@ -173,9 +173,10 @@ of the feeds football uses.
 
 So **LEADERS and STATS are aggregated from every match summary of the season**
 by `tool/generate_cricket_league_stats.dart` → `assets/data/cricket-league-stats.json`
-(62.7 KB). It walks the 62-date calendar for event ids, fetches all **74**
-completed summaries, and sums the 46-stat sheets into per-player and per-team
-season totals.
+(135.9 KB). It walks the 62-date calendar for event ids, stores all **74**
+normalized fixtures, fetches every completed summary, and sums the 46-stat
+sheets into per-player and per-team season totals. The package keeps all
+**202** season participants rather than only top-25 leaderboard athletes.
 
 Notes that cost time to discover:
 
@@ -190,7 +191,7 @@ Notes that cost time to discover:
 - **`qualified` arrives as the numeric `1`** on the four playoff teams and is
   absent elsewhere; only its `displayValue` is the string `'Y'`.
 - **ESPN's cricket position taxonomy has no "Batter"** — a specialist batter
-  comes back as the literal string `"Unknown"` (23 of the 81 ranked players), so
+  can come back as the literal string `"Unknown"`, so
   the decoder drops it rather than printing UNKNOWN under a leader's name.
 - **The generator refuses a partial season.** A single 502 mid-run would
   otherwise understate whoever played in that match, with nothing downstream
