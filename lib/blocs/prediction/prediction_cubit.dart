@@ -339,6 +339,64 @@ class PredictionCubit extends Cubit<PredictionState> {
     await _loadSportUnchecked(sport);
   }
 
+  /// Adds season fixtures discovered outside the rolling-window feed.
+  ///
+  /// Team hubs use this after loading an ESPN season schedule so opening a
+  /// match has the same authored/generated quiz, saved answers, deadline lock,
+  /// and settlement behavior as a fixture loaded on prediction home.
+  Future<void> ingestFixtures(Iterable<SportMatch> fixtures) async {
+    final incoming = fixtures.toList(growable: false);
+    if (incoming.isEmpty) return;
+
+    final quizzes = <String, PredictionQuiz>{...state.quizzes};
+    var checkpointsChanged = false;
+    for (final fixture in incoming) {
+      final authored = await _repository.quizzesFor(fixture.id);
+      final cached = quizzes.values
+          .where((quiz) => quiz.matchId == fixture.id && quiz.generated)
+          .toList(growable: false);
+      final validAuthored = authored
+          .where((quiz) => _validAuthoredQuiz(fixture.sport, quiz))
+          .toList(growable: false);
+      final authoredSets = authored.length > 1 ? authored : validAuthored;
+      final matchQuizzes = authoredSets.isNotEmpty
+          ? authoredSets
+          : cached.isNotEmpty
+          ? cached
+          : [_quizGenerator.generate(fixture)];
+
+      quizzes.removeWhere((_, quiz) => quiz.matchId == fixture.id);
+      for (final quiz in matchQuizzes) {
+        final checkpointKey = predictionStorageKey(fixture.id, quiz.id);
+        final checkpointBefore = _settlementCheckpoints[checkpointKey];
+        final resolved = fixture.status == MatchStatus.finished
+            ? _validatedSettlement(fixture, quiz)
+            : quiz;
+        checkpointsChanged =
+            checkpointsChanged ||
+            checkpointBefore != _settlementCheckpoints[checkpointKey];
+        quizzes[predictionStorageKey(fixture.id, resolved.id)] = resolved;
+      }
+    }
+
+    if (isClosed) return;
+    final fixturesById = <String, SportMatch>{
+      for (final fixture in state.fixtures) fixture.id: fixture,
+      for (final fixture in incoming) fixture.id: fixture,
+    };
+    final merged = fixturesById.values.toList(growable: false);
+    emit(
+      state.copyWith(
+        fixtures: merged,
+        quizzes: quizzes,
+        questionIntel: _buildQuestionIntel(merged, quizzes, state.predictions),
+      ),
+    );
+    await _persistGeneratedQuizzes(quizzes.values);
+    if (checkpointsChanged) await _persistSettlementCheckpoints();
+    await lockDuePredictions(merged);
+  }
+
   Future<void> _loadSportUnchecked(Sport sport) async {
     emit(state.copyWith(loadingSports: {...state.loadingSports, sport}));
 

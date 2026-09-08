@@ -26,7 +26,6 @@ class _FootballMatchStatsViewState extends State<FootballMatchStatsView> {
   static const _tabs = <String>[
     'OVERVIEW',
     'MOMENTUM',
-    'EVENTS',
     'LINEUPS',
     'COMMENTARY',
   ];
@@ -58,7 +57,6 @@ class _FootballMatchStatsViewState extends State<FootballMatchStatsView> {
               key: ValueKey(_activeTab),
               child: switch (_activeTab) {
                 'MOMENTUM' => _MomentumSection(match: widget.match),
-                'EVENTS' => _EventsSection(match: widget.match),
                 'LINEUPS' => MatchPitchView(match: widget.match),
                 'COMMENTARY' => _CommentarySection(match: widget.match),
                 _ => _OverviewSection(match: widget.match),
@@ -104,10 +102,11 @@ class _OverviewSection extends StatelessWidget {
           const SizedBox(height: 18),
           _TeamControlPanel(match: match, stats: stats),
         ],
-        if (details?.scorers.isNotEmpty ?? false) ...[
-          const SizedBox(height: 18),
-          _GoalImpactPanel(match: match, scorers: details!.scorers),
-        ],
+        const SizedBox(height: 18),
+        _MatchTimelinePanel(
+          key: const ValueKey('football-timeline-block'),
+          match: match,
+        ),
       ],
     );
   }
@@ -351,110 +350,6 @@ class _TeamControlPanelState extends State<_TeamControlPanel> {
   }
 }
 
-class _GoalImpactPanel extends StatelessWidget {
-  const _GoalImpactPanel({required this.match, required this.scorers});
-
-  final SportMatch match;
-  final List<FootballScorer> scorers;
-
-  @override
-  Widget build(BuildContext context) {
-    final homeColor = paletteForTeam(
-      match.home,
-      sport: match.sport,
-      competition: match.leagueId,
-    ).secondaryTextColor;
-    final awayColor = paletteForTeam(
-      match.away,
-      sport: match.sport,
-      competition: match.leagueId,
-    ).secondaryTextColor;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const CyberSectionHeading(label: 'GOAL IMPACT'),
-        const SizedBox(height: 10),
-        for (final scorer in scorers) ...[
-          StatsRowShell(
-            accent: scorer.teamId == match.home.id ? homeColor : awayColor,
-            padding: const EdgeInsets.all(12),
-            child: _ScorerRow(
-              scorer: scorer,
-              homeTeamId: match.home.id,
-              homeColor: homeColor,
-              awayColor: awayColor,
-            ),
-          ),
-          const SizedBox(height: 8),
-        ],
-      ],
-    );
-  }
-}
-
-class _ScorerRow extends StatelessWidget {
-  const _ScorerRow({
-    required this.scorer,
-    required this.homeTeamId,
-    required this.homeColor,
-    required this.awayColor,
-  });
-
-  final FootballScorer scorer;
-  final String homeTeamId;
-  final Color homeColor;
-  final Color awayColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final isHome = scorer.teamId == homeTeamId;
-    final color = isHome ? homeColor : awayColor;
-    return Row(
-      children: [
-        Container(
-          width: 44,
-          height: 36,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
-            border: Border.all(color: color.withValues(alpha: 0.54)),
-          ),
-          child: Text(
-            scorer.minute,
-            style: Cyber.display(
-              11,
-              color: color,
-            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Icon(Icons.sports_soccer, size: 17, color: color),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(scorer.name, style: Cyber.body(13, weight: FontWeight.w800)),
-              const SizedBox(height: 2),
-              Text(
-                [
-                  scorer.team.toUpperCase(),
-                  scorer.type.toUpperCase(),
-                  if (scorer.assist != null)
-                    'AST ${scorer.assist!.toUpperCase()}',
-                ].join(' // '),
-                style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.7),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 /// MOMENTUM: the two-sided pressure trace on the shared chart surface. Drag it
 /// to read either side's pressure at any minute; goals ride the plot as markers
 /// and the decisive one carries the focal halo.
@@ -664,8 +559,11 @@ class _GoalMarkerChip extends StatelessWidget {
   }
 }
 
-class _EventsSection extends StatelessWidget {
-  const _EventsSection({required this.match});
+/// MATCH TIMELINE: the event spine. Minutes run down the middle and every
+/// moment sits on the side of the team that made it, so who-did-what-when
+/// reads in a single pass. Tap a moment to unpack the feed's report on it.
+class _MatchTimelinePanel extends StatelessWidget {
+  const _MatchTimelinePanel({required this.match, super.key});
 
   final SportMatch match;
 
@@ -674,7 +572,7 @@ class _EventsSection extends StatelessWidget {
     final events = match.timelineEvents ?? const <MatchEvent>[];
     if (events.isEmpty) {
       return const CyberNoDataState(
-        key: ValueKey('football-events-empty'),
+        key: ValueKey('football-timeline-empty'),
         icon: Icons.timeline,
         title: 'Event log pending',
         message: 'Goals, cards and substitutions will be tracked here.',
@@ -692,146 +590,387 @@ class _EventsSection extends StatelessWidget {
       sport: match.sport,
       competition: match.leagueId,
     ).secondaryTextColor;
-    return ListView.separated(
-      key: const ValueKey('football-stats-events'),
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
-      itemCount: events.length + 1,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          return _LogHeader(
-            title: 'MATCH EVENT LOG',
-            count: events.length,
-            suffix: 'EVENTS',
-          );
-        }
-        return _EventLogRow(
-          event: events[index - 1],
+    return Column(
+      key: const ValueKey('football-match-timeline'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _LogHeader(
+          title: 'MATCH TIMELINE',
+          count: events.length,
+          suffix: 'EVENTS',
+        ),
+        const SizedBox(height: 12),
+        _TimelineSides(
+          match: match,
           homeColor: homeColor,
           awayColor: awayColor,
-        );
-      },
+        ),
+        const SizedBox(height: 5),
+        Text(
+          'TAP A MOMENT FOR THE FULL REPORT',
+          textAlign: TextAlign.center,
+          style: Cyber.label(7.5, color: Cyber.muted, letterSpacing: 1.1),
+        ),
+        for (final event in events)
+          if (_isPeriodMarker(event.type))
+            _PeriodMarker(event: event)
+          else
+            _TimelineRow(
+              event: event,
+              accent: event.isHomeTeam ? homeColor : awayColor,
+            ),
+      ],
     );
   }
 }
 
-class _EventLogRow extends StatelessWidget {
-  const _EventLogRow({
-    required this.event,
+/// Width of the centre column. Sized for the longest stoppage-time label
+/// ("90'+5'") so the spine never shifts sideways between rows.
+const double _kSpineWidth = 60;
+
+/// Names the two sides of the spine and labels the centre column, so the
+/// left/right split is stated once rather than inferred from colour.
+class _TimelineSides extends StatelessWidget {
+  const _TimelineSides({
+    required this.match,
     required this.homeColor,
     required this.awayColor,
   });
 
-  final MatchEvent event;
+  final SportMatch match;
   final Color homeColor;
   final Color awayColor;
 
   @override
   Widget build(BuildContext context) {
-    if (_isPeriodMarker(event.type)) {
-      return _PeriodMarker(event: event);
-    }
-    final teamColor = event.isHomeTeam ? homeColor : awayColor;
-    final iconColor = switch (event.type) {
-      MatchEventType.yellowCard => Cyber.amber,
-      MatchEventType.redCard => Cyber.danger,
-      MatchEventType.substitution => Cyber.lime,
-      _ => teamColor,
-    };
-    final icon = switch (event.type) {
-      MatchEventType.goal => Icons.sports_soccer,
-      MatchEventType.yellowCard => Icons.style,
-      MatchEventType.redCard => Icons.style,
-      MatchEventType.substitution => Icons.swap_horiz,
-      _ => Icons.bolt,
-    };
-    final secondaryPrefix = event.type == MatchEventType.substitution
-        ? 'OUT'
-        : 'ASSIST';
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border(left: BorderSide(color: teamColor, width: 3)),
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            match.home.shortName.toUpperCase(),
+            textAlign: TextAlign.right,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Cyber.display(12, color: homeColor),
+          ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.only(left: 9),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 44,
+        SizedBox(
+          width: _kSpineWidth,
+          child: Text(
+            'MIN',
+            textAlign: TextAlign.center,
+            style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.4),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            match.away.shortName.toUpperCase(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Cyber.display(12, color: awayColor),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One moment on the spine: the minute in the centre, the event pushed out to
+/// its own team's side. Tapping expands the feed's own report on the moment.
+class _TimelineRow extends StatefulWidget {
+  const _TimelineRow({required this.event, required this.accent});
+
+  final MatchEvent event;
+  final Color accent;
+
+  @override
+  State<_TimelineRow> createState() => _TimelineRowState();
+}
+
+class _TimelineRowState extends State<_TimelineRow> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final event = widget.event;
+    final isHome = event.isHomeTeam;
+    final report = event.description?.trim() ?? '';
+    final body = _EventBody(
+      event: event,
+      accent: widget.accent,
+      alignEnd: isHome,
+    );
+    return PressableScale(
+      enabled: report.isNotEmpty,
+      onTap: report.isEmpty
+          ? null
+          : () {
+              HapticFeedback.selectionClick();
+              setState(() => _open = !_open);
+            },
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        alignment: Alignment.topCenter,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(child: isHome ? body : const SizedBox.shrink()),
+                  _MinuteSpine(event: event, accent: widget.accent),
+                  Expanded(child: isHome ? const SizedBox.shrink() : body),
+                ],
+              ),
+            ),
+            if (_open && report.isNotEmpty)
+              _EventReport(
+                text: report,
+                accent: widget.accent,
+                alignEnd: isHome,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The centre column: a continuous hairline with the minute plate riding it.
+/// Only a goal plate glows — a goal is the one event class that moved the
+/// score, so it stays the scarce focal mark down the whole spine.
+class _MinuteSpine extends StatelessWidget {
+  const _MinuteSpine({required this.event, required this.accent});
+
+  final MatchEvent event;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final isGoal = event.type == MatchEventType.goal;
+    return SizedBox(
+      width: _kSpineWidth,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned.fill(
+            child: Center(
+              child: Container(
+                width: 1,
+                color: Cyber.line.withValues(alpha: 0.32),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: ChamferedActionSurface(
+              clipper: const HudChamferClipper(bigCut: 7, smallCut: 0),
+              borderColor: accent.withValues(alpha: isGoal ? 0.72 : 0.3),
+              glowColor: accent,
+              glow: isGoal ? 1 : 0,
+              child: Container(
+                width: 48,
+                height: 26,
+                alignment: Alignment.center,
+                color: isGoal ? accent.withValues(alpha: 0.12) : Cyber.panel,
                 child: Text(
                   event.minuteLabel,
-                  style: Cyber.display(12, color: teamColor).copyWith(
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-              ),
-              Container(
-                width: 30,
-                height: 30,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.11),
-                  border: Border.all(color: iconColor.withValues(alpha: 0.45)),
-                ),
-                child: Icon(icon, size: 15, color: iconColor),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            (event.playerName.isEmpty
-                                    ? event.label ?? 'MATCH EVENT'
-                                    : event.playerName)
-                                .toUpperCase(),
-                            style: Cyber.display(11.5, letterSpacing: 0.5),
-                          ),
-                        ),
-                        if (event.scoreDisplay != null)
-                          Text(
-                            event.scoreDisplay!,
-                            style: Cyber.display(11, color: Cyber.cyan)
-                                .copyWith(
-                                  fontFeatures: const [
-                                    FontFeature.tabularFigures(),
-                                  ],
-                                ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      [
-                        if (event.teamName != null)
-                          event.teamName!.toUpperCase(),
-                        if (event.label != null) event.label!.toUpperCase(),
-                        if (event.secondaryPlayerName != null)
-                          '$secondaryPrefix ${event.secondaryPlayerName!.toUpperCase()}',
-                      ].join(' // '),
-                      style: Cyber.label(
-                        8,
-                        color: Cyber.muted,
-                        letterSpacing: 0.6,
+                  maxLines: 1,
+                  style:
+                      Cyber.display(
+                        10.5,
+                        color: isGoal ? accent : Cyber.muted,
+                      ).copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
-                    ),
-                    if (event.description != null) ...[
-                      const SizedBox(height: 7),
-                      Text(
-                        event.description!,
-                        style: Cyber.body(11.5, color: Cyber.muted),
-                      ),
-                    ],
-                  ],
                 ),
               ),
-            ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The copy for one moment, mirrored so the glyph always hugs the spine and
+/// the text reads outward from it.
+class _EventBody extends StatelessWidget {
+  const _EventBody({
+    required this.event,
+    required this.accent,
+    required this.alignEnd,
+  });
+
+  final MatchEvent event;
+  final Color accent;
+  final bool alignEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    final align = alignEnd ? TextAlign.right : TextAlign.left;
+    final lines = <Widget>[];
+
+    if (event.type == MatchEventType.substitution &&
+        event.secondaryPlayerName != null) {
+      // A swap reads as two names, not one: who came on, then who came off.
+      lines.add(
+        Text(
+          event.playerName.toUpperCase(),
+          textAlign: align,
+          style: Cyber.display(11, color: Cyber.lime, letterSpacing: 0.4),
+        ),
+      );
+      lines.add(const SizedBox(height: 2));
+      lines.add(
+        Text(
+          event.secondaryPlayerName!.toUpperCase(),
+          textAlign: align,
+          style: Cyber.display(11, color: Cyber.danger, letterSpacing: 0.4),
+        ),
+      );
+    } else {
+      lines.add(
+        Text(
+          (event.playerName.isEmpty
+                  ? event.label ?? 'MATCH EVENT'
+                  : event.playerName)
+              .toUpperCase(),
+          textAlign: align,
+          style: Cyber.display(11.5, letterSpacing: 0.4),
+        ),
+      );
+      if (event.type == MatchEventType.goal && event.scoreDisplay != null) {
+        lines.add(const SizedBox(height: 3));
+        lines.add(
+          Text(
+            event.scoreDisplay!,
+            textAlign: align,
+            style: Cyber.display(11, color: accent).copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        );
+      }
+      if (event.secondaryPlayerName != null) {
+        lines.add(const SizedBox(height: 3));
+        lines.add(
+          Text(
+            'ASSIST ${event.secondaryPlayerName!.toUpperCase()}',
+            textAlign: align,
+            style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.6),
+          ),
+        );
+      }
+    }
+
+    final copy = Flexible(
+      child: Column(
+        crossAxisAlignment: alignEnd
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
+        children: lines,
+      ),
+    );
+    final glyph = _EventGlyph(
+      type: event.type,
+      color: _eventTone(event.type, accent),
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        mainAxisAlignment: alignEnd
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: alignEnd
+            ? [copy, const SizedBox(width: 8), glyph]
+            : [glyph, const SizedBox(width: 8), copy],
+      ),
+    );
+  }
+}
+
+/// The event mark. Cards are drawn as actual cards rather than borrowed from
+/// the icon set — the shape carries the meaning faster than any glyph does.
+class _EventGlyph extends StatelessWidget {
+  const _EventGlyph({required this.type, required this.color});
+
+  final MatchEventType type;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final isCard =
+        type == MatchEventType.yellowCard || type == MatchEventType.redCard;
+    final mark = isCard
+        ? Transform.rotate(
+            angle: 0.18,
+            child: Container(
+              width: 9,
+              height: 13,
+              decoration: BoxDecoration(
+                color: color,
+                border: Border.all(
+                  color: Cyber.bg.withValues(alpha: 0.6),
+                  width: 0.8,
+                ),
+              ),
+            ),
+          )
+        : Icon(_eventIcon(type), size: 15, color: color);
+    return ChamferedActionSurface(
+      clipper: const HudChamferClipper(bigCut: 7, smallCut: 0),
+      borderColor: color.withValues(alpha: 0.42),
+      child: Container(
+        width: 28,
+        height: 28,
+        alignment: Alignment.center,
+        color: color.withValues(alpha: 0.1),
+        child: mark,
+      ),
+    );
+  }
+}
+
+/// The feed's own prose on a moment, revealed on tap and pinned to the side of
+/// the team it belongs to.
+class _EventReport extends StatelessWidget {
+  const _EventReport({
+    required this.text,
+    required this.accent,
+    required this.alignEnd,
+  });
+
+  final String text;
+  final Color accent;
+  final bool alignEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    final edge = BorderSide(color: accent.withValues(alpha: 0.7), width: 2);
+    return Padding(
+      padding: EdgeInsets.only(
+        left: alignEnd ? 0 : _kSpineWidth + 8,
+        right: alignEnd ? _kSpineWidth + 8 : 0,
+        bottom: 10,
+      ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Cyber.panel,
+          border: Border(
+            left: alignEnd ? BorderSide.none : edge,
+            right: alignEnd ? edge : BorderSide.none,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+          child: Text(
+            text,
+            textAlign: alignEnd ? TextAlign.right : TextAlign.left,
+            style: Cyber.body(11.5, color: Cyber.muted),
           ),
         ),
       ),
@@ -846,24 +985,40 @@ class _PeriodMarker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(child: Divider(color: Cyber.cyan.withValues(alpha: 0.24))),
-        const SizedBox(width: 10),
-        Icon(Icons.adjust, size: 12, color: Cyber.cyan),
-        const SizedBox(width: 7),
-        Text(
-          '${event.label ?? _eventLabel(event.type)} ${event.scoreDisplay ?? ''}'
-              .trim()
-              .toUpperCase(),
-          style: Cyber.label(9, color: Cyber.cyan, letterSpacing: 1),
-        ),
-        const SizedBox(width: 10),
-        Expanded(child: Divider(color: Cyber.cyan.withValues(alpha: 0.24))),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Row(
+        children: [
+          Expanded(child: Divider(color: Cyber.cyan.withValues(alpha: 0.24))),
+          const SizedBox(width: 10),
+          Icon(Icons.adjust, size: 12, color: Cyber.cyan),
+          const SizedBox(width: 7),
+          Text(
+            '${event.label ?? _eventLabel(event.type)} ${event.scoreDisplay ?? ''}'
+                .trim()
+                .toUpperCase(),
+            style: Cyber.label(9, color: Cyber.cyan, letterSpacing: 1),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Divider(color: Cyber.cyan.withValues(alpha: 0.24))),
+        ],
+      ),
     );
   }
 }
+
+Color _eventTone(MatchEventType type, Color accent) => switch (type) {
+  MatchEventType.yellowCard => Cyber.amber,
+  MatchEventType.redCard => Cyber.danger,
+  MatchEventType.substitution => Cyber.lime,
+  _ => accent,
+};
+
+IconData _eventIcon(MatchEventType type) => switch (type) {
+  MatchEventType.goal => Icons.sports_soccer,
+  MatchEventType.substitution => Icons.swap_horiz,
+  _ => Icons.bolt,
+};
 
 class _CommentarySection extends StatelessWidget {
   const _CommentarySection({required this.match});

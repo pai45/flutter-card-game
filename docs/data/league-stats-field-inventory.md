@@ -1,7 +1,7 @@
 # League stats field inventory - EPL and LaLiga
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-06
+> **Last verified:** 2026-09-08
 > **Scope:** Every field extracted from ESPN into `assets/data/football-league-stats.json`, and how populated each one is
 
 Describes the asset produced by
@@ -27,11 +27,12 @@ a headline card.
 | Standings rows | 20 | 20 |
 | Leader categories | 12 | 12 |
 | Leader rows | 300 | 300 |
-| Unique athletes resolved | 131 | 140 |
+| Full roster athletes resolved | 569 | 594 |
+| Season fixtures | 380 | 380 |
 | Teams with season statistics | 20 | 20 |
 | Stats per team | 112 | 112 |
 
-File size: 299.8 KB (compact JSON). Shared `statDictionary`: 112 entries.
+File size: 669.6 KB (compact JSON). Shared `statDictionary`: 112 entries.
 
 ## Reading the JSON
 
@@ -51,6 +52,9 @@ File size: 299.8 KB (compact JSON). Shared `statDictionary`: 112 entries.
     "athletes":  { "<athleteId>": { "id", "displayName", "fullName", "shortName", "jersey",
                                     "position", "positionAbbr", "citizenship", "age",
                                     "dateOfBirth", "flag" } },
+    "rosters":   { "<teamId>": ["<athleteId>", "..."] },
+    "fixtures":  [{ "id", "kickoff", "homeTeamId", "awayTeamId", "status",
+                     "homeScore", "awayScore", "resultLine" }],
     "teamStats": { "<teamId>": { "<category>": { "<name>": [value, "displayValue"] } } }
   }]
 }
@@ -309,8 +313,8 @@ the extraction.
 - **Snapshot, not live.** The asset is a point-in-time capture that does not update itself.
   Regenerate it, or layer the live `EspnLeagueStatsService` on top, before treating any
   number as current.
-- **No per-player season statistics.** Only leaderboard placements are captured, not a full
-  stat line per athlete. The core API exposes those per athlete if wanted later.
+- **No bundled per-player season statistics.** Full roster identities are captured, but
+  football stat families are still requested lazily when a player dossier opens.
 
 ## What consumes this
 

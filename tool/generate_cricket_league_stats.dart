@@ -80,7 +80,8 @@ Future<void> main(List<String> arguments) async {
     }
     stdout.writeln('  standings  ${standings.rows.length} teams');
 
-    final eventIds = await _fetchSeasonEvents(client, league, delay);
+    final schedule = await _fetchSeasonEvents(client, league, delay);
+    final eventIds = schedule.completedIds;
     stdout.writeln('  schedule   ${eventIds.length} completed matches');
     if (eventIds.isEmpty) {
       stderr.writeln('No matches found; nothing written.');
@@ -125,7 +126,12 @@ Future<void> main(List<String> arguments) async {
       '${season.matchesSeen} matches',
     );
 
-    final payload = _build(standings, season, league: league);
+    final payload = _build(
+      standings,
+      season,
+      league: league,
+      fixtures: schedule.fixtures,
+    );
     _verify(payload, standings, season);
 
     final text = '${jsonEncode(payload)}\n';
@@ -169,7 +175,10 @@ class _Standings {
 }
 
 /// The one league-level cricket feed that works.
-Future<_Standings?> _fetchStandings(EspnFeedClient client, String league) async {
+Future<_Standings?> _fetchStandings(
+  EspnFeedClient client,
+  String league,
+) async {
   final data = await client.getJson(
     'https://site.web.api.espn.com/apis/v2/sports/cricket/$league/standings',
   );
@@ -208,18 +217,13 @@ Future<_Standings?> _fetchStandings(EspnFeedClient client, String league) async 
       rows.add({'teamId': id, ...stats});
     }
   }
-  rows.sort(
-    (a, b) => _asInt(a['rank']).compareTo(_asInt(b['rank'])),
-  );
+  rows.sort((a, b) => _asInt(a['rank']).compareTo(_asInt(b['rank'])));
   return _Standings(rows: rows, teams: teams, seasonLabel: seasonLabel);
 }
 
 /// Walks the season calendar for completed event ids.
-Future<List<String>> _fetchSeasonEvents(
-  EspnFeedClient client,
-  String league,
-  Duration delay,
-) async {
+Future<({List<String> completedIds, List<Map<String, Object?>> fixtures})>
+_fetchSeasonEvents(EspnFeedClient client, String league, Duration delay) async {
   final first = await client.getJson(
     'https://site.api.espn.com/apis/site/v2/sports/cricket/$league/scoreboard',
   );
@@ -232,9 +236,15 @@ Future<List<String>> _fetchSeasonEvents(
       dates.add(raw.substring(0, 10).replaceAll('-', ''));
     }
   }
-  if (dates.isEmpty) return const [];
+  if (dates.isEmpty) {
+    return (
+      completedIds: const <String>[],
+      fixtures: const <Map<String, Object?>>[],
+    );
+  }
 
   final ids = <String>{};
+  final fixtures = <String, Map<String, Object?>>{};
   for (final date in dates) {
     final board = await client.getJson(
       'https://site.api.espn.com/apis/site/v2/sports/cricket/$league'
@@ -245,13 +255,62 @@ Future<List<String>> _fetchSeasonEvents(
       final id = event['id']?.toString();
       // Cricket has no `completed` boolean on the scoreboard — a finished match
       // is `status.type.state == 'post'` with description "Result".
-      final state =
-          ((event['status'] as Map?)?['type'] as Map?)?['state']?.toString();
+      final state = ((event['status'] as Map?)?['type'] as Map?)?['state']
+          ?.toString();
       if (id != null && state == 'post') ids.add(id);
+      final fixture = _cricketFixture(event);
+      if (id != null && fixture != null) fixtures[id] = fixture;
     }
     await Future<void>.delayed(delay);
   }
-  return ids.toList()..sort();
+  final completed = ids.toList()..sort();
+  final seasonFixtures = fixtures.values.toList()
+    ..sort(
+      (a, b) => a['kickoff'].toString().compareTo(b['kickoff'].toString()),
+    );
+  return (completedIds: completed, fixtures: seasonFixtures);
+}
+
+Map<String, Object?>? _cricketFixture(Map<dynamic, dynamic> event) {
+  final id = event['id']?.toString();
+  final kickoff = event['date']?.toString();
+  final competitions = event['competitions'];
+  if (id == null ||
+      kickoff == null ||
+      competitions is! List ||
+      competitions.isEmpty) {
+    return null;
+  }
+  final competition = competitions.first;
+  if (competition is! Map) return null;
+  Map<dynamic, dynamic>? home;
+  Map<dynamic, dynamic>? away;
+  for (final competitor in competition['competitors'] as List? ?? const []) {
+    if (competitor is! Map) continue;
+    if (competitor['homeAway']?.toString() == 'home') home = competitor;
+    if (competitor['homeAway']?.toString() == 'away') away = competitor;
+  }
+  final homeId = (home?['team'] as Map?)?['id']?.toString();
+  final awayId = (away?['team'] as Map?)?['id']?.toString();
+  if (homeId == null || awayId == null) return null;
+  final type = (event['status'] as Map?)?['type'];
+  final state = type is Map ? type['state']?.toString() : null;
+  return <String, Object?>{
+    'id': id,
+    'kickoff': kickoff,
+    'homeTeamId': homeId,
+    'awayTeamId': awayId,
+    'status': state == 'in'
+        ? 'live'
+        : state == 'post'
+        ? 'finished'
+        : 'upcoming',
+    if (home?['score'] != null) 'homeScore': home!['score'].toString(),
+    if (away?['score'] != null) 'awayScore': away!['score'].toString(),
+    if (state == 'post' && type is Map)
+      'resultLine':
+          type['detail']?.toString() ?? type['description']?.toString(),
+  };
 }
 
 // -- Aggregation --------------------------------------------------------------
@@ -349,7 +408,8 @@ class _SeasonAggregate {
       if (outer is! Map) continue;
       for (final inner in (outer['linescores'] as List? ?? const [])) {
         if (inner is! Map) continue;
-        final categories = (inner['statistics'] as Map?)?['categories'] as List?;
+        final categories =
+            (inner['statistics'] as Map?)?['categories'] as List?;
         for (final category in categories ?? const []) {
           if (category is! Map) continue;
           for (final stat in (category['stats'] as List? ?? const [])) {
@@ -376,7 +436,12 @@ class _SeasonAggregate {
 /// top the economy chart.
 const _leaderSpecs = <Map<String, Object>>[
   {'key': 'runs', 'label': 'Most Runs', 'stat': 'runs', 'unit': 'RUNS'},
-  {'key': 'wickets', 'label': 'Most Wickets', 'stat': 'wickets', 'unit': 'WKTS'},
+  {
+    'key': 'wickets',
+    'label': 'Most Wickets',
+    'stat': 'wickets',
+    'unit': 'WKTS',
+  },
   {'key': 'sixes', 'label': 'Most Sixes', 'stat': 'sixes', 'unit': 'SIXES'},
   {'key': 'fours', 'label': 'Most Fours', 'stat': 'fours', 'unit': 'FOURS'},
   {
@@ -412,6 +477,7 @@ Map<String, Object?> _build(
   _Standings standings,
   _SeasonAggregate season, {
   required String league,
+  required List<Map<String, Object?>> fixtures,
 }) {
   // Rates are recomputed from season totals — averaging per-match rates would
   // weight a 4-ball cameo the same as a 60-ball innings.
@@ -439,26 +505,24 @@ Map<String, Object?> _build(
     final minimumOf = spec['minimumOf'] as String?;
 
     final ranked =
-        season.players.entries
-            .where((e) {
-              final value = e.value[stat];
-              if (value == null || value == 0) return false;
-              if (minimumOf == null) return true;
-              return (e.value[minimumOf] ?? 0) >= minimum;
-            })
-            .toList()
-          ..sort((a, b) {
-            final av = a.value[stat]!;
-            final bv = b.value[stat]!;
-            return lower ? av.compareTo(bv) : bv.compareTo(av);
-          });
+        season.players.entries.where((e) {
+          final value = e.value[stat];
+          if (value == null || value == 0) return false;
+          if (minimumOf == null) return true;
+          return (e.value[minimumOf] ?? 0) >= minimum;
+        }).toList()..sort((a, b) {
+          final av = a.value[stat]!;
+          final bv = b.value[stat]!;
+          return lower ? av.compareTo(bv) : bv.compareTo(av);
+        });
 
     leaders.add({
       'key': spec['key'],
       'displayName': spec['label'],
       'unit': spec['unit'],
       'lowerIsBetter': lower,
-      if (minimumOf != null) 'qualifier': '$minimum+ ${_qualifierNoun(minimumOf)}',
+      if (minimumOf != null)
+        'qualifier': '$minimum+ ${_qualifierNoun(minimumOf)}',
       'leaders': [
         for (var i = 0; i < ranked.length && i < 25; i++)
           {
@@ -470,13 +534,6 @@ Map<String, Object?> _build(
       ],
     });
   }
-
-  // Only the athletes an actual board references need shipping.
-  final referenced = <String>{
-    for (final board in leaders)
-      for (final row in board['leaders'] as List)
-        (row as Map)['athleteId'] as String,
-  };
 
   return <String, Object?>{
     'generatedAt': DateTime.now().toUtc().toIso8601String(),
@@ -493,18 +550,22 @@ Map<String, Object?> _build(
         'name': 'Indian Premier League',
         'abbreviation': 'IPL',
         'season': standings.seasonLabel,
+        if (fixtures.isNotEmpty)
+          'seasonYear': DateTime.tryParse(
+            fixtures.first['kickoff'].toString(),
+          )?.year,
         'matchesAggregated': season.matchesSeen,
         'teams': standings.teams.values.toList(),
         'standings': standings.rows,
         'leaders': leaders,
         'athletes': {
-          for (final id in referenced)
+          // The team hub needs the complete season roster, not just the
+          // athletes who happened to reach a top-25 leaderboard.
+          for (final id in season.playerMeta.keys)
             if (season.playerMeta[id] != null)
-              id: {
-                ...season.playerMeta[id]!,
-                'stats': season.players[id],
-              },
+              id: {...season.playerMeta[id]!, 'stats': season.players[id]},
         },
+        'fixtures': fixtures,
         'teamStats': season.teamTotals,
       },
     ],
@@ -572,9 +633,7 @@ void _report(Map<String, Object?> payload) {
     final name = top == null
         ? '-'
         : ((league['athletes'] as Map)[top['athleteId']] as Map?)?['name'];
-    stdout.writeln(
-      '    ${board['displayName']}: $name ${top?['value'] ?? ''}',
-    );
+    stdout.writeln('    ${board['displayName']}: $name ${top?['value'] ?? ''}');
   }
 }
 

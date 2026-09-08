@@ -8,6 +8,7 @@ import '../../blocs/picks/picks_cubit.dart';
 import '../../blocs/picks/picks_state.dart';
 import '../../blocs/prediction/prediction_cubit.dart';
 import '../../blocs/prediction/prediction_state.dart';
+import '../../blocs/team_hub/team_hub_cubit.dart';
 import '../../config/theme.dart';
 import '../../data/followable_leagues.dart';
 import '../../models/league.dart';
@@ -15,6 +16,7 @@ import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
 import '../../models/team_standing.dart';
 import '../../models/league_stat_leaders.dart';
+import '../../services/team_hub_repository.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_filter_chips.dart';
 import '../../widgets/cyber/cyber_underline_tabs.dart';
@@ -84,9 +86,43 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
 
   void _openTeam(SportTeam team) {
     playSound(SoundEffect.uiTap);
+    HapticFeedback.selectionClick();
+    final prediction = context.read<PredictionCubit>().state;
+    final stats = context.read<LeagueStatsCubit>().state;
+    final rolling = prediction.fixtures
+        .where((match) => _matchesLeague(match.leagueId))
+        .toList(growable: false);
+    final fixtures = _mergeSeasonFixtures(stats, rolling);
+    final sport = followableLeagueFor(_league)?.sport ?? Sport.football;
+    final seasonYear =
+        stats.selectedSeasonYear ??
+        stats.snapshot.seasonYear ??
+        DateTime.now().year;
+    final seasonLabel = _headerSubtitle(stats) ?? seasonYear.toString();
+    final standing = stats.snapshot.allRows
+        .where((row) => row.team.id == team.id)
+        .firstOrNull;
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => TeamDetailScreen(team: team, league: _league),
+        builder: (_) => BlocProvider(
+          create: (_) => TeamHubCubit(
+            repository: EspnTeamHubRepository(),
+            leagueId: _league.id,
+            teamId: team.id,
+            sport: sport,
+            seasonYear: seasonYear,
+            seasonLabel: seasonLabel,
+            seedFixtures: fixtures,
+          )..load(),
+          child: TeamDetailScreen(
+            team: team,
+            league: _league,
+            sport: sport,
+            seasonYear: seasonYear,
+            seasonLabel: seasonLabel,
+            standing: standing,
+          ),
+        ),
       ),
     );
   }
@@ -326,6 +362,9 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
         key: const ValueKey('hub-stats'),
         stats: stats,
         accent: _accent,
+        sport: followable?.sport ?? Sport.football,
+        competition: _league.id,
+        onTapTeam: _openTeam,
       ),
       _HubTab.fixtures => _FixturesTab(
         key: const ValueKey('hub-fixtures'),
@@ -535,10 +574,20 @@ class _LeadersTab extends StatelessWidget {
 /// season statistics, so a competition outside the package shows the locked
 /// state rather than an empty board.
 class _StatsTab extends StatefulWidget {
-  const _StatsTab({required this.stats, required this.accent, super.key});
+  const _StatsTab({
+    required this.stats,
+    required this.accent,
+    required this.sport,
+    required this.competition,
+    required this.onTapTeam,
+    super.key,
+  });
 
   final LeagueStatsState stats;
   final Color accent;
+  final Sport sport;
+  final String competition;
+  final ValueChanged<SportTeam> onTapTeam;
 
   @override
   State<_StatsTab> createState() => _StatsTabState();
@@ -637,6 +686,9 @@ class _StatsTabState extends State<_StatsTab> {
                 spec: spec,
                 definition: snapshot.statDefinitions[spec.stat],
                 accent: boardAccent,
+                sport: widget.sport,
+                competition: widget.competition,
+                onTapTeam: widget.onTapTeam,
               ),
             ],
           ),

@@ -90,11 +90,10 @@ Future<void> main(List<String> arguments) async {
   final check = args.remove('--check');
   final out = _optionValue(args, '--out') ?? _defaultOut;
   final seasonOverride = _intOption(args, '--season');
-  final slugFilter = _optionValue(args, '--leagues')
-      ?.split(',')
-      .map((s) => s.trim())
-      .where((s) => s.isNotEmpty)
-      .toSet();
+  final slugFilter = _optionValue(
+    args,
+    '--leagues',
+  )?.split(',').map((s) => s.trim()).where((s) => s.isNotEmpty).toSet();
 
   if (args.isNotEmpty) {
     stderr.writeln('Unexpected arguments: ${args.join(' ')}');
@@ -111,7 +110,9 @@ Future<void> main(List<String> arguments) async {
       : _leagueSpecs.where((s) => slugFilter.contains(s.slug)).toList();
   if (specs.isEmpty) {
     stderr.writeln('No known leagues matched --leagues');
-    stderr.writeln('Known slugs: ${_leagueSpecs.map((s) => s.slug).join(', ')}');
+    stderr.writeln(
+      'Known slugs: ${_leagueSpecs.map((s) => s.slug).join(', ')}',
+    );
     exitCode = 64;
     return;
   }
@@ -299,6 +300,58 @@ Future<Map<String, Object?>> _extractLeague(
     team['logo'] ??= _firstLogo(data['logos']);
   });
 
+  // -- Full team rosters ------------------------------------------------------
+  // The collection contains athlete refs, not embedded identities. Add every
+  // roster athlete to the shared athlete pool below so the shipped package is
+  // a complete offline first render rather than leaderboard-only names.
+  final rosters = SplayTreeMap<String, List<String>>();
+  await _pool(teamIds, (teamId) async {
+    final data = await client.getJson(
+      'https://sports.core.api.espn.com/v2/sports/soccer/leagues/$slug'
+      '/seasons/$seasonYear/teams/$teamId/athletes?limit=100',
+    );
+    final ids = <String>[];
+    for (final item in data?['items'] as List? ?? const []) {
+      if (item is! Map) continue;
+      final athleteId = _idFromRef(item[r'$ref']);
+      if (athleteId == null) continue;
+      ids.add(athleteId);
+      athleteIds.add(athleteId);
+    }
+    if (ids.isNotEmpty) rosters[teamId] = ids;
+  });
+  final missingRosters = teamIds.where((id) => rosters[id]?.isEmpty ?? true);
+  if (missingRosters.isNotEmpty) {
+    throw StateError(
+      '$slug: roster collection missing for ${missingRosters.join(', ')}.',
+    );
+  }
+  stdout.writeln('   rosters: ${rosters.length} teams');
+
+  // -- Season fixtures -------------------------------------------------------
+  // Soccer seasons span two calendar years. The site scoreboard is the
+  // cheapest authoritative source because one response embeds competitors,
+  // date, status, and score instead of returning hundreds of core refs.
+  final fixturesById = SplayTreeMap<String, Map<String, Object?>>();
+  for (final calendarYear in [seasonYear, seasonYear + 1]) {
+    final data = await client.getJson(
+      'https://site.api.espn.com/apis/site/v2/sports/soccer/$slug'
+      '/scoreboard?dates=$calendarYear&limit=1000',
+    );
+    for (final event in data?['events'] as List? ?? const []) {
+      if (event is! Map) continue;
+      final eventSeason = (event['season'] as Map?)?['year'];
+      if (eventSeason is num && eventSeason.toInt() != seasonYear) continue;
+      final fixture = _fixtureFromEvent(event);
+      final id = fixture?['id']?.toString();
+      if (fixture != null && id != null) fixturesById[id] = fixture;
+    }
+  }
+  if (fixturesById.isEmpty) {
+    throw StateError('$slug: season scoreboard returned no fixtures.');
+  }
+  stdout.writeln('   fixtures: ${fixturesById.length} matches');
+
   // -- Per-team season statistics ---------------------------------------------
   final teamStats = SplayTreeMap<String, Object?>();
   await _pool(teamIds, (teamId) async {
@@ -389,7 +442,51 @@ Future<Map<String, Object?>> _extractLeague(
     'standings': standings,
     'leaders': leaders,
     'athletes': athletes,
+    'rosters': rosters,
+    'fixtures': fixturesById.values.toList(),
     'teamStats': teamStats,
+  };
+}
+
+Map<String, Object?>? _fixtureFromEvent(Map<dynamic, dynamic> event) {
+  final id = event['id']?.toString();
+  final date = event['date']?.toString();
+  final competitions = event['competitions'];
+  if (id == null ||
+      date == null ||
+      competitions is! List ||
+      competitions.isEmpty) {
+    return null;
+  }
+  final competition = competitions.first;
+  if (competition is! Map) return null;
+  Map<dynamic, dynamic>? home;
+  Map<dynamic, dynamic>? away;
+  for (final competitor in competition['competitors'] as List? ?? const []) {
+    if (competitor is! Map) continue;
+    if (competitor['homeAway']?.toString() == 'home') home = competitor;
+    if (competitor['homeAway']?.toString() == 'away') away = competitor;
+  }
+  final homeId = (home?['team'] as Map?)?['id']?.toString();
+  final awayId = (away?['team'] as Map?)?['id']?.toString();
+  if (homeId == null || awayId == null) return null;
+  final type = (event['status'] as Map?)?['type'];
+  final state = type is Map ? type['state']?.toString() : null;
+  return <String, Object?>{
+    'id': id,
+    'kickoff': date,
+    'homeTeamId': homeId,
+    'awayTeamId': awayId,
+    'status': state == 'in'
+        ? 'live'
+        : state == 'post'
+        ? 'finished'
+        : 'upcoming',
+    if (home?['score'] != null) 'homeScore': home!['score'].toString(),
+    if (away?['score'] != null) 'awayScore': away!['score'].toString(),
+    if (state == 'post' && type is Map)
+      'resultLine':
+          type['detail']?.toString() ?? type['description']?.toString(),
   };
 }
 
@@ -468,12 +565,10 @@ bool _check(String path, String expected) {
 String _withoutTimestamp(String source) {
   final decoded = jsonDecode(source);
   if (decoded is! Map<String, dynamic>) return source;
-  return jsonEncode(
-    <String, Object?>{
-      for (final entry in decoded.entries)
-        if (entry.key != 'generatedAt') entry.key: entry.value,
-    },
-  );
+  return jsonEncode(<String, Object?>{
+    for (final entry in decoded.entries)
+      if (entry.key != 'generatedAt') entry.key: entry.value,
+  });
 }
 
 String? _optionValue(List<String> args, String name) {

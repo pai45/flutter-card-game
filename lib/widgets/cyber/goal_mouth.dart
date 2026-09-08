@@ -16,15 +16,6 @@ class GoalMouthFrame {
     required this.groundY,
   });
 
-  /// The shootout scene's proportions: posts inset a tenth of the width, the
-  /// crossbar a sixth down, and room beneath the mouth for the ball and spot.
-  factory GoalMouthFrame.scene(Size size) => GoalMouthFrame(
-    left: size.width * 0.10,
-    right: size.width * 0.90,
-    crossbarY: size.height * 0.16,
-    groundY: size.height * 0.80,
-  );
-
   /// A mouth for an inline diagram.
   ///
   /// The margins are not decorative: attempts that missed are placed *outside*

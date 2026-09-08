@@ -59,6 +59,12 @@ under `lib/screens/`; entries without a dedicated frame are marked
 `indexed-no-dedicated-frame` with a reason. `manifest.json` separately records
 BUILT, PROTOTYPE, PLANNED, and DEPRECATED behavior that was not capturable.
 
+The next baseline regeneration must add dedicated production-widget captures
+for the new ESPN team hub: EPL MATCHES and PLAYERS, LaLiga PREDICTIONS, IPL
+MATCHES and PLAYERS, plus the live-refresh-failure state where bundled data
+remains visible. Each capture must enter from a real TABLE or STATS team row and
+retain the 393x852 / DPR 1 catalog contract.
+
 ## Persistence
 
 The capture app seeds only local test data, mutes audio, freezes the prediction

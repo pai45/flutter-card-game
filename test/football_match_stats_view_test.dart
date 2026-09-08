@@ -11,7 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('football stats HUD exposes all five supplied data views', (
+  testWidgets('football stats HUD exposes all four supplied data views', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(390, 844);
@@ -63,8 +63,35 @@ void main() {
           .any((text) => text.style?.color == awayIdentity),
       isTrue,
     );
-    await _scrollTo(tester, find.text('GOAL IMPACT'));
-    expect(find.text('GOAL IMPACT'), findsOneWidget);
+    // The event timeline replaced the scorer block in the same slot.
+    expect(find.text('GOAL IMPACT'), findsNothing);
+    await _scrollTo(tester, find.text('MATCH TIMELINE'));
+    expect(find.text('MATCH TIMELINE'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('football-match-timeline')),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        '${(match.timelineEvents?.length ?? 0).toString().padLeft(3, '0')} EVENTS',
+      ),
+      findsOneWidget,
+    );
+    // The minute column is the axis: both sides read off the same centre line.
+    final spine = tester.getRect(find.text('MIN'));
+    expect(spine.center.dx, closeTo(390 / 2, 1));
+    final homeMark = find.descendant(
+      of: find.byKey(const ValueKey('football-match-timeline')),
+      matching: find.text('JOSH KING'),
+    );
+    final awayMark = find.descendant(
+      of: find.byKey(const ValueKey('football-match-timeline')),
+      matching: find.text('JOÃO PEDRO'),
+    );
+    await _scrollTo(tester, homeMark);
+    expect(tester.getRect(homeMark).right, lessThan(spine.center.dx));
+    await _scrollTo(tester, awayMark);
+    expect(tester.getRect(awayMark).left, greaterThan(spine.center.dx));
 
     _selectSection(tester, 'MOMENTUM');
     await _pumpAnimations(tester);
@@ -78,17 +105,6 @@ void main() {
     expect(find.text('SHOT MAP'), findsOneWidget);
     await _scrollTo(tester, find.textContaining('João Pedro'));
     expect(find.textContaining('João Pedro'), findsOneWidget);
-
-    _selectSection(tester, 'EVENTS');
-    await _pumpAnimations(tester);
-    expect(find.byKey(const ValueKey('football-stats-events')), findsOneWidget);
-    expect(
-      find.text(
-        '${(match.timelineEvents?.length ?? 0).toString().padLeft(3, '0')} EVENTS',
-      ),
-      findsOneWidget,
-    );
-    expect(find.byType(StatsRowShell), findsNothing);
 
     _selectSection(tester, 'LINEUPS');
     await _pumpAnimations(tester);
@@ -177,13 +193,75 @@ void main() {
       ),
     );
 
-    _selectSection(tester, 'EVENTS');
-    await _pumpAnimations(tester);
+    await _scrollTo(tester, find.text('EVENT LOG PENDING'));
     expect(find.text('EVENT LOG PENDING'), findsOneWidget);
 
     _selectSection(tester, 'COMMENTARY');
     await _pumpAnimations(tester);
     expect(find.text('MATCH COMMS SILENT'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('tapping a moment unpacks the report behind it', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final match = (await tester.runAsync(
+      () => const FootballMatchPackageService().loadBundled(),
+    ))!;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.darkTheme,
+        home: Scaffold(body: FootballMatchStatsView(match: match)),
+      ),
+    );
+    await _pumpAnimations(tester);
+
+    // The prose stays folded away until the moment is asked about, which is
+    // what keeps 22 events readable as a timeline rather than a wall of text.
+    expect(find.textContaining('right footed shot'), findsNothing);
+    await _scrollTo(tester, find.text('JOÃO PEDRO'));
+    await tester.tap(find.text('JOÃO PEDRO'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('right footed shot'), findsOneWidget);
+
+    await tester.tap(find.text('JOÃO PEDRO'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('right footed shot'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a substitution names who came on and who came off', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final match = (await tester.runAsync(
+      () => const FootballMatchPackageService().loadBundled(),
+    ))!;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.darkTheme,
+        home: Scaffold(body: FootballMatchStatsView(match: match)),
+      ),
+    );
+    await _pumpAnimations(tester);
+
+    // Fulham's 67th minute: Shea Charles on for Oscar Bobb.
+    await _scrollTo(tester, find.text('SHEA CHARLES'));
+    expect(
+      tester.widget<Text>(find.text('SHEA CHARLES')).style?.color,
+      Cyber.lime,
+    );
+    expect(
+      tester.widget<Text>(find.text('OSCAR BOBB')).style?.color,
+      Cyber.danger,
+    );
     expect(tester.takeException(), isNull);
   });
 
