@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../blocs/guess_player/guess_player_cubit.dart';
 import '../../config/theme.dart';
@@ -8,6 +9,7 @@ import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
+import '../leaderboard/widgets/game_leaderboard_button.dart';
 
 class GuessPlayerHomeScreen extends StatefulWidget {
   const GuessPlayerHomeScreen({
@@ -69,10 +71,21 @@ class _GuessPlayerHomeScreenState extends State<GuessPlayerHomeScreen> {
         },
         icon: const Icon(Icons.arrow_back, color: Cyber.cyan),
       ),
-      rightSlot: const Icon(
-        Icons.person_search_rounded,
-        color: Cyber.magenta,
-        size: 22,
+      rightSlot: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.person_search_rounded,
+            color: Cyber.magenta,
+            size: 22,
+          ),
+          const SizedBox(width: 10),
+          GameLeaderboardButton(
+            sport: context.read<GuessPlayerCubit>().sport,
+            mode: GameMode.mystery,
+            accent: Cyber.magenta,
+          ),
+        ],
       ),
       child: _body(),
     );

@@ -68,6 +68,64 @@ only the crest and name.
 Status and reward semantics continue to take priority and team identity adds no
 persistent glow.
 
+## F1 championship hub — BUILT
+
+The F1 league page (`f1`, `formula1`, and ESPN `2030`) uses a dedicated
+championship view with **TABLE / ROUNDS / STATS / GAMES / PICKS**. TABLE contains
+the **WDC / WCC** selector, preserving the championship choice when returning
+from another tab. Its championship statistics come
+only from ESPN's `site.web.api.espn.com/apis/v2/sports/racing/f1/standings`.
+It does not use the generic football table or prototype F1 standings. The
+league follow control is retained; the league feed's view-more entry opens
+GAMES. GAMES and PICKS reuse the same fixture and market panels as football
+league hubs, including prediction summaries, race-detail navigation, market
+detail, positions, and the pick trade sheet. These two tabs remain accessible
+when championship data is unavailable. GAMES uses ESPN event-ID fixtures from
+the motorsport feed and its bundled race package, excludes named prototype
+fixtures, and does not call the football season-schedule API. PICKS displays
+the existing app markets filtered across F1 league aliases; those app-owned
+markets are separate from the ESPN championship statistics and retain the
+existing prototype-market limitations documented in Picks.
+
+- WDC and WCC show ESPN rank and championship points, leader margin and gap
+  to the leader. Tapping an entry reveals its recorded weekend points,
+  scoring-round count, and best weekend total with haptics and an animated reveal.
+- STATS switches between drivers and constructors. It shows recorded/listed
+  rounds, entry and point-scorer counts, the current leading trio's cumulative
+  weekend points in the shared scrubbable `CyberChartPanel`, and the five
+  highest best-weekend totals. Chart colors distinguish series rather than
+  claiming team identity; all metrics are directly read or derived from ESPN.
+- ROUNDS uses ESPN event codes and names to inspect driver or constructor
+  weekend points, ordered by points rather than claiming race finishing order.
+  Sprint points remain part of the reported weekend total. Highest weekend
+  points are not described as wins or poles.
+- ESPN's `played: false` numeric zero is not a scored result. Recorded `-`
+  display values mean zero points; missing/blank cells remain absent. The chart is
+  omitted when any leading entry lacks a recorded-round value, rather than
+  filling gaps with invented zeroes. Unrecorded rounds are not called upcoming:
+  the standings feed may include cancelled or otherwise unplayed events.
+- The bundled, unmodified ESPN response loads first, followed by a live refresh.
+  The refresh icon is right-aligned beside F1 CHAMPIONSHIP in the shared top bar,
+  available across all five tabs; the former ESPN/fetch-time strip is removed.
+  The icon shows progress and disables repeat taps while refreshing.
+  Pull-to-refresh on the statistics tabs also retries the feed.
+  Network/CORS failure keeps the saved ESPN snapshot and the icon tooltip offers
+  retry feedback. Source and fetch time remain in the data model and asset.
+  If neither source is available,
+  the page provides an error/retry state. Partial tables have explicit empty states.
+
+The source asset is `assets/data/f1-league-standings.json`; regenerate it with
+`dart run tool/generate_f1_league.dart`. The parser verifies the season from
+each standings table and rejects mismatches. `EspnF1LeagueService` and the
+route-scoped `F1LeagueCubit` keep this feed separate from football data.
+`tool/f1_league_preview.dart` opens the same production widget against ESPN
+data for visual checks. Tests in `test/f1_league_test.dart` cover the real
+snapshot, missing/unplayed values, season mismatches, retry/disposal, and
+mobile tab/expansion/chart interactions.
+
+This standings endpoint supplies no season wins, poles, or lap telemetry,
+so those metrics are not shown. An F1 archive picker is not part of this scope.
+
 ## Player Flow
 
 1. Browse the selected match day — the followed club's fixture first when it
@@ -294,6 +352,42 @@ commentary. Cricket's STATS navigation contains OVERVIEW, RACE, SCORECARD, and
 MATCH FEED; the standalone CHASE and SQUADS tabs are omitted. MATCH FEED uses one
 tab per batting team and open timeline rows rather than individual comment cards;
 an innings without published commentary receives its own contextual empty state.
+### NBA hub (league TABLE / LEADERS / STATS) — BUILT
+
+The NBA hub now shows the real 2025-26 season: both conference tables in
+basketball's own columns, twelve leader boards, and four STATS board groups.
+
+**Basketball is the sport ESPN serves fully.** Where cricket's core API rejects
+the sport and forced an aggregation from every match summary, all three feeds
+the football hub runs on answer for the NBA — standings, season leaders, and
+per-team statistics — so `tool/generate_nba_league_stats.dart` is a straight
+extraction into `assets/data/nba-league-stats.json`. The package is still the
+hub's only source: `EspnLeagueStatsService` builds `sports/soccer/...` URLs, so
+there is nothing to layer live over it until that service learns a second sport.
+
+- **TABLE** is a third `StandingsTable` layout, selected the way the other two
+  are — off the data. A non-null `winPercent` means basketball, because a null
+  `drawn` alone would read a drawless NBA table as cricket. The columns are
+  **W / L / PCT / GB / L10 / STRK**: there is no games-played column because
+  W-L already is one, and no points column because wins are the currency. PCT
+  is the emphasised figure rather than a points total, printed the way the sport
+  prints it (`.732`, no leading zero). Two cut lines are drawn instead of one —
+  playoffs after seed 6, play-in after seed 10.
+- **LEADERS** carries twelve boards. Each rate board states its qualifying
+  minimum in the headline, because **ESPN applies none of its own**: taken raw,
+  a two-way player with eight appearances topped both PER and free-throw
+  percentage. The league's published minimums (58 games; 300/82/125 made) are
+  applied at generation time and shown as `58+ GAMES`, `125+ MADE`.
+- **STATS** uses `basketballStatGroups` — SCORING / PLAYMAKING / DEFENCE /
+  DISCIPLINE. Basketball files its stats under the same `offensive` /
+  `defensive` / `general` categories football does, so unlike cricket it cannot
+  be told apart by category; the board set is picked off a signature stat
+  instead. Per-game boards use a one-decimal format, since basketball quotes
+  118.0 points a night and never 118.00.
+
+Field coverage, the season-label trap and the post-play-in seed trap are in
+`data/nba-league-stats-field-inventory.md`.
+
 ### IPL hub (league TABLE / LEADERS / STATS) — BUILT
 
 The IPL hub used to open on a six-team mock table with NO STAT LEADERS and NO
@@ -616,6 +710,41 @@ A Grand Prix is not a 1v1, so it takes **no `MatchPulseHeader`**: there is no
 home-vs-away pair to sit either side of a split bar. The hero is the circuit —
 ESPN's Monza track map over 53 laps / 5.793 km / 11 turns, the 1:20.901 lap
 record, and the winner's plate reading `FROM P19 · +18`.
+
+The hero card carries **no race title and no location line**. The match page's
+own header already names the Grand Prix directly above the tab strip, and the
+feed card the player arrived from names it again, so repeating it here pushed
+the map — the thing the card exists to show — down the card. It opens on the
+series and season pills, then the circuit's own name (`Autodromo Nazionale
+Monza`), then the map.
+
+#### The expanded circuit map — BUILT
+
+The map carries an expand control (top-right, shown only once the SVG has
+actually loaded, so it never opens an empty view). It pushes a full-screen
+circuit view: pinch/drag to pan and zoom, double tap to zoom about the point
+tapped and again to reset. The diagram is vector, so it stays crisp at 6x and
+the `S1`/`S2`/`S3` captions ESPN draws finally become readable.
+
+Two things on the map can be tapped, and the readout beneath changes with the
+selection:
+
+- **THE LAP** (the default; tap anywhere on the drawing) — the circuit as ESPN
+  publishes it: laps, lap length, turns, plus **race distance, direction and
+  year established**, which the app stores but has nowhere else to show, and the
+  lap record with its holder and year.
+- **START / FINISH** (tap the chequered marker) — who lined up on the line and
+  who crossed it first: pole, the winner and the grid slot they came from, and
+  the biggest position gain of the race, each carrying its driver's livery.
+
+**There is deliberately no per-sector readout.** ESPN publishes no sector
+splits — `.../splits` 404s and no stat key in the package is sector-scoped — and
+the `S1`/`S2`/`S3` on the diagram are text outlines in a separate subtree rather
+than segments of the track path, so the circuit is one continuous shape with no
+per-sector geometry to hit-test either. A sector panel could only have been
+invented, so the map exposes the one marker whose meaning is unambiguous. The
+diagram's other drawn markers (a red disc and two yellow ones) carry no legend
+and are likewise left unlabelled.
 
 Four charts and one board, all on the shared `CyberChartPanel`:
 

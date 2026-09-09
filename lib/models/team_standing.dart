@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 
 import 'sport_match.dart';
 
-/// One row of a league standings table. Designed for both football
-/// (P/W/D/L/GD/Pts) and cricket (P/W/L/NRR/Pts) — the table hides the drawn
-/// column when [drawn] is null.
+/// One row of a league standings table, shaped for three sports:
+/// football (P/W/D/L/GD/PTS), cricket (P/W/L/NRR/PTS) and basketball
+/// (W/L/PCT/GB). The table picks its layout off the data — a non-null
+/// [winPercent] means basketball, and a null [drawn] after that means cricket.
 ///
 /// Mock-seeded for now (see [MockPredictionRepository.standings]); maps cleanly
 /// to a backend/sports-feed payload later without any UI change. The optional
@@ -28,6 +29,9 @@ class TeamStanding {
     this.zoneNote,
     this.zoneColor,
     this.rankChange,
+    this.winPercent,
+    this.streak,
+    this.lastTen,
   });
 
   final SportTeam team;
@@ -70,4 +74,18 @@ class TeamStanding {
 
   /// Positions gained (+) or lost (-) since the last update; 0 or null = same.
   final int? rankChange;
+
+  /// Basketball only. Win percentage as a 0-1 fraction, which is the column an
+  /// NBA table is actually ordered by — and the signal that selects the
+  /// basketball layout, since a sport with no draws would otherwise be read as
+  /// cricket.
+  final double? winPercent;
+
+  /// Current run, already formatted by the feed, e.g. "W3".
+  final String? streak;
+
+  /// Record over the last ten games, e.g. "8-2". Basketball's answer to
+  /// football's form pips, which need a per-match sequence the feed does not
+  /// publish for the NBA.
+  final String? lastTen;
 }

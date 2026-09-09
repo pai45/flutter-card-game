@@ -16,6 +16,10 @@ enum StatFormat {
 
   /// A per-match average that needs two decimals.
   average,
+
+  /// A per-game rate the sport itself quotes to one decimal — basketball's
+  /// 118.0 points a night, never 118.00.
+  perGame,
 }
 
 /// One curated stat board: which stat, how to read it, and whether a low
@@ -505,6 +509,8 @@ String formatStat(double value, String display, StatFormat format) {
       return '${value.toStringAsFixed(value >= 100 ? 0 : 1)}%';
     case StatFormat.average:
       return value.toStringAsFixed(2);
+    case StatFormat.perGame:
+      return value.toStringAsFixed(1);
     case StatFormat.count:
       if (display.isNotEmpty) return display;
       return value == value.roundToDouble()
@@ -585,6 +591,132 @@ const cricketStatGroups = <StatBoardGroup>[
   ),
 ];
 
+/// The NBA STATS tab: four groups drawn from the 79 season stats that are
+/// actually populated, out of the 109 ESPN publishes per team.
+///
+/// The 30 left out are dead league-wide, not merely uninteresting: the whole
+/// `avg48*` family is zero for all 30 clubs, as are `minutes`, `avgMinutes`,
+/// `doubleDouble`, `tripleDouble`, `turnoverPoints`, `defReboundRate` and
+/// `gamesStarted`. Several survivors are duplicates of a board already here
+/// (`totalRebounds`, `threePointFieldGoalPct`) or ESPN's own inconsistent
+/// fraction spelling of a percentage it also ships as 0-100
+/// (`fieldGoals`, `freeThrows`, `offensiveReboundPct`) — see
+/// `docs/data/nba-league-stats-field-inventory.md`.
+const basketballStatGroups = <StatBoardGroup>[
+  StatBoardGroup(
+    label: 'SCORING',
+    // Per-team averages, not league totals: a league scores ~286,000 points a
+    // season, which is a number nobody can read. 116.3 a night is the one
+    // every basketball fan already carries.
+    pulse: [
+      StatPulseSpec('avgPoints', 'PPG', perTeam: true),
+      StatPulseSpec('avgThreePointFieldGoalsMade', '3PM', perTeam: true),
+      StatPulseSpec('avgFreeThrowsMade', 'FTM', perTeam: true),
+    ],
+    boards: [
+      StatBoardSpec('avgPoints', 'POINTS', format: StatFormat.perGame),
+      StatBoardSpec('points', 'TOTAL PTS'),
+      StatBoardSpec('fieldGoalPct', 'FG%', format: StatFormat.percent),
+      StatBoardSpec('effectiveFGPct', 'EFG%', format: StatFormat.percent),
+      StatBoardSpec('trueShootingPct', 'TS%', format: StatFormat.percent),
+      StatBoardSpec(
+        'avgThreePointFieldGoalsMade',
+        'THREES',
+        format: StatFormat.perGame,
+      ),
+      StatBoardSpec('threePointPct', '3P%', format: StatFormat.percent),
+      StatBoardSpec('freeThrowPct', 'FT%', format: StatFormat.percent),
+      StatBoardSpec('pointsInPaint', 'PAINT PTS'),
+      StatBoardSpec('fastBreakPoints', 'FAST BREAK'),
+    ],
+  ),
+  StatBoardGroup(
+    label: 'PLAYMAKING',
+    accent: Cyber.violet,
+    pulse: [
+      StatPulseSpec('avgAssists', 'AST', perTeam: true),
+      StatPulseSpec('assistTurnoverRatio', 'AST/TO', perTeam: true),
+      StatPulseSpec('paceFactor', 'PACE', perTeam: true),
+    ],
+    boards: [
+      StatBoardSpec('avgAssists', 'ASSISTS', format: StatFormat.perGame),
+      StatBoardSpec('assists', 'TOTAL AST'),
+      StatBoardSpec(
+        'assistTurnoverRatio',
+        'AST/TO',
+        format: StatFormat.average,
+      ),
+      StatBoardSpec('assistRatio', 'AST RATIO', format: StatFormat.average),
+      // Giving the ball away is the one board here where the smallest number
+      // wins, so it is ranked and framed that way.
+      StatBoardSpec(
+        'avgTotalTurnovers',
+        'TURNOVERS',
+        format: StatFormat.perGame,
+        lowerIsBetter: true,
+        accent: Cyber.amber,
+      ),
+      StatBoardSpec(
+        'turnoverRatio',
+        'TO RATIO',
+        format: StatFormat.average,
+        lowerIsBetter: true,
+        accent: Cyber.amber,
+      ),
+      StatBoardSpec('paceFactor', 'PACE', format: StatFormat.average),
+      StatBoardSpec(
+        'pointsPerEstimatedPossessions',
+        'PTS / POSS',
+        format: StatFormat.average,
+      ),
+    ],
+  ),
+  StatBoardGroup(
+    label: 'DEFENCE',
+    accent: Cyber.success,
+    pulse: [
+      StatPulseSpec('avgSteals', 'STL', perTeam: true),
+      StatPulseSpec('avgBlocks', 'BLK', perTeam: true),
+      StatPulseSpec('avgRebounds', 'REB', perTeam: true),
+    ],
+    boards: [
+      StatBoardSpec('avgSteals', 'STEALS', format: StatFormat.perGame),
+      StatBoardSpec('avgBlocks', 'BLOCKS', format: StatFormat.perGame),
+      StatBoardSpec('avgRebounds', 'REBOUNDS', format: StatFormat.perGame),
+      StatBoardSpec(
+        'avgDefensiveRebounds',
+        'DEF REB',
+        format: StatFormat.perGame,
+      ),
+      StatBoardSpec(
+        'avgOffensiveRebounds',
+        'OFF REB',
+        format: StatFormat.perGame,
+      ),
+      StatBoardSpec('reboundRate', 'REB RATE', format: StatFormat.percent),
+      StatBoardSpec('offReboundRate', 'OFF REB %', format: StatFormat.percent),
+      StatBoardSpec('stealTurnoverRatio', 'STL/TO', format: StatFormat.average),
+    ],
+  ),
+  StatBoardGroup(
+    label: 'DISCIPLINE',
+    accent: Cyber.amber,
+    pulse: [
+      StatPulseSpec('fouls', 'FOULS'),
+      StatPulseSpec('technicalFouls', 'TECHNICALS'),
+      StatPulseSpec('flagrantFouls', 'FLAGRANTS'),
+    ],
+    boards: [
+      StatBoardSpec('avgFouls', 'FOULS', format: StatFormat.perGame, lowerIsBetter: true),
+      StatBoardSpec('technicalFouls', 'TECHNICALS', lowerIsBetter: true),
+      StatBoardSpec('flagrantFouls', 'FLAGRANTS', lowerIsBetter: true),
+      StatBoardSpec('ejections', 'EJECTIONS', lowerIsBetter: true),
+      StatBoardSpec('disqualifications', 'FOUL-OUTS', lowerIsBetter: true),
+      StatBoardSpec('stealFoulRatio', 'STL/PF', format: StatFormat.average),
+    ],
+  ),
+];
+
 /// Picks the board set a league's stats belong to.
 ///
 /// Keyed off the stat dictionary's own categories rather than a sport enum, so
@@ -597,6 +729,13 @@ List<StatBoardGroup> statGroupsFor(Map<String, LeagueStatDefinition> defs) {
         definition.category == 'fielding') {
       return cricketStatGroups;
     }
+  }
+  // Basketball cannot be told apart by category: ESPN files its stats under
+  // `offensive` / `defensive` / `general`, exactly as it does football's. A
+  // signature stat is the honest discriminator — no football dictionary
+  // contains a rebound.
+  if (defs.containsKey('reboundRate') || defs.containsKey('threePointPct')) {
+    return basketballStatGroups;
   }
   return footballStatGroups;
 }

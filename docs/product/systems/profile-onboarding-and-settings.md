@@ -1,7 +1,7 @@
 # Profile, Onboarding, Identity, and Settings
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-07
+> **Last verified:** 2026-09-09
 > **Scope:** First-run identity, welcome reward, Profile hub, followed competitions/teams, cosmetics, and settings
 
 ## Product Purpose
@@ -23,6 +23,19 @@ showing a dead-end message (see
 [`systems/collections-decks-and-packs.md`](collections-decks-and-packs.md)).
 
 ## Player Flow
+
+First entry plays WELCOME TO STATOZ. Both its timer and tap-to-skip open the
+**PROTOTYPE** login/signup page before the following built profile steps.
+The supplied six-second StatOz card showcase loops silently above the form,
+with a poster during loading/failure, on unsupported platforms, or with reduced
+motion. Playback pauses when the app backgrounds and disposes on leaving.
+
+The page offers email and Google preview entry. LOGIN / SIGNUP activates for a
+valid trimmed email; Google preview works without an email. Both continue into
+avatar setup with press/haptic feedback and the existing setup entrance motion.
+A visible preview note explains that no account is created. Email is transient
+and never saved or transmitted. Legal links show themed unavailability dialogs;
+they do not represent published policies or record acceptance.
 
 1. Choose avatar and profile banner.
 2. Select a primary sport/module.
@@ -92,11 +105,14 @@ onboarding-complete flag, and onboarding-reward status persist through
 
 - **BUILT:** Five-step-capable identity setup, optional following, profile hero/
   hubs, local preference persistence, one-time 1,000-coin bonus, and logout.
+- **PROTOTYPE:** Screenshot-inspired email/Google account-entry screen after
+  welcome. This is not authentication; no provider, session, or account is created.
 - **PLANNED:** Cross-device account sync, live personalization, privacy/account
   controls, and broader global sound/accessibility settings require new scope.
 
 ## Implementation References
 
+- [`lib/screens/onboarding/login_signup_screen.dart`](../../../lib/screens/onboarding/login_signup_screen.dart)
 - [`lib/screens/onboarding/profile_setup_screen.dart`](../../../lib/screens/onboarding/profile_setup_screen.dart)
 - [`lib/screens/onboarding/widgets/onboarding_coin_reward_animation.dart`](../../../lib/screens/onboarding/widgets/onboarding_coin_reward_animation.dart)
 - [`lib/screens/profile/profile_screen.dart`](../../../lib/screens/profile/profile_screen.dart)
@@ -108,6 +124,7 @@ onboarding-complete flag, and onboarding-reward status persist through
 
 ## Tests
 
+- [`test/login_signup_screen_test.dart`](../../../test/login_signup_screen_test.dart)
 - [`test/profile_setup_screen_test.dart`](../../../test/profile_setup_screen_test.dart)
 - [`test/league_follow_test.dart`](../../../test/league_follow_test.dart)
 - [`test/onboarding_reward_storage_test.dart`](../../../test/onboarding_reward_storage_test.dart)

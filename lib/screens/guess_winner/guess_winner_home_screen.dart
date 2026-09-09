@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import '../../blocs/guess_winner/guess_winner_cubit.dart';
 import '../../config/theme.dart';
+import '../../models/sport_match.dart';
 import '../../widgets/cyber/daily_mystery_widgets.dart';
 import '../../widgets/cyber/sport_signal_painters.dart';
+import '../leaderboard/widgets/game_leaderboard_button.dart';
 
 class GuessWinnerHomeScreen extends StatelessWidget {
   const GuessWinnerHomeScreen({
@@ -58,6 +60,11 @@ class GuessWinnerHomeScreen extends StatelessWidget {
       onOpenToday: onOpenToday,
       onOpenLogs: onOpenLogs,
       onRetry: onRetry,
+      trailingAction: const GameLeaderboardButton(
+        sport: Sport.tennis,
+        mode: GameMode.mystery,
+        accent: Cyber.lime,
+      ),
     );
   }
 }

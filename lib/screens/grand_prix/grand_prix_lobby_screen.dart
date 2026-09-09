@@ -15,11 +15,13 @@ import '../../data/grand_prix_liveries.dart';
 import '../../models/grand_prix.dart';
 import '../../models/progression.dart'
     show ProgressTrack, grandPrixXpMultiplier;
+import '../../models/sport_match.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
 import '../../widgets/player_level_badge.dart';
+import '../leaderboard/widgets/game_leaderboard_button.dart';
 import '../match_history/match_history_pages.dart';
 import 'grand_prix_pit_deck_screen.dart';
 import 'grand_prix_race_screen.dart';
@@ -106,9 +108,21 @@ class _GrandPrixLobbyScreenState extends State<GrandPrixLobbyScreen> {
                 subtitle: '// LIGHTS OUT',
                 onBack: () => widget.onNavigate(AppSection.predictions),
                 showTitle: false,
-                rightSlot: PlayerLevelBadge(
-                  progression: gameState.progression,
-                  track: ProgressTrack.grandPrix,
+                rightSlot: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    PlayerLevelBadge(
+                      progression: gameState.progression,
+                      track: ProgressTrack.grandPrix,
+                    ),
+                    const SizedBox(width: 6),
+                    GameLeaderboardButton(
+                      sport: Sport.motorsport,
+                      mode: GameMode.featured,
+                      accent: Cyber.f1Red,
+                      onNavigate: widget.onNavigate,
+                    ),
+                  ],
                 ),
               ),
               // Arena art stays full-bleed (same bed pattern as Hoop Duel).

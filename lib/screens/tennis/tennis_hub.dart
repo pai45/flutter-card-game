@@ -12,6 +12,7 @@ import '../../config/theme.dart';
 import '../../models/avatar_frame_option.dart';
 import '../../models/avatar_option.dart';
 import '../../models/progression.dart';
+import '../../models/sport_match.dart';
 import '../../models/tennis.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
@@ -20,6 +21,7 @@ import '../../widgets/game_scaffold.dart';
 import '../../widgets/matchmaking/game_match_gate.dart';
 import '../../widgets/matchmaking/game_matchmaking_config.dart';
 import '../deck/tennis_deck_builder_screen.dart';
+import '../leaderboard/widgets/game_leaderboard_button.dart';
 import '../match_history/match_history_pages.dart';
 import 'tennis_match_screen.dart';
 
@@ -446,6 +448,11 @@ class _LandingScreen extends StatelessWidget {
         title: 'Tennis Rally',
         subtitle: '// COURT ONLINE',
         onBack: onExit,
+        rightSlot: const GameLeaderboardButton(
+          sport: Sport.tennis,
+          mode: GameMode.featured,
+          accent: Cyber.lime,
+        ),
       ),
       body: Column(
         children: [

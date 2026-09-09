@@ -56,7 +56,8 @@ must be explicitly tagged.
 
 ## App Map
 
-First launch opens profile setup. Completing it saves the player's identity and
+First launch plays WELCOME TO STATOZ, opens the **PROTOTYPE** login/signup
+preview, then enters profile setup. Completing setup saves the player's identity and
 awards an idempotent 1,000 Oz Coin welcome bonus with a reward animation. The
 main app then opens the sports hub with four persistent destinations:
 
@@ -68,9 +69,11 @@ main app then opens the sports hub with four persistent destinations:
 - **Profile**: progression, achievements, activity history, decks, collection,
   friends, following preferences, tutorials, support, and settings.
 
-Game modes open as full-screen experiences. Shared systems connect them through
-XP tracks, total level, Oz Coins, cards and decks, achievements, streaks,
-starter packs, reward reveals, and local persistence.
+Game modes open as full-screen experiences. Every game lobby's top bar carries a
+leaderboard CTA that opens that game's own board over the lobby, so standings are
+reachable without leaving the tee-up. Shared systems connect them through XP
+tracks, total level, Oz Coins, cards and decks, achievements, streaks, starter
+packs, reward reveals, and local persistence.
 
 ## Playable Game Coverage
 
@@ -104,6 +107,7 @@ Guess the Player entries share one implementation and one product page.
 |---|---|---|
 | Match discovery/search, predictions, sport STATS (including Cricket innings race/run-rate), quizzes, scoreline contests, and settlement | BUILT / PROTOTYPE DATA | [Predictions](systems/predictions.md) |
 | Season-aware league and team hubs: TABLE, player LEADERS/dossiers, tappable club STATS, GAMES, PICKS, plus per-club MATCHES/PREDICTIONS/PLAYERS (EPL, LaLiga, IPL) | BUILT / SNAPSHOT + LIVE ESPN DATA | [Predictions](systems/predictions.md) |
+| F1 league hub: TABLE (WDC/WCC), ROUNDS, STATS, match-card GAMES and PICKS | BUILT / ESPN STATS + EXISTING APP MARKETS | [Predictions](systems/predictions.md#f1-championship-hub--built) |
 | Prediction feedback, rewards, and future quests | BUILT / PLANNED | [Prediction Gamification](systems/prediction-gamification.md) |
 | Outcome markets, positions, settlement, and payouts | BUILT / PROTOTYPE DATA | [Picks](systems/picks.md) |
 | Per-mode XP tracks and aggregate player level | BUILT | [Progression and Leveling](systems/progression-and-leveling.md) |
@@ -111,8 +115,8 @@ Guess the Player entries share one implementation and one product page.
 | Cross-app badges and unlock celebrations | BUILT | [Achievements](systems/achievements.md) |
 | Cards, decks, packs, starter packs, and daily drops | BUILT | [Collections, Decks, and Packs](systems/collections-decks-and-packs.md) |
 | Oz Coins, shop, cosmetics, XP/coin ledgers, and settlement | BUILT / PROTOTYPE COMMERCE | [Economy, Shop, and Ledgers](systems/economy-shop-and-ledgers.md) |
-| Leaderboards, rivals, challenges, and activity history | BUILT / PROTOTYPE DATA | [Leaderboards, Rivals, and History](systems/leaderboards-rivals-and-history.md) |
-| Identity, onboarding, followed leagues, favorite clubs, and settings | BUILT | [Profile, Onboarding, and Settings](systems/profile-onboarding-and-settings.md) |
+| Leaderboards, per-league player boards, rivals, challenges, and activity history | BUILT / PROTOTYPE DATA | [Leaderboards, Rivals, and History](systems/leaderboards-rivals-and-history.md) |
+| Identity, onboarding, followed leagues, favorite clubs, and settings | BUILT; account entry PROTOTYPE | [Profile, Onboarding, and Settings](systems/profile-onboarding-and-settings.md) |
 | Local friend bookmarks and CPU-themed challenges | BUILT / PROTOTYPE SOCIAL DATA | [Friends](systems/friends.md) |
 | Invite links and demo referral rewards | PROTOTYPE | [Referrals](systems/referrals.md) |
 | Tutorials, How to Play, and support | BUILT / PARTIAL COVERAGE | [Tutorials, How to Play, and Support](systems/tutorials-how-to-play-and-support.md) |

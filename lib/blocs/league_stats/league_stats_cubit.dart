@@ -8,6 +8,7 @@ import '../../services/cricket_league_stats_package_service.dart';
 import '../../services/espn_league_stats_service.dart';
 import '../../services/espn_score_service.dart';
 import '../../services/league_stats_package_service.dart';
+import '../../services/nba_league_stats_package_service.dart';
 import 'league_stats_state.dart';
 
 /// Route-scoped controller for every season-aware league-hub surface.
@@ -58,6 +59,35 @@ class LeagueStatsCubit extends Cubit<LeagueStatsState> {
       // `archiveUnavailable` is NOT set: that flag replaces the whole table
       // with a "use mobile" empty state, which is not what "this sport has no
       // archive" means.
+      return;
+    }
+
+    // Basketball next, and also terminally. Every ESPN feed the football hub
+    // uses does answer for the NBA — that is why the package is a straight
+    // extraction rather than cricket's re-derivation — but the live service
+    // itself is soccer-shaped: `EspnLeagueStatsService` builds
+    // `sports/soccer/...` URLs, so there is nothing to layer over the package
+    // until that service learns a second sport.
+    final basketball = await NbaLeagueStatsPackageService.snapshotFor(
+      _leagueId,
+      leagueName: leagueName,
+      shortCode: shortCode,
+    );
+    if (!_isCurrent(generation)) return;
+    if (basketball != null && !basketball.isEmpty) {
+      emit(
+        state.copyWith(
+          status: LeagueStatsStatus.loaded,
+          snapshot: basketball,
+          categoryIndex: 0,
+          groupIndex: 0,
+          statGroupIndex: 0,
+          statIndex: 0,
+        ),
+      );
+      // As with cricket: no season list is emitted, so the archive picker
+      // stays hidden, and `archiveUnavailable` is deliberately NOT set —
+      // that flag replaces the table with a "use mobile" empty state.
       return;
     }
 

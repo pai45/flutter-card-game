@@ -1,34 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../blocs/prediction/prediction_cubit.dart';
 import '../../config/enums.dart';
 import '../../config/sport_modules.dart';
 import '../../config/theme.dart';
+import '../../data/leaderboard_leagues.dart';
 import '../../data/rival_roster.dart';
 import '../../models/sport_match.dart';
 import '../../utils/sound_effects.dart';
-import '../../widgets/cyber/cyber_underline_tabs.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/cyber/cyber_underline_tabs.dart';
 import '../../widgets/cyber/sport_underline_tabs.dart';
 import '../../widgets/landing_bottom_navigation.dart';
 import '../../widgets/stat_oz_top_bar.dart';
 import '../../widgets/staggered_card_entrance.dart';
 import '../profile/rival_profile_screen.dart';
+import 'widgets/league_dial.dart';
 import 'widgets/rank_board.dart';
 import 'user_search_screen.dart';
 import 'widgets/rank_widgets.dart';
 
 // ─── Domain ──────────────────────────────────────────────────────────────────
 
-enum LeaderboardType { matchDay, tournament, games }
-
-// Matches shop tab styling (_ShopTabs / _TabItem).
-const Color _tabBarBg = Cyber.bg;
-const Color _tabSecondary = AppTheme.slate400;
+enum LeaderboardType { matches, games }
 
 const List<LeaderboardType> _typeTabOrder = [
-  LeaderboardType.matchDay,
-  LeaderboardType.tournament,
+  LeaderboardType.matches,
   LeaderboardType.games,
 ];
 
@@ -40,23 +39,57 @@ const List<Sport> _leaderboardSports = [
   Sport.tennis,
 ];
 
-final _leaderboardSportLabels = _leaderboardSports
-    .map((sport) => sportModuleFor(sport).label.toUpperCase())
-    .toList(growable: false);
-
-final _leaderboardSportIcons = _leaderboardSports
-    .map((sport) => sportModuleFor(sport).icon)
-    .toList(growable: false);
-
-final _leaderboardSportColors = _leaderboardSports
-    .map((sport) => sportModuleFor(sport).accent)
-    .toList(growable: false);
-
 enum TournamentBoard { players, teams }
 
 enum TournamentScope { weekly, season, allTime }
 
-enum GameMode { quiz, cardDuel, streaks, accuracy }
+/// Every sport's Games board carries its own game catalogue. The enum keeps
+/// leaderboard score generation stable while [_gameModesFor] supplies the
+/// sport-specific player-facing names. [shootout], [chess] and [bingo] are
+/// football-only; every other sport reuses the featured/quiz/mystery trio.
+enum GameMode { featured, quiz, mystery, shootout, chess, bingo }
+
+typedef _GameModeOption = ({GameMode mode, String label});
+
+List<_GameModeOption> _gameModesFor(Sport sport) => switch (sport) {
+  Sport.football => const [
+    (mode: GameMode.featured, label: 'PITCH DUEL'),
+    (mode: GameMode.shootout, label: 'PENALTY SHOOTOUT'),
+    (mode: GameMode.chess, label: 'FOOTBALL CHESS'),
+    (mode: GameMode.bingo, label: 'FOOTBALL BINGO'),
+    (mode: GameMode.quiz, label: 'FOOTBALL QUIZ'),
+    (mode: GameMode.mystery, label: 'GUESS THE PLAYER'),
+  ],
+  Sport.cricket => const [
+    (mode: GameMode.featured, label: 'FINAL OVER'),
+    (mode: GameMode.quiz, label: 'CRICKET QUIZ'),
+    (mode: GameMode.mystery, label: 'GUESS THE PLAYER'),
+  ],
+  Sport.basketball => const [
+    (mode: GameMode.featured, label: 'HOOP DUEL'),
+    (mode: GameMode.quiz, label: 'BASKETBALL QUIZ'),
+    (mode: GameMode.mystery, label: 'GUESS THE PLAYER'),
+  ],
+  Sport.motorsport => const [
+    (mode: GameMode.featured, label: 'GRAND PRIX DASH'),
+    (mode: GameMode.quiz, label: 'F1 QUIZ'),
+    (mode: GameMode.mystery, label: 'GUESS THE DRIVER'),
+  ],
+  Sport.tennis => const [
+    (mode: GameMode.featured, label: 'TENNIS RALLY'),
+    (mode: GameMode.quiz, label: 'TENNIS QUIZ'),
+    (mode: GameMode.mystery, label: 'GUESS THE WINNER'),
+  ],
+};
+
+/// Player-facing name of [mode] on [sport]'s Games board. Falls back to the
+/// sport's first game when the pair doesn't exist (the football-only modes).
+String gameModeLabel(Sport sport, GameMode mode) {
+  final options = _gameModesFor(sport);
+  return options
+      .firstWhere((option) => option.mode == mode, orElse: () => options.first)
+      .label;
+}
 
 class _TeamSeed {
   const _TeamSeed({
@@ -237,8 +270,7 @@ const List<_TeamSeed> _teams = [
 ];
 
 ScoreMeta _scoreMeta(LeaderboardType type) => switch (type) {
-  LeaderboardType.matchDay => (unit: 'XP'),
-  LeaderboardType.tournament => (unit: 'XP'),
+  LeaderboardType.matches => (unit: 'XP'),
   LeaderboardType.games => (unit: 'W'),
 };
 
@@ -249,9 +281,7 @@ int _scoreFor(
   GameMode mode,
 ) {
   switch (type) {
-    case LeaderboardType.matchDay:
-      return base;
-    case LeaderboardType.tournament:
+    case LeaderboardType.matches:
       return switch (scope) {
         TournamentScope.weekly => base,
         TournamentScope.season => base * 6,
@@ -262,24 +292,108 @@ int _scoreFor(
   }
 }
 
+/// Stable hash over `<leagueId>:<name>`. No `Random`, no `DateTime` — a rival
+/// must land on the same club and the same league-adjusted score every visit.
+///
+/// Kept deliberately small-arithmetic: every intermediate stays under 2^53, so
+/// it produces the SAME value on the web (where ints are JS doubles) as on the
+/// VM. An FNV-1a here silently diverged between the two, giving a rival a
+/// different club and rank in the browser than in tests.
+int _leagueHash(String value) {
+  var hash = 0;
+  for (var i = 0; i < value.length; i++) {
+    hash = (hash * 31 + value.codeUnitAt(i)) % 0x7fffffff;
+  }
+  return hash;
+}
+
+/// A rival's standing *inside* [league]. Nudging the canonical base by a stable
+/// per-league offset keeps the elite near the top while genuinely churning the
+/// mid-table — so the podium, and your own rank, differ league to league.
+int _leagueBase(int base, int hash) => base + (hash % 700) - 320;
+
 List<LeaderboardEntry> _entriesFor(
   LeaderboardType type,
   TournamentScope scope,
   GameMode mode,
+  LeaderboardLeague league,
 ) {
+  final seeded = [
+    for (final seed in kRivalRoster)
+      (seed: seed, hash: _leagueHash('${league.id}:${seed.name}')),
+  ]..sort((a, b) {
+    final byBase = _leagueBase(
+      b.seed.base,
+      b.hash,
+    ).compareTo(_leagueBase(a.seed.base, a.hash));
+    // Ties fall back to the canonical order so the board never flickers.
+    return byBase != 0 ? byBase : a.seed.name.compareTo(b.seed.name);
+  });
+
   return [
-    for (var i = 0; i < kRivalRoster.length; i++)
+    for (var i = 0; i < seeded.length; i++)
       LeaderboardEntry(
         rank: i + 1,
-        name: kRivalRoster[i].name,
-        score: _scoreFor(type, kRivalRoster[i].base, scope, mode),
-        movement: kRivalRoster[i].movement,
-        isNew: kRivalRoster[i].isNew,
-        badge: kRivalRoster[i].badge,
-        isUser: kRivalRoster[i].isUser,
-        xp: kRivalRoster[i].base,
+        name: seeded[i].seed.name,
+        // Score off the league-adjusted base, not the canonical one, or the
+        // column disagrees with the ranking it produced.
+        score: _scoreFor(
+          type,
+          _leagueBase(seeded[i].seed.base, seeded[i].hash),
+          scope,
+          mode,
+        ),
+        movement: seeded[i].seed.movement,
+        isNew: seeded[i].seed.isNew,
+        badge: seeded[i].seed.badge,
+        isUser: seeded[i].seed.isUser,
+        xp: seeded[i].seed.base,
+        subtitle: _clubFor(league, seeded[i].hash),
       ),
   ];
+}
+
+/// The rival's club/nation badge on this board. Reuses [LeaderboardEntry.subtitle],
+/// which the podium tile, rows and pinned user bar already render — deliberately
+/// NOT `team`, since a non-null `team` makes a row inert in [_openRival].
+String? _clubFor(LeaderboardLeague league, int hash) =>
+    league.clubs.isEmpty ? null : league.clubs[hash % league.clubs.length];
+
+/// Where the user lands in [league], without building the whole board.
+int _userRankIn(LeaderboardLeague league) {
+  final user = kRivalRoster.firstWhere(
+    (seed) => seed.isUser,
+    orElse: () => kRivalRoster.last,
+  );
+  final mine = _leagueBase(
+    user.base,
+    _leagueHash('${league.id}:${user.name}'),
+  );
+  var rank = 1;
+  for (final seed in kRivalRoster) {
+    if (seed.name == user.name) continue;
+    final theirs = _leagueBase(
+      seed.base,
+      _leagueHash('${league.id}:${seed.name}'),
+    );
+    if (theirs > mine) rank++;
+  }
+  return rank;
+}
+
+/// The league in [catalogue] the user ranks highest in — the "you're king here"
+/// hook on the pinned rank bar.
+LeaderboardLeague? _bestLeagueFor(List<LeaderboardLeague> catalogue) {
+  LeaderboardLeague? best;
+  var bestRank = 1 << 30;
+  for (final league in catalogue) {
+    final rank = _userRankIn(league);
+    if (rank < bestRank) {
+      bestRank = rank;
+      best = league;
+    }
+  }
+  return best;
 }
 
 List<LeaderboardEntry> _teamEntriesFor() {
@@ -350,6 +464,10 @@ class LeaderboardScreen extends StatefulWidget {
     required this.onNavigate,
     this.onAddCoins,
     this.onChallenge,
+    this.initialType,
+    this.initialSport,
+    this.initialMode,
+    this.onClose,
     super.key,
   });
 
@@ -361,56 +479,62 @@ class LeaderboardScreen extends StatefulWidget {
   /// leaderboard), in which case the dossier hides its CHALLENGE action.
   final void Function(String opponentName, int opponentLevel)? onChallenge;
 
+  /// Board to open on. Lets a game lobby deep-link straight to its own
+  /// standings instead of dropping the player on the default MATCHES board.
+  final LeaderboardType? initialType;
+  final Sport? initialSport;
+  final GameMode? initialMode;
+
+  /// Set when the board is pushed over another screen (a game lobby) rather
+  /// than mounted as the leaderboard tab: swaps the bottom nav for a back
+  /// action and titles the bar with the game you came from.
+  final VoidCallback? onClose;
+
   @override
   State<LeaderboardScreen> createState() => _LeaderboardScreenState();
 }
 
-class _LeaderboardScreenState extends State<LeaderboardScreen>
-    with TickerProviderStateMixin {
-  LeaderboardType _type = LeaderboardType.matchDay;
+class _LeaderboardScreenState extends State<LeaderboardScreen> {
+  late LeaderboardType _type = widget.initialType ?? LeaderboardType.matches;
   TournamentBoard _tournamentBoard = TournamentBoard.teams;
-  Sport _sport = Sport.football;
+  late Sport _sport = widget.initialSport ?? Sport.football;
   TournamentScope _scope = TournamentScope.weekly;
-  GameMode _mode = GameMode.quiz;
+  late GameMode _mode = widget.initialMode ?? GameMode.featured;
 
-  late final AnimationController _typeTabIndicatorController;
-  late Animation<double> _typeTabIndicatorAnimation;
-  int _previousTypeTab = 0;
+  /// Each sport remembers the league you last spun to, so switching tabs and
+  /// coming back doesn't reset your board.
+  final Map<Sport, String> _leagueBySport = {};
 
-  @override
-  void initState() {
-    super.initState();
-    _typeTabIndicatorController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-      value: 0,
-    );
-    _typeTabIndicatorAnimation = AlwaysStoppedAnimation<double>(
-      _typeTabOrder.indexOf(_type).toDouble(),
+  LeaderboardLeague _leagueFor(Sport sport) {
+    final catalogue = leaderboardLeaguesFor(sport);
+    final id = _leagueBySport[sport] ??= _defaultLeagueId(sport, catalogue);
+    return catalogue.firstWhere(
+      (league) => league.id == id,
+      orElse: () => catalogue.first,
     );
   }
 
-  @override
-  void dispose() {
-    _typeTabIndicatorController.dispose();
-    super.dispose();
+  /// Defaults to the league the player follows from onboarding when this sport
+  /// has one, otherwise the first in the dial.
+  ///
+  /// Read nullably: the board is also mounted from the in-game shell, where a
+  /// PredictionCubit isn't guaranteed — a missing one just means no preference.
+  String _defaultLeagueId(Sport sport, List<LeaderboardLeague> catalogue) {
+    final followed =
+        context.read<PredictionCubit?>()?.state.followedLeagueIds ??
+        const <String>[];
+    return catalogue
+        .firstWhere(
+          (league) => followed.contains(league.id),
+          orElse: () => catalogue.first,
+        )
+        .id;
   }
 
   void _setTypeTab(int index) {
     final type = _typeTabOrder[index];
     if (type == _type) return;
-    _previousTypeTab = _typeTabOrder.indexOf(_type);
-    _typeTabIndicatorAnimation =
-        Tween<double>(
-          begin: _previousTypeTab.toDouble(),
-          end: index.toDouble(),
-        ).animate(
-          CurvedAnimation(
-            parent: _typeTabIndicatorController,
-            curve: Curves.easeOutCubic,
-          ),
-        );
-    _typeTabIndicatorController.forward(from: 0);
+    HapticFeedback.selectionClick();
     setState(() => _type = type);
   }
 
@@ -429,14 +553,23 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
 
   @override
   Widget build(BuildContext context) {
+    final onClose = widget.onClose;
     final accent = sportModuleFor(_sport).accent;
     final isTeamTournament =
-        _type == LeaderboardType.tournament &&
+        _type == LeaderboardType.matches &&
         _tournamentBoard == TournamentBoard.teams;
+    final catalogue = leaderboardLeaguesFor(_sport);
+    final league = _leagueFor(_sport);
     final allEntries = isTeamTournament
         ? _teamEntriesFor()
-        : _entriesFor(_type, _scope, _mode);
-    final user = _userEntry(allEntries);
+        : _entriesFor(_type, _scope, _mode, league);
+    var user = _userEntry(allEntries);
+    // Reward finding the league you're strongest in.
+    if (!isTeamTournament &&
+        user.subtitle != null &&
+        _bestLeagueFor(catalogue)?.id == league.id) {
+      user = user.copyWith(subtitle: '${user.subtitle} // BEST LEAGUE');
+    }
     final entries = allEntries;
 
     return Scaffold(
@@ -461,6 +594,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                       setState(() => _tournamentBoard = board),
                   mode: _mode,
                   onMode: (mode) => setState(() => _mode = mode),
+                  sport: _sport,
+                  leagues: catalogue,
+                  selectedLeagueId: league.id,
+                  onLeague: (id) =>
+                      setState(() => _leagueBySport[_sport] = id),
                   accent: accent,
                   compact: compact,
                 );
@@ -470,15 +608,38 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                     StatOzTopBar(
                       title: 'Leaderboard',
                       accent: accent,
+                      leading: onClose == null
+                          ? null
+                          : IconButton(
+                              tooltip: 'Back',
+                              padding: EdgeInsets.zero,
+                              visualDensity: VisualDensity.compact,
+                              constraints: const BoxConstraints.tightFor(
+                                width: 34,
+                                height: 40,
+                              ),
+                              onPressed: onClose,
+                              icon: const Icon(
+                                Icons.arrow_back_ios_new,
+                                size: 18,
+                              ),
+                              color: accent,
+                            ),
                       onAddCoins:
                           widget.onAddCoins ??
                           () => widget.onNavigate(AppSection.shop),
                     ),
+                    _LeaderboardTabs(
+                      activeTab: _typeTabOrder.indexOf(_type),
+                      onTap: _setTypeTab,
+                    ),
                     _LeaderboardSportsTabs(
                       activeIndex: activeSportIndex < 0 ? 0 : activeSportIndex,
                       selectedSport: _sport,
-                      onTap: (index) =>
-                          setState(() => _sport = _leaderboardSports[index]),
+                      onTap: (index) => setState(() {
+                        _sport = _leaderboardSports[index];
+                        _mode = GameMode.featured;
+                      }),
                       onSearch: () {
                         HapticFeedback.selectionClick();
                         Navigator.of(context).push(
@@ -489,12 +650,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                           ),
                         );
                       },
-                    ),
-                    _LeaderboardTabs(
-                      activeTab: _typeTabOrder.indexOf(_type),
-                      indicatorAnimation: _typeTabIndicatorAnimation,
-                      accent: accent,
-                      onTap: _setTypeTab,
                     ),
                     Expanded(
                       child: AnimatedSwitcher(
@@ -548,11 +703,13 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
           ),
         ],
       ),
-      bottomNavigationBar: LandingBottomNavigation(
-        selectedIndex: 2,
-        onNavigate: widget.onNavigate,
-        includeShop: false,
-      ),
+      bottomNavigationBar: onClose != null
+          ? null
+          : LandingBottomNavigation(
+              selectedIndex: 2,
+              onNavigate: widget.onNavigate,
+              includeShop: false,
+            ),
     );
   }
 }
@@ -560,170 +717,18 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
 // ─── Type tabs (matches shop _ShopTabs) ──────────────────────────────────────
 
 class _LeaderboardTabs extends StatelessWidget {
-  const _LeaderboardTabs({
-    required this.activeTab,
-    required this.indicatorAnimation,
-    required this.accent,
-    required this.onTap,
-  });
+  const _LeaderboardTabs({required this.activeTab, required this.onTap});
 
   final int activeTab;
-  final Animation<double> indicatorAnimation;
-  final Color accent;
   final ValueChanged<int> onTap;
 
-  static const List<String> _items = ['MATCH DAY', 'TOURNEY', 'GAMES'];
-
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 50,
-      decoration: BoxDecoration(
-        color: _tabBarBg.withValues(alpha: 0.4),
-        border: Border(
-          bottom: BorderSide(color: accent.withValues(alpha: 0.22)),
-        ),
-      ),
-      child: LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-          final double tabWidth = constraints.maxWidth / _items.length;
-          return Stack(
-            children: [
-              Row(
-                children: [
-                  for (int index = 0; index < _items.length; index++)
-                    Expanded(
-                      child: _Pressable(
-                        accent: accent,
-                        onTap: () => onTap(index),
-                        child: _LeaderboardTabItem(
-                          label: _items[index],
-                          active: activeTab == index,
-                          accent: accent,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              AnimatedBuilder(
-                animation: indicatorAnimation,
-                builder: (BuildContext context, Widget? child) {
-                  return Positioned(
-                    left: tabWidth * indicatorAnimation.value + tabWidth * 0.18,
-                    bottom: 0,
-                    width: tabWidth * 0.64,
-                    height: 3,
-                    child: child!,
-                  );
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: accent,
-                    boxShadow: [
-                      BoxShadow(
-                        color: accent.withValues(alpha: 0.7),
-                        blurRadius: 10,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _LeaderboardTabItem extends StatelessWidget {
-  const _LeaderboardTabItem({
-    required this.label,
-    required this.active,
-    required this.accent,
-  });
-
-  final String label;
-  final bool active;
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    final Color color = active ? accent : _tabSecondary;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      decoration: BoxDecoration(
-        color: active ? accent.withValues(alpha: 0.07) : Colors.transparent,
-      ),
-      child: Center(
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            label,
-            maxLines: 1,
-            style: Cyber.label(
-              10,
-              color: color,
-              weight: FontWeight.w900,
-              letterSpacing: 1.2,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Pressable extends StatefulWidget {
-  const _Pressable({
-    required this.child,
-    required this.onTap,
-    required this.accent,
-  });
-
-  final Widget child;
-  final VoidCallback onTap;
-  final Color accent;
-
-  @override
-  State<_Pressable> createState() => _PressableState();
-}
-
-class _PressableState extends State<_Pressable> {
-  bool _pressed = false;
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTapDown: (_) => setState(() => _pressed = true),
-        onTapCancel: () => setState(() => _pressed = false),
-        onTapUp: (_) => setState(() => _pressed = false),
-        onTap: widget.onTap,
-        child: AnimatedScale(
-          duration: const Duration(milliseconds: 150),
-          scale: _pressed ? 0.97 : 1,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.zero,
-              boxShadow: _hovered
-                  ? [
-                      BoxShadow(
-                        color: widget.accent.withValues(alpha: 0.25),
-                        blurRadius: 16,
-                      ),
-                    ]
-                  : null,
-            ),
-            child: widget.child,
-          ),
-        ),
-      ),
+    return CyberUnderlineTabs(
+      labels: const ['MATCHES', 'GAMES'],
+      activeIndex: activeTab,
+      onTap: onTap,
+      accent: activeTab == 0 ? Cyber.cyan : Cyber.amber,
     );
   }
 }
@@ -745,18 +750,11 @@ class _LeaderboardSportsTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tabs = CyberUnderlineTabs(
-      labels: _leaderboardSportLabels,
-      icons: _leaderboardSportIcons,
-      iconColors: _leaderboardSportColors,
+    return SportUnderlineTabs(
       activeIndex: activeIndex,
-      accent: sportModuleFor(selectedSport).accent,
+      selectedSport: selectedSport,
       onTap: onTap,
-    );
-    return CyberUnderlineTabsWithAction(
-      tabs: tabs,
-      accent: sportModuleFor(selectedSport).accent,
-      action: CyberSearchButton(
+      trailingAction: CyberSearchButton(
         key: const ValueKey('leaderboard-search-button'),
         onTap: onSearch,
         label: 'Search Leaderboard',
@@ -774,6 +772,10 @@ class _FilterBar extends StatelessWidget {
     required this.onTournamentBoard,
     required this.mode,
     required this.onMode,
+    required this.sport,
+    required this.leagues,
+    required this.selectedLeagueId,
+    required this.onLeague,
     required this.accent,
     required this.compact,
   });
@@ -785,44 +787,38 @@ class _FilterBar extends StatelessWidget {
   final ValueChanged<TournamentBoard> onTournamentBoard;
   final GameMode mode;
   final ValueChanged<GameMode> onMode;
+  final Sport sport;
+  final List<LeaderboardLeague> leagues;
+  final String selectedLeagueId;
+  final ValueChanged<String> onLeague;
   final Color accent;
   final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    final showCountdownInline =
-        type == LeaderboardType.matchDay &&
-        MediaQuery.sizeOf(context).width >= 360;
-    final showCountdownBelow =
-        type == LeaderboardType.matchDay && !showCountdownInline && !compact;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (showCountdownInline || showCountdownBelow)
-          Padding(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: CountdownPill(remaining: '04h 12m'),
-            ),
-          ),
-        if (type == LeaderboardType.tournament) ...[
+        if (type == LeaderboardType.matches) ...[
           _TournamentBoardTabs(
             active: tournamentBoard,
             onSelect: onTournamentBoard,
             accent: accent,
           ),
           if (tournamentBoard == TournamentBoard.players)
-            _ScopeToggle(
+            _ScopeRow(
               scope: scope,
               onScope: onScope,
+              sport: sport,
+              leagues: leagues,
+              selectedLeagueId: selectedLeagueId,
+              onLeague: onLeague,
               accent: accent,
               compact: compact,
             ),
         ],
         if (type == LeaderboardType.games)
-          _ModeTabs(mode: mode, onMode: onMode, accent: accent),
+          _ModeTabs(mode: mode, onMode: onMode, sport: sport, accent: accent),
       ],
     );
   }
@@ -889,18 +885,30 @@ class _TournamentBoardTabs extends StatelessWidget {
   }
 }
 
-class _ScopeToggle extends StatelessWidget {
-  const _ScopeToggle({
+/// The players board's filter row: the league dial and the timeframe segments
+/// share one line, so "which league" and "over what span" read as one question.
+class _ScopeRow extends StatelessWidget {
+  const _ScopeRow({
     required this.scope,
     required this.onScope,
+    required this.sport,
+    required this.leagues,
+    required this.selectedLeagueId,
+    required this.onLeague,
     required this.accent,
     required this.compact,
   });
 
   final TournamentScope scope;
   final ValueChanged<TournamentScope> onScope;
+  final Sport sport;
+  final List<LeaderboardLeague> leagues;
+  final String selectedLeagueId;
+  final ValueChanged<String> onLeague;
   final Color accent;
   final bool compact;
+
+  static const double _height = 38;
 
   static const List<({TournamentScope scope, String label})> _items = [
     (scope: TournamentScope.weekly, label: 'WEEKLY'),
@@ -912,44 +920,69 @@ class _ScopeToggle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.fromLTRB(16, compact ? 6 : 10, 16, 0),
-      child: Row(
-        children: [
-          for (final item in _items)
-            Expanded(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => onScope(item.scope),
-                child: Container(
-                  margin: const EdgeInsets.only(right: 6),
-                  padding: const EdgeInsets.symmetric(vertical: 7),
-                  alignment: Alignment.center,
-                  decoration: cutCornerDecoration(
-                    color: scope == item.scope
-                        ? accent.withValues(alpha: 0.14)
-                        : Cyber.panel.withValues(alpha: 0.5),
-                    borderColor: scope == item.scope
-                        ? accent
-                        : Cyber.line.withValues(alpha: 0.35),
-                    cut: 8,
-                  ),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      item.label,
-                      maxLines: 1,
-                      style: TextStyle(
-                        color: scope == item.scope ? accent : Cyber.muted,
-                        fontFamily: Cyber.displayFont,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.8,
+      child: SizedBox(
+        height: _height,
+        child: Row(
+          children: [
+            LeagueDial(
+              // Rebuild cleanly when the sport swaps the whole catalogue out.
+              key: ValueKey('league-dial-${sport.name}'),
+              leagues: leagues,
+              selectedId: selectedLeagueId,
+              onSelect: onLeague,
+              height: _height,
+            ),
+            const SizedBox(width: 8),
+            Container(
+              width: 1,
+              height: 22,
+              color: Cyber.line.withValues(alpha: 0.35),
+            ),
+            const SizedBox(width: 8),
+            for (var i = 0; i < _items.length; i++)
+              Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => onScope(_items[i].scope),
+                  child: Container(
+                    margin: EdgeInsets.only(
+                      right: i == _items.length - 1 ? 0 : 6,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 7,
+                      horizontal: 2,
+                    ),
+                    alignment: Alignment.center,
+                    decoration: cutCornerDecoration(
+                      color: scope == _items[i].scope
+                          ? accent.withValues(alpha: 0.14)
+                          : Cyber.panel.withValues(alpha: 0.5),
+                      borderColor: scope == _items[i].scope
+                          ? accent
+                          : Cyber.line.withValues(alpha: 0.35),
+                      cut: 8,
+                    ),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        _items[i].label,
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: scope == _items[i].scope
+                              ? accent
+                              : Cyber.muted,
+                          fontFamily: Cyber.displayFont,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.8,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -959,19 +992,14 @@ class _ModeTabs extends StatelessWidget {
   const _ModeTabs({
     required this.mode,
     required this.onMode,
+    required this.sport,
     required this.accent,
   });
 
   final GameMode mode;
   final ValueChanged<GameMode> onMode;
+  final Sport sport;
   final Color accent;
-
-  static const List<({GameMode mode, String label})> _items = [
-    (mode: GameMode.quiz, label: 'QUIZ'),
-    (mode: GameMode.cardDuel, label: 'CARD DUEL'),
-    (mode: GameMode.streaks, label: 'STREAKS'),
-    (mode: GameMode.accuracy, label: 'ACCURACY'),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -981,7 +1009,7 @@ class _ModeTabs extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
         children: [
-          for (final item in _items)
+          for (final item in _gameModesFor(sport))
             Padding(
               padding: const EdgeInsets.only(right: 7),
               child: GestureDetector(
@@ -1117,15 +1145,7 @@ class _EmptyState extends StatelessWidget {
   ({IconData icon, String title, String body, String cta, AppSection target})
   _config() {
     switch (type) {
-      case LeaderboardType.matchDay:
-        return (
-          icon: Icons.sports_soccer,
-          title: 'NO LIVE MATCH LEADERBOARD',
-          body: 'Come back when the next match starts.',
-          cta: 'VIEW TOURNAMENT RANKING',
-          target: AppSection.leaderboard,
-        );
-      case LeaderboardType.tournament:
+      case LeaderboardType.matches:
         return (
           icon: Icons.military_tech,
           title: "YOU'RE NOT RANKED YET",

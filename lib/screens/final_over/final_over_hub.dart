@@ -9,11 +9,13 @@ import '../../blocs/game/game_state.dart';
 import '../../config/theme.dart';
 import '../../models/final_over.dart';
 import '../../models/progression.dart';
+import '../../models/sport_match.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
 import '../../widgets/player_level_badge.dart';
+import '../leaderboard/widgets/game_leaderboard_button.dart';
 import '../match_history/match_history_pages.dart';
 import 'final_over_deck_builder_screen.dart';
 import 'final_over_match_screen.dart';
@@ -55,9 +57,19 @@ class FinalOverHub extends StatelessWidget {
                 subtitle: '// THREE-OVER CHASE',
                 showTitle: false,
                 onBack: onExit,
-                rightSlot: PlayerLevelBadge(
-                  progression: gameState.progression,
-                  track: ProgressTrack.finalOver,
+                rightSlot: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    PlayerLevelBadge(
+                      progression: gameState.progression,
+                      track: ProgressTrack.finalOver,
+                    ),
+                    const SizedBox(width: 6),
+                    const GameLeaderboardButton(
+                      sport: Sport.cricket,
+                      mode: GameMode.featured,
+                    ),
+                  ],
                 ),
               ),
               body: FinalOverArenaBackground(

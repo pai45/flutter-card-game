@@ -10,6 +10,8 @@ import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../config/tutorial_steps.dart';
 import '../../models/match.dart';
+import '../../models/sport_match.dart';
+import '../../screens/leaderboard/widgets/game_leaderboard_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/game_scaffold.dart';
@@ -48,7 +50,18 @@ class HomeScreen extends StatelessWidget {
                     icon: const Icon(Icons.arrow_back_ios_new, size: 18),
                     color: Cyber.cyan,
                   ),
-            rightSlot: PlayerLevelBadge(progression: state.progression),
+            rightSlot: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                PlayerLevelBadge(progression: state.progression),
+                const SizedBox(width: 6),
+                GameLeaderboardButton(
+                  sport: Sport.football,
+                  mode: GameMode.featured,
+                  onNavigate: onNavigate,
+                ),
+              ],
+            ),
           ),
           body: CyberArenaBackground(
             assetPath: 'assets/backgrounds/home_stadium.png',

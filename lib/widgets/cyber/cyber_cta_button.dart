@@ -136,6 +136,10 @@ class HudCtaButton extends StatefulWidget {
   /// — e.g. on the hold-to-lock dock or profile-setup flow.
   final bool glow;
 
+  /// Calm secondary action with a flat panel fill and accent-colored content.
+  final bool outlined;
+  final TextStyle? labelStyle;
+
   const HudCtaButton({
     super.key,
     this.label = 'PLAY MATCH',
@@ -148,6 +152,8 @@ class HudCtaButton extends StatefulWidget {
     this.pressedLabel,
     this.pressedHelper,
     this.glow = true,
+    this.outlined = false,
+    this.labelStyle,
     this.enabled = true,
     this.onPressStart,
     this.onPressEnd,
@@ -205,7 +211,9 @@ class _HudCtaButtonState extends State<HudCtaButton>
     final Color fillBottom = widget.enabled
         ? (isCyan ? _fillBottom : accent)
         : Cyber.panel;
-    final contentColor = widget.enabled ? _ink : Cyber.muted;
+    final contentColor = widget.enabled
+        ? (widget.outlined ? accent : _ink)
+        : Cyber.muted;
     final displayLabel = _pressed
         ? widget.pressedLabel ?? widget.label
         : widget.label;
@@ -296,11 +304,14 @@ class _HudCtaButtonState extends State<HudCtaButton>
                         Positioned.fill(
                           child: DecoratedBox(
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [fillTop, fillBottom],
-                              ),
+                              color: widget.outlined ? Cyber.panel : null,
+                              gradient: widget.outlined
+                                  ? null
+                                  : LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [fillTop, fillBottom],
+                                    ),
                             ),
                           ),
                         ),
@@ -337,20 +348,26 @@ class _HudCtaButtonState extends State<HudCtaButton>
                                           displayLabel,
                                           maxLines: 1,
                                           textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            color: contentColor,
-                                            fontSize: 20,
-                                            fontWeight: FontWeight.w800,
-                                            letterSpacing: 3,
-                                            shadows: [
-                                              Shadow(
-                                                color: Colors.white.withValues(
-                                                  alpha: 0.30,
-                                                ),
-                                                blurRadius: 4,
-                                              ),
-                                            ],
-                                          ),
+                                          style:
+                                              (widget.labelStyle ??
+                                                      DefaultTextStyle.of(
+                                                        context,
+                                                      ).style)
+                                                  .copyWith(
+                                                    color: contentColor,
+                                                    fontSize: 20,
+                                                    fontWeight: FontWeight.w800,
+                                                    letterSpacing: 3,
+                                                    shadows: [
+                                                      Shadow(
+                                                        color: Colors.white
+                                                            .withValues(
+                                                              alpha: 0.30,
+                                                            ),
+                                                        blurRadius: 4,
+                                                      ),
+                                                    ],
+                                                  ),
                                         ),
                                       ),
                                       if (displayHelper != null) ...[

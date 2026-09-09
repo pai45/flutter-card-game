@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../blocs/guess_driver/guess_driver_cubit.dart';
 import '../../config/theme.dart';
+import '../../models/sport_match.dart';
 import '../../widgets/cyber/daily_mystery_widgets.dart';
+import '../leaderboard/widgets/game_leaderboard_button.dart';
 import '../../widgets/cyber/sport_signal_painters.dart';
 
 class GuessDriverHomeScreen extends StatelessWidget {
@@ -58,6 +60,11 @@ class GuessDriverHomeScreen extends StatelessWidget {
       onOpenToday: onOpenToday,
       onOpenLogs: onOpenLogs,
       onRetry: onRetry,
+      trailingAction: const GameLeaderboardButton(
+        sport: Sport.motorsport,
+        mode: GameMode.mystery,
+        accent: Cyber.pink,
+      ),
     );
   }
 }

@@ -143,6 +143,10 @@ Future<void> _pumpProfileSetup(
   // Dismiss the launch intro overlay.
   await tester.tapAt(const Offset(300, 300));
   await tester.pump(const Duration(milliseconds: 120));
+  await tester.ensureVisible(find.byKey(const ValueKey('onboarding-google')));
+  await tester.tap(find.byKey(const ValueKey('onboarding-google')));
+  await tester.pump(const Duration(milliseconds: 200));
+  await tester.pump(const Duration(milliseconds: 500));
 }
 
 Future<void> _openClubsStep(WidgetTester tester) async {

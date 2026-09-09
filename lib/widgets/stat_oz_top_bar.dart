@@ -13,6 +13,7 @@ class StatOzTopBar extends StatelessWidget {
     required this.onAddCoins,
     this.accent = Cyber.cyan,
     this.onStreakTap,
+    this.leading,
     super.key,
   });
 
@@ -20,6 +21,9 @@ class StatOzTopBar extends StatelessWidget {
   final VoidCallback onAddCoins;
   final Color accent;
   final VoidCallback? onStreakTap;
+
+  /// Back action shown before the title when the bar isn't a tab root.
+  final Widget? leading;
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +53,10 @@ class StatOzTopBar extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          if (leading != null) ...[
+            SizedBox(width: 34, height: 40, child: leading),
+            const SizedBox(width: 6),
+          ],
           Expanded(
             child: Text(
               title,
@@ -58,7 +66,8 @@ class StatOzTopBar extends StatelessWidget {
                 color: Colors.white,
                 fontFamily: Cyber.displayFont,
                 fontWeight: FontWeight.w900,
-                fontSize: 22,
+                // A back action costs the title 40px of the bar's width.
+                fontSize: leading == null ? 22 : 19,
                 height: 1,
                 letterSpacing: 0.2,
                 shadows: [

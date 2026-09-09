@@ -13,12 +13,14 @@ import '../../config/theme.dart';
 import '../../data/basketball_teams.dart';
 import '../../models/basketball.dart';
 import '../../models/progression.dart';
+import '../../models/sport_match.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
 import '../../widgets/player_level_badge.dart';
 import '../how_to_play/how_to_play_hub_screen.dart';
+import '../leaderboard/widgets/game_leaderboard_button.dart';
 import '../match_history/match_history_pages.dart';
 import 'basketball_match_screen.dart';
 import 'widgets/basketball_arena_background.dart';
@@ -86,9 +88,21 @@ class BasketballLobbyScreen extends StatelessWidget {
                 subtitle: '// STREET 1-ON-1',
                 onBack: () => onNavigate(AppSection.predictions),
                 showTitle: false,
-                rightSlot: PlayerLevelBadge(
-                  progression: gameState.progression,
-                  track: ProgressTrack.hoopDuel,
+                rightSlot: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    PlayerLevelBadge(
+                      progression: gameState.progression,
+                      track: ProgressTrack.hoopDuel,
+                    ),
+                    const SizedBox(width: 6),
+                    GameLeaderboardButton(
+                      sport: Sport.basketball,
+                      mode: GameMode.featured,
+                      accent: Cyber.gold,
+                      onNavigate: onNavigate,
+                    ),
+                  ],
                 ),
               ),
               // Arena art stays full-bleed (same bed as Penalty Shootout);
