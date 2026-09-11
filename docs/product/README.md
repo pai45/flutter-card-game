@@ -241,6 +241,9 @@ session-only presentation and identify mock/seeded data that is not a remote ser
 ## Supporting Technical References
 
 - [Round resolution and match settlement](../technical/round-resolution.md)
+- [Quiz set hub card implementation and porting guide](../technical/quiz-set-hub-card.md)
+- [Cricket scorecard implementation and porting guide](../technical/cricket-scorecard-view.md)
+- [Cricket match STATS view implementation and porting guide](../technical/cricket-match-stats-view.md)
 - [Audio cue catalog](../audio/CUE_CATALOG.md)
 - [IPL player data sheet](../data/ipl_players.md)
 - [League stats field inventory (EPL and LaLiga)](../data/league-stats-field-inventory.md)

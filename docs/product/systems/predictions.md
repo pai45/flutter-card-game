@@ -157,6 +157,11 @@ The match STATS tab uses sport-specific report HUDs built on the **pick market
 detail language** (see `design/cyber-ui-design-system.md`), so a match report and
 a pick market read as one surface.
 
+The cricket report's implementation — every widget verbatim, its data contract,
+the race/run-rate chart configuration, and a guide to rebuilding it in another
+Flutter project — is documented in
+[Cricket match STATS view](../../technical/cricket-match-stats-view.md).
+
 Football's STATS navigation is **OVERVIEW / MOMENTUM / LINEUPS / COMMENTARY**.
 There is no separate EVENTS tab: the event log was never a destination of its
 own — it is how a match reads — so it now sits in OVERVIEW as the **MATCH
