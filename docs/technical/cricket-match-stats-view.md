@@ -394,6 +394,11 @@ class _CricketStatsPanelState extends State<_CricketStatsPanel> {
 
 ## 6. RACE — `_CricketRace`
 
+> A deeper standalone treatment of this tab — both charts' asymmetries, every
+> helper edge case, the `requiredRunRate` infinity hazard and a race-only port
+> checklist — lives in [`cricket-innings-race.md`](cricket-innings-race.md).
+> The source below is the same code.
+
 Two charts on one tab, both `CyberChartPanel` (App. B): the innings race, then
 the run-rate panel.
 

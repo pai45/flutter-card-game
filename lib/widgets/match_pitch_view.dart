@@ -358,11 +358,7 @@ class _PlayerMarks extends StatelessWidget {
     final goals = stats.intStat('totalGoals');
     for (var i = 0; i < goals && i < 3; i++) {
       marks.add(
-        const _Mark(
-          icon: Icons.sports_soccer,
-          color: Cyber.gold,
-          glow: true,
-        ),
+        const _Mark(icon: Icons.sports_soccer, color: Cyber.gold, glow: true),
       );
     }
     if (stats.intStat('goalAssists') > 0) {
@@ -380,10 +376,8 @@ class _PlayerMarks extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (final mark in marks) Padding(
-          padding: const EdgeInsets.only(left: 1),
-          child: mark,
-        ),
+        for (final mark in marks)
+          Padding(padding: const EdgeInsets.only(left: 1), child: mark),
       ],
     );
   }
