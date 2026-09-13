@@ -1,7 +1,7 @@
 # Leaderboards, Rivals, History, and Statistics
 
 > **Status:** PROTOTYPE
-> **Last verified:** 2026-09-09
+> **Last verified:** 2026-09-11
 > **Scope:** Ranking boards, rival dossiers, game/prediction/pick histories, ledgers, and profile statistics
 
 ## Product Purpose
@@ -23,7 +23,7 @@ history.
 
 1. Choose MATCHES or GAMES, then choose a sport from the second-row strip.
 2. On MATCHES, choose the TEAMS or PLAYERS board. On PLAYERS, spin the league
-   dial and pick a timeframe from the same row.
+   dial and choose SEASON or ALL-TIME from the same row.
 3. Compare podium, ranked list, movement, and the pinned personal rank.
 4. Inspect a rival dossier or launch an available challenge route.
 5. Open personal history/statistics to review results and value movement.
@@ -39,7 +39,7 @@ tab plates are removed. Selection feedback and board switching are unchanged.
 The full sport
 strip (Football, Cricket, Basketball, Motorsport, Tennis) is the second row,
 so a player's sport context remains visible while changing board. MATCHES keeps
-the seeded tournament player/team board and weekly/season/all-time scope.
+the seeded tournament player/team board and season/all-time scope.
 GAMES exposes the selected sport's actual game catalogue before showing
 the relevant seeded wins board: Cricket, for example, offers Final Over,
 Cricket Quiz, and Guess the Player. Football, which ships the most modes, offers
@@ -53,12 +53,15 @@ coins use their dedicated records and filters.
 ### League dial on the PLAYERS board — BUILT / PROTOTYPE DATA
 
 The PLAYERS board's filter row carries a league selector alongside the
-WEEKLY/SEASON/ALL-TIME segments, so "which league" and "over what span" read as
-one question. It is a flick-to-spin wheel — a `ListWheelScrollView` laid on its
-side — where the centred league takes its own accent, neighbours recede and fade
-at the edges, and every detent ticks with a haptic and a sound. Per the glow
-rule the centre notch is crisp chrome at rest and only flashes as a league locks
-in. TEAMS and the GAMES board have no dial.
+SEASON/ALL-TIME segments, so "which league" and "over what span" read as one
+question. SEASON is the default; the former WEEKLY scope is no longer offered.
+The selector is a circular flick-to-spin wheel — a `ListWheelScrollView` laid
+on its side — where one centred league is fully visible and the immediate
+neighbour on each side stays partially visible, including when the first or last
+catalogue entry is selected. The centred league takes its own accent, neighbours
+recede and fade at the edges, and every detent ticks with a haptic and a sound.
+Per the glow rule the centre notch is crisp chrome at rest and only flashes as a
+league locks in. TEAMS and the GAMES board have no dial.
 
 Each sport carries its own 2-4 league catalogue, defaulting to the league the
 player follows from onboarding when there is one and otherwise the first entry:

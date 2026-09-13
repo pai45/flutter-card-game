@@ -1,7 +1,7 @@
 # StatOz Screen and State Catalog
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-07
+> **Last verified:** 2026-09-12
 > **Scope:** Reproducible product and QA evidence for StatOz screens, game entries, and representative visible states.
 
 ## Product Purpose
@@ -52,9 +52,12 @@ for failure/QA, and dotted gray for return paths.
 
 ## Visible States
 
-The baseline contains 45 production-widget captures, including every sport
-lane, all 18 game entries, seven shop categories, profile, leaderboard, friends,
-referrals, tutorials, and support. `coverage_audit.csv` indexes every Dart file
+The baseline contains 70 production-widget captures, including every sport
+lane, each PREDICT, PICKS, TOPS, and STATS match-detail tab for Football,
+Cricket, Basketball, Motorsport, and Tennis, plus a terminal scroll-position
+STATS continuation for each sport, all 18 game entries, seven shop
+categories, profile, leaderboard, friends, referrals, tutorials, and support.
+`coverage_audit.csv` indexes every Dart file
 under `lib/screens/`; entries without a dedicated frame are marked
 `indexed-no-dedicated-frame` with a reason. `manifest.json` separately records
 BUILT, PROTOTYPE, PLANNED, and DEPRECATED behavior that was not capturable.
@@ -69,8 +72,13 @@ retain the 393x852 / DPR 1 catalog contract.
 
 The capture app seeds only local test data, mutes audio, freezes the prediction
 clock, uses mock prediction/pick repositories, and satisfies starter-pack gates.
-It does not change production navigation or public APIs. Output artifacts are
-regenerated from the current working-tree code.
+The compiled web harness is captured through Chrome DevTools Protocol after an
+exact 393 x 852 / DPR 1 device-metrics override. Every frame is rejected unless
+the runtime, visual, document, and layout viewports all match that contract and
+the resulting PNG is exactly 393 x 852. This avoids Chrome's narrow-window clamp,
+which previously laid the app out wider than the saved bitmap and cropped the
+right side. The harness does not change production navigation or public APIs.
+Output artifacts are regenerated from the current working-tree code.
 
 ## Planned Scope and Current Limitations
 
@@ -84,12 +92,15 @@ regenerated from the current working-tree code.
   capture budget and is retained as `QA-001`.
 - **ENVIRONMENT:** The Flutter tester image encoder currently throws
   `Bad state: Future already completed` even for a one-color control golden;
-  capture therefore uses the compiled web harness plus headless Chrome.
+  capture therefore uses the compiled web harness plus headless Chrome. Chrome
+  is controlled through its DevTools Protocol rather than the `--window-size`
+  screenshot shortcut so the layout and output widths cannot diverge.
 
 ## Implementation References
 
 - [`tool/statoz_catalog_app.dart`](../../../tool/statoz_catalog_app.dart)
 - [`tool/capture_statoz_catalog.ps1`](../../../tool/capture_statoz_catalog.ps1)
+- [`tool/capture_chrome_viewport.mjs`](../../../tool/capture_chrome_viewport.mjs)
 - [`tool/build_statoz_screen_catalog.py`](../../../tool/build_statoz_screen_catalog.py)
 - [`test/screenshot_catalog/statoz_screenshot_catalog_test.dart`](../../../test/screenshot_catalog/statoz_screenshot_catalog_test.dart)
 - [`lib/app.dart`](../../../lib/app.dart)
@@ -98,6 +109,10 @@ regenerated from the current working-tree code.
 ## Tests
 
 - `flutter analyze lib/utils/sound_effects.dart tool/statoz_catalog_app.dart test/screenshot_catalog/statoz_screenshot_catalog_test.dart`
+- Two complete capture passes verify the same 70 stable scenario IDs and file
+  names; every CDP response reports a 393 x 852 layout and screenshot at DPR 1.
 - Manifest validation verifies 45 unique IDs, PNG integrity, exact dimensions,
   complete metadata, and searchable PDF IDs.
-- Representative PDF pages are rendered and visually inspected.
+- All 48 PDF pages are rendered and visually inspected; the cricket match hub,
+  Grand Prix Dash lobby, and pack shop are retained as right-edge regression
+  checks.

@@ -102,10 +102,10 @@ void main() {
     final future = tester.getRect(futureTile);
     final predict = tester.getRect(predictTile);
     expect(wide.width, greaterThan(wide.height * 1.8));
-    expect(future.height, lessThan(future.width));
-    expect(future.height, greaterThan(future.width * 0.75));
+    expect(future.height, greaterThan(future.width));
+    expect(future.height, lessThan(future.width * 1.1));
     expect(future.top, moreOrLessEquals(predict.top));
-    expect(future.top - wide.bottom, moreOrLessEquals(20));
+    expect(future.top - wide.bottom, moreOrLessEquals(14));
     _expectTextColor(tester, futureTile, 'FUTURE', Cyber.cyan);
     _expectTextColor(tester, predictTile, 'PREDICT', Cyber.cyan);
     _expectTextColor(
@@ -116,34 +116,47 @@ void main() {
     );
     _expectTextColor(tester, futureTile, 'FIFA', Cyber.muted);
     _expectTextColor(tester, predictTile, 'EPL', Cyber.muted);
+    final futureFooter = find.byKey(
+      const ValueKey('trending-market-footer-fifa_2026_winner'),
+    );
+    final predictFooter = find.byKey(
+      const ValueKey('trending-predict-footer-epl_mu_ars'),
+    );
+    expect(futureFooter, findsOneWidget);
+    expect(predictFooter, findsOneWidget);
     expect(
-      tester
-          .getRect(find.descendant(of: futureTile, matching: find.text('16%')))
-          .bottom,
-      greaterThanOrEqualTo(future.bottom - 12),
+      tester.getRect(futureFooter).bottom,
+      moreOrLessEquals(future.bottom),
     );
     expect(
-      tester
-          .getRect(
-            find.descendant(
-              of: predictTile,
-              matching: find.text('+XP MISSION OPEN'),
-            ),
-          )
-          .bottom,
-      greaterThanOrEqualTo(predict.bottom - 12),
+      tester.getRect(predictFooter).bottom,
+      moreOrLessEquals(predict.bottom),
     );
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('trend-live-epl')),
-        matching: find.text('CFC'),
+        matching: find.text('Chelsea'),
       ),
       findsOneWidget,
     );
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('trend-live-epl')),
-        matching: find.textContaining('POTENTIAL +'),
+        matching: find.text('2 - 1'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('trend-live-epl')),
+        matching: find.text('LIVE MATCH'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('trend-live-epl')),
+        matching: find.text('IN PLAY'),
       ),
       findsOneWidget,
     );

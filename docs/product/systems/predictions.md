@@ -1,7 +1,7 @@
 # Predictions
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-07
+> **Last verified:** 2026-09-13
 > **Scope:** Fixture quiz discovery, submission/editing, boosters, lock lifecycle, XP settlement, and paid Scoreline contest
 
 ## Product Purpose
@@ -217,9 +217,27 @@ cyan-tinted panel background, cyan chamfered border, cyan signal line, and cyan
 hard-elevation edge. LIVE, FUTURE, PREDICT, PICK, and sport identity colors stay
 inside the card as semantic labels and markers rather than changing its shell.
 
+The Trending layout uses a dense two-column broadcast grid. Full-width fixtures
+are scoreboard cards: the lifecycle sits in a centered top notch, the score or
+kickoff is the dominant figure between full team names and crests, and the
+bottom telemetry rail carries live/full-time/XP state plus Oz volume. FUTURE,
+PICK, and PREDICT cards use taller portrait proportions with the same separated
+telemetry rail, keeping the question or matchup readable above market status,
+XP, and volume. The rail changes to the darker footer surface without a divider
+line, so each tile reads as one uninterrupted card. Only LIVE badges and
+genuinely hot market deltas animate or glow; the repeated card shell and
+telemetry chrome stay calm.
+
 The match STATS tab uses sport-specific report HUDs built on the **pick market
 detail language** (see `design/cyber-ui-design-system.md`), so a match report and
 a pick market read as one surface.
+
+On long match reports and prediction leaderboards, the fixture summary scrolls
+away to return vertical space to the data while the primary **PREDICT / PICKS /
+TOPS / STATS** strip pins beneath the MATCH top bar. The player can therefore
+switch modes without climbing back through a long timeline, chart stack, or
+rank board. Short tabs keep the same static composition because there is no
+scroll distance to trigger the pinned state.
 
 Football's STATS navigation is **OVERVIEW / MOMENTUM / LINEUPS / COMMENTARY**.
 There is no separate EVENTS tab: the event log was never a destination of its
@@ -607,6 +625,10 @@ so duplicated competition text and team count do not compete for header space.
 In the TABLE standings, club names stay white for a consistent readable text
 hierarchy; club identity colour remains on the crest rather than tinting the
 row label.
+
+Every shared club crest stays compact: a badge can be at most 1.1 times as wide
+as it is tall, so an oversized parent constraint cannot turn a leader or table
+logo into a banner.
 
 ### Where the data comes from
 

@@ -17,6 +17,7 @@ import 'package:card_game/services/pick_repository.dart';
 import 'package:card_game/services/prediction_repository.dart';
 import 'package:card_game/services/secure_storage_service.dart';
 import 'package:card_game/utils/sound_effects.dart';
+import 'package:card_game/widgets/match_summary_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -404,6 +405,97 @@ void main() {
     expect(find.text('720'), findsOneWidget);
   });
 
+  testWidgets('long match tabs pin primary navigation after header scrolls', (
+    tester,
+  ) async {
+    await _pumpDetail(
+      tester,
+      initialTab: 2,
+      repository: _LongLeaderboardPredictionRepo(),
+      match: _franceParaguayUpcoming,
+    );
+    await tester.pumpAndSettle();
+
+    final primaryTabs = find.byKey(const ValueKey('match-primary-tabs'));
+    final scrollView = find.byKey(const ValueKey('match-tabs-scroll-view'));
+    final pinnedHeader = tester.widget<SliverPersistentHeader>(
+      find.descendant(
+        of: scrollView,
+        matching: find.byType(SliverPersistentHeader),
+      ),
+    );
+    final initialTabsTop = tester.getTopLeft(primaryTabs).dy;
+
+    expect(pinnedHeader.pinned, isTrue);
+    expect(find.byType(MatchSummaryHeader), findsOneWidget);
+
+    await tester.drag(
+      find.byKey(const ValueKey('match-leaderboard-tab')),
+      const Offset(0, -420),
+    );
+    await tester.pumpAndSettle();
+
+    final stickyTabsTop = tester.getTopLeft(primaryTabs).dy;
+    expect(stickyTabsTop, lessThan(initialTabsTop));
+    expect(find.byType(MatchSummaryHeader), findsNothing);
+
+    await tester.drag(
+      find.byKey(const ValueKey('match-leaderboard-tab')),
+      const Offset(0, -240),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.getTopLeft(primaryTabs).dy, closeTo(stickyTabsTop, 0.1));
+
+    await tester.tap(find.text('STATS'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('football-stats-overview')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('long stats content uses the sticky primary navigation', (
+    tester,
+  ) async {
+    final statsMatch = _match.copyWith(
+      teamStats: [
+        for (var index = 0; index < 14; index++)
+          TeamStatLine(
+            label: 'STAT ${index + 1}',
+            homeDisplay: '${40 + index}',
+            awayDisplay: '${30 + index}',
+            homeValue: 40 + index.toDouble(),
+            awayValue: 30 + index.toDouble(),
+          ),
+      ],
+    );
+    await _pumpDetail(tester, initialTab: 3, match: statsMatch);
+    await tester.pumpAndSettle();
+
+    final primaryTabs = find.byKey(const ValueKey('match-primary-tabs'));
+    final initialTabsTop = tester.getTopLeft(primaryTabs).dy;
+
+    await tester.drag(
+      find.byKey(const ValueKey('football-stats-overview')),
+      const Offset(0, -420),
+    );
+    await tester.pumpAndSettle();
+
+    final stickyTabsTop = tester.getTopLeft(primaryTabs).dy;
+    expect(stickyTabsTop, lessThan(initialTabsTop));
+    expect(find.byType(MatchSummaryHeader), findsNothing);
+
+    await tester.drag(
+      find.byKey(const ValueKey('football-stats-overview')),
+      const Offset(0, -240),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.getTopLeft(primaryTabs).dy, closeTo(stickyTabsTop, 0.1));
+  });
+
   testWidgets('predict tab shows quiz-set hub for multiple quizzes', (
     tester,
   ) async {
@@ -764,6 +856,22 @@ class _TwoQuestionPredictionRepo extends _PredictionRepo {
       points: quizId == 'events' ? 720 : 640,
       correct: quizId == 'events' ? 3 : 2,
     ),
+  ];
+}
+
+class _LongLeaderboardPredictionRepo extends _PredictionRepo {
+  @override
+  Future<List<MatchPredictionLeaderboardEntry>> matchLeaderboard(
+    String matchId,
+    String quizId,
+  ) async => [
+    for (var index = 0; index < 18; index++)
+      MatchPredictionLeaderboardEntry(
+        rank: index + 1,
+        name: 'Rival ${index + 1}',
+        points: 900 - index * 20,
+        correct: 5 - (index % 3),
+      ),
   ];
 }
 

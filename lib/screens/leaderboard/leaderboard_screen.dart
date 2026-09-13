@@ -41,7 +41,7 @@ const List<Sport> _leaderboardSports = [
 
 enum TournamentBoard { players, teams }
 
-enum TournamentScope { weekly, season, allTime }
+enum TournamentScope { season, allTime }
 
 /// Every sport's Games board carries its own game catalogue. The enum keeps
 /// leaderboard score generation stable while [_gameModesFor] supplies the
@@ -283,7 +283,6 @@ int _scoreFor(
   switch (type) {
     case LeaderboardType.matches:
       return switch (scope) {
-        TournamentScope.weekly => base,
         TournamentScope.season => base * 6,
         TournamentScope.allTime => base * 27,
       };
@@ -318,17 +317,18 @@ List<LeaderboardEntry> _entriesFor(
   GameMode mode,
   LeaderboardLeague league,
 ) {
-  final seeded = [
-    for (final seed in kRivalRoster)
-      (seed: seed, hash: _leagueHash('${league.id}:${seed.name}')),
-  ]..sort((a, b) {
-    final byBase = _leagueBase(
-      b.seed.base,
-      b.hash,
-    ).compareTo(_leagueBase(a.seed.base, a.hash));
-    // Ties fall back to the canonical order so the board never flickers.
-    return byBase != 0 ? byBase : a.seed.name.compareTo(b.seed.name);
-  });
+  final seeded =
+      [
+        for (final seed in kRivalRoster)
+          (seed: seed, hash: _leagueHash('${league.id}:${seed.name}')),
+      ]..sort((a, b) {
+        final byBase = _leagueBase(
+          b.seed.base,
+          b.hash,
+        ).compareTo(_leagueBase(a.seed.base, a.hash));
+        // Ties fall back to the canonical order so the board never flickers.
+        return byBase != 0 ? byBase : a.seed.name.compareTo(b.seed.name);
+      });
 
   return [
     for (var i = 0; i < seeded.length; i++)
@@ -365,10 +365,7 @@ int _userRankIn(LeaderboardLeague league) {
     (seed) => seed.isUser,
     orElse: () => kRivalRoster.last,
   );
-  final mine = _leagueBase(
-    user.base,
-    _leagueHash('${league.id}:${user.name}'),
-  );
+  final mine = _leagueBase(user.base, _leagueHash('${league.id}:${user.name}'));
   var rank = 1;
   for (final seed in kRivalRoster) {
     if (seed.name == user.name) continue;
@@ -498,7 +495,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   late LeaderboardType _type = widget.initialType ?? LeaderboardType.matches;
   TournamentBoard _tournamentBoard = TournamentBoard.teams;
   late Sport _sport = widget.initialSport ?? Sport.football;
-  TournamentScope _scope = TournamentScope.weekly;
+  TournamentScope _scope = TournamentScope.season;
   late GameMode _mode = widget.initialMode ?? GameMode.featured;
 
   /// Each sport remembers the league you last spun to, so switching tabs and
@@ -597,8 +594,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                   sport: _sport,
                   leagues: catalogue,
                   selectedLeagueId: league.id,
-                  onLeague: (id) =>
-                      setState(() => _leagueBySport[_sport] = id),
+                  onLeague: (id) => setState(() => _leagueBySport[_sport] = id),
                   accent: accent,
                   compact: compact,
                 );
@@ -911,7 +907,6 @@ class _ScopeRow extends StatelessWidget {
   static const double _height = 38;
 
   static const List<({TournamentScope scope, String label})> _items = [
-    (scope: TournamentScope.weekly, label: 'WEEKLY'),
     (scope: TournamentScope.season, label: 'SEASON'),
     (scope: TournamentScope.allTime, label: 'ALL-TIME'),
   ];

@@ -1313,36 +1313,34 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
                     if (widget.embedded && _quizzes.length > 1)
                       _AllQuizzesButton(onTap: _returnToQuizHub),
                     _LockLine(match: _match, untilLock: _untilLock),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+                    _ResultsContentFrame(
+                      top: 14,
                       child: _ReviewNotice(
+                        key: const ValueKey('community-results-notice'),
                         text:
                             'You did not enter this quiz. Study the final answers and the crowd signal.',
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                    _ResultsContentFrame(
+                      top: 8,
                       child: _CommunityResultsTelemetry(
+                        key: const ValueKey('community-results-telemetry'),
                         crowdCorrectVotes: crowd.correctVotes,
                         crowdTotalVotes: crowd.totalVotes,
                         fieldSize: fieldSize,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
                   ],
                 );
               }
 
               final questionIndex = i - 1;
               final question = _questions[questionIndex];
-              return Padding(
-                padding: EdgeInsets.fromLTRB(
-                  20,
-                  0,
-                  20,
-                  questionIndex == _questions.length - 1 ? 0 : 10,
-                ),
+              return _ResultsContentFrame(
+                bottom: questionIndex == _questions.length - 1 ? 0 : 10,
                 child: _ReviewQuestionCard(
+                  key: ValueKey('community-result-question-${question.id}'),
                   index: questionIndex + 1,
                   question: question,
                   match: _match,
@@ -1497,13 +1495,13 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
                     if (widget.embedded && _quizzes.length > 1)
                       _AllQuizzesButton(onTap: _returnToQuizHub),
                     _LockLine(match: _match, untilLock: _untilLock),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+                    _ResultsContentFrame(
+                      top: 14,
                       child: _ReviewNotice(text: _reviewNotice(prediction)),
                     ),
                     if (linkedMarket != null || widget.onOpenPicks != null)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                      _ResultsContentFrame(
+                        top: 8,
                         child: _OpenPicksInlineAction(
                           market: linkedMarket,
                           onOpenPicks: widget.onOpenPicks,
@@ -1521,13 +1519,8 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
                 // Cascade the cards in only right after a fresh submit; plain
                 // revisits render instantly.
                 animate: _justSubmitted,
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    20,
-                    0,
-                    20,
-                    questionIndex == _questions.length - 1 ? 0 : 10,
-                  ),
+                child: _ResultsContentFrame(
+                  bottom: questionIndex == _questions.length - 1 ? 0 : 10,
                   child: _ReviewQuestionCard(
                     index: questionIndex + 1,
                     question: question,
@@ -2534,7 +2527,10 @@ class _QuizSetHubCardState extends State<_QuizSetHubCard>
             );
           },
           child: CustomPaint(
-            painter: _QuizChamferPanelPainter(
+            // The fill is clipped to the same silhouette. Paint the stroke in
+            // front of it so the diagonal chamfer segments are not covered by
+            // the card background on any prediction state.
+            foregroundPainter: _QuizChamferPanelPainter(
               bigCut: 12,
               smallCut: 3,
               borderColor: v.accent.withValues(alpha: v.glow ? 0.6 : 0.4),
@@ -2705,7 +2701,7 @@ class _IndexPlate extends StatelessWidget {
       width: 38,
       height: 38,
       child: CustomPaint(
-        painter: _QuizChamferPanelPainter(
+        foregroundPainter: _QuizChamferPanelPainter(
           bigCut: 8,
           smallCut: 2,
           borderColor: accent.withValues(alpha: 0.6),
@@ -2912,7 +2908,7 @@ class _ChevronChip extends StatelessWidget {
       width: 26,
       height: 26,
       child: CustomPaint(
-        painter: _QuizChamferPanelPainter(
+        foregroundPainter: _QuizChamferPanelPainter(
           bigCut: 6,
           smallCut: 2,
           borderColor: accent.withValues(alpha: 0.55),
@@ -2930,8 +2926,29 @@ class _ChevronChip extends StatelessWidget {
   }
 }
 
+/// Shared horizontal frame for every full-width result surface. Keeping this
+/// outside individual cards prevents notices, community telemetry and review
+/// questions from drifting to different widths as their internals change.
+class _ResultsContentFrame extends StatelessWidget {
+  const _ResultsContentFrame({
+    required this.child,
+    this.top = 0,
+    this.bottom = 0,
+  });
+
+  final Widget child;
+  final double top;
+  final double bottom;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: EdgeInsets.fromLTRB(20, top, 20, bottom),
+    child: SizedBox(width: double.infinity, child: child),
+  );
+}
+
 class _ReviewNotice extends StatelessWidget {
-  const _ReviewNotice({required this.text});
+  const _ReviewNotice({required this.text, super.key});
 
   final String text;
 
@@ -2961,6 +2978,7 @@ class _CommunityResultsTelemetry extends StatelessWidget {
     required this.crowdCorrectVotes,
     required this.crowdTotalVotes,
     required this.fieldSize,
+    super.key,
   });
 
   final int crowdCorrectVotes;
@@ -3020,11 +3038,6 @@ class _CommunityResultsTelemetry extends StatelessWidget {
                 : 'Vote data will appear when the community feed is available.',
             style: Cyber.body(11.5, color: Cyber.muted),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'ACTUAL ANSWERS ARE MARKED IN GREEN BELOW',
-            style: Cyber.label(8, color: Cyber.success, letterSpacing: 0.9),
-          ),
         ],
       ),
     );
@@ -3051,6 +3064,7 @@ class _ReviewQuestionCard extends StatelessWidget {
     required this.onSelect,
     required this.onScoreChanged,
     required this.onMultiplierTap,
+    super.key,
   });
 
   final int index;

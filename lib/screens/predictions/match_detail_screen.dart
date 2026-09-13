@@ -170,41 +170,80 @@ class _MatchTabsViewState extends State<MatchTabsView> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        widget.headerBuilder(_match),
-        CyberUnderlineTabs(
-          labels: _tabs,
-          activeIndex: _activeTab,
-          onTap: _setTab,
-        ),
-        Expanded(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
-            child: KeyedSubtree(
-              key: ValueKey<int>(_activeTab),
-              child: switch (_activeTab) {
-                0 => MatchPredictionScreen(
-                  match: _match,
-                  embedded: true,
-                  showTopBar: false,
-                  showMatchHeader: false,
-                  onOpenPicks: () => _setTab(1),
-                ),
-                1 => _MatchPicksTab(match: _match),
-                2 => _MatchLeaderboardTab(
-                  match: _match,
-                  onJoin: () => _setTab(0),
-                ),
-                _ => _ScoreboardTab(match: _match),
-              },
+    return NestedScrollView(
+      key: const ValueKey('match-tabs-scroll-view'),
+      headerSliverBuilder: (context, innerBoxIsScrolled) => [
+        SliverToBoxAdapter(child: widget.headerBuilder(_match)),
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _MatchPrimaryTabsHeader(
+            child: CyberUnderlineTabs(
+              key: const ValueKey('match-primary-tabs'),
+              labels: _tabs,
+              activeIndex: _activeTab,
+              onTap: _setTab,
             ),
           ),
         ),
-        _MatchCircleCta(match: _match),
       ],
+      body: Column(
+        children: [
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              child: KeyedSubtree(
+                key: ValueKey<int>(_activeTab),
+                child: switch (_activeTab) {
+                  0 => MatchPredictionScreen(
+                    match: _match,
+                    embedded: true,
+                    showTopBar: false,
+                    showMatchHeader: false,
+                    onOpenPicks: () => _setTab(1),
+                  ),
+                  1 => _MatchPicksTab(match: _match),
+                  2 => _MatchLeaderboardTab(
+                    match: _match,
+                    onJoin: () => _setTab(0),
+                  ),
+                  _ => _ScoreboardTab(match: _match),
+                },
+              ),
+            ),
+          ),
+          _MatchCircleCta(match: _match),
+        ],
+      ),
     );
   }
+}
+
+/// Keeps the match's primary navigation reachable after the score header has
+/// scrolled away. The existing underline tab bar remains the only active/glow
+/// treatment; this delegate adds scroll behavior without adding new chrome.
+class _MatchPrimaryTabsHeader extends SliverPersistentHeaderDelegate {
+  const _MatchPrimaryTabsHeader({required this.child});
+
+  final Widget child;
+
+  @override
+  double get minExtent => 50;
+
+  @override
+  double get maxExtent => 50;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return ColoredBox(color: Cyber.bg, child: child);
+  }
+
+  @override
+  bool shouldRebuild(covariant _MatchPrimaryTabsHeader oldDelegate) =>
+      oldDelegate.child != child;
 }
 
 class _MatchCircleCta extends StatefulWidget {

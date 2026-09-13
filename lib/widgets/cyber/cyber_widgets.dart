@@ -4389,6 +4389,78 @@ class _CardBackEdgePainter extends CustomPainter {
 /// Cell footprints supported by [CyberBentoGrid].
 enum CyberBentoSpan { square, wide, tall }
 
+/// Compact two-slot readout for the bottom edge of data-dense HUD cards.
+///
+/// The footer is intentionally calm: it separates status/reward information
+/// from the card subject without competing with the screen's live focal cue.
+class CyberTelemetryFooter extends StatelessWidget {
+  const CyberTelemetryFooter({
+    required this.leading,
+    required this.trailing,
+    this.leadingColor = Cyber.cyan,
+    this.trailingColor = Cyber.muted,
+    this.leadingIcon,
+    this.leadingIconColor,
+    this.height = 36,
+    super.key,
+  });
+
+  final String leading;
+  final String trailing;
+  final Color leadingColor;
+  final Color trailingColor;
+  final IconData? leadingIcon;
+  final Color? leadingIconColor;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: height,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      color: Cyber.bg2,
+      child: Row(
+        children: [
+          if (leadingIcon != null) ...[
+            Icon(
+              leadingIcon,
+              size: 12,
+              color: leadingIconColor ?? leadingColor,
+            ),
+            const SizedBox(width: 6),
+          ],
+          Expanded(
+            child: Text(
+              leading.toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Cyber.label(
+                10,
+                color: leadingColor,
+                letterSpacing: 0.7,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              trailing.toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: Cyber.label(
+                10,
+                color: trailingColor,
+                letterSpacing: 0.4,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class CyberBentoTile {
   const CyberBentoTile({required this.span, required this.child});
 
@@ -4577,11 +4649,7 @@ class CyberSearchButton extends StatelessWidget {
 /// Never glows: these label a state rather than mark the live or selected
 /// thing, and there are usually several on screen at once.
 class CyberStatusPill extends StatelessWidget {
-  const CyberStatusPill({
-    required this.label,
-    required this.color,
-    super.key,
-  });
+  const CyberStatusPill({required this.label, required this.color, super.key});
 
   final String label;
   final Color color;
