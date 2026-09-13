@@ -830,7 +830,11 @@ class _ModeTile extends StatelessWidget {
                 mode.blurbFor(sport),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.label(7.5, color: Cyber.muted, letterSpacing: 0.65),
+                style: Cyber.label(
+                  7.5,
+                  color: Cyber.muted,
+                  letterSpacing: 0.65,
+                ),
               ),
               const SizedBox(height: 3),
               Text(
@@ -839,7 +843,9 @@ class _ModeTile extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: Cyber.label(
                   7.5,
-                  color: complete ? Cyber.success : accent.withValues(alpha: 0.9),
+                  color: complete
+                      ? Cyber.success
+                      : accent.withValues(alpha: 0.9),
                   letterSpacing: 0.7,
                 ),
               ),
@@ -1095,16 +1101,13 @@ class _ChapterTab extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 '${firstSet.toString().padLeft(2, '0')}–${firstSet + 9}',
-                style:
-                    Cyber.label(
-                      8.5,
-                      color: selected
-                          ? accent
-                          : ink.withValues(alpha: authored ? 0.75 : 0.45),
-                      letterSpacing: 0.4,
-                    ).copyWith(
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
+                style: Cyber.label(
+                  8.5,
+                  color: selected
+                      ? accent
+                      : ink.withValues(alpha: authored ? 0.75 : 0.45),
+                  letterSpacing: 0.4,
+                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
             ],
           ),
@@ -1138,7 +1141,8 @@ class _SetTile extends StatelessWidget {
         visualState != QuizSetVisualState.locked &&
         visualState != QuizSetVisualState.upcoming &&
         !launching;
-    final graded = visualState == QuizSetVisualState.mastered ||
+    final graded =
+        visualState == QuizSetVisualState.mastered ||
         visualState == QuizSetVisualState.cleared;
     final color = switch (visualState) {
       QuizSetVisualState.mastered => Cyber.gold,
@@ -1204,9 +1208,14 @@ class _SetTile extends StatelessWidget {
                       launching ? 'OPENING' : status,
                       maxLines: 1,
                       textAlign: TextAlign.center,
-                      style: Cyber.label(6.5, color: color, letterSpacing: 0.35),
+                      style: Cyber.label(
+                        6.5,
+                        color: color,
+                        letterSpacing: 0.35,
+                      ),
                     ),
-                  if (graded || visualState == QuizSetVisualState.available) ...[
+                  if (graded ||
+                      visualState == QuizSetVisualState.available) ...[
                     const SizedBox(height: 4),
                     Text(
                       graded

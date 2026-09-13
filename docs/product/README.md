@@ -246,6 +246,8 @@ session-only presentation and identify mock/seeded data that is not a remote ser
 
 - [Round resolution and match settlement](../technical/round-resolution.md)
 - [Quiz set hub card implementation and porting guide](../technical/quiz-set-hub-card.md)
+- [Quiz lobby and set ladder implementation and porting guide](../technical/quiz-lobby-and-set-ladder.md)
+- [Quiz play screen implementation and porting guide](../technical/quiz-play-screen.md)
 - [Cricket scorecard implementation and porting guide](../technical/cricket-scorecard-view.md)
 - [Cricket match STATS view implementation and porting guide](../technical/cricket-match-stats-view.md)
 - [Cricket innings race implementation and porting guide](../technical/cricket-innings-race.md)
