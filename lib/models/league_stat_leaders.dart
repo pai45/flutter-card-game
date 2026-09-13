@@ -107,10 +107,23 @@ class StatLeader {
   bool get isResolved => name != null;
 
   /// The headline number, without the feed's "Matches: 15, Goals: 13" prose.
+  ///
+  /// Where [displayValue] is already a bare number, that formatting wins: a
+  /// source that quotes a per-game average to one decimal means it, and a
+  /// board reading 28.3 / 27.9 / 26 has one row that looks like a different
+  /// kind of number. Prose display values fall through to the computed form.
+  ///
+  /// Otherwise two decimals is the ceiling, not the target — a trailing zero
+  /// is dropped so 33.50 reads as 33.5.
   String get shortValue {
+    final display = displayValue.trim();
+    if (_bareNumber.hasMatch(display)) return display;
     if (value == value.roundToDouble()) return value.round().toString();
-    return value.toStringAsFixed(2);
+    final fixed = value.toStringAsFixed(2);
+    return fixed.endsWith('0') ? fixed.substring(0, fixed.length - 1) : fixed;
   }
+
+  static final _bareNumber = RegExp(r'^-?\d+(\.\d+)?$');
 
   StatLeader copyWith({
     String? name,

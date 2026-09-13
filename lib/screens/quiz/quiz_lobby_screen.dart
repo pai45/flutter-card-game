@@ -14,6 +14,7 @@ import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
+import '../leaderboard/widgets/game_leaderboard_button.dart';
 import 'quiz_play_screen.dart';
 
 /// A set is [mastered] at a flawless 10/10, [cleared] once finished at any
@@ -53,6 +54,11 @@ class QuizLobbyScreen extends StatelessWidget {
       title: '${sport.name.toUpperCase()} QUIZ',
       subtitle: 'KNOWLEDGE ARENA',
       leading: _BackButton(onTap: onBack),
+      rightSlot: GameLeaderboardButton(
+        sport: sport,
+        mode: GameMode.quiz,
+        accent: Cyber.violet,
+      ),
       child: BlocBuilder<QuizCubit, QuizState>(
         builder: (context, state) {
           if (state.loading) {

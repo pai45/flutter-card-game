@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'dart:ui' show Color;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
+import '../config/theme.dart';
 import '../models/f1_race_package.dart';
+import '../models/sport_match.dart';
 
 /// Loads the bundled F1 race-weekend package.
 ///
@@ -61,6 +64,99 @@ class F1RacePackageService {
 
   /// Every bundled weekend, in load order.
   static Future<List<F1RacePackage>> all() => _load();
+
+  /// Every bundled weekend as a fixture the prediction board can show.
+  ///
+  /// Without this the only way a race reaches the feed is the live ESPN
+  /// scoreboard, which a web build cannot call (CORS) — so the bundled weekend
+  /// existed but was unreachable in the app. Unlike the football/cricket
+  /// prototype packages these keep their **real** dates rather than being
+  /// pinned to today: a Grand Prix is a dated event, and the motorsport feed's
+  /// week picker already opens on the closest race week.
+  static Future<List<SportMatch>> bundledFixtures() async {
+    final packages = await _load();
+    return [
+      for (final package in packages) ?fixtureFor(package),
+    ];
+  }
+
+  /// Maps a bundled weekend onto the fixture shape the feed and the legacy F1
+  /// panels expect. Session lines are rebuilt in ESPN's own
+  /// `"1. Driver · Constructor (time)"` display format so the starting-grid
+  /// parser reads them exactly as it reads a live response.
+  @visibleForTesting
+  static SportMatch? fixtureFor(F1RacePackage package) {
+    final start = DateTime.tryParse(package.startDate ?? '');
+    if (start == null) return null;
+    final end = DateTime.tryParse(package.endDate ?? '');
+    final race = package.race;
+    final winner = package.winner;
+    final winnerName = winner == null
+        ? null
+        : package.driver(winner.driverId)?.displayName;
+
+    return SportMatch(
+      id: package.raceId,
+      leagueId: 'f1',
+      sport: Sport.motorsport,
+      // The Grand Prix title rides the home side and the series label the away
+      // side — the same shape `_parseMotorsportEventToMatch` builds, so a live
+      // response for this race de-duplicates against this fixture.
+      home: SportTeam(
+        id: 'f1_home',
+        name: package.name,
+        shortName: package.abbreviation ?? 'F1',
+        color: Cyber.f1Red,
+      ),
+      away: const SportTeam(
+        id: 'f1_away',
+        name: 'F1',
+        shortName: 'F1',
+        color: Color(0xFF000000),
+      ),
+      kickoff: start.toLocal(),
+      f1WeekendEndDate: end?.toLocal(),
+      status: race == null || race.classification.isEmpty
+          ? MatchStatus.upcoming
+          : MatchStatus.finished,
+      // The card reads this as a race summary line beneath the Grand Prix
+      // title, so it states only the fact the title doesn't: who took P1.
+      resultLine: winnerName == null ? null : 'P1 : $winnerName',
+      rewardXp: 150,
+      f1DriverStandings: [
+        for (final row in package.standings.drivers)
+          row.name ?? package.driver(row.id)?.displayName ?? row.id,
+      ],
+      f1Sessions: [
+        for (final session in package.sessions)
+          F1SessionResult(
+            name: session.abbreviation,
+            results: [
+              for (final entry in session.classification)
+                _resultLine(package, entry),
+            ],
+          ),
+      ],
+    );
+  }
+
+  static String _resultLine(
+    F1RacePackage package,
+    F1ClassificationEntry entry,
+  ) {
+    final driver = package.driver(entry.driverId)?.displayName ?? entry.driverId;
+    final constructor = entry.constructorName;
+    final identity = constructor == null ? driver : '$driver · $constructor';
+    // A retired car has no time at all, so it reports its status instead of a
+    // blank bracket.
+    final detail =
+        entry.display('totalTime') ??
+        entry.display('behindTime') ??
+        (entry.retired ? entry.statusDescription : null);
+    return detail == null
+        ? '${entry.position}. $identity'
+        : '${entry.position}. $identity ($detail)';
+  }
 
   /// Resolves the package for a race by **alias**, never by a single id. The
   /// same weekend reaches this method as the ESPN event id (`600057442`), the

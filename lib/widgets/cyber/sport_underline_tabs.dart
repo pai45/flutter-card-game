@@ -39,10 +39,8 @@ class SportUnderlineTabs extends StatelessWidget {
   }
 }
 
-/// MATCH / GAMES browse strip: TRENDING, four direct sports, then MORE.
-///
-/// Motorsport remains available in All Sports without squeezing the primary
-/// shortcuts. MORE is an action, not a selectable destination.
+/// MATCH / GAMES browse strip: TRENDING, Football, Cricket, Basketball,
+/// Motorsport, then MORE. MORE is an action, not a selectable destination.
 class SportHubTabs extends StatelessWidget {
   const SportHubTabs({
     required this.activeIndex,
@@ -57,8 +55,23 @@ class SportHubTabs extends StatelessWidget {
   final VoidCallback onMore;
   final Widget? trailingAction;
 
+  /// The sports that get a shortcut on the compact strip. Everything else is
+  /// reached through ALL SPORTS: the strip also carries TRENDING, the overflow
+  /// and the search action, so only a few sports fit before the icons crowd.
+  /// Curated rather than "all" or "all but one" — which sports earn a shortcut
+  /// is a product call, and the strip should not silently grow when a sport is
+  /// added to [sportTabOrder].
+  static const _shortcutSports = <Sport>{
+    Sport.football,
+    Sport.cricket,
+    Sport.basketball,
+    Sport.motorsport,
+  };
+
+  /// Ordered by the canonical [sportTabOrder] so the strip never disagrees with
+  /// the ALL SPORTS router, the collection, the leaderboard or the shop.
   static final _visibleSports = sportTabOrder
-      .where((sport) => sport != Sport.motorsport)
+      .where(_shortcutSports.contains)
       .toList(growable: false);
 
   static final _labels = <String>[

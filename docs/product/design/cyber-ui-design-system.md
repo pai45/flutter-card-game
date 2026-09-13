@@ -115,6 +115,11 @@ effects stay behind content and must not flatten every state into equal intensit
 
 ## Visible States
 
+`HudCtaButton` supports an opt-in `outlined` secondary treatment: flat panel
+fill with accent text, paired with `glow: false`. Account entry uses this for
+Google preview and supplies tokenized `labelStyle` values to both actions.
+Existing callers keep their original fill and inherited label styling.
+
 Shared components must support default, focused/selected, pressed, disabled,
 locked, loading, success, danger, reward, and reduced-motion-safe variants
 without losing labels or contrast.

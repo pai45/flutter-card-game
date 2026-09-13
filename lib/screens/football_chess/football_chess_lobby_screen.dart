@@ -16,8 +16,10 @@ import '../../models/avatar_option.dart';
 import '../../models/cards.dart';
 import '../../models/football_chess.dart';
 import '../../models/progression.dart';
+import '../../models/sport_match.dart';
 import '../../services/secure_storage_service.dart';
 import '../../utils/sound_effects.dart';
+import '../leaderboard/widgets/game_leaderboard_button.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
@@ -172,9 +174,20 @@ class _FootballChessLobbyScreenState extends State<FootballChessLobbyScreen> {
                 subtitle: '// TACTICAL GRID DUEL',
                 onBack: () => widget.onNavigate(AppSection.predictions),
                 showTitle: false,
-                rightSlot: PlayerLevelBadge(
-                  progression: gameState.progression,
-                  track: ProgressTrack.footballChess,
+                rightSlot: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    PlayerLevelBadge(
+                      progression: gameState.progression,
+                      track: ProgressTrack.footballChess,
+                    ),
+                    const SizedBox(width: 6),
+                    GameLeaderboardButton(
+                      sport: Sport.football,
+                      mode: GameMode.chess,
+                      onNavigate: widget.onNavigate,
+                    ),
+                  ],
                 ),
               ),
               body: CyberBackground(

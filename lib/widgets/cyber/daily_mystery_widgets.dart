@@ -131,6 +131,7 @@ class DailyMysteryLanding extends StatefulWidget {
     required this.onRetry,
     this.errorMessage,
     this.now,
+    this.trailingAction,
     super.key,
   });
 
@@ -158,6 +159,9 @@ class DailyMysteryLanding extends StatefulWidget {
   final VoidCallback onOpenToday;
   final VoidCallback onOpenLogs;
   final VoidCallback onRetry;
+
+  /// Header action shown after the mode glyph — the leaderboard CTA.
+  final Widget? trailingAction;
 
   @override
   State<DailyMysteryLanding> createState() => _DailyMysteryLandingState();
@@ -207,7 +211,16 @@ class _DailyMysteryLandingState extends State<DailyMysteryLanding> {
           icon: const Icon(Icons.arrow_back, color: Cyber.cyan),
         ),
       ),
-      rightSlot: Icon(widget.icon, color: widget.accent, size: 22),
+      rightSlot: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(widget.icon, color: widget.accent, size: 22),
+          if (widget.trailingAction != null) ...[
+            const SizedBox(width: 10),
+            widget.trailingAction!,
+          ],
+        ],
+      ),
       child: _body(context),
     );
   }

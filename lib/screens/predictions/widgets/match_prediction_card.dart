@@ -110,7 +110,7 @@ class MatchPredictionCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             match.sport == Sport.motorsport
-                ? _RaceIdentityRow(match: match, dim: _finished)
+                ? _RaceIdentityRow(match: match)
                 : _TeamsRow(
                     match: match,
                     dimNames: _finished,
@@ -259,9 +259,8 @@ class _TagContent extends StatelessWidget {
 /// race name beneath it. No second badge, no centre dash — there's no "away"
 /// side to punctuate against.
 class _RaceIdentityRow extends StatelessWidget {
-  const _RaceIdentityRow({required this.match, required this.dim});
+  const _RaceIdentityRow({required this.match});
   final SportMatch match;
-  final bool dim;
 
   @override
   Widget build(BuildContext context) {
@@ -281,9 +280,12 @@ class _RaceIdentityRow extends StatelessWidget {
           maxLines: 2,
           textAlign: TextAlign.center,
           overflow: TextOverflow.ellipsis,
+          // The Grand Prix title is the card's one identity line, not a team
+          // name — it stays white after the flag instead of dimming like a
+          // finished team, so the race keeps its full identity at rest.
           style: Cyber.body(
             14.5,
-            color: dim ? _dimName : Colors.white,
+            color: Colors.white,
             weight: FontWeight.w700,
           ),
         ),

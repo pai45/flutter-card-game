@@ -18,7 +18,12 @@ AchievementStats currentAchievementStats(BuildContext context) {
   final pred = context.read<PredictionCubit>().state;
   final picks = context.read<PicksCubit>().state;
   final tennis = context.read<TennisCubit>().state;
-  final record = MatchRecord.fromHistory(game.matchHistory);
+  // Seeded demo logs populate the history pages but must not unlock anything,
+  // or a fresh install would fire the celebration watcher for games nobody
+  // played.
+  final record = MatchRecord.fromHistory(
+    game.matchHistory.where((entry) => !entry.isDemo).toList(growable: false),
+  );
 
   final wonPicks = picks.positions.values
       .where((p) => p.status == PickPositionStatus.won)

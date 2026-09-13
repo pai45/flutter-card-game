@@ -7,6 +7,8 @@ import '../../config/enums.dart';
 import '../../config/theme.dart';
 import '../../models/match.dart';
 import '../../models/progression.dart';
+import '../../models/sport_match.dart';
+import '../leaderboard/widgets/game_leaderboard_button.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
@@ -35,6 +37,10 @@ class ShootoutHomeScreen extends StatelessWidget {
           backgroundColor: Cyber.bg,
           appBar: ReactHeaderBar(
             title: 'Penalty Shootout',
+            // The hero below already reads PENALTY SHOOTOUT in display type,
+            // and the bar's remaining width can't hold it beside the badge and
+            // leaderboard action. Matches the other game lobbies.
+            showTitle: false,
             leftSlot: onBack == null
                 ? null
                 : IconButton(
@@ -42,9 +48,21 @@ class ShootoutHomeScreen extends StatelessWidget {
                     icon: const Icon(Icons.arrow_back_ios_new, size: 18),
                     color: Cyber.lime,
                   ),
-            rightSlot: PlayerLevelBadge(
-              progression: state.progression,
-              track: ProgressTrack.shootout,
+            rightSlot: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                PlayerLevelBadge(
+                  progression: state.progression,
+                  track: ProgressTrack.shootout,
+                ),
+                const SizedBox(width: 6),
+                GameLeaderboardButton(
+                  sport: Sport.football,
+                  mode: GameMode.shootout,
+                  accent: Cyber.lime,
+                  onNavigate: onNavigate,
+                ),
+              ],
             ),
           ),
           body: ShootoutArenaBackground(

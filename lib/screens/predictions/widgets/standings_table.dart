@@ -12,9 +12,10 @@ import '../../../widgets/team_logo.dart';
 
 /// Back chevron + title bar shared by the league and team detail screens.
 class DetailTopBar extends StatelessWidget {
-  const DetailTopBar({required this.title, super.key});
+  const DetailTopBar({required this.title, this.trailing, super.key});
 
   final String title;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +39,15 @@ class DetailTopBar extends StatelessWidget {
               ),
             ),
           ),
-          Text(title, style: Cyber.display(15, letterSpacing: 1.6)),
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Cyber.display(15, letterSpacing: 1.6),
+            ),
+          ),
+          ?trailing,
         ],
       ),
     );
@@ -326,9 +335,10 @@ class _LeagueFollowButton extends StatelessWidget {
 Color _inkOn(Color fill) =>
     fill.computeLuminance() > 0.45 ? AppTheme.darkInk : Colors.white;
 
-/// The league standings table. Football shows P/W/D/L/GD/PTS; cricket (rows with
-/// a null [TeamStanding.drawn]) shows P/W/L/NRR/PTS. Each row taps through to the
-/// team. Calm by design — no glow (glow rule) except the qualification line,
+/// The league standings table, in three layouts picked off the data itself:
+/// basketball (rows carrying [TeamStanding.winPercent]) shows W/L/PCT/GB/L10/STRK,
+/// cricket (rows with a null [TeamStanding.drawn]) shows P/W/L/NRR/PTS, and
+/// football shows P/W/D/L/GD/PTS. Each row taps through to the team. Calm by design — no glow (glow rule) except the qualification line,
 /// which is the table's single live element; rank 1 gets a gold tick only.
 ///
 /// When rows carry [TeamStanding.goalsFor] the table widens to F/A, and when
@@ -362,15 +372,32 @@ class StandingsTable extends StatelessWidget {
         style: Cyber.body(13, color: Cyber.muted),
       );
     }
-    final cricket = rows.first.drawn == null;
+    // Basketball is tested first: it has no draws either, so a null `drawn`
+    // alone would read an NBA table as cricket.
+    final basketball = rows.first.winPercent != null;
+    final cricket = !basketball && rows.first.drawn == null;
     final withGoals = showGoals && rows.first.goalsFor != null;
-    final cols = cricket
+    final cols = basketball
+        ? <_Col>[
+            // No games-played column: an NBA table is read as a record, and
+            // W-L already carries it. PCT is what the table is ordered by, so
+            // it is the emphasised number rather than a points total.
+            // Wide enough for two digits and for the STRK header to stay on
+            // one line — 82 games means every W/L is two characters.
+            _Col('W', 24, (s) => '${s.won}'),
+            _Col('L', 24, (s) => '${s.lost}'),
+            _Col('PCT', 38, (s) => _pct(s.winPercent), strong: true),
+            _Col('GB', 26, (s) => s.diffLabel),
+            _Col('L10', 34, (s) => s.lastTen ?? '—'),
+            _Col('STRK', 38, (s) => s.streak ?? '—'),
+          ]
+        : cricket
         ? <_Col>[
             _Col('P', 22, (s) => '${s.played}'),
             _Col('W', 20, (s) => '${s.won}'),
             _Col('L', 20, (s) => '${s.lost}'),
             _Col('NRR', 42, (s) => s.diffLabel),
-            _Col('PTS', 30, (s) => '${s.points}'),
+            _Col('PTS', 30, (s) => '${s.points}', strong: true),
           ]
         : <_Col>[
             _Col('P', 22, (s) => '${s.played}'),
@@ -380,7 +407,7 @@ class StandingsTable extends StatelessWidget {
             if (withGoals) _Col('F', 22, (s) => '${s.goalsFor}'),
             if (withGoals) _Col('A', 22, (s) => '${s.goalsAgainst}'),
             _Col('GD', 30, (s) => s.diffLabel),
-            _Col('PTS', 30, (s) => '${s.points}'),
+            _Col('PTS', 30, (s) => '${s.points}', strong: true),
           ];
 
     return ClipPath(
@@ -595,7 +622,7 @@ class _DataRow extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: Cyber.label(
                       11,
-                      color: c.label == 'PTS' ? Colors.white : Cyber.muted,
+                      color: c.strong ? Colors.white : Cyber.muted,
                       letterSpacing: 0.2,
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
@@ -726,9 +753,21 @@ class FormPips extends StatelessWidget {
 }
 
 class _Col {
-  const _Col(this.label, this.width, this.value);
+  const _Col(this.label, this.width, this.value, {this.strong = false});
 
   final String label;
   final double width;
   final String Function(TeamStanding) value;
+
+  /// The one column the table is ordered by — points for football and cricket,
+  /// win percentage for basketball. Rendered in white against the muted rest.
+  final bool strong;
+}
+
+/// A win percentage the way every basketball table prints it: three decimals,
+/// no leading zero (`.732`).
+String _pct(double? value) {
+  if (value == null) return '—';
+  final text = value.toStringAsFixed(3);
+  return text.startsWith('0') ? text.substring(1) : text;
 }

@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:card_game/config/theme.dart';
+import 'package:card_game/models/f1_race_package.dart';
 import 'package:card_game/models/sport_match.dart';
 import 'package:card_game/screens/predictions/widgets/match_stats_shell.dart';
 import 'package:card_game/screens/predictions/widgets/motorsport_match_stats_view.dart';
@@ -81,7 +84,10 @@ void main() {
     // A Grand Prix is not a 1v1, so the two-sided team plate must stay away.
     expect(find.byType(MatchPulseHeader), findsNothing);
 
-    expect(find.text('PIRELLI ITALIAN GRAND PRIX'), findsOneWidget);
+    // The race identity already reads on the page above this tab, so the hero
+    // card drops the title and the location and leads with the circuit itself.
+    expect(find.text('PIRELLI ITALIAN GRAND PRIX'), findsNothing);
+    expect(find.text('MONZA, ITALY'), findsNothing);
     expect(find.text('Autodromo Nazionale Monza'), findsOneWidget);
     expect(find.text('LAP RECORD'), findsOneWidget);
     expect(find.text('1:20.901'), findsOneWidget);
@@ -280,5 +286,133 @@ void main() {
 
     expect(find.byType(CyberNoDataState), findsOneWidget);
     expect(find.text('WEEKEND NOT STARTED'), findsOneWidget);
+  });
+
+  group('the full-screen circuit map', () {
+    // A stand-in for ESPN's diagram: the screen is handed bytes, so the test
+    // does not need the CDN. The viewBox matches the real one, which is what
+    // the start/finish marker is positioned against.
+    final svg = Uint8List.fromList(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 96">'
+              '<rect width="160" height="96" fill="#111"/></svg>'
+          .codeUnits,
+    );
+
+    Future<F1RacePackage> italianPackage() async {
+      final packages = await F1RacePackageService.all();
+      return packages.firstWhere((p) => p.name.contains('Italian'));
+    }
+
+    testWidgets('opens on the lap, showing facts the card has no room for', (
+      tester,
+    ) async {
+      final package = await tester.runAsync(italianPackage);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: F1TrackMapScreen(package: package!, svg: svg),
+        ),
+      );
+      await _pumpAnimations(tester);
+
+      expect(find.text('THE LAP'), findsOneWidget);
+      // Real circuit values, and three of them appear nowhere else in the app.
+      expect(find.text('RACE DISTANCE'), findsOneWidget);
+      expect(find.text('306.72 KM'), findsOneWidget);
+      expect(find.text('DIRECTION'), findsOneWidget);
+      expect(find.text('CLOCKWISE'), findsOneWidget);
+      expect(find.text('ESTABLISHED'), findsOneWidget);
+      expect(find.text('1950'), findsOneWidget);
+      expect(find.text('1:20.901'), findsOneWidget);
+    });
+
+    testWidgets('tapping the chequered marker reads out the start/finish', (
+      tester,
+    ) async {
+      final package = await tester.runAsync(italianPackage);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: F1TrackMapScreen(package: package!, svg: svg),
+        ),
+      );
+      await _pumpAnimations(tester);
+
+      await tester.tap(find.bySemanticsLabel('Start finish line'));
+      await _pumpAnimations(tester);
+
+      expect(find.text('START / FINISH'), findsOneWidget);
+      expect(find.text('POLE'), findsOneWidget);
+      expect(find.text('WINNER'), findsOneWidget);
+      // Antonelli started 19th and won, so he is both the winner and the
+      // biggest climber of the race.
+      expect(find.text('BIGGEST GAIN'), findsOneWidget);
+      expect(find.text('FROM P19'), findsOneWidget);
+      expect(find.text('P19 → P1 · +18'), findsOneWidget);
+
+      // And back to the lap by tapping the drawing away from the marker. The
+      // centre of the viewer is the middle of the letterboxed map box, which
+      // the marker (at 0.78, 0.83 of it) is nowhere near.
+      await tester.tap(find.byType(InteractiveViewer));
+      // Twice: the tap only resolves once the double-tap timeout lapses, so
+      // the first round starts the switch and the second finishes it.
+      await _pumpAnimations(tester);
+      await _pumpAnimations(tester);
+      expect(find.text('THE LAP'), findsOneWidget);
+      expect(find.text('START / FINISH'), findsNothing);
+    });
+
+    testWidgets('double tap zooms the map about the point tapped', (
+      tester,
+    ) async {
+      final package = await tester.runAsync(italianPackage);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: F1TrackMapScreen(package: package!, svg: svg),
+        ),
+      );
+      await _pumpAnimations(tester);
+
+      final controller = tester
+          .widget<InteractiveViewer>(find.byType(InteractiveViewer))
+          .transformationController!;
+      expect(controller.value.getMaxScaleOnAxis(), 1);
+
+      final centre = tester.getCenter(find.byType(InteractiveViewer));
+      await tester.tapAt(centre);
+      await tester.pump(const Duration(milliseconds: 40));
+      await tester.tapAt(centre);
+      await _pumpAnimations(tester);
+      expect(controller.value.getMaxScaleOnAxis(), greaterThan(2));
+
+      // And again to reset.
+      await tester.tapAt(centre);
+      await tester.pump(const Duration(milliseconds: 40));
+      await tester.tapAt(centre);
+      await _pumpAnimations(tester);
+      expect(controller.value.getMaxScaleOnAxis(), 1);
+    });
+
+    testWidgets('there is no per-sector readout, because there is no data', (
+      tester,
+    ) async {
+      final package = await tester.runAsync(italianPackage);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.darkTheme,
+          home: F1TrackMapScreen(package: package!, svg: svg),
+        ),
+      );
+      await _pumpAnimations(tester);
+
+      // ESPN publishes no sector splits, and the SVG's S1/S2/S3 are text
+      // outlines rather than track segments. Nothing here may invent one.
+      for (final label in ['SECTOR 1', 'SECTOR 2', 'SECTOR 3', 'SECTOR']) {
+        expect(find.text(label), findsNothing);
+      }
+      // The map carries exactly one tap target.
+      expect(find.bySemanticsLabel('Start finish line'), findsOneWidget);
+    });
   });
 }

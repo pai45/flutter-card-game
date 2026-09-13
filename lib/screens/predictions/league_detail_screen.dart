@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../blocs/league_stats/league_stats_cubit.dart';
+import '../../blocs/f1_league/f1_league_cubit.dart';
 import '../../blocs/league_stats/league_stats_state.dart';
 import '../../blocs/picks/picks_cubit.dart';
 import '../../blocs/picks/picks_state.dart';
@@ -23,6 +24,7 @@ import '../../widgets/cyber/cyber_underline_tabs.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/team_logo.dart';
 import 'market_detail_screen.dart';
+import 'f1_league_view.dart';
 import 'match_detail_screen.dart';
 import 'football_player_profile_screen.dart';
 import 'team_detail_screen.dart';
@@ -67,11 +69,21 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
 
   League get _league => widget.league;
   Color get _accent => _league.accent;
+  bool get _isF1 =>
+      const {'f1', 'formula1', '2030'}.contains(_league.id) ||
+      _league.shortCode.toUpperCase() == 'F1';
 
   @override
   void initState() {
     super.initState();
-    if (widget.openFixturesTab) {
+    if (_isF1) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<PredictionCubit>().loadSport(Sport.motorsport);
+        }
+      });
+    }
+    if (widget.openFixturesTab && !_isF1) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) context.read<LeagueStatsCubit>().ensureSeasonFixtures();
       });
@@ -231,6 +243,79 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isF1) {
+      return BlocProvider(
+        create: (_) => F1LeagueCubit()..load(),
+        child: BlocBuilder<PredictionCubit, PredictionState>(
+          builder: (context, prediction) {
+            final followable = followableLeagueFor(_league);
+            // F1 uses the motorsport feed, not football's season-schedule API.
+            // Both the live ESPN feed and bundled ESPN weekend use event IDs;
+            // exclude the old named prototype fixtures from this league hub.
+            final fixtures = _mergeSeasonFixtures(
+              const LeagueStatsState(),
+              prediction.fixtures
+                  .where(
+                    (match) =>
+                        match.sport == Sport.motorsport &&
+                        _matchesLeague(match.leagueId) &&
+                        RegExp(r'^\d+$').hasMatch(match.id),
+                  )
+                  .toList(),
+            );
+            final fixtureStats = LeagueStatsState(
+              status: LeagueStatsStatus.loaded,
+              fixturesStatus:
+                  prediction.loadingSports.contains(Sport.motorsport)
+                  ? LeagueFixturesStatus.loading
+                  : LeagueFixturesStatus.loaded,
+            );
+            final leagueIds = <String>{
+              _league.id,
+              'f1',
+              'formula1',
+              '2030',
+              if (followable != null) ...followable.aliases,
+            };
+            return F1LeagueView(
+              league: _league,
+              openFixturesTab: widget.openFixturesTab,
+              gamesTab:
+                  fixtures.isEmpty &&
+                      (prediction.loading ||
+                          prediction.loadingSports.contains(Sport.motorsport))
+                  ? const _HubLoader(label: 'SYNCING RACE WEEKENDS')
+                  : _FixturesTab(
+                      state: prediction,
+                      stats: fixtureStats,
+                      fixtures: fixtures,
+                      onOpenMatch: _openMatch,
+                      onRetry: () => context
+                          .read<PredictionCubit>()
+                          .refreshSport(Sport.motorsport),
+                    ),
+              picksTab: _PicksTab(
+                leagueIds: leagueIds,
+                stats: fixtureStats,
+                fixtures: fixtures,
+                onOpenMarket: _openPickMarket,
+                onOpenMatch: _openMatch,
+                onRetry: () => context.read<PredictionCubit>().refreshSport(
+                  Sport.motorsport,
+                ),
+              ),
+              followed:
+                  followable != null &&
+                  prediction.followedLeagueIds.contains(followable.league.id),
+              followBusy: _followBusy,
+              onToggleFollow: followable == null
+                  ? null
+                  : () => _toggleFollow(followable, prediction),
+            );
+          },
+        ),
+      );
+    }
     return Scaffold(
       backgroundColor: Cyber.bg,
       body: CyberPlainBackground(
@@ -311,6 +396,9 @@ class _LeagueDetailScreenState extends State<LeagueDetailScreen> {
 
   bool _matchesLeague(String leagueId) {
     if (leagueId == _league.id) return true;
+    if (_isF1 && const {'f1', 'formula1', '2030'}.contains(leagueId)) {
+      return true;
+    }
     final target = followableLeagueFor(_league);
     final candidate = followableLeagueById(leagueId);
     return target != null && identical(target, candidate);

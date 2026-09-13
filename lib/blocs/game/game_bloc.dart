@@ -7,6 +7,7 @@ import '../../config/enums.dart';
 import '../../config/tutorial_steps.dart';
 import '../../data/random_opponent_names.dart';
 import '../../data/basketball_teams.dart';
+import '../../data/demo_match_history.dart';
 import '../../data/final_over_kits.dart';
 import '../../data/grand_prix_liveries.dart';
 import '../../models/avatar_frame_option.dart';
@@ -222,10 +223,18 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       );
       developer.log('GameLoaded: Loaded owned cards');
 
-      final history = await _storage.loadMatchHistory().timeout(
+      final storedHistory = await _storage.loadMatchHistory().timeout(
         const Duration(seconds: 2),
         onTimeout: () => <MatchHistoryEntry>[],
       );
+      // Demo logs sit *after* the player's own games, so `_retainHistoryByMode`
+      // keeps every real result and drops the demos first once a mode fills up.
+      // Ids are stable, so a demo persisted by a later save is deduped here
+      // rather than duplicated.
+      final history = _retainHistoryByMode([
+        ...storedHistory,
+        ...demoMatchHistory(),
+      ]);
       developer.log('GameLoaded: Loaded history');
 
       final progression = await _storage.loadProgression().timeout(

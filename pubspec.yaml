@@ -44,6 +44,7 @@ dependencies:
 
   # 5v5 Football Chess game loop / renderer.
   flame: ^1.18.0
+  video_player: ^2.14.0
 
   # Final Over — offline six-ball cricket chase rules engine (local package).
   final_over:
@@ -59,6 +60,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  video_player_platform_interface: ^6.9.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

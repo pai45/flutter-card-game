@@ -121,10 +121,10 @@ void main() {
         Cyber.gold.withValues(alpha: 0.58),
       );
       expect(
-        tester.widget<Icon>(find.byIcon(Icons.sports_tennis)).color,
-        Cyber.lime.withValues(alpha: 0.58),
+        tester.widget<Icon>(find.byIcon(Icons.sports_motorsports)).color,
+        Cyber.f1Red.withValues(alpha: 0.58),
       );
-      expect(find.byIcon(Icons.sports_motorsports), findsNothing);
+      expect(find.byIcon(Icons.sports_tennis), findsNothing);
 
       final indicator = tester.widget<DecoratedBox>(
         find.descendant(

@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import '../../blocs/football_bingo/football_bingo_state.dart';
 import '../../config/theme.dart';
 import '../../models/football_bingo.dart';
+import '../../models/sport_match.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../how_to_play/how_to_play_hub_screen.dart';
+import '../leaderboard/widgets/game_leaderboard_button.dart';
 
 class FootballBingoHomeScreen extends StatelessWidget {
   const FootballBingoHomeScreen({
@@ -169,6 +171,12 @@ class _HomeHeader extends StatelessWidget implements PreferredSizeWidget {
             ),
             const Spacer(),
             const Icon(Icons.grid_view, color: Cyber.amber, size: 24),
+            const SizedBox(width: 10),
+            const GameLeaderboardButton(
+              sport: Sport.football,
+              mode: GameMode.bingo,
+              accent: Cyber.amber,
+            ),
           ],
         ),
       ),

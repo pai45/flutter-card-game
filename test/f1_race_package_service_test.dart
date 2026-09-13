@@ -1,3 +1,4 @@
+import 'package:card_game/models/sport_match.dart';
 import 'package:card_game/services/f1_race_package_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -198,6 +199,52 @@ void main() {
       isFalse,
       reason: 'a round that has not run carries no entry',
     );
+  });
+
+  test('the bundled weekend becomes a reachable fixture', () async {
+    final fixtures = await F1RacePackageService.bundledFixtures();
+    expect(fixtures, hasLength(1));
+
+    final race = fixtures.single;
+    // The STATS tab resolves the package off this id, so it has to be the ESPN
+    // event id rather than a seeded slug.
+    expect(race.id, '600057442');
+    expect(race.sport, Sport.motorsport);
+    expect(race.leagueId, 'f1');
+    expect(race.status, MatchStatus.finished);
+
+    // Real dates, not pinned to today: the week picker opens on the closest
+    // race week, so a dated Grand Prix stays honest and still lands.
+    expect(race.kickoff.toUtc(), DateTime.utc(2026, 9, 4, 10, 30));
+    expect(race.f1WeekendEndDate!.toUtc(), DateTime.utc(2026, 9, 6, 13));
+
+    // Same home/away shape the live scoreboard builds, so a live response for
+    // this race de-duplicates against the bundled one instead of doubling it.
+    expect(race.home.name, 'Pirelli Italian Grand Prix');
+    expect(race.away.name, 'F1');
+    expect(race.resultLine, contains('Kimi Antonelli'));
+
+    // Five sessions, and the grid parser reads them like a live response.
+    expect(race.f1Sessions!.map((s) => s.name), [
+      'FP1',
+      'FP2',
+      'FP3',
+      'Qual',
+      'Race',
+    ]);
+    final qualifying = race.f1Sessions!.firstWhere((s) => s.isQualifying);
+    expect(qualifying.results.first, '1. Pierre Gasly · Alpine (1:21.786)');
+
+    final raceSession = race.f1Sessions!.last;
+    expect(
+      raceSession.results.first,
+      '1. Kimi Antonelli · Mercedes (1:51:15.281)',
+    );
+    // A retired car reports its status rather than an empty bracket.
+    expect(raceSession.results.last, endsWith('(Retired)'));
+
+    expect(race.f1DriverStandings!.first, 'Kimi Antonelli');
+    expect(race.f1DriverStandings, hasLength(23));
   });
 
   test('no session exposes usable lap-by-lap data', () async {

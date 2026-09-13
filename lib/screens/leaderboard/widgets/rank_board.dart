@@ -47,8 +47,21 @@ class LeaderboardEntry {
   final int xp;
 
   /// Optional detail line shown beside the movement badge (e.g. "4/5 CORRECT"
-  /// on the in-match board). Null on the season boards.
+  /// on the in-match board, or the rival's club on a league board).
   final String? subtitle;
+
+  LeaderboardEntry copyWith({String? subtitle}) => LeaderboardEntry(
+    rank: rank,
+    name: name,
+    score: score,
+    movement: movement,
+    isNew: isNew,
+    badge: badge,
+    isUser: isUser,
+    team: team,
+    xp: xp,
+    subtitle: subtitle ?? this.subtitle,
+  );
 }
 
 typedef ScoreMeta = ({String unit});

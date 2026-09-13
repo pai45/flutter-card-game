@@ -15,6 +15,9 @@ import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/profile_banner_visual.dart';
 import '../../widgets/team_logo.dart';
+import 'login_signup_screen.dart';
+
+enum _EntryPhase { welcome, account, profile }
 
 /// Everything the player chose during profile setup, handed back to the shell
 /// to persist in one shot.
@@ -70,7 +73,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   ).first.league.id;
   bool _completing = false;
   // First-run brand splash + WELCOME reveal, shown before the setup steps.
-  bool _intro = true;
+  _EntryPhase _entryPhase = _EntryPhase.welcome;
 
   List<FollowableLeague> get _availableLeagues =>
       followableLeaguesForSport(_primarySport);
@@ -174,6 +177,22 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_entryPhase == _EntryPhase.welcome) {
+      return Scaffold(
+        body: _LaunchIntro(
+          onDone: () {
+            setState(() => _entryPhase = _EntryPhase.account);
+          },
+        ),
+      );
+    }
+    if (_entryPhase == _EntryPhase.account) {
+      return LoginSignupScreen(
+        onContinue: () {
+          setState(() => _entryPhase = _EntryPhase.profile);
+        },
+      );
+    }
     return Scaffold(
       backgroundColor: Cyber.bg,
       body: Stack(
@@ -210,10 +229,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           ),
           if (_completing)
             Positioned.fill(child: _LaunchSequence(onEnter: _emit)),
-          if (_intro)
-            Positioned.fill(
-              child: _LaunchIntro(onDone: () => setState(() => _intro = false)),
-            ),
         ],
       ),
     );

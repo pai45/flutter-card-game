@@ -60,6 +60,13 @@ class MatchHistoryEntry {
   final List<MatchHistoryRound> rounds;
   final int? xpEarned;
 
+  /// A seeded demo log (see `data/demo_match_history.dart`) rather than a game
+  /// the player actually finished. Demos are shown and counted like any other
+  /// entry on the history pages, but must never satisfy an achievement — an
+  /// unlock is a reward for playing, so [currentAchievementStats] measures the
+  /// player's own results only.
+  bool get isDemo => id.startsWith('demo-');
+
   bool get isShootout => mode == 'shootout';
   bool get isGrandPrix => mode == 'grandprix';
   bool get isBasketball => mode == 'basketball';

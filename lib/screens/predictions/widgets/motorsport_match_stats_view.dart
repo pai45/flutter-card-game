@@ -9,10 +9,12 @@ import '../../../config/theme.dart';
 import '../../../models/f1_race_package.dart';
 import '../../../models/sport_match.dart';
 import '../../../services/f1_race_package_service.dart';
+import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_chart.dart';
 import '../../../widgets/cyber/cyber_filter_chips.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 import 'match_stats_shell.dart';
+import 'standings_table.dart';
 
 /// The motorsport STATS tab.
 ///
@@ -233,31 +235,16 @@ class _CircuitHero extends StatelessWidget {
                     value: '${package.season}',
                     color: Cyber.cyan,
                   ),
-                const Spacer(),
-                Flexible(
-                  child: Text(
-                    circuit?.locationLabel.toUpperCase() ?? '',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.end,
-                    style: Cyber.label(10, color: Cyber.muted),
-                  ),
-                ),
               ],
             ),
-            const SizedBox(height: 12),
-            Text(
-              package.name.toUpperCase(),
-              style: Cyber.display(16, letterSpacing: 0.5),
-            ),
             if (circuit != null) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: 12),
               Text(
                 circuit.fullName,
                 style: Cyber.body(12, color: Cyber.muted),
               ),
               const SizedBox(height: 12),
-              _TrackMap(circuit: circuit),
+              _TrackMap(circuit: circuit, package: package),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -300,6 +287,22 @@ class _CircuitHero extends StatelessWidget {
   }
 }
 
+/// The `viewBox` of ESPN's circuit SVGs. Every marker coordinate below lives in
+/// this space, so the tap overlay stays glued to the drawing at any zoom.
+const Size _kTrackViewBox = Size(160, 96);
+
+/// Centre of the chequered start/finish block ESPN draws into the circuit SVG
+/// (the `Group-6` 3x3 of 1x1 rects, spanning 123.73-126.01 x 78.29-80.57).
+///
+/// The chequered pattern is the one marker on these diagrams whose meaning is
+/// unambiguous. The SVG's other drawn markers — a red disc and two yellow ones —
+/// carry no legend, so nothing here labels them. Its `S1`/`S2`/`S3` are text
+/// outlines in a separate subtree, NOT segments of the track path: the circuit
+/// is one continuous shape, so there is no per-sector geometry to hit-test even
+/// if there were sector data to show, and there is none — see
+/// docs/data/f1-race-field-inventory.md.
+const Offset _kStartFinishMarker = Offset(124.87, 79.43);
+
 /// ESPN's circuit diagram.
 ///
 /// The bytes are fetched here rather than through `SvgPicture.network` so a
@@ -308,10 +311,15 @@ class _CircuitHero extends StatelessWidget {
 /// inside the loader. The map is decoration over numbers that stand on their
 /// own, so it degrades to an icon instead. ESPN serves these with
 /// `Access-Control-Allow-Origin: *`, so it works on web too.
+///
+/// Once the bytes are in hand the map can be opened full screen
+/// ([F1TrackMapScreen]); the affordance stays hidden until then, so it never
+/// promises a view that would open empty.
 class _TrackMap extends StatefulWidget {
-  const _TrackMap({required this.circuit});
+  const _TrackMap({required this.circuit, required this.package});
 
   final F1Circuit circuit;
+  final F1RacePackage package;
 
   @override
   State<_TrackMap> createState() => _TrackMapState();
@@ -355,22 +363,565 @@ class _TrackMapState extends State<_TrackMap> {
     return head.startsWith('<');
   }
 
+  void _expand(Uint8List bytes) {
+    HapticFeedback.selectionClick();
+    playSound(SoundEffect.uiTap);
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => F1TrackMapScreen(package: widget.package, svg: bytes),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bytes = _bytes;
+    final ready = bytes != null && !_failed;
     return Container(
       height: 132,
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(color: Cyber.bg.withValues(alpha: 0.42)),
-      child: bytes == null || _failed
-          ? const _TrackMapFallback()
-          : SvgPicture.memory(
-              bytes,
-              fit: BoxFit.contain,
-              placeholderBuilder: (_) => const _TrackMapFallback(),
-              errorBuilder: (_, _, _) => const _TrackMapFallback(),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: ready
+                ? SvgPicture.memory(
+                    bytes,
+                    fit: BoxFit.contain,
+                    placeholderBuilder: (_) => const _TrackMapFallback(),
+                    errorBuilder: (_, _, _) => const _TrackMapFallback(),
+                  )
+                : const _TrackMapFallback(),
+          ),
+          if (ready)
+            Positioned(
+              right: 4,
+              top: 0,
+              child: _ExpandMapButton(onTap: () => _expand(bytes)),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Opens the circuit full screen. Calm chamfered chrome, no glow — the winner
+/// plate is this card's focal element and stays that way.
+class _ExpandMapButton extends StatelessWidget {
+  const _ExpandMapButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Expand circuit map',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: ClipPath(
+          clipper: const HudChamferClipper(bigCut: 8, smallCut: 2),
+          child: Container(
+            width: 30,
+            height: 30,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Cyber.panel.withValues(alpha: 0.9),
+              border: Border.all(color: Cyber.line),
+            ),
+            child: const Icon(
+              Icons.open_in_full,
+              size: 14,
+              color: Cyber.cyan,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Full-screen circuit map
+// ---------------------------------------------------------------------------
+
+/// What the map's readout is currently describing.
+enum _TrackFocus { lap, startFinish }
+
+/// The circuit, full screen, pinch-zoomable, with a readout underneath.
+///
+/// Only two things on this map can be spoken about truthfully, so only two
+/// things are tappable: the chequered **start/finish** block ESPN draws, and
+/// **the lap** itself (the rest of the map). There is deliberately no
+/// per-sector panel — ESPN publishes no sector splits (`.../splits` 404s, and
+/// no stat key in the package is sector-scoped), so a sector readout could only
+/// have been invented.
+class F1TrackMapScreen extends StatefulWidget {
+  const F1TrackMapScreen({
+    required this.package,
+    required this.svg,
+    super.key,
+  });
+
+  final F1RacePackage package;
+  final Uint8List svg;
+
+  @override
+  State<F1TrackMapScreen> createState() => _F1TrackMapScreenState();
+}
+
+class _F1TrackMapScreenState extends State<F1TrackMapScreen>
+    with SingleTickerProviderStateMixin {
+  static const double _doubleTapScale = 2.6;
+
+  final TransformationController _view = TransformationController();
+  final GlobalKey _viewport = GlobalKey();
+  late final AnimationController _zoom;
+  Animation<Matrix4>? _zoomTween;
+  _TrackFocus _focus = _TrackFocus.lap;
+
+  @override
+  void initState() {
+    super.initState();
+    _zoom = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 260),
+    )..addListener(() {
+      final tween = _zoomTween;
+      if (tween != null) _view.value = tween.value;
+    });
+  }
+
+  @override
+  void dispose() {
+    _zoom.dispose();
+    _view.dispose();
+    super.dispose();
+  }
+
+  void _select(_TrackFocus focus) {
+    if (_focus == focus) return;
+    HapticFeedback.selectionClick();
+    playSound(SoundEffect.uiTap);
+    setState(() => _focus = focus);
+  }
+
+  /// Double tap zooms about the point tapped, and again to reset.
+  ///
+  /// The reporting detector sits inside the viewer, so its local position is in
+  /// the already-transformed child space; the zoom matrix has to be built in
+  /// viewport space, which is what this resolves the global position against.
+  void _handleDoubleTap(TapDownDetails details) {
+    final zoomedIn = _view.value.getMaxScaleOnAxis() > 1.4;
+    final box = _viewport.currentContext?.findRenderObject() as RenderBox?;
+    final point = box == null
+        ? details.localPosition
+        : box.globalToLocal(details.globalPosition);
+    final target = zoomedIn
+        ? Matrix4.identity()
+        : (Matrix4.identity()
+            ..translateByDouble(point.dx, point.dy, 0, 1)
+            ..scaleByDouble(
+              _doubleTapScale,
+              _doubleTapScale,
+              _doubleTapScale,
+              1,
+            )
+            ..translateByDouble(-point.dx, -point.dy, 0, 1));
+    _zoomTween = Matrix4Tween(begin: _view.value, end: target).animate(
+      CurvedAnimation(parent: _zoom, curve: Curves.easeOutCubic),
+    );
+    _zoom.forward(from: 0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final circuit = widget.package.circuit;
+    return Scaffold(
+      backgroundColor: Cyber.bg,
+      body: Stack(
+        children: [
+          const Positioned.fill(child: CyberTextureOverlay()),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  DetailTopBar(title: circuit?.fullName ?? 'CIRCUIT'),
+                  Expanded(
+                    child: InteractiveViewer(
+                      key: _viewport,
+                      transformationController: _view,
+                      minScale: 1,
+                      maxScale: 6,
+                      child: Center(
+                        child: AspectRatio(
+                          aspectRatio: _kTrackViewBox.aspectRatio,
+                          child: _TrackCanvas(
+                            svg: widget.svg,
+                            view: _view,
+                            focus: _focus,
+                            onLap: () => _select(_TrackFocus.lap),
+                            onDoubleTapDown: _handleDoubleTap,
+                            onStartFinish: () =>
+                                _select(_TrackFocus.startFinish),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 220),
+                    child: _focus == _TrackFocus.startFinish
+                        ? _StartFinishReadout(
+                            key: const ValueKey('motorsport-map-startfinish'),
+                            package: widget.package,
+                          )
+                        : _LapReadout(
+                            key: const ValueKey('motorsport-map-lap'),
+                            package: widget.package,
+                          ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The drawing plus its one tappable marker, laid out in `viewBox` units so the
+/// marker sits exactly where ESPN drew the chequered flag.
+class _TrackCanvas extends StatelessWidget {
+  const _TrackCanvas({
+    required this.svg,
+    required this.view,
+    required this.focus,
+    required this.onLap,
+    required this.onDoubleTapDown,
+    required this.onStartFinish,
+  });
+
+  final Uint8List svg;
+  final TransformationController view;
+  final _TrackFocus focus;
+  final VoidCallback onLap;
+  final GestureTapDownCallback onDoubleTapDown;
+  final VoidCallback onStartFinish;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final sx = constraints.maxWidth / _kTrackViewBox.width;
+        final sy = constraints.maxHeight / _kTrackViewBox.height;
+        const hit = 40.0;
+        return Stack(
+          children: [
+            // Anywhere on the drawing that is not the marker is "the lap".
+            // Both gestures live on one detector so they share an arena entry
+            // — split across two, the tap wins and the double tap never fires.
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onLap,
+                onDoubleTapDown: onDoubleTapDown,
+                onDoubleTap: () {},
+              ),
+            ),
+            Positioned.fill(
+              child: IgnorePointer(
+                child: SvgPicture.memory(
+                  svg,
+                  // The box already matches the viewBox, so fill == contain
+                  // and the marker maths below stays exact.
+                  fit: BoxFit.fill,
+                  placeholderBuilder: (_) => const _TrackMapFallback(),
+                  errorBuilder: (_, _, _) => const _TrackMapFallback(),
+                ),
+              ),
+            ),
+            Positioned(
+              left: (_kStartFinishMarker.dx * sx) - (hit / 2),
+              top: (_kStartFinishMarker.dy * sy) - (hit / 2),
+              width: hit,
+              height: hit,
+              child: AnimatedBuilder(
+                animation: view,
+                builder: (context, child) => Transform.scale(
+                  // Hold the marker at a constant on-screen size as the map
+                  // zooms, so it stays tappable without swallowing the track.
+                  scale: 1 / view.value.getMaxScaleOnAxis(),
+                  child: child,
+                ),
+                child: _StartFinishMarker(
+                  selected: focus == _TrackFocus.startFinish,
+                  onTap: onStartFinish,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// The one tappable point on the map. Selected is the single glowing element
+/// on this screen.
+class _StartFinishMarker extends StatelessWidget {
+  const _StartFinishMarker({required this.selected, required this.onTap});
+
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: 'Start finish line',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Center(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: selected ? 26 : 22,
+            height: selected ? 26 : 22,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Cyber.bg.withValues(alpha: 0.86),
+              border: Border.all(
+                color: selected ? Cyber.cyan : Cyber.muted,
+                width: selected ? 2 : 1,
+              ),
+              boxShadow: selected ? Cyber.glow(Cyber.cyan) : null,
+            ),
+            child: Icon(
+              Icons.sports_score,
+              size: selected ? 14 : 12,
+              color: selected ? Cyber.cyan : Cyber.muted,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The lap itself: the circuit facts ESPN publishes, including the three the
+/// card has no room for (race distance, direction, year established).
+class _LapReadout extends StatelessWidget {
+  const _LapReadout({required this.package, super.key});
+
+  final F1RacePackage package;
+
+  @override
+  Widget build(BuildContext context) {
+    final circuit = package.circuit;
+    if (circuit == null) return const SizedBox.shrink();
+    final record = circuit.lapRecord;
+    final holder = record.driverId == null
+        ? null
+        : package.driver(record.driverId!);
+    return _MapReadoutShell(
+      label: 'THE LAP',
+      caption: 'TAP THE CHEQUERED MARKER FOR THE START/FINISH LINE',
+      children: [
+        Row(
+          children: [
+            CyberMiniMetric(label: 'LAPS', value: '${circuit.laps ?? '—'}'),
+            const SizedBox(width: 10),
+            CyberMiniMetric(
+              label: 'LAP',
+              value: circuit.lengthKm == null
+                  ? '—'
+                  : '${circuit.lengthKm!.toStringAsFixed(3)} KM',
+            ),
+            const SizedBox(width: 10),
+            CyberMiniMetric(label: 'TURNS', value: '${circuit.turns ?? '—'}'),
+          ],
+        ),
+        if (circuit.distanceKm != null)
+          _MapFactRow(
+            label: 'RACE DISTANCE',
+            value: '${circuit.distanceKm!.toStringAsFixed(2)} KM',
+          ),
+        if (circuit.direction != null)
+          _MapFactRow(
+            label: 'DIRECTION',
+            value: circuit.direction!.toUpperCase(),
+          ),
+        if (circuit.established != null)
+          _MapFactRow(label: 'ESTABLISHED', value: '${circuit.established}'),
+        if (!record.isEmpty)
+          _MapFactRow(
+            label: 'LAP RECORD',
+            value: record.time ?? '—',
+            detail: [
+              holder?.displayName,
+              if (record.year != null) '${record.year}',
+            ].whereType<String>().join(' · '),
+            accent: Cyber.cyan,
+          ),
+      ],
+    );
+  }
+}
+
+/// The start/finish line: who lined up on it, who crossed it first, and who
+/// gained the most between the two.
+class _StartFinishReadout extends StatelessWidget {
+  const _StartFinishReadout({required this.package, super.key});
+
+  final F1RacePackage package;
+
+  @override
+  Widget build(BuildContext context) {
+    final entries = package.race?.classification ?? const [];
+    final winner = package.winner;
+    final pole = entries.where((e) => e.grid == 1).firstOrNull;
+    final movers =
+        entries.where((e) => e.grid != null).toList(growable: false)
+          ..sort(
+            (a, b) => (b.grid! - b.position).compareTo(a.grid! - a.position),
+          );
+    final climber = movers.firstOrNull;
+    final livery = _Livery.of(package);
+
+    String named(F1ClassificationEntry? e) =>
+        e == null ? '—' : (package.driver(e.driverId)?.displayName ?? '—');
+
+    return _MapReadoutShell(
+      label: 'START / FINISH',
+      caption: 'TAP THE MAP TO GO BACK TO THE LAP',
+      children: [
+        if (pole != null)
+          _MapFactRow(
+            label: 'POLE',
+            value: named(pole),
+            detail: pole.constructorName,
+            accent: livery.colorFor(pole.driverId),
+          ),
+        if (winner != null)
+          _MapFactRow(
+            label: 'WINNER',
+            value: named(winner),
+            detail: winner.grid == null
+                ? winner.constructorName
+                : 'FROM P${winner.grid}',
+            accent: livery.colorFor(winner.driverId),
+          ),
+        if (climber != null && climber.grid! - climber.position > 0)
+          _MapFactRow(
+            label: 'BIGGEST GAIN',
+            value: named(climber),
+            detail:
+                'P${climber.grid} → P${climber.position} · '
+                '+${climber.grid! - climber.position}',
+            accent: livery.colorFor(climber.driverId),
+          ),
+      ],
+    );
+  }
+}
+
+/// Shared frame for the two map readouts.
+class _MapReadoutShell extends StatelessWidget {
+  const _MapReadoutShell({
+    required this.label,
+    required this.caption,
+    required this.children,
+  });
+
+  final String label;
+  final String caption;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Text(
+              label,
+              style: Cyber.label(10, color: Cyber.cyan, letterSpacing: 1.6),
+            ),
+            const SizedBox(width: 8),
+            Expanded(child: Container(height: 1, color: Cyber.line)),
+          ],
+        ),
+        const SizedBox(height: 8),
+        for (final child in children) ...[
+          child,
+          const SizedBox(height: 6),
+        ],
+        Text(
+          caption,
+          style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.1),
+        ),
+      ],
+    );
+  }
+}
+
+class _MapFactRow extends StatelessWidget {
+  const _MapFactRow({
+    required this.label,
+    required this.value,
+    this.detail,
+    this.accent,
+  });
+
+  final String label;
+  final String value;
+  final String? detail;
+  final Color? accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final detail = this.detail;
+    return StatsRowShell(
+      child: Row(
+        children: [
+          if (accent != null) ...[
+            Container(width: 3, height: 18, color: accent),
+            const SizedBox(width: 8),
+          ],
+          Text(
+            label,
+            style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.2),
+          ),
+          const Spacer(),
+          if (detail != null && detail.isNotEmpty) ...[
+            Flexible(
+              child: Text(
+                detail,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.end,
+                style: Cyber.body(11, color: Cyber.muted),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          Text(
+            value,
+            style: Cyber.display(12, color: accent ?? Colors.white),
+          ),
+        ],
+      ),
     );
   }
 }

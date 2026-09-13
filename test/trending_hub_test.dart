@@ -93,21 +93,46 @@ void main() {
         of: hubTabs,
         matching: find.byIcon(Icons.sports_motorsports),
       ),
-      findsNothing,
+      findsOneWidget,
     );
 
     final wide = tester.getRect(find.byKey(const ValueKey('trend-live-epl')));
-    final future = tester.getRect(
-      find.byKey(const ValueKey('trend-world-cup-future')),
-    );
-    final predict = tester.getRect(
-      find.byKey(const ValueKey('trend-arsenal-predict')),
-    );
+    final futureTile = find.byKey(const ValueKey('trend-world-cup-future'));
+    final predictTile = find.byKey(const ValueKey('trend-arsenal-predict'));
+    final future = tester.getRect(futureTile);
+    final predict = tester.getRect(predictTile);
     expect(wide.width, greaterThan(wide.height * 1.8));
     expect(future.height, lessThan(future.width));
     expect(future.height, greaterThan(future.width * 0.75));
     expect(future.top, moreOrLessEquals(predict.top));
     expect(future.top - wide.bottom, moreOrLessEquals(20));
+    _expectTextColor(tester, futureTile, 'FUTURE', Cyber.cyan);
+    _expectTextColor(tester, predictTile, 'PREDICT', Cyber.cyan);
+    _expectTextColor(
+      tester,
+      find.byKey(const ValueKey('trend-liverpool-pick')),
+      'PICK',
+      Cyber.cyan,
+    );
+    _expectTextColor(tester, futureTile, 'FIFA', Cyber.muted);
+    _expectTextColor(tester, predictTile, 'EPL', Cyber.muted);
+    expect(
+      tester
+          .getRect(find.descendant(of: futureTile, matching: find.text('16%')))
+          .bottom,
+      greaterThanOrEqualTo(future.bottom - 12),
+    );
+    expect(
+      tester
+          .getRect(
+            find.descendant(
+              of: predictTile,
+              matching: find.text('+XP MISSION OPEN'),
+            ),
+          )
+          .bottom,
+      greaterThanOrEqualTo(predict.bottom - 12),
+    );
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('trend-live-epl')),
@@ -170,7 +195,8 @@ void main() {
     expect(harnessKey.currentState!.matchIndex, hubTrendingTabIndex);
 
     await tester.tap(find.text('CRICKET'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
     expect(find.byType(AllSportsScreen), findsNothing);
     expect(
       harnessKey.currentState!.matchIndex,
@@ -351,6 +377,16 @@ void _expectMinimumStyledType(WidgetTester tester, Finder root) {
       .where((text) => text.style?.fontSize != null);
   expect(styledText, isNotEmpty);
   expect(styledText.every((text) => text.style!.fontSize! >= 10), isTrue);
+}
+
+void _expectTextColor(
+  WidgetTester tester,
+  Finder root,
+  String label,
+  Color color,
+) {
+  final text = find.descendant(of: root, matching: find.text(label)).first;
+  expect(tester.widget<Text>(text).style?.color, color);
 }
 
 Future<void> _scrollAndTap(WidgetTester tester, Finder finder) async {
