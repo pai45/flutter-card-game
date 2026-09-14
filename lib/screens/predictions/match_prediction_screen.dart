@@ -18,6 +18,7 @@ import '../../models/picks.dart';
 import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
 import '../../models/streak.dart';
+import '../../models/daily_quest.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
@@ -598,6 +599,12 @@ class _MatchPredictionScreenState extends State<MatchPredictionScreen>
       return;
     }
     if (isFresh) {
+      context.read<GameBloc?>()?.add(
+        DailyQuestActivityRecorded(
+          DailyQuestActivity.prediction,
+          sourceId: '${_match.id}:$quizId',
+        ),
+      );
       context.read<GameBloc?>()?.add(
         StreakActivityRecorded(StreakActivity.predict),
       );

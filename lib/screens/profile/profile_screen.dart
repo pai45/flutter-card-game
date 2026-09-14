@@ -39,6 +39,7 @@ import '../leaderboard/widgets/rank_widgets.dart';
 import '../match_history/match_history_pages.dart';
 import '../predictions/prediction_match_history_screen.dart';
 import '../predictions/prediction_picks_history_screen.dart';
+import '../predictions/streak_calendar_screen.dart';
 import 'achievements_screen.dart';
 import 'oz_coin_history_screen.dart';
 import 'talk_to_statoz_screen.dart';
@@ -62,6 +63,7 @@ class ProfileScreen extends StatelessWidget {
     required this.onLogout,
     required this.onChallenge,
     required this.onOpenSportGames,
+    this.onOpenStreakHub,
     super.key,
   });
 
@@ -75,6 +77,10 @@ class ProfileScreen extends StatelessWidget {
   /// Launches a card match against a CPU themed as the given rival (name,
   /// level). Threaded into the Friends Arena so a friend can be challenged.
   final void Function(String opponentName, int opponentLevel) onChallenge;
+
+  /// Opens the streak hub from a band's streak badge (null = hub without
+  /// quest routing).
+  final VoidCallback? onOpenStreakHub;
 
   @override
   Widget build(BuildContext context) {
@@ -123,6 +129,8 @@ class ProfileScreen extends StatelessWidget {
                     // Single source of truth, shared with the app-root
                     // achievement-unlock watcher (services/achievement_progress).
                     final stats = currentAchievementStats(context);
+                    final openStreaks =
+                        onOpenStreakHub ?? () => showStreakCalendar(context);
 
                     return ListView(
                       padding: EdgeInsets.zero,
@@ -151,6 +159,7 @@ class ProfileScreen extends StatelessWidget {
                               const SizedBox(height: 14),
                               ProfileStatBand(
                                 title: 'PREDICTS',
+                                onStreakTap: openStreaks,
                                 streak: game.streak.current(
                                   StreakCategory.predict,
                                 ),
@@ -185,6 +194,7 @@ class ProfileScreen extends StatelessWidget {
                               const SizedBox(height: 12),
                               ProfileStatBand(
                                 title: 'PICKS',
+                                onStreakTap: openStreaks,
                                 streak: game.streak.current(
                                   StreakCategory.pick,
                                 ),
@@ -219,6 +229,7 @@ class ProfileScreen extends StatelessWidget {
                               const SizedBox(height: 12),
                               ProfileStatBand(
                                 title: 'GAMES',
+                                onStreakTap: openStreaks,
                                 streak: game.streak.current(
                                   StreakCategory.games,
                                 ),

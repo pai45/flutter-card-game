@@ -18,6 +18,8 @@ import '../models/progression.dart';
 import '../models/quiz_trivia.dart';
 import '../models/referral.dart';
 import '../models/streak.dart';
+import '../models/streak_reminder.dart';
+import '../models/daily_quest.dart';
 import '../models/tennis.dart';
 import '../models/xp_ledger.dart';
 import '../models/guess_player.dart';
@@ -368,7 +370,9 @@ class SecureGameStorage {
 
   Future<void> saveWallet(WalletSnapshot wallet) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_walletKey, jsonEncode(wallet.toJson()));
+    if (!await prefs.setString(_walletKey, jsonEncode(wallet.toJson()))) {
+      throw StateError('Wallet write failed');
+    }
   }
 
   Future<List<OzCoinLedgerEntry>> loadCoinLedger() async {
@@ -390,10 +394,11 @@ class SecureGameStorage {
 
   Future<void> saveCoinLedger(List<OzCoinLedgerEntry> ledger) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
+    final saved = await prefs.setString(
       _coinLedgerKey,
       jsonEncode(ledger.map((entry) => entry.toJson()).toList()),
     );
+    if (!saved) throw StateError('Coin ledger write failed');
   }
 
   Future<List<XpLedgerEntry>> loadXpLedger() async {
@@ -695,6 +700,31 @@ class SecureGameStorage {
     await _storage.write(key: _rolloverLastDayKey, value: dayKey);
   }
 
+  static const _streakReminderKey = 'pd_streak_reminder_v1';
+
+  /// Which streak reminders were shown today. A failed or malformed read is an
+  /// empty log (worst case: one extra reminder), never an error.
+  Future<StreakReminderLog> loadStreakReminderLog() async {
+    try {
+      final raw = await _storage.read(key: _streakReminderKey);
+      if (raw == null || raw.isEmpty) return const StreakReminderLog();
+      return StreakReminderLog.fromJson(jsonDecode(raw));
+    } catch (_) {
+      return const StreakReminderLog();
+    }
+  }
+
+  Future<void> saveStreakReminderLog(StreakReminderLog log) async {
+    try {
+      await _storage.write(
+        key: _streakReminderKey,
+        value: jsonEncode(log.toJson()),
+      );
+    } catch (_) {
+      // Non-critical: the popup still shows; it may repeat once.
+    }
+  }
+
   Future<String?> loadSelectedAvatarId() async {
     try {
       final raw = await _storage.read(key: _selectedAvatarKey);
@@ -918,6 +948,61 @@ class SecureGameStorage {
 
   Future<void> saveStreak(StreakSnapshot streak) async {
     await _storage.write(key: _streakKey, value: jsonEncode(streak.toJson()));
+  }
+
+  // Do not silently reset failed quest reads: that could erase claim receipts.
+  Future<DailyQuestSnapshot> loadDailyQuests() async {
+    final raw = await _storage.read(key: 'pd_daily_quests_v1');
+    return raw == null
+        ? const DailyQuestSnapshot()
+        : DailyQuestSnapshot.fromJson(
+            Map<String, dynamic>.from(jsonDecode(raw) as Map),
+          );
+  }
+
+  Future<void> saveDailyQuests(DailyQuestSnapshot quests) => _storage.write(
+    key: 'pd_daily_quests_v1',
+    value: jsonEncode(quests.toJson()),
+  );
+
+  Future<Map<String, dynamic>?> loadQuestClaimJournal() async {
+    final raw = await _storage.read(key: 'pd_quest_claim_journal_v1');
+    return raw == null
+        ? null
+        : Map<String, dynamic>.from(jsonDecode(raw) as Map);
+  }
+
+  Future<void> saveQuestClaimJournal(Map<String, dynamic> journal) => _storage
+      .write(key: 'pd_quest_claim_journal_v1', value: jsonEncode(journal));
+
+  Future<void> clearQuestClaimJournal() =>
+      _storage.delete(key: 'pd_quest_claim_journal_v1');
+
+  /// Reapply absolute target snapshots. This is safe after any interrupted write,
+  /// provided the caller blocks other wallet mutations until recovery finishes.
+  Future<Map<String, dynamic>?> recoverQuestClaim() async {
+    final journal = await loadQuestClaimJournal();
+    if (journal == null) return null;
+    await saveWallet(
+      WalletSnapshot.fromJson(
+        Map<String, dynamic>.from(journal['wallet'] as Map),
+      ),
+    );
+    await saveCoinLedger(
+      (journal['ledger'] as List)
+          .map(
+            (e) =>
+                OzCoinLedgerEntry.fromJson(Map<String, dynamic>.from(e as Map)),
+          )
+          .toList(),
+    );
+    await saveDailyQuests(
+      DailyQuestSnapshot.fromJson(
+        Map<String, dynamic>.from(journal['quests'] as Map),
+      ),
+    );
+    await clearQuestClaimJournal();
+    return journal;
   }
 
   Future<PlayerProgression> loadProgression() async {

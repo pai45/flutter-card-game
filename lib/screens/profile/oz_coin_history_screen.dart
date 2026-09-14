@@ -317,6 +317,7 @@ IconData _sourceIcon(OzCoinTransactionSource source) {
       Icons.manage_search_rounded,
     OzCoinTransactionSource.guessDriverHint => Icons.sports_motorsports,
     OzCoinTransactionSource.streakReward => Icons.local_fire_department,
+    OzCoinTransactionSource.dailyQuestReward => Icons.task_alt,
     OzCoinTransactionSource.referralReward => Icons.card_giftcard_rounded,
     OzCoinTransactionSource.onboardingReward => Icons.redeem_rounded,
     OzCoinTransactionSource.pickStake ||

@@ -31,6 +31,7 @@ import 'all_sports_screen.dart';
 import 'match_search_screen.dart';
 import 'streak_calendar_screen.dart';
 import 'trending_hub_catalog.dart';
+import 'widgets/daily_quest_home_tile.dart';
 import 'widgets/history_hud.dart';
 import 'widgets/match_prediction_card.dart';
 import 'widgets/motorsport_week_picker.dart';
@@ -65,6 +66,7 @@ class PredictionHomeScreen extends StatefulWidget {
     this.onOpenFinalOver,
     this.onOpenTennisRally,
     this.onAddCoins,
+    this.onOpenStreakHub,
     super.key,
   });
 
@@ -95,6 +97,10 @@ class PredictionHomeScreen extends StatefulWidget {
   final VoidCallback? onOpenTennisRally;
   final VoidCallback? onAddCoins;
 
+  /// Opens the streak hub with the shell's quest routing. Null falls back to
+  /// the hub without quest destinations.
+  final VoidCallback? onOpenStreakHub;
+
   @override
   State<PredictionHomeScreen> createState() => _PredictionHomeScreenState();
 }
@@ -124,7 +130,7 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
                   onAddCoins:
                       widget.onAddCoins ??
                       () => widget.onNavigate(AppSection.shop),
-                  onStreakTap: () => showStreakCalendar(context),
+                  onStreakTap: widget.onOpenStreakHub,
                 ),
                 CyberGlidingTabs(
                   tabs: _predictionTopTabs,
@@ -158,6 +164,7 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
       0 =>
         _selectedMatchSport == null
             ? _TrendingMatchesTab(
+                questTile: _questTile(),
                 activeSportTab: widget.activeMatchSportTab,
                 onSportTabChanged: widget.onMatchSportTabChanged,
                 onMore: () => _openAllSports(
@@ -192,6 +199,7 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
       _ =>
         _selectedGamesSport == null
             ? _TrendingGamesTab(
+                questTile: _questTile(),
                 activeSportTab: widget.activeGamesSportTab,
                 onSportTabChanged: widget.onGamesSportTabChanged,
                 onMore: () => _openAllSports(
@@ -267,6 +275,11 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
     );
   }
 
+  /// Both Trending feeds lead with the daily-quest door into the streak hub.
+  Widget _questTile() => DailyQuestHomeTile(
+    onTap: widget.onOpenStreakHub ?? () => showStreakCalendar(context),
+  );
+
   bool _shouldAnimateIntro(int tab) => !_introPlayedTabs.contains(tab);
 
   void _markIntroPlayed(int tab) {
@@ -285,6 +298,7 @@ class _PredictionBackground extends StatelessWidget {
 
 class _TrendingMatchesTab extends StatelessWidget {
   const _TrendingMatchesTab({
+    required this.questTile,
     required this.activeSportTab,
     required this.onSportTabChanged,
     required this.onMore,
@@ -303,6 +317,7 @@ class _TrendingMatchesTab extends StatelessWidget {
   final VoidCallback onSearch;
   final bool animateIntro;
   final VoidCallback onIntroPlayed;
+  final Widget questTile;
 
   @override
   Widget build(BuildContext context) {
@@ -320,6 +335,7 @@ class _TrendingMatchesTab extends StatelessWidget {
         ),
         Expanded(
           child: TrendingMatchesView(
+            header: questTile,
             onOpenMatch: onOpenMatch,
             onOpenMarket: onOpenMarket,
             animateIntro: animateIntro,
@@ -1552,7 +1568,9 @@ Map<League, List<SportMatch>> _groupByLeague(
   final withFavorite = <League, List<SportMatch>>{};
   final withoutFavorite = <League, List<SportMatch>>{};
   for (final entry in grouped.entries) {
-    (isFavorite(entry.value.first) ? withFavorite : withoutFavorite)[entry.key] =
+    (isFavorite(entry.value.first)
+            ? withFavorite
+            : withoutFavorite)[entry.key] =
         entry.value;
   }
   if (withFavorite.isEmpty) return grouped;
@@ -1795,9 +1813,11 @@ class _ClubPinReadout extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           _formatCountdown(remaining),
-          style: Cyber.label(11, color: accent, letterSpacing: 1).copyWith(
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
+          style: Cyber.label(
+            11,
+            color: accent,
+            letterSpacing: 1,
+          ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
         ),
       ],
     );
@@ -1983,6 +2003,7 @@ String _monthDayLabel(DateTime day) {
 // Sport-specific games hub content.
 class _TrendingGamesTab extends StatefulWidget {
   const _TrendingGamesTab({
+    required this.questTile,
     required this.activeSportTab,
     required this.onSportTabChanged,
     required this.onMore,
@@ -2015,6 +2036,7 @@ class _TrendingGamesTab extends StatefulWidget {
   final VoidCallback onOpenTennisRally;
   final bool animateIntro;
   final VoidCallback onIntroPlayed;
+  final Widget questTile;
 
   @override
   State<_TrendingGamesTab> createState() => _TrendingGamesTabState();
@@ -2055,6 +2077,8 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
             key: const ValueKey('games-trending-feed'),
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
             children: [
+              widget.questTile,
+              const SizedBox(height: 14),
               CyberBentoGrid(
                 tiles: [
                   for (var index = 0; index < catalog.length; index++)
@@ -2919,7 +2943,7 @@ class _HeroTitle extends StatelessWidget {
         children: [
           if (streak > 0) ...[
             StreakBadge(value: streak, scale: 1.25),
-            const SizedBox(height: StreakTheme.space4),
+            const SizedBox(height: 4),
           ],
           Text(
             title,
@@ -2943,7 +2967,7 @@ class _HeroTitle extends StatelessWidget {
           children: [
             if (streak > 0) ...[
               StreakBadge(value: streak, scale: 1.25),
-              const SizedBox(height: StreakTheme.space4),
+              const SizedBox(height: 4),
             ],
             ConstrainedBox(
               constraints: BoxConstraints(maxWidth: titleWidth.toDouble()),

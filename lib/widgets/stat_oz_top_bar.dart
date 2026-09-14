@@ -4,8 +4,12 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../blocs/game/game_bloc.dart';
 import '../models/streak.dart';
+import '../screens/predictions/streak_calendar_screen.dart';
 import '../utils/sound_effects.dart';
 import '../config/theme.dart';
+import 'streak_widgets.dart';
+
+const _barFill = Color(0xff1a253a);
 
 class StatOzTopBar extends StatelessWidget {
   const StatOzTopBar({
@@ -20,6 +24,9 @@ class StatOzTopBar extends StatelessWidget {
   final String title;
   final VoidCallback onAddCoins;
   final Color accent;
+
+  /// Opens the streak hub. Null falls back to the hub without quest routing,
+  /// so the flame is live on every screen that shows this bar.
   final VoidCallback? onStreakTap;
 
   /// Back action shown before the title when the bar isn't a tab root.
@@ -27,12 +34,20 @@ class StatOzTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final wallet = context.select<GameBloc, ({int coins, int streak})>(
-      (bloc) => (
-        coins: bloc.state.coins,
-        streak: bloc.state.streak.current(StreakCategory.overall),
-      ),
-    );
+    final wallet = context
+        .select<
+          GameBloc,
+          ({int coins, int streak, StreakFlameState flame, bool questReady})
+        >((bloc) {
+          final now = DateTime.now();
+          final streak = bloc.state.streak;
+          return (
+            coins: bloc.state.coins,
+            streak: streak.current(StreakCategory.overall, now: now),
+            flame: streakFlameState(streak, now),
+            questReady: bloc.state.dailyQuests.claimableCoins > 0,
+          );
+        });
 
     // Fold the status-bar inset into the bar so its fill covers the status bar
     // (the host screen wraps this in SafeArea(top: false)). Content stays 54px.
@@ -42,7 +57,7 @@ class StatOzTopBar extends StatelessWidget {
       height: 78 + topInset,
       padding: EdgeInsets.fromLTRB(16, 12 + topInset, 14, 12),
       decoration: BoxDecoration(
-        color: const Color(0xff1a253a),
+        color: _barFill,
         border: Border(
           bottom: BorderSide(color: accent.withValues(alpha: 0.26)),
         ),
@@ -76,7 +91,12 @@ class StatOzTopBar extends StatelessWidget {
               ),
             ),
           ),
-          _TopBarStreak(value: _formatInt(wallet.streak), onTap: onStreakTap),
+          _TopBarStreak(
+            value: _formatInt(wallet.streak),
+            flame: wallet.flame,
+            questReady: wallet.questReady,
+            onTap: onStreakTap ?? () => showStreakCalendar(context),
+          ),
           const SizedBox(width: 12),
           _TopBarCoinPill(
             coins: wallet.coins == 0 ? 1000 : wallet.coins,
@@ -89,46 +109,70 @@ class StatOzTopBar extends StatelessWidget {
   }
 }
 
+/// Flame tally in the top bar. The flame colour carries the streak state
+/// (gold live / amber pending / red at risk); a gold beacon dot marks rewards
+/// waiting in the quest vault. Persistent chrome, so nothing pulses here.
 class _TopBarStreak extends StatelessWidget {
-  const _TopBarStreak({required this.value, this.onTap});
+  const _TopBarStreak({
+    required this.value,
+    required this.flame,
+    required this.questReady,
+    required this.onTap,
+  });
 
   final String value;
-  final VoidCallback? onTap;
+  final StreakFlameState flame;
+  final bool questReady;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final content = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Icon(
-          Icons.local_fire_department_outlined,
-          color: StreakTheme.primary,
-          size: 22,
-        ),
-        const SizedBox(width: 6),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontFamily: Cyber.displayFont,
-            fontSize: 15,
-            fontWeight: FontWeight.w900,
-            fontFeatures: [FontFeature.tabularFigures()],
+    return Semantics(
+      button: true,
+      label:
+          '$value day streak${questReady ? ', quest rewards ready' : ''}. Open streaks',
+      child: GestureDetector(
+        key: const ValueKey('top-bar-streak'),
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          playSound(SoundEffect.uiTap);
+          onTap();
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  StreakFlame(state: flame, size: 22, animate: false),
+                  if (questReady)
+                    Positioned(
+                      right: -2,
+                      top: -1,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: Cyber.gold,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: _barFill, width: 1.5),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 6),
+              Text(
+                value,
+                style: Cyber.display(15, letterSpacing: 0).copyWith(
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
           ),
         ),
-      ],
-    );
-
-    if (onTap == null) return content;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () {
-        playSound(SoundEffect.uiTap);
-        onTap!();
-      },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-        child: content,
       ),
     );
   }

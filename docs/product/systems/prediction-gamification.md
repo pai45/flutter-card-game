@@ -28,6 +28,13 @@ context, and the settlement reveal. The base lifecycle is documented in
 
 ## Mechanics and Rules
 
+**BUILT — Daily quests:** Fresh successful prediction submissions complete
+Make Your Call in the shared streak hub; edits, failed submissions and reopening
+results do not count. Two eligible game completions are its built-in alternative.
+Confirmed picks complete Back Your Play, with three game completions as the
+alternative. The quest rewards are Oz Coins, separate from prediction XP and
+accuracy. See [Streaks](streaks.md) for the daily set, claims and persistence.
+
 Built gamification includes the potential-XP ticker, movable 2×/1.5× boosters,
 daily prediction activity streak recording, shared achievements, community vote
 context, match leaderboard, results-ready state, skippable cinematic settlement,
@@ -68,8 +75,8 @@ presentation state and does not own reward settlement.
 - **BUILT:** Potential pot, boosters, submission/result celebrations, daily
   prediction activity streak, shared achievements, community comparison,
   settlement reveal, perfect treatment, and level-up handoff.
-- **PLANNED:** Consecutive-correct accuracy streak/tier multiplier, daily quest
-  chips, streak-break beats, and accuracy-flame placement. These concepts are
+- **PLANNED:** Consecutive-correct accuracy streak/tier multiplier, inline quest
+  chips outside the streak hub, streak-break beats, and accuracy-flame placement. These concepts are
   preserved as design scope only and do not change current rewards.
 
 ## Implementation References

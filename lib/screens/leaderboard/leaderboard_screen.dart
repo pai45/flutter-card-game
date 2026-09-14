@@ -465,6 +465,7 @@ class LeaderboardScreen extends StatefulWidget {
     this.initialSport,
     this.initialMode,
     this.onClose,
+    this.onOpenStreakHub,
     super.key,
   });
 
@@ -486,6 +487,9 @@ class LeaderboardScreen extends StatefulWidget {
   /// than mounted as the leaderboard tab: swaps the bottom nav for a back
   /// action and titles the bar with the game you came from.
   final VoidCallback? onClose;
+
+  /// Streak hub entry for the top-bar flame (null = hub without quest routing).
+  final VoidCallback? onOpenStreakHub;
 
   @override
   State<LeaderboardScreen> createState() => _LeaderboardScreenState();
@@ -624,6 +628,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                       onAddCoins:
                           widget.onAddCoins ??
                           () => widget.onNavigate(AppSection.shop),
+                      onStreakTap: widget.onOpenStreakHub,
                     ),
                     _LeaderboardTabs(
                       activeTab: _typeTabOrder.indexOf(_type),

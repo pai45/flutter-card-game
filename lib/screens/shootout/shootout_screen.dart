@@ -33,6 +33,7 @@ class _ShootoutScreenState extends State<ShootoutScreen> {
   /// Bumped on PLAY AGAIN so the provider key rebuilds a fresh bloc
   /// (and re-rolls the opponent name + squad).
   int _session = 0;
+  String _sessionId = 'shootout-${DateTime.now().microsecondsSinceEpoch}';
   bool _finishDispatched = false;
   bool _suddenDeathSounded = false;
 
@@ -75,6 +76,7 @@ class _ShootoutScreenState extends State<ShootoutScreen> {
   void _restart() {
     setState(() {
       _session++;
+      _sessionId = 'shootout-${DateTime.now().microsecondsSinceEpoch}';
       _finishDispatched = false;
       _suddenDeathSounded = false;
     });
@@ -120,6 +122,7 @@ class _ShootoutScreenState extends State<ShootoutScreen> {
             _finishDispatched = true;
             context.read<GameBloc>().add(
               ShootoutFinished(
+                sessionId: _sessionId,
                 playerGoals: state.playerScore,
                 cpuGoals: state.opponentScore,
               ),

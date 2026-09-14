@@ -37,6 +37,7 @@ class TrendingMatchesView extends StatefulWidget {
     required this.onOpenMarket,
     required this.animateIntro,
     this.onIntroPlayed,
+    this.header,
     super.key,
   });
 
@@ -44,6 +45,9 @@ class TrendingMatchesView extends StatefulWidget {
   final ValueChanged<String> onOpenMarket;
   final bool animateIntro;
   final VoidCallback? onIntroPlayed;
+
+  /// Optional lead item above the bento grid (the home daily-quest tile).
+  final Widget? header;
 
   @override
   State<TrendingMatchesView> createState() => _TrendingMatchesViewState();
@@ -124,6 +128,10 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
               key: const ValueKey('match-trending-feed'),
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
               children: [
+                if (widget.header != null) ...[
+                  widget.header!,
+                  const SizedBox(height: 14),
+                ],
                 CyberBentoGrid(
                   gap: 10,
                   rowGap: 14,
@@ -265,7 +273,7 @@ class _TrendingMatchCard extends StatelessWidget {
         ? leagueLabel
         : detail;
     final statusTag = live
-        ? 'LIVE MATCH'
+        ? centerLabel
         : isFavorite
         ? 'YOUR CLUB'
         : finished
@@ -319,17 +327,19 @@ class _TrendingMatchCard extends StatelessWidget {
                                 ],
                               ),
                         ),
-                        const SizedBox(height: 5),
-                        Text(
-                          contextLabel,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Cyber.label(
-                            10,
-                            color: Cyber.muted,
-                            letterSpacing: 0.6,
+                        if (!live) ...[
+                          const SizedBox(height: 5),
+                          Text(
+                            contextLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Cyber.label(
+                              10,
+                              color: Cyber.muted,
+                              letterSpacing: 0.6,
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ),
@@ -823,11 +833,7 @@ class _TrendSignalShell extends StatelessWidget {
                   left: 0,
                   right: 0,
                   child: Center(
-                    child: _ScoreboardStatusTag(
-                      label: tag,
-                      color: accent,
-                      live: live,
-                    ),
+                    child: _ScoreboardStatusTag(label: tag, color: accent),
                   ),
                 ),
             ],
@@ -875,19 +881,13 @@ class _LiveSignalBadge extends StatelessWidget {
 }
 
 class _ScoreboardStatusTag extends StatelessWidget {
-  const _ScoreboardStatusTag({
-    required this.label,
-    required this.color,
-    required this.live,
-  });
+  const _ScoreboardStatusTag({required this.label, required this.color});
 
   final String label;
   final Color color;
-  final bool live;
 
   @override
   Widget build(BuildContext context) {
-    if (live) return _LiveSignalBadge(label: label);
     return Text(
       label,
       style: Cyber.label(10, color: color, letterSpacing: 0.7),

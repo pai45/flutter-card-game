@@ -383,10 +383,18 @@ _bannerPlaceholders = [
 ];
 
 class ShopScreen extends StatefulWidget {
-  const ShopScreen({required this.onNavigate, this.initialTab = 0, super.key});
+  const ShopScreen({
+    required this.onNavigate,
+    this.initialTab = 0,
+    this.onOpenStreakHub,
+    super.key,
+  });
 
   final ValueChanged<AppSection> onNavigate;
   final int initialTab;
+
+  /// Streak hub entry for the top-bar flame (null = hub without quest routing).
+  final VoidCallback? onOpenStreakHub;
 
   @override
   State<ShopScreen> createState() => _ShopScreenState();
@@ -469,6 +477,7 @@ class _ShopScreenState extends State<ShopScreen> with TickerProviderStateMixin {
                       title: 'Shop',
                       accent: _cyan,
                       onAddCoins: () => _setTab(4),
+                      onStreakTap: widget.onOpenStreakHub,
                     ),
                     _ShopSportsTabs(
                       activeIndex: _activeSportTab,

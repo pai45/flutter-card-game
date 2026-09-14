@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
@@ -15,23 +18,51 @@ import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
 import '../../models/streak.dart';
 import '../../utils/sound_effects.dart';
+import '../../widgets/cyber/cyber_underline_tabs.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
+import '../../widgets/game_scaffold.dart';
 import '../../widgets/streak_widgets.dart';
+import 'widgets/daily_quest_panel.dart';
 
-void showStreakCalendar(BuildContext context) {
+export 'widgets/daily_quest_panel.dart' show QuestDestination;
+
+const _hubTransition = Duration(milliseconds: 280);
+
+void showStreakCalendar(
+  BuildContext context, {
+  ValueChanged<QuestDestination>? onQuestNavigate,
+}) {
   Navigator.of(context).push(
     PageRouteBuilder<void>(
-      transitionDuration: StreakTheme.standardDuration,
+      transitionDuration: _hubTransition,
       pageBuilder: (context, animation, secondaryAnimation) =>
-          const StreakCalendarScreen(),
-      transitionsBuilder: (context, animation, secondaryAnimation, child) =>
-          FadeTransition(opacity: animation, child: child),
+          StreakCalendarScreen(onQuestNavigate: onQuestNavigate),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.03),
+              end: Offset.zero,
+            ).animate(curved),
+            child: child,
+          ),
+        );
+      },
     ),
   );
 }
 
+/// The streak hub: a live STREAK CORE hero (the one focal glow), then TODAY
+/// (daily quests + the road-to-365 milestone track), STREAKS (per-mode runs and
+/// the shield briefing) and CALENDAR (month fuse + day dossier).
 class StreakCalendarScreen extends StatefulWidget {
-  const StreakCalendarScreen({super.key});
+  const StreakCalendarScreen({this.onQuestNavigate, super.key});
+  final ValueChanged<QuestDestination>? onQuestNavigate;
 
   @override
   State<StreakCalendarScreen> createState() => _StreakCalendarScreenState();
@@ -40,58 +71,110 @@ class StreakCalendarScreen extends StatefulWidget {
 class _StreakCalendarScreenState extends State<StreakCalendarScreen> {
   late DateTime _selectedDay = dateOnly(DateTime.now());
   late DateTime _visibleMonth = DateTime(_selectedDay.year, _selectedDay.month);
-  _StreakPageTab _tab = _StreakPageTab.streaks;
+  int _tab = 0;
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<GameBloc>().add(DailyQuestsRefreshed());
+    });
+    _scheduleRefresh();
+  }
+
+  void _scheduleRefresh() {
+    final now = DateTime.now();
+    final nextMinute = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      now.hour,
+      now.minute + 1,
+    );
+    _refreshTimer = Timer(nextMinute.difference(now), () {
+      if (!mounted) return;
+      context.read<GameBloc>().add(DailyQuestsRefreshed());
+      setState(() {});
+      _scheduleRefresh();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  void _navigateQuest(QuestDestination destination) {
+    Navigator.of(context).pop();
+    widget.onQuestNavigate?.call(destination);
+  }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<GameBloc, GameState>(
-      buildWhen: (previous, current) => previous.streak != current.streak,
+      buildWhen: (previous, current) =>
+          previous.streak != current.streak ||
+          previous.dailyQuests != current.dailyQuests ||
+          previous.questClaiming != current.questClaiming ||
+          previous.questError != current.questError ||
+          previous.loading != current.loading,
       builder: (context, state) {
-        final streak = state.streak;
-        return Scaffold(
-          backgroundColor: StreakTheme.background,
-          body: Stack(
-            children: [
-              const Positioned.fill(
-                child: CyberPlainBackground(child: SizedBox.expand()),
+        final now = DateTime.now();
+        final reduced = MediaQuery.disableAnimationsOf(context);
+        // No header subtitle: GameScaffold's 64px bar overflows with a
+        // subtitle at text scale >= 1.3; the hero carries the telemetry line.
+        return GameScaffold(
+          title: 'STREAKS',
+          leading: _HubBackButton(
+            onTap: () => Navigator.of(context).maybePop(),
+          ),
+          rightSlot: Padding(
+            padding: const EdgeInsets.only(left: 8, right: 4),
+            child: StreakShieldPips(shields: state.streak.shields, size: 16),
+          ),
+          child: CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                sliver: SliverToBoxAdapter(
+                  child: _StreakHero(streak: state.streak, now: now),
+                ),
               ),
-              SafeArea(
-                child: CustomScrollView(
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: _StreakPageHeader(
-                        onBack: () => Navigator.of(context).pop(),
+              SliverToBoxAdapter(
+                child: CyberUnderlineTabs(
+                  labels: _hubTabLabels,
+                  activeIndex: _tab,
+                  accent: _hubTabAccents[_tab],
+                  onTap: (index) {
+                    HapticFeedback.selectionClick();
+                    setState(() => _tab = index);
+                  },
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
+                sliver: SliverToBoxAdapter(
+                  child: AnimatedSwitcher(
+                    duration: reduced ? Duration.zero : _hubTransition,
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, animation) => FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, 0.015),
+                          end: Offset.zero,
+                        ).animate(animation),
+                        child: child,
                       ),
                     ),
-                    SliverPadding(
-                      padding: StreakTheme.heroSectionPadding,
-                      sliver: SliverToBoxAdapter(
-                        child: _StreakHero(streak: streak),
-                      ),
+                    child: KeyedSubtree(
+                      key: ValueKey(_tab),
+                      child: _tabContent(state, now),
                     ),
-                    SliverToBoxAdapter(
-                      child: _StreakTabs(
-                        active: _tab,
-                        onSelect: (tab) => setState(() => _tab = tab),
-                      ),
-                    ),
-                    SliverPadding(
-                      padding: StreakTheme.tabContentPadding,
-                      sliver: SliverToBoxAdapter(
-                        child: AnimatedSwitcher(
-                          duration: StreakTheme.standardDuration,
-                          switchInCurve: Curves.easeOutCubic,
-                          switchOutCurve: Curves.easeInCubic,
-                          transitionBuilder: (child, animation) =>
-                              FadeTransition(opacity: animation, child: child),
-                          child: KeyedSubtree(
-                            key: ValueKey(_tab),
-                            child: _tabContent(streak),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ],
@@ -101,46 +184,45 @@ class _StreakCalendarScreenState extends State<StreakCalendarScreen> {
     );
   }
 
-  Widget _tabContent(StreakSnapshot streak) => switch (_tab) {
-    _StreakPageTab.streaks => _CategorySummary(streak: streak),
-    _StreakPageTab.calendar => Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const _SectionHeading(
-          title: 'ACTIVITY CALENDAR',
-          subtitle: 'Tap a day to review your activity.',
-        ),
-        const SizedBox(height: StreakTheme.space10),
-        _CalendarPanel(
-          streak: streak,
-          visibleMonth: _visibleMonth,
-          selectedDay: _selectedDay,
-          onPrevious: () => _shiftMonth(-1),
-          onNext: () => _shiftMonth(1),
-          onSelect: (day) {
-            playSound(SoundEffect.uiTap);
-            setState(() => _selectedDay = day);
-          },
-        ),
-        const SizedBox(height: StreakTheme.space16),
-        _DayActivityPanel(
-          day: _selectedDay,
-          activities: streak.activitiesOn(_selectedDay),
-        ),
-      ],
-    ),
-    _StreakPageTab.milestones => Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const _SectionHeading(
-          title: 'STREAK MILESTONES',
-          subtitle: 'Keep showing up to unlock bigger rewards.',
-        ),
-        const SizedBox(height: StreakTheme.space10),
-        _MilestoneTrack(streak: streak),
-      ],
-    ),
-  };
+  Widget _tabContent(GameState state, DateTime now) {
+    final streak = state.streak;
+    return switch (_tab) {
+      1 => _ModeStreaks(streak: streak, now: now),
+      2 => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          KeyedSubtree(
+            key: const ValueKey('streak-calendar-panel'),
+            child: _CalendarPanel(
+              streak: streak,
+              now: now,
+              visibleMonth: _visibleMonth,
+              selectedDay: _selectedDay,
+              onPrevious: () => _shiftMonth(-1),
+              onNext: () => _shiftMonth(1),
+              onSelect: (day) {
+                playSound(SoundEffect.uiTap);
+                HapticFeedback.selectionClick();
+                setState(() => _selectedDay = day);
+              },
+            ),
+          ),
+          const SizedBox(height: 14),
+          _DayActivityPanel(
+            day: _selectedDay,
+            now: now,
+            streak: streak,
+            activities: streak.activitiesOn(_selectedDay),
+          ),
+        ],
+      ),
+      3 => _MilestoneRoad(streak: streak, now: now),
+      _ => DailyQuestPanel(
+        state: state,
+        onNavigate: widget.onQuestNavigate == null ? null : _navigateQuest,
+      ),
+    };
+  }
 
   void _shiftMonth(int delta) {
     playSound(SoundEffect.uiTap);
@@ -150,190 +232,812 @@ class _StreakCalendarScreenState extends State<StreakCalendarScreen> {
   }
 }
 
-enum _StreakPageTab { streaks, calendar, milestones }
+// Same flat underline bar as the Leaderboard / sport hubs; the underline takes
+// each tab's identity colour (gold quests, amber runs, cyan calendar, violet
+// elite road).
+const _hubTabLabels = ['TODAY', 'STREAKS', 'CALENDAR', 'MILESTONES'];
+const _hubTabAccents = [Cyber.gold, Cyber.amber, Cyber.cyan, Cyber.violet];
 
-class _StreakTabs extends StatelessWidget {
-  const _StreakTabs({required this.active, required this.onSelect});
+class _HubBackButton extends StatelessWidget {
+  const _HubBackButton({required this.onTap});
 
-  final _StreakPageTab active;
-  final ValueChanged<_StreakPageTab> onSelect;
-
-  static const _tabs = [
-    (_StreakPageTab.streaks, 'STREAKS'),
-    (_StreakPageTab.calendar, 'CALENDAR'),
-    (_StreakPageTab.milestones, 'MILESTONES'),
-  ];
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final activeIndex = _tabs.indexWhere((item) => item.$1 == active);
-    return Container(
-      height: StreakTheme.tabBarHeight,
-      decoration: BoxDecoration(
-        color: StreakTheme.tabBarBackground,
-        border: Border(bottom: BorderSide(color: StreakTheme.subtleBorder)),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final tabWidth = constraints.maxWidth / _tabs.length;
-          return Stack(
-            children: [
-              Row(
-                children: [
-                  for (var index = 0; index < _tabs.length; index++)
-                    Expanded(
-                      child: GestureDetector(
-                        key: ValueKey('streak_page_tab_$index'),
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          if (_tabs[index].$1 == active) return;
-                          playSound(SoundEffect.uiTap);
-                          onSelect(_tabs[index].$1);
-                        },
-                        child: AnimatedContainer(
-                          duration: StreakTheme.fastDuration,
-                          color: index == activeIndex
-                              ? StreakTheme.primary.withValues(alpha: 0.07)
-                              : Colors.transparent,
-                          alignment: Alignment.center,
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              _tabs[index].$2,
-                              style: StreakTheme.label(
-                                color: index == activeIndex
-                                    ? StreakTheme.primary
-                                    : StreakTheme.mutedText,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              AnimatedPositioned(
-                duration: StreakTheme.standardDuration,
-                curve: Curves.easeOutCubic,
-                left:
-                    tabWidth * activeIndex +
-                    tabWidth * StreakTheme.tabIndicatorInsetFactor,
-                bottom: 0,
-                width: tabWidth * StreakTheme.tabIndicatorWidthFactor,
-                height: StreakTheme.tabIndicatorHeight,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: StreakTheme.primary,
-                    boxShadow: [
-                      BoxShadow(
-                        color: StreakTheme.primary.withValues(
-                          alpha: StreakTheme.tabIndicatorGlowAlpha,
-                        ),
-                        blurRadius: StreakTheme.tabIndicatorGlowBlur,
-                      ),
-                    ],
-                  ),
+    return Semantics(
+      button: true,
+      label: 'Back',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          playSound(SoundEffect.uiTap);
+          onTap();
+        },
+        child: Center(
+          child: SizedBox.square(
+            dimension: 36,
+            child: ChamferedActionSurface(
+              clipper: const HudChamferClipper(bigCut: 8, smallCut: 2),
+              borderColor: Cyber.cyan.withValues(alpha: 0.35),
+              child: const ColoredBox(
+                color: Cyber.panel2,
+                child: Icon(
+                  Icons.arrow_back_ios_new,
+                  size: 16,
+                  color: Cyber.cyan,
                 ),
               ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _StreakPageHeader extends StatelessWidget {
-  const _StreakPageHeader({required this.onBack});
-
-  final VoidCallback onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: StreakTheme.cardPadding,
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: onBack,
-            color: StreakTheme.primary,
-            icon: const Icon(Icons.arrow_back),
+            ),
           ),
-          const SizedBox(width: StreakTheme.space8),
-          Text('STREAKS', style: StreakTheme.title()),
-        ],
+        ),
       ),
     );
   }
 }
 
 class _StreakHero extends StatelessWidget {
-  const _StreakHero({required this.streak});
+  const _StreakHero({required this.streak, required this.now});
 
   final StreakSnapshot streak;
+  final DateTime now;
 
   @override
   Widget build(BuildContext context) {
-    final current = streak.current(StreakCategory.overall);
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    final flame = streakFlameState(streak, now);
+    final current = streak.current(StreakCategory.overall, now: now);
     final best = streak.best(StreakCategory.overall);
     final next = streak.nextMilestone;
-    final todayActive = streak.activeOn(StreakCategory.overall, DateTime.now());
+    final accent = flame == StreakFlameState.cold
+        ? Cyber.cyan
+        : streakFlameColor(flame);
     final previousDays = next == null
         ? 0
         : streakMilestones
               .where((milestone) => milestone.days < next.days)
-              .map((milestone) => milestone.days)
-              .fold<int>(0, (value, days) => days > value ? days : value);
+              .fold<int>(0, (value, m) => m.days > value ? m.days : value);
     final progress = next == null
         ? 1.0
         : (current - previousDays) / (next.days - previousDays);
+    final (tag, headline, body) = switch (flame) {
+      StreakFlameState.live => (
+        'LIVE',
+        'STREAK SECURED',
+        'Back tomorrow for day ${current + 1}.',
+      ),
+      StreakFlameState.pending => (
+        'PENDING',
+        'KEEP IT ALIVE',
+        'Play anything to lock in day ${current + 1}.',
+      ),
+      StreakFlameState.atRisk => (
+        'AT RISK',
+        'STREAK AT RISK',
+        '${questClock(questTimeLeft(now))} left'
+            '${streak.shields > 0 ? ' · shield armed' : ''}.',
+      ),
+      StreakFlameState.cold => (
+        'COLD',
+        'START A NEW RUN',
+        'Play anything to light day 1.',
+      ),
+    };
+    final tabular = const [FontFeature.tabularFigures()];
 
-    return StreakElevatedSurface(
-      padding: StreakTheme.sectionPadding,
-      borderColor: StreakTheme.primary,
-      color: StreakTheme.surface,
+    // Shields live in the header, quests on TODAY — the hero only carries the
+    // run itself, its week and the next milestone.
+    return CyberPanel(
+      accent: accent,
+      glow: flame == StreakFlameState.live || flame == StreakFlameState.atRisk,
+      padding: const EdgeInsets.all(14),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(
-            width: StreakTheme.heroIconSize,
-            height: StreakTheme.heroIconSize,
-            child: Lottie.asset(
-              'assets/animations/streak_animation.json',
-              repeat: !MediaQuery.disableAnimationsOf(context),
-            ),
-          ),
-          Text('$current', style: StreakTheme.heroNumber()),
-          const SizedBox(height: StreakTheme.space4),
-          Text(
-            current == 1 ? 'DAY ACTIVE' : 'DAYS ACTIVE',
-            style: StreakTheme.label(color: StreakTheme.secondary),
-          ),
-          const SizedBox(height: StreakTheme.space14),
           Row(
             children: [
+              _FlameCore(flame: flame, accent: accent),
+              const SizedBox(width: 14),
               Expanded(
-                child: _HeroMetric(label: 'BEST', value: '$best DAYS'),
-              ),
-              const SizedBox(width: StreakTheme.space8),
-              Expanded(
-                child: _HeroMetric(
-                  label: 'TODAY',
-                  value: todayActive ? 'COMPLETE' : 'PLAY NOW',
-                  color: todayActive
-                      ? StreakTheme.success
-                      : StreakTheme.secondary,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
+                              textBaseline: TextBaseline.alphabetic,
+                              children: [
+                                TweenAnimationBuilder<double>(
+                                  tween: Tween(
+                                    begin: 0,
+                                    end: current.toDouble(),
+                                  ),
+                                  duration: reduced
+                                      ? Duration.zero
+                                      : const Duration(milliseconds: 700),
+                                  curve: Curves.easeOutCubic,
+                                  builder: (context, value, _) => Text(
+                                    '${value.round()}',
+                                    style: Cyber.display(
+                                      46,
+                                      color: flame == StreakFlameState.cold
+                                          ? Colors.white
+                                          : accent,
+                                      letterSpacing: 0,
+                                    ).copyWith(fontFeatures: tabular),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${current == 1 ? 'DAY' : 'DAYS'} · BEST $best',
+                                  style: Cyber.label(
+                                    11,
+                                    color: Cyber.muted,
+                                    letterSpacing: 1.2,
+                                    fontFeatures: tabular,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        _StatusTag(
+                          label: tag,
+                          color: accent,
+                          pulse: flame == StreakFlameState.atRisk,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      headline,
+                      style: Cyber.label(
+                        11.5,
+                        color: flame == StreakFlameState.cold
+                            ? Colors.white
+                            : accent,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(body, style: Cyber.body(12.5, color: Cyber.muted)),
+                  ],
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 14),
+          StreakWeekChain(streak: streak, now: now),
+          const SizedBox(height: 14),
           if (next != null) ...[
-            const SizedBox(height: StreakTheme.space16),
-            StreakProgressBar(value: progress),
-            const SizedBox(height: StreakTheme.space8),
+            Row(
+              children: [
+                Icon(
+                  streakRewardIcon(next.rewardType),
+                  size: 14,
+                  color: streakMilestoneAccent(next),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '${next.days} DAYS · ${next.rewardLabel}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Cyber.label(10),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '${next.days - current} TO GO',
+                  style: Cyber.label(
+                    10,
+                    color: streakMilestoneAccent(next),
+                    fontFeatures: tabular,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            CyberProgressBar(
+              value: progress,
+              accent: streakMilestoneAccent(next),
+              animate: !reduced,
+            ),
+          ] else
             Text(
-              '${next.days - current} days to ${next.rewardLabel}',
-              textAlign: TextAlign.center,
-              style: StreakTheme.body(),
+              'EVERY MILESTONE CLEARED',
+              style: Cyber.label(10, color: Cyber.gold, letterSpacing: 1.2),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FlameCore extends StatelessWidget {
+  const _FlameCore({required this.flame, required this.accent});
+
+  final StreakFlameState flame;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    return SizedBox(
+      width: 72,
+      height: 80,
+      child: ChamferedActionSurface(
+        clipper: const HudChamferClipper(bigCut: 14, smallCut: 4),
+        borderColor: accent.withValues(alpha: 0.45),
+        child: ColoredBox(
+          color: Color.alphaBlend(accent.withValues(alpha: 0.08), Cyber.panel2),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              if (flame == StreakFlameState.cold)
+                const Icon(
+                  Icons.local_fire_department_outlined,
+                  size: 34,
+                  color: Cyber.muted,
+                )
+              else
+                SizedBox.square(
+                  dimension: 60,
+                  child: Lottie.asset(
+                    'assets/animations/streak_animation.json',
+                    repeat: !reduced,
+                  ),
+                ),
+              if (flame == StreakFlameState.atRisk)
+                const Positioned(
+                  top: 6,
+                  right: 6,
+                  child: Icon(Icons.warning_amber, size: 14, color: Cyber.danger),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusTag extends StatelessWidget {
+  const _StatusTag({
+    required this.label,
+    required this.color,
+    this.pulse = false,
+  });
+
+  final String label;
+  final Color color;
+  final bool pulse;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget tag(double t) => DecoratedBox(
+      decoration: ShapeDecoration(
+        color: color.withValues(alpha: 0.1 + 0.14 * t),
+        shape: BeveledRectangleBorder(
+          borderRadius: BorderRadius.circular(3),
+          side: BorderSide(color: color.withValues(alpha: 0.7)),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 5, height: 5, color: color),
+            const SizedBox(width: 5),
+            Text(label, style: Cyber.label(8.5, color: color, letterSpacing: 1)),
+          ],
+        ),
+      ),
+    );
+    if (!pulse || MediaQuery.disableAnimationsOf(context)) return tag(0);
+    return CyberPulse(
+      period: const Duration(milliseconds: 620),
+      builder: (context, t) => tag(t),
+    );
+  }
+}
+
+// ─── MILESTONES: the road to 365 ─────────────────────────────────────────────
+
+class _MilestoneRoad extends StatelessWidget {
+  const _MilestoneRoad({required this.streak, required this.now});
+
+  final StreakSnapshot streak;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final current = streak.current(StreakCategory.overall, now: now);
+    final next = streak.nextMilestone;
+    // Segment i runs from milestone i-1 to milestone i; it is drawn across the
+    // previous row's bottom half and this row's top half.
+    double fill(int i) {
+      final previous = i == 0 ? 0 : streakMilestones[i - 1].days;
+      final days = streakMilestones[i].days;
+      return ((current - previous) / (days - previous)).clamp(0.0, 1.0);
+    }
+
+    final last = streakMilestones.length - 1;
+    return Column(
+      children: [
+        for (var i = 0; i <= last; i++)
+          Builder(
+            builder: (context) {
+              final milestone = streakMilestones[i];
+              final claimed = streak.claimedMilestones.contains(milestone.days);
+              return _MilestoneRow(
+                milestone: milestone,
+                current: current,
+                topFill: i == 0 ? fill(0) : (fill(i) * 2 - 1).clamp(0.0, 1.0),
+                bottomFill: i == last ? null : (fill(i + 1) * 2).clamp(0.0, 1.0),
+                claimed: claimed,
+                claimable:
+                    !claimed &&
+                    streak.announcedMilestones.contains(milestone.days),
+                isNext: next?.days == milestone.days,
+                onClaim: () => context.read<GameBloc>().add(
+                  StreakMilestoneClaimed(milestone.days),
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+}
+
+class _MilestoneRow extends StatelessWidget {
+  const _MilestoneRow({
+    required this.milestone,
+    required this.current,
+    required this.topFill,
+    required this.bottomFill,
+    required this.claimed,
+    required this.claimable,
+    required this.isNext,
+    required this.onClaim,
+  });
+
+  final StreakMilestone milestone;
+  final int current;
+  final double topFill;
+  final double? bottomFill;
+  final bool claimed;
+  final bool claimable;
+  final bool isNext;
+  final VoidCallback onClaim;
+
+  @override
+  Widget build(BuildContext context) {
+    final tier = streakMilestoneAccent(milestone);
+    final locked = !claimed && !claimable && !isNext;
+    final Widget trailing;
+    if (claimable) {
+      trailing = _ClaimChip(accent: tier, onTap: onClaim);
+    } else if (claimed) {
+      trailing = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.verified, size: 14, color: Cyber.success),
+          const SizedBox(width: 4),
+          Text('CLAIMED', style: Cyber.label(9.5, color: Cyber.success)),
+        ],
+      );
+    } else if (isNext) {
+      trailing = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            '${milestone.days - current}',
+            style: Cyber.display(18, color: tier, letterSpacing: 0).copyWith(
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text('TO GO', style: Cyber.label(8, color: Cyber.muted)),
+        ],
+      );
+    } else {
+      trailing = Icon(
+        Icons.lock_outline,
+        size: 16,
+        color: Cyber.muted.withValues(alpha: 0.7),
+      );
+    }
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: 34,
+            child: CustomPaint(
+              painter: _RoadRailPainter(
+                topFill: topFill,
+                bottomFill: bottomFill,
+                accent: Cyber.gold,
+              ),
+              child: Center(
+                child: _MilestoneNode(
+                  accent: tier,
+                  claimed: claimed,
+                  claimable: claimable,
+                  isNext: isNext,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              child: ChamferedActionSurface(
+                clipper: const HudChamferClipper(bigCut: 10, smallCut: 3),
+                borderColor: claimable
+                    ? tier.withValues(alpha: 0.8)
+                    : isNext
+                    ? tier.withValues(alpha: 0.45)
+                    : claimed
+                    ? Cyber.success.withValues(alpha: 0.4)
+                    : Cyber.border,
+                child: ColoredBox(
+                  color: claimable
+                      ? Color.alphaBlend(tier.withValues(alpha: 0.1), Cyber.panel)
+                      : Cyber.panel,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${milestone.days} DAYS',
+                                style: Cyber.display(
+                                  14,
+                                  color: locked
+                                      ? Colors.white.withValues(alpha: 0.6)
+                                      : tier,
+                                ),
+                              ),
+                              const SizedBox(height: 5),
+                              Row(
+                                children: [
+                                  Icon(
+                                    streakRewardIcon(milestone.rewardType),
+                                    size: 13,
+                                    color: locked ? Cyber.muted : Colors.white,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Flexible(
+                                    child: Text(
+                                      milestone.rewardLabel,
+                                      style: Cyber.label(
+                                        10,
+                                        color: locked
+                                            ? Cyber.muted
+                                            : Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        trailing,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoadRailPainter extends CustomPainter {
+  const _RoadRailPainter({
+    required this.topFill,
+    required this.bottomFill,
+    required this.accent,
+  });
+
+  final double topFill;
+  final double? bottomFill;
+  final Color accent;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final x = size.width / 2;
+    final mid = size.height / 2;
+    final base = Paint()
+      ..color = Cyber.line.withValues(alpha: 0.45)
+      ..strokeWidth = 2;
+    final lit = Paint()
+      ..color = accent
+      ..strokeWidth = 2;
+    canvas.drawLine(Offset(x, 0), Offset(x, mid), base);
+    if (topFill > 0) {
+      canvas.drawLine(Offset(x, 0), Offset(x, mid * topFill), lit);
+    }
+    final bottom = bottomFill;
+    if (bottom != null) {
+      canvas.drawLine(Offset(x, mid), Offset(x, size.height), base);
+      if (bottom > 0) {
+        canvas.drawLine(
+          Offset(x, mid),
+          Offset(x, mid + (size.height - mid) * bottom),
+          lit,
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_RoadRailPainter old) =>
+      old.topFill != topFill ||
+      old.bottomFill != bottomFill ||
+      old.accent != accent;
+}
+
+class _MilestoneNode extends StatelessWidget {
+  const _MilestoneNode({
+    required this.accent,
+    required this.claimed,
+    required this.claimable,
+    required this.isNext,
+  });
+
+  final Color accent;
+  final bool claimed;
+  final bool claimable;
+  final bool isNext;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget node(double t) {
+      final (Color fill, Color border, Widget glyph) = claimed
+          ? (
+              Cyber.success,
+              Cyber.success,
+              const Icon(Icons.check, size: 13, color: AppTheme.darkInk),
+            )
+          : claimable
+          ? (
+              accent,
+              accent,
+              const Icon(Icons.redeem, size: 13, color: AppTheme.darkInk),
+            )
+          : isNext
+          ? (Cyber.panel, accent, Icon(Icons.flag, size: 12, color: accent))
+          : (
+              Cyber.bg,
+              Cyber.line.withValues(alpha: 0.6),
+              const Icon(Icons.lock, size: 10, color: Cyber.muted),
+            );
+      return SizedBox.square(
+        dimension: 24,
+        child: DecoratedBox(
+          decoration: ShapeDecoration(
+            color: fill,
+            shape: BeveledRectangleBorder(
+              borderRadius: BorderRadius.circular(6),
+              side: BorderSide(color: border, width: isNext ? 1.5 : 1),
+            ),
+            // A claimable node is a live reward — the one place on the track
+            // allowed to glow.
+            shadows: claimable
+                ? Cyber.glow(accent, alpha: 0.3 + 0.3 * t, blur: 10 + 6 * t)
+                : null,
+          ),
+          child: Center(child: glyph),
+        ),
+      );
+    }
+
+    if (!claimable || MediaQuery.disableAnimationsOf(context)) return node(0.5);
+    return CyberPulse(
+      period: const Duration(milliseconds: 900),
+      builder: (context, t) => node(t),
+    );
+  }
+}
+
+class _ClaimChip extends StatelessWidget {
+  const _ClaimChip({required this.accent, required this.onTap});
+
+  final Color accent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'Claim milestone reward',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          playSound(SoundEffect.uiConfirm);
+          onTap();
+        },
+        child: ClipPath(
+          clipper: const HudChamferClipper(bigCut: 8, smallCut: 3),
+          child: ColoredBox(
+            color: accent,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.redeem, size: 14, color: AppTheme.darkInk),
+                  const SizedBox(width: 5),
+                  Text(
+                    'CLAIM',
+                    style: Cyber.label(11, color: AppTheme.darkInk),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── STREAKS: per-mode runs + shield briefing ────────────────────────────────
+
+const _modeCategories = [
+  StreakCategory.predict,
+  StreakCategory.pick,
+  StreakCategory.games,
+  StreakCategory.pitchDuel,
+  StreakCategory.penaltyShootout,
+];
+
+class _ModeStreaks extends StatelessWidget {
+  const _ModeStreaks({required this.streak, required this.now});
+
+  final StreakSnapshot streak;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final wide = constraints.maxWidth >= 520;
+            final width = wide
+                ? (constraints.maxWidth - 10) / 2
+                : constraints.maxWidth;
+            return Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                for (final category in _modeCategories)
+                  SizedBox(
+                    width: width,
+                    child: _ModeStreakCard(
+                      category: category,
+                      streak: streak,
+                      now: now,
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
+        const SizedBox(height: 20),
+        _ShieldBriefing(shields: streak.shields),
+      ],
+    );
+  }
+}
+
+class _ModeStreakCard extends StatelessWidget {
+  const _ModeStreakCard({
+    required this.category,
+    required this.streak,
+    required this.now,
+  });
+
+  final StreakCategory category;
+  final StreakSnapshot streak;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = _categoryAccent(category);
+    final current = streak.current(category, now: now);
+    final best = streak.best(category);
+    final live = current > 0;
+    return CyberPanel(
+      accent: live ? accent : Cyber.line,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              SizedBox.square(
+                dimension: 34,
+                child: ColoredBox(
+                  color: Color.alphaBlend(
+                    accent.withValues(alpha: live ? 0.14 : 0.05),
+                    Cyber.panel2,
+                  ),
+                  child: Center(
+                    child: _CategoryIcon(
+                      category: category,
+                      color: live ? accent : Cyber.muted,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      streakCategoryLabel(category).toUpperCase(),
+                      style: Cyber.display(13),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'BEST $best',
+                      style: Cyber.label(
+                        9,
+                        color: Cyber.muted,
+                        letterSpacing: 0.8,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '$current',
+                style: Cyber.display(
+                  24,
+                  color: live ? accent : Colors.white.withValues(alpha: 0.5),
+                  letterSpacing: 0,
+                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+              ),
+            ],
+          ),
+          // Only a live run earns its week chain; cold modes stay one row.
+          if (live) ...[
+            const SizedBox(height: 12),
+            StreakWeekChain(
+              streak: streak,
+              now: now,
+              category: category,
+              accent: accent,
+              compact: true,
             ),
           ],
         ],
@@ -342,33 +1046,28 @@ class _StreakHero extends StatelessWidget {
   }
 }
 
-class _HeroMetric extends StatelessWidget {
-  const _HeroMetric({
-    required this.label,
-    required this.value,
-    this.color = StreakTheme.text,
-  });
+class _ShieldBriefing extends StatelessWidget {
+  const _ShieldBriefing({required this.shields});
 
-  final String label;
-  final String value;
-  final Color color;
+  final int shields;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: StreakTheme.cardPadding,
-      decoration: BoxDecoration(
-        color: StreakTheme.mutedSurface,
-        border: Border.all(color: StreakTheme.subtleBorder),
-      ),
-      child: Column(
+    return CyberHudPanel(
+      title: 'Streak shields',
+      code: '$shields/$streakShieldCap',
+      child: Row(
         children: [
-          Text(label, style: StreakTheme.label()),
-          const SizedBox(height: StreakTheme.space6),
-          Text(
-            value,
-            textAlign: TextAlign.center,
-            style: StreakTheme.sectionTitle(color: color),
+          StreakShieldPips(shields: shields, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Clear the Daily Sweep to forge one. Each covers a missed day.',
+              style: Cyber.body(
+                12.5,
+                color: Colors.white.withValues(alpha: 0.85),
+              ),
+            ),
           ),
         ],
       ),
@@ -376,92 +1075,491 @@ class _HeroMetric extends StatelessWidget {
   }
 }
 
-class _CategorySummary extends StatelessWidget {
-  const _CategorySummary({required this.streak});
+// ─── CALENDAR: month fuse + day dossier ──────────────────────────────────────
+
+class _CalendarPanel extends StatelessWidget {
+  const _CalendarPanel({
+    required this.streak,
+    required this.now,
+    required this.visibleMonth,
+    required this.selectedDay,
+    required this.onPrevious,
+    required this.onNext,
+    required this.onSelect,
+  });
 
   final StreakSnapshot streak;
+  final DateTime now;
+  final DateTime visibleMonth;
+  final DateTime selectedDay;
+  final VoidCallback onPrevious;
+  final VoidCallback onNext;
+  final ValueChanged<DateTime> onSelect;
 
   @override
   Widget build(BuildContext context) {
-    const categories = [
-      StreakCategory.predict,
-      StreakCategory.pick,
-      StreakCategory.games,
-      StreakCategory.pitchDuel,
-      StreakCategory.penaltyShootout,
+    final first = DateTime(visibleMonth.year, visibleMonth.month);
+    final gridStart = DateTime(
+      first.year,
+      first.month,
+      first.day - (first.weekday - 1),
+    );
+    final days = [
+      for (var index = 0; index < 42; index++)
+        DateTime(gridStart.year, gridStart.month, gridStart.day + index),
     ];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _SectionHeading(
-          title: 'YOUR STREAKS',
-          subtitle: 'Each mode keeps its own daily run.',
-        ),
-        const SizedBox(height: StreakTheme.space10),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final wide = constraints.maxWidth >= StreakTheme.maxContentWidth;
-            final width = wide
-                ? (constraints.maxWidth - StreakTheme.space10) / 2
-                : constraints.maxWidth;
-            return Wrap(
-              spacing: StreakTheme.space10,
-              runSpacing: StreakTheme.space10,
+    bool active(DateTime day) => streak.activeOn(StreakCategory.overall, day);
+    bool inChain(DateTime day) => active(day) || streak.shieldedOn(day);
+    final monthDays = days.where((day) => day.month == visibleMonth.month);
+    final activeCount = monthDays.where(active).length;
+    final shieldedCount = monthDays.where(streak.shieldedOn).length;
+
+    return CyberPanel(
+      padding: const EdgeInsets.fromLTRB(10, 12, 10, 12),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              _MonthArrow(
+                icon: Icons.chevron_left,
+                label: 'Previous month',
+                onTap: onPrevious,
+              ),
+              Expanded(
+                child: Column(
+                  children: [
+                    Text(
+                      _monthLabel(visibleMonth).toUpperCase(),
+                      textAlign: TextAlign.center,
+                      style: Cyber.display(14),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      shieldedCount > 0
+                          ? '$activeCount ACTIVE · $shieldedCount SHIELDED'
+                          : '$activeCount ACTIVE DAYS',
+                      textAlign: TextAlign.center,
+                      style: Cyber.label(
+                        8.5,
+                        color: Cyber.muted,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _MonthArrow(
+                icon: Icons.chevron_right,
+                label: 'Next month',
+                onTap: onNext,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const _WeekdayHeader(),
+          const SizedBox(height: 6),
+          for (var week = 0; week < 6; week++)
+            Row(
               children: [
-                for (final category in categories)
-                  SizedBox(
-                    width: width,
-                    child: _CategoryCard(
-                      category: category,
-                      current: streak.current(category),
-                      best: streak.best(category),
+                for (var weekday = 0; weekday < 7; weekday++)
+                  Expanded(
+                    child: AspectRatio(
+                      aspectRatio: 1,
+                      child: Builder(
+                        builder: (context) {
+                          final index = week * 7 + weekday;
+                          final day = days[index];
+                          return _CalendarDay(
+                            key: ValueKey(
+                              'streak_calendar_day_${streakDayKey(day)}',
+                            ),
+                            day: day,
+                            inMonth: day.month == visibleMonth.month,
+                            selected: _sameDay(day, selectedDay),
+                            today: _sameDay(day, now),
+                            active: active(day),
+                            shielded: streak.shieldedOn(day),
+                            chainLeft:
+                                weekday > 0 &&
+                                inChain(day) &&
+                                inChain(days[index - 1]),
+                            chainRight:
+                                weekday < 6 &&
+                                inChain(day) &&
+                                inChain(days[index + 1]),
+                            activities: streak.activitiesOn(day),
+                            onTap: () => onSelect(day),
+                          );
+                        },
+                      ),
                     ),
                   ),
               ],
-            );
-          },
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MonthArrow extends StatelessWidget {
+  const _MonthArrow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: SizedBox.square(
+          dimension: 36,
+          child: ChamferedActionSurface(
+            clipper: const HudChamferClipper(bigCut: 8, smallCut: 2),
+            borderColor: Cyber.cyan.withValues(alpha: 0.35),
+            child: ColoredBox(
+              color: Cyber.panel2,
+              child: Icon(icon, color: Cyber.cyan, size: 20),
+            ),
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class _WeekdayHeader extends StatelessWidget {
+  const _WeekdayHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        for (final label in const ['M', 'T', 'W', 'T', 'F', 'S', 'S'])
+          Expanded(
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: Cyber.label(9, color: Cyber.muted),
+            ),
+          ),
       ],
     );
   }
 }
 
-class _CategoryCard extends StatelessWidget {
-  const _CategoryCard({
-    required this.category,
-    required this.current,
-    required this.best,
+class _CalendarDay extends StatelessWidget {
+  const _CalendarDay({
+    required this.day,
+    required this.inMonth,
+    required this.selected,
+    required this.today,
+    required this.active,
+    required this.shielded,
+    required this.chainLeft,
+    required this.chainRight,
+    required this.activities,
+    required this.onTap,
+    super.key,
   });
 
-  final StreakCategory category;
-  final int current;
-  final int best;
+  final DateTime day;
+  final bool inMonth;
+  final bool selected;
+  final bool today;
+  final bool active;
+  final bool shielded;
+  final bool chainLeft;
+  final bool chainRight;
+  final List<StreakActivity> activities;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final accent = _categoryAccent(category);
-    return StreakElevatedSurface(
-      borderColor: current > 0 ? accent : StreakTheme.inactiveCategoryBorder,
-      child: Row(
-        children: [
-          _CategoryIcon(category: category, color: accent),
-          const SizedBox(width: StreakTheme.space10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  streakCategoryLabel(category).toUpperCase(),
-                  style: StreakTheme.sectionTitle(),
-                ),
-                const SizedBox(height: StreakTheme.space4),
-                Text('Best $best days', style: StreakTheme.body()),
-              ],
+    final fuse = Cyber.gold.withValues(alpha: 0.45);
+    final fill = selected
+        ? Cyber.gold
+        : active
+        ? Color.alphaBlend(Cyber.gold.withValues(alpha: 0.2), Cyber.panel2)
+        : shielded
+        ? Color.alphaBlend(Cyber.cyan.withValues(alpha: 0.14), Cyber.panel2)
+        : inMonth
+        ? Cyber.bg.withValues(alpha: 0.55)
+        : Colors.transparent;
+    final border = selected
+        ? Cyber.gold
+        : today
+        ? Cyber.amber
+        : active
+        ? Cyber.gold.withValues(alpha: 0.45)
+        : shielded
+        ? Cyber.cyan.withValues(alpha: 0.5)
+        : inMonth
+        ? Cyber.border.withValues(alpha: 0.6)
+        : Cyber.line.withValues(alpha: 0.15);
+    final textColor = selected
+        ? AppTheme.darkInk
+        : inMonth
+        ? Colors.white
+        : Cyber.muted.withValues(alpha: 0.45);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: _fullDate(day),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // The fuse: consecutive chain days in a week row join up.
+            Center(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 3,
+                      color: chainLeft ? fuse : Colors.transparent,
+                    ),
+                  ),
+                  Expanded(
+                    child: Container(
+                      height: 3,
+                      color: chainRight ? fuse : Colors.transparent,
+                    ),
+                  ),
+                ],
+              ),
             ),
+            Padding(
+              padding: const EdgeInsets.all(3),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                decoration: ShapeDecoration(
+                  color: fill,
+                  shape: BeveledRectangleBorder(
+                    borderRadius: BorderRadius.circular(5),
+                    side: BorderSide(
+                      color: border,
+                      width: selected || today ? 1.5 : 1,
+                    ),
+                  ),
+                ),
+                child: Stack(
+                  children: [
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            '${day.day}',
+                            style: Cyber.label(
+                              11.5,
+                              color: textColor,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (active || shielded)
+                      Positioned(
+                        top: 2,
+                        right: 2,
+                        child: Icon(
+                          active ? Icons.local_fire_department : Icons.shield,
+                          size: 9,
+                          color: selected
+                              ? AppTheme.darkInk
+                              : active
+                              ? Cyber.gold
+                              : Cyber.cyan,
+                        ),
+                      ),
+                    if (activities.isNotEmpty)
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 3,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            for (final activity in activities.take(3))
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 1.5,
+                                ),
+                                child: StreakActivityMarker(
+                                  activity: activity,
+                                  size: 3.5,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DayActivityPanel extends StatelessWidget {
+  const _DayActivityPanel({
+    required this.day,
+    required this.now,
+    required this.streak,
+    required this.activities,
+  });
+
+  final DateTime day;
+  final DateTime now;
+  final StreakSnapshot streak;
+  final List<StreakActivity> activities;
+
+  @override
+  Widget build(BuildContext context) {
+    final game = context.watch<GameBloc>().state;
+    final predictions = context.watch<PredictionCubit>().state;
+    final picks = context.watch<PicksCubit>().state;
+    final events = _eventsForDay(
+      day,
+      game.matchHistory,
+      predictions.predictions.values,
+      predictions.fixtures,
+      picks.positions.values,
+    );
+    final rows = events.isNotEmpty
+        ? events
+        : [
+            for (final activity in activities)
+              _StreakDayEvent(
+                activity: activity,
+                title: streakActivityLabel(activity),
+                subtitle: 'Streak activity',
+                timestamp: day,
+              ),
+          ];
+    final today = dateOnly(now);
+    final selected = dateOnly(day);
+    final active = streak.activeOn(StreakCategory.overall, day);
+    final shielded = streak.shieldedOn(day);
+    final (status, color) = active
+        ? ('ACTIVE', Cyber.gold)
+        : shielded
+        ? ('SHIELDED', Cyber.cyan)
+        : selected == today
+        ? ('TODAY', Cyber.amber)
+        : selected.isAfter(today)
+        ? ('UPCOMING', Cyber.muted)
+        : ('NO ACTIVITY', Cyber.muted);
+
+    return CyberPanel(
+      accent: active
+          ? Cyber.gold
+          : shielded
+          ? Cyber.cyan
+          : Cyber.line,
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _fullDate(day).toUpperCase(),
+                  style: Cyber.display(13, color: Cyber.gold),
+                ),
+              ),
+              const SizedBox(width: 8),
+              _StatusTag(label: status, color: color),
+            ],
           ),
-          if (current > 0) StreakBadge(value: current),
+          const SizedBox(height: 12),
+          if (rows.isEmpty)
+            Row(
+              children: [
+                Icon(
+                  shielded ? Icons.shield_outlined : Icons.nights_stay_outlined,
+                  size: 18,
+                  color: Cyber.muted,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    shielded
+                        ? 'A shield kept your streak alive on this day.'
+                        : selected.isAfter(today)
+                        ? 'This day hasn’t happened yet.'
+                        : 'No streak activity recorded.',
+                    style: Cyber.body(13, color: Cyber.muted),
+                  ),
+                ),
+              ],
+            )
+          else
+            for (var index = 0; index < rows.length; index++) ...[
+              if (index > 0) const SizedBox(height: 10),
+              _DayEventRow(event: rows[index]),
+            ],
         ],
       ),
+    );
+  }
+}
+
+class _DayEventRow extends StatelessWidget {
+  const _DayEventRow({required this.event});
+
+  final _StreakDayEvent event;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = streakActivityColor(event.activity);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox.square(
+          dimension: 30,
+          child: ColoredBox(
+            color: Color.alphaBlend(color.withValues(alpha: 0.14), Cyber.panel2),
+            child: Icon(streakActivityIcon(event.activity), size: 16, color: color),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                event.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Cyber.body(13, weight: FontWeight.w800, height: 1.3),
+              ),
+              const SizedBox(height: 2),
+              Text(event.subtitle, style: Cyber.body(12, color: Cyber.muted)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -483,355 +1581,30 @@ class _CategoryIcon extends StatelessWidget {
     if (asset != null) {
       return SvgPicture.asset(
         asset,
-        width: StreakTheme.badgeIconSize,
-        height: StreakTheme.badgeIconSize,
+        width: 18,
+        height: 18,
         colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
       );
     }
     return Icon(
       switch (category) {
-        StreakCategory.pitchDuel => Icons.sports_soccer,
-        StreakCategory.penaltyShootout => Icons.gps_fixed,
+        StreakCategory.pitchDuel => Icons.style,
+        StreakCategory.penaltyShootout => Icons.sports_soccer,
         _ => Icons.local_fire_department,
       },
       color: color,
-      size: StreakTheme.badgeIconSize,
-    );
-  }
-}
-
-class _SectionHeading extends StatelessWidget {
-  const _SectionHeading({required this.title, required this.subtitle});
-
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: StreakTheme.sectionTitle()),
-        const SizedBox(height: StreakTheme.space4),
-        Text(subtitle, style: StreakTheme.body()),
-      ],
-    );
-  }
-}
-
-class _CalendarPanel extends StatelessWidget {
-  const _CalendarPanel({
-    required this.streak,
-    required this.visibleMonth,
-    required this.selectedDay,
-    required this.onPrevious,
-    required this.onNext,
-    required this.onSelect,
-  });
-
-  final StreakSnapshot streak;
-  final DateTime visibleMonth;
-  final DateTime selectedDay;
-  final VoidCallback onPrevious;
-  final VoidCallback onNext;
-  final ValueChanged<DateTime> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    final first = DateTime(visibleMonth.year, visibleMonth.month);
-    final gridStart = first.subtract(Duration(days: first.weekday - 1));
-    final days = [
-      for (var index = 0; index < 42; index++)
-        gridStart.add(Duration(days: index)),
-    ];
-    return StreakElevatedSurface(
-      borderColor: StreakTheme.primary,
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Text(
-                _monthLabel(visibleMonth).toUpperCase(),
-                style: StreakTheme.sectionTitle(color: StreakTheme.primary),
-              ),
-              const Spacer(),
-              IconButton(
-                onPressed: onPrevious,
-                color: StreakTheme.primary,
-                icon: const Icon(Icons.chevron_left),
-              ),
-              IconButton(
-                onPressed: onNext,
-                color: StreakTheme.primary,
-                icon: const Icon(Icons.chevron_right),
-              ),
-            ],
-          ),
-          const SizedBox(height: StreakTheme.space8),
-          const _WeekdayHeader(),
-          const SizedBox(height: StreakTheme.space6),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: days.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 7,
-              mainAxisSpacing: StreakTheme.space4,
-              crossAxisSpacing: StreakTheme.space4,
-              childAspectRatio: StreakTheme.calendarCellAspectRatio,
-            ),
-            itemBuilder: (context, index) {
-              final day = days[index];
-              return _CalendarDay(
-                key: ValueKey('streak_calendar_day_${streakDayKey(day)}'),
-                day: day,
-                inMonth: day.month == visibleMonth.month,
-                selected: _sameDay(day, selectedDay),
-                today: _sameDay(day, DateTime.now()),
-                active: streak.activeOn(StreakCategory.overall, day),
-                activities: streak.activitiesOn(day),
-                onTap: () => onSelect(day),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _WeekdayHeader extends StatelessWidget {
-  const _WeekdayHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        for (final label in const ['M', 'T', 'W', 'T', 'F', 'S', 'S'])
-          Expanded(
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              style: StreakTheme.label(),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _CalendarDay extends StatelessWidget {
-  const _CalendarDay({
-    required this.day,
-    required this.inMonth,
-    required this.selected,
-    required this.today,
-    required this.active,
-    required this.activities,
-    required this.onTap,
-    super.key,
-  });
-
-  final DateTime day;
-  final bool inMonth;
-  final bool selected;
-  final bool today;
-  final bool active;
-  final List<StreakActivity> activities;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final textColor = selected
-        ? StreakTheme.selectedInk
-        : inMonth
-        ? StreakTheme.text
-        : StreakTheme.inactiveDayText;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: StreakTheme.fastDuration,
-        padding: StreakTheme.calendarCellPadding,
-        decoration: BoxDecoration(
-          color: selected
-              ? StreakTheme.selectedDayFill
-              : active
-              ? StreakTheme.activeDayFill
-              : StreakTheme.background,
-          border: Border.all(
-            color: selected
-                ? StreakTheme.primary
-                : today
-                ? StreakTheme.todayBorder
-                : StreakTheme.subtleBorder,
-            width: today || selected
-                ? StreakTheme.activeBorderWidth
-                : StreakTheme.borderWidth,
-          ),
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                '${day.day}',
-                style: StreakTheme.bodyStrong(color: textColor),
-              ),
-            ),
-            if (activities.isNotEmpty)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: Wrap(
-                  spacing: StreakTheme.space2,
-                  runSpacing: StreakTheme.space2,
-                  alignment: WrapAlignment.center,
-                  children: [
-                    for (final activity in activities.take(4))
-                      StreakActivityMarker(activity: activity),
-                  ],
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DayActivityPanel extends StatelessWidget {
-  const _DayActivityPanel({required this.day, required this.activities});
-
-  final DateTime day;
-  final List<StreakActivity> activities;
-
-  @override
-  Widget build(BuildContext context) {
-    final game = context.watch<GameBloc>().state;
-    final predictions = context.watch<PredictionCubit>().state;
-    final picks = context.watch<PicksCubit>().state;
-    final events = _eventsForDay(
-      day,
-      game.matchHistory,
-      predictions.predictions.values,
-      predictions.fixtures,
-      picks.positions.values,
-    );
-    return StreakElevatedSurface(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            _fullDate(day).toUpperCase(),
-            style: StreakTheme.sectionTitle(color: StreakTheme.primary),
-          ),
-          const SizedBox(height: StreakTheme.space10),
-          if (events.isEmpty && activities.isEmpty)
-            Text('No streak activity recorded.', style: StreakTheme.body())
-          else
-            for (
-              var index = 0;
-              index < (events.isEmpty ? activities.length : events.length);
-              index++
-            ) ...[
-              if (events.isEmpty)
-                StreakActivityMarker(
-                  activity: activities[index],
-                  showLabel: true,
-                )
-              else
-                _DayEventRow(event: events[index]),
-              if (index <
-                  (events.isEmpty ? activities.length : events.length) - 1)
-                const SizedBox(height: StreakTheme.space10),
-            ],
-        ],
-      ),
-    );
-  }
-}
-
-class _DayEventRow extends StatelessWidget {
-  const _DayEventRow({required this.event});
-
-  final _StreakDayEvent event;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: StreakTheme.space6),
-          child: StreakActivityMarker(activity: event.activity),
-        ),
-        const SizedBox(width: StreakTheme.space10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(event.title, style: StreakTheme.bodyStrong()),
-              const SizedBox(height: StreakTheme.space2),
-              Text(event.subtitle, style: StreakTheme.body()),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _MilestoneTrack extends StatelessWidget {
-  const _MilestoneTrack({required this.streak});
-
-  final StreakSnapshot streak;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        for (var index = 0; index < streakMilestones.length; index++) ...[
-          Builder(
-            builder: (context) {
-              final milestone = streakMilestones[index];
-              final claimed = streak.claimedMilestones.contains(milestone.days);
-              final reached = streak.announcedMilestones.contains(
-                milestone.days,
-              );
-              final visualState = claimed
-                  ? StreakMilestoneVisualState.claimed
-                  : reached
-                  ? StreakMilestoneVisualState.claimable
-                  : StreakMilestoneVisualState.locked;
-              return StreakMilestoneCard(
-                milestone: milestone,
-                state: visualState,
-                onClaim: reached
-                    ? () => context.read<GameBloc>().add(
-                        StreakMilestoneClaimed(milestone.days),
-                      )
-                    : null,
-              );
-            },
-          ),
-          if (index < streakMilestones.length - 1)
-            const SizedBox(height: StreakTheme.space10),
-        ],
-      ],
+      size: 18,
     );
   }
 }
 
 Color _categoryAccent(StreakCategory category) => switch (category) {
-  StreakCategory.overall => StreakTheme.primary,
-  StreakCategory.predict => StreakTheme.predict,
-  StreakCategory.pick => StreakTheme.pick,
-  StreakCategory.games => StreakTheme.pitchDuel,
-  StreakCategory.pitchDuel => StreakTheme.predict,
-  StreakCategory.penaltyShootout => StreakTheme.pick,
+  StreakCategory.overall => Cyber.gold,
+  StreakCategory.predict => Cyber.cyan,
+  StreakCategory.pick => Cyber.lime,
+  StreakCategory.games => Cyber.amber,
+  StreakCategory.pitchDuel => Cyber.amber,
+  StreakCategory.penaltyShootout => Cyber.violet,
 };
 
 bool _sameDay(DateTime a, DateTime b) =>

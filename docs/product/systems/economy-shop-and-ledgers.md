@@ -57,6 +57,23 @@ remote catalogue, or fuzzy typo matching.
 
 ## Rewards and Progression
 
+### Daily quest rewards — BUILT
+
+The [Streaks](streaks.md) hub grants 10 Oz Coins for each of three daily quests
+and a 20-coin Daily Sweep bonus, capped at 50 earned coins per local day.
+One claim action collects all available quest rewards, including earlier days.
+Existing streak milestone rewards and XP formulas remain unchanged. The Daily
+Sweep also forges a streak shield; shields are a streak-only protection item,
+not a currency, and never enter the coin or XP ledgers.
+
+Quest rewards use `OzCoinTransactionSource.dailyQuestReward`, deterministic
+per-day/per-quest ledger IDs, and a dedicated coin-history icon. Earned amounts
+are snapshotted before claim. A pending-claim journal stores absolute wallet,
+ledger and quest-claim targets; replay completes interrupted writes before any
+later GameBloc wallet mutation. Claims and other GameBloc events share one
+queue. A failed recovery stops the attempted action with retry feedback.
+This is local crash recovery, not cross-device or server-authoritative settlement.
+
 XP routes to a mode track and contributes to aggregate level. Coins do not set
 level; they support entry, hints, lifelines, acquisition, and customization.
 Settlement events must identify a reward so replaying a screen cannot double-pay.

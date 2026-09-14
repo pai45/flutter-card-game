@@ -108,10 +108,10 @@ Guess the Player entries share one implementation and one product page.
 | Match discovery/search, predictions, sport STATS (including Cricket innings race/run-rate), quizzes, scoreline contests, and settlement | BUILT / PROTOTYPE DATA | [Predictions](systems/predictions.md) |
 | Season-aware league and team hubs: TABLE, player LEADERS/dossiers, tappable club STATS, GAMES, PICKS, plus per-club MATCHES/PREDICTIONS/PLAYERS (EPL, LaLiga, IPL) | BUILT / SNAPSHOT + LIVE ESPN DATA | [Predictions](systems/predictions.md) |
 | F1 league hub: TABLE (WDC/WCC), ROUNDS, STATS, match-card GAMES and PICKS | BUILT / ESPN STATS + EXISTING APP MARKETS | [Predictions](systems/predictions.md#f1-championship-hub--built) |
-| Prediction feedback, rewards, and future quests | BUILT / PLANNED | [Prediction Gamification](systems/prediction-gamification.md) |
+| Prediction feedback, rewards, daily quests, and planned accuracy streaks | BUILT / PLANNED | [Prediction Gamification](systems/prediction-gamification.md) |
 | Outcome markets, positions, settlement, and payouts | BUILT / PROTOTYPE DATA | [Picks](systems/picks.md) |
 | Per-mode XP tracks and aggregate player level | BUILT | [Progression and Leveling](systems/progression-and-leveling.md) |
-| Daily activity streaks, milestones, and claims | BUILT | [Streaks](systems/streaks.md) |
+| Daily activity streaks, streak shields + at-risk state, escalating streak reminder popups, three daily quests + sweep bonus, milestones, and claims | BUILT | [Streaks](systems/streaks.md) |
 | Cross-app badges and unlock celebrations | BUILT | [Achievements](systems/achievements.md) |
 | Cards, decks, packs, starter packs, and daily drops | BUILT | [Collections, Decks, and Packs](systems/collections-decks-and-packs.md) |
 | Oz Coins, shop, cosmetics, XP/coin ledgers, and settlement | BUILT / PROTOTYPE COMMERCE | [Economy, Shop, and Ledgers](systems/economy-shop-and-ledgers.md) |
@@ -146,6 +146,11 @@ Guess the Player entries share one implementation and one product page.
 
 1. Complete predictions, picks, games, or daily mysteries.
 2. Extend activity streaks and unlock milestone claims.
+   The streak hub (opened from any top-bar flame, the Trending quest tile, or a
+   Profile streak badge) has four tabs: TODAY quests, per-mode STREAKS, the
+   CALENDAR, and the road-to-365 MILESTONES. Complete three daily quests for up to 50
+   extra Oz Coins; predictions and picks each have a game alternative. The
+   Daily Sweep forges a streak shield (bank of 2) that covers a missed day.
 3. Claim the 24-hour daily drop and open packs.
 4. Review XP and Oz Coin histories, achievements, leaderboards, rivals, and
    career statistics.

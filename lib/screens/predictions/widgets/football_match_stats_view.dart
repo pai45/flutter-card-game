@@ -120,11 +120,6 @@ class _MatchIntelPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final details = match.footballDetails;
-    final statusColor = switch (match.status) {
-      MatchStatus.live => Cyber.danger,
-      MatchStatus.finished => Cyber.cyan,
-      MatchStatus.upcoming => Cyber.gold,
-    };
     final venue = details == null
         ? 'Venue awaiting feed'
         : '${details.venue} // ${details.city}, ${details.country}';
@@ -133,7 +128,6 @@ class _MatchIntelPanel extends StatelessWidget {
         : _compactNumber(details.attendance);
 
     return StatsRowShell(
-      accent: statusColor,
       padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -22,6 +22,7 @@ import 'config/theme.dart';
 import 'models/league.dart';
 import 'models/oz_coin_ledger.dart';
 import 'models/sport_match.dart';
+import 'models/streak_reminder.dart';
 import 'screens/final_over/final_over_hub.dart';
 import 'screens/football_bingo/football_bingo_hub.dart';
 import 'screens/football_chess/football_chess_hub.dart';
@@ -37,6 +38,7 @@ import 'screens/predictions/league_detail_screen.dart';
 import 'screens/predictions/match_detail_screen.dart';
 import 'screens/predictions/market_detail_screen.dart';
 import 'screens/predictions/prediction_home_screen.dart';
+import 'screens/predictions/streak_calendar_screen.dart';
 import 'screens/quiz/quiz_hub.dart';
 import 'screens/guess_player/guess_player_hub.dart';
 import 'screens/guess_driver/guess_driver_hub.dart';
@@ -57,6 +59,7 @@ import 'services/rolling_window_service.dart';
 import 'services/secure_storage_service.dart';
 import 'widgets/achievement_celebration_host.dart';
 import 'widgets/streak_celebration_host.dart';
+import 'widgets/streak_reminder_popup.dart';
 
 enum _PendingGameLaunchKind { football, cricket, basketball, tennis, grandPrix }
 
@@ -188,6 +191,12 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      context.read<GameBloc>().add(DailyQuestsRefreshed());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _maybeShowStreakReminder(),
+      );
+    }
+    if (state == AppLifecycleState.resumed) {
       _runRollingWindowIfDue();
     }
   }
@@ -233,6 +242,9 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     if (complete && rewardStatus == OnboardingRewardStatus.pending) {
       context.read<GameBloc>().add(OnboardingRewardClaimed());
     }
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _maybeShowStreakReminder(),
+    );
   }
 
   void _go(AppSection next) => setState(() {
@@ -244,6 +256,97 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     _shopInitialTab = 2;
     section = AppSection.shop;
   });
+
+  /// One streak-hub entry for every surface (top-bar flame on each tab, the
+  /// home quest tile, profile streak badges) so quest CTAs route identically.
+  void _openStreakHub() =>
+      showStreakCalendar(context, onQuestNavigate: _routeQuest);
+
+  void _routeQuest(QuestDestination destination) {
+    switch (destination) {
+      case QuestDestination.pitchDuel:
+        _openGame();
+      case QuestDestination.penaltyShootout:
+        _openShootout();
+      case QuestDestination.guessPlayer:
+        _openGuessPlayer();
+      case QuestDestination.prediction:
+        setState(() {
+          section = AppSection.predictions;
+          _predictionTab = 0;
+        });
+      case QuestDestination.pick:
+        final market = context
+            .read<PicksCubit>()
+            .state
+            .markets
+            .where((market) => market.canBuy)
+            .firstOrNull;
+        if (market != null) {
+          _openMarket(market.id);
+        } else {
+          setState(() {
+            section = AppSection.predictions;
+            _predictionTab = 0;
+            _predictionMatchSportTab = 0;
+          });
+        }
+    }
+  }
+
+  bool _reminderOpen = false;
+
+  /// Escalating streak reminder (nudge → AT RISK). Only fires on the bare shell
+  /// — never over onboarding, reveals, a pushed game/hub, or a queued moment —
+  /// and is logged before showing so a killed app can't re-spam it.
+  Future<void> _maybeShowStreakReminder() async {
+    if (_reminderOpen || !mounted) return;
+    final game = context.read<GameBloc>().state;
+    final achievements = context.read<AchievementCelebrationController>().state;
+    final onTop = ModalRoute.of(context)?.isCurrent ?? true;
+    if (game.loading ||
+        _onboardingLoading ||
+        !_onboardingComplete ||
+        _onboardingRewardStatus == OnboardingRewardStatus.pending ||
+        game.pendingPackReveal != null ||
+        !onTop ||
+        game.streak.celebrationQueue.isNotEmpty ||
+        game.questRewardCoins > 0 ||
+        achievements.holding ||
+        achievements.queue.isNotEmpty) {
+      return;
+    }
+    _reminderOpen = true;
+    try {
+      final now = DateTime.now();
+      final log = await _storage.loadStreakReminderLog();
+      if (!mounted) return;
+      final streak = context.read<GameBloc>().state.streak;
+      final kind = streakReminderDue(streak: streak, now: now, log: log);
+      if (kind == null) return;
+      await _storage.saveStreakReminderLog(log.markShown(kind, now));
+      if (!mounted) return;
+      final action = await showStreakReminder(
+        context,
+        kind: kind,
+        streak: streak,
+        now: now,
+      );
+      if (!mounted || action == null) return;
+      switch (action) {
+        case StreakReminderAction.openHub:
+          _openStreakHub();
+        case StreakReminderAction.play:
+          _routeQuest(QuestDestination.pitchDuel);
+        case StreakReminderAction.predict:
+          _routeQuest(QuestDestination.prediction);
+        case StreakReminderAction.pick:
+          _routeQuest(QuestDestination.pick);
+      }
+    } finally {
+      _reminderOpen = false;
+    }
+  }
 
   /// Launch a card match against a CPU themed as a leaderboard rival. Reuses the
   /// starter-pack gate, then opens the game flow straight into the match.
@@ -670,8 +773,17 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     return Scaffold(
       body: BlocConsumer<GameBloc, GameState>(
         listenWhen: (previous, current) =>
-            previous.pendingPackReveal != current.pendingPackReveal,
+            previous.pendingPackReveal != current.pendingPackReveal ||
+            previous.loading != current.loading ||
+            previous.streak.celebrationQueue !=
+                current.streak.celebrationQueue ||
+            previous.questRewardCoins != current.questRewardCoins,
         listener: (context, state) {
+          // Re-check the streak reminder once loading finishes and whenever a
+          // queued moment clears (its guards decide whether it can show).
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) => _maybeShowStreakReminder(),
+          );
           final pending = _pendingGameLaunch;
           final ready = switch (_pendingGameLaunchKind) {
             _PendingGameLaunchKind.cricket => state.cricketStarterPackClaimed,
@@ -745,17 +857,20 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
             AppSection.shop => ShopScreen(
               onNavigate: _go,
               initialTab: _shopInitialTab,
+              onOpenStreakHub: _openStreakHub,
             ),
             AppSection.leaderboard => LeaderboardScreen(
               onNavigate: _go,
               onAddCoins: _openShopCoins,
               onChallenge: _openChallenge,
+              onOpenStreakHub: _openStreakHub,
             ),
             AppSection.profile => ProfileScreen(
               onNavigate: _go,
               onLogout: _logoutFromProfile,
               onChallenge: _openChallenge,
               onOpenSportGames: _openSportGames,
+              onOpenStreakHub: _openStreakHub,
             ),
             _ => PredictionHomeScreen(
               activeTab: _predictionTab,
@@ -786,6 +901,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
               onOpenBasketball: _openBasketball,
               onOpenTennisRally: _openTennisRally,
               onAddCoins: _openShopCoins,
+              onOpenStreakHub: _openStreakHub,
             ),
           };
           return content;
