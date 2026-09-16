@@ -3914,15 +3914,18 @@ class _CyberDealtCardState extends State<CyberDealtCard>
 }
 
 /// Frame painter for HUD bottom sheets: chamfered border + cyan→magenta accent
-/// stripe along the top edge. Used by order-ticket and filter sheets.
+/// stripe along the top edge. Used by order-ticket and filter sheets. Pass
+/// [accent] to key the frame to a single signal colour (e.g. an alert sheet).
 class HudSheetFramePainter extends CustomPainter {
-  const HudSheetFramePainter({this.bigCut = 18, this.smallCut = 4});
+  const HudSheetFramePainter({this.bigCut = 18, this.smallCut = 4, this.accent});
 
   final double bigCut;
   final double smallCut;
+  final Color? accent;
 
   @override
   void paint(Canvas canvas, Size size) {
+    final accent = this.accent;
     final path = HudChamferClipper(
       bigCut: bigCut,
       smallCut: smallCut,
@@ -3932,7 +3935,7 @@ class HudSheetFramePainter extends CustomPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1
-        ..color = Cyber.border,
+        ..color = accent?.withValues(alpha: 0.45) ?? Cyber.border,
     );
 
     final topPath = Path()
@@ -3946,12 +3949,19 @@ class HudSheetFramePainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2
         ..shader = LinearGradient(
-          colors: const [
-            Colors.transparent,
-            Cyber.cyan,
-            Cyber.magenta,
-            Colors.transparent,
-          ],
+          colors: accent == null
+              ? const [
+                  Colors.transparent,
+                  Cyber.cyan,
+                  Cyber.magenta,
+                  Colors.transparent,
+                ]
+              : [
+                  Colors.transparent,
+                  accent,
+                  Color.lerp(accent, Colors.white, 0.35)!,
+                  Colors.transparent,
+                ],
           stops: const [0, 0.28, 0.72, 1],
         ).createShader(Rect.fromLTWH(0, 0, size.width, bigCut + smallCut)),
     );
@@ -3959,7 +3969,7 @@ class HudSheetFramePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant HudSheetFramePainter old) =>
-      old.bigCut != bigCut || old.smallCut != smallCut;
+      old.bigCut != bigCut || old.smallCut != smallCut || old.accent != accent;
 }
 
 // ── Pager dock: PREVIOUS / NEXT button + progress segments ────────────────────
@@ -4877,10 +4887,16 @@ class CyberTelemetryFooter extends StatelessWidget {
 }
 
 class CyberBentoTile {
-  const CyberBentoTile({required this.span, required this.child});
+  const CyberBentoTile({required this.span, required this.child, this.rowHeight})
+    : assert(rowHeight == null || rowHeight > 0);
 
   final CyberBentoSpan span;
   final Widget child;
+
+  /// Overrides the grid's row height for the row this tile starts in. Meant
+  /// for `wide` tiles (which own their row) whose content is shorter than a
+  /// square cell, e.g. a scoreboard strip.
+  final double? rowHeight;
 }
 
 /// A dependency-free, dense two-column bento layout shared by the MATCH and
@@ -4925,8 +4941,24 @@ class CyberBentoGrid extends StatelessWidget {
         final unit = (width - gap) / 2;
         final rowHeight = max(unit * rowHeightFactor, minRowHeight).toDouble();
         final layout = _packBentoTiles(tiles);
-        final height =
-            layout.rowCount * rowHeight + max(0, layout.rowCount - 1) * rowGap;
+        final rowHeights = List<double>.filled(layout.rowCount, rowHeight);
+        for (var index = 0; index < tiles.length; index++) {
+          final override = tiles[index].rowHeight;
+          if (override != null && layout.cells[index].rowSpan == 1) {
+            rowHeights[layout.cells[index].row] = override;
+          }
+        }
+        final rowTops = <double>[];
+        var cursor = 0.0;
+        for (final value in rowHeights) {
+          rowTops.add(cursor);
+          cursor += value + rowGap;
+        }
+        double spanHeight(_CyberBentoCell cell) =>
+            rowTops[cell.row + cell.rowSpan - 1] +
+            rowHeights[cell.row + cell.rowSpan - 1] -
+            rowTops[cell.row];
+        final height = rowHeights.isEmpty ? 0.0 : cursor - rowGap;
 
         return Align(
           alignment: Alignment.topCenter,
@@ -4939,13 +4971,11 @@ class CyberBentoGrid extends StatelessWidget {
                 for (var index = 0; index < tiles.length; index++)
                   Positioned(
                     left: layout.cells[index].column * (unit + gap),
-                    top: layout.cells[index].row * (rowHeight + rowGap),
+                    top: rowTops[layout.cells[index].row],
                     width:
                         layout.cells[index].columnSpan * unit +
                         (layout.cells[index].columnSpan - 1) * gap,
-                    height:
-                        layout.cells[index].rowSpan * rowHeight +
-                        (layout.cells[index].rowSpan - 1) * rowGap,
+                    height: spanHeight(layout.cells[index]),
                     child: tiles[index].child,
                   ),
               ],

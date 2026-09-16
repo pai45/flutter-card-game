@@ -603,92 +603,91 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                   compact: compact,
                 );
 
-                return Column(
-                  children: [
-                    StatOzTopBar(
-                      title: 'Leaderboard',
-                      accent: accent,
-                      leading: onClose == null
-                          ? null
-                          : IconButton(
-                              tooltip: 'Back',
-                              padding: EdgeInsets.zero,
-                              visualDensity: VisualDensity.compact,
-                              constraints: const BoxConstraints.tightFor(
-                                width: 34,
-                                height: 40,
-                              ),
-                              onPressed: onClose,
-                              icon: const Icon(
-                                Icons.arrow_back_ios_new,
-                                size: 18,
-                              ),
-                              color: accent,
+                final board = StatOzCollapsingHeaderView(
+                  topBar: StatOzTopBar(
+                    title: 'Leaderboard',
+                    accent: accent,
+                    leading: onClose == null
+                        ? null
+                        : IconButton(
+                            tooltip: 'Back',
+                            padding: EdgeInsets.zero,
+                            visualDensity: VisualDensity.compact,
+                            constraints: const BoxConstraints.tightFor(
+                              width: 34,
+                              height: 40,
                             ),
-                      onAddCoins:
-                          widget.onAddCoins ??
-                          () => widget.onNavigate(AppSection.shop),
-                      onStreakTap: widget.onOpenStreakHub,
-                    ),
-                    _LeaderboardTabs(
-                      activeTab: _typeTabOrder.indexOf(_type),
-                      onTap: _setTypeTab,
-                    ),
-                    _LeaderboardSportsTabs(
-                      activeIndex: activeSportIndex < 0 ? 0 : activeSportIndex,
-                      selectedSport: _sport,
-                      onTap: (index) => setState(() {
-                        _sport = _leaderboardSports[index];
-                        _mode = GameMode.featured;
-                      }),
-                      onSearch: () {
-                        HapticFeedback.selectionClick();
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => UserSearchScreen(
-                              onChallenge: widget.onChallenge,
+                            onPressed: onClose,
+                            icon: const Icon(
+                              Icons.arrow_back_ios_new,
+                              size: 18,
                             ),
+                            color: accent,
                           ),
-                        );
-                      },
-                    ),
-                    Expanded(
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 280),
-                        switchInCurve: Curves.easeOutCubic,
-                        transitionBuilder: (child, animation) => FadeTransition(
-                          opacity: animation,
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0, 0.025),
-                              end: Offset.zero,
-                            ).animate(animation),
-                            child: child,
-                          ),
+                    onAddCoins:
+                        widget.onAddCoins ??
+                        () => widget.onNavigate(AppSection.shop),
+                    onStreakTap: widget.onOpenStreakHub,
+                  ),
+                  collapsible: _LeaderboardTabs(
+                    activeTab: _typeTabOrder.indexOf(_type),
+                    onTap: _setTypeTab,
+                  ),
+                  pinned: _LeaderboardSportsTabs(
+                    activeIndex: activeSportIndex < 0 ? 0 : activeSportIndex,
+                    selectedSport: _sport,
+                    onTap: (index) => setState(() {
+                      _sport = _leaderboardSports[index];
+                      _mode = GameMode.featured;
+                    }),
+                    onSearch: () {
+                      HapticFeedback.selectionClick();
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              UserSearchScreen(onChallenge: widget.onChallenge),
                         ),
-                        child: entries.isEmpty
-                            ? _EmptyState(
-                                key: ValueKey('empty-${_type.name}'),
-                                filters: filters,
-                                type: _type,
-                                accent: accent,
-                                onAction: widget.onNavigate,
-                              )
-                            : _Body(
-                                key: ValueKey(
-                                  '${_type.name}-${_tournamentBoard.name}-${_scope.name}-${_mode.name}',
-                                ),
-                                filters: filters,
-                                entries: entries,
-                                type: _type,
-                                accent: accent,
-                                compact: compact,
-                                onTapEntry: isTeamTournament
-                                    ? null
-                                    : _openRival,
-                              ),
+                      );
+                    },
+                  ),
+                  body: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 280),
+                    switchInCurve: Curves.easeOutCubic,
+                    transitionBuilder: (child, animation) => FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, 0.025),
+                          end: Offset.zero,
+                        ).animate(animation),
+                        child: child,
                       ),
                     ),
+                    child: entries.isEmpty
+                        ? _EmptyState(
+                            key: ValueKey('empty-${_type.name}'),
+                            filters: filters,
+                            type: _type,
+                            accent: accent,
+                            onAction: widget.onNavigate,
+                          )
+                        : _Body(
+                            key: ValueKey(
+                              '${_type.name}-${_tournamentBoard.name}-${_scope.name}-${_mode.name}',
+                            ),
+                            filters: filters,
+                            entries: entries,
+                            type: _type,
+                            accent: accent,
+                            compact: compact,
+                            onTapEntry: isTeamTournament ? null : _openRival,
+                          ),
+                  ),
+                );
+
+                return Column(
+                  children: [
+                    Expanded(child: board),
                     if (entries.isNotEmpty)
                       RankUserBar(
                         user: user,

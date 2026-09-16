@@ -1,7 +1,7 @@
 # Leaderboards, Rivals, History, and Statistics
 
 > **Status:** PROTOTYPE
-> **Last verified:** 2026-09-11
+> **Last verified:** 2026-09-15
 > **Scope:** Ranking boards, rival dossiers, game/prediction/pick histories, ledgers, and profile statistics
 
 ## Product Purpose
@@ -38,7 +38,10 @@ MATCHES retains its cyan accent and GAMES its amber accent; the raised filled
 tab plates are removed. Selection feedback and board switching are unchanged.
 The full sport
 strip (Football, Cricket, Basketball, Motorsport, Tennis) is the second row,
-so a player's sport context remains visible while changing board. MATCHES keeps
+so a player's sport context remains visible while changing board. On scroll the
+top bar and the MATCHES / GAMES tabs scroll away with the board while the sport
+strip (with its search action) pins to the top of the screen; the pinned
+personal rank bar stays docked at the bottom. MATCHES keeps
 the seeded tournament player/team board and season/all-time scope.
 GAMES exposes the selected sport's actual game catalogue before showing
 the relevant seeded wins board: Cricket, for example, offers Final Over,

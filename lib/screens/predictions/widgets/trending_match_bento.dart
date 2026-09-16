@@ -17,6 +17,7 @@ import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../../widgets/staggered_card_entrance.dart';
 import '../../../widgets/team_logo.dart';
+import '../all_picks_screen.dart';
 import '../trending_hub_catalog.dart';
 import 'pick_status_style.dart';
 
@@ -132,6 +133,8 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
                   widget.header!,
                   const SizedBox(height: 14),
                 ],
+                _PickCategoryStrip(picksState: picksState, animate: animate),
+                const SizedBox(height: 14),
                 CyberBentoGrid(
                   gap: 10,
                   rowGap: 14,
@@ -141,9 +144,14 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
                     for (var index = 0; index < catalog.length; index++)
                       CyberBentoTile(
                         span: catalog[index].span,
+                        rowHeight:
+                            catalog[index].kind == TrendingTileKind.match &&
+                                catalog[index].span == CyberBentoSpan.wide
+                            ? _kScoreboardRowHeight
+                            : null,
                         child: StaggeredCardEntrance(
                           key: ValueKey(catalog[index].id),
-                          index: index,
+                          index: index + _pickCategories.length,
                           animate: animate,
                           child: _buildTile(
                             catalog[index],
@@ -298,7 +306,7 @@ class _TrendingMatchCard extends StatelessWidget {
         children: [
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 30, 14, 8),
+              padding: const EdgeInsets.fromLTRB(14, 26, 14, 8),
               child: Row(
                 children: [
                   Expanded(
@@ -319,7 +327,7 @@ class _TrendingMatchCard extends StatelessWidget {
                           style:
                               Cyber.display(
                                 live || finished ? 23 : 19,
-                                color: live ? Cyber.success : Colors.white,
+                                color: Colors.white,
                                 letterSpacing: 0.5,
                               ).copyWith(
                                 fontFeatures: const [
@@ -364,6 +372,183 @@ class _TrendingMatchCard extends StatelessWidget {
             leadingIconColor: module.accent,
           ),
         ],
+      ),
+    );
+  }
+}
+
+typedef _PickCategory = ({PickMarketType type, String label, IconData icon});
+
+/// Market categories surfaced as square shortcuts above the Trending grid.
+const _pickCategories = <_PickCategory>[
+  (
+    type: PickMarketType.match,
+    label: 'PICKS',
+    icon: Icons.stacked_line_chart_rounded,
+  ),
+  (
+    type: PickMarketType.future,
+    label: 'FUTURES',
+    icon: Icons.emoji_events_rounded,
+  ),
+  (type: PickMarketType.event, label: 'EVENTS', icon: Icons.bolt_rounded),
+];
+
+class _PickCategoryStrip extends StatelessWidget {
+  const _PickCategoryStrip({required this.picksState, required this.animate});
+
+  final PicksState picksState;
+  final bool animate;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 440),
+        child: Row(
+          children: [
+            for (var i = 0; i < _pickCategories.length; i++) ...[
+              if (i > 0) const SizedBox(width: 10),
+              Expanded(
+                child: AspectRatio(
+                  key: ValueKey(
+                    'trend-category-${_pickCategories[i].label.toLowerCase()}',
+                  ),
+                  aspectRatio: 1,
+                  child: StaggeredCardEntrance(
+                    index: i,
+                    animate: animate,
+                    child: _buildCard(context, _pickCategories[i]),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCard(BuildContext context, _PickCategory category) {
+    final open = picksState.markets
+        .where((market) => market.type == category.type && market.canBuy)
+        .toList(growable: false);
+    final hot = open.any((market) {
+      final delta = market.latestDeltaFor(market.leadingOutcome.id);
+      return delta != null &&
+          delta.abs() >= _kHotDeltaThreshold &&
+          !market.isResultKnown;
+    });
+    return _PickCategoryCard(
+      type: category.type,
+      label: category.label,
+      icon: category.icon,
+      openCount: picksState.loading ? null : open.length,
+      hot: !picksState.loading && hot,
+      onTap: () => AllPicksScreen.openFiltered(context, category.type),
+    );
+  }
+}
+
+class _PickCategoryCard extends StatelessWidget {
+  const _PickCategoryCard({
+    required this.type,
+    required this.label,
+    required this.icon,
+    required this.openCount,
+    required this.hot,
+    required this.onTap,
+  });
+
+  final PickMarketType type;
+  final String label;
+  final IconData icon;
+
+  /// Null while markets are still loading.
+  final int? openCount;
+
+  /// A genuinely hot mover in this category — the only state that animates.
+  final bool hot;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final typeColor = pickMarketTypeColor(type);
+    return _TrendSignalShell(
+      semanticsLabel: openCount == null
+          ? '$label markets'
+          : '$label, $openCount open markets',
+      accent: Cyber.cyan,
+      tag: label,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 28, 10, 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Spacer(),
+            Row(
+              children: [
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      openCount?.toString() ?? '—',
+                      maxLines: 1,
+                      style: Cyber.display(
+                        20,
+                        color: Colors.white,
+                        letterSpacing: 0.3,
+                      ).copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ),
+                ),
+                if (hot) ...[
+                  const SizedBox(width: 6),
+                  CyberPulse(
+                    period: const Duration(milliseconds: 700),
+                    builder: (context, t) => Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: typeColor.withValues(alpha: 0.25 + 0.75 * t),
+                        shape: BoxShape.circle,
+                        boxShadow: Cyber.glow(
+                          typeColor,
+                          alpha: 0.5 * t,
+                          blur: 6,
+                          spread: 0,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 3),
+            Row(
+              children: [
+                Icon(icon, size: 13, color: typeColor),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    'OPEN',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Cyber.label(
+                      10,
+                      color: Cyber.muted,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -829,11 +1014,16 @@ class _TrendSignalShell extends StatelessWidget {
               ),
               if (scoreboard)
                 Positioned(
-                  top: 4,
+                  top: 0,
                   left: 0,
                   right: 0,
+                  height: _scoreboardNotchDepth,
                   child: Center(
-                    child: _ScoreboardStatusTag(label: tag, color: accent),
+                    child: _ScoreboardStatusTag(
+                      label: tag,
+                      color: accent,
+                      live: live,
+                    ),
                   ),
                 ),
             ],
@@ -881,16 +1071,45 @@ class _LiveSignalBadge extends StatelessWidget {
 }
 
 class _ScoreboardStatusTag extends StatelessWidget {
-  const _ScoreboardStatusTag({required this.label, required this.color});
+  const _ScoreboardStatusTag({
+    required this.label,
+    required this.color,
+    required this.live,
+  });
 
   final String label;
   final Color color;
+  final bool live;
 
   @override
   Widget build(BuildContext context) {
-    return Text(
+    final text = Text(
       label,
-      style: Cyber.label(10, color: color, letterSpacing: 0.7),
+      style: Cyber.label(
+        10,
+        color: color,
+        letterSpacing: 0.7,
+      ).copyWith(height: 1, fontFeatures: const [FontFeature.tabularFigures()]),
+    );
+    if (!live) return text;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CyberPulse(
+          period: const Duration(milliseconds: 700),
+          builder: (context, t) => Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.25 + 0.75 * t),
+              shape: BoxShape.circle,
+              boxShadow: Cyber.glow(color, alpha: 0.5 * t, blur: 6, spread: 0),
+            ),
+          ),
+        ),
+        const SizedBox(width: 5),
+        text,
+      ],
     );
   }
 }
@@ -1030,6 +1249,12 @@ class _TrendSignalPainter extends CustomPainter {
       oldDelegate.scoreboard != scoreboard;
 }
 
+/// How far the scoreboard card's top status notch dips into the panel.
+const _scoreboardNotchDepth = 16.0;
+
+/// Wide live-scoreboard cards are a strip, not a square cell — shorter row.
+const _kScoreboardRowHeight = 148.0;
+
 Path _trendSignalPath(Size size, {required bool scoreboard}) {
   const cut = 12.0;
   const notch = 34.0;
@@ -1039,8 +1264,8 @@ Path _trendSignalPath(Size size, {required bool scoreboard}) {
     const notchHalf = 54.0;
     path
       ..lineTo(center - notchHalf - 8, 0)
-      ..lineTo(center - notchHalf, 16)
-      ..lineTo(center + notchHalf, 16)
+      ..lineTo(center - notchHalf, _scoreboardNotchDepth)
+      ..lineTo(center + notchHalf, _scoreboardNotchDepth)
       ..lineTo(center + notchHalf + 8, 0)
       ..lineTo(size.width, 0);
   } else {

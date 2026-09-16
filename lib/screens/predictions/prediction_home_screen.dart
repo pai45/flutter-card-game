@@ -123,30 +123,27 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
           const Positioned.fill(child: _PredictionBackground()),
           SafeArea(
             top: false,
-            child: Column(
-              children: [
-                StatOzTopBar(
-                  title: 'StatOz',
-                  onAddCoins:
-                      widget.onAddCoins ??
-                      () => widget.onNavigate(AppSection.shop),
-                  onStreakTap: widget.onOpenStreakHub,
+            child: StatOzCollapsingHeaderView(
+              topBar: StatOzTopBar(
+                title: 'StatOz',
+                onAddCoins:
+                    widget.onAddCoins ??
+                    () => widget.onNavigate(AppSection.shop),
+                onStreakTap: widget.onOpenStreakHub,
+              ),
+              collapsible: CyberGlidingTabs(
+                tabs: _predictionTopTabs,
+                activeIndex: tab,
+                onTap: widget.onTabChanged,
+              ),
+              pinned: _buildSportTabs(tab),
+              body: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 240),
+                child: KeyedSubtree(
+                  key: ValueKey<int>(tab),
+                  child: _buildTab(tab),
                 ),
-                CyberGlidingTabs(
-                  tabs: _predictionTopTabs,
-                  activeIndex: tab,
-                  onTap: widget.onTabChanged,
-                ),
-                Expanded(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 240),
-                    child: KeyedSubtree(
-                      key: ValueKey<int>(tab),
-                      child: _buildTab(tab),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ],
@@ -159,40 +156,52 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
     );
   }
 
+  /// The sport strip pins once the bar and MATCH / GAMES switcher scroll away.
+  /// It follows the active hub tab, which keeps its own sport selection.
+  Widget _buildSportTabs(int tab) {
+    final matches = tab == 0;
+    final activeIndex = matches
+        ? widget.activeMatchSportTab
+        : widget.activeGamesSportTab;
+    final onChanged = matches
+        ? widget.onMatchSportTabChanged
+        : widget.onGamesSportTabChanged;
+    return SportHubTabs(
+      activeIndex: activeIndex,
+      onTap: onChanged,
+      onMore: () => _openAllSports(
+        mode: matches ? SportHubMode.matches : SportHubMode.games,
+        selectedIndex: activeIndex,
+        onChanged: onChanged,
+      ),
+      trailingAction: matches
+          ? CyberSearchButton(
+              key: const ValueKey('match-search-button'),
+              onTap: _openMatchSearch,
+              label: 'Search teams and leagues',
+            )
+          : null,
+    );
+  }
+
   Widget _buildTab(int tab) {
     return switch (tab) {
       0 =>
         _selectedMatchSport == null
             ? _TrendingMatchesTab(
                 questTile: _questTile(),
-                activeSportTab: widget.activeMatchSportTab,
-                onSportTabChanged: widget.onMatchSportTabChanged,
-                onMore: () => _openAllSports(
-                  mode: SportHubMode.matches,
-                  selectedIndex: widget.activeMatchSportTab,
-                  onChanged: widget.onMatchSportTabChanged,
-                ),
                 onOpenMatch: widget.onOpenMatch,
                 onOpenMarket: widget.onOpenMarket,
-                onSearch: _openMatchSearch,
                 animateIntro: _shouldAnimateIntro(0),
                 onIntroPlayed: () => _markIntroPlayed(0),
               )
             : _MatchesTab(
                 selectedSport: _selectedMatchSport!,
-                activeSportTab: widget.activeMatchSportTab,
-                onSportTabChanged: widget.onMatchSportTabChanged,
-                onMore: () => _openAllSports(
-                  mode: SportHubMode.matches,
-                  selectedIndex: widget.activeMatchSportTab,
-                  onChanged: widget.onMatchSportTabChanged,
-                ),
                 onOpenMatch: widget.onOpenMatch,
                 onOpenLeague: widget.onOpenLeague,
                 onOpenLeagueGames: widget.onOpenLeagueGames,
                 onOpenGame: widget.onOpenGame,
                 onOpenShootout: widget.onOpenShootout,
-                onSearch: _openMatchSearch,
                 animateIntro: _shouldAnimateIntro(0),
                 onIntroPlayed: () => _markIntroPlayed(0),
               ),
@@ -200,13 +209,6 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
         _selectedGamesSport == null
             ? _TrendingGamesTab(
                 questTile: _questTile(),
-                activeSportTab: widget.activeGamesSportTab,
-                onSportTabChanged: widget.onGamesSportTabChanged,
-                onMore: () => _openAllSports(
-                  mode: SportHubMode.games,
-                  selectedIndex: widget.activeGamesSportTab,
-                  onChanged: widget.onGamesSportTabChanged,
-                ),
                 onOpenGame: widget.onOpenGame,
                 onOpenShootout: widget.onOpenShootout,
                 onOpenQuiz: widget.onOpenQuiz,
@@ -222,13 +224,6 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
               )
             : _GamesTab(
                 selectedSport: _selectedGamesSport!,
-                activeSportTab: widget.activeGamesSportTab,
-                onSportTabChanged: widget.onGamesSportTabChanged,
-                onMore: () => _openAllSports(
-                  mode: SportHubMode.games,
-                  selectedIndex: widget.activeGamesSportTab,
-                  onChanged: widget.onGamesSportTabChanged,
-                ),
                 onOpenGame: widget.onOpenGame,
                 onOpenShootout: widget.onOpenShootout,
                 onOpenQuiz: widget.onOpenQuiz,
@@ -299,50 +294,26 @@ class _PredictionBackground extends StatelessWidget {
 class _TrendingMatchesTab extends StatelessWidget {
   const _TrendingMatchesTab({
     required this.questTile,
-    required this.activeSportTab,
-    required this.onSportTabChanged,
-    required this.onMore,
     required this.onOpenMatch,
     required this.onOpenMarket,
-    required this.onSearch,
     required this.animateIntro,
     required this.onIntroPlayed,
   });
 
-  final int activeSportTab;
-  final ValueChanged<int> onSportTabChanged;
-  final VoidCallback onMore;
   final ValueChanged<SportMatch> onOpenMatch;
   final ValueChanged<String> onOpenMarket;
-  final VoidCallback onSearch;
   final bool animateIntro;
   final VoidCallback onIntroPlayed;
   final Widget questTile;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        SportHubTabs(
-          activeIndex: activeSportTab,
-          onTap: onSportTabChanged,
-          onMore: onMore,
-          trailingAction: CyberSearchButton(
-            key: const ValueKey('match-search-button'),
-            onTap: onSearch,
-            label: 'Search teams and leagues',
-          ),
-        ),
-        Expanded(
-          child: TrendingMatchesView(
-            header: questTile,
-            onOpenMatch: onOpenMatch,
-            onOpenMarket: onOpenMarket,
-            animateIntro: animateIntro,
-            onIntroPlayed: onIntroPlayed,
-          ),
-        ),
-      ],
+    return TrendingMatchesView(
+      header: questTile,
+      onOpenMatch: onOpenMatch,
+      onOpenMarket: onOpenMarket,
+      animateIntro: animateIntro,
+      onIntroPlayed: onIntroPlayed,
     );
   }
 }
@@ -377,29 +348,21 @@ final List<CyberGlidingTab> _predictionTopTabs = <CyberGlidingTab>[
 class _MatchesTab extends StatefulWidget {
   const _MatchesTab({
     required this.selectedSport,
-    required this.activeSportTab,
-    required this.onSportTabChanged,
-    required this.onMore,
     required this.onOpenMatch,
     required this.onOpenLeague,
     required this.onOpenLeagueGames,
     required this.onOpenGame,
     required this.onOpenShootout,
-    required this.onSearch,
     required this.animateIntro,
     required this.onIntroPlayed,
   });
 
   final Sport selectedSport;
-  final int activeSportTab;
-  final ValueChanged<int> onSportTabChanged;
-  final VoidCallback onMore;
   final ValueChanged<SportMatch> onOpenMatch;
   final ValueChanged<League> onOpenLeague;
   final ValueChanged<League> onOpenLeagueGames;
   final VoidCallback onOpenGame;
   final VoidCallback onOpenShootout;
-  final VoidCallback onSearch;
   final bool animateIntro;
   final VoidCallback? onIntroPlayed;
 
@@ -563,432 +526,393 @@ class _MatchesTabState extends State<_MatchesTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        SportHubTabs(
-          activeIndex: widget.activeSportTab,
-          onTap: widget.onSportTabChanged,
-          onMore: widget.onMore,
-          trailingAction: CyberSearchButton(
-            key: const ValueKey('match-search-button'),
-            onTap: widget.onSearch,
-            label: 'Search teams and leagues',
-          ),
-        ),
-        Expanded(
-          child: BlocBuilder<PredictionCubit, PredictionState>(
-            builder: (context, state) {
-              if (state.loading ||
-                  state.loadingSports.contains(widget.selectedSport)) {
-                return const Center(
-                  child: CircularProgressIndicator(color: Cyber.cyan),
-                );
+    return BlocBuilder<PredictionCubit, PredictionState>(
+      builder: (context, state) {
+        if (state.loading ||
+            state.loadingSports.contains(widget.selectedSport)) {
+          return const Center(
+            child: CircularProgressIndicator(color: Cyber.cyan),
+          );
+        }
+        final validLeagueIds = state.leagues.map((l) => l.id).toSet();
+        final allSportFixtures = state.fixtures
+            .where(
+              (fixture) =>
+                  fixture.sport == widget.selectedSport &&
+                  validLeagueIds.contains(fixture.leagueId),
+            )
+            .toList();
+        // Motorsport browses Mon–Sun race weeks; other sports stay
+        // day-to-day. Concurrent series still group under league headers
+        // via _groupByLeague below.
+        final sportFixtures = allSportFixtures;
+        final days = _calendarDays(
+          sportFixtures,
+          weekAligned: widget.selectedSport == Sport.motorsport,
+        );
+        final weeks = calendarWeeks(days);
+        final today = _startOfDay(DateTime.now());
+        final weekMode = widget.selectedSport == Sport.motorsport;
+
+        if (!_hasAutoSelectedDay && sportFixtures.isNotEmpty) {
+          _hasAutoSelectedDay = true;
+          if (weekMode) {
+            final thisMonday = mondayOf(today);
+            final thisWeekHasRaces = sportFixtures.any((f) {
+              final d = _startOfDay(f.kickoff);
+              return !d.isBefore(thisMonday) &&
+                  !d.isAfter(sundayOf(thisMonday));
+            });
+            if (!thisWeekHasRaces) {
+              DateTime? closestDay;
+              var minDiff = 999999;
+              for (final f in sportFixtures) {
+                final d = _startOfDay(f.kickoff);
+                final diff = (d.difference(today).inDays).abs();
+                if (diff < minDiff) {
+                  minDiff = diff;
+                  closestDay = d;
+                } else if (diff == minDiff &&
+                    closestDay != null &&
+                    d.isBefore(closestDay)) {
+                  closestDay = d;
+                }
               }
-              final validLeagueIds = state.leagues.map((l) => l.id).toSet();
-              final allSportFixtures = state.fixtures
-                  .where(
-                    (fixture) =>
-                        fixture.sport == widget.selectedSport &&
-                        validLeagueIds.contains(fixture.leagueId),
-                  )
-                  .toList();
-              // Motorsport browses Mon–Sun race weeks; other sports stay
-              // day-to-day. Concurrent series still group under league headers
-              // via _groupByLeague below.
-              final sportFixtures = allSportFixtures;
-              final days = _calendarDays(
-                sportFixtures,
-                weekAligned: widget.selectedSport == Sport.motorsport,
+              if (closestDay != null) {
+                _selectedDay = mondayOf(closestDay);
+                _slideFromLeft = closestDay.isBefore(today);
+              }
+            } else {
+              _selectedDay = thisMonday;
+            }
+          } else {
+            final todayHasMatches = sportFixtures.any(
+              (f) => _sameDay(f.kickoff, today),
+            );
+            if (!todayHasMatches) {
+              DateTime? closestDay;
+              var minDiff = 999999;
+              for (final f in sportFixtures) {
+                final d = _startOfDay(f.kickoff);
+                final diff = (d.difference(today).inDays).abs();
+                if (diff < minDiff) {
+                  minDiff = diff;
+                  closestDay = d;
+                } else if (diff == minDiff &&
+                    closestDay != null &&
+                    d.isBefore(closestDay)) {
+                  closestDay = d;
+                }
+              }
+              if (closestDay != null) {
+                _selectedDay = closestDay;
+                _slideFromLeft = closestDay.isBefore(today);
+              }
+            }
+          }
+        }
+
+        if (weekMode) {
+          final selectedMonday = mondayOf(_selectedDay);
+          if (!_hasWeek(weeks, selectedMonday)) {
+            _selectedDay = weeks.any((w) => _sameDay(w, mondayOf(today)))
+                ? mondayOf(today)
+                : (weeks.isNotEmpty ? weeks.first : mondayOf(today));
+          } else {
+            _selectedDay = selectedMonday;
+          }
+        } else if (!days.any((day) => _sameDay(day, _selectedDay)) &&
+            !_sameDay(_selectedDay, today)) {
+          _selectedDay = days.any((day) => _sameDay(day, today))
+              ? today
+              : (days.isNotEmpty ? days.first : today);
+        }
+
+        // ── YOUR CLUB pin ───────────────────────────────────────────
+        // Deliberately day-scoped: the pin exists only when one of the
+        // player's clubs plays inside the window the navigator is
+        // showing, so it never contradicts the selected day.
+        final pinWindowStart = weekMode ? mondayOf(_selectedDay) : _selectedDay;
+        final pinWindowEnd = weekMode ? sundayOf(pinWindowStart) : _selectedDay;
+        final clubFixtures = sportFixtures.where((fixture) {
+          final day = _startOfDay(fixture.kickoff);
+          return !day.isBefore(pinWindowStart) &&
+              !day.isAfter(pinWindowEnd) &&
+              state.isFavoriteMatch(fixture);
+        }).toList();
+        final clubOptions = _clubPinOptions(state, clubFixtures);
+        // A club the player un-followed mid-session must not keep the pin.
+        final activeClubTeamId =
+            clubOptions.any((c) => c.teamId == _pinnedClubTeamId)
+            ? _pinnedClubTeamId
+            : null;
+        final pinnedMatch = _choosePinnedMatch(
+          clubFixtures,
+          state,
+          activeClubTeamId,
+        );
+        final pinnedSide = pinnedMatch == null
+            ? null
+            : state.favoriteSideFor(pinnedMatch);
+
+        final DateTime navigatorAnchor;
+        final int matchCount;
+        final String dayLabel;
+        final bool canGoPrevious;
+        final bool canGoNext;
+        final VoidCallback onPrevious;
+        final VoidCallback onNext;
+        final groupedByDay = <DateTime, Map<League, List<SportMatch>>>{};
+
+        if (weekMode) {
+          final weekStart = mondayOf(_selectedDay);
+          final weekEnd = sundayOf(weekStart);
+          navigatorAnchor = weekStart;
+          dayLabel = weekHeading(weekStart);
+          final weekFixtures = sportFixtures.where((fixture) {
+            final day = _startOfDay(fixture.kickoff);
+            return !day.isBefore(weekStart) && !day.isAfter(weekEnd);
+          }).toList();
+          matchCount = weekFixtures.length;
+          canGoPrevious = _canMoveWeek(weeks, -1);
+          canGoNext = _canMoveWeek(weeks, 1);
+          onPrevious = () => _moveWeek(weeks, -1);
+          onNext = () => _moveWeek(weeks, 1);
+          for (final day in weekDays(weekStart)) {
+            final dayFixtures = sportFixtures
+                .where(
+                  (fixture) =>
+                      _sameDay(fixture.kickoff, day) &&
+                      fixture.id != pinnedMatch?.id,
+                )
+                .toList();
+            if (dayFixtures.isEmpty) continue;
+            final grouped = _groupByLeague(
+              state.leagues,
+              dayFixtures,
+              isFavorite: state.isFavoriteMatch,
+            );
+            if (grouped.isNotEmpty) {
+              groupedByDay[day] = grouped;
+            }
+          }
+        } else {
+          navigatorAnchor = _selectedDay;
+          dayLabel = _dayHeading(_selectedDay);
+          final selectedFixtures = sportFixtures
+              .where((fixture) => _sameDay(fixture.kickoff, _selectedDay))
+              .toList();
+          matchCount = selectedFixtures.length;
+          canGoPrevious = _canMoveDay(days, -1);
+          canGoNext = _canMoveDay(days, 1);
+          onPrevious = () => _moveDay(days, -1);
+          onNext = () => _moveDay(days, 1);
+          final upcomingDays = days
+              .where((d) => !d.isBefore(_selectedDay))
+              .toList();
+          for (final day in upcomingDays) {
+            final dayFixtures = sportFixtures
+                .where(
+                  (fixture) =>
+                      _sameDay(fixture.kickoff, day) &&
+                      fixture.id != pinnedMatch?.id,
+                )
+                .toList();
+            if (dayFixtures.isNotEmpty) {
+              final grouped = _groupByLeague(
+                state.leagues,
+                dayFixtures,
+                isFavorite: state.isFavoriteMatch,
               );
-              final weeks = calendarWeeks(days);
-              final today = _startOfDay(DateTime.now());
-              final weekMode = widget.selectedSport == Sport.motorsport;
-
-              if (!_hasAutoSelectedDay && sportFixtures.isNotEmpty) {
-                _hasAutoSelectedDay = true;
-                if (weekMode) {
-                  final thisMonday = mondayOf(today);
-                  final thisWeekHasRaces = sportFixtures.any((f) {
-                    final d = _startOfDay(f.kickoff);
-                    return !d.isBefore(thisMonday) &&
-                        !d.isAfter(sundayOf(thisMonday));
-                  });
-                  if (!thisWeekHasRaces) {
-                    DateTime? closestDay;
-                    var minDiff = 999999;
-                    for (final f in sportFixtures) {
-                      final d = _startOfDay(f.kickoff);
-                      final diff = (d.difference(today).inDays).abs();
-                      if (diff < minDiff) {
-                        minDiff = diff;
-                        closestDay = d;
-                      } else if (diff == minDiff &&
-                          closestDay != null &&
-                          d.isBefore(closestDay)) {
-                        closestDay = d;
-                      }
-                    }
-                    if (closestDay != null) {
-                      _selectedDay = mondayOf(closestDay);
-                      _slideFromLeft = closestDay.isBefore(today);
-                    }
-                  } else {
-                    _selectedDay = thisMonday;
-                  }
-                } else {
-                  final todayHasMatches = sportFixtures.any(
-                    (f) => _sameDay(f.kickoff, today),
-                  );
-                  if (!todayHasMatches) {
-                    DateTime? closestDay;
-                    var minDiff = 999999;
-                    for (final f in sportFixtures) {
-                      final d = _startOfDay(f.kickoff);
-                      final diff = (d.difference(today).inDays).abs();
-                      if (diff < minDiff) {
-                        minDiff = diff;
-                        closestDay = d;
-                      } else if (diff == minDiff &&
-                          closestDay != null &&
-                          d.isBefore(closestDay)) {
-                        closestDay = d;
-                      }
-                    }
-                    if (closestDay != null) {
-                      _selectedDay = closestDay;
-                      _slideFromLeft = closestDay.isBefore(today);
-                    }
-                  }
-                }
+              if (grouped.isNotEmpty) {
+                groupedByDay[day] = grouped;
               }
-
-              if (weekMode) {
-                final selectedMonday = mondayOf(_selectedDay);
-                if (!_hasWeek(weeks, selectedMonday)) {
-                  _selectedDay = weeks.any((w) => _sameDay(w, mondayOf(today)))
-                      ? mondayOf(today)
-                      : (weeks.isNotEmpty ? weeks.first : mondayOf(today));
-                } else {
-                  _selectedDay = selectedMonday;
-                }
-              } else if (!days.any((day) => _sameDay(day, _selectedDay)) &&
-                  !_sameDay(_selectedDay, today)) {
-                _selectedDay = days.any((day) => _sameDay(day, today))
-                    ? today
-                    : (days.isNotEmpty ? days.first : today);
-              }
-
-              // ── YOUR CLUB pin ───────────────────────────────────────────
-              // Deliberately day-scoped: the pin exists only when one of the
-              // player's clubs plays inside the window the navigator is
-              // showing, so it never contradicts the selected day.
-              final pinWindowStart = weekMode
-                  ? mondayOf(_selectedDay)
-                  : _selectedDay;
-              final pinWindowEnd = weekMode
-                  ? sundayOf(pinWindowStart)
-                  : _selectedDay;
-              final clubFixtures = sportFixtures.where((fixture) {
-                final day = _startOfDay(fixture.kickoff);
-                return !day.isBefore(pinWindowStart) &&
-                    !day.isAfter(pinWindowEnd) &&
-                    state.isFavoriteMatch(fixture);
-              }).toList();
-              final clubOptions = _clubPinOptions(state, clubFixtures);
-              // A club the player un-followed mid-session must not keep the pin.
-              final activeClubTeamId =
-                  clubOptions.any((c) => c.teamId == _pinnedClubTeamId)
-                  ? _pinnedClubTeamId
-                  : null;
-              final pinnedMatch = _choosePinnedMatch(
-                clubFixtures,
-                state,
-                activeClubTeamId,
-              );
-              final pinnedSide = pinnedMatch == null
-                  ? null
-                  : state.favoriteSideFor(pinnedMatch);
-
-              final DateTime navigatorAnchor;
-              final int matchCount;
-              final String dayLabel;
-              final bool canGoPrevious;
-              final bool canGoNext;
-              final VoidCallback onPrevious;
-              final VoidCallback onNext;
-              final groupedByDay = <DateTime, Map<League, List<SportMatch>>>{};
-
-              if (weekMode) {
-                final weekStart = mondayOf(_selectedDay);
-                final weekEnd = sundayOf(weekStart);
-                navigatorAnchor = weekStart;
-                dayLabel = weekHeading(weekStart);
-                final weekFixtures = sportFixtures.where((fixture) {
-                  final day = _startOfDay(fixture.kickoff);
-                  return !day.isBefore(weekStart) && !day.isAfter(weekEnd);
-                }).toList();
-                matchCount = weekFixtures.length;
-                canGoPrevious = _canMoveWeek(weeks, -1);
-                canGoNext = _canMoveWeek(weeks, 1);
-                onPrevious = () => _moveWeek(weeks, -1);
-                onNext = () => _moveWeek(weeks, 1);
-                for (final day in weekDays(weekStart)) {
-                  final dayFixtures = sportFixtures
-                      .where(
-                        (fixture) =>
-                            _sameDay(fixture.kickoff, day) &&
-                            fixture.id != pinnedMatch?.id,
-                      )
-                      .toList();
-                  if (dayFixtures.isEmpty) continue;
-                  final grouped = _groupByLeague(
-                    state.leagues,
-                    dayFixtures,
-                    isFavorite: state.isFavoriteMatch,
-                  );
-                  if (grouped.isNotEmpty) {
-                    groupedByDay[day] = grouped;
-                  }
-                }
-              } else {
-                navigatorAnchor = _selectedDay;
-                dayLabel = _dayHeading(_selectedDay);
-                final selectedFixtures = sportFixtures
-                    .where((fixture) => _sameDay(fixture.kickoff, _selectedDay))
-                    .toList();
-                matchCount = selectedFixtures.length;
-                canGoPrevious = _canMoveDay(days, -1);
-                canGoNext = _canMoveDay(days, 1);
-                onPrevious = () => _moveDay(days, -1);
-                onNext = () => _moveDay(days, 1);
-                final upcomingDays = days
-                    .where((d) => !d.isBefore(_selectedDay))
-                    .toList();
-                for (final day in upcomingDays) {
-                  final dayFixtures = sportFixtures
-                      .where(
-                        (fixture) =>
-                            _sameDay(fixture.kickoff, day) &&
-                            fixture.id != pinnedMatch?.id,
-                      )
-                      .toList();
-                  if (dayFixtures.isNotEmpty) {
-                    final grouped = _groupByLeague(
-                      state.leagues,
-                      dayFixtures,
-                      isFavorite: state.isFavoriteMatch,
-                    );
-                    if (grouped.isNotEmpty) {
-                      groupedByDay[day] = grouped;
-                    }
-                  }
-                }
-              }
-              final animateIntro =
-                  widget.animateIntro &&
-                  !_introPlayed &&
-                  groupedByDay.isNotEmpty;
-              if (animateIntro) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (!mounted) return;
-                  _introPlayed = true;
-                  widget.onIntroPlayed?.call();
-                });
-              }
-              final animateCards = animateIntro || _dayGeneration > 0;
-              var cardEntranceIndex = 0;
-              return GestureDetector(
-                key: const ValueKey('match-day-swipe-area'),
-                behavior: HitTestBehavior.translucent,
-                onHorizontalDragStart: _handleDaySwipeStart,
-                onHorizontalDragUpdate: _handleDaySwipeUpdate,
-                onHorizontalDragEnd: (details) =>
-                    _handleDaySwipeEnd(days, weeks, details),
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-                  children: [
-                    if (_showNewGamesCallout) ...[
-                      _NewGamesReleaseCard(
-                        key: const ValueKey('new-games-release-card'),
-                        onTap: _openNewGamesRelease,
-                        onClose: () {
-                          setState(() {
-                            _showNewGamesCallout = false;
-                          });
-                        },
-                      ),
-                      const SizedBox(height: 14),
-                    ],
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _MatchDayNavigator(
-                            dayLabel: dayLabel,
-                            matchCount: matchCount,
-                            labelWidth: weekMode ? 248 : 200,
-                            canGoPrevious: canGoPrevious,
-                            canGoNext: canGoNext,
-                            onPrevious: onPrevious,
-                            onNext: onNext,
-                            onCalendar: () {
-                              playSound(SoundEffect.uiTap);
-                              _openCalendar(days);
-                            },
-                          ),
-                        ),
-                      ],
+            }
+          }
+        }
+        final animateIntro =
+            widget.animateIntro && !_introPlayed && groupedByDay.isNotEmpty;
+        if (animateIntro) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _introPlayed = true;
+            widget.onIntroPlayed?.call();
+          });
+        }
+        final animateCards = animateIntro || _dayGeneration > 0;
+        var cardEntranceIndex = 0;
+        return GestureDetector(
+          key: const ValueKey('match-day-swipe-area'),
+          behavior: HitTestBehavior.translucent,
+          onHorizontalDragStart: _handleDaySwipeStart,
+          onHorizontalDragUpdate: _handleDaySwipeUpdate,
+          onHorizontalDragEnd: (details) =>
+              _handleDaySwipeEnd(days, weeks, details),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+            children: [
+              if (_showNewGamesCallout) ...[
+                _NewGamesReleaseCard(
+                  key: const ValueKey('new-games-release-card'),
+                  onTap: _openNewGamesRelease,
+                  onClose: () {
+                    setState(() {
+                      _showNewGamesCallout = false;
+                    });
+                  },
+                ),
+                const SizedBox(height: 14),
+              ],
+              Row(
+                children: [
+                  Expanded(
+                    child: _MatchDayNavigator(
+                      dayLabel: dayLabel,
+                      matchCount: matchCount,
+                      labelWidth: weekMode ? 248 : 200,
+                      canGoPrevious: canGoPrevious,
+                      canGoNext: canGoNext,
+                      onPrevious: onPrevious,
+                      onNext: onNext,
+                      onCalendar: () {
+                        playSound(SoundEffect.uiTap);
+                        _openCalendar(days);
+                      },
                     ),
-                    const SizedBox(height: 12),
-                    if (pinnedMatch != null && pinnedSide != null) ...[
-                      if (clubOptions.length > 1) ...[
-                        _ClubCrestSwitcher(
-                          clubs: clubOptions,
-                          activeTeamId: pinnedSide.teamId,
-                          onSelect: (teamId) {
-                            playSound(SoundEffect.uiTap);
-                            setState(() => _pinnedClubTeamId = teamId);
-                          },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (pinnedMatch != null && pinnedSide != null) ...[
+                if (clubOptions.length > 1) ...[
+                  _ClubCrestSwitcher(
+                    clubs: clubOptions,
+                    activeTeamId: pinnedSide.teamId,
+                    onSelect: (teamId) {
+                      playSound(SoundEffect.uiTap);
+                      setState(() => _pinnedClubTeamId = teamId);
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                StaggeredCardEntrance(
+                  key: ValueKey('club-pin-$_dayGeneration'),
+                  index: cardEntranceIndex++,
+                  animate: animateCards,
+                  slideFromLeft: _slideFromLeft,
+                  child: _YourClubPin(
+                    match: pinnedMatch,
+                    side: pinnedSide,
+                    prediction: state.predictionSummaryForMatch(pinnedMatch.id),
+                    quiz:
+                        state.quizzes[predictionStorageKey(
+                          pinnedMatch.id,
+                          state
+                                  .predictionSummaryForMatch(pinnedMatch.id)
+                                  ?.quizId ??
+                              kDefaultPredictionQuizId,
+                        )],
+                    onTap: () => widget.onOpenMatch(pinnedMatch),
+                  ),
+                ),
+                const SizedBox(height: 18),
+              ],
+              if (groupedByDay.isEmpty && pinnedMatch == null)
+                _EmptyMatchDay(day: navigatorAnchor, weekMode: weekMode)
+              else
+                for (final dayEntry in groupedByDay.entries) ...[
+                  if (weekMode || !_sameDay(dayEntry.key, _selectedDay))
+                    _DayDividerRow(day: dayEntry.key),
+                  for (final entry in dayEntry.value.entries) ...[
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () {
+                        playSound(SoundEffect.uiTap);
+                        widget.onOpenLeague(entry.key);
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 8, top: 4),
+                        child: Row(
+                          children: [
+                            Text(
+                              entry.key.shortCode,
+                              style:
+                                  Cyber.display(
+                                    18,
+                                    color: Cyber.cyan.withValues(alpha: 0.85),
+                                    letterSpacing: 2,
+                                  ).copyWith(
+                                    fontFeatures: const [
+                                      FontFeature.tabularFigures(),
+                                    ],
+                                  ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Container(
+                                height: 1,
+                                color: entry.key.accent.withValues(alpha: 0.25),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              'STANDING',
+                              style: Cyber.label(
+                                9,
+                                color: Cyber.muted,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(width: 3),
+                            Icon(
+                              Icons.chevron_right,
+                              size: 13,
+                              color: Cyber.cyan.withValues(alpha: 0.7),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 10),
-                      ],
+                      ),
+                    ),
+                    for (final match in _visibleLeagueMatches(entry.value)) ...[
                       StaggeredCardEntrance(
-                        key: ValueKey('club-pin-$_dayGeneration'),
+                        key: ValueKey('day-$_dayGeneration-$cardEntranceIndex'),
                         index: cardEntranceIndex++,
                         animate: animateCards,
                         slideFromLeft: _slideFromLeft,
-                        child: _YourClubPin(
-                          match: pinnedMatch,
-                          side: pinnedSide,
-                          prediction: state.predictionSummaryForMatch(
-                            pinnedMatch.id,
-                          ),
+                        child: MatchPredictionCard(
+                          match: match,
+                          prediction: state.predictionSummaryForMatch(match.id),
                           quiz:
                               state.quizzes[predictionStorageKey(
-                                pinnedMatch.id,
+                                match.id,
                                 state
-                                        .predictionSummaryForMatch(
-                                          pinnedMatch.id,
-                                        )
+                                        .predictionSummaryForMatch(match.id)
                                         ?.quizId ??
                                     kDefaultPredictionQuizId,
                               )],
-                          onTap: () => widget.onOpenMatch(pinnedMatch),
+                          favorite: state.favoriteSideFor(match),
+                          onTap: () => widget.onOpenMatch(match),
                         ),
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 16),
                     ],
-                    if (groupedByDay.isEmpty && pinnedMatch == null)
-                      _EmptyMatchDay(day: navigatorAnchor, weekMode: weekMode)
-                    else
-                      for (final dayEntry in groupedByDay.entries) ...[
-                        if (weekMode || !_sameDay(dayEntry.key, _selectedDay))
-                          _DayDividerRow(day: dayEntry.key),
-                        for (final entry in dayEntry.value.entries) ...[
-                          GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () {
-                              playSound(SoundEffect.uiTap);
-                              widget.onOpenLeague(entry.key);
-                            },
-                            child: Padding(
-                              padding: const EdgeInsets.only(bottom: 8, top: 4),
-                              child: Row(
-                                children: [
-                                  Text(
-                                    entry.key.shortCode,
-                                    style:
-                                        Cyber.display(
-                                          18,
-                                          color: Cyber.cyan.withValues(
-                                            alpha: 0.85,
-                                          ),
-                                          letterSpacing: 2,
-                                        ).copyWith(
-                                          fontFeatures: const [
-                                            FontFeature.tabularFigures(),
-                                          ],
-                                        ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Container(
-                                      height: 1,
-                                      color: entry.key.accent.withValues(
-                                        alpha: 0.25,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    'STANDING',
-                                    style: Cyber.label(
-                                      9,
-                                      color: Cyber.muted,
-                                      letterSpacing: 1.2,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 3),
-                                  Icon(
-                                    Icons.chevron_right,
-                                    size: 13,
-                                    color: Cyber.cyan.withValues(alpha: 0.7),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          for (final match in _visibleLeagueMatches(
-                            entry.value,
-                          )) ...[
-                            StaggeredCardEntrance(
-                              key: ValueKey(
-                                'day-$_dayGeneration-$cardEntranceIndex',
-                              ),
-                              index: cardEntranceIndex++,
-                              animate: animateCards,
-                              slideFromLeft: _slideFromLeft,
-                              child: MatchPredictionCard(
-                                match: match,
-                                prediction: state.predictionSummaryForMatch(
-                                  match.id,
-                                ),
-                                quiz:
-                                    state.quizzes[predictionStorageKey(
-                                      match.id,
-                                      state
-                                              .predictionSummaryForMatch(
-                                                match.id,
-                                              )
-                                              ?.quizId ??
-                                          kDefaultPredictionQuizId,
-                                    )],
-                                favorite: state.favoriteSideFor(match),
-                                onTap: () => widget.onOpenMatch(match),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                          ],
-                          if (entry.value.length > _kLeaguePreviewCount) ...[
-                            _LeagueViewMoreRow(
-                              remaining:
-                                  entry.value.length - _kLeaguePreviewCount,
-                              accent: entry.key.accent,
-                              onTap: () {
-                                playSound(SoundEffect.uiTap);
-                                widget.onOpenLeagueGames(entry.key);
-                              },
-                            ),
-                            const SizedBox(height: 16),
-                          ],
-                        ],
-                      ],
+                    if (entry.value.length > _kLeaguePreviewCount) ...[
+                      _LeagueViewMoreRow(
+                        remaining: entry.value.length - _kLeaguePreviewCount,
+                        accent: entry.key.accent,
+                        onTap: () {
+                          playSound(SoundEffect.uiTap);
+                          widget.onOpenLeagueGames(entry.key);
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                   ],
-                ),
-              );
-            },
+                ],
+            ],
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -2004,9 +1928,6 @@ String _monthDayLabel(DateTime day) {
 class _TrendingGamesTab extends StatefulWidget {
   const _TrendingGamesTab({
     required this.questTile,
-    required this.activeSportTab,
-    required this.onSportTabChanged,
-    required this.onMore,
     required this.onOpenGame,
     required this.onOpenShootout,
     required this.onOpenQuiz,
@@ -2021,9 +1942,6 @@ class _TrendingGamesTab extends StatefulWidget {
     required this.onIntroPlayed,
   });
 
-  final int activeSportTab;
-  final ValueChanged<int> onSportTabChanged;
-  final VoidCallback onMore;
   final VoidCallback onOpenGame;
   final VoidCallback onOpenShootout;
   final ValueChanged<Sport> onOpenQuiz;
@@ -2065,36 +1983,25 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
       });
     }
 
-    return Column(
+    return ListView(
+      key: const ValueKey('games-trending-feed'),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       children: [
-        SportHubTabs(
-          activeIndex: widget.activeSportTab,
-          onTap: widget.onSportTabChanged,
-          onMore: widget.onMore,
-        ),
-        Expanded(
-          child: ListView(
-            key: const ValueKey('games-trending-feed'),
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-            children: [
-              widget.questTile,
-              const SizedBox(height: 14),
-              CyberBentoGrid(
-                tiles: [
-                  for (var index = 0; index < catalog.length; index++)
-                    CyberBentoTile(
-                      span: catalog[index].span,
-                      child: StaggeredCardEntrance(
-                        key: ValueKey(catalog[index].id),
-                        index: index,
-                        animate: animate,
-                        child: _buildGameTile(catalog[index], streaks),
-                      ),
-                    ),
-                ],
+        widget.questTile,
+        const SizedBox(height: 14),
+        CyberBentoGrid(
+          tiles: [
+            for (var index = 0; index < catalog.length; index++)
+              CyberBentoTile(
+                span: catalog[index].span,
+                child: StaggeredCardEntrance(
+                  key: ValueKey(catalog[index].id),
+                  index: index,
+                  animate: animate,
+                  child: _buildGameTile(catalog[index], streaks),
+                ),
               ),
-            ],
-          ),
+          ],
         ),
       ],
     );
@@ -2270,9 +2177,6 @@ class _TrendingGameUnavailable extends StatelessWidget {
 class _GamesTab extends StatefulWidget {
   const _GamesTab({
     required this.selectedSport,
-    required this.activeSportTab,
-    required this.onSportTabChanged,
-    required this.onMore,
     required this.onOpenGame,
     required this.onOpenShootout,
     required this.onOpenQuiz,
@@ -2292,9 +2196,6 @@ class _GamesTab extends StatefulWidget {
   });
 
   final Sport selectedSport;
-  final int activeSportTab;
-  final ValueChanged<int> onSportTabChanged;
-  final VoidCallback onMore;
   final VoidCallback onOpenGame;
   final VoidCallback onOpenShootout;
   final ValueChanged<Sport> onOpenQuiz;
@@ -2335,33 +2236,22 @@ class _GamesTabState extends State<_GamesTab> {
         widget.onIntroPlayed?.call();
       });
     }
-    return Column(
-      children: [
-        SportHubTabs(
-          activeIndex: widget.activeSportTab,
-          onTap: widget.onSportTabChanged,
-          onMore: widget.onMore,
-        ),
-        Expanded(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 240),
-            transitionBuilder: (child, animation) {
-              final slide = Tween<Offset>(
-                begin: const Offset(0, 0.03),
-                end: Offset.zero,
-              ).animate(animation);
-              return FadeTransition(
-                opacity: animation,
-                child: SlideTransition(position: slide, child: child),
-              );
-            },
-            child: KeyedSubtree(
-              key: ValueKey<Sport>(widget.selectedSport),
-              child: _buildSportTab(animateIntro, streaks),
-            ),
-          ),
-        ),
-      ],
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 240),
+      transitionBuilder: (child, animation) {
+        final slide = Tween<Offset>(
+          begin: const Offset(0, 0.03),
+          end: Offset.zero,
+        ).animate(animation);
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(position: slide, child: child),
+        );
+      },
+      child: KeyedSubtree(
+        key: ValueKey<Sport>(widget.selectedSport),
+        child: _buildSportTab(animateIntro, streaks),
+      ),
     );
   }
 

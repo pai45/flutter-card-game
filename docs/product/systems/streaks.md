@@ -88,17 +88,32 @@ miss); the top-bar flame and home tile turn red without pulsing.
 
 ### Streak reminders — BUILT
 
-An in-app popup (no OS notifications) warns players before a live streak breaks.
-It escalates at most twice per local day:
+An in-app bottom sheet (no OS notifications) warns players before a live streak
+breaks. It escalates at most twice per local day:
 
 | Reminder | When | Content |
 |---|---|---|
 | Nudge (amber) | First app open/resume before 18:00 with a live, unsecured run | `KEEP THE FIRE BURNING` · "Play anything today to make it N." |
 | AT RISK (danger) | Open/resume from 18:00 (`streakRiskHour`) with the run still unsecured | `STREAK AT RISK` · "Xh Ym left to save your N-day run." + `SHIELD ARMED` when shields are banked |
 
-Each shows a pulsing streak flame, the run count, the compact week chain that is
-about to break, one CTA into the hub (`KEEP IT ALIVE` / `SAVE MY STREAK`), one-tap
-`PLAY` / `PREDICT` / `PICK` (routed through `AppShell._routeQuest`), and `NOT NOW`.
+The sheet (`StreakReminderSheet`) slides up from the bottom (swipe down or tap
+the scrim to dismiss — there is no separate dismiss button, so the sheet is
+capped at 90% of the screen height and its drag handle sits outside the
+scrolling content to keep both dismiss paths available on small screens) and reads top to bottom as *what's at stake → how
+long is left → the fastest way to save it*:
+
+1. `PENDING` / `AT RISK` status tag and a secondary `STREAK HUB ›` link.
+2. Flame core plate (streak flame + day count) beside the headline and one line.
+3. `LAST 7 DAYS` panel: the full week chain with today's open slot, the reset
+   clock, and the next milestone (`DAY N REWARD`, reward, `UNLOCKS TODAY` /
+   `N DAYS AWAY`, progress meter).
+4. Shield line: `SHIELD ARMED` + days covered, or `NO SHIELD` + how to forge one.
+5. `PICK YOUR MOVE`: `PLAY` / `PREDICT` / `PICK` tiles, preselected to the
+   player's most recent activity.
+6. One ignition CTA (`CyberFuseCtaButton`) whose label names exactly what the tap
+   does — `PLAY A GAME` / `MAKE A PREDICTION` / `PLACE A PICK` — routed through
+   `AppShell._routeQuest`; a fuse along its base burns down with the time left
+   today. It is the sheet's only glow.
 Nothing shows when today is already secured or there is no live run. A nudge
 missed before 18:00 is skipped; only the AT RISK reminder fires in the evening.
 

@@ -7,6 +7,7 @@ import '../models/streak.dart';
 import '../screens/predictions/streak_calendar_screen.dart';
 import '../utils/sound_effects.dart';
 import '../config/theme.dart';
+import 'cyber/cyber_underline_tabs.dart';
 import 'streak_widgets.dart';
 
 const _barFill = Color(0xff1a253a);
@@ -105,6 +106,63 @@ class StatOzTopBar extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Tab-root page shell: the [topBar] and any [collapsible] rows beneath it (the
+/// MATCH / GAMES switcher) scroll away with the feed, while [pinned] — the sport
+/// strip — sticks to the top so switching sport is always one tap away.
+///
+/// The status-bar inset keeps the bar fill, so the pinned strip parks below the
+/// system clock instead of sliding under it. Body scroll views need no wiring:
+/// [NestedScrollView] hands them its controller on every platform.
+class StatOzCollapsingHeaderView extends StatelessWidget {
+  const StatOzCollapsingHeaderView({
+    required this.topBar,
+    required this.pinned,
+    required this.body,
+    this.collapsible,
+    super.key,
+  });
+
+  final Widget topBar;
+  final Widget? collapsible;
+  final Widget pinned;
+  final Widget body;
+
+  @override
+  Widget build(BuildContext context) {
+    final topInset = MediaQuery.viewPaddingOf(context).top;
+    return Column(
+      children: [
+        ColoredBox(
+          color: _barFill,
+          child: SizedBox(height: topInset, width: double.infinity),
+        ),
+        Expanded(
+          // The inset is painted above, so the bar inside must not add it again.
+          child: MediaQuery.removeViewPadding(
+            context: context,
+            removeTop: true,
+            child: NestedScrollView(
+              headerSliverBuilder: (context, _) => [
+                SliverToBoxAdapter(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [topBar, ?collapsible],
+                  ),
+                ),
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: CyberPinnedTabsDelegate(child: pinned),
+                ),
+              ],
+              body: body,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

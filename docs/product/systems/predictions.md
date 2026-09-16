@@ -1,7 +1,7 @@
 # Predictions
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-13
+> **Last verified:** 2026-09-15
 > **Scope:** Fixture quiz discovery, submission/editing, boosters, lock lifecycle, XP settlement, and paid Scoreline contest
 
 ## Product Purpose
@@ -17,6 +17,13 @@ grouped by date and league; match, league, standings, history, leaderboard, and
 linked-pick surfaces provide context around the quiz. A fixed search action on
 the MATCH sport strip opens an all-sports team and league fixture finder without
 changing the selected sport or match day.
+
+The MATCH / GAMES page header collapses on scroll: the StatOz top bar (title,
+streak flame, coins) and the MATCH / GAMES switcher scroll away with the feed,
+while the sport strip (TRENDING, sports, ALL SPORTS, search) pins to the top of
+the screen so switching sport stays one tap away at any depth. The status-bar
+area keeps the top-bar fill, so the pinned strip never slides under the system
+clock. Scrolling back to the top restores the full header. — BUILT
 
 When the player's followed club plays inside the match window on screen, that
 fixture is lifted out of its league group and pinned directly beneath the day
@@ -217,15 +224,25 @@ cyan-tinted panel background, cyan chamfered border, cyan signal line, and cyan
 hard-elevation edge. LIVE, FUTURE, PREDICT, PICK, and sport identity colors stay
 inside the card as semantic labels and markers rather than changing its shell.
 
-The Trending layout uses a dense two-column broadcast grid. Full-width fixtures
-are scoreboard cards: the lifecycle sits in a centered top notch, the score or
-kickoff is the dominant figure between full team names and crests, and the
-bottom telemetry rail carries live/full-time/XP state plus Oz volume. FUTURE,
+The MATCH Trending feed opens with a PICKS / FUTURES / EVENTS category strip:
+three equal squares on the same cyan Trending card shell, directly above the
+bento grid. Each shows its live open-market count and a type-coloured glyph;
+tapping one opens ALL PICKS with the browse filters reset (all leagues, open
+status) and the matching MATCHES / FUTURES / EVENT chip active. A square pulses
+a small dot only while one of its open markets is genuinely hot (the same
+5-point rule as the market delta chip).
+
+Below it, the Trending layout uses a dense two-column broadcast grid.
+Full-width fixtures are scoreboard cards on a shorter strip row: the live minute
+(beside a blinking green dot) or lifecycle sits in a centered top notch, the
+white score or kickoff is the dominant figure between full team names and
+crests, and the bottom telemetry rail carries live/full-time/XP state plus Oz
+volume. FUTURE,
 PICK, and PREDICT cards use taller portrait proportions with the same separated
 telemetry rail, keeping the question or matchup readable above market status,
 XP, and volume. The rail changes to the darker footer surface without a divider
-line, so each tile reads as one uninterrupted card. Only LIVE badges and
-genuinely hot market deltas animate or glow; the repeated card shell and
+line, so each tile reads as one uninterrupted card. Only LIVE badges and dots,
+genuinely hot market deltas, and hot category dots animate or glow; the repeated card shell and
 telemetry chrome stay calm.
 
 The match STATS tab uses sport-specific report HUDs built on the **pick market

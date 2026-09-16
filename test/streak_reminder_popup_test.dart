@@ -21,15 +21,17 @@ void main() {
 
   final morning = DateTime(2026, 6, 19, 10);
   final evening = DateTime(2026, 6, 19, 20);
+  final cta = find.byKey(const ValueKey('streak-reminder-cta'));
 
-  /// Opens the reminder at 320px / 1.4x text, taps [label] and returns the
-  /// resolved action (null = dismissed).
+  /// Opens the reminder sheet at 320px / 1.4x text, taps [taps] in order and
+  /// returns the resolved action (null = dismissed).
   Future<(bool, StreakReminderAction?)> run(
     WidgetTester tester, {
     required StreakReminderKind kind,
     required StreakSnapshot streak,
     required DateTime now,
-    required String label,
+    List<Finder> taps = const [],
+    Offset? tapScrimAt,
     List<String> expectTexts = const [],
     List<String> absentTexts = const [],
   }) async {
@@ -68,6 +70,7 @@ void main() {
     await tester.tap(find.text('OPEN'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
+    expect(find.byType(StreakReminderSheet), findsOneWidget);
     for (final text in expectTexts) {
       expect(find.text(text), findsOneWidget, reason: text);
     }
@@ -75,27 +78,42 @@ void main() {
       expect(find.text(text), findsNothing, reason: text);
     }
     expect(tester.takeException(), isNull);
-    final target = find.text(label);
-    await tester.ensureVisible(target);
-    await tester.tap(target);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-    expect(find.byType(StreakReminderDialog), findsNothing);
+    for (final target in taps) {
+      await tester.ensureVisible(target);
+      await tester.pump();
+      await tester.tap(target);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+    if (tapScrimAt != null) {
+      await tester.tapAt(tapScrimAt);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+    expect(tester.takeException(), isNull);
+    expect(find.byType(StreakReminderSheet), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
     return (resolved, result);
   }
 
-  testWidgets('nudge invites the next day and opens the hub', (tester) async {
+  testWidgets('nudge shows the stakes and STREAK HUB opens the hub', (
+    tester,
+  ) async {
     final (resolved, action) = await run(
       tester,
       kind: StreakReminderKind.nudge,
       streak: StreakSnapshot.seeded(morning),
       now: morning,
-      label: 'KEEP IT ALIVE',
+      taps: [find.text('STREAK HUB')],
       expectTexts: const [
         'KEEP THE FIRE BURNING',
         'Play anything today to make it 7.',
         '6',
+        'PENDING',
+        'DAY 7 REWARD',
+        'UNLOCKS TODAY',
+        'NO SHIELD',
+        'RESETS IN 14H 00M',
       ],
       absentTexts: const ['STREAK AT RISK', 'SHIELD ARMED'],
     );
@@ -103,52 +121,70 @@ void main() {
     expect(action, StreakReminderAction.openHub);
   });
 
-  testWidgets('at-risk warning shows armed shields and routes PREDICT', (
-    tester,
-  ) async {
+  testWidgets('at-risk warning shows armed shields; choosing PREDICT '
+      'retargets the CTA', (tester) async {
     final (_, action) = await run(
       tester,
       kind: StreakReminderKind.atRisk,
       streak: StreakSnapshot.seeded(evening).copyWith(shields: 1),
       now: evening,
-      label: 'PREDICT',
+      taps: [find.text('PREDICT'), find.text('MAKE A PREDICTION')],
       expectTexts: const [
         'STREAK AT RISK',
+        'AT RISK',
         '4H 00M left to save your 6-day run.',
         'SHIELD ARMED',
-        'SAVE MY STREAK',
+        'Covers a missed day.',
       ],
     );
     expect(action, StreakReminderAction.predict);
   });
 
-  testWidgets('at-risk without shields hides the shield line; NOT NOW '
+  testWidgets('at-risk without shields hides the shield line; the scrim '
       'dismisses', (tester) async {
     final (resolved, action) = await run(
       tester,
       kind: StreakReminderKind.atRisk,
       streak: StreakSnapshot.seeded(evening),
       now: evening,
-      label: 'NOT NOW',
-      absentTexts: const ['SHIELD ARMED'],
+      tapScrimAt: const Offset(160, 4),
+      absentTexts: const ['SHIELD ARMED', 'NOT NOW'],
     );
     expect(resolved, isTrue);
     expect(action, isNull);
+  });
+
+  testWidgets('the CTA preselects the most recent move', (tester) async {
+    final base = StreakSnapshot.seeded(morning);
+    final yesterday = streakDayKey(morning.subtract(const Duration(days: 1)));
+    final (_, action) = await run(
+      tester,
+      kind: StreakReminderKind.nudge,
+      streak: base.copyWith(
+        activitiesByDay: {
+          ...base.activitiesByDay,
+          yesterday: const [StreakActivity.pick],
+        },
+      ),
+      now: morning,
+      taps: [cta],
+      expectTexts: const ['PLACE A PICK'],
+      absentTexts: const ['ONE PICK COUNTS'],
+    );
+    expect(action, StreakReminderAction.pick);
   });
 
   for (final entry in const {
     'PLAY': StreakReminderAction.play,
     'PICK': StreakReminderAction.pick,
   }.entries) {
-    testWidgets('${entry.key} quick action resolves ${entry.value}', (
-      tester,
-    ) async {
+    testWidgets('${entry.key} move resolves ${entry.value}', (tester) async {
       final (_, action) = await run(
         tester,
         kind: StreakReminderKind.nudge,
         streak: StreakSnapshot.seeded(morning),
         now: morning,
-        label: entry.key,
+        taps: [find.text(entry.key), cta],
       );
       expect(action, entry.value);
     });

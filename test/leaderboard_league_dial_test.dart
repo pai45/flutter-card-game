@@ -209,7 +209,20 @@ void main() {
 
       final rival = rows.firstWhere((row) => !row.entry.isUser);
       final rivalRow = find.text(rival.entry.name);
-      await tester.ensureVisible(rivalRow);
+      // The top bar and MATCHES / GAMES tabs scroll away in a NestedScrollView,
+      // where ensureVisible re-opens the header and snaps the board back, so
+      // drag the row above the docked rank bar instead.
+      final board = find.byType(NestedScrollView);
+      for (var step = 0; step < 60; step++) {
+        if (tester.getRect(rivalRow).bottom <= tester.getRect(board).bottom) {
+          break;
+        }
+        await tester.dragFrom(
+          tester.getRect(board).center,
+          const Offset(0, -120),
+        );
+        await tester.pump();
+      }
       await tester.pumpAndSettle();
       await tester.tap(rivalRow);
       await tester.pumpAndSettle();

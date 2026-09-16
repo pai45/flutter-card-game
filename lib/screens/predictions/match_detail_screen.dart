@@ -176,7 +176,7 @@ class _MatchTabsViewState extends State<MatchTabsView> {
         SliverToBoxAdapter(child: widget.headerBuilder(_match)),
         SliverPersistentHeader(
           pinned: true,
-          delegate: _MatchPrimaryTabsHeader(
+          delegate: CyberPinnedTabsDelegate(
             child: CyberUnderlineTabs(
               key: const ValueKey('match-primary-tabs'),
               labels: _tabs,
@@ -216,34 +216,6 @@ class _MatchTabsViewState extends State<MatchTabsView> {
       ),
     );
   }
-}
-
-/// Keeps the match's primary navigation reachable after the score header has
-/// scrolled away. The existing underline tab bar remains the only active/glow
-/// treatment; this delegate adds scroll behavior without adding new chrome.
-class _MatchPrimaryTabsHeader extends SliverPersistentHeaderDelegate {
-  const _MatchPrimaryTabsHeader({required this.child});
-
-  final Widget child;
-
-  @override
-  double get minExtent => 50;
-
-  @override
-  double get maxExtent => 50;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return ColoredBox(color: Cyber.bg, child: child);
-  }
-
-  @override
-  bool shouldRebuild(covariant _MatchPrimaryTabsHeader oldDelegate) =>
-      oldDelegate.child != child;
 }
 
 class _MatchCircleCta extends StatefulWidget {
