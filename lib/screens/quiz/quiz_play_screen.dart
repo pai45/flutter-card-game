@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_event.dart';
+import '../../config/game_ladder.dart';
 import '../../blocs/quiz/quiz_cubit.dart';
 import '../../config/theme.dart';
 import '../../models/oz_coin_ledger.dart';
@@ -303,6 +304,13 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
     final xpBefore = context.read<GameBloc>().state.progression.totalXP;
     final totalXp = _earnedXp;
     _bankEarnedXp(partial: false);
+    context.read<GameBloc>().add(
+      ArcadeGamePlayed(
+        quizGameFor(_sport),
+        sourceId:
+            '${_mode.name}-$_setNumber-${DateTime.now().microsecondsSinceEpoch}',
+      ),
+    );
 
     final outcome = await quiz.recordResult(
       _sport,

@@ -187,6 +187,8 @@ class _QuizSetScreenState extends State<QuizSetScreen> {
 
     setState(() => _launchingSet = setNumber);
     final game = context.read<GameBloc>();
+    // The Beginner's Quest's quiz step comes with one free entry.
+    final rookieTicket = game.state.unlocks.hasRookieTicket(widget.sport);
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -197,6 +199,7 @@ class _QuizSetScreenState extends State<QuizSetScreen> {
         mode: widget.mode,
         setNumber: setNumber,
         coins: game.state.coins,
+        free: rookieTicket,
       ),
     );
 
@@ -205,22 +208,26 @@ class _QuizSetScreenState extends State<QuizSetScreen> {
       setState(() => _launchingSet = null);
       return;
     }
-    if (game.state.coins < kQuizEntryCost) {
+    if (!rookieTicket && game.state.coins < kQuizEntryCost) {
       setState(() => _launchingSet = null);
       _showMessage('Need $kQuizEntryCost coins to play this quiz set.');
       return;
     }
 
-    playSound(SoundEffect.coinSpend);
     playSound(SoundEffect.playMatch);
-    game.add(
-      CoinsSpent(
-        kQuizEntryCost,
-        source: OzCoinTransactionSource.quizEntry,
-        title: '${widget.sport.name.toUpperCase()} QUIZ ENTRY',
-        subtitle: '${widget.mode.label} SET $setNumber',
-      ),
-    );
+    if (rookieTicket) {
+      game.add(RookieTicketUsed(widget.sport));
+    } else {
+      playSound(SoundEffect.coinSpend);
+      game.add(
+        CoinsSpent(
+          kQuizEntryCost,
+          source: OzCoinTransactionSource.quizEntry,
+          title: '${widget.sport.name.toUpperCase()} QUIZ ENTRY',
+          subtitle: '${widget.mode.label} SET $setNumber',
+        ),
+      );
+    }
     await Future<void>.delayed(const Duration(milliseconds: 120));
     if (!mounted) return;
     await Navigator.of(context).push(
@@ -1271,6 +1278,7 @@ class _EntryBriefing extends StatelessWidget {
     required this.mode,
     required this.setNumber,
     required this.coins,
+    this.free = false,
   });
 
   final Sport sport;
@@ -1278,9 +1286,12 @@ class _EntryBriefing extends StatelessWidget {
   final int setNumber;
   final int coins;
 
+  /// A Beginner's Quest ROOKIE TICKET covers this entry.
+  final bool free;
+
   @override
   Widget build(BuildContext context) {
-    final canAfford = coins >= kQuizEntryCost;
+    final canAfford = free || coins >= kQuizEntryCost;
     final missing = (kQuizEntryCost - coins).clamp(0, kQuizEntryCost);
     return Container(
       decoration: BoxDecoration(
@@ -1375,7 +1386,9 @@ class _EntryBriefing extends StatelessWidget {
                           _BriefingStat(
                             icon: Icons.toll,
                             label: 'ENTRY',
-                            value: '$kQuizEntryCost COINS',
+                            value: free
+                                ? 'FREE · ROOKIE TICKET'
+                                : '$kQuizEntryCost COINS',
                             accent: Cyber.amber,
                           ),
                         ],

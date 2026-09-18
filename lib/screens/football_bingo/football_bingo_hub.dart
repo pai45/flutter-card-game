@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../blocs/game/game_bloc.dart';
+import '../../blocs/game/game_event.dart';
+import '../../config/game_ladder.dart';
 import '../../blocs/football_bingo/football_bingo_cubit.dart';
 import '../../blocs/football_bingo/football_bingo_state.dart';
 import '../../config/enums.dart';
@@ -51,7 +54,15 @@ class _FootballBingoTabContentState extends State<FootballBingoTabContent> {
           if (_showGrid) {
             return FootballBingoScreen(
               onBack: _backHome,
-              onCompleted: _backHome,
+              onCompleted: () {
+                context.read<GameBloc>().add(
+                  ArcadeGamePlayed(
+                    ArcadeGame.footballBingo,
+                    sourceId: state.activeDayKey,
+                  ),
+                );
+                _backHome();
+              },
             );
           }
           if (_showLogs) {

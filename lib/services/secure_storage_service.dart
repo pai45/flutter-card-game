@@ -21,6 +21,7 @@ import '../models/streak.dart';
 import '../models/streak_reminder.dart';
 import '../models/daily_quest.dart';
 import '../models/tennis.dart';
+import '../models/unlock_progress.dart';
 import '../models/xp_ledger.dart';
 import '../models/guess_player.dart';
 import '../models/guess_driver.dart';
@@ -171,10 +172,12 @@ class SecureGameStorage {
   static const _selectedAvatarKey = 'pd_selected_avatar_v1';
   static const _selectedProfileBannerKey = 'pd_selected_profile_banner_v1';
   static const _primarySportKey = 'pd_primary_sport_v1';
+  static const _followedSportsKey = 'pd_followed_sports_v1';
   static const _selectedTimeZoneKey = 'pd_selected_time_zone_v1';
   static const _followedLeaguesKey = 'pd_followed_leagues_v1';
   static const _favoriteTeamsKey = 'pd_favorite_teams_v1';
   static const _onboardingCompleteKey = 'pd_onboarding_complete_v1';
+  static const _unlockProgressKey = 'pd_unlock_progress_v1';
   static const _onboardingRewardStatusKey = 'pd_onboarding_reward_status_v1';
   static const _celebratedAchievementsKey = 'pd_celebrated_achievements_v1';
   static const _streakKey = 'pd_daily_streak_v1';
@@ -794,6 +797,25 @@ class SecureGameStorage {
     );
   }
 
+  /// Every sport picked during profile setup, by `Sport.name`. The first of
+  /// them is also stored on its own as the primary sport.
+  Future<List<String>> loadFollowedSportNames() async {
+    try {
+      final raw = await _storage.read(key: _followedSportsKey);
+      if (raw == null || raw.isEmpty) return const [];
+      return List<String>.from(jsonDecode(raw) as List);
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<void> saveFollowedSportNames(List<String> sportNames) async {
+    await _storage.write(
+      key: _followedSportsKey,
+      value: jsonEncode(sportNames),
+    );
+  }
+
   /// The rivals the player has added as friends, by leaderboard display name.
   Future<List<String>> loadFriends() async {
     try {
@@ -907,6 +929,7 @@ class SecureGameStorage {
       _storage.delete(key: _selectedAvatarKey),
       _storage.delete(key: _selectedProfileBannerKey),
       _storage.delete(key: _primarySportKey),
+      _storage.delete(key: _followedSportsKey),
       _storage.delete(key: _selectedTimeZoneKey),
       _storage.delete(key: _followedLeaguesKey),
       _storage.delete(key: _favoriteTeamsKey),
@@ -949,6 +972,26 @@ class SecureGameStorage {
   Future<void> saveStreak(StreakSnapshot streak) async {
     await _storage.write(key: _streakKey, value: jsonEncode(streak.toJson()));
   }
+
+  /// `null` when never written: the bloc then grandfathers profiles that
+  /// finished onboarding before sport/game unlocks shipped. A failed read
+  /// also returns `null`, which only ever errs towards everything unlocked.
+  Future<UnlockProgress?> loadUnlockProgress() async {
+    try {
+      final raw = await _storage.read(key: _unlockProgressKey);
+      if (raw == null || raw.isEmpty) return null;
+      return UnlockProgress.fromJson(
+        Map<String, dynamic>.from(jsonDecode(raw) as Map),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> saveUnlockProgress(UnlockProgress progress) => _storage.write(
+    key: _unlockProgressKey,
+    value: jsonEncode(progress.toJson()),
+  );
 
   // Do not silently reset failed quest reads: that could erase claim receipts.
   Future<DailyQuestSnapshot> loadDailyQuests() async {

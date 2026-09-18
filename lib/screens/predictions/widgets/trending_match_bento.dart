@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../blocs/game/game_bloc.dart';
 import '../../../blocs/picks/picks_cubit.dart';
 import '../../../blocs/picks/picks_state.dart';
 import '../../../blocs/prediction/prediction_cubit.dart';
@@ -12,6 +13,7 @@ import '../../../config/sport_modules.dart';
 import '../../../config/theme.dart';
 import '../../../models/picks.dart';
 import '../../../models/sport_match.dart';
+import '../../../models/unlock_progress.dart';
 import '../../../utils/prediction_helpers.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
@@ -94,8 +96,10 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
     // PredictionCubit merges each sport result into its current fixture
     // snapshot. Keep these catalog-scoped loads ordered so concurrent
     // completions cannot replace fixtures added by another sport.
+    final unlocks =
+        context.read<GameBloc?>()?.state.unlocks ?? const UnlockProgress();
     for (final sport in matchTrendingSports) {
-      await cubit.loadSport(sport);
+      if (unlocks.isSportUnlocked(sport)) await cubit.loadSport(sport);
     }
     final catalogFixtures = await cubit.resolveCatalogFixtures(
       catalogFixtureIds,
@@ -113,8 +117,11 @@ class _TrendingMatchesViewState extends State<TrendingMatchesView> {
       builder: (context, predictionState) {
         return BlocBuilder<PicksCubit, PicksState>(
           builder: (context, picksState) {
+            final unlocks = context.select<GameBloc?, UnlockProgress>(
+              (bloc) => bloc?.state.unlocks ?? const UnlockProgress(),
+            );
             final catalog = matchTrendingCatalog
-                .where((item) => item.enabled)
+                .where((item) => trendingTileVisible(item, unlocks))
                 .toList(growable: false);
             final animate = widget.animateIntro && !_introReported;
             if (animate && catalog.isNotEmpty) {

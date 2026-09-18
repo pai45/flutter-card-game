@@ -22,6 +22,7 @@ enum XpTransactionSource {
   finalOver,
   guessPlayer,
   bingo,
+  beginnerQuest,
 }
 
 /// Maps an XP ledger source onto a [ProgressTrack].
@@ -43,6 +44,7 @@ ProgressTrack progressTrackForSource(XpTransactionSource source) =>
       XpTransactionSource.dailyDrop ||
       XpTransactionSource.cardUnlock ||
       XpTransactionSource.streakReward ||
+      XpTransactionSource.beginnerQuest ||
       XpTransactionSource.openingBalance => ProgressTrack.cardsMeta,
     };
 

@@ -58,8 +58,14 @@ must be explicitly tagged.
 
 First launch plays WELCOME TO STATOZ, opens the **PROTOTYPE** login/signup
 preview, then enters profile setup. Completing setup saves the player's identity and
-awards an idempotent 1,000 Oz Coin welcome bonus with a reward animation. The
-main app then opens the sports hub with four persistent destinations:
+awards an idempotent 1,000 Oz Coin welcome bonus with a reward animation.
+Setup's single-select **home sport** is the only sport open to a new player:
+the other sports sit on the sport strip as padlocked teasers that unlock for 50
+Oz each, and within every sport only the first game is open. The rest unlock by
+playing through that sport's **Beginner's Quest**
+([Sport and Game Unlocks](systems/sport-and-game-unlocks.md)). Profiles
+onboarded before this shipped keep everything open. The main app then opens the
+sports hub with four persistent destinations:
 
 - **Sports**: PREDICT, PICK, and GAMES tabs, each with sport filters.
 - **Shop**: avatars, frames, banners, kits/liveries, coins, packs, and cards,
@@ -111,6 +117,7 @@ Guess the Player entries share one implementation and one product page.
 | Prediction feedback, rewards, daily quests, and planned accuracy streaks | BUILT / PLANNED | [Prediction Gamification](systems/prediction-gamification.md) |
 | Outcome markets, positions, settlement, and payouts | BUILT / PROTOTYPE DATA | [Picks](systems/picks.md) |
 | Per-mode XP tracks and aggregate player level | BUILT | [Progression and Leveling](systems/progression-and-leveling.md) |
+| Home sport, locked sports (50 Oz unlock), per-sport game ladders, and the Beginner's Quest | BUILT | [Sport and Game Unlocks](systems/sport-and-game-unlocks.md) |
 | Daily activity streaks, streak shields + at-risk state, escalating streak reminder popups, three daily quests + sweep bonus, milestones, and claims | BUILT | [Streaks](systems/streaks.md) |
 | Cross-app badges and unlock celebrations | BUILT | [Achievements](systems/achievements.md) |
 | Cards, decks, packs, starter packs, and daily drops | BUILT | [Collections, Decks, and Packs](systems/collections-decks-and-packs.md) |

@@ -138,7 +138,11 @@ day from daily quest completion.
 | Daily Sweep | Complete all three quests | 20 | +1 streak shield |
 
 Game totals are cumulative. Eligible completions are Pitch Duel, Penalty
-Shootout, and daily Guess the Player across its supported sports. Winning is
+Shootout, daily Guess the Player across its supported sports, and (since
+2026-09-18) every other finished GAMES-tab mode (`DailyQuestActivity.arcadeGame`),
+so a player whose home sport isn't football can clear the game quests. Game
+quest CTAs open the named football mode when the player has it unlocked, and
+otherwise their home sport's current Beginner's Quest game. Winning is
 optional; quitting does not count. Predictions count after a successful fresh
 submission, not edits or results. Picks count after successful confirmation;
 additional purchases in a position have distinct confirmation identities.

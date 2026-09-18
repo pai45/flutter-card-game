@@ -721,7 +721,8 @@ bool _matches(XpLedgerEntry entry, _XpHistoryFilter filter) {
       entry.source == XpTransactionSource.pack ||
           entry.source == XpTransactionSource.dailyDrop ||
           entry.source == XpTransactionSource.streakReward ||
-          entry.source == XpTransactionSource.cardUnlock,
+          entry.source == XpTransactionSource.cardUnlock ||
+          entry.source == XpTransactionSource.beginnerQuest,
   };
 }
 
@@ -789,6 +790,7 @@ IconData _sourceIcon(XpTransactionSource source) {
     XpTransactionSource.streakReward => Icons.local_fire_department,
     XpTransactionSource.cardUnlock => Icons.style,
     XpTransactionSource.openingBalance => Icons.history,
+    XpTransactionSource.beginnerQuest => Icons.flag_rounded,
   };
 }
 

@@ -38,7 +38,10 @@ and never saved or transmitted. Legal links show themed unavailability dialogs;
 they do not represent published policies or record acceptance.
 
 1. Choose avatar and profile banner.
-2. Select a primary sport/module.
+2. Pick one **home sport** (single-select board, `PICK YOUR HOME SPORT`),
+   then that sport's clubs page. The home sport is the only sport open in the
+   app until more are unlocked for 50 Oz each; see
+   [Sport and Game Unlocks](sport-and-game-unlocks.md).
 3. Optionally follow leagues/competitions and favorite teams.
 4. Confirm identity in the profile-locked reveal.
 5. Receive the one-time **1,000 Oz Coin** welcome bonus and animation.

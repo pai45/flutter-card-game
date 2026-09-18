@@ -27,9 +27,11 @@ class CyberUnderlineTabs extends StatelessWidget {
     this.icons,
     this.iconColors,
     this.minTabWidth,
+    this.locked,
     super.key,
   }) : assert(icons == null || icons.length == labels.length),
-       assert(iconColors == null || iconColors.length == labels.length);
+       assert(iconColors == null || iconColors.length == labels.length),
+       assert(locked == null || locked.length == labels.length);
 
   final List<String> labels;
   final int activeIndex;
@@ -45,6 +47,10 @@ class CyberUnderlineTabs extends StatelessWidget {
 
   /// When set, each tab is at least this wide. Overflow scrolls horizontally.
   final double? minTabWidth;
+
+  /// Per-tab locked teaser flags: a locked tab reads dimmed with a lock seal
+  /// but stays tappable, so the owner can open an unlock sheet instead.
+  final List<bool>? locked;
 
   @override
   Widget build(BuildContext context) {
@@ -80,6 +86,7 @@ class CyberUnderlineTabs extends StatelessWidget {
                           label: labels[i],
                           icon: icons?[i],
                           iconColor: iconColors?[i],
+                          locked: locked?[i] ?? false,
                           active: activeIndex == i,
                           accent: accent,
                           onTap: () {
@@ -169,11 +176,13 @@ class _UnderlineTab extends StatefulWidget {
     required this.active,
     required this.accent,
     required this.onTap,
+    this.locked = false,
   });
 
   final String label;
   final IconData? icon;
   final Color? iconColor;
+  final bool locked;
   final bool active;
   final Color accent;
   final VoidCallback onTap;
@@ -188,7 +197,9 @@ class _UnderlineTabState extends State<_UnderlineTab> {
   @override
   Widget build(BuildContext context) {
     final labelColor = widget.active ? widget.accent : Cyber.muted;
-    final iconColor = widget.iconColor == null
+    final iconColor = widget.locked
+        ? Cyber.muted.withValues(alpha: 0.4)
+        : widget.iconColor == null
         ? labelColor
         : widget.iconColor!.withValues(alpha: widget.active ? 1 : 0.58);
     return GestureDetector(
@@ -211,7 +222,7 @@ class _UnderlineTabState extends State<_UnderlineTab> {
             child: Semantics(
               button: true,
               selected: widget.active,
-              label: widget.label,
+              label: widget.locked ? '${widget.label}, locked' : widget.label,
               child: ExcludeSemantics(
                 child: widget.icon == null
                     ? FittedBox(
@@ -229,13 +240,55 @@ class _UnderlineTabState extends State<_UnderlineTab> {
                         ),
                       )
                     : Tooltip(
-                        message: widget.label,
-                        child: Icon(widget.icon, color: iconColor, size: 21),
+                        message: widget.locked
+                            ? '${widget.label} - locked'
+                            : widget.label,
+                        child: widget.locked
+                            ? _LockedIcon(icon: widget.icon!, color: iconColor)
+                            : Icon(widget.icon, color: iconColor, size: 21),
                       ),
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// A locked teaser glyph: the sport icon dimmed, sealed with a small padlock.
+/// Flat on purpose - a locked tab is never the live element, so it never glows.
+class _LockedIcon extends StatelessWidget {
+  const _LockedIcon({required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 28,
+      height: 26,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Align(
+            alignment: Alignment.topLeft,
+            child: Icon(icon, color: color, size: 21),
+          ),
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: Container(
+              padding: const EdgeInsets.all(1.5),
+              decoration: BoxDecoration(
+                color: Cyber.bg,
+                border: Border.all(color: Cyber.gold.withValues(alpha: 0.55)),
+              ),
+              child: const Icon(Icons.lock, size: 9, color: Cyber.gold),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,3 +1,4 @@
+import '../../config/game_ladder.dart';
 import '../../models/cards.dart';
 import '../../models/deck.dart';
 import '../../models/oz_coin_ledger.dart';
@@ -272,6 +273,35 @@ class DailyQuestsRefreshed extends GameEvent {}
 class DailyQuestRewardsClaimed extends GameEvent {}
 
 class DailyQuestRewardConsumed extends GameEvent {}
+
+/// Onboarding picked the player's home sport; starts gated unlock progress.
+class HomeSportChosen extends GameEvent {
+  HomeSportChosen(this.sport);
+  final Sport sport;
+}
+
+/// Spend [sportUnlockCostOz] to open another sport.
+class SportUnlockPurchased extends GameEvent {
+  SportUnlockPurchased(this.sport);
+  final Sport sport;
+}
+
+/// A GAMES-tab mode was finished (win or lose). Advances the Beginner's Quest
+/// and counts towards the daily game quests.
+class ArcadeGamePlayed extends GameEvent {
+  ArcadeGamePlayed(this.game, {required this.sourceId});
+  final ArcadeGame game;
+  final String sourceId;
+}
+
+/// The free first quiz entry of a Beginner's Quest was used.
+class RookieTicketUsed extends GameEvent {
+  RookieTicketUsed(this.sport);
+  final Sport sport;
+}
+
+/// The app root finished playing the head of the unlock reveal queue.
+class UnlockRevealConsumed extends GameEvent {}
 
 class StreakMilestoneClaimed extends GameEvent {
   StreakMilestoneClaimed(this.days);

@@ -328,6 +328,8 @@ IconData _sourceIcon(OzCoinTransactionSource source) {
     OzCoinTransactionSource.shopTopUp => Icons.storefront,
     OzCoinTransactionSource.openingBalance => Icons.account_balance_wallet,
     OzCoinTransactionSource.manual => Icons.toll,
+    OzCoinTransactionSource.sportUnlock => Icons.lock_open_rounded,
+    OzCoinTransactionSource.beginnerQuestReward => Icons.flag_rounded,
   };
 }
 

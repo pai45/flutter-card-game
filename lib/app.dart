@@ -17,6 +17,7 @@ import 'blocs/quiz/quiz_cubit.dart';
 import 'blocs/tennis/tennis_cubit.dart';
 import 'blocs/tennis/tennis_state.dart';
 import 'config/enums.dart';
+import 'config/game_ladder.dart';
 import 'config/sport_modules.dart';
 import 'config/theme.dart';
 import 'models/league.dart';
@@ -39,6 +40,7 @@ import 'screens/predictions/match_detail_screen.dart';
 import 'screens/predictions/market_detail_screen.dart';
 import 'screens/predictions/prediction_home_screen.dart';
 import 'screens/predictions/streak_calendar_screen.dart';
+import 'screens/predictions/widgets/unlock_sheets.dart';
 import 'screens/quiz/quiz_hub.dart';
 import 'screens/guess_player/guess_player_hub.dart';
 import 'screens/guess_driver/guess_driver_hub.dart';
@@ -60,6 +62,12 @@ import 'services/secure_storage_service.dart';
 import 'widgets/achievement_celebration_host.dart';
 import 'widgets/streak_celebration_host.dart';
 import 'widgets/streak_reminder_popup.dart';
+import 'widgets/unlock_celebration_host.dart';
+
+/// Lets the shell know when a pushed route covers the home hub, so unlock
+/// moments wait until the player is back on it.
+final RouteObserver<ModalRoute<void>> _appRouteObserver =
+    RouteObserver<ModalRoute<void>>();
 
 enum _PendingGameLaunchKind { football, cricket, basketball, tennis, grandPrix }
 
@@ -107,6 +115,7 @@ class PitchDuelApp extends StatelessWidget {
         title: 'StatOz',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
+        navigatorObservers: [_appRouteObserver],
         // Watch the three source blocs and float the achievement-unlock reveal
         // above every route. The reveal itself lives in [AchievementCelebrationHost].
         builder: (context, child) {
@@ -130,6 +139,7 @@ class PitchDuelApp extends StatelessWidget {
                 Positioned.fill(child: child ?? const SizedBox.shrink()),
                 const Positioned.fill(child: AchievementCelebrationHost()),
                 const Positioned.fill(child: StreakCelebrationHost()),
+                const Positioned.fill(child: UnlockCelebrationHost()),
               ],
             ),
           );
@@ -160,7 +170,8 @@ class AppShell extends StatefulWidget {
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
+class _AppShellState extends State<AppShell>
+    with WidgetsBindingObserver, RouteAware {
   // Default landing is Matches; both hub strips start on Trending.
   AppSection section = AppSection.predictions;
   int _predictionTab = 0;
@@ -184,8 +195,42 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    UnlockRevealGate.instance
+      ..playGame = _openArcadeGame
+      ..openSport = _enterSport;
     _loadOnboardingState();
     _runRollingWindowIfDue();
+  }
+
+  bool _hubOnTop = true;
+  bool _homeTabsSeeded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null) _appRouteObserver.subscribe(this, route);
+  }
+
+  @override
+  void didPushNext() => _setHubOnTop(false);
+
+  @override
+  void didPopNext() => _setHubOnTop(true);
+
+  void _setHubOnTop(bool onTop) {
+    _hubOnTop = onTop;
+    _syncRevealGate();
+  }
+
+  /// Unlock reveals may only play on the bare, fully onboarded hub.
+  void _syncRevealGate() {
+    UnlockRevealGate.instance.hubVisible.value =
+        mounted &&
+        _hubOnTop &&
+        !_onboardingLoading &&
+        _onboardingComplete &&
+        _onboardingRewardStatus != OnboardingRewardStatus.pending;
   }
 
   @override
@@ -204,6 +249,11 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _appRouteObserver.unsubscribe(this);
+    final gate = UnlockRevealGate.instance;
+    gate.hubVisible.value = false;
+    gate.playGame = null;
+    gate.openSport = null;
     super.dispose();
   }
 
@@ -265,11 +315,11 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
   void _routeQuest(QuestDestination destination) {
     switch (destination) {
       case QuestDestination.pitchDuel:
-        _openGame();
+        _openQuestGame(ArcadeGame.pitchDuel);
       case QuestDestination.penaltyShootout:
-        _openShootout();
+        _openQuestGame(ArcadeGame.penaltyShootout);
       case QuestDestination.guessPlayer:
-        _openGuessPlayer();
+        _openQuestGame(ArcadeGame.footballGuessPlayer);
       case QuestDestination.prediction:
         setState(() {
           section = AppSection.predictions;
@@ -312,6 +362,7 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         !onTop ||
         game.streak.celebrationQueue.isNotEmpty ||
         game.questRewardCoins > 0 ||
+        game.unlocks.pendingReveals.isNotEmpty ||
         achievements.holding ||
         achievements.queue.isNotEmpty) {
       return;
@@ -378,6 +429,9 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     await _storage.saveSelectedAvatarId(result.avatarId);
     await _storage.saveSelectedProfileBannerId(result.bannerId);
     await _storage.savePrimarySportName(result.primarySport.name);
+    await _storage.saveFollowedSportNames([
+      for (final sport in result.sports) sport.name,
+    ]);
     await _storage.saveFollowedLeagueIds(result.followedLeagueIds);
     await _storage.saveFavoriteTeams(result.favoriteTeams);
     final rewardPending =
@@ -387,9 +441,14 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
     }
     await _storage.saveOnboardingComplete(true);
     if (!mounted) return;
+    // Starts the gated unlock ladder: only the home sport (and its first game)
+    // is open, and both hub strips land on it.
+    context.read<GameBloc>().add(HomeSportChosen(result.primarySport));
     setState(() {
       _selectedAvatarId = result.avatarId;
       _onboardingComplete = true;
+      _predictionMatchSportTab = hubIndexForSport(result.primarySport);
+      _predictionGamesSportTab = hubIndexForSport(result.primarySport);
       if (rewardPending) {
         _onboardingRewardStatus = OnboardingRewardStatus.pending;
       }
@@ -429,6 +488,69 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
       _onboardingComplete = false;
       _onboardingRewardDismissing = false;
     });
+  }
+
+  /// Daily-quest game CTAs name football modes; a player whose home sport is
+  /// something else (or who has not reached that mode yet) is sent to their
+  /// home sport's current Beginner's Quest game instead of a lock sheet.
+  void _openQuestGame(ArcadeGame preferred) {
+    final unlocks = context.read<GameBloc>().state.unlocks;
+    if (unlocks.isGameUnlocked(preferred)) {
+      _openArcadeGame(preferred);
+      return;
+    }
+    final home = unlocks.homeSport ?? Sport.football;
+    _openArcadeGame(unlocks.currentStep(home) ?? sportGameLadder[home]!.first);
+  }
+
+  /// The single, guarded entry into every GAMES-tab mode. A locked game (or a
+  /// game of a locked sport) opens its unlock sheet instead of launching.
+  void _openArcadeGame(ArcadeGame game) {
+    final unlocks = context.read<GameBloc>().state.unlocks;
+    if (!unlocks.isGameUnlocked(game)) {
+      showLockedGameSheet(context, game, onPlay: _openArcadeGame);
+      return;
+    }
+    switch (game) {
+      case ArcadeGame.pitchDuel:
+        _openGame();
+      case ArcadeGame.penaltyShootout:
+        _openShootout();
+      case ArcadeGame.footballChess:
+        _openFootballChess();
+      case ArcadeGame.footballBingo:
+        _openFootballBingo();
+      case ArcadeGame.footballGuessPlayer:
+        _openGuessPlayer();
+      case ArcadeGame.cricketGuessPlayer:
+        _openCricketGuessPlayer();
+      case ArcadeGame.basketballGuessPlayer:
+        _openBasketballGuessPlayer();
+      case ArcadeGame.finalOver:
+        _openFinalOver();
+      case ArcadeGame.hoopDuel:
+        _openBasketball();
+      case ArcadeGame.grandPrixDash:
+        _openGrandPrix();
+      case ArcadeGame.guessDriver:
+        _openF1GuessDriver();
+      case ArcadeGame.tennisRally:
+        _openTennisRally();
+      case ArcadeGame.guessWinner:
+        _openTennisGuessWinner();
+      case ArcadeGame.footballQuiz ||
+          ArcadeGame.cricketQuiz ||
+          ArcadeGame.basketballQuiz ||
+          ArcadeGame.motorsportQuiz ||
+          ArcadeGame.tennisQuiz:
+        _openQuiz(game.sport);
+    }
+  }
+
+  /// SPORT UNLOCKED → land on that sport's GAMES tab, where its quest starts.
+  void _enterSport(Sport sport) {
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    _openSportGames(sport);
   }
 
   /// Deck Locker → the sport's GAMES tab, where launching a game claims that
@@ -781,9 +903,27 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
         listener: (context, state) {
           // Re-check the streak reminder once loading finishes and whenever a
           // queued moment clears (its guards decide whether it can show).
-          WidgetsBinding.instance.addPostFrameCallback(
-            (_) => _maybeShowStreakReminder(),
-          );
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _syncRevealGate();
+            _maybeShowStreakReminder();
+          });
+          // Hub tabs start on TRENDING; a gated player's first view after a
+          // relaunch is their home sport instead (TRENDING stays reachable
+          // once they own a second sport).
+          final home = state.unlocks.homeSport;
+          if (!_homeTabsSeeded && !state.loading && home != null) {
+            _homeTabsSeeded = true;
+            if (state.unlocks.gated) {
+              setState(() {
+                if (_predictionMatchSportTab == hubTrendingTabIndex) {
+                  _predictionMatchSportTab = hubIndexForSport(home);
+                }
+                if (_predictionGamesSportTab == hubTrendingTabIndex) {
+                  _predictionGamesSportTab = hubIndexForSport(home);
+                }
+              });
+            }
+          }
           final pending = _pendingGameLaunch;
           final ready = switch (_pendingGameLaunchKind) {
             _PendingGameLaunchKind.cricket => state.cricketStarterPackClaimed,
@@ -886,20 +1026,28 @@ class _AppShellState extends State<AppShell> with WidgetsBindingObserver {
               onOpenMarket: _openMarket,
               onOpenLeague: _openLeague,
               onOpenLeagueGames: _openLeagueGames,
-              onOpenGame: _openGame,
-              onOpenShootout: _openShootout,
-              onOpenQuiz: _openQuiz,
-              onOpenFootballBingo: _openFootballBingo,
-              onOpenFootballChess: _openFootballChess,
-              onOpenFinalOver: _openFinalOver,
-              onOpenGuessPlayer: _openGuessPlayer,
-              onOpenBasketballGuessPlayer: _openBasketballGuessPlayer,
-              onOpenCricketGuessPlayer: _openCricketGuessPlayer,
-              onOpenGrandPrix: _openGrandPrix,
-              onOpenF1GuessDriver: _openF1GuessDriver,
-              onOpenTennisGuessWinner: _openTennisGuessWinner,
-              onOpenBasketball: _openBasketball,
-              onOpenTennisRally: _openTennisRally,
+              onOpenArcadeGame: _openArcadeGame,
+              onOpenGame: () => _openArcadeGame(ArcadeGame.pitchDuel),
+              onOpenShootout: () => _openArcadeGame(ArcadeGame.penaltyShootout),
+              onOpenQuiz: (sport) => _openArcadeGame(quizGameFor(sport)),
+              onOpenFootballBingo: () =>
+                  _openArcadeGame(ArcadeGame.footballBingo),
+              onOpenFootballChess: () =>
+                  _openArcadeGame(ArcadeGame.footballChess),
+              onOpenFinalOver: () => _openArcadeGame(ArcadeGame.finalOver),
+              onOpenGuessPlayer: () =>
+                  _openArcadeGame(ArcadeGame.footballGuessPlayer),
+              onOpenBasketballGuessPlayer: () =>
+                  _openArcadeGame(ArcadeGame.basketballGuessPlayer),
+              onOpenCricketGuessPlayer: () =>
+                  _openArcadeGame(ArcadeGame.cricketGuessPlayer),
+              onOpenGrandPrix: () => _openArcadeGame(ArcadeGame.grandPrixDash),
+              onOpenF1GuessDriver: () =>
+                  _openArcadeGame(ArcadeGame.guessDriver),
+              onOpenTennisGuessWinner: () =>
+                  _openArcadeGame(ArcadeGame.guessWinner),
+              onOpenBasketball: () => _openArcadeGame(ArcadeGame.hoopDuel),
+              onOpenTennisRally: () => _openArcadeGame(ArcadeGame.tennisRally),
               onAddCoins: _openShopCoins,
               onOpenStreakHub: _openStreakHub,
             ),

@@ -9,6 +9,7 @@ import '../../blocs/game/game_bloc.dart';
 import '../../blocs/prediction/prediction_cubit.dart';
 import '../../blocs/prediction/prediction_state.dart';
 import '../../config/enums.dart';
+import '../../config/game_ladder.dart';
 import '../../config/sport_modules.dart';
 import '../../config/theme.dart';
 import '../../data/favorite_team_matcher.dart';
@@ -17,6 +18,7 @@ import '../../models/league.dart';
 import '../../models/prediction.dart';
 import '../../models/sport_match.dart';
 import '../../models/streak.dart';
+import '../../models/unlock_progress.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/cyber/sport_signal_painters.dart';
@@ -31,11 +33,13 @@ import 'all_sports_screen.dart';
 import 'match_search_screen.dart';
 import 'streak_calendar_screen.dart';
 import 'trending_hub_catalog.dart';
+import 'widgets/beginner_quest_card.dart';
 import 'widgets/daily_quest_home_tile.dart';
 import 'widgets/history_hud.dart';
 import 'widgets/match_prediction_card.dart';
 import 'widgets/motorsport_week_picker.dart';
 import 'widgets/trending_match_bento.dart';
+import 'widgets/unlock_sheets.dart';
 
 /// A compact sports prediction hub with StatOz styling.
 class PredictionHomeScreen extends StatefulWidget {
@@ -67,6 +71,7 @@ class PredictionHomeScreen extends StatefulWidget {
     this.onOpenTennisRally,
     this.onAddCoins,
     this.onOpenStreakHub,
+    this.onOpenArcadeGame,
     super.key,
   });
 
@@ -101,6 +106,9 @@ class PredictionHomeScreen extends StatefulWidget {
   /// the hub without quest destinations.
   final VoidCallback? onOpenStreakHub;
 
+  /// Guarded launch for any GAMES-tab mode (Beginner's Quest CTAs).
+  final ValueChanged<ArcadeGame>? onOpenArcadeGame;
+
   @override
   State<PredictionHomeScreen> createState() => _PredictionHomeScreenState();
 }
@@ -108,13 +116,40 @@ class PredictionHomeScreen extends StatefulWidget {
 class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
   final Set<int> _introPlayedTabs = <int>{};
 
-  Sport? get _selectedMatchSport =>
-      sportForHubIndex(widget.activeMatchSportTab);
-  Sport? get _selectedGamesSport =>
-      sportForHubIndex(widget.activeGamesSportTab);
+  UnlockProgress _unlocks = const UnlockProgress();
+
+  /// With only one sport open there is no cross-sport TRENDING feed.
+  bool get _showTrending =>
+      !_unlocks.gated || _unlocks.orderedUnlockedSports.length > 1;
+
+  /// Maps a persisted hub index onto something this player may see: a locked
+  /// sport (or a hidden TRENDING) falls back to the home sport.
+  int _resolveHubIndex(int index) {
+    final unlocks = _unlocks;
+    final home = unlocks.homeSport;
+    if (!unlocks.gated || home == null) return index;
+    final sport = sportForHubIndex(index);
+    if (sport == null) {
+      return _showTrending ? hubTrendingTabIndex : hubIndexForSport(home);
+    }
+    return unlocks.isSportUnlocked(sport) ? index : hubIndexForSport(home);
+  }
+
+  int get _matchIndex => _resolveHubIndex(widget.activeMatchSportTab);
+  int get _gamesIndex => _resolveHubIndex(widget.activeGamesSportTab);
+  Sport? get _selectedMatchSport => sportForHubIndex(_matchIndex);
+  Sport? get _selectedGamesSport => sportForHubIndex(_gamesIndex);
+
+  void _openArcadeGame(ArcadeGame game) =>
+      widget.onOpenArcadeGame?.call(game);
+
+  Future<void> _offerSport(Sport sport) => showSportUnlockSheet(context, sport);
 
   @override
   Widget build(BuildContext context) {
+    _unlocks = context.select<GameBloc?, UnlockProgress>(
+      (bloc) => bloc?.state.unlocks ?? const UnlockProgress(),
+    );
     final tab = widget.activeTab;
     return Scaffold(
       backgroundColor: Cyber.bg,
@@ -160,15 +195,18 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
   /// It follows the active hub tab, which keeps its own sport selection.
   Widget _buildSportTabs(int tab) {
     final matches = tab == 0;
-    final activeIndex = matches
-        ? widget.activeMatchSportTab
-        : widget.activeGamesSportTab;
+    final activeIndex = matches ? _matchIndex : _gamesIndex;
     final onChanged = matches
         ? widget.onMatchSportTabChanged
         : widget.onGamesSportTabChanged;
+    final gated = _unlocks.gated;
     return SportHubTabs(
       activeIndex: activeIndex,
       onTap: onChanged,
+      sports: gated ? _unlocks.orderedUnlockedSports : null,
+      lockedSports: gated ? _unlocks.lockedSports : const [],
+      showTrending: _showTrending,
+      onLockedSportTap: _offerSport,
       onMore: () => _openAllSports(
         mode: matches ? SportHubMode.matches : SportHubMode.games,
         selectedIndex: activeIndex,
@@ -197,6 +235,7 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
               )
             : _MatchesTab(
                 selectedSport: _selectedMatchSport!,
+                header: _matchHeader(_selectedMatchSport!),
                 onOpenMatch: widget.onOpenMatch,
                 onOpenLeague: widget.onOpenLeague,
                 onOpenLeagueGames: widget.onOpenLeagueGames,
@@ -224,6 +263,8 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
               )
             : _GamesTab(
                 selectedSport: _selectedGamesSport!,
+                unlocks: _unlocks,
+                onOpenArcadeGame: _openArcadeGame,
                 onOpenGame: widget.onOpenGame,
                 onOpenShootout: widget.onOpenShootout,
                 onOpenQuiz: widget.onOpenQuiz,
@@ -274,6 +315,24 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
   Widget _questTile() => DailyQuestHomeTile(
     onTap: widget.onOpenStreakHub ?? () => showStreakCalendar(context),
   );
+
+  /// A gated player has no TRENDING feed early on, so the per-sport MATCH tab
+  /// carries the quest door: the Beginner's Quest while it runs (one
+  /// objective, not two), the daily quests after.
+  Widget? _matchHeader(Sport sport) {
+    if (!_unlocks.gated) return null;
+    if (_unlocks.isQuestActive(sport)) {
+      return BeginnerQuestStrip(
+        sport: sport,
+        unlocks: _unlocks,
+        onTap: () {
+          widget.onGamesSportTabChanged(hubIndexForSport(sport));
+          widget.onTabChanged(1);
+        },
+      );
+    }
+    return _questTile();
+  }
 
   bool _shouldAnimateIntro(int tab) => !_introPlayedTabs.contains(tab);
 
@@ -355,9 +414,11 @@ class _MatchesTab extends StatefulWidget {
     required this.onOpenShootout,
     required this.animateIntro,
     required this.onIntroPlayed,
+    this.header,
   });
 
   final Sport selectedSport;
+  final Widget? header;
   final ValueChanged<SportMatch> onOpenMatch;
   final ValueChanged<League> onOpenLeague;
   final ValueChanged<League> onOpenLeagueGames;
@@ -761,6 +822,10 @@ class _MatchesTabState extends State<_MatchesTab> {
                     });
                   },
                 ),
+                const SizedBox(height: 14),
+              ],
+              if (widget.header != null) ...[
+                widget.header!,
                 const SizedBox(height: 14),
               ],
               Row(
@@ -1971,8 +2036,11 @@ class _TrendingGamesTabState extends State<_TrendingGamesTab> {
         penalty: bloc.state.streak.current(StreakCategory.penaltyShootout),
       ),
     );
+    final unlocks = context.select<GameBloc?, UnlockProgress>(
+      (bloc) => bloc?.state.unlocks ?? const UnlockProgress(),
+    );
     final catalog = gamesTrendingCatalog
-        .where((item) => item.enabled)
+        .where((item) => trendingTileVisible(item, unlocks))
         .toList(growable: false);
     final animate = widget.animateIntro && !_introReported;
     if (animate && catalog.isNotEmpty) {
@@ -2177,6 +2245,8 @@ class _TrendingGameUnavailable extends StatelessWidget {
 class _GamesTab extends StatefulWidget {
   const _GamesTab({
     required this.selectedSport,
+    required this.unlocks,
+    required this.onOpenArcadeGame,
     required this.onOpenGame,
     required this.onOpenShootout,
     required this.onOpenQuiz,
@@ -2196,6 +2266,8 @@ class _GamesTab extends StatefulWidget {
   });
 
   final Sport selectedSport;
+  final UnlockProgress unlocks;
+  final ValueChanged<ArcadeGame> onOpenArcadeGame;
   final VoidCallback onOpenGame;
   final VoidCallback onOpenShootout;
   final ValueChanged<Sport> onOpenQuiz;
@@ -2255,6 +2327,31 @@ class _GamesTabState extends State<_GamesTab> {
     );
   }
 
+  /// Lock treatment for a tile: null when open, NEXT UNLOCK for the game the
+  /// current quest step opens, QUEST STEP n for the rest.
+  _GameLock? _lockFor(ArcadeGame game) {
+    final unlocks = widget.unlocks;
+    if (unlocks.isGameUnlocked(game)) return null;
+    final next = game.ladderIndex == unlocks.reachedFor(game.sport);
+    return _GameLock(
+      label: next ? 'NEXT UNLOCK' : 'QUEST STEP ${game.ladderIndex}',
+      next: next,
+    );
+  }
+
+  /// Slot #1 while the sport's Beginner's Quest runs.
+  List<Widget> _questHeader(Sport sport) {
+    if (!widget.unlocks.isQuestActive(sport)) return const [];
+    return [
+      BeginnerQuestCard(
+        sport: sport,
+        unlocks: widget.unlocks,
+        onPlay: widget.onOpenArcadeGame,
+      ),
+      const SizedBox(height: 16),
+    ];
+  }
+
   Widget _buildSportTab(bool animateIntro, ({int pitch, int penalty}) streaks) {
     return switch (widget.selectedSport) {
       Sport.football => _buildFootballGames(animateIntro, streaks),
@@ -2270,10 +2367,14 @@ class _GamesTabState extends State<_GamesTab> {
       key: const ValueKey('tennis-games-tab'),
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 48),
       children: [
+        ..._questHeader(Sport.tennis),
         StaggeredCardEntrance(
           index: 0,
           animate: animateIntro,
-          child: _TennisRallyGameTile(onTap: widget.onOpenTennisRally),
+          child: _TennisRallyGameTile(
+            onTap: widget.onOpenTennisRally,
+            lock: _lockFor(ArcadeGame.tennisRally),
+          ),
         ),
         const SizedBox(height: 24),
         const _QuickPlayHeader(gameCount: 2),
@@ -2284,6 +2385,7 @@ class _GamesTabState extends State<_GamesTab> {
           games: [
             _QuickGameEntry(
               key: const ValueKey('tennis-quiz-grid-card'),
+              lock: _lockFor(ArcadeGame.tennisQuiz),
               title: 'TENNIS QUIZ',
               subtitle: 'TRIVIA GAUNTLET',
               icon: Icons.quiz_rounded,
@@ -2292,6 +2394,7 @@ class _GamesTabState extends State<_GamesTab> {
             ),
             _QuickGameEntry(
               key: const ValueKey('tennis-guess-winner-grid-card'),
+              lock: _lockFor(ArcadeGame.guessWinner),
               title: 'GUESS THE WINNER',
               subtitle: 'DAILY MYSTERY',
               icon: Icons.person_search_rounded,
@@ -2308,11 +2411,13 @@ class _GamesTabState extends State<_GamesTab> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
+        ..._questHeader(Sport.basketball),
         StaggeredCardEntrance(
           index: 0,
           animate: animateIntro,
           child: _ArcadeHeroGameTile(
             key: const ValueKey('hoop-duel-hero-card'),
+            lock: _lockFor(ArcadeGame.hoopDuel),
             title: 'HOOP DUEL',
             subtitle: 'STREET 1-ON-1 ARCADE HOOPS',
             badgeLabel: 'FEATURED // STREET',
@@ -2331,6 +2436,7 @@ class _GamesTabState extends State<_GamesTab> {
           games: [
             _QuickGameEntry(
               key: const ValueKey('basketball-quiz-grid-card'),
+              lock: _lockFor(ArcadeGame.basketballQuiz),
               title: 'BASKETBALL QUIZ',
               subtitle: 'TRIVIA GAUNTLET',
               icon: Icons.quiz_rounded,
@@ -2339,6 +2445,7 @@ class _GamesTabState extends State<_GamesTab> {
             ),
             _QuickGameEntry(
               key: const ValueKey('basketball-guess-player-grid-card'),
+              lock: _lockFor(ArcadeGame.basketballGuessPlayer),
               title: 'GUESS THE PLAYER',
               subtitle: 'DAILY BASKETBALL MYSTERY',
               icon: Icons.person_search_rounded,
@@ -2355,11 +2462,13 @@ class _GamesTabState extends State<_GamesTab> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
+        ..._questHeader(Sport.cricket),
         StaggeredCardEntrance(
           index: 0,
           animate: animateIntro,
           child: _ArcadeHeroGameTile(
             key: const ValueKey('final-over-hero-card'),
+            lock: _lockFor(ArcadeGame.finalOver),
             title: 'FINAL OVER',
             subtitle: 'SIX-BALL CRICKET CHASE',
             badgeLabel: 'FEATURED // SIX BALLS',
@@ -2380,6 +2489,7 @@ class _GamesTabState extends State<_GamesTab> {
           games: [
             _QuickGameEntry(
               key: const ValueKey('cricket-quiz-grid-card'),
+              lock: _lockFor(ArcadeGame.cricketQuiz),
               title: 'CRICKET QUIZ',
               subtitle: 'TRIVIA GAUNTLET',
               icon: Icons.quiz_rounded,
@@ -2388,6 +2498,7 @@ class _GamesTabState extends State<_GamesTab> {
             ),
             _QuickGameEntry(
               key: const ValueKey('cricket-guess-player-grid-card'),
+              lock: _lockFor(ArcadeGame.cricketGuessPlayer),
               title: 'GUESS THE PLAYER',
               subtitle: 'DAILY CRICKET MYSTERY',
               icon: Icons.person_search_rounded,
@@ -2407,11 +2518,13 @@ class _GamesTabState extends State<_GamesTab> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
+        ..._questHeader(Sport.football),
         StaggeredCardEntrance(
           index: 0,
           animate: animateIntro,
           child: _ArcadeHeroGameTile(
             key: const ValueKey('pitch-duel-hero-card'),
+            lock: _lockFor(ArcadeGame.pitchDuel),
             title: 'PITCH DUEL',
             subtitle: 'TACTICAL CARD GAME',
             badgeLabel: 'FEATURED // TACTICAL',
@@ -2430,6 +2543,7 @@ class _GamesTabState extends State<_GamesTab> {
           animate: animateIntro,
           child: _ArcadeHeroGameTile(
             key: const ValueKey('penalty-shootout-hero-card'),
+            lock: _lockFor(ArcadeGame.penaltyShootout),
             title: 'PENALTY SHOOTOUT',
             titleLines: const ['PENALTY', 'SHOOTOUT'],
             subtitle: 'SUDDEN-DEATH SPOT KICKS',
@@ -2449,6 +2563,7 @@ class _GamesTabState extends State<_GamesTab> {
           animate: animateIntro,
           child: _ArcadeHeroGameTile(
             key: const ValueKey('football-chess-hero-card'),
+            lock: _lockFor(ArcadeGame.footballChess),
             title: '5V5 FOOTBALL CHESS',
             titleLines: const ['5V5 FOOTBALL', 'CHESS'],
             subtitle: 'TACTICAL SQUAD DUEL',
@@ -2470,6 +2585,7 @@ class _GamesTabState extends State<_GamesTab> {
           games: [
             _QuickGameEntry(
               key: const ValueKey('football-quiz-grid-card'),
+              lock: _lockFor(ArcadeGame.footballQuiz),
               title: 'FOOTBALL QUIZ',
               subtitle: 'TRIVIA GAUNTLET',
               icon: Icons.quiz_rounded,
@@ -2478,6 +2594,7 @@ class _GamesTabState extends State<_GamesTab> {
             ),
             _QuickGameEntry(
               key: const ValueKey('football-bingo-grid-card'),
+              lock: _lockFor(ArcadeGame.footballBingo),
               title: 'FOOTBALL BINGO',
               subtitle: 'COUNTRY x CLUB GRID',
               icon: Icons.grid_view_rounded,
@@ -2486,6 +2603,7 @@ class _GamesTabState extends State<_GamesTab> {
             ),
             _QuickGameEntry(
               key: const ValueKey('football-guess-player-grid-card'),
+              lock: _lockFor(ArcadeGame.footballGuessPlayer),
               title: 'GUESS THE PLAYER',
               subtitle: 'DAILY FOOTBALL MYSTERY',
               icon: Icons.person_search_rounded,
@@ -2502,11 +2620,13 @@ class _GamesTabState extends State<_GamesTab> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
+        ..._questHeader(Sport.motorsport),
         StaggeredCardEntrance(
           index: 0,
           animate: animateIntro,
           child: _ArcadeHeroGameTile(
             key: const ValueKey('grand-prix-dash-hero-card'),
+            lock: _lockFor(ArcadeGame.grandPrixDash),
             title: 'GRAND PRIX DASH',
             subtitle: 'ONE-LAP ARCADE RACER',
             badgeLabel: 'FEATURED // RACE',
@@ -2525,6 +2645,7 @@ class _GamesTabState extends State<_GamesTab> {
           games: [
             _QuickGameEntry(
               key: const ValueKey('motorsport-quiz-grid-card'),
+              lock: _lockFor(ArcadeGame.motorsportQuiz),
               title: 'MOTORSPORT QUIZ',
               subtitle: 'TRIVIA GAUNTLET',
               icon: Icons.quiz_rounded,
@@ -2533,6 +2654,7 @@ class _GamesTabState extends State<_GamesTab> {
             ),
             _QuickGameEntry(
               key: const ValueKey('f1-guess-driver-grid-card'),
+              lock: _lockFor(ArcadeGame.guessDriver),
               title: 'GUESS THE DRIVER',
               subtitle: 'DAILY F1 MYSTERY',
               icon: Icons.person_search_rounded,
@@ -2547,9 +2669,10 @@ class _GamesTabState extends State<_GamesTab> {
 }
 
 class _TennisRallyGameTile extends StatelessWidget {
-  const _TennisRallyGameTile({required this.onTap});
+  const _TennisRallyGameTile({required this.onTap, this.lock});
 
   final VoidCallback onTap;
+  final _GameLock? lock;
 
   @override
   Widget build(BuildContext context) {
@@ -2562,6 +2685,7 @@ class _TennisRallyGameTile extends StatelessWidget {
       accent: Cyber.lime,
       background: const CustomPaint(painter: TennisMysterySignalPainter()),
       onTap: onTap,
+      lock: lock,
     );
   }
 }
@@ -2583,11 +2707,13 @@ class _ArcadeHeroGameTile extends StatelessWidget {
     this.emphasis = true,
     this.tightContent = false,
     this.largeType = false,
+    this.lock,
     super.key,
   });
 
   final String title;
   final List<String>? titleLines;
+  final _GameLock? lock;
   final String subtitle;
   final String badgeLabel;
   final String ctaLabel;
@@ -2602,22 +2728,28 @@ class _ArcadeHeroGameTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lock = this.lock;
     return Semantics(
       button: true,
-      label: '$title, $ctaLabel',
+      label: lock == null ? '$title, $ctaLabel' : '$title, locked',
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () {
           HapticFeedback.selectionClick();
           onTap();
         },
-        child: CustomPaint(
+        child: _LockVeil(
+          lock: lock,
+          bigCut: 14,
+          smallCut: 4,
+          child: CustomPaint(
           painter: _HudChamferCardPainter(
             bigCut: 14,
             smallCut: 4,
             fillColor: Cyber.panel,
             borderColor: accent.withValues(alpha: 0.86),
-            borderGlow: emphasis,
+            // Locked tiles never glow: they are not live.
+            borderGlow: emphasis && lock == null,
           ),
           child: ClipPath(
             clipper: const HudChamferClipper(bigCut: 14, smallCut: 4),
@@ -2635,6 +2767,7 @@ class _ArcadeHeroGameTile extends StatelessWidget {
               },
             ),
           ),
+        ),
         ),
       ),
     );
@@ -3334,8 +3467,10 @@ class _QuickGameEntry {
     required this.icon,
     required this.accent,
     required this.onTap,
+    this.lock,
   });
 
+  final _GameLock? lock;
   final Key key;
   final String title;
   final String subtitle;
@@ -3386,6 +3521,7 @@ class _QuickGamesGrid extends StatelessWidget {
                     icon: games[index].icon,
                     accent: games[index].accent,
                     onTap: games[index].onTap,
+                    lock: games[index].lock,
                   ),
                 ),
               ),
@@ -3406,6 +3542,7 @@ class _QuickGameTile extends StatelessWidget {
     this.emphasis = true,
     this.tightContent = false,
     this.largeType = false,
+    this.lock,
     super.key,
   });
 
@@ -3414,6 +3551,7 @@ class _QuickGameTile extends StatelessWidget {
   final IconData icon;
   final Color accent;
   final VoidCallback onTap;
+  final _GameLock? lock;
   final bool emphasis;
   final bool tightContent;
   final bool largeType;
@@ -3425,19 +3563,23 @@ class _QuickGameTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: '$title, free to play',
+      label: lock == null ? '$title, free to play' : '$title, locked',
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: onTap,
-          child: CustomPaint(
+          child: _LockVeil(
+            lock: lock,
+            bigCut: _bigCut,
+            smallCut: _smallCut,
+            child: CustomPaint(
             painter: _HudChamferCardPainter(
               bigCut: _bigCut,
               smallCut: _smallCut,
               fillColor: Color.lerp(Cyber.panel, accent, 0.055)!,
               borderColor: accent.withValues(alpha: 0.84),
-              borderGlow: emphasis,
+              borderGlow: emphasis && lock == null,
             ),
             child: ClipPath(
               clipper: const HudChamferClipper(
@@ -3551,8 +3693,84 @@ class _QuickGameTile extends StatelessWidget {
               ),
             ),
           ),
+          ),
         ),
       ),
+    );
+  }
+}
+
+/// Lock state for a GAMES tile (see [_GamesTabState._lockFor]).
+class _GameLock {
+  const _GameLock({required this.label, required this.next});
+
+  final String label;
+
+  /// The game the current Beginner's Quest step opens.
+  final bool next;
+}
+
+/// Dims and desaturates a locked GAMES tile and seals it with a padlock
+/// chip. Flat by design - a locked tile is never live, so it never glows; the
+/// NEXT UNLOCK tile only earns a calm amber chip border.
+class _LockVeil extends StatelessWidget {
+  const _LockVeil({
+    required this.lock,
+    required this.bigCut,
+    required this.smallCut,
+    required this.child,
+  });
+
+  final _GameLock? lock;
+  final double bigCut;
+  final double smallCut;
+  final Widget child;
+
+  static const _greyscale = ColorFilter.matrix(<double>[
+    0.2126, 0.7152, 0.0722, 0, 0, //
+    0.2126, 0.7152, 0.0722, 0, 0, //
+    0.2126, 0.7152, 0.0722, 0, 0, //
+    0, 0, 0, 1, 0, //
+  ]);
+
+  @override
+  Widget build(BuildContext context) {
+    final lock = this.lock;
+    if (lock == null) return child;
+    final tint = lock.next ? Cyber.amber : Cyber.muted;
+    return Stack(
+      fit: StackFit.passthrough,
+      children: [
+        ColorFiltered(colorFilter: _greyscale, child: child),
+        Positioned.fill(
+          child: ClipPath(
+            clipper: HudChamferClipper(bigCut: bigCut, smallCut: smallCut),
+            child: ColoredBox(color: Cyber.bg.withValues(alpha: 0.55)),
+          ),
+        ),
+        Positioned.fill(
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Cyber.bg.withValues(alpha: 0.9),
+                border: Border.all(color: tint.withValues(alpha: 0.7)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.lock_rounded, size: 14, color: tint),
+                  const SizedBox(width: 6),
+                  Text(
+                    lock.label,
+                    style: Cyber.label(9, color: tint, letterSpacing: 1.3),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

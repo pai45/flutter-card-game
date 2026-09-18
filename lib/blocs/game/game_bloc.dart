@@ -5,6 +5,8 @@ import 'dart:math';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../config/enums.dart';
+import '../../config/game_ladder.dart';
+import '../../config/sport_modules.dart';
 import '../../config/tutorial_steps.dart';
 import '../../data/random_opponent_names.dart';
 import '../../data/basketball_teams.dart';
@@ -21,6 +23,8 @@ import '../../models/packs.dart';
 import '../../models/progression.dart';
 import '../../models/streak.dart';
 import '../../models/daily_quest.dart';
+import '../../models/sport_match.dart';
+import '../../models/unlock_progress.dart';
 import '../../models/xp_ledger.dart';
 import '../../services/secure_storage_service.dart';
 import '../../utils/card_helpers.dart';
@@ -179,6 +183,24 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<DailyQuestRewardConsumed>(
       (event, emit) => emit(state.copyWith(questRewardCoins: 0)),
     );
+    on<HomeSportChosen>(_onHomeSportChosen);
+    on<SportUnlockPurchased>(_onSportUnlockPurchased);
+    on<ArcadeGamePlayed>(
+      (event, emit) =>
+          _recordArcadePlay(event.game, event.sourceId, emit, countDaily: true),
+    );
+    on<RookieTicketUsed>((event, emit) async {
+      if (!state.unlocks.hasRookieTicket(event.sport)) return;
+      final next = state.unlocks.useRookieTicket(event.sport);
+      emit(state.copyWith(unlocks: next));
+      await _storage.saveUnlockProgress(next);
+    });
+    on<UnlockRevealConsumed>((event, emit) async {
+      if (state.unlocks.pendingReveals.isEmpty) return;
+      final next = state.unlocks.consumeReveal();
+      emit(state.copyWith(unlocks: next));
+      await _storage.saveUnlockProgress(next);
+    });
     on<MatchReset>((_, emit) => emit(_resetMatch(state)));
     on<MatchStarted>(_onMatchStarted);
     on<TossChoiceChanged>(
@@ -299,8 +321,94 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final streak = swept ? state.streak.grantShield(now) : state.streak;
     if (!identical(streak, state.streak)) await _storage.saveStreak(streak);
     emit(
-      state.copyWith(dailyQuests: quests, streak: streak, clearQuestError: true),
+      state.copyWith(
+        dailyQuests: quests,
+        streak: streak,
+        clearQuestError: true,
+      ),
     );
+  }
+
+  Future<void> _onHomeSportChosen(
+    HomeSportChosen event,
+    Emitter<GameState> emit,
+  ) async {
+    final next = state.unlocks.chooseHomeSport(event.sport);
+    emit(state.copyWith(unlocks: next));
+    await _storage.saveUnlockProgress(next);
+  }
+
+  Future<void> _onSportUnlockPurchased(
+    SportUnlockPurchased event,
+    Emitter<GameState> emit,
+  ) async {
+    if (state.unlocks.isSportUnlocked(event.sport) ||
+        state.coins < sportUnlockCostOz) {
+      return;
+    }
+    await _applyCoinDelta(
+      delta: -sportUnlockCostOz,
+      emit: emit,
+      source: OzCoinTransactionSource.sportUnlock,
+      type: OzCoinTransactionType.spend,
+      title: 'SPORT UNLOCK',
+      subtitle: sportModuleFor(event.sport).label.toUpperCase(),
+    );
+    final next = state.unlocks.unlockSport(event.sport);
+    emit(state.copyWith(unlocks: next));
+    await _storage.saveUnlockProgress(next);
+  }
+
+  /// Counts a finished GAMES-tab mode against the Beginner's Quest (and, for
+  /// modes without their own daily-quest activity, the daily game quests).
+  /// Runs after the game's own settle so its result screen is never delayed.
+  Future<void> _recordArcadePlay(
+    ArcadeGame game,
+    String sourceId,
+    Emitter<GameState> emit, {
+    required bool countDaily,
+  }) async {
+    if (sourceId.isEmpty) return;
+    if (countDaily) {
+      await _onQuestActivity(
+        DailyQuestActivityRecorded(
+          DailyQuestActivity.arcadeGame,
+          sourceId: '${game.name}:$sourceId',
+        ),
+        emit,
+      );
+    }
+    final result = state.unlocks.recordPlay(game, sourceId);
+    if (!result.stepCleared) return;
+    final sportLabel = sportModuleFor(game.sport).label.toUpperCase();
+    final xp = _nextXpSnapshot(
+      delta: beginnerQuestStepXp,
+      source: XpTransactionSource.beginnerQuest,
+      title: "BEGINNER'S QUEST",
+      details: result.questCompleted
+          ? '$sportLabel QUEST COMPLETE'
+          : '${result.unlockedGame!.title} UNLOCKED',
+    );
+    emit(
+      state.copyWith(
+        unlocks: result.progress,
+        progression: xp.progression,
+        xpLedger: xp.ledger,
+      ),
+    );
+    await _storage.saveUnlockProgress(result.progress);
+    await _storage.saveProgression(xp.progression);
+    await _storage.saveXpLedger(xp.ledger);
+    if (result.questCompleted) {
+      await _applyCoinDelta(
+        delta: beginnerQuestCompleteOz,
+        emit: emit,
+        source: OzCoinTransactionSource.beginnerQuestReward,
+        type: OzCoinTransactionType.earn,
+        title: "BEGINNER'S QUEST",
+        subtitle: '$sportLabel COMPLETE',
+      );
+    }
   }
 
   Future<void> _onQuestClaim(
@@ -430,6 +538,24 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         await _storage.saveStreak(streak);
       }
       developer.log('GameLoaded: Loaded daily streak');
+
+      // No stored progress + a finished onboarding = a profile from before
+      // unlocks shipped: grandfather it (everything open, no quest). A fresh
+      // install stays unmanaged until onboarding sends [HomeSportChosen].
+      var unlocks = await _storage.loadUnlockProgress().timeout(
+        const Duration(seconds: 2),
+        onTimeout: () => null,
+      );
+      if (unlocks == null) {
+        final onboarded = await _storage.loadOnboardingComplete().timeout(
+          const Duration(seconds: 2),
+          onTimeout: () => false,
+        );
+        unlocks = onboarded
+            ? const UnlockProgress.grandfathered()
+            : const UnlockProgress();
+        if (onboarded) await _storage.saveUnlockProgress(unlocks);
+      }
 
       final starterPackClaimed = await _storage
           .loadStarterPackClaimed()
@@ -638,6 +764,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           progression: migratedProgression,
           streak: streak,
           dailyQuests: dailyQuests,
+          unlocks: unlocks,
         ),
       );
       developer.log('GameLoaded: Complete');
@@ -895,6 +1022,20 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     } catch (_) {
       _guessPlayerSettlementsSeen.remove(event.settlementId);
       rethrow;
+    }
+    final game = switch (event.sport) {
+      Sport.football => ArcadeGame.footballGuessPlayer,
+      Sport.cricket => ArcadeGame.cricketGuessPlayer,
+      Sport.basketball => ArcadeGame.basketballGuessPlayer,
+      Sport.motorsport || Sport.tennis => null,
+    };
+    if (game != null) {
+      await _recordArcadePlay(
+        game,
+        event.settlementId,
+        emit,
+        countDaily: false,
+      );
     }
   }
 
@@ -1901,6 +2042,12 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _saveWallet(coins: coins);
     await _storage.saveCoinLedger(coinLedger);
     await _storage.saveStreak(streak);
+    await _recordArcadePlay(
+      ArcadeGame.pitchDuel,
+      _pitchSessionId!,
+      emit,
+      countDaily: false,
+    );
   }
 
   Future<void> _onShootoutFinished(
@@ -1977,6 +2124,12 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _saveWallet(coins: coins);
     await _storage.saveCoinLedger(coinLedger);
     await _storage.saveStreak(streak);
+    await _recordArcadePlay(
+      ArcadeGame.penaltyShootout,
+      event.sessionId,
+      emit,
+      countDaily: false,
+    );
   }
 
   Future<void> _onGrandPrixFinished(
@@ -2015,6 +2168,12 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _storage.saveMatchHistory(history);
     await _storage.saveProgression(xp.progression);
     await _storage.saveXpLedger(xp.ledger);
+    await _recordArcadePlay(
+      ArcadeGame.grandPrixDash,
+      historyEntry.id,
+      emit,
+      countDaily: true,
+    );
   }
 
   Future<void> _onBasketballFinished(
@@ -2055,6 +2214,12 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _storage.saveMatchHistory(history);
     await _storage.saveProgression(xp.progression);
     await _storage.saveXpLedger(xp.ledger);
+    await _recordArcadePlay(
+      ArcadeGame.hoopDuel,
+      historyEntry.id,
+      emit,
+      countDaily: true,
+    );
   }
 
   Future<void> _onFinalOverFinished(
@@ -2099,6 +2264,12 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     await _storage.saveMatchHistory(history);
     await _storage.saveProgression(xp.progression);
     await _storage.saveXpLedger(xp.ledger);
+    await _recordArcadePlay(
+      ArcadeGame.finalOver,
+      event.matchId,
+      emit,
+      countDaily: true,
+    );
   }
 
   Future<void> _onTennisFinished(
@@ -2161,6 +2332,12 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       _storage.saveCoinLedger(coinLedger),
       _storage.saveTennisRewardSettlementIds(settled),
     ]);
+    await _recordArcadePlay(
+      ArcadeGame.tennisRally,
+      event.matchId,
+      emit,
+      countDaily: true,
+    );
   }
 
   /// Live path: higher total wins. Exact ties coin-flip GOAL vs BLOCKED.
@@ -2380,6 +2557,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     questClaiming: old.questClaiming,
     questError: old.questError,
     questRewardCoins: old.questRewardCoins,
+    unlocks: old.unlocks,
     matchHistory: old.matchHistory,
     tutorialSeen: old.tutorialSeen,
     pendingPackReveal: old.pendingPackReveal,
@@ -2747,6 +2925,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         'GUESS PLAYER EXTRA ATTEMPT',
       OzCoinTransactionSource.guessDriverHint => 'GUESS DRIVER TEAM HINT',
       OzCoinTransactionSource.openingBalance => 'OPENING BALANCE',
+      OzCoinTransactionSource.sportUnlock => 'SPORT UNLOCK',
+      OzCoinTransactionSource.beginnerQuestReward => 'BEGINNER\'S QUEST',
       OzCoinTransactionSource.manual =>
         positive ? 'COINS ADDED' : 'COINS SPENT',
     };

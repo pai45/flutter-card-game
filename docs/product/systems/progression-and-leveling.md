@@ -58,6 +58,10 @@ prediction/daily-mystery XP uses its settlement result.
 
 ## Rewards and Progression
 
+Beginner's Quest steps pay **+40 XP** each to the Cards/Meta track
+(`XpTransactionSource.beginnerQuest`); see
+[Sport and Game Unlocks](sport-and-game-unlocks.md).
+
 XP never changes Oz Coins by itself. Typed sources keep history and routing
 auditable. Packs/cards use Cards/Meta, quizzes share Quiz, and the three daily
 Guess Player sports share Guess Player. Legacy `{totalXP}` saves migrate by

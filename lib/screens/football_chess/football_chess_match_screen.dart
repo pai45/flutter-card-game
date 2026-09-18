@@ -7,6 +7,7 @@ import '../../blocs/football_chess/football_chess_cubit.dart';
 import '../../blocs/football_chess/football_chess_state.dart';
 import '../../blocs/game/game_bloc.dart';
 import '../../blocs/game/game_event.dart';
+import '../../config/game_ladder.dart';
 import '../../config/theme.dart';
 import '../../games/football_chess/football_chess_board.dart';
 import '../../games/football_chess/football_chess_game.dart';
@@ -150,6 +151,12 @@ class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
         source: XpTransactionSource.footballChess,
         title: '5V5 FOOTBALL CHESS',
         details: '$verdict ${m.playerScore}-${m.opponentScore}',
+      ),
+    );
+    context.read<GameBloc>().add(
+      ArcadeGamePlayed(
+        ArcadeGame.footballChess,
+        sourceId: 'chess-${DateTime.now().microsecondsSinceEpoch}',
       ),
     );
   }

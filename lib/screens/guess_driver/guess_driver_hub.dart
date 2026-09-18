@@ -1,6 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../blocs/game/game_bloc.dart';
+import '../../blocs/game/game_event.dart';
+import '../../config/game_ladder.dart';
 import '../../blocs/guess_driver/guess_driver_cubit.dart';
 import '../../config/enums.dart';
 import '../../config/theme.dart';
@@ -35,7 +40,22 @@ class _GuessDriverTabContentState extends State<GuessDriverTabContent>
       allDrivers: f1Drivers,
       storage: SecureGameStorage(),
     )..load();
+    // A fresh result is a finished run (won or lost): it counts as a
+    // Beginner's Quest step and a daily game.
+    final game = context.read<GameBloc>();
+    _results = _cubit.stream
+        .where((state) => state.freshResult)
+        .listen(
+          (state) => game.add(
+            ArcadeGamePlayed(
+              ArcadeGame.guessDriver,
+              sourceId: state.activeDayKey,
+            ),
+          ),
+        );
   }
+
+  late final StreamSubscription<GuessDriverState> _results;
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -47,6 +67,7 @@ class _GuessDriverTabContentState extends State<GuessDriverTabContent>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _results.cancel();
     _cubit.close();
     super.dispose();
   }

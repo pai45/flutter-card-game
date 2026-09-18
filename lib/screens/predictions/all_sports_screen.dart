@@ -2,23 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../blocs/game/game_bloc.dart';
 import '../../blocs/prediction/prediction_cubit.dart';
 import '../../blocs/prediction/prediction_state.dart';
+import '../../config/game_ladder.dart';
 import '../../config/sport_modules.dart';
 import '../../config/theme.dart';
 import '../../models/sport_match.dart';
+import '../../models/unlock_progress.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/staggered_card_entrance.dart';
 import 'widgets/standings_table.dart' show DetailTopBar;
-
-const _gameCounts = <Sport, int>{
-  Sport.football: 6,
-  Sport.cricket: 3,
-  Sport.basketball: 3,
-  Sport.motorsport: 3,
-  Sport.tennis: 3,
-};
+import 'widgets/unlock_sheets.dart';
 
 class AllSportsScreen extends StatefulWidget {
   const AllSportsScreen({
@@ -50,8 +46,11 @@ class _AllSportsScreenState extends State<AllSportsScreen> {
 
   Future<void> _loadMatchSports() async {
     final cubit = context.read<PredictionCubit>();
+    final unlocks =
+        context.read<GameBloc?>()?.state.unlocks ?? const UnlockProgress();
     for (final sport in sportTabOrder) {
-      await cubit.loadSport(sport);
+      // Locked sports stay teasers - no fixtures are fetched for them.
+      if (unlocks.isSportUnlocked(sport)) await cubit.loadSport(sport);
     }
   }
 
@@ -78,26 +77,34 @@ class _AllSportsScreenState extends State<AllSportsScreen> {
               Expanded(
                 child: BlocBuilder<PredictionCubit, PredictionState>(
                   builder: (context, state) {
+                    final unlocks = context.select<GameBloc?, UnlockProgress>(
+                      (bloc) => bloc?.state.unlocks ?? const UnlockProgress(),
+                    );
+                    final showTrending =
+                        !unlocks.gated ||
+                        unlocks.orderedUnlockedSports.length > 1;
                     return ListView(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                       children: [
-                        StaggeredCardEntrance(
-                          index: 0,
-                          animate: true,
-                          child: _SportSignalRow(
-                            icon: Icons.local_fire_department_rounded,
-                            label: 'Trending',
-                            detail: 'CURATED // LIVE SIGNALS',
-                            countLabel: 'HOT',
-                            accent: Cyber.cyan,
-                            selected:
-                                widget.selectedIndex == hubTrendingTabIndex,
-                            onTap: () => _select(hubTrendingTabIndex),
+                        if (showTrending) ...[
+                          StaggeredCardEntrance(
+                            index: 0,
+                            animate: true,
+                            child: _SportSignalRow(
+                              icon: Icons.local_fire_department_rounded,
+                              label: 'Trending',
+                              detail: 'CURATED // LIVE SIGNALS',
+                              countLabel: 'HOT',
+                              accent: Cyber.cyan,
+                              selected:
+                                  widget.selectedIndex == hubTrendingTabIndex,
+                              onTap: () => _select(hubTrendingTabIndex),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        const HudLine(),
-                        const SizedBox(height: 8),
+                          const SizedBox(height: 8),
+                          const HudLine(),
+                          const SizedBox(height: 8),
+                        ],
                         for (
                           var index = 0;
                           index < sportTabOrder.length;
@@ -105,6 +112,7 @@ class _AllSportsScreenState extends State<AllSportsScreen> {
                         ) ...[
                           _buildSportRow(
                             state,
+                            unlocks,
                             sportTabOrder[index],
                             index + 1,
                           ),
@@ -123,9 +131,31 @@ class _AllSportsScreenState extends State<AllSportsScreen> {
     );
   }
 
-  Widget _buildSportRow(PredictionState state, Sport sport, int entranceIndex) {
+  Widget _buildSportRow(
+    PredictionState state,
+    UnlockProgress unlocks,
+    Sport sport,
+    int entranceIndex,
+  ) {
     final module = sportModuleFor(sport);
     final selectedIndex = hubIndexForSport(sport);
+    final gameCount = sportGameLadder[sport]!.length;
+    if (!unlocks.isSportUnlocked(sport)) {
+      return StaggeredCardEntrance(
+        index: entranceIndex,
+        animate: true,
+        child: _SportSignalRow(
+          key: ValueKey('all-sports-locked-${sport.name}'),
+          icon: Icons.lock_rounded,
+          label: sport == Sport.basketball ? 'Basketball' : module.label,
+          detail: 'LOCKED // $gameCount GAMES + MATCHES',
+          countLabel: '$sportUnlockCostOz OZ',
+          accent: Cyber.muted,
+          selected: false,
+          onTap: () => showSportUnlockSheet(context, sport),
+        ),
+      );
+    }
     final fixtures = state.fixtures
         .where((fixture) => fixture.sport == sport)
         .toList(growable: false);
@@ -134,12 +164,12 @@ class _AllSportsScreenState extends State<AllSportsScreen> {
         .length;
     final loading = state.loadingSports.contains(sport);
     final countLabel = widget.mode == SportHubMode.games
-        ? '${_gameCounts[sport] ?? 0}'
+        ? '$gameCount'
         : loading
         ? '...'
         : '$live / ${fixtures.length}';
     final detail = widget.mode == SportHubMode.games
-        ? '${_gameCounts[sport] ?? 0} PLAYABLE MODES'
+        ? '$gameCount PLAYABLE MODES'
         : loading
         ? 'SCANNING LIVE FIXTURES'
         : '${fixtures.length} FIXTURES IN RANGE';
@@ -200,6 +230,7 @@ class _SportSignalRow extends StatelessWidget {
     required this.accent,
     required this.selected,
     required this.onTap,
+    super.key,
   });
 
   final IconData icon;

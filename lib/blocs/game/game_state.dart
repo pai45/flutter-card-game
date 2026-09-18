@@ -10,6 +10,7 @@ import '../../models/packs.dart';
 import '../../models/progression.dart';
 import '../../models/streak.dart';
 import '../../models/daily_quest.dart';
+import '../../models/unlock_progress.dart';
 import '../../models/xp_ledger.dart';
 import '../../utils/card_helpers.dart';
 
@@ -292,6 +293,7 @@ class GameState {
     this.questClaiming = false,
     this.questError,
     this.questRewardCoins = 0,
+    this.unlocks = const UnlockProgress(),
   });
 
   factory GameState.initial() => GameState(
@@ -468,6 +470,9 @@ class GameState {
   final String? questError;
   final int questRewardCoins;
 
+  /// Sport + game unlocks and the per-sport Beginner's Quest position.
+  final UnlockProgress unlocks;
+
   bool get hasLevelUp => pendingLevelUps.isNotEmpty;
 
   bool get deckReady => pitchDuelDeckReady;
@@ -599,6 +604,7 @@ class GameState {
     String? questError,
     bool clearQuestError = false,
     int? questRewardCoins,
+    UnlockProgress? unlocks,
   }) => GameState(
     loading: loading ?? this.loading,
     deckSlots: deckSlots ?? this.deckSlots,
@@ -714,6 +720,7 @@ class GameState {
     questClaiming: questClaiming ?? this.questClaiming,
     questError: clearQuestError ? null : questError ?? this.questError,
     questRewardCoins: questRewardCoins ?? this.questRewardCoins,
+    unlocks: unlocks ?? this.unlocks,
   );
 }
 
