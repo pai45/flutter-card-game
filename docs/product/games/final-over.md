@@ -13,13 +13,16 @@ timing, wickets, objectives, and OVERDRIVE all matter.
 ## Where It Lives
 
 Open **Sports -> Games -> Cricket -> Final Over**. First entry requires the
-free cricket starter pack and a three-batsman deck. The hub exposes tier,
-career record, kit selection, deck editing, and the play CTA.
+free cricket starter pack and a five-batter squad. The hub shows the Final
+Over level, the leaderboard shortcut, tier selection, and the play CTA
+(TAKE GUARD when the squad is ready, BUILD SQUAD otherwise). CRICKET DECK
+opens the squad editor, which also holds the kit picker. MATCH HISTORY
+opens Final Over results under the career record.
 
 ## Player Flow
 
 1. Claim the cricket starter pack if required.
-2. Equip three batsmen and choose an owned kit.
+2. Equip five owned batters and choose an owned kit (deck builder).
 3. Select Rookie, Pro, or Elite.
 4. Enter matchmaking and receive a target from the tier's approved ladder.
 5. Chase the target across up to 18 legal balls, using tap/swipe batting and
@@ -92,6 +95,8 @@ ledger.
 - **PROTOTYPE:** Opponents and all state are local; there is no network match.
 - **CURRENT LIMITATION:** Games-tab subtitle says six balls while gameplay
   permits 18 legal balls.
+- **CURRENT LIMITATION:** The hub's not-ready CTA helper still says
+  "PICK 3 OWNED BATTERS TO CHASE", but readiness requires five owned batters.
 - **PLANNED:** No additional roadmap commitments are recorded.
 
 ## Implementation References
@@ -101,6 +106,8 @@ ledger.
 - [`lib/screens/final_over/final_over_hub.dart`](../../../lib/screens/final_over/final_over_hub.dart)
 - [`lib/screens/final_over/final_over_match_screen.dart`](../../../lib/screens/final_over/final_over_match_screen.dart)
 - [`final_over/lib/`](../../../final_over/lib/)
+- Technical: [Final Over port](../../technical/final-over-cricket-port.md) ·
+  [Final Over hub port](../../technical/final-over-hub-port.md)
 
 ## Tests
 

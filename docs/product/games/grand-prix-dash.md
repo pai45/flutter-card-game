@@ -4,17 +4,17 @@
 > **Last verified:** 2026-08-09
 > **Scope:** Racing starter pack, pit deck, circuits, launch, race engine, rewards, and career
 
-Grand Prix Dash is StatOz's one-lap top-down F1-style arcade racer. The user chooses a circuit and livery, launches from the grid, races through a 20-car field, manages speed through corners, uses slipstream on straights, and earns XP based on finishing position.
+Grand Prix Dash is StatOz's top-down F1-style arcade racer over 1, 3 or 5 laps. The user signs a driver and equips a livery in the Pit Deck, chooses a circuit and race distance in the lobby, launches from the grid, races through a 20-car field, manages speed through corners, uses slipstream on straights, and earns XP based on finishing position (multiplied by distance).
 
 ## Product Purpose
 
 Grand Prix Dash gives the F1 section a skill-first game mode with instant readability and repeat-session mastery.
 
-It is intentionally deck-free:
+It is deliberately light on equipment:
 
-- no starter-pack gate
-- no squad or card requirements
-- car livery is cosmetic
+- a racing starter pack signs the first F1 driver on first entry
+- one signed, owned starter driver is required to race, but its stats never affect the race
+- car livery is cosmetic, but it must be owned (GRID LINE is free)
 - player level affects CPU strength rather than user equipment
 
 The mode creates progression through local racing stats, circuit personal bests, and shared XP rewards. It does not award coins.
@@ -27,14 +27,14 @@ The app-level entry pushes `GrandPrixTabContent`, which creates `GrandPrixCubit`
 
 ## Entry Requirements
 
-Grand Prix Dash has no deck requirement and no starter-pack gate.
+First entry opens the racing starter pack (`grandPrixStarterPackClaimed`), and the lobby is pushed after the reveal. **START RACE** is available once the racing deck has an owned starter driver and the equipped livery is owned (`GameState.grandPrixPitDeckReady`). Otherwise the same CTA reads **PIT DECK** and opens the Pit Deck.
 
-The user can start immediately once the lobby stats have loaded. The current player level is read when a race is built so CPU smartness can scale with progression.
+The current Grand Prix track level is read when a race is built, so CPU smartness can scale with progression.
 
 ## Player Flow
 1. User opens **Games -> F1 -> Grand Prix Dash**.
 2. Lobby loads persisted racing stats.
-3. User chooses a circuit and team livery, or keeps the last-used choices.
+3. User chooses a circuit and a race distance (1 / 3 / 5 laps), or keeps the last-used choices. Driver and livery are set in the Pit Deck.
 4. User taps **START RACE**.
 5. Cubit builds a seeded race setup with player level, selected circuit, selected livery, random start position, and random simulation seed.
 6. Race screen opens on the grid.
@@ -53,7 +53,7 @@ Leaving during grid, lights, or racing abandons the attempt. Abandoned races do 
 ## Mechanics and Rules
 | Rule | Value |
 |------|-------|
-| Race length | 1 lap |
+| Race length | 1 lap (SPRINT, XP ×1), 3 laps (GRAND PRIX, XP ×2) or 5 laps (ENDURANCE, XP ×3) |
 | Field size | 20 cars |
 | Player start slot | Random P8-P16 |
 | Camera | Top-down pseudo-scroller |
@@ -78,8 +78,9 @@ Each circuit is a list of straights, corners, and chicanes. Sections define leng
 
 ## Livery Selection
 
-The lobby offers six cosmetic liveries:
+The Pit Deck's livery selector offers seven cosmetic liveries. GRID LINE is free, and the others are bought in the Shop:
 
+- Grid Line
 - Scarlet
 - Silver Arrow
 - Papaya
@@ -89,7 +90,7 @@ The lobby offers six cosmetic liveries:
 
 Each livery has a primary body color and accent color. These are content colors for cars only; surrounding UI uses shared Cyber tokens.
 
-The selected circuit and livery are persisted as part of `GrandPrixStats`, so returning users can immediately start with their last setup.
+The selected circuit, livery and race distance are persisted as part of `GrandPrixStats`, so returning users can immediately start with their last setup. An equipped livery the user no longer owns is reset to GRID LINE when the lobby opens.
 
 ## Start And Launch Mechanics
 
@@ -237,32 +238,32 @@ The lobby is a cyber-styled full-screen route with a constrained 420px content c
 
 Primary UI:
 
-- `ReactHeaderBar` with title context and player level badge
+- `ReactHeaderBar` with the Grand Prix level badge and leaderboard shortcut
 - **PIT LANE OPEN** status strip
 - animated racing emblem
 - title `GRAND PRIX DASH`
-- subtitle `ONE LAP / 20 CARS / LIGHTS OUT`
+- subtitle `1·3·5 LAPS · 20 CARS · LIGHTS OUT`
 - record chip showing rookie season, races in, or race wins
-- record panel with races, wins, podiums, best position, and current streak
 - horizontal circuit picker
-- livery swatches
-- **START RACE** CTA
+- race-distance picker (SPRINT / GRAND PRIX / ENDURANCE) with XP multiplier chips
+- **START RACE** CTA (or **PIT DECK** when the driver or livery is not ready), whose helper line summarizes circuit, distance and livery
+- **PIT DECK** and **MATCH HISTORY** buttons; the record panel (races, wins, podiums, best position, current streak) sits at the top of Match History
 
 Animation and feedback:
 
 - animated Cyber background
 - staggered slide/fade content entrance
-- racing emblem spins and pulses with magenta glow
-- selected livery animates border state
-- circuit selection and livery taps trigger haptic selection and UI tap sound
+- racing emblem breathes with a racing-red glow
+- selected distance tile animates its border state
+- circuit and distance taps trigger haptic selection and UI tap sound
 - start race uses play-match sound
 
 Working behavior:
 
-- stats load asynchronously; loading state shows a cyan progress indicator
+- stats load asynchronously; loading state shows a racing-red progress indicator
 - circuit picker opens near the last selected circuit
-- circuit cards show character, difficulty stars, and personal best lap
-- livery picker persists selection immediately
+- circuit cards show character, difficulty stars, and the personal best for the selected distance
+- circuit and distance picks persist immediately
 - start builds a fresh `RaceSetup` and pushes `GrandPrixRaceScreen`
 
 ### 2. Race Screen: Grid Phase
@@ -426,26 +427,29 @@ The race screen dispatches `GrandPrixFinished` with position, field size, circui
 - best finishing position
 - current win streak
 - best win streak
-- best lap per circuit
+- personal-best race time per circuit and distance
 - last selected circuit
 - last selected livery
+- last selected race distance
 
 Stats are saved through `SecureGameStorage`.
 
-Personal bests are tracked per circuit by `GrandPrixCircuitId.name`. A DNF has no lap time and does not set a personal best.
+Personal bests are tracked per circuit and distance: `GrandPrixCircuitId.name` for 1 lap, with `@3L` / `@5L` appended for longer races. For multi-lap races the stored value is the total race time. A DNF has no time and does not set a personal best.
 
 ## Current Product Notes
 
-- Grand Prix Dash is deck-free and cosmetic-livery-only.
+- Grand Prix Dash needs one owned starter driver and an owned livery, and both are cosmetic to the race itself.
 - The mode is XP-only; no coin payout is defined.
 - In-progress races are discarded on exit.
-- The result records local racing stats and shared XP, but no separate race-history archive is currently documented.
+- The result records local racing stats and shared XP. Results also appear in the lobby's per-game Match History (`mode: 'grandprix'`).
+- **CURRENT LIMITATION:** The lobby's circuit strip opens past its end when COASTAL SPRINT is remembered and springs back, and circuit-card BEST shows total race time for multi-lap distances under a lap-time-looking label.
 - Reduced-motion users bypass the reaction test and receive a good launch.
 
 ## Implementation References
 | Concern | Source |
 |---------|--------|
 | Domain enums, circuits, results, persisted stats | [`lib/models/grand_prix.dart`](../../../lib/models/grand_prix.dart) |
+| Lobby | [`lib/screens/grand_prix/grand_prix_lobby_screen.dart`](../../../lib/screens/grand_prix/grand_prix_lobby_screen.dart) · technical: [Grand Prix Dash port](../../technical/grand-prix-dash-port.md), [lobby port](../../technical/grand-prix-lobby-port.md) |
 | Circuit catalog | [`lib/data/grand_prix_circuits.dart`](../../../lib/data/grand_prix_circuits.dart) |
 | Livery catalog | [`lib/data/grand_prix_liveries.dart`](../../../lib/data/grand_prix_liveries.dart) |
 | CPU driver name generation | [`lib/data/grand_prix_drivers.dart`](../../../lib/data/grand_prix_drivers.dart) |
