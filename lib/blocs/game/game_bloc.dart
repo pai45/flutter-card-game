@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as developer;
 import 'dart:math';
 
@@ -19,6 +20,7 @@ import '../../models/oz_coin_ledger.dart';
 import '../../models/packs.dart';
 import '../../models/progression.dart';
 import '../../models/streak.dart';
+import '../../models/daily_quest.dart';
 import '../../models/xp_ledger.dart';
 import '../../services/secure_storage_service.dart';
 import '../../utils/card_helpers.dart';
@@ -49,10 +51,7 @@ double goalChanceForDiffProbabilistic(double diff) {
 
 /// Higher-total duel resolve. Exact ties: [tieHeads] true → goal, false → blocked.
 /// Risky foul/red rolls are not part of the live path.
-RoundOutcome resolveRoundDeterministic(
-  double diff, {
-  required bool tieHeads,
-}) {
+RoundOutcome resolveRoundDeterministic(double diff, {required bool tieHeads}) {
   if (diff > 0) return RoundOutcome.goal;
   if (diff < 0) return RoundOutcome.saved;
   return tieHeads ? RoundOutcome.goal : RoundOutcome.blocked;
@@ -158,6 +157,28 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     on<StreakActivityRecorded>(_onStreakActivityRecorded);
     on<StreakCelebrationConsumed>(_onStreakCelebrationConsumed);
     on<StreakMilestoneClaimed>(_onStreakMilestoneClaimed);
+    on<DailyQuestActivityRecorded>(_onQuestActivity);
+    on<DailyQuestsRefreshed>((event, emit) async {
+      if (state.loading) return;
+      final now = DateTime.now();
+      final quests = state.dailyQuests.refresh(now);
+      // The same local-day tick lets banked shields bridge a missed day as
+      // soon as the player returns, before they have played today.
+      final streak = state.streak.applyShields(now);
+      await _storage.saveDailyQuests(quests);
+      if (!identical(streak, state.streak)) await _storage.saveStreak(streak);
+      emit(
+        state.copyWith(
+          dailyQuests: quests,
+          streak: streak,
+          clearQuestError: true,
+        ),
+      );
+    });
+    on<DailyQuestRewardsClaimed>(_onQuestClaim);
+    on<DailyQuestRewardConsumed>(
+      (event, emit) => emit(state.copyWith(questRewardCoins: 0)),
+    );
     on<MatchReset>((_, emit) => emit(_resetMatch(state)));
     on<MatchStarted>(_onMatchStarted);
     on<TossChoiceChanged>(
@@ -194,8 +215,158 @@ class GameBloc extends Bloc<GameEvent, GameState> {
   final SecureGameStorage _storage;
   final Random _random = Random();
   final Set<String> _guessPlayerSettlementsSeen = <String>{};
+  Future<void> _eventTail = Future<void>.value();
+  bool _questRecoveryNeeded = true;
+  String? _pitchSessionId;
+
+  /// A shared queue across event types (per-type sequential transformers would
+  /// still allow a purchase to race a claim). Recovery precedes every mutation.
+  @override
+  void on<E extends GameEvent>(
+    EventHandler<E, GameState> handler, {
+    EventTransformer<E>? transformer,
+  }) {
+    super.on<E>((event, emit) async {
+      final previous = _eventTail;
+      final done = Completer<void>();
+      _eventTail = done.future;
+      await previous;
+      try {
+        if (_questRecoveryNeeded) await _recoverQuestClaim(emit);
+        await handler(event, emit);
+      } catch (error, stack) {
+        developer.log('Game update failed', error: error, stackTrace: stack);
+        emit(
+          state.copyWith(
+            questClaiming: false,
+            questError: 'Could not save progress. Please retry.',
+          ),
+        );
+      } finally {
+        done.complete();
+      }
+    }, transformer: transformer);
+  }
+
+  Future<void> _recoverQuestClaim(Emitter<GameState> emit) async {
+    final journal = await _storage.recoverQuestClaim();
+    if (journal != null) {
+      final wallet = WalletSnapshot.fromJson(
+        Map<String, dynamic>.from(journal['wallet'] as Map),
+      );
+      final ledger = (journal['ledger'] as List)
+          .map(
+            (e) =>
+                OzCoinLedgerEntry.fromJson(Map<String, dynamic>.from(e as Map)),
+          )
+          .toList();
+      emit(
+        state.copyWith(
+          coins: wallet.coins,
+          coinLedger: ledger,
+          dailyQuests: DailyQuestSnapshot.fromJson(
+            Map<String, dynamic>.from(journal['quests'] as Map),
+          ).refresh(DateTime.now()),
+          questClaiming: false,
+          clearQuestError: true,
+          questRewardCoins: state.questRewardCoins + (journal['amount'] as int),
+        ),
+      );
+    }
+    _questRecoveryNeeded = false;
+  }
+
+  Future<void> _onQuestActivity(
+    DailyQuestActivityRecorded event,
+    Emitter<GameState> emit,
+  ) async {
+    final now = DateTime.now();
+    final before = state.dailyQuests.refresh(now);
+    final quests = state.dailyQuests.record(
+      event.activity,
+      event.sourceId,
+      event.occurredAt,
+      now: now,
+    );
+    if (identical(quests, state.dailyQuests)) return;
+    await _storage.saveDailyQuests(quests);
+    // Completion is monotonic within a day and source ids are deduplicated,
+    // so the Daily Sweep transition fires at most once per local day.
+    final swept =
+        quests.dayKey == before.dayKey &&
+        !before.today.completed(DailyQuestId.dailySweep) &&
+        quests.today.completed(DailyQuestId.dailySweep);
+    final streak = swept ? state.streak.grantShield(now) : state.streak;
+    if (!identical(streak, state.streak)) await _storage.saveStreak(streak);
+    emit(
+      state.copyWith(dailyQuests: quests, streak: streak, clearQuestError: true),
+    );
+  }
+
+  Future<void> _onQuestClaim(
+    DailyQuestRewardsClaimed event,
+    Emitter<GameState> emit,
+  ) async {
+    if (state.loading || state.dailyQuests.claimable.isEmpty) return;
+    emit(state.copyWith(questClaiming: true, clearQuestError: true));
+    final rewards = state.dailyQuests.claimable;
+    final amount = state.dailyQuests.claimableCoins;
+    // Capture the serialized owner's current inventory, rather than a storage
+    // read that could fall back to an empty wallet after a transient read error.
+    final wallet = WalletSnapshot(
+      coins: state.coins,
+      ownedCardIds: state.ownedCardIds,
+      ownedActionCardIds: state.ownedActionCardIds,
+      ownedCardBackIds: state.ownedCardBackIds,
+      equippedCardBackId: state.equippedCardBackId,
+      ownedAvatarFrameIds: state.ownedAvatarFrameIds,
+      equippedAvatarFrameId: state.equippedAvatarFrameId,
+      ownedAvatarIds: state.ownedAvatarIds,
+      ownedBannerIds: state.ownedBannerIds,
+      ownedFinalOverKitIds: state.ownedFinalOverKitIds,
+      ownedGrandPrixLiveryIds: state.ownedGrandPrixLiveryIds,
+      ownedBasketballTeamIds: state.ownedBasketballTeamIds,
+      dailyDropLastClaimedAtMillis:
+          state.dailyDropLastClaimedAt?.millisecondsSinceEpoch,
+    ).toJson();
+    var balance = state.coins;
+    final entries = <OzCoinLedgerEntry>[];
+    for (final reward in rewards.entries) {
+      balance += reward.value;
+      entries.add(
+        OzCoinLedgerEntry(
+          id: reward.key,
+          timestamp: DateTime.now(),
+          delta: reward.value,
+          balanceAfter: balance,
+          type: OzCoinTransactionType.earn,
+          source: OzCoinTransactionSource.dailyQuestReward,
+          title: 'DAILY QUEST REWARD',
+          subtitle: reward.key,
+        ),
+      );
+    }
+    wallet['coins'] = balance;
+    _questRecoveryNeeded = true;
+    await _storage.saveQuestClaimJournal({
+      'wallet': wallet,
+      'ledger': [
+        ...entries.reversed,
+        ...state.coinLedger,
+      ].map((e) => e.toJson()).toList(),
+      'quests': state.dailyQuests.claimAll().toJson(),
+      'amount': amount,
+    });
+    await _recoverQuestClaim(emit);
+  }
 
   Future<void> _onLoaded(GameLoaded event, Emitter<GameState> emit) async {
+    // A failed quest read must stop initialization, never substitute empty
+    // receipts and accidentally make already-paid rewards available again.
+    final dailyQuests = (await _storage.loadDailyQuests()).refresh(
+      DateTime.now(),
+    );
+    await _storage.saveDailyQuests(dailyQuests);
     try {
       developer.log('GameLoaded: Starting initialization');
 
@@ -251,6 +422,11 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       );
       if (streak == null) {
         streak = StreakSnapshot.seeded(DateTime.now());
+        await _storage.saveStreak(streak);
+      }
+      final shielded = streak.applyShields(DateTime.now());
+      if (!identical(shielded, streak)) {
+        streak = shielded;
         await _storage.saveStreak(streak);
       }
       developer.log('GameLoaded: Loaded daily streak');
@@ -359,7 +535,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         await _storage.saveOwnedCards(ownedPlayerIds);
       }
 
-      final active = safeSlots
+      final active =
+          safeSlots
               .where((slot) => slot.id == storedActiveDeckId)
               .firstOrNull ??
           safeSlots.first;
@@ -378,9 +555,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         safeSlots = migrated.slots;
       }
 
-      final activeAfterMigration = safeSlots
-              .where((slot) => slot.id == active.id)
-              .firstOrNull ??
+      final activeAfterMigration =
+          safeSlots.where((slot) => slot.id == active.id).firstOrNull ??
           safeSlots.first;
 
       await _storage.saveOwnedCards(ownedPlayerIds);
@@ -415,8 +591,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           deckDefenders: cardsByIds(defenders, activeAfterMigration.defenders),
           deckActions: actionCardsByIds(activeAfterMigration.actions),
           deckKeeper: _keeperOf(activeAfterMigration),
-          deckFinalOverBatsmen:
-              cardsByIds(batsmen, activeAfterMigration.finalOverBatsmen),
+          deckFinalOverBatsmen: cardsByIds(
+            batsmen,
+            activeAfterMigration.finalOverBatsmen,
+          ),
           deckBasketballPlayers: cardsByIds(
             basketballPlayerCards,
             activeAfterMigration.basketballPlayers,
@@ -459,6 +637,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           dailyDropLastClaimedAt: dailyDropLastClaimedAt,
           progression: migratedProgression,
           streak: streak,
+          dailyQuests: dailyQuests,
         ),
       );
       developer.log('GameLoaded: Complete');
@@ -679,6 +858,14 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     try {
       final settled = await _storage.loadGuessPlayerSettlementIds();
       if (settled.contains(event.settlementId)) return;
+      await _onQuestActivity(
+        DailyQuestActivityRecorded(
+          DailyQuestActivity.guessPlayer,
+          sourceId: event.settlementId,
+          occurredAt: event.completedAt,
+        ),
+        emit,
+      );
 
       final xp = _nextXpSnapshot(
         delta: event.won ? event.xp : 0,
@@ -797,7 +984,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final slot = _starterDeckSlot(
       result,
       id: state.activeDeckId,
-      name: _activeSlot()?.name ??
+      name:
+          _activeSlot()?.name ??
           state.deckSlots.firstOrNull?.name ??
           'Starter Squad',
     );
@@ -827,7 +1015,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final slot = _cricketStarterDeckSlot(
       result,
       id: state.activeDeckId,
-      name: _activeSlot()?.name ??
+      name:
+          _activeSlot()?.name ??
           state.deckSlots.firstOrNull?.name ??
           'Starter Squad',
     );
@@ -857,7 +1046,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final slot = _basketballStarterDeckSlot(
       result,
       id: state.activeDeckId,
-      name: _activeSlot()?.name ??
+      name:
+          _activeSlot()?.name ??
           state.deckSlots.firstOrNull?.name ??
           'Starter Squad',
     );
@@ -886,7 +1076,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final slot = _tennisStarterDeckSlot(
       result,
       id: state.activeDeckId,
-      name: _activeSlot()?.name ??
+      name:
+          _activeSlot()?.name ??
           state.deckSlots.firstOrNull?.name ??
           'Starter Squad',
     );
@@ -909,11 +1100,15 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     Emitter<GameState> emit,
   ) async {
     if (state.grandPrixStarterPackClaimed) return;
-    final result = buildGrandPrixStarterPack(racingPlayerCards, random: _random);
+    final result = buildGrandPrixStarterPack(
+      racingPlayerCards,
+      random: _random,
+    );
     final slot = _grandPrixStarterDeckSlot(
       result,
       id: state.activeDeckId,
-      name: _activeSlot()?.name ??
+      name:
+          _activeSlot()?.name ??
           state.deckSlots.firstOrNull?.name ??
           'Starter Squad',
     );
@@ -925,10 +1120,8 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       xpDetails: 'Grand Prix Dash driver unlocked',
       grandPrixStarterClaimed: true,
       equippedSlot: slot,
-      revealBuilder: (levels) => PackRevealData.grandPrixStarter(
-        result: result,
-        levelsGained: levels,
-      ),
+      revealBuilder: (levels) =>
+          PackRevealData.grandPrixStarter(result: result, levelsGained: levels),
     );
     await _storage.saveGrandPrixStarterPackClaimed();
   }
@@ -968,12 +1161,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final result = pack.id == starterPackId
         ? buildStarterPack(attackers, defenders, actionCards)
         : kRacingPackIds.contains(pack.id)
-        ? rollPack(
-            pack,
-            racingPlayerCards,
-            const [],
-            random: _random,
-          )
+        ? rollPack(pack, racingPlayerCards, const [], random: _random)
         : rollPack(
             pack,
             [...attackers, ...defenders],
@@ -1202,15 +1390,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           cleaned.basketballPlayers,
         ),
         deckBasketballStarter: _basketballStarterOf(cleaned),
-        deckTennisPlayers: cardsByIds(
-          tennisPlayerCards,
-          cleaned.tennisPlayers,
-        ),
+        deckTennisPlayers: cardsByIds(tennisPlayerCards, cleaned.tennisPlayers),
         deckTennisStarter: _tennisStarterOf(cleaned),
-        deckRacingPlayers: cardsByIds(
-          racingPlayerCards,
-          cleaned.racingPlayers,
-        ),
+        deckRacingPlayers: cardsByIds(racingPlayerCards, cleaned.racingPlayers),
         deckRacingStarter: _racingStarterOf(cleaned),
       ),
     );
@@ -1382,6 +1564,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
 
   void _onMatchStarted(MatchStarted event, Emitter<GameState> emit) {
     if (!state.deckReady) return;
+    _pitchSessionId = 'pitch-${DateTime.now().microsecondsSinceEpoch}';
     final opponentName =
         event.opponentName ?? randomOpponentName(random: _random);
     final opponent = generateOpponentDeck(
@@ -1511,15 +1694,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         : scenario.attackBonus > 8;
     final pitchLevel = state.progression.levelFor(ProgressTrack.pitchDuel);
     final ActionCard oppAction;
-    if (scenarioFavorsOpp &&
-        _random.nextDouble() < cpuSmartness(pitchLevel)) {
+    if (scenarioFavorsOpp && _random.nextDouble() < cpuSmartness(pitchLevel)) {
       oppAction = actionPool.reduce((a, b) => a.power >= b.power ? a : b);
     } else {
-      oppAction = chooseOpponentAction(
-        actionPool,
-        pitchLevel,
-        random: _random,
-      );
+      oppAction = chooseOpponentAction(actionPool, pitchLevel, random: _random);
     }
     return (player: oppPlayer, action: oppAction);
   }
@@ -1643,6 +1821,15 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     MatchFinished event,
     Emitter<GameState> emit,
   ) async {
+    if (state.phase == MatchPhase.finalResult) return;
+    _pitchSessionId ??= 'pitch-${DateTime.now().microsecondsSinceEpoch}';
+    await _onQuestActivity(
+      DailyQuestActivityRecorded(
+        DailyQuestActivity.pitchDuel,
+        sourceId: _pitchSessionId!,
+      ),
+      emit,
+    );
     final resultLabel = _resultLabelForState(state);
     final xpDelta = calculateMatchXP(
       resultLabel: resultLabel,
@@ -1720,6 +1907,14 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     ShootoutFinished event,
     Emitter<GameState> emit,
   ) async {
+    if (state.matchHistory.any((entry) => entry.id == event.sessionId)) return;
+    await _onQuestActivity(
+      DailyQuestActivityRecorded(
+        DailyQuestActivity.penaltyShootout,
+        sourceId: event.sessionId,
+      ),
+      emit,
+    );
     final won = event.playerGoals > event.cpuGoals;
     final xpDelta = calculateShootoutXP(
       won: won,
@@ -1747,7 +1942,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         .where((slot) => slot.id == state.activeDeckId)
         .firstOrNull;
     final historyEntry = MatchHistoryEntry(
-      id: 'shootout-${DateTime.now().microsecondsSinceEpoch}',
+      id: event.sessionId,
       mode: 'shootout',
       deckName: activeDeck?.name ?? 'Unknown Deck',
       timestampIso: DateTime.now().toIso8601String(),
@@ -2181,6 +2376,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     ownedGrandPrixLiveryIds: old.ownedGrandPrixLiveryIds,
     ownedBasketballTeamIds: old.ownedBasketballTeamIds,
     streak: old.streak,
+    dailyQuests: old.dailyQuests,
+    questClaiming: old.questClaiming,
+    questError: old.questError,
+    questRewardCoins: old.questRewardCoins,
     matchHistory: old.matchHistory,
     tutorialSeen: old.tutorialSeen,
     pendingPackReveal: old.pendingPackReveal,
@@ -2219,8 +2418,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           equippedAvatarFrameId ?? state.equippedAvatarFrameId,
       ownedAvatarIds: ownedAvatarIds ?? state.ownedAvatarIds,
       ownedBannerIds: ownedBannerIds ?? state.ownedBannerIds,
-      ownedFinalOverKitIds:
-          ownedFinalOverKitIds ?? state.ownedFinalOverKitIds,
+      ownedFinalOverKitIds: ownedFinalOverKitIds ?? state.ownedFinalOverKitIds,
       ownedGrandPrixLiveryIds:
           ownedGrandPrixLiveryIds ?? state.ownedGrandPrixLiveryIds,
       ownedBasketballTeamIds:
@@ -2309,9 +2507,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         .map((card) => card.id)
         .take(cricketStarterCardCount)
         .toList();
-    return _baseDeckSlot(id: id, name: name).copyWith(
-      finalOverBatsmen: starterBatsmen,
-    );
+    return _baseDeckSlot(
+      id: id,
+      name: name,
+    ).copyWith(finalOverBatsmen: starterBatsmen);
   }
 
   /// Grants bronze batsmen and pads deck slots so a claimed cricket starter
@@ -2322,14 +2521,14 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     required List<StoredDeckSlot> slots,
   }) {
     var owned = {...ownedPlayerIds};
-    final ownedBatsmanCount =
-        batsmen.where((card) => owned.contains(card.id)).length;
+    final ownedBatsmanCount = batsmen
+        .where((card) => owned.contains(card.id))
+        .length;
     if (ownedBatsmanCount < cricketStarterCardCount) {
       final need = cricketStarterCardCount - ownedBatsmanCount;
       final pool = batsmen
           .where(
-            (card) =>
-                card.tier == CardTier.bronze && !owned.contains(card.id),
+            (card) => card.tier == CardTier.bronze && !owned.contains(card.id),
           )
           .toList();
       for (var i = 0; i < need && i < pool.length; i++) {
@@ -2383,10 +2582,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         .map((card) => card.id)
         .take(tennisStarterCardCount)
         .toList();
-    return _baseDeckSlot(id: id, name: name).copyWith(
-      tennisPlayers: ids,
-      tennisStarter: ids.firstOrNull,
-    );
+    return _baseDeckSlot(
+      id: id,
+      name: name,
+    ).copyWith(tennisPlayers: ids, tennisStarter: ids.firstOrNull);
   }
 
   StoredDeckSlot _grandPrixStarterDeckSlot(
@@ -2398,10 +2597,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         .map((card) => card.id)
         .take(grandPrixStarterCardCount)
         .toList();
-    return _baseDeckSlot(id: id, name: name).copyWith(
-      racingPlayers: ids,
-      racingStarter: ids.firstOrNull,
-    );
+    return _baseDeckSlot(
+      id: id,
+      name: name,
+    ).copyWith(racingPlayers: ids, racingStarter: ids.firstOrNull);
   }
 
   StoredDeckSlot _baseDeckSlot({required String id, required String name}) =>
@@ -2467,11 +2666,13 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           ? slot.basketballStarter
           : null,
       tennisPlayers: tennisPlayers,
-      tennisStarter:
-          tennisPlayers.contains(slot.tennisStarter) ? slot.tennisStarter : null,
+      tennisStarter: tennisPlayers.contains(slot.tennisStarter)
+          ? slot.tennisStarter
+          : null,
       racingPlayers: racingPlayers,
-      racingStarter:
-          racingPlayers.contains(slot.racingStarter) ? slot.racingStarter : null,
+      racingStarter: racingPlayers.contains(slot.racingStarter)
+          ? slot.racingStarter
+          : null,
       keeper: goalkeepers.any((card) => card.id == slot.keeper)
           ? slot.keeper
           : null,
@@ -2536,6 +2737,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       OzCoinTransactionSource.shopTopUp => 'COIN TOP-UP',
       OzCoinTransactionSource.onboardingReward => 'WELCOME BONUS',
       OzCoinTransactionSource.streakReward => 'STREAK REWARD',
+      OzCoinTransactionSource.dailyQuestReward => 'DAILY QUEST REWARD',
       OzCoinTransactionSource.referralReward => 'FRIEND REFERRAL',
       OzCoinTransactionSource.quizEntry => 'FOOTBALL QUIZ ENTRY',
       OzCoinTransactionSource.quizContestPayout => 'SCORELINE QUIZ PRIZE',

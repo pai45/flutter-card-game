@@ -1,7 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../config/theme.dart';
 import '../../utils/sound_effects.dart';
+import 'cyber_widgets.dart' show ChamferedActionSurface, HudChamferClipper;
 
 /// Accent blue used alongside [Cyber.cyan] for this button's gradient glow,
 /// matching the primary CTA gradient elsewhere in the app.
@@ -406,6 +409,327 @@ class _HudCtaButtonState extends State<HudCtaButton>
       ),
     );
   }
+}
+
+/// Time-pressured "ignition" CTA: a solid accent core holding the action glyph,
+/// a slanted seam into a dark body with the label + helper, a chevron chase
+/// pulling the eye toward the tap, and an optional burning fuse along the base
+/// showing how much time is left. The one focal glow wherever it sits.
+class CyberFuseCtaButton extends StatefulWidget {
+  const CyberFuseCtaButton({
+    required this.label,
+    required this.onTap,
+    this.helper,
+    this.icon = Icons.local_fire_department,
+    this.accent = Cyber.cyan,
+    this.fuse,
+    this.height = 68,
+    this.tapSound = SoundEffect.uiConfirm,
+    super.key,
+  });
+
+  final String label;
+  final VoidCallback? onTap;
+  final String? helper;
+  final IconData icon;
+  final Color accent;
+
+  /// Remaining fraction (0..1) drawn as a burning fuse; null hides it.
+  final double? fuse;
+  final double height;
+  final SoundEffect tapSound;
+
+  @override
+  State<CyberFuseCtaButton> createState() => _CyberFuseCtaButtonState();
+}
+
+class _CyberFuseCtaButtonState extends State<CyberFuseCtaButton>
+    with SingleTickerProviderStateMixin {
+  static const _clipper = HudChamferClipper(bigCut: 16, smallCut: 5);
+  static const _slant = 14.0;
+
+  late final AnimationController _loop = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1500),
+  );
+  bool _pressed = false;
+  bool _still = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _still = MediaQuery.disableAnimationsOf(context);
+    if (_still) {
+      _loop.stop();
+    } else if (!_loop.isAnimating) {
+      _loop.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _loop.dispose();
+    super.dispose();
+  }
+
+  void _setPressed(bool value) {
+    if (_pressed != value) setState(() => _pressed = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = widget.onTap != null;
+    final accent = enabled ? widget.accent : Cyber.muted;
+    final bright = Color.lerp(accent, Colors.white, 0.35)!;
+    final core = widget.height + 4;
+    final helper = widget.helper;
+
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: helper == null ? widget.label : '${widget.label}. $helper',
+      excludeSemantics: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTapDown: enabled ? (_) => _setPressed(true) : null,
+        onTapUp: enabled ? (_) => _setPressed(false) : null,
+        onTapCancel: enabled ? () => _setPressed(false) : null,
+        onTap: enabled
+            ? () {
+                HapticFeedback.mediumImpact();
+                playSound(widget.tapSound);
+                widget.onTap!();
+              }
+            : null,
+        child: AnimatedScale(
+          scale: _pressed ? 0.97 : 1,
+          duration: const Duration(milliseconds: 90),
+          child: AnimatedBuilder(
+            animation: _loop,
+            builder: (context, _) {
+              final t = _loop.value;
+              final breathe = _still
+                  ? 0.5
+                  : 0.5 + 0.5 * math.sin(t * 2 * math.pi);
+              final glow = !enabled
+                  ? 0.0
+                  : _pressed
+                  ? 1.0
+                  : 0.35 + 0.3 * breathe;
+              return DecoratedBox(
+                decoration: BoxDecoration(
+                  boxShadow: enabled
+                      ? Cyber.glow(
+                          accent,
+                          alpha: 0.16 + 0.24 * glow,
+                          blur: 18 + 16 * glow,
+                          spread: -2,
+                        )
+                      : null,
+                ),
+                child: ChamferedActionSurface(
+                  clipper: _clipper,
+                  borderColor: bright.withValues(alpha: enabled ? 0.95 : 0.4),
+                  borderWidth: 1.5,
+                  child: SizedBox(
+                    height: widget.height,
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: ColoredBox(
+                            color: Color.alphaBlend(
+                              accent.withValues(alpha: 0.12),
+                              Cyber.panel,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: core + _slant,
+                          child: ClipPath(
+                            clipper: const _SlantSeamClipper(_slant),
+                            child: ColoredBox(color: accent),
+                          ),
+                        ),
+                        Positioned(
+                          left: 0,
+                          top: 0,
+                          width: core + _slant,
+                          height: 2,
+                          child: ColoredBox(
+                            color: Colors.white.withValues(alpha: 0.35),
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            SizedBox(
+                              width: core,
+                              child: Icon(
+                                widget.icon,
+                                size: 30,
+                                color: AppTheme.darkInk,
+                              ),
+                            ),
+                            const SizedBox(width: _slant + 12),
+                            Expanded(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      widget.label,
+                                      maxLines: 1,
+                                      style: Cyber.display(17, letterSpacing: 1.4),
+                                    ),
+                                  ),
+                                  if (helper != null) ...[
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      helper,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Cyber.label(
+                                        9.5,
+                                        color: bright,
+                                        letterSpacing: 1,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            _ChevronChase(t: t, color: bright, still: _still),
+                            const SizedBox(width: 16),
+                          ],
+                        ),
+                        if (widget.fuse != null)
+                          // Inset above the chamfered border so the lit fuse
+                          // never merges into the same-colour stroke.
+                          Positioned(
+                            left: core + _slant + 12,
+                            right: 22,
+                            bottom: 7,
+                            height: 3,
+                            child: _FuseLine(
+                              value: widget.fuse!.clamp(0.0, 1.0),
+                              accent: accent,
+                              flicker: breathe,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Core plate whose right edge leans like a `/` seam.
+class _SlantSeamClipper extends CustomClipper<Path> {
+  const _SlantSeamClipper(this.slant);
+
+  final double slant;
+
+  @override
+  Path getClip(Size size) => Path()
+    ..moveTo(0, 0)
+    ..lineTo(size.width, 0)
+    ..lineTo(size.width - slant, size.height)
+    ..lineTo(0, size.height)
+    ..close();
+
+  @override
+  bool shouldReclip(covariant _SlantSeamClipper old) => old.slant != slant;
+}
+
+/// Three chevrons lit in sequence so the button reads "go this way".
+class _ChevronChase extends StatelessWidget {
+  const _ChevronChase({required this.t, required this.color, required this.still});
+
+  final double t;
+  final Color color;
+  final bool still;
+
+  double _alpha(int i) {
+    if (still) return 0.8;
+    final distance = ((t * 3) % 3 - i).abs();
+    return 0.25 + 0.75 * (1 - distance.clamp(0.0, 1.0));
+  }
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      for (var i = 0; i < 3; i++)
+        Align(
+          widthFactor: 0.5,
+          child: Icon(
+            Icons.chevron_right,
+            size: 24,
+            color: color.withValues(alpha: _alpha(i)),
+          ),
+        ),
+    ],
+  );
+}
+
+/// Burnt-down fuse: a lit stretch for the time left, capped by a flickering
+/// ember at the burning end.
+class _FuseLine extends StatelessWidget {
+  const _FuseLine({
+    required this.value,
+    required this.accent,
+    required this.flicker,
+  });
+
+  final double value;
+  final Color accent;
+  final double flicker;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, box) {
+      final lit = box.maxWidth * value;
+      return Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: ColoredBox(color: Cyber.bg.withValues(alpha: 0.7)),
+          ),
+          Positioned(
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: lit,
+            child: ColoredBox(color: accent),
+          ),
+          Positioned(
+            left: lit - 3,
+            top: -1.5,
+            child: Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: Color.lerp(accent, Colors.white, 0.4 + 0.5 * flicker),
+                boxShadow: Cyber.glow(accent, alpha: 0.9, blur: 8),
+              ),
+            ),
+          ),
+        ],
+      );
+    },
+  );
 }
 
 /// Primary HUD CTA with an explicit press/hold/release lifecycle.

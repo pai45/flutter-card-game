@@ -74,6 +74,63 @@ void main() {
     expect(afterGap.best(StreakCategory.overall), 6);
   });
 
+  test('a banked shield bridges a missed day without adding to the count', () {
+    final returnDay = now.add(const Duration(days: 1));
+    final armed = StreakSnapshot.seeded(now).copyWith(shields: 1);
+
+    final saved = armed.applyShields(returnDay);
+    expect(saved.shields, 0);
+    expect(saved.shieldedOn(now), isTrue);
+    expect(saved.current(StreakCategory.overall, now: returnDay), 6);
+    final moment = saved.celebrationQueue.last;
+    expect(moment.type, StreakCelebrationType.shieldSaved);
+    expect(moment.shieldsUsed, 1);
+    expect(moment.shields, 0);
+
+    // Playing on the return day continues the run instead of restarting it.
+    final played = armed.record(StreakActivity.predict, returnDay);
+    expect(played.current(StreakCategory.overall, now: returnDay), 7);
+    expect(played.best(StreakCategory.overall), 7);
+    expect(played.shields, 0);
+  });
+
+  test('shields are kept when the gap is wider than the bank', () {
+    final later = now.add(const Duration(days: 3));
+    final armed = StreakSnapshot.seeded(now).copyWith(shields: 2);
+
+    expect(identical(armed.applyShields(later), armed), isTrue);
+    final restarted = armed.record(StreakActivity.pick, later);
+    expect(restarted.current(StreakCategory.overall, now: later), 1);
+    expect(restarted.shields, 2);
+  });
+
+  test('forged shields cap at the bank limit and serialize', () {
+    final streak = StreakSnapshot.seeded(now).grantShield(now).grantShield(now);
+
+    expect(streak.shields, streakShieldCap);
+    expect(identical(streak.grantShield(now), streak), isTrue);
+    expect(
+      streak.celebrationQueue.where(
+        (item) => item.type == StreakCelebrationType.shieldEarned,
+      ),
+      hasLength(2),
+    );
+    expect(StreakSnapshot.fromJson(streak.toJson()).toJson(), streak.toJson());
+    expect(StreakSnapshot.fromJson(const {}).shields, 0);
+  });
+
+  test('an unsecured live streak is only at risk late in the day', () {
+    final streak = StreakSnapshot.seeded(now);
+
+    expect(streak.atRisk(DateTime(2026, 6, 19, 12)), isFalse);
+    expect(streak.atRisk(DateTime(2026, 6, 19, 20)), isTrue);
+    final secured = streak.record(
+      StreakActivity.predict,
+      DateTime(2026, 6, 19, 20),
+    );
+    expect(secured.atRisk(DateTime(2026, 6, 19, 21)), isFalse);
+  });
+
   test('snapshot serialization preserves claims and queued celebrations', () {
     final original = StreakSnapshot.seeded(now)
         .record(StreakActivity.predict, now)

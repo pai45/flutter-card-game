@@ -89,10 +89,38 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(LeagueDial), findsOneWidget);
-      expect(_dial(tester).selectedId, leaderboardLeaguesFor(Sport.football).first.id);
-      // Shares the row with the timeframe segments.
-      expect(find.text('WEEKLY'), findsOneWidget);
+      expect(
+        _dial(tester).selectedId,
+        leaderboardLeaguesFor(Sport.football).first.id,
+      );
+      // Shares the row with the remaining timeframe segments. Season is the
+      // default now that the short-lived Weekly board has been removed.
+      expect(find.text('WEEKLY'), findsNothing);
+      expect(find.text('SEASON'), findsOneWidget);
       expect(find.text('ALL-TIME'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox());
+    });
+
+    testWidgets('wraps from the first league in both directions', (
+      tester,
+    ) async {
+      await _pumpLeaderboard(tester);
+      await tester.tap(find.text('PLAYERS'));
+      await tester.pumpAndSettle();
+
+      final firstLeague = _dial(tester).selectedId;
+      await tester.drag(find.byType(LeagueDial), const Offset(-80, 0));
+      await tester.pumpAndSettle();
+      expect(_dial(tester).selectedId, isNot(firstLeague));
+
+      _dial(tester).onSelect(firstLeague);
+      await tester.pumpAndSettle();
+      expect(_dial(tester).selectedId, firstLeague);
+
+      await tester.drag(find.byType(LeagueDial), const Offset(80, 0));
+      await tester.pumpAndSettle();
+      expect(_dial(tester).selectedId, isNot(firstLeague));
 
       await tester.pumpWidget(const SizedBox());
     });
@@ -126,9 +154,7 @@ void main() {
       for (final league in leaderboardLeaguesFor(Sport.football)) {
         dial.onSelect(league.id);
         await tester.pumpAndSettle();
-        final rows = tester
-            .widgetList<RankRow>(find.byType(RankRow))
-            .toList();
+        final rows = tester.widgetList<RankRow>(find.byType(RankRow)).toList();
         for (var i = 1; i < rows.length; i++) {
           expect(
             rows[i].entry.score,
@@ -155,7 +181,9 @@ void main() {
       for (final league in leaderboardLeaguesFor(Sport.football)) {
         dial.onSelect(league.id);
         await tester.pumpAndSettle();
-        ranks.add(tester.widget<RankUserBar>(find.byType(RankUserBar)).user.rank);
+        ranks.add(
+          tester.widget<RankUserBar>(find.byType(RankUserBar)).user.rank,
+        );
       }
       expect(ranks.length, greaterThan(1));
 
@@ -181,7 +209,20 @@ void main() {
 
       final rival = rows.firstWhere((row) => !row.entry.isUser);
       final rivalRow = find.text(rival.entry.name);
-      await tester.ensureVisible(rivalRow);
+      // The top bar and MATCHES / GAMES tabs scroll away in a NestedScrollView,
+      // where ensureVisible re-opens the header and snaps the board back, so
+      // drag the row above the docked rank bar instead.
+      final board = find.byType(NestedScrollView);
+      for (var step = 0; step < 60; step++) {
+        if (tester.getRect(rivalRow).bottom <= tester.getRect(board).bottom) {
+          break;
+        }
+        await tester.dragFrom(
+          tester.getRect(board).center,
+          const Offset(0, -120),
+        );
+        await tester.pump();
+      }
       await tester.pumpAndSettle();
       await tester.tap(rivalRow);
       await tester.pumpAndSettle();

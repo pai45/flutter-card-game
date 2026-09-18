@@ -12,6 +12,7 @@ enum OzCoinTransactionSource {
   shopTopUp,
   onboardingReward,
   streakReward,
+  dailyQuestReward,
   referralReward,
   quizEntry,
   quizContestPayout,

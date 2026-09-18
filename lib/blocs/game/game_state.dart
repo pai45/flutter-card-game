@@ -9,6 +9,7 @@ import '../../models/oz_coin_ledger.dart';
 import '../../models/packs.dart';
 import '../../models/progression.dart';
 import '../../models/streak.dart';
+import '../../models/daily_quest.dart';
 import '../../models/xp_ledger.dart';
 import '../../utils/card_helpers.dart';
 
@@ -287,6 +288,10 @@ class GameState {
     this.pendingLevelUpTrack,
     required this.lastMatchXP,
     required this.streak,
+    this.dailyQuests = const DailyQuestSnapshot(),
+    this.questClaiming = false,
+    this.questError,
+    this.questRewardCoins = 0,
   });
 
   factory GameState.initial() => GameState(
@@ -453,10 +458,15 @@ class GameState {
   final PlayerProgression progression;
   final PlayerProgression? previousProgression;
   final List<int> pendingLevelUps;
+
   /// Track that produced the pending level-up (for celebration label).
   final ProgressTrack? pendingLevelUpTrack;
   final int? lastMatchXP;
   final StreakSnapshot streak;
+  final DailyQuestSnapshot dailyQuests;
+  final bool questClaiming;
+  final String? questError;
+  final int questRewardCoins;
 
   bool get hasLevelUp => pendingLevelUps.isNotEmpty;
 
@@ -584,6 +594,11 @@ class GameState {
     Object? pendingLevelUpTrack = _sentinel,
     Object? lastMatchXP = _sentinel,
     StreakSnapshot? streak,
+    DailyQuestSnapshot? dailyQuests,
+    bool? questClaiming,
+    String? questError,
+    bool clearQuestError = false,
+    int? questRewardCoins,
   }) => GameState(
     loading: loading ?? this.loading,
     deckSlots: deckSlots ?? this.deckSlots,
@@ -695,6 +710,10 @@ class GameState {
         ? this.lastMatchXP
         : lastMatchXP as int?,
     streak: streak ?? this.streak,
+    dailyQuests: dailyQuests ?? this.dailyQuests,
+    questClaiming: questClaiming ?? this.questClaiming,
+    questError: clearQuestError ? null : questError ?? this.questError,
+    questRewardCoins: questRewardCoins ?? this.questRewardCoins,
   );
 }
 

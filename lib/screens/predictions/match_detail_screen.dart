@@ -170,39 +170,50 @@ class _MatchTabsViewState extends State<MatchTabsView> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        widget.headerBuilder(_match),
-        CyberUnderlineTabs(
-          labels: _tabs,
-          activeIndex: _activeTab,
-          onTap: _setTab,
-        ),
-        Expanded(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
-            child: KeyedSubtree(
-              key: ValueKey<int>(_activeTab),
-              child: switch (_activeTab) {
-                0 => MatchPredictionScreen(
-                  match: _match,
-                  embedded: true,
-                  showTopBar: false,
-                  showMatchHeader: false,
-                  onOpenPicks: () => _setTab(1),
-                ),
-                1 => _MatchPicksTab(match: _match),
-                2 => _MatchLeaderboardTab(
-                  match: _match,
-                  onJoin: () => _setTab(0),
-                ),
-                _ => _ScoreboardTab(match: _match),
-              },
+    return NestedScrollView(
+      key: const ValueKey('match-tabs-scroll-view'),
+      headerSliverBuilder: (context, innerBoxIsScrolled) => [
+        SliverToBoxAdapter(child: widget.headerBuilder(_match)),
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: CyberPinnedTabsDelegate(
+            child: CyberUnderlineTabs(
+              key: const ValueKey('match-primary-tabs'),
+              labels: _tabs,
+              activeIndex: _activeTab,
+              onTap: _setTab,
             ),
           ),
         ),
-        _MatchCircleCta(match: _match),
       ],
+      body: Column(
+        children: [
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              child: KeyedSubtree(
+                key: ValueKey<int>(_activeTab),
+                child: switch (_activeTab) {
+                  0 => MatchPredictionScreen(
+                    match: _match,
+                    embedded: true,
+                    showTopBar: false,
+                    showMatchHeader: false,
+                    onOpenPicks: () => _setTab(1),
+                  ),
+                  1 => _MatchPicksTab(match: _match),
+                  2 => _MatchLeaderboardTab(
+                    match: _match,
+                    onJoin: () => _setTab(0),
+                  ),
+                  _ => _ScoreboardTab(match: _match),
+                },
+              ),
+            ),
+          ),
+          _MatchCircleCta(match: _match),
+        ],
+      ),
     );
   }
 }

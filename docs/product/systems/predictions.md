@@ -1,7 +1,7 @@
 # Predictions
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-07
+> **Last verified:** 2026-09-15
 > **Scope:** Fixture quiz discovery, submission/editing, boosters, lock lifecycle, XP settlement, and paid Scoreline contest
 
 ## Product Purpose
@@ -18,10 +18,16 @@ linked-pick surfaces provide context around the quiz. A fixed search action on
 the MATCH sport strip opens an all-sports team and league fixture finder without
 changing the selected sport or match day.
 
+The MATCH / GAMES page header collapses on scroll: the StatOz top bar (title,
+streak flame, coins) and the MATCH / GAMES switcher scroll away with the feed,
+while the sport strip (TRENDING, sports, ALL SPORTS, search) pins to the top of
+the screen so switching sport stays one tap away at any depth. The status-bar
+area keeps the top-bar fill, so the pinned strip never slides under the system
+clock. Scrolling back to the top restores the full header. — BUILT
+
 When the player's followed club plays inside the match window on screen, that
 fixture is lifted out of its league group and pinned directly beneath the day
 navigator under a **YOUR CLUB** header, and the rest of the day follows below.
-
 
 Sports appear in one canonical order everywhere they are tabbed —
 **Football, Cricket, Basketball, Motorsport, Tennis** — defined by
@@ -217,14 +223,37 @@ cyan-tinted panel background, cyan chamfered border, cyan signal line, and cyan
 hard-elevation edge. LIVE, FUTURE, PREDICT, PICK, and sport identity colors stay
 inside the card as semantic labels and markers rather than changing its shell.
 
+The MATCH Trending feed opens with a PICKS / FUTURES / EVENTS category strip:
+three equal squares on the same cyan Trending card shell, directly above the
+bento grid. Each shows its live open-market count and a type-coloured glyph;
+tapping one opens ALL PICKS with the browse filters reset (all leagues, open
+status) and the matching MATCHES / FUTURES / EVENT chip active. A square pulses
+a small dot only while one of its open markets is genuinely hot (the same
+5-point rule as the market delta chip).
+
+Below it, the Trending layout uses a dense two-column broadcast grid.
+Full-width fixtures are scoreboard cards on a shorter strip row: the live minute
+(beside a blinking green dot) or lifecycle sits in a centered top notch, the
+white score or kickoff is the dominant figure between full team names and
+crests, and the bottom telemetry rail carries live/full-time/XP state plus Oz
+volume. FUTURE,
+PICK, and PREDICT cards use taller portrait proportions with the same separated
+telemetry rail, keeping the question or matchup readable above market status,
+XP, and volume. The rail changes to the darker footer surface without a divider
+line, so each tile reads as one uninterrupted card. Only LIVE badges and dots,
+genuinely hot market deltas, and hot category dots animate or glow; the repeated card shell and
+telemetry chrome stay calm.
+
 The match STATS tab uses sport-specific report HUDs built on the **pick market
 detail language** (see `design/cyber-ui-design-system.md`), so a match report and
 a pick market read as one surface.
 
-The cricket report's implementation — every widget verbatim, its data contract,
-the race/run-rate chart configuration, and a guide to rebuilding it in another
-Flutter project — is documented in
-[Cricket match STATS view](../../technical/cricket-match-stats-view.md).
+On long match reports and prediction leaderboards, the fixture summary scrolls
+away to return vertical space to the data while the primary **PREDICT / PICKS /
+TOPS / STATS** strip pins beneath the MATCH top bar. The player can therefore
+switch modes without climbing back through a long timeline, chart stack, or
+rank board. Short tabs keep the same static composition because there is no
+scroll distance to trigger the pinned state.
 
 Football's STATS navigation is **OVERVIEW / MOMENTUM / LINEUPS / COMMENTARY**.
 There is no separate EVENTS tab: the event log was never a destination of its
@@ -254,7 +283,7 @@ the game clock. Each chart carries range tabs and expands to a full-screen view.
   pressure at a minute.
 - **Cricket RACE** — both innings worms on one axis (20 OV / POWERPLAY / DEATH)
   with wicket markers in the batting team's identity colour; scrubbing reads
-  *both* scoreboards at the same over. The chart has no duplicate RACE VERDICT
+  _both_ scoreboards at the same over. The chart has no duplicate RACE VERDICT
   panel; its legend already carries the live innings result. Directly beneath it,
   **INNINGS RUN RATE** switches between 1ST INNINGS and 2ND INNINGS. The selected
   batting team's resolved colour traces actual run rate; an innings with a target
@@ -265,7 +294,7 @@ the game clock. Each chart carries range tabs and expands to a full-screen view.
   game on one axis (GAME / H1 / H2 / CLUTCH), drawn stepped because a score is a
   step function, with the home side filled and the away side stroked so two
   rising lines stay separable. The x-axis samples the real play at each label
-  position and reads `Q1`…`Q4`; scrubbing reads *both* scoreboards at a live game
+  position and reads `Q1`…`Q4`; scrubbing reads _both_ scoreboards at a live game
   clock (`Q3 4:12`). Lead changes ride the plot as rings in the colour of the team
   that took the lead, only the closing dozen are drawn, and only the last flip —
   the one the game never came back from — is focal. Directly beneath it a
@@ -340,7 +369,7 @@ Player images degrade in three steps: a bundled portrait where one exists (the
 portrait library is the card game's roster, so it covers 2 of these 40 players),
 then ESPN's per-event kit render decoded downscaled, then the shirt-number
 octagon — the same badge the pitch draws, so card and formation board speak the
-same language. The number badge sits permanently *behind* the image, so a slow,
+same language. The number badge sits permanently _behind_ the image, so a slow,
 missing or failed kit never leaves a blank plate. **ESPN publishes no headshots
 for soccer at all**; the kit render is the only player image its API offers.
 
@@ -357,6 +386,7 @@ commentary. Cricket's STATS navigation contains OVERVIEW, RACE, SCORECARD, and
 MATCH FEED; the standalone CHASE and SQUADS tabs are omitted. MATCH FEED uses one
 tab per batting team and open timeline rows rather than individual comment cards;
 an innings without published commentary receives its own contextual empty state.
+
 ### NBA hub (league TABLE / LEADERS / STATS) — BUILT
 
 The NBA hub now shows the real 2025-26 season: both conference tables in
@@ -612,6 +642,10 @@ so duplicated competition text and team count do not compete for header space.
 In the TABLE standings, club names stay white for a consistent readable text
 hierarchy; club identity colour remains on the crest rather than tinting the
 row label.
+
+Every shared club crest stays compact: a badge can be at most 1.1 times as wide
+as it is tall, so an oversized parent constraint cannot turn a leader or table
+logo into a banner.
 
 ### Where the data comes from
 
@@ -872,7 +906,7 @@ with red cards in danger red.
 
 Each board is the team-side twin of the LEADERS player boards — a glowing
 `#1` plate over calm chaser rows, so the two tabs read as one system. Boards
-where the *smallest* number wins (goals conceded, cards, fouls) rank ascending
+where the _smallest_ number wins (goals conceded, cards, fouls) rank ascending
 and are framed `LEAGUE BEST // FEWEST`.
 
 Neither board draws a progress meter behind its rows. Both carry short values

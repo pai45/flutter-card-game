@@ -2,6 +2,7 @@ import '../../models/cards.dart';
 import '../../models/deck.dart';
 import '../../models/oz_coin_ledger.dart';
 import '../../models/streak.dart';
+import '../../models/daily_quest.dart';
 import '../../models/sport_match.dart';
 import '../../models/xp_ledger.dart';
 
@@ -255,6 +256,23 @@ class StreakActivityRecorded extends GameEvent {
 
 class StreakCelebrationConsumed extends GameEvent {}
 
+class DailyQuestActivityRecorded extends GameEvent {
+  DailyQuestActivityRecorded(
+    this.activity, {
+    required this.sourceId,
+    DateTime? occurredAt,
+  }) : occurredAt = occurredAt ?? DateTime.now();
+  final DailyQuestActivity activity;
+  final String sourceId;
+  final DateTime occurredAt;
+}
+
+class DailyQuestsRefreshed extends GameEvent {}
+
+class DailyQuestRewardsClaimed extends GameEvent {}
+
+class DailyQuestRewardConsumed extends GameEvent {}
+
 class StreakMilestoneClaimed extends GameEvent {
   StreakMilestoneClaimed(this.days);
   final int days;
@@ -329,7 +347,13 @@ class MatchFinished extends GameEvent {}
 /// Fired once by the standalone Penalty Shootout mode when a shootout ends,
 /// so XP/coins/history flow through the same progression owner as matches.
 class ShootoutFinished extends GameEvent {
-  ShootoutFinished({required this.playerGoals, required this.cpuGoals});
+  ShootoutFinished({
+    required this.playerGoals,
+    required this.cpuGoals,
+    required this.sessionId,
+  });
+
+  final String sessionId;
 
   final int playerGoals;
   final int cpuGoals;

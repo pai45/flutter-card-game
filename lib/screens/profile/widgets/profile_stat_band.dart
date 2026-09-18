@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../config/theme.dart';
+import '../../../utils/sound_effects.dart';
 import '../../predictions/widgets/history_hud.dart' show HistoryStatCell;
 import 'profile_card.dart';
 import '../../../widgets/streak_widgets.dart';
@@ -38,6 +40,7 @@ class ProfileStatBand extends StatelessWidget {
     required this.stats,
     this.streak = 0,
     this.onViewHistory,
+    this.onStreakTap,
     super.key,
   });
 
@@ -47,6 +50,9 @@ class ProfileStatBand extends StatelessWidget {
   final List<ProfileStat> stats;
   final int streak;
   final VoidCallback? onViewHistory;
+
+  /// Makes the streak badge a door into the streak hub.
+  final VoidCallback? onStreakTap;
 
   @override
   Widget build(BuildContext context) {
@@ -64,8 +70,8 @@ class ProfileStatBand extends StatelessWidget {
                 style: Cyber.display(15, color: accent, letterSpacing: 1),
               ),
               if (streak > 0) ...[
-                const SizedBox(width: StreakTheme.space8),
-                StreakBadge(value: streak),
+                const SizedBox(width: 8),
+                _StreakBadgeButton(streak: streak, onTap: onStreakTap),
               ],
               const Spacer(),
               if (onViewHistory != null)
@@ -100,6 +106,53 @@ class ProfileStatBand extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The band's streak tally; when [onTap] is set it becomes a chamfered chip
+/// with a chevron that opens the streak hub.
+class _StreakBadgeButton extends StatelessWidget {
+  const _StreakBadgeButton({required this.streak, this.onTap});
+
+  final int streak;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tap = onTap;
+    if (tap == null) return StreakBadge(value: streak);
+    return Semantics(
+      button: true,
+      label: 'Open $streak day streak',
+      excludeSemantics: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          HapticFeedback.selectionClick();
+          playSound(SoundEffect.uiTap);
+          tap();
+        },
+        child: DecoratedBox(
+          decoration: ShapeDecoration(
+            color: Cyber.gold.withValues(alpha: 0.08),
+            shape: BeveledRectangleBorder(
+              borderRadius: BorderRadius.circular(4),
+              side: BorderSide(color: Cyber.gold.withValues(alpha: 0.35)),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(6, 0, 2, 0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                StreakBadge(value: streak),
+                const Icon(Icons.chevron_right, size: 14, color: Cyber.gold),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

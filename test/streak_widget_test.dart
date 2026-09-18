@@ -6,6 +6,8 @@ import 'package:card_game/screens/predictions/streak_calendar_screen.dart';
 import 'package:card_game/services/secure_storage_service.dart';
 import 'package:card_game/services/pick_repository.dart';
 import 'package:card_game/services/prediction_repository.dart';
+import 'package:card_game/widgets/cyber/cyber_underline_tabs.dart';
+import 'package:card_game/widgets/cyber/cyber_widgets.dart';
 import 'package:card_game/widgets/streak_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -82,36 +84,45 @@ void main() {
 
     expect(find.text('STREAKS'), findsNWidgets(2));
     expect(find.text('CALENDAR'), findsOneWidget);
+    expect(find.text('TODAY'), findsWidgets);
+    const calendarPanel = ValueKey('streak-calendar-panel');
+    expect(find.text('STREAK SHIELDS'), findsNothing);
+    expect(find.text('KICK OFF'), findsOneWidget);
+    expect(find.byKey(calendarPanel), findsNothing);
     expect(find.text('MILESTONES'), findsOneWidget);
-    expect(find.text('YOUR STREAKS'), findsOneWidget);
-    expect(find.text('ACTIVITY CALENDAR'), findsNothing);
-    expect(find.text('STREAK MILESTONES'), findsNothing);
+    expect(find.text('365 DAYS'), findsNothing);
 
-    final surfaces = tester.widgetList<StreakElevatedSurface>(
-      find.byType(StreakElevatedSurface),
-    );
-    expect(surfaces.length, greaterThanOrEqualTo(6));
-    final hardShadowDecorations = tester
-        .widgetList<DecoratedBox>(find.byType(DecoratedBox))
-        .map((widget) => widget.decoration)
-        .whereType<ShapeDecoration>()
-        .where((decoration) => decoration.shadows?.isNotEmpty ?? false);
-    expect(hardShadowDecorations, isNotEmpty);
-    for (final decoration in hardShadowDecorations) {
-      expect(
-        decoration.shadows!.every((shadow) => shadow.blurRadius == 0),
-        isTrue,
+    // Glow rule: the STREAK CORE hero is the only panel allowed to glow.
+    final glowingPanels = tester
+        .widgetList<CyberPanel>(find.byType(CyberPanel))
+        .where((panel) => panel.glow);
+    expect(glowingPanels.length, lessThanOrEqualTo(1));
+
+    Future<void> openTab(String label) async {
+      final tab = find.descendant(
+        of: find.byType(CyberUnderlineTabs),
+        matching: find.text(label),
       );
+      await tester.ensureVisible(tab);
+      await tester.tap(tab);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
     }
 
-    final calendarTab = find.byKey(const ValueKey('streak_page_tab_1'));
-    await tester.ensureVisible(calendarTab);
-    tester.widget<GestureDetector>(calendarTab).onTap!();
-    await tester.pump();
-    await tester.pump(StreakTheme.standardDuration + StreakTheme.fastDuration);
-    expect(find.text('YOUR STREAKS'), findsNothing);
-    expect(find.text('ACTIVITY CALENDAR'), findsOneWidget);
-    expect(find.text('STREAK MILESTONES'), findsNothing);
+    await openTab('STREAKS');
+    expect(find.text('STREAK SHIELDS'), findsOneWidget);
+    expect(find.text('PENALTY SHOOTOUT'), findsOneWidget);
+    expect(find.text('KICK OFF'), findsNothing);
+
+    await openTab('MILESTONES');
+    expect(find.text('365 DAYS'), findsOneWidget);
+    expect(find.text('7 DAYS'), findsOneWidget);
+    expect(find.text('KICK OFF'), findsNothing);
+
+    await openTab('CALENDAR');
+    expect(find.text('STREAK SHIELDS'), findsNothing);
+    expect(find.byKey(calendarPanel), findsOneWidget);
+    expect(find.text('365 DAYS'), findsNothing);
 
     final selected = DateTime.now().subtract(const Duration(days: 1));
     final selectedDayFinder = find.byKey(
@@ -119,24 +130,18 @@ void main() {
     );
     await tester.ensureVisible(selectedDayFinder);
     await tester.tap(selectedDayFinder);
-    await tester.pump(StreakTheme.standardDuration);
+    await tester.pump(const Duration(milliseconds: 300));
     final selectedLabel = _fullDate(selected).toUpperCase();
     expect(find.text(selectedLabel), findsOneWidget);
 
-    final milestoneTab = find.byKey(const ValueKey('streak_page_tab_2'));
-    await tester.ensureVisible(milestoneTab);
-    tester.widget<GestureDetector>(milestoneTab).onTap!();
-    await tester.pump();
-    await tester.pump(StreakTheme.standardDuration + StreakTheme.fastDuration);
-    expect(find.text('STREAK MILESTONES'), findsOneWidget);
-    expect(find.text('ACTIVITY CALENDAR'), findsNothing);
+    await openTab('TODAY');
+    expect(find.text('KICK OFF'), findsOneWidget);
+    expect(find.byKey(calendarPanel), findsNothing);
 
-    await tester.ensureVisible(calendarTab);
-    tester.widget<GestureDetector>(calendarTab).onTap!();
-    await tester.pump();
-    await tester.pump(StreakTheme.standardDuration + StreakTheme.fastDuration);
+    await openTab('CALENDAR');
     expect(find.text(selectedLabel), findsOneWidget);
     expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 }
 

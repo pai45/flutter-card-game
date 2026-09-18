@@ -20,7 +20,7 @@ class LeagueDial extends StatefulWidget {
     required this.leagues,
     required this.selectedId,
     required this.onSelect,
-    this.width = 132,
+    this.width = 152,
     this.height = 38,
     super.key,
   });
@@ -37,7 +37,8 @@ class LeagueDial extends StatefulWidget {
 
 class _LeagueDialState extends State<LeagueDial>
     with SingleTickerProviderStateMixin {
-  static const double _itemExtent = 64;
+  static const double _itemExtent = 76;
+  static const int _wheelAnchor = 1000;
 
   late final FixedExtentScrollController _wheel;
   late final AnimationController _pulse;
@@ -45,7 +46,9 @@ class _LeagueDialState extends State<LeagueDial>
   @override
   void initState() {
     super.initState();
-    _wheel = FixedExtentScrollController(initialItem: _indexOf(widget.selectedId));
+    _wheel = FixedExtentScrollController(
+      initialItem: _initialWheelItem(widget.selectedId),
+    );
     // Rests at 1 so the notch sits dark; a detent drives it 0 → 1 again, which
     // reads as a flash that decays.
     _pulse = AnimationController(
@@ -60,9 +63,9 @@ class _LeagueDialState extends State<LeagueDial>
     super.didUpdateWidget(oldWidget);
     // Realign when the selection changes from outside the dial.
     final target = _indexOf(widget.selectedId);
-    if (_wheel.hasClients && _wheel.selectedItem != target) {
+    if (_wheel.hasClients && _wrappedIndex(_wheel.selectedItem) != target) {
       _wheel.animateToItem(
-        target,
+        _nearestWheelItem(_wheel.selectedItem, target),
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOutCubic,
       );
@@ -81,14 +84,35 @@ class _LeagueDialState extends State<LeagueDial>
     return index < 0 ? 0 : index;
   }
 
+  int _wrappedIndex(int wheelIndex) => wheelIndex % widget.leagues.length;
+
+  int _initialWheelItem(String id) {
+    final cycleStart = _wheelAnchor - (_wheelAnchor % widget.leagues.length);
+    return cycleStart + _indexOf(id);
+  }
+
+  int _nearestWheelItem(int current, int logicalTarget) {
+    final count = widget.leagues.length;
+    final cycle = current ~/ count;
+    final candidates = [
+      (cycle - 1) * count + logicalTarget,
+      cycle * count + logicalTarget,
+      (cycle + 1) * count + logicalTarget,
+    ];
+    candidates.sort(
+      (a, b) => (a - current).abs().compareTo((b - current).abs()),
+    );
+    return candidates.first;
+  }
+
   /// Fires per detent while spinning, not just on settle — so a flick through
   /// four leagues ticks four times.
   void _onDetent(int index) {
-    if (index < 0 || index >= widget.leagues.length) return;
+    if (index < 0) return;
     HapticFeedback.selectionClick();
     playSound(SoundEffect.countdownTick);
     _pulse.forward(from: 0);
-    widget.onSelect(widget.leagues[index].id);
+    widget.onSelect(widget.leagues[_wrappedIndex(index)].id);
   }
 
   /// Fractional wheel position, so colour and opacity track the spin per pixel
@@ -153,9 +177,8 @@ class _LeagueDialState extends State<LeagueDial>
           // scaling below instead.
           onSelectedItemChanged: _onDetent,
           childDelegate: ListWheelChildBuilderDelegate(
-            childCount: widget.leagues.length,
             builder: (context, index) {
-              final league = widget.leagues[index];
+              final league = widget.leagues[_wrappedIndex(index)];
               final focus = (1 - (index - position).abs()).clamp(0.0, 1.0);
               return RotatedBox(
                 quarterTurns: 1,
@@ -209,7 +232,7 @@ class _DialEdgeFade extends StatelessWidget {
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
           colors: [Cyber.bg, clear, clear, Cyber.bg],
-          stops: const [0, 0.24, 0.66, 0.94],
+          stops: const [0, 0.16, 0.84, 1],
         ),
       ),
       child: const SizedBox.expand(),
@@ -227,7 +250,7 @@ class _DialNotch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 58,
+      width: 68,
       height: double.infinity,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,

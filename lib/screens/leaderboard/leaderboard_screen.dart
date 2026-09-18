@@ -41,7 +41,7 @@ const List<Sport> _leaderboardSports = [
 
 enum TournamentBoard { players, teams }
 
-enum TournamentScope { weekly, season, allTime }
+enum TournamentScope { season, allTime }
 
 /// Every sport's Games board carries its own game catalogue. The enum keeps
 /// leaderboard score generation stable while [_gameModesFor] supplies the
@@ -283,7 +283,6 @@ int _scoreFor(
   switch (type) {
     case LeaderboardType.matches:
       return switch (scope) {
-        TournamentScope.weekly => base,
         TournamentScope.season => base * 6,
         TournamentScope.allTime => base * 27,
       };
@@ -318,17 +317,18 @@ List<LeaderboardEntry> _entriesFor(
   GameMode mode,
   LeaderboardLeague league,
 ) {
-  final seeded = [
-    for (final seed in kRivalRoster)
-      (seed: seed, hash: _leagueHash('${league.id}:${seed.name}')),
-  ]..sort((a, b) {
-    final byBase = _leagueBase(
-      b.seed.base,
-      b.hash,
-    ).compareTo(_leagueBase(a.seed.base, a.hash));
-    // Ties fall back to the canonical order so the board never flickers.
-    return byBase != 0 ? byBase : a.seed.name.compareTo(b.seed.name);
-  });
+  final seeded =
+      [
+        for (final seed in kRivalRoster)
+          (seed: seed, hash: _leagueHash('${league.id}:${seed.name}')),
+      ]..sort((a, b) {
+        final byBase = _leagueBase(
+          b.seed.base,
+          b.hash,
+        ).compareTo(_leagueBase(a.seed.base, a.hash));
+        // Ties fall back to the canonical order so the board never flickers.
+        return byBase != 0 ? byBase : a.seed.name.compareTo(b.seed.name);
+      });
 
   return [
     for (var i = 0; i < seeded.length; i++)
@@ -365,10 +365,7 @@ int _userRankIn(LeaderboardLeague league) {
     (seed) => seed.isUser,
     orElse: () => kRivalRoster.last,
   );
-  final mine = _leagueBase(
-    user.base,
-    _leagueHash('${league.id}:${user.name}'),
-  );
+  final mine = _leagueBase(user.base, _leagueHash('${league.id}:${user.name}'));
   var rank = 1;
   for (final seed in kRivalRoster) {
     if (seed.name == user.name) continue;
@@ -468,6 +465,7 @@ class LeaderboardScreen extends StatefulWidget {
     this.initialSport,
     this.initialMode,
     this.onClose,
+    this.onOpenStreakHub,
     super.key,
   });
 
@@ -490,6 +488,9 @@ class LeaderboardScreen extends StatefulWidget {
   /// action and titles the bar with the game you came from.
   final VoidCallback? onClose;
 
+  /// Streak hub entry for the top-bar flame (null = hub without quest routing).
+  final VoidCallback? onOpenStreakHub;
+
   @override
   State<LeaderboardScreen> createState() => _LeaderboardScreenState();
 }
@@ -498,7 +499,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   late LeaderboardType _type = widget.initialType ?? LeaderboardType.matches;
   TournamentBoard _tournamentBoard = TournamentBoard.teams;
   late Sport _sport = widget.initialSport ?? Sport.football;
-  TournamentScope _scope = TournamentScope.weekly;
+  TournamentScope _scope = TournamentScope.season;
   late GameMode _mode = widget.initialMode ?? GameMode.featured;
 
   /// Each sport remembers the league you last spun to, so switching tabs and
@@ -597,97 +598,96 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                   sport: _sport,
                   leagues: catalogue,
                   selectedLeagueId: league.id,
-                  onLeague: (id) =>
-                      setState(() => _leagueBySport[_sport] = id),
+                  onLeague: (id) => setState(() => _leagueBySport[_sport] = id),
                   accent: accent,
                   compact: compact,
                 );
 
-                return Column(
-                  children: [
-                    StatOzTopBar(
-                      title: 'Leaderboard',
-                      accent: accent,
-                      leading: onClose == null
-                          ? null
-                          : IconButton(
-                              tooltip: 'Back',
-                              padding: EdgeInsets.zero,
-                              visualDensity: VisualDensity.compact,
-                              constraints: const BoxConstraints.tightFor(
-                                width: 34,
-                                height: 40,
-                              ),
-                              onPressed: onClose,
-                              icon: const Icon(
-                                Icons.arrow_back_ios_new,
-                                size: 18,
-                              ),
-                              color: accent,
+                final board = StatOzCollapsingHeaderView(
+                  topBar: StatOzTopBar(
+                    title: 'Leaderboard',
+                    accent: accent,
+                    leading: onClose == null
+                        ? null
+                        : IconButton(
+                            tooltip: 'Back',
+                            padding: EdgeInsets.zero,
+                            visualDensity: VisualDensity.compact,
+                            constraints: const BoxConstraints.tightFor(
+                              width: 34,
+                              height: 40,
                             ),
-                      onAddCoins:
-                          widget.onAddCoins ??
-                          () => widget.onNavigate(AppSection.shop),
-                    ),
-                    _LeaderboardTabs(
-                      activeTab: _typeTabOrder.indexOf(_type),
-                      onTap: _setTypeTab,
-                    ),
-                    _LeaderboardSportsTabs(
-                      activeIndex: activeSportIndex < 0 ? 0 : activeSportIndex,
-                      selectedSport: _sport,
-                      onTap: (index) => setState(() {
-                        _sport = _leaderboardSports[index];
-                        _mode = GameMode.featured;
-                      }),
-                      onSearch: () {
-                        HapticFeedback.selectionClick();
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => UserSearchScreen(
-                              onChallenge: widget.onChallenge,
+                            onPressed: onClose,
+                            icon: const Icon(
+                              Icons.arrow_back_ios_new,
+                              size: 18,
                             ),
+                            color: accent,
                           ),
-                        );
-                      },
-                    ),
-                    Expanded(
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 280),
-                        switchInCurve: Curves.easeOutCubic,
-                        transitionBuilder: (child, animation) => FadeTransition(
-                          opacity: animation,
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0, 0.025),
-                              end: Offset.zero,
-                            ).animate(animation),
-                            child: child,
-                          ),
+                    onAddCoins:
+                        widget.onAddCoins ??
+                        () => widget.onNavigate(AppSection.shop),
+                    onStreakTap: widget.onOpenStreakHub,
+                  ),
+                  collapsible: _LeaderboardTabs(
+                    activeTab: _typeTabOrder.indexOf(_type),
+                    onTap: _setTypeTab,
+                  ),
+                  pinned: _LeaderboardSportsTabs(
+                    activeIndex: activeSportIndex < 0 ? 0 : activeSportIndex,
+                    selectedSport: _sport,
+                    onTap: (index) => setState(() {
+                      _sport = _leaderboardSports[index];
+                      _mode = GameMode.featured;
+                    }),
+                    onSearch: () {
+                      HapticFeedback.selectionClick();
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              UserSearchScreen(onChallenge: widget.onChallenge),
                         ),
-                        child: entries.isEmpty
-                            ? _EmptyState(
-                                key: ValueKey('empty-${_type.name}'),
-                                filters: filters,
-                                type: _type,
-                                accent: accent,
-                                onAction: widget.onNavigate,
-                              )
-                            : _Body(
-                                key: ValueKey(
-                                  '${_type.name}-${_tournamentBoard.name}-${_scope.name}-${_mode.name}',
-                                ),
-                                filters: filters,
-                                entries: entries,
-                                type: _type,
-                                accent: accent,
-                                compact: compact,
-                                onTapEntry: isTeamTournament
-                                    ? null
-                                    : _openRival,
-                              ),
+                      );
+                    },
+                  ),
+                  body: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 280),
+                    switchInCurve: Curves.easeOutCubic,
+                    transitionBuilder: (child, animation) => FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, 0.025),
+                          end: Offset.zero,
+                        ).animate(animation),
+                        child: child,
                       ),
                     ),
+                    child: entries.isEmpty
+                        ? _EmptyState(
+                            key: ValueKey('empty-${_type.name}'),
+                            filters: filters,
+                            type: _type,
+                            accent: accent,
+                            onAction: widget.onNavigate,
+                          )
+                        : _Body(
+                            key: ValueKey(
+                              '${_type.name}-${_tournamentBoard.name}-${_scope.name}-${_mode.name}',
+                            ),
+                            filters: filters,
+                            entries: entries,
+                            type: _type,
+                            accent: accent,
+                            compact: compact,
+                            onTapEntry: isTeamTournament ? null : _openRival,
+                          ),
+                  ),
+                );
+
+                return Column(
+                  children: [
+                    Expanded(child: board),
                     if (entries.isNotEmpty)
                       RankUserBar(
                         user: user,
@@ -911,7 +911,6 @@ class _ScopeRow extends StatelessWidget {
   static const double _height = 38;
 
   static const List<({TournamentScope scope, String label})> _items = [
-    (scope: TournamentScope.weekly, label: 'WEEKLY'),
     (scope: TournamentScope.season, label: 'SEASON'),
     (scope: TournamentScope.allTime, label: 'ALL-TIME'),
   ];

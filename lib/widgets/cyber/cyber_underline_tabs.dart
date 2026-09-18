@@ -131,6 +131,36 @@ class CyberUnderlineTabs extends StatelessWidget {
   }
 }
 
+/// Pins an underline tab strip once the chrome above it has scrolled away —
+/// match detail's PREDICT / PICKS strip and the hub + leaderboard sport strips.
+/// Adds scroll behaviour only: the strip's underline stays its one glow, and the
+/// solid ground keeps the translucent strip from ghosting over scrolled content.
+class CyberPinnedTabsDelegate extends SliverPersistentHeaderDelegate {
+  const CyberPinnedTabsDelegate({required this.child, this.height = 50});
+
+  final Widget child;
+  final double height;
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return ColoredBox(color: Cyber.bg, child: child);
+  }
+
+  @override
+  bool shouldRebuild(covariant CyberPinnedTabsDelegate oldDelegate) =>
+      oldDelegate.child != child || oldDelegate.height != height;
+}
+
 class _UnderlineTab extends StatefulWidget {
   const _UnderlineTab({
     required this.label,

@@ -5,7 +5,9 @@ import 'package:card_game/config/enums.dart';
 import 'package:card_game/config/sport_modules.dart';
 import 'package:card_game/config/theme.dart';
 import 'package:card_game/models/league.dart';
+import 'package:card_game/models/picks.dart';
 import 'package:card_game/models/sport_match.dart';
+import 'package:card_game/screens/predictions/all_picks_screen.dart';
 import 'package:card_game/screens/predictions/all_sports_screen.dart';
 import 'package:card_game/screens/predictions/prediction_home_screen.dart';
 import 'package:card_game/screens/predictions/widgets/pick_status_style.dart';
@@ -102,10 +104,10 @@ void main() {
     final future = tester.getRect(futureTile);
     final predict = tester.getRect(predictTile);
     expect(wide.width, greaterThan(wide.height * 1.8));
-    expect(future.height, lessThan(future.width));
-    expect(future.height, greaterThan(future.width * 0.75));
+    expect(future.height, greaterThan(future.width));
+    expect(future.height, lessThan(future.width * 1.1));
     expect(future.top, moreOrLessEquals(predict.top));
-    expect(future.top - wide.bottom, moreOrLessEquals(20));
+    expect(future.top - wide.bottom, moreOrLessEquals(14));
     _expectTextColor(tester, futureTile, 'FUTURE', Cyber.cyan);
     _expectTextColor(tester, predictTile, 'PREDICT', Cyber.cyan);
     _expectTextColor(
@@ -116,34 +118,47 @@ void main() {
     );
     _expectTextColor(tester, futureTile, 'FIFA', Cyber.muted);
     _expectTextColor(tester, predictTile, 'EPL', Cyber.muted);
+    final futureFooter = find.byKey(
+      const ValueKey('trending-market-footer-fifa_2026_winner'),
+    );
+    final predictFooter = find.byKey(
+      const ValueKey('trending-predict-footer-epl_mu_ars'),
+    );
+    expect(futureFooter, findsOneWidget);
+    expect(predictFooter, findsOneWidget);
     expect(
-      tester
-          .getRect(find.descendant(of: futureTile, matching: find.text('16%')))
-          .bottom,
-      greaterThanOrEqualTo(future.bottom - 12),
+      tester.getRect(futureFooter).bottom,
+      moreOrLessEquals(future.bottom),
     );
     expect(
-      tester
-          .getRect(
-            find.descendant(
-              of: predictTile,
-              matching: find.text('+XP MISSION OPEN'),
-            ),
-          )
-          .bottom,
-      greaterThanOrEqualTo(predict.bottom - 12),
+      tester.getRect(predictFooter).bottom,
+      moreOrLessEquals(predict.bottom),
     );
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('trend-live-epl')),
-        matching: find.text('CFC'),
+        matching: find.text('Chelsea'),
       ),
       findsOneWidget,
     );
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('trend-live-epl')),
-        matching: find.textContaining('POTENTIAL +'),
+        matching: find.text('2 - 1'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('trend-live-epl')),
+        matching: find.text('67′'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('trend-live-epl')),
+        matching: find.text('IN PLAY'),
       ),
       findsOneWidget,
     );
@@ -161,6 +176,35 @@ void main() {
       findsOneWidget,
     );
 
+    const categoryKeys = [
+      ValueKey('trend-category-picks'),
+      ValueKey('trend-category-futures'),
+      ValueKey('trend-category-events'),
+    ];
+    final categoryRects = [
+      for (final key in categoryKeys) tester.getRect(find.byKey(key)),
+    ];
+    for (final rect in categoryRects) {
+      expect(rect.width, moreOrLessEquals(categoryRects.first.width));
+      expect(rect.top, moreOrLessEquals(categoryRects.first.top));
+      expect(rect.height, moreOrLessEquals(rect.width, epsilon: 0.5));
+      expect(rect.bottom, lessThan(wide.top));
+    }
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(categoryKeys[1]),
+        matching: find.byType(PressableScale),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(AllPicksScreen), findsOneWidget);
+    expect(bundle.picks.state.typeFilter, PickMarketType.future);
+    Navigator.of(tester.element(find.byType(AllPicksScreen))).pop();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(AllPicksScreen), findsNothing);
+
     await tester.tap(
       find.descendant(
         of: find.byKey(const ValueKey('trend-live-epl')),
@@ -170,11 +214,24 @@ void main() {
     expect(harnessKey.currentState!.openedMatchId, 'epl_cfc_new');
 
     final pick = find.byKey(const ValueKey('trend-liverpool-pick'));
-    await tester.scrollUntilVisible(
-      pick,
-      180,
-      scrollable: find.byType(Scrollable).last,
-    );
+    // The category strip pushes the grid down, so "visible" can still leave
+    // the tile under the bottom edge; drag the feed itself until the tile is
+    // fully inside the viewport.
+    final feedScrollable = find
+        .descendant(
+          of: find.byKey(const ValueKey('match-trending-feed')),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    for (
+      var i = 0;
+      i < 8 && tester.getRect(pick).bottom > tester.view.physicalSize.height /
+          tester.view.devicePixelRatio - 80;
+      i++
+    ) {
+      await tester.drag(feedScrollable, const Offset(0, -200));
+      await tester.pump();
+    }
     await tester.tap(
       find.descendant(of: pick, matching: find.byType(PressableScale)),
     );
@@ -390,13 +447,25 @@ void _expectTextColor(
 }
 
 Future<void> _scrollAndTap(WidgetTester tester, Finder finder) async {
-  await tester.scrollUntilVisible(
-    finder,
-    180,
-    scrollable: find.byType(Scrollable).last,
-  );
+  await _dragIntoView(tester, finder);
   await tester.tap(finder);
   await tester.pump();
+}
+
+/// Drags the hub feed until [finder] sits on screen. The top bar and MATCH /
+/// GAMES switcher scroll away in a [NestedScrollView], where `ensureVisible`
+/// (and so `scrollUntilVisible`) re-opens the header and snaps the feed back.
+Future<void> _dragIntoView(WidgetTester tester, Finder finder) async {
+  final view = find.byType(NestedScrollView);
+  for (var step = 0; step < 60; step++) {
+    if (finder.evaluate().isNotEmpty &&
+        tester.getRect(finder).bottom <= tester.getRect(view).bottom) {
+      return;
+    }
+    await tester.dragFrom(tester.getRect(view).center, const Offset(0, -120));
+    await tester.pump();
+  }
+  fail('could not drag $finder into view');
 }
 
 Future<void> _setPhoneSize(WidgetTester tester, Size size) async {

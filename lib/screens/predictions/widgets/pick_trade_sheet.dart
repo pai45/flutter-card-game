@@ -9,6 +9,7 @@ import '../../../config/theme.dart';
 import '../../../models/oz_coin_ledger.dart';
 import '../../../models/picks.dart';
 import '../../../models/streak.dart';
+import '../../../models/daily_quest.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
 import '../../shop/shop_screen.dart' show CoinIcon;
@@ -301,6 +302,12 @@ class _PickTradeSheetState extends State<_PickTradeSheet> {
       ),
     );
     context.read<GameBloc>().add(StreakActivityRecorded(StreakActivity.pick));
+    context.read<GameBloc>().add(
+      DailyQuestActivityRecorded(
+        DailyQuestActivity.pick,
+        sourceId: '${result.position!.id}:${result.position!.shareCount}',
+      ),
+    );
     playSound(SoundEffect.coinSpend);
     Navigator.of(context).pop(
       _PickTradeSuccess(

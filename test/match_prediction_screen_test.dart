@@ -236,6 +236,21 @@ void main() {
     expect(find.text('36% CROWD ACCURACY'), findsOneWidget);
     expect(find.text('ACTUAL RESULT'), findsOneWidget);
     expect(find.text('CROWD PICK %'), findsOneWidget);
+    expect(find.text('ACTUAL ANSWERS ARE MARKED IN GREEN BELOW'), findsNothing);
+    final notice = tester.getRect(
+      find.byKey(const ValueKey('community-results-notice')),
+    );
+    final telemetry = tester.getRect(
+      find.byKey(const ValueKey('community-results-telemetry')),
+    );
+    final firstQuestion = tester.getRect(
+      find.byKey(const ValueKey('community-result-question-q1')),
+    );
+    for (final surface in [telemetry, firstQuestion]) {
+      expect(surface.left, moreOrLessEquals(notice.left));
+      expect(surface.width, moreOrLessEquals(notice.width));
+    }
+    expect(firstQuestion.top - telemetry.bottom, moreOrLessEquals(16));
     expect(find.text('HOLD TO LOCK'), findsNothing);
     expect(find.text('YOUR PICK'), findsNothing);
   });
@@ -288,6 +303,15 @@ void main() {
     await tester.pump();
 
     expect(find.text('VIEW COMMUNITY RESULTS'), findsNWidgets(2));
+    for (final title in ['Scoreline Quiz', 'Match Events Quiz']) {
+      final cardBorder = find.ancestor(
+        of: find.text(title),
+        matching: find.byWidgetPredicate(
+          (widget) => widget is CustomPaint && widget.foregroundPainter != null,
+        ),
+      );
+      expect(cardBorder, findsWidgets);
+    }
     await tester.tap(find.text('Match Events Quiz'));
     await tester.pumpAndSettle();
 

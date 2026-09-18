@@ -197,4 +197,31 @@ void main() {
     expect(painter.palette.secondaryTextColor, const Color(0xff3390fb));
     expect(painter.label, 'CHE');
   });
+
+  testWidgets('TeamLogo caps an unexpectedly wide crest', (tester) async {
+    const team = SportTeam(
+      id: 'mci',
+      name: 'Manchester City',
+      shortName: 'MCI',
+      color: Color(0xff6cabdd),
+    );
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: TeamLogo(
+          team: team,
+          sport: Sport.football,
+          competition: 'eng.1',
+          width: 390,
+          height: 39,
+        ),
+      ),
+    );
+
+    final logoPaint = find.descendant(
+      of: find.byType(TeamLogo),
+      matching: find.byType(CustomPaint),
+    );
+    expect(tester.getRect(logoPaint).width, closeTo(42.9, 0.01));
+    expect(tester.getRect(logoPaint).height, 39);
+  });
 }

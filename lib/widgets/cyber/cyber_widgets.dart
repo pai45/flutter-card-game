@@ -16,6 +16,408 @@ import '../racing/racing_driver_portrait.dart';
 import '../team_logo.dart' show OctagonBorderPainter, OctagonClipper;
 import 'sport_signal_painters.dart';
 
+/// Lifecycle of a [CyberObjectiveCard]: in progress, completed and waiting to
+/// be claimed, or already paid out.
+enum CyberObjectiveState { active, ready, claimed }
+
+/// Shared objective surface for repeated quest/challenge cards: a numbered
+/// mission plate, the shared cyber meter (or discrete segments), a status
+/// stamp that slams in when the objective completes, and reward pills.
+/// Completion is carried by the border and stamp, never a glow — the claim
+/// CTA owns the screen's focal glow.
+class CyberObjectiveCard extends StatelessWidget {
+  const CyberObjectiveCard({
+    required this.title,
+    required this.description,
+    required this.status,
+    required this.progress,
+    required this.reward,
+    this.actions,
+    this.index,
+    this.icon,
+    this.accent = Cyber.cyan,
+    this.state,
+    this.rewardDetail,
+    this.segments,
+    super.key,
+  });
+  final String title;
+  final String description;
+  final String status;
+  final double progress;
+  final String reward;
+  final Widget? actions;
+
+  /// 1-based mission number shown on the plate.
+  final int? index;
+  final IconData? icon;
+
+  /// Identity colour for the plate and in-progress meter.
+  final Color accent;
+
+  /// Defaults to `ready` at full progress, otherwise `active`.
+  final CyberObjectiveState? state;
+
+  /// Secondary reward pill (e.g. `+1 SHIELD`).
+  final String? rewardDetail;
+
+  /// When set, progress renders as this many discrete segments instead of a
+  /// continuous meter.
+  final int? segments;
+
+  @override
+  Widget build(BuildContext context) {
+    final resolved =
+        state ??
+        (progress >= 1 ? CyberObjectiveState.ready : CyberObjectiveState.active);
+    final ready = resolved == CyberObjectiveState.ready;
+    final claimed = resolved == CyberObjectiveState.claimed;
+    final meterAccent = claimed
+        ? Cyber.muted
+        : ready
+        ? Cyber.success
+        : accent;
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    return Semantics(
+      container: true,
+      label: '$title. $description. $status. Reward $reward',
+      child: ChamferedActionSurface(
+        clipper: const HudChamferClipper(bigCut: 12, smallCut: 4),
+        borderColor: ready
+            ? Cyber.success.withValues(alpha: 0.75)
+            : claimed
+            ? Cyber.line.withValues(alpha: 0.5)
+            : Cyber.border,
+        child: ColoredBox(
+          color: ready
+              ? Color.alphaBlend(
+                  Cyber.success.withValues(alpha: 0.06),
+                  Cyber.panel,
+                )
+              : Cyber.panel,
+          child: Opacity(
+            opacity: claimed ? 0.62 : 1,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _ObjectivePlate(
+                        index: index,
+                        icon: icon,
+                        accent: claimed ? Cyber.muted : accent,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(title, style: Cyber.display(13)),
+                            const SizedBox(height: 4),
+                            Text(
+                              description,
+                              style: Cyber.body(12.5, color: Cyber.muted),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Rewards sit top-right so the card reads title → payout.
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          _ObjectiveRewardPill(label: reward, color: Cyber.gold),
+                          if (rewardDetail != null) ...[
+                            const SizedBox(height: 6),
+                            _ObjectiveRewardPill(
+                              label: rewardDetail!,
+                              color: Cyber.cyan,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Meter and its status stamp share one row.
+                  Row(
+                    children: [
+                      Expanded(
+                        child: segments != null
+                            ? _ObjectiveSegments(
+                                count: segments!,
+                                filled: (progress * segments!).round(),
+                                accent: meterAccent,
+                              )
+                            : CyberProgressBar(
+                                value: progress,
+                                accent: meterAccent,
+                                animate: !reduced,
+                              ),
+                      ),
+                      const SizedBox(width: 10),
+                      _ObjectiveStamp(status: status, state: resolved),
+                    ],
+                  ),
+                  if (actions != null) ...[const SizedBox(height: 10), actions!],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ObjectivePlate extends StatelessWidget {
+  const _ObjectivePlate({this.index, this.icon, required this.accent});
+
+  final int? index;
+  final IconData? icon;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: 38,
+    height: 42,
+    child: ChamferedActionSurface(
+      clipper: const HudChamferClipper(bigCut: 8, smallCut: 2),
+      borderColor: accent.withValues(alpha: 0.5),
+      child: ColoredBox(
+        color: Color.alphaBlend(accent.withValues(alpha: 0.1), Cyber.panel2),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (icon != null) Icon(icon, size: 16, color: accent),
+            if (index != null) ...[
+              if (icon != null) const SizedBox(height: 3),
+              Text(
+                index!.toString().padLeft(2, '0'),
+                style: Cyber.label(
+                  8.5,
+                  color: accent,
+                  letterSpacing: 0.4,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _ObjectiveSegments extends StatelessWidget {
+  const _ObjectiveSegments({
+    required this.count,
+    required this.filled,
+    required this.accent,
+  });
+
+  final int count;
+  final int filled;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      for (var i = 0; i < count; i++) ...[
+        if (i > 0) const SizedBox(width: 4),
+        Expanded(
+          child: AnimatedContainer(
+            duration: MediaQuery.disableAnimationsOf(context)
+                ? Duration.zero
+                : Duration(milliseconds: 260 + 80 * i),
+            height: 7,
+            color: i < filled ? accent : Cyber.bg.withValues(alpha: 0.7),
+          ),
+        ),
+      ],
+    ],
+  );
+}
+
+class _ObjectiveRewardPill extends StatelessWidget {
+  const _ObjectiveRewardPill({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: ShapeDecoration(
+      color: color.withValues(alpha: 0.1),
+      shape: BeveledRectangleBorder(
+        borderRadius: BorderRadius.circular(4),
+        side: BorderSide(color: color.withValues(alpha: 0.55)),
+      ),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      child: Text(
+        label,
+        style: Cyber.label(
+          10,
+          color: color,
+          fontFeatures: const [FontFeature.tabularFigures()],
+        ),
+      ),
+    ),
+  );
+}
+
+/// The status tag. Crossing into READY slams the stamp in (overshoot scale)
+/// with a haptic + confirm cue — the per-quest payoff beat.
+class _ObjectiveStamp extends StatefulWidget {
+  const _ObjectiveStamp({required this.status, required this.state});
+
+  final String status;
+  final CyberObjectiveState state;
+
+  @override
+  State<_ObjectiveStamp> createState() => _ObjectiveStampState();
+}
+
+class _ObjectiveStampState extends State<_ObjectiveStamp>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _slam = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 460),
+    value: 1,
+  );
+
+  @override
+  void didUpdateWidget(covariant _ObjectiveStamp oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.state != CyberObjectiveState.ready &&
+        widget.state == CyberObjectiveState.ready) {
+      HapticFeedback.mediumImpact();
+      playSound(SoundEffect.uiConfirm);
+      if (!MediaQuery.disableAnimationsOf(context)) _slam.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _slam.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final (color, icon) = switch (widget.state) {
+      CyberObjectiveState.ready => (Cyber.success, Icons.check),
+      CyberObjectiveState.claimed => (Cyber.muted, Icons.verified_outlined),
+      CyberObjectiveState.active => (Cyber.muted, null),
+    };
+    final stamp = DecoratedBox(
+      decoration: ShapeDecoration(
+        color: widget.state == CyberObjectiveState.ready
+            ? color.withValues(alpha: 0.16)
+            : Cyber.bg.withValues(alpha: 0.5),
+        shape: BeveledRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
+          side: BorderSide(color: color.withValues(alpha: 0.7)),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 12, color: color),
+              const SizedBox(width: 4),
+            ],
+            Text(
+              widget.status,
+              style: Cyber.label(
+                10,
+                color: widget.state == CyberObjectiveState.ready
+                    ? color
+                    : Colors.white.withValues(alpha: 0.8),
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    return AnimatedBuilder(
+      animation: _slam,
+      builder: (context, child) {
+        final t = Curves.easeOutBack.transform(_slam.value);
+        return Opacity(
+          opacity: _slam.value.clamp(0.0, 1.0),
+          child: Transform.scale(scale: 1.7 - 0.7 * t, child: child),
+        );
+      },
+      child: stamp,
+    );
+  }
+}
+
+/// Compact chamfered action for objective cards (PLAY / PREDICT / RETRY).
+/// Calm outline treatment — secondary to the screen's primary CTA.
+class CyberObjectiveAction extends StatelessWidget {
+  const CyberObjectiveAction({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.accent = Cyber.cyan,
+    super.key,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback? onTap;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+    final color = enabled ? accent : Cyber.muted;
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: enabled
+            ? () {
+                HapticFeedback.selectionClick();
+                playSound(SoundEffect.uiTap);
+                onTap!();
+              }
+            : null,
+        child: ChamferedActionSurface(
+          clipper: const HudChamferClipper(bigCut: 8, smallCut: 3),
+          borderColor: color.withValues(alpha: enabled ? 0.6 : 0.3),
+          child: ColoredBox(
+            color: Color.alphaBlend(color.withValues(alpha: 0.08), Cyber.panel),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 12, 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 14, color: color),
+                  const SizedBox(width: 6),
+                  Text(label, style: Cyber.label(10.5, color: color)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class CyberConfirmDialog extends StatelessWidget {
   const CyberConfirmDialog({
     required this.title,
@@ -3512,15 +3914,18 @@ class _CyberDealtCardState extends State<CyberDealtCard>
 }
 
 /// Frame painter for HUD bottom sheets: chamfered border + cyan→magenta accent
-/// stripe along the top edge. Used by order-ticket and filter sheets.
+/// stripe along the top edge. Used by order-ticket and filter sheets. Pass
+/// [accent] to key the frame to a single signal colour (e.g. an alert sheet).
 class HudSheetFramePainter extends CustomPainter {
-  const HudSheetFramePainter({this.bigCut = 18, this.smallCut = 4});
+  const HudSheetFramePainter({this.bigCut = 18, this.smallCut = 4, this.accent});
 
   final double bigCut;
   final double smallCut;
+  final Color? accent;
 
   @override
   void paint(Canvas canvas, Size size) {
+    final accent = this.accent;
     final path = HudChamferClipper(
       bigCut: bigCut,
       smallCut: smallCut,
@@ -3530,7 +3935,7 @@ class HudSheetFramePainter extends CustomPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1
-        ..color = Cyber.border,
+        ..color = accent?.withValues(alpha: 0.45) ?? Cyber.border,
     );
 
     final topPath = Path()
@@ -3544,12 +3949,19 @@ class HudSheetFramePainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = 2
         ..shader = LinearGradient(
-          colors: const [
-            Colors.transparent,
-            Cyber.cyan,
-            Cyber.magenta,
-            Colors.transparent,
-          ],
+          colors: accent == null
+              ? const [
+                  Colors.transparent,
+                  Cyber.cyan,
+                  Cyber.magenta,
+                  Colors.transparent,
+                ]
+              : [
+                  Colors.transparent,
+                  accent,
+                  Color.lerp(accent, Colors.white, 0.35)!,
+                  Colors.transparent,
+                ],
           stops: const [0, 0.28, 0.72, 1],
         ).createShader(Rect.fromLTWH(0, 0, size.width, bigCut + smallCut)),
     );
@@ -3557,7 +3969,7 @@ class HudSheetFramePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant HudSheetFramePainter old) =>
-      old.bigCut != bigCut || old.smallCut != smallCut;
+      old.bigCut != bigCut || old.smallCut != smallCut || old.accent != accent;
 }
 
 // ── Pager dock: PREVIOUS / NEXT button + progress segments ────────────────────
@@ -4184,17 +4596,30 @@ class _GlidingTab extends StatelessWidget {
             child: SizedBox(width: 18, height: 18, child: data.icon(color)),
           ),
           const SizedBox(height: 5),
-          AnimatedDefaultTextStyle(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
-            style: Cyber.label(
-              active ? 12 : 10,
-              color: color,
-              weight: active ? FontWeight.w900 : FontWeight.w600,
-              letterSpacing: active ? 0.5 : 0.3,
-              height: active ? 1.25 : 1.5,
+          // Single line, scaled down to fit: the row is a fixed 61px, so a
+          // long label (e.g. CALENDAR) must never wrap at enlarged text.
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOutCubic,
+                style: Cyber.label(
+                  active ? 12 : 10,
+                  color: color,
+                  weight: active ? FontWeight.w900 : FontWeight.w600,
+                  letterSpacing: active ? 0.5 : 0.3,
+                  height: active ? 1.25 : 1.5,
+                ),
+                child: Text(
+                  data.label,
+                  maxLines: 1,
+                  softWrap: false,
+                  textAlign: TextAlign.center,
+                ),
+              ),
             ),
-            child: Text(data.label, textAlign: TextAlign.center),
           ),
         ],
       ),
@@ -4389,11 +4814,89 @@ class _CardBackEdgePainter extends CustomPainter {
 /// Cell footprints supported by [CyberBentoGrid].
 enum CyberBentoSpan { square, wide, tall }
 
+/// Compact two-slot readout for the bottom edge of data-dense HUD cards.
+///
+/// The footer is intentionally calm: it separates status/reward information
+/// from the card subject without competing with the screen's live focal cue.
+class CyberTelemetryFooter extends StatelessWidget {
+  const CyberTelemetryFooter({
+    required this.leading,
+    required this.trailing,
+    this.leadingColor = Cyber.cyan,
+    this.trailingColor = Cyber.muted,
+    this.leadingIcon,
+    this.leadingIconColor,
+    this.height = 36,
+    super.key,
+  });
+
+  final String leading;
+  final String trailing;
+  final Color leadingColor;
+  final Color trailingColor;
+  final IconData? leadingIcon;
+  final Color? leadingIconColor;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: height,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      color: Cyber.bg2,
+      child: Row(
+        children: [
+          if (leadingIcon != null) ...[
+            Icon(
+              leadingIcon,
+              size: 12,
+              color: leadingIconColor ?? leadingColor,
+            ),
+            const SizedBox(width: 6),
+          ],
+          Expanded(
+            child: Text(
+              leading.toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Cyber.label(
+                10,
+                color: leadingColor,
+                letterSpacing: 0.7,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              trailing.toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: Cyber.label(
+                10,
+                color: trailingColor,
+                letterSpacing: 0.4,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class CyberBentoTile {
-  const CyberBentoTile({required this.span, required this.child});
+  const CyberBentoTile({required this.span, required this.child, this.rowHeight})
+    : assert(rowHeight == null || rowHeight > 0);
 
   final CyberBentoSpan span;
   final Widget child;
+
+  /// Overrides the grid's row height for the row this tile starts in. Meant
+  /// for `wide` tiles (which own their row) whose content is shorter than a
+  /// square cell, e.g. a scoreboard strip.
+  final double? rowHeight;
 }
 
 /// A dependency-free, dense two-column bento layout shared by the MATCH and
@@ -4438,8 +4941,24 @@ class CyberBentoGrid extends StatelessWidget {
         final unit = (width - gap) / 2;
         final rowHeight = max(unit * rowHeightFactor, minRowHeight).toDouble();
         final layout = _packBentoTiles(tiles);
-        final height =
-            layout.rowCount * rowHeight + max(0, layout.rowCount - 1) * rowGap;
+        final rowHeights = List<double>.filled(layout.rowCount, rowHeight);
+        for (var index = 0; index < tiles.length; index++) {
+          final override = tiles[index].rowHeight;
+          if (override != null && layout.cells[index].rowSpan == 1) {
+            rowHeights[layout.cells[index].row] = override;
+          }
+        }
+        final rowTops = <double>[];
+        var cursor = 0.0;
+        for (final value in rowHeights) {
+          rowTops.add(cursor);
+          cursor += value + rowGap;
+        }
+        double spanHeight(_CyberBentoCell cell) =>
+            rowTops[cell.row + cell.rowSpan - 1] +
+            rowHeights[cell.row + cell.rowSpan - 1] -
+            rowTops[cell.row];
+        final height = rowHeights.isEmpty ? 0.0 : cursor - rowGap;
 
         return Align(
           alignment: Alignment.topCenter,
@@ -4452,13 +4971,11 @@ class CyberBentoGrid extends StatelessWidget {
                 for (var index = 0; index < tiles.length; index++)
                   Positioned(
                     left: layout.cells[index].column * (unit + gap),
-                    top: layout.cells[index].row * (rowHeight + rowGap),
+                    top: rowTops[layout.cells[index].row],
                     width:
                         layout.cells[index].columnSpan * unit +
                         (layout.cells[index].columnSpan - 1) * gap,
-                    height:
-                        layout.cells[index].rowSpan * rowHeight +
-                        (layout.cells[index].rowSpan - 1) * rowGap,
+                    height: spanHeight(layout.cells[index]),
                     child: tiles[index].child,
                   ),
               ],
@@ -4577,11 +5094,7 @@ class CyberSearchButton extends StatelessWidget {
 /// Never glows: these label a state rather than mark the live or selected
 /// thing, and there are usually several on screen at once.
 class CyberStatusPill extends StatelessWidget {
-  const CyberStatusPill({
-    required this.label,
-    required this.color,
-    super.key,
-  });
+  const CyberStatusPill({required this.label, required this.color, super.key});
 
   final String label;
   final Color color;

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../data/team_palettes.dart';
@@ -102,6 +104,16 @@ class TeamLogo extends StatelessWidget {
   /// palettes when the same team has variants in multiple competitions.
   final String? competition;
 
+  /// A crest may be slightly wider than it is tall, but never a banner. This
+  /// protects every use of the shared badge from an unexpectedly wide layout
+  /// constraint while preserving the compact proportions used across the HUD.
+  static const _maxWidthToHeightRatio = 1.1;
+
+  double get _resolvedWidth => math.min(width, height * _maxWidthToHeightRatio);
+
+  Widget _frame(Widget child) =>
+      Align(widthFactor: 1, heightFactor: 1, child: child);
+
   @override
   Widget build(BuildContext context) {
     String label = team.shortName;
@@ -126,21 +138,25 @@ class TeamLogo extends StatelessWidget {
       }
       final flagUrl = team.flagUrl;
       if (flagUrl != null) {
-        return _TennisFlagBadge(
-          url: flagUrl,
-          width: width,
-          height: height,
-          palette: palette,
-          fallbackLabel: label,
+        return _frame(
+          _TennisFlagBadge(
+            url: flagUrl,
+            width: _resolvedWidth,
+            height: height,
+            palette: palette,
+            fallbackLabel: label,
+          ),
         );
       }
     }
 
-    return SizedBox(
-      width: width,
-      height: height,
-      child: CustomPaint(
-        painter: TeamLogoPainter(label: label, palette: palette),
+    return _frame(
+      SizedBox(
+        width: _resolvedWidth,
+        height: height,
+        child: CustomPaint(
+          painter: TeamLogoPainter(label: label, palette: palette),
+        ),
       ),
     );
   }
