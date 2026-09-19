@@ -34,6 +34,7 @@ import 'screens/shootout/shootout_hub.dart';
 import 'screens/tennis/tennis_hub.dart';
 import 'screens/home/widgets/starter_pack_onboarding.dart';
 import 'screens/onboarding/widgets/onboarding_coin_reward_animation.dart';
+import 'screens/onboarding/player_profile_selector_screen.dart';
 import 'screens/onboarding/profile_setup_screen.dart';
 import 'screens/predictions/league_detail_screen.dart';
 import 'screens/predictions/match_detail_screen.dart';
@@ -71,12 +72,34 @@ final RouteObserver<ModalRoute<void>> _appRouteObserver =
 
 enum _PendingGameLaunchKind { football, cricket, basketball, tennis, grandPrix }
 
-class PitchDuelApp extends StatelessWidget {
+class PitchDuelApp extends StatefulWidget {
   const PitchDuelApp({super.key});
+
+  @override
+  State<PitchDuelApp> createState() => _PitchDuelAppState();
+}
+
+class _PitchDuelAppState extends State<PitchDuelApp> {
+  final SecureGameStorage _storage = SecureGameStorage();
+  int _profileSession = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeProfiles();
+  }
+
+  Future<void> _initializeProfiles() => _storage.ensureLocalProfiles();
+
+  void _restartProfileSession(LocalProfileSlot _) {
+    if (!mounted) return;
+    setState(() => _profileSession++);
+  }
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
+      key: ValueKey('profile_session_$_profileSession'),
       providers: [
         BlocProvider(
           create: (_) => GameBloc(SecureGameStorage())..add(GameLoaded()),
@@ -144,7 +167,7 @@ class PitchDuelApp extends StatelessWidget {
             ),
           );
         },
-        home: const AppShell(),
+        home: AppShell(onProfileActivated: _restartProfileSession),
       ),
     );
   }
@@ -164,7 +187,9 @@ void _syncAchievements(BuildContext context) {
 }
 
 class AppShell extends StatefulWidget {
-  const AppShell({super.key});
+  const AppShell({required this.onProfileActivated, super.key});
+
+  final ValueChanged<LocalProfileSlot> onProfileActivated;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -190,6 +215,9 @@ class _AppShellState extends State<AppShell>
   OnboardingRewardStatus? _onboardingRewardStatus;
   bool _onboardingRewardDismissing = false;
   String? _selectedAvatarId;
+  bool _profileSelectorOpen = false;
+  bool _firstTimeProfileReady = false;
+  bool _returningProfileReady = false;
 
   @override
   void initState() {
@@ -197,7 +225,8 @@ class _AppShellState extends State<AppShell>
     WidgetsBinding.instance.addObserver(this);
     UnlockRevealGate.instance
       ..playGame = _openArcadeGame
-      ..openSport = _enterSport;
+      ..openSport = _enterSport
+      ..openQuestHub = _openStreakHub;
     _loadOnboardingState();
     _runRollingWindowIfDue();
   }
@@ -254,6 +283,7 @@ class _AppShellState extends State<AppShell>
     gate.hubVisible.value = false;
     gate.playGame = null;
     gate.openSport = null;
+    gate.openQuestHub = null;
     super.dispose();
   }
 
@@ -309,8 +339,11 @@ class _AppShellState extends State<AppShell>
 
   /// One streak-hub entry for every surface (top-bar flame on each tab, the
   /// home quest tile, profile streak badges) so quest CTAs route identically.
-  void _openStreakHub() =>
-      showStreakCalendar(context, onQuestNavigate: _routeQuest);
+  void _openStreakHub() => showStreakCalendar(
+    context,
+    onQuestNavigate: _routeQuest,
+    onBeginnerNavigate: _openArcadeGame,
+  );
 
   void _routeQuest(QuestDestination destination) {
     switch (destination) {
@@ -357,6 +390,7 @@ class _AppShellState extends State<AppShell>
     if (game.loading ||
         _onboardingLoading ||
         !_onboardingComplete ||
+        game.unlocks.initialQuestActive ||
         _onboardingRewardStatus == OnboardingRewardStatus.pending ||
         game.pendingPackReveal != null ||
         !onTop ||
@@ -475,19 +509,27 @@ class _AppShellState extends State<AppShell>
   }
 
   Future<void> _logoutFromProfile() async {
-    await _storage.resetProfileSetup();
+    final readiness = await Future.wait([
+      _storage.isLocalProfileReady(LocalProfileSlot.firstTime),
+      _storage.isLocalProfileReady(LocalProfileSlot.returning),
+    ]);
     if (!mounted) return;
     setState(() {
-      section = AppSection.predictions;
-      _predictionTab = 0;
-      _predictionMatchSportTab = 0;
-      _predictionGamesSportTab = 0;
       _pendingGameLaunch = null;
       _pendingGameLaunchKind = null;
-      _selectedAvatarId = null;
-      _onboardingComplete = false;
-      _onboardingRewardDismissing = false;
+      _firstTimeProfileReady = readiness[0];
+      _returningProfileReady = readiness[1];
+      _profileSelectorOpen = true;
     });
+  }
+
+  Future<void> _selectPlayerProfile(PlayerProfileChoice choice) async {
+    final slot = choice == PlayerProfileChoice.firstTime
+        ? LocalProfileSlot.firstTime
+        : LocalProfileSlot.returning;
+    await _storage.switchLocalProfile(slot);
+    if (!mounted) return;
+    widget.onProfileActivated(slot);
   }
 
   /// Daily-quest game CTAs name football modes; a player whose home sport is
@@ -960,6 +1002,13 @@ class _AppShellState extends State<AppShell>
                   ],
                 ),
               ),
+            );
+          }
+          if (_profileSelectorOpen) {
+            return PlayerProfileSelectorScreen(
+              firstTimeProfileReady: _firstTimeProfileReady,
+              returningProfileReady: _returningProfileReady,
+              onSelect: _selectPlayerProfile,
             );
           }
           if (!_onboardingComplete) {

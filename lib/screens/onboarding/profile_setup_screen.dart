@@ -8,7 +8,6 @@ import '../../config/game_ladder.dart';
 import '../../config/sport_modules.dart';
 import '../../config/theme.dart';
 import '../../data/followable_leagues.dart';
-import '../../data/team_palettes.dart';
 import '../../models/avatar_option.dart';
 import '../../models/profile_banner_option.dart';
 import '../../models/sport_match.dart';
@@ -150,6 +149,18 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   void _finish() => setState(() => _completing = true);
 
+  void _selectAvatar(String id) {
+    setState(() => _avatarId = id);
+    HapticFeedback.selectionClick();
+    playSound(SoundEffect.cardSelect);
+  }
+
+  void _selectBanner(String id) {
+    setState(() => _bannerId = id);
+    HapticFeedback.selectionClick();
+    playSound(SoundEffect.cardSelect);
+  }
+
   void _emit() {
     widget.onComplete(
       ProfileSetupResult(
@@ -206,6 +217,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   void _selectLeague(FollowableLeague entry) {
     setState(() => _activeLeagueBySport[entry.sport] = entry.league.id);
+    HapticFeedback.selectionClick();
   }
 
   void _selectTeam(FollowableLeague entry, String teamId) {
@@ -216,6 +228,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       }
       _favoriteTeams[entry.league.id] = teamId;
     });
+    HapticFeedback.mediumImpact();
+    playSound(SoundEffect.cardSelect);
   }
 
   String get _skipLabel => _isLastVisibleStep ? 'DECIDE LATER' : 'SKIP';
@@ -267,7 +281,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 _SetupTopBar(skipLabel: _skipLabel, onSkip: _skip),
                 Expanded(
                   child: Align(
-                    alignment: Alignment.topLeft,
+                    alignment: Alignment.topCenter,
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 520),
                       child: KeyedSubtree(
@@ -299,16 +313,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   Widget _buildStepBody() {
     if (_step == 0) {
-      return _AvatarStep(
-        selectedId: _avatarId,
-        onSelect: (id) => setState(() => _avatarId = id),
-      );
+      return _AvatarStep(selectedId: _avatarId, onSelect: _selectAvatar);
     }
     if (_step == 1) {
-      return _BannerStep(
-        selectedId: _bannerId,
-        onSelect: (id) => setState(() => _bannerId = id),
-      );
+      return _BannerStep(selectedId: _bannerId, onSelect: _selectBanner);
     }
     final sport = _activeClubSport;
     if (sport == null) {
@@ -550,7 +558,7 @@ class _SetupDock extends StatelessWidget {
                 Text(
                   helper,
                   textAlign: TextAlign.center,
-                  style: Cyber.body(12, color: const Color(0xFF90A1B9)),
+                  style: Cyber.body(12, color: AppTheme.textMedium),
                 ),
               ],
             ),
@@ -577,7 +585,11 @@ class _StepShell extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(title, style: Cyber.display(23, letterSpacing: 1.0)),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(title, style: Cyber.display(23, letterSpacing: 1.0)),
+          ),
           if (subtitle != null) ...[
             const SizedBox(height: 6),
             Text(subtitle!, style: Cyber.body(13, color: Cyber.muted)),
@@ -638,7 +650,6 @@ class _AvatarTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = selected ? Cyber.lime : Cyber.line;
     return Semantics(
       button: true,
       selected: selected,
@@ -646,15 +657,10 @@ class _AvatarTile extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          decoration: BoxDecoration(
-            color: Cyber.panel,
-            border: Border.all(color: borderColor, width: selected ? 2 : 1),
-            boxShadow: selected
-                ? Cyber.glow(Cyber.lime, alpha: 0.18, blur: 14, spread: -2)
-                : null,
-          ),
+        child: CyberSelectableCard(
+          selected: selected,
+          accent: Cyber.lime,
+          borderColor: Cyber.line,
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -663,7 +669,11 @@ class _AvatarTile extends StatelessWidget {
                 fit: BoxFit.cover,
                 alignment: Alignment.topCenter,
               ),
-              if (selected) const SelectedCheckCorner(size: 32),
+              if (selected)
+                const SelectedCheckCorner(
+                  size: 32,
+                  alignment: Alignment.topRight,
+                ),
             ],
           ),
         ),
@@ -768,56 +778,62 @@ class _SportTile extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-          decoration: BoxDecoration(
-            color: AppTheme.onboardingPanelFill,
-            border: Border.all(
-              color: selected ? accent : AppTheme.onboardingPanelBorder,
-              width: selected ? 2 : 1,
-            ),
-            boxShadow: selected
-                ? Cyber.glow(accent, alpha: 0.16, blur: 12, spread: -3)
-                : null,
-          ),
+        child: CyberSelectableCard(
+          selected: selected,
+          accent: accent,
+          fillColor: AppTheme.onboardingPanelFill,
+          borderColor: AppTheme.onboardingPanelBorder,
           child: Stack(
+            fit: StackFit.expand,
             children: [
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  AnimatedScale(
-                    duration: const Duration(milliseconds: 150),
-                    scale: selected ? 1.1 : 1,
-                    child: Icon(module.icon, color: iconColor, size: 30),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    module.label.toUpperCase(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Cyber.display(
-                      14,
-                      color: selected ? Colors.white : Cyber.muted,
-                      letterSpacing: 1.2,
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 14,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    AnimatedScale(
+                      duration: const Duration(milliseconds: 150),
+                      scale: selected ? 1.1 : 1,
+                      child: Icon(module.icon, color: iconColor, size: 30),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    selected ? 'HOME SPORT' : module.systemCode,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Cyber.label(
-                      8,
-                      color: iconColor.withValues(
-                        alpha: selected ? 0.85 : 0.45,
+                    const SizedBox(height: 10),
+                    Text(
+                      module.label.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: Cyber.display(
+                        14,
+                        color: selected ? AppTheme.whiteColor : Cyber.muted,
+                        letterSpacing: 1.2,
                       ),
-                      letterSpacing: 1.2,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    Text(
+                      selected ? 'HOME SPORT' : module.systemCode,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: Cyber.label(
+                        8,
+                        color: iconColor.withValues(
+                          alpha: selected ? 0.85 : 0.45,
+                        ),
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              if (selected) const SelectedCheckCorner(size: 20),
+              if (selected)
+                const SelectedCheckCorner(
+                  size: 20,
+                  alignment: Alignment.topRight,
+                ),
             ],
           ),
         ),
@@ -856,18 +872,8 @@ class _ClubsStep extends StatelessWidget {
     final singleLeague = leagues.length < 2;
     final activeLeague = followableLeagueById(activeLeagueId) ?? leagues.first;
     final selectedTeamId = favoriteTeams[activeLeague.league.id];
-    final picked = selectedTeamId == null
-        ? null
-        : followableTeam(activeLeague.league.id, selectedTeamId);
-    const position = 'HOME SPORT';
-
     return _StepShell(
       title: 'CHOOSE YOUR ${module.label.toUpperCase()} CLUBS',
-      subtitle: picked != null
-          ? '$position - ${picked.name} locked in.'
-          : singleLeague
-          ? '$position - pick who you back in ${activeLeague.league.name}.'
-          : '$position - choose leagues, then tap a club to follow it.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -908,7 +914,6 @@ class _ClubsStep extends StatelessWidget {
                 final team = activeLeague.teams[index];
                 return _ClubTeamTile(
                   team: team,
-                  sport: activeLeague.sport,
                   competition: activeLeague.league.id,
                   selected: team.id == selectedTeamId,
                   enabled: followedIds.contains(activeLeague.league.id),
@@ -953,53 +958,58 @@ class _ClubLeaguePill extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: Container(
+        child: SizedBox(
           width: 106,
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: active
-                ? AppTheme.onboardingPanelFill
-                : AppTheme.onboardingPanelFill.withValues(alpha: 0.64),
-            border: Border.all(
-              color: active ? pillAccent : AppTheme.onboardingPanelBorder,
-              width: active ? 1.5 : 1,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+          child: CyberSelectableCard(
+            selected: active,
+            accent: pillAccent,
+            fillColor: AppTheme.onboardingPanelFill,
+            borderColor: AppTheme.onboardingPanelBorder,
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Expanded(
-                    child: Text(
-                      entry.league.shortCode,
-                      style: Cyber.display(
-                        13,
-                        color: active ? pillAccent : Cyber.muted,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          entry.league.shortCode,
+                          textAlign: TextAlign.center,
+                          style: Cyber.display(
+                            13,
+                            color: active ? pillAccent : Cyber.muted,
+                          ),
+                        ),
                       ),
-                    ),
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: onToggle,
+                        child: Icon(
+                          selected
+                              ? Icons.check_box
+                              : Icons.check_box_outline_blank,
+                          color: pillAccent,
+                          size: 18,
+                        ),
+                      ),
+                    ],
                   ),
-                  GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: onToggle,
-                    child: Icon(
-                      selected
-                          ? Icons.check_box
-                          : Icons.check_box_outline_blank,
-                      color: pillAccent,
-                      size: 18,
+                  const Spacer(),
+                  Text(
+                    entry.league.name.toUpperCase(),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: Cyber.label(
+                      8,
+                      color: Cyber.muted,
+                      letterSpacing: 0.4,
                     ),
                   ),
                 ],
               ),
-              const Spacer(),
-              Text(
-                entry.league.name.toUpperCase(),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.4),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -1010,7 +1020,6 @@ class _ClubLeaguePill extends StatelessWidget {
 class _ClubTeamTile extends StatelessWidget {
   const _ClubTeamTile({
     required this.team,
-    required this.sport,
     required this.competition,
     required this.selected,
     required this.enabled,
@@ -1018,7 +1027,6 @@ class _ClubTeamTile extends StatelessWidget {
   });
 
   final SportTeam team;
-  final Sport sport;
   final String competition;
   final bool selected;
   final bool enabled;
@@ -1026,12 +1034,6 @@ class _ClubTeamTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = selected ? Cyber.lime : AppTheme.onboardingPanelBorder;
-    final teamColor = paletteForTeam(
-      team,
-      sport: sport,
-      competition: competition,
-    ).secondaryTextColor;
     return Semantics(
       button: true,
       selected: selected,
@@ -1039,44 +1041,50 @@ class _ClubTeamTile extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-          decoration: BoxDecoration(
-            color: enabled
-                ? AppTheme.onboardingPanelFill
-                : AppTheme.onboardingPanelFill.withValues(alpha: 0.58),
-            border: Border.all(color: borderColor, width: selected ? 2 : 1),
-            boxShadow: selected
-                ? Cyber.glow(Cyber.lime, alpha: 0.16, blur: 12, spread: -3)
-                : null,
-          ),
+        child: CyberSelectableCard(
+          selected: selected,
+          accent: Cyber.lime,
+          fillColor: AppTheme.onboardingPanelFill,
+          borderColor: AppTheme.onboardingPanelBorder,
+          enabled: enabled,
           child: Stack(
+            fit: StackFit.expand,
             children: [
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  TeamLogo(
-                    team: team,
-                    competition: competition,
-                    width: 40,
-                    height: 44,
-                  ),
-                  const SizedBox(height: 7),
-                  Text(
-                    team.name.toUpperCase(),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: Cyber.label(
-                      8,
-                      color: selected ? Colors.white : teamColor,
-                      letterSpacing: 0.3,
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 10,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    TeamLogo(
+                      team: team,
+                      competition: competition,
+                      width: 40,
+                      height: 44,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Text(
+                      team.name.toUpperCase(),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: Cyber.label(
+                        8,
+                        color: AppTheme.whiteColor,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              if (selected) const SelectedCheckCorner(size: 20),
+              if (selected)
+                const SelectedCheckCorner(
+                  size: 20,
+                  alignment: Alignment.topRight,
+                ),
             ],
           ),
         ),

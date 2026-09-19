@@ -1,7 +1,7 @@
 # Streaks
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-14
+> **Last verified:** 2026-09-19
 > **Scope:** Daily activity streaks, streak shields, daily quests, mode streaks, milestones, reward claims, and calendar surfaces
 
 ## Product Purpose
@@ -27,6 +27,9 @@ leaderboards) fall back to the hub without quest routing. Supported activity
 types are prediction, pick, Pitch Duel, Penalty Shootout, and daily Guess the
 Player; these roll up into overall and category streaks.
 
+For a first-time gated career, those same entries show a flag with home-ladder
+progress and open the ROOKIE PATH until the home Beginner's Quest is complete.
+
 ## Player Flow
 
 1. Complete an eligible action.
@@ -40,6 +43,18 @@ Player; these roll up into overall and category streaks.
 ## Mechanics and Rules
 
 ### Streak hub — BUILT
+
+The hub has three progression-derived presentations:
+
+- **Rookie:** a tabless ROOKIE PATH command center replaces the streak hero,
+  tabs and Daily Quest cards until the home Beginner's Quest is complete.
+- **Graduated, one sport:** the normal TODAY / STREAKS / CALENDAR / MILESTONES
+  hub below.
+- **Graduated, 2+ sports:** TODAY is renamed QUESTS and contains Daily Quests
+  followed by every active sport Beginner's Quest. Completed sport quests
+  leave the list; an empty list reads ALL SPORT QUESTS CLEARED.
+
+Grandfathered profiles always use the normal TODAY presentation.
 
 The hub opens on a compact hero: flame core, animated run count with BEST, a
 state tag (LIVE / PENDING / AT RISK / COLD) with a one-line prompt, a seven-day
@@ -123,12 +138,19 @@ while a streak/quest/achievement moment is queued. It re-checks when the game
 finishes loading, when a queued moment clears, and on app resume. The shown day
 is saved to `pd_streak_reminder_v1` (`StreakReminderLog`) before the popup opens,
 so a killed app cannot repeat it; a failed read counts as an empty log.
+The reminder is also suppressed throughout the Rookie Path.
 
 ### Daily quests — BUILT
 
 TODAY combines daily quests and one quest-reward claim button; the milestone
 track lives on its own MILESTONES tab. The hero distinguishes the secured streak
 day from daily quest completion.
+
+Daily activity still records during the Rookie Path, but its progress, rewards,
+claim beacon and shield moments remain hidden. Home-quest graduation reveals
+the current day's actual progress immediately; it never resets the snapshot.
+The ROOKIE PATH COMPLETE / DAILY QUESTS UNLOCKED reveal plays before any queued
+Daily Sweep shield feedback.
 
 | Quest | Requirement | Oz Coins | Extra |
 |---|---|---|---|

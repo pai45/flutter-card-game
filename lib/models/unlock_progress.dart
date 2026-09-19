@@ -101,6 +101,24 @@ class UnlockProgress {
 
   bool get gated => homeSport != null && !grandfathered;
 
+  /// The one-time rookie phase is owned by the home sport. Unlocking another
+  /// sport early never skips it, and later sport quests never re-enter it.
+  bool get initialQuestActive =>
+      gated && homeSport != null && !completedQuests.contains(homeSport);
+
+  bool get dailyQuestsUnlocked => !initialQuestActive;
+
+  /// Only progression-managed careers get the combined quest board. Legacy
+  /// grandfathered profiles keep the familiar TODAY tab.
+  bool get questListEnabled =>
+      gated && dailyQuestsUnlocked && unlockedSports.length >= 2;
+
+  /// Active Beginner's Quests in the same order as the sport hub.
+  List<Sport> get activeQuestSports => [
+    for (final sport in orderedUnlockedSports)
+      if (isQuestActive(sport)) sport,
+  ];
+
   bool isSportUnlocked(Sport sport) => !gated || unlockedSports.contains(sport);
 
   int reachedFor(Sport sport) {

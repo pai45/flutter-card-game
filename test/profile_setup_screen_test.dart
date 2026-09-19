@@ -72,8 +72,18 @@ void main() {
     expect(find.byKey(const ValueKey('onboarding_team_grid')), findsOneWidget);
     expect(find.text('EPL'), findsOneWidget);
     expect(find.text('LIVERPOOL'), findsOneWidget);
+    expect(find.textContaining('HOME SPORT -'), findsNothing);
+    expect(
+      tester.widget<Text>(find.text('LIVERPOOL')).style?.color,
+      AppTheme.whiteColor,
+    );
+    final clubHelper = tester.widget<Text>(
+      find.text('STEP 4 OF 4 // FOOTBALL - PICK YOUR LEAGUE AND CLUB'),
+    );
+    expect(clubHelper.style?.color, AppTheme.textMedium);
 
     await _tapTile(tester, 'LIVERPOOL');
+    expect(find.textContaining('locked in'), findsNothing);
     await _finishSetup(tester);
 
     expect(result, isNotNull);

@@ -140,8 +140,7 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
   Sport? get _selectedMatchSport => sportForHubIndex(_matchIndex);
   Sport? get _selectedGamesSport => sportForHubIndex(_gamesIndex);
 
-  void _openArcadeGame(ArcadeGame game) =>
-      widget.onOpenArcadeGame?.call(game);
+  void _openArcadeGame(ArcadeGame game) => widget.onOpenArcadeGame?.call(game);
 
   Future<void> _offerSport(Sport sport) => showSportUnlockSheet(context, sport);
 
@@ -311,26 +310,22 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
     );
   }
 
-  /// Both Trending feeds lead with the daily-quest door into the streak hub.
-  Widget _questTile() => DailyQuestHomeTile(
-    onTap: widget.onOpenStreakHub ?? () => showStreakCalendar(context),
-  );
+  /// Both Trending feeds use one quest doorway. The home Beginner's Quest owns
+  /// it until graduation; Daily Quests own it permanently after that.
+  Widget _questTile() {
+    final openHub = widget.onOpenStreakHub ?? () => showStreakCalendar(context);
+    final home = _unlocks.homeSport;
+    if (_unlocks.initialQuestActive && home != null) {
+      return BeginnerQuestStrip(sport: home, unlocks: _unlocks, onTap: openHub);
+    }
+    return DailyQuestHomeTile(onTap: openHub);
+  }
 
   /// A gated player has no TRENDING feed early on, so the per-sport MATCH tab
-  /// carries the quest door: the Beginner's Quest while it runs (one
-  /// objective, not two), the daily quests after.
-  Widget? _matchHeader(Sport sport) {
+  /// carries the global quest door. Even if a second sport was bought early,
+  /// the home quest remains the rookie focus until graduation.
+  Widget? _matchHeader(Sport _) {
     if (!_unlocks.gated) return null;
-    if (_unlocks.isQuestActive(sport)) {
-      return BeginnerQuestStrip(
-        sport: sport,
-        unlocks: _unlocks,
-        onTap: () {
-          widget.onGamesSportTabChanged(hubIndexForSport(sport));
-          widget.onTabChanged(1);
-        },
-      );
-    }
     return _questTile();
   }
 
@@ -2743,31 +2738,31 @@ class _ArcadeHeroGameTile extends StatelessWidget {
           bigCut: 14,
           smallCut: 4,
           child: CustomPaint(
-          painter: _HudChamferCardPainter(
-            bigCut: 14,
-            smallCut: 4,
-            fillColor: Cyber.panel,
-            borderColor: accent.withValues(alpha: 0.86),
-            // Locked tiles never glow: they are not live.
-            borderGlow: emphasis && lock == null,
-          ),
-          child: ClipPath(
-            clipper: const HudChamferClipper(bigCut: 14, smallCut: 4),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final compact =
-                    layout == GameHeroLayout.landscape &&
-                    constraints.maxWidth < 165;
-                return SizedBox(
-                  height: 174,
-                  child: layout == GameHeroLayout.portrait
-                      ? _buildPortrait()
-                      : _buildLandscape(compact: compact),
-                );
-              },
+            painter: _HudChamferCardPainter(
+              bigCut: 14,
+              smallCut: 4,
+              fillColor: Cyber.panel,
+              borderColor: accent.withValues(alpha: 0.86),
+              // Locked tiles never glow: they are not live.
+              borderGlow: emphasis && lock == null,
+            ),
+            child: ClipPath(
+              clipper: const HudChamferClipper(bigCut: 14, smallCut: 4),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final compact =
+                      layout == GameHeroLayout.landscape &&
+                      constraints.maxWidth < 165;
+                  return SizedBox(
+                    height: 174,
+                    child: layout == GameHeroLayout.portrait
+                        ? _buildPortrait()
+                        : _buildLandscape(compact: compact),
+                  );
+                },
+              ),
             ),
           ),
-        ),
         ),
       ),
     );
@@ -3574,125 +3569,126 @@ class _QuickGameTile extends StatelessWidget {
             bigCut: _bigCut,
             smallCut: _smallCut,
             child: CustomPaint(
-            painter: _HudChamferCardPainter(
-              bigCut: _bigCut,
-              smallCut: _smallCut,
-              fillColor: Color.lerp(Cyber.panel, accent, 0.055)!,
-              borderColor: accent.withValues(alpha: 0.84),
-              borderGlow: emphasis && lock == null,
-            ),
-            child: ClipPath(
-              clipper: const HudChamferClipper(
+              painter: _HudChamferCardPainter(
                 bigCut: _bigCut,
                 smallCut: _smallCut,
+                fillColor: Color.lerp(Cyber.panel, accent, 0.055)!,
+                borderColor: accent.withValues(alpha: 0.84),
+                borderGlow: emphasis && lock == null,
               ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final compact = constraints.maxWidth < 150;
-                  return Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Positioned(
-                        right: -18,
-                        bottom: -8,
-                        child: Icon(
-                          icon,
-                          size: compact ? 72 : 86,
-                          color: accent.withValues(alpha: 0.065),
+              child: ClipPath(
+                clipper: const HudChamferClipper(
+                  bigCut: _bigCut,
+                  smallCut: _smallCut,
+                ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final compact = constraints.maxWidth < 150;
+                    return Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Positioned(
+                          right: -18,
+                          bottom: -8,
+                          child: Icon(
+                            icon,
+                            size: compact ? 72 : 86,
+                            color: accent.withValues(alpha: 0.065),
+                          ),
                         ),
-                      ),
-                      Positioned(
-                        top: 0,
-                        left: _bigCut,
-                        right: 34,
-                        child: Container(
-                          height: 2,
-                          color: accent.withValues(alpha: 0.82),
+                        Positioned(
+                          top: 0,
+                          left: _bigCut,
+                          right: 34,
+                          child: Container(
+                            height: 2,
+                            color: accent.withValues(alpha: 0.82),
+                          ),
                         ),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.all(compact ? 11 : 13),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                _GameIconBox(
-                                  icon: icon,
-                                  accent: accent,
-                                  size: compact ? 36 : 40,
-                                  iconSize: compact ? 19 : 22,
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 7,
-                                    vertical: 4,
+                        Padding(
+                          padding: EdgeInsets.all(compact ? 11 : 13),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  _GameIconBox(
+                                    icon: icon,
+                                    accent: accent,
+                                    size: compact ? 36 : 40,
+                                    iconSize: compact ? 19 : 22,
                                   ),
-                                  color: accent.withValues(alpha: 0.14),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        width: 5,
-                                        height: 5,
-                                        decoration: BoxDecoration(
-                                          color: accent,
-                                          shape: BoxShape.circle,
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 7,
+                                      vertical: 4,
+                                    ),
+                                    color: accent.withValues(alpha: 0.14),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          width: 5,
+                                          height: 5,
+                                          decoration: BoxDecoration(
+                                            color: accent,
+                                            shape: BoxShape.circle,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 5),
-                                      Text(
-                                        'FREE',
-                                        style: Cyber.display(
-                                          largeType ? 10 : 7,
-                                          color: accent,
-                                          letterSpacing: 0.4,
+                                        const SizedBox(width: 5),
+                                        Text(
+                                          'FREE',
+                                          style: Cyber.display(
+                                            largeType ? 10 : 7,
+                                            color: accent,
+                                            letterSpacing: 0.4,
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            if (tightContent)
-                              const SizedBox(height: 12)
-                            else
-                              const Spacer(),
-                            Text(
-                              title,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: Cyber.display(
-                                compact ? 11.5 : 13.5,
-                                color: Colors.white,
-                                letterSpacing: compact ? 0.65 : 0.9,
-                              ).copyWith(height: 1.02),
-                            ),
-                            const SizedBox(height: 5),
-                            Text(
-                              subtitle,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: Cyber.label(
-                                largeType
-                                    ? 10
-                                    : compact
-                                    ? 6.5
-                                    : 7.5,
-                                color: accent.withValues(alpha: 0.76),
-                                letterSpacing: compact ? 0.4 : 0.6,
-                              ).copyWith(height: 1.2),
-                            ),
-                          ],
+                                ],
+                              ),
+                              if (tightContent)
+                                const SizedBox(height: 12)
+                              else
+                                const Spacer(),
+                              Text(
+                                title,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: Cyber.display(
+                                  compact ? 11.5 : 13.5,
+                                  color: Colors.white,
+                                  letterSpacing: compact ? 0.65 : 0.9,
+                                ).copyWith(height: 1.02),
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                subtitle,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: Cyber.label(
+                                  largeType
+                                      ? 10
+                                      : compact
+                                      ? 6.5
+                                      : 7.5,
+                                  color: accent.withValues(alpha: 0.76),
+                                  letterSpacing: compact ? 0.4 : 0.6,
+                                ).copyWith(height: 1.2),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  );
-                },
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
-          ),
           ),
         ),
       ),

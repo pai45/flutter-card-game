@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../config/theme.dart';
 import '../models/profile_banner_option.dart';
+import 'cyber/cyber_widgets.dart' show CyberSelectableCard;
 
 /// Renders a profile banner: its asset when present, otherwise gradient-free
 /// procedural art (solid accent base + chevron motif + faint scanlines).
@@ -74,14 +75,19 @@ class _ProfileBannerPlaceholderPainter extends CustomPainter {
 
 /// A lime check seal pinned to the top-left of a selected tile.
 class SelectedCheckCorner extends StatelessWidget {
-  const SelectedCheckCorner({this.size = 30, super.key});
+  const SelectedCheckCorner({
+    this.size = 30,
+    this.alignment = Alignment.topLeft,
+    super.key,
+  });
 
   final double size;
+  final Alignment alignment;
 
   @override
   Widget build(BuildContext context) {
     return Align(
-      alignment: Alignment.topLeft,
+      alignment: alignment,
       child: Container(
         width: size,
         height: size,
@@ -109,7 +115,6 @@ class SelectableBannerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = selected ? Cyber.lime : Cyber.line;
     return Semantics(
       button: true,
       selected: selected,
@@ -117,15 +122,10 @@ class SelectableBannerTile extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          decoration: BoxDecoration(
-            color: Cyber.panel,
-            border: Border.all(color: borderColor, width: selected ? 2 : 1),
-            boxShadow: selected
-                ? Cyber.glow(Cyber.lime, alpha: 0.18, blur: 14, spread: -2)
-                : null,
-          ),
+        child: CyberSelectableCard(
+          selected: selected,
+          accent: Cyber.lime,
+          borderColor: Cyber.line,
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -152,7 +152,8 @@ class SelectableBannerTile extends StatelessWidget {
                   ),
                 ),
               ),
-              if (selected) const SelectedCheckCorner(),
+              if (selected)
+                const SelectedCheckCorner(alignment: Alignment.topRight),
             ],
           ),
         ),

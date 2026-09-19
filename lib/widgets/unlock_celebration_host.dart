@@ -8,6 +8,7 @@ import '../blocs/game/game_state.dart';
 import '../config/game_ladder.dart';
 import '../config/sport_modules.dart';
 import '../models/sport_match.dart';
+import '../models/streak.dart';
 import '../models/unlock_progress.dart';
 import 'cyber/cyber_unlock_reveal.dart';
 
@@ -25,6 +26,7 @@ class UnlockRevealGate {
 
   ValueChanged<ArcadeGame>? playGame;
   ValueChanged<Sport>? openSport;
+  VoidCallback? openQuestHub;
 }
 
 /// Plays queued unlock moments (NEW GAME UNLOCKED / SPORT UNLOCKED /
@@ -50,21 +52,33 @@ class UnlockCelebrationHost extends StatelessWidget {
             previous.pendingPackReveal != current.pendingPackReveal,
         builder: (context, state) {
           final reveals = state.unlocks.pendingReveals;
+          if (reveals.isEmpty) return const SizedBox.shrink();
+          final reveal = reveals.first;
+          final rookieGraduation =
+              reveal.kind == UnlockRevealKind.questComplete &&
+              reveal.sport == state.unlocks.homeSport;
+          final deferredShield =
+              state.unlocks.initialQuestActive &&
+              state.streak.celebrationQueue.isNotEmpty &&
+              _isShieldMoment(state.streak.celebrationQueue.first);
           final busy =
               !hubVisible ||
               state.pendingPackReveal != null ||
-              state.streak.celebrationQueue.isNotEmpty ||
+              (state.streak.celebrationQueue.isNotEmpty &&
+                  !rookieGraduation &&
+                  !deferredShield) ||
               state.questRewardCoins > 0 ||
               (achievements?.holding ?? false) ||
               (achievements?.queue.isNotEmpty ?? false);
-          if (reveals.isEmpty || busy) return const SizedBox.shrink();
-          final reveal = reveals.first;
+          if (busy) return const SizedBox.shrink();
           return _UnlockRevealFor(
             key: ValueKey(
               '${reveals.length}-${reveal.kind.name}-'
               '${reveal.game?.name ?? reveal.sport?.name}',
             ),
             reveal: reveal,
+            rookieGraduation: rookieGraduation,
+            questListEnabled: state.unlocks.questListEnabled,
             onDismissed: () =>
                 context.read<GameBloc>().add(UnlockRevealConsumed()),
           );
@@ -77,11 +91,15 @@ class UnlockCelebrationHost extends StatelessWidget {
 class _UnlockRevealFor extends StatelessWidget {
   const _UnlockRevealFor({
     required this.reveal,
+    required this.rookieGraduation,
+    required this.questListEnabled,
     required this.onDismissed,
     super.key,
   });
 
   final UnlockReveal reveal;
+  final bool rookieGraduation;
+  final bool questListEnabled;
   final VoidCallback onDismissed;
 
   @override
@@ -123,6 +141,21 @@ class _UnlockRevealFor extends StatelessWidget {
           onDismissed: onDismissed,
         );
       case UnlockRevealKind.questComplete:
+        if (rookieGraduation) {
+          return CyberUnlockReveal(
+            eyebrow: 'ROOKIE PATH COMPLETE',
+            title: 'DAILY QUESTS UNLOCKED',
+            subtitle:
+                'All $sportLabel games are open. Today\'s activity is already '
+                'counted and your next missions are live.',
+            icon: Icons.emoji_events_rounded,
+            accent: module.accent,
+            rewardLabel: '+$beginnerQuestCompleteOz OZ',
+            ctaLabel: questListEnabled ? 'VIEW QUESTS' : 'VIEW TODAY',
+            onCta: gate.openQuestHub,
+            onDismissed: onDismissed,
+          );
+        }
         return CyberUnlockReveal(
           eyebrow: "BEGINNER'S QUEST COMPLETE",
           title: 'ALL $sportLabel GAMES OPEN',
@@ -137,3 +170,7 @@ class _UnlockRevealFor extends StatelessWidget {
     }
   }
 }
+
+bool _isShieldMoment(StreakCelebration celebration) =>
+    celebration.type == StreakCelebrationType.shieldEarned ||
+    celebration.type == StreakCelebrationType.shieldSaved;

@@ -24,6 +24,10 @@ void main() {
     test('a fresh player opens only the home sport and its first game', () {
       final progress = UnlockProgress.fresh(Sport.cricket);
       expect(progress.gated, isTrue);
+      expect(progress.initialQuestActive, isTrue);
+      expect(progress.dailyQuestsUnlocked, isFalse);
+      expect(progress.questListEnabled, isFalse);
+      expect(progress.activeQuestSports, [Sport.cricket]);
       expect(progress.isSportUnlocked(Sport.cricket), isTrue);
       expect(progress.isSportUnlocked(Sport.football), isFalse);
       expect(progress.isGameUnlocked(ArcadeGame.finalOver), isTrue);
@@ -32,6 +36,42 @@ void main() {
       expect(progress.currentStep(Sport.cricket), ArcadeGame.finalOver);
       expect(progress.orderedUnlockedSports, [Sport.cricket]);
       expect(progress.lockedSports, hasLength(Sport.values.length - 1));
+    });
+
+    test('home graduation unlocks daily and two sports enable quest list', () {
+      var progress = UnlockProgress.fresh(
+        Sport.football,
+      ).unlockSport(Sport.cricket);
+      expect(progress.initialQuestActive, isTrue);
+      expect(progress.questListEnabled, isFalse);
+      expect(progress.activeQuestSports, [Sport.football, Sport.cricket]);
+
+      for (
+        var index = 0;
+        index < sportGameLadder[Sport.football]!.length;
+        index++
+      ) {
+        progress = progress
+            .recordPlay(sportGameLadder[Sport.football]![index], 'home-$index')
+            .progress;
+      }
+
+      expect(progress.initialQuestActive, isFalse);
+      expect(progress.dailyQuestsUnlocked, isTrue);
+      expect(progress.questListEnabled, isTrue);
+      expect(progress.activeQuestSports, [Sport.cricket]);
+    });
+
+    test('unmanaged and grandfathered profiles keep TODAY semantics', () {
+      for (final progress in const [
+        UnlockProgress(),
+        UnlockProgress.grandfathered(),
+      ]) {
+        expect(progress.initialQuestActive, isFalse);
+        expect(progress.dailyQuestsUnlocked, isTrue);
+        expect(progress.questListEnabled, isFalse);
+        expect(progress.activeQuestSports, isEmpty);
+      }
     });
 
     test('finishing the current step unlocks the next game, once', () {
@@ -69,10 +109,7 @@ void main() {
       for (final game in ladder) {
         expect(progress.isGameUnlocked(game), isTrue);
       }
-      expect(
-        progress.pendingReveals.last.kind,
-        UnlockRevealKind.questComplete,
-      );
+      expect(progress.pendingReveals.last.kind, UnlockRevealKind.questComplete);
     });
 
     test('unlocking a sport opens its first game and queues a reveal', () {

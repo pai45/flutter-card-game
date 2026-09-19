@@ -33,6 +33,10 @@ import '../data/rival_roster.dart' show randomPlayerTag;
 
 enum OnboardingRewardStatus { pending, seen }
 
+/// The two device-local careers exposed by the Profile Select switchboard.
+/// They are isolated save slots, not remote accounts.
+enum LocalProfileSlot { firstTime, returning }
+
 /// Maps a legacy `border_*` avatar-frame id to the renamed `frame_*` form so a
 /// player's pre-rename owned/equipped frames keep resolving after the migration.
 String _migrateFrameId(String id) =>
@@ -206,8 +210,174 @@ class SecureGameStorage {
   static const _tennisProfileKey = 'pd_tennis_profile_v1';
   static const _tennisResumeKey = 'pd_tennis_resume_v1';
   static const _tennisSettlementKey = 'pd_tennis_settlements_v1';
+  static const _localProfilesKey = 'pd_local_profile_slots_v1';
+  static const _activeLocalProfileKey = 'pd_active_local_profile_v1';
 
   final FlutterSecureStorage _storage;
+
+  /// Creates two isolated local save slots without disturbing an existing
+  /// player's career. A populated legacy install migrates into RETURNING;
+  /// a clean install begins in the blank FIRST-TIME slot.
+  Future<void> ensureLocalProfiles() async {
+    final existing = await _storage.read(key: _localProfilesKey);
+    if (existing != null && existing.isNotEmpty) return;
+
+    final current = await _captureLocalProfile();
+    final secure = Map<String, dynamic>.from(
+      current['secure'] as Map? ?? const <String, dynamic>{},
+    );
+    // A new install can already have a few default game keys written while the
+    // app boots. Only completed onboarding identifies a pre-profile career.
+    final hasExistingCareer = secure[_onboardingCompleteKey] == 'true';
+    final slots = <String, dynamic>{
+      LocalProfileSlot.firstTime.name: _emptyLocalProfile(),
+      LocalProfileSlot.returning.name: hasExistingCareer
+          ? current
+          : _emptyLocalProfile(),
+    };
+    await _storage.write(key: _localProfilesKey, value: jsonEncode(slots));
+    await _storage.write(
+      key: _activeLocalProfileKey,
+      value: hasExistingCareer
+          ? LocalProfileSlot.returning.name
+          : LocalProfileSlot.firstTime.name,
+    );
+  }
+
+  Future<LocalProfileSlot> loadActiveLocalProfile() async {
+    await ensureLocalProfiles();
+    final raw = await _storage.read(key: _activeLocalProfileKey);
+    return switch (raw) {
+      'returning' => LocalProfileSlot.returning,
+      _ => LocalProfileSlot.firstTime,
+    };
+  }
+
+  /// Whether [slot] has reached the completed-onboarding state and can be
+  /// presented as a resumable career in the switchboard.
+  Future<bool> isLocalProfileReady(LocalProfileSlot slot) async {
+    final active = await loadActiveLocalProfile();
+    if (active == slot) return loadOnboardingComplete();
+    final slots = await _readLocalProfiles();
+    final snapshot = Map<String, dynamic>.from(
+      slots[slot.name] as Map? ?? const <String, dynamic>{},
+    );
+    final secure = Map<String, dynamic>.from(
+      snapshot['secure'] as Map? ?? const <String, dynamic>{},
+    );
+    return secure[_onboardingCompleteKey] == 'true';
+  }
+
+  /// Atomically saves the outgoing career snapshot before clearing game data
+  /// and restoring [target]. The app then recreates its blocs so no state from
+  /// the previous player remains in memory.
+  Future<void> switchLocalProfile(LocalProfileSlot target) async {
+    final active = await loadActiveLocalProfile();
+    if (target == active) return;
+
+    final slots = await _readLocalProfiles();
+    slots[active.name] = await _captureLocalProfile();
+    final targetSnapshot = Map<String, dynamic>.from(
+      slots[target.name] as Map? ?? _emptyLocalProfile(),
+    );
+    await _writeLocalProfiles(slots);
+    await _restoreLocalProfile(targetSnapshot);
+    await _storage.write(key: _activeLocalProfileKey, value: target.name);
+  }
+
+  Future<Map<String, dynamic>> _readLocalProfiles() async {
+    await ensureLocalProfiles();
+    final raw = await _storage.read(key: _localProfilesKey);
+    if (raw == null || raw.isEmpty) {
+      return <String, dynamic>{
+        LocalProfileSlot.firstTime.name: _emptyLocalProfile(),
+        LocalProfileSlot.returning.name: _emptyLocalProfile(),
+      };
+    }
+    try {
+      return Map<String, dynamic>.from(jsonDecode(raw) as Map);
+    } catch (_) {
+      return <String, dynamic>{
+        LocalProfileSlot.firstTime.name: _emptyLocalProfile(),
+        LocalProfileSlot.returning.name: _emptyLocalProfile(),
+      };
+    }
+  }
+
+  Future<void> _writeLocalProfiles(Map<String, dynamic> slots) =>
+      _storage.write(key: _localProfilesKey, value: jsonEncode(slots));
+
+  Map<String, dynamic> _emptyLocalProfile() => <String, dynamic>{
+    'secure': <String, String>{},
+    'preferences': <String, dynamic>{},
+  };
+
+  bool _isManagedSecureKey(String key) =>
+      key.startsWith('pd_') &&
+      key != _localProfilesKey &&
+      key != _activeLocalProfileKey;
+
+  bool _isManagedPreferenceKey(String key) =>
+      key.startsWith('pd_') || key == _walletKey;
+
+  Future<Map<String, dynamic>> _captureLocalProfile() async {
+    final secureValues = await _storage.readAll();
+    final preferences = await SharedPreferences.getInstance();
+    final secure = <String, String>{
+      for (final entry in secureValues.entries)
+        if (_isManagedSecureKey(entry.key)) entry.key: entry.value,
+    };
+    final preferenceValues = <String, dynamic>{
+      for (final key in preferences.getKeys())
+        if (_isManagedPreferenceKey(key)) key: preferences.get(key),
+    };
+    return <String, dynamic>{'secure': secure, 'preferences': preferenceValues};
+  }
+
+  Future<void> _restoreLocalProfile(Map<String, dynamic> snapshot) async {
+    final currentSecure = await _storage.readAll();
+    await Future.wait([
+      for (final key in currentSecure.keys.toList())
+        if (_isManagedSecureKey(key)) _storage.delete(key: key),
+    ]);
+
+    final preferences = await SharedPreferences.getInstance();
+    await Future.wait([
+      for (final key in preferences.getKeys().toList())
+        if (_isManagedPreferenceKey(key)) preferences.remove(key),
+    ]);
+
+    final secure = Map<String, dynamic>.from(
+      snapshot['secure'] as Map? ?? const <String, dynamic>{},
+    );
+    await Future.wait([
+      for (final entry in secure.entries)
+        _storage.write(key: entry.key, value: entry.value as String),
+    ]);
+
+    final preferenceValues = Map<String, dynamic>.from(
+      snapshot['preferences'] as Map? ?? const <String, dynamic>{},
+    );
+    await Future.wait([
+      for (final entry in preferenceValues.entries)
+        _restorePreference(preferences, entry.key, entry.value),
+    ]);
+  }
+
+  Future<bool> _restorePreference(
+    SharedPreferences preferences,
+    String key,
+    dynamic value,
+  ) {
+    if (value is String) return preferences.setString(key, value);
+    if (value is int) return preferences.setInt(key, value);
+    if (value is double) return preferences.setDouble(key, value);
+    if (value is bool) return preferences.setBool(key, value);
+    if (value is List) {
+      return preferences.setStringList(key, List<String>.from(value));
+    }
+    return Future.value(false);
+  }
 
   Future<List<StoredDeckSlot>> loadDecks() async {
     try {

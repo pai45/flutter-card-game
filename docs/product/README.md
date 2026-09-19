@@ -62,7 +62,10 @@ awards an idempotent 1,000 Oz Coin welcome bonus with a reward animation.
 Setup's single-select **home sport** is the only sport open to a new player:
 the other sports sit on the sport strip as padlocked teasers that unlock for 50
 Oz each, and within every sport only the first game is open. The rest unlock by
-playing through that sport's **Beginner's Quest**
+playing through that sport's **Beginner's Quest**. The home quest is the
+one-time ROOKIE PATH: it replaces Daily Quest UI until completion while daily
+activity tracks invisibly. Graduated multi-sport careers receive a combined
+QUESTS list for Daily Quests and remaining sport ladders
 ([Sport and Game Unlocks](systems/sport-and-game-unlocks.md)). Profiles
 onboarded before this shipped keep everything open. The main app then opens the
 sports hub with four persistent destinations:
@@ -153,11 +156,13 @@ Guess the Player entries share one implementation and one product page.
 
 1. Complete predictions, picks, games, or daily mysteries.
 2. Extend activity streaks and unlock milestone claims.
-   The streak hub (opened from any top-bar flame, the Trending quest tile, or a
+   The streak hub (opened from any top-bar flame/rookie flag, the Trending quest tile, or a
    Profile streak badge) has four tabs: TODAY quests, per-mode STREAKS, the
    CALENDAR, and the road-to-365 MILESTONES. Complete three daily quests for up to 50
    extra Oz Coins; predictions and picks each have a game alternative. The
    Daily Sweep forges a streak shield (bank of 2) that covers a missed day.
+   Before home-sport graduation this is a focused ROOKIE PATH instead; with two
+   unlocked sports after graduation, TODAY becomes the combined QUESTS tab.
 3. Claim the 24-hour daily drop and open packs.
 4. Review XP and Oz Coin histories, achievements, leaderboards, rivals, and
    career statistics.

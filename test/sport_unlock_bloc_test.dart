@@ -39,18 +39,21 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  test('a fresh install stays unmanaged until a home sport is chosen', () async {
-    final storage = SecureGameStorage();
-    final bloc = await loaded(storage);
-    expect(bloc.state.unlocks.gated, isFalse);
+  test(
+    'a fresh install stays unmanaged until a home sport is chosen',
+    () async {
+      final storage = SecureGameStorage();
+      final bloc = await loaded(storage);
+      expect(bloc.state.unlocks.gated, isFalse);
 
-    bloc.add(HomeSportChosen(Sport.cricket));
-    final state = await settle(bloc, (s) => s.unlocks.gated);
-    expect(state.unlocks.isGameUnlocked(ArcadeGame.finalOver), isTrue);
-    expect(state.unlocks.isGameUnlocked(ArcadeGame.pitchDuel), isFalse);
-    await bloc.close();
-    expect((await storage.loadUnlockProgress())!.homeSport, Sport.cricket);
-  });
+      bloc.add(HomeSportChosen(Sport.cricket));
+      final state = await settle(bloc, (s) => s.unlocks.gated);
+      expect(state.unlocks.isGameUnlocked(ArcadeGame.finalOver), isTrue);
+      expect(state.unlocks.isGameUnlocked(ArcadeGame.pitchDuel), isFalse);
+      await bloc.close();
+      expect((await storage.loadUnlockProgress())!.homeSport, Sport.cricket);
+    },
+  );
 
   test('a profile onboarded before unlocks shipped is grandfathered', () async {
     final storage = SecureGameStorage();
@@ -71,7 +74,9 @@ void main() {
       (s) => s.unlocks.gated && s.unlocks.reachedFor(Sport.cricket) == 2,
     );
     expect(
-      state.xpLedger.where((e) => e.source == XpTransactionSource.beginnerQuest),
+      state.xpLedger.where(
+        (e) => e.source == XpTransactionSource.beginnerQuest,
+      ),
       hasLength(1),
     );
     expect(state.unlocks.pendingReveals.single.game, ArcadeGame.cricketQuiz);
@@ -110,6 +115,34 @@ void main() {
     );
     await bloc.close();
   });
+
+  test(
+    'daily progress tracks invisibly and is retained on graduation',
+    () async {
+      final bloc = await loaded(SecureGameStorage());
+      bloc.add(HomeSportChosen(Sport.cricket));
+      bloc.add(finalOver('hidden-fo'));
+      bloc.add(ArcadeGamePlayed(ArcadeGame.cricketQuiz, sourceId: 'hidden-q'));
+      final hidden = await settle(
+        bloc,
+        (s) => s.unlocks.gated && s.unlocks.reachedFor(Sport.cricket) == 3,
+      );
+      expect(hidden.unlocks.dailyQuestsUnlocked, isFalse);
+      expect(hidden.dailyQuests.today.games, 2);
+
+      bloc.add(
+        ArcadeGamePlayed(ArcadeGame.cricketGuessPlayer, sourceId: 'hidden-g'),
+      );
+      final graduated = await settle(
+        bloc,
+        (s) => s.unlocks.dailyQuestsUnlocked,
+      );
+      expect(graduated.dailyQuests.today.games, 3);
+      expect(graduated.dailyQuests.claimableCoins, 50);
+      expect(graduated.streak.shields, 1);
+      await bloc.close();
+    },
+  );
 
   test('buying a sport spends 50 Oz; broke or owned buys are no-ops', () async {
     final bloc = await loaded(SecureGameStorage());

@@ -1,7 +1,7 @@
 # Sport and Game Unlocks (Beginner's Quest)
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-18
+> **Last verified:** 2026-09-19
 > **Scope:** The home sport chosen at onboarding, locked sports and games, the per-sport Beginner's Quest ladder that opens games by playing, and the 50 Oz sport unlock.
 
 ## Product Purpose
@@ -24,11 +24,18 @@ teasers, so the player knows there is more to earn.
   show only tiles from unlocked sports. A stored tab that points at a locked sport, or
   at a hidden TRENDING, falls back to the home sport.
 - **GAMES tab, slot #1.** The **BEGINNER'S QUEST** card, shown while that
-  sport's quest is running.
-- **MATCH tab.** A one-line Beginner's Quest strip takes the daily-quest tile's
-  slot while the quest runs, then the daily-quest tile returns. This only
-  applies to gated players; everyone else keeps the daily-quest tile on
-  TRENDING as before.
+  sport's quest is running. Its compact two-row layout shows only the current
+  game, `+40 XP`, the next unlock/completion bonus, and **PLAY NOW**; the header
+  already carries total ladder progress, so the card does not repeat a step
+  stamp, paragraph, or second progress meter.
+- **MATCH / TRENDING quest slot.** The home-sport Beginner's Quest takes the
+  daily-quest tile's place for the whole rookie phase, then the daily tile
+  returns permanently. Buying another sport early does not change the focus.
+- **Streak / quest hub.** Before home-sport graduation it becomes a tabless
+  **ROOKIE PATH** command center: ladder progress, current game CTA, rewards,
+  game states, and a locked Daily Quest preview. After graduation, one-sport
+  careers get TODAY; managed careers with 2+ sports get QUESTS (Daily Quests
+  followed by active sport quests).
 - **ALL SPORTS.** Locked sports show a lock, `LOCKED // N GAMES + MATCHES` and
   `50 OZ`, and open the unlock sheet. Fixtures are never fetched for them.
 - **Match search.** Results cover unlocked sports only.
@@ -49,8 +56,8 @@ teasers, so the player knows there is more to earn.
    and the Cricket Quiz plate slams in with `+40 XP` and **PLAY NOW**.
 4. The quiz step comes with a **ROOKIE TICKET**: the first quiz entry during
    the quest is free.
-5. Finishing the last ladder game plays **BEGINNER'S QUEST COMPLETE**:
-   `ALL CRICKET GAMES OPEN` and `+50 OZ`.
+5. Finishing the last home-sport game plays **ROOKIE PATH COMPLETE**:
+   `DAILY QUESTS UNLOCKED` and `+50 OZ`, with VIEW TODAY or VIEW QUESTS.
 6. The player taps a padlocked sport on the strip. The UNLOCK sheet previews
    that sport's full game ladder and the balance before and after. They tap
    **UNLOCK · 50 OZ**, **SPORT UNLOCKED** plays, and **ENTER \<SPORT\>** lands
@@ -92,6 +99,12 @@ teasers, so the player knows there is more to earn.
   own Beginner's Quest.
 
 **Daily quests:**
+- The home quest is the one-time graduation gate. Daily activity records
+  invisibly before graduation, then becomes visible without being reset.
+- The top bar shows a flag plus `cleared/total`; Daily reward indicators and
+  at-risk reminders stay suppressed during the Rookie Path.
+- Buying another sport early is allowed, but the home quest keeps focus. After
+  graduation, later sport quests never replace or hide Daily Quests.
 - Every finished GAMES-tab mode now counts as a daily-quest game, so a
   non-football player can clear Kick Off and friends.
 - Quest game CTAs route to the named football mode when it is open. Otherwise
@@ -125,8 +138,9 @@ teasers, so the player knows there is more to earn.
   streak and quest-reward moments, pack reveals and the welcome reward.
 - The streak reminder waits while unlock reveals are pending.
 - Locked tiles are desaturated and flat with no glow. The next unlock gets a
-  calm amber chip. The quest card follows the daily-quest objective-card
-  family (numbered plate, segment pips, reward pills, PLAY NOW action).
+  calm amber chip. The GAMES quest card is a compact mission plate with one
+  reward chip and a calm **PLAY NOW** action; the detailed objective card and
+  segmented ladder remain in the dedicated ROOKIE PATH command center.
 
 ## Visible States
 
@@ -134,8 +148,10 @@ teasers, so the player knows there is more to earn.
 - **Gated:** home sport only, quest active.
 - **Mid-quest:** some games open, NEXT UNLOCK and QUEST STEP chips on the rest.
 - **Quest complete:** the card disappears and all of that sport's games are
-  open.
+  open. Completing the home quest also graduates the career to Daily Quests.
 - **Multi-sport:** TRENDING returns once a second sport is open.
+- **Quest List:** after home graduation with 2+ sports, QUESTS combines Daily
+  Quests with remaining active sport ladders.
 - **Grandfathered:** no locks, no quest.
 
 ## Persistence

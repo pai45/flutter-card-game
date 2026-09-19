@@ -1053,7 +1053,7 @@ class _ProfileSettingsSheet extends StatelessWidget {
               _SettingsActionRow(
                 icon: Icons.logout,
                 label: 'Log Out',
-                subtitle: 'Return to avatar selection',
+                subtitle: 'Choose a player profile',
                 color: Cyber.red,
                 onTap: onLogout,
               ),
@@ -1166,12 +1166,12 @@ class _LogoutConfirmDialog extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'RETURN TO AVATAR SELECTION?',
+                      'SWITCH PLAYER PROFILE?',
                       style: Cyber.display(16, letterSpacing: 1.1),
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Your profile setup choices will be cleared. Your cards, coins, matches, predictions, and picks stay saved.',
+                      'Choose a first-time setup or resume your saved career. Your cards, coins, matches, predictions, and picks stay on this device.',
                       style: Cyber.body(13, color: Cyber.muted, height: 1.35),
                     ),
                   ],
@@ -1192,7 +1192,7 @@ class _LogoutConfirmDialog extends StatelessWidget {
                     Container(width: 1, color: Cyber.line),
                     Expanded(
                       child: _DialogAction(
-                        label: 'Log Out >',
+                        label: 'Continue >',
                         color: Cyber.red,
                         onTap: () => Navigator.of(context).pop(true),
                       ),

@@ -1,7 +1,7 @@
 # Profile, Onboarding, Identity, and Settings
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-09
+> **Last verified:** 2026-09-19
 > **Scope:** First-run identity, welcome reward, Profile hub, followed competitions/teams, cosmetics, and settings
 
 ## Product Purpose
@@ -46,7 +46,9 @@ they do not represent published policies or record acceptance.
 4. Confirm identity in the profile-locked reveal.
 5. Receive the one-time **1,000 Oz Coin** welcome bonus and animation.
 6. Use Profile to inspect/edit identity and open progression/social/history/help.
-7. Use Settings to log out/reset the onboarding entry state when intended.
+7. Use Settings to open **PROFILE SELECT**. Choose **FIRST-TIME PLAYER** for
+   its isolated, blank career and onboarding flow, or **RETURNING PLAYER** to
+   resume the separately saved career.
 
 ## Mechanics and Rules
 
@@ -74,9 +76,31 @@ yellow, Tennis green, and Motorsport red. Inactive icons remain recognizable at
 reduced intensity; the selected sport uses full color with the only selector
 glow. Changing this presentation does not alter the persisted primary sport.
 
-The current Profile settings sheet contains the logout action. Tennis owns a
-separate, mode-specific accessibility/control/audio settings surface documented
-on its game/design pages.
+All onboarding choice cards share one calm, angular selection surface with the
+standard top-left / bottom-right chamfer. Card content is centered, while only
+the current selection receives the accent border, slight lift, and restrained
+glow. On the clubs step, the title stands alone without a duplicate explanatory
+subheading; the dock keeps the neutral step instruction, and every club name is
+white so team identity stays in the crest rather than reducing label contrast.
+Existing dealt-card entrances are retained, and each identity or club choice now
+answers selection with haptic/audio feedback.
+
+The current Profile settings sheet contains the logout/profile-select action.
+It opens a two-route local switchboard:
+
+- **FIRST-TIME PLAYER** is a separate blank save slot on first use. It begins
+  at level 1, zero XP, no streak, no coins, no cards, no unlocks, and incomplete
+  onboarding; once played, its card becomes **CONTINUE ROOKIE PROFILE** and
+  restores that slot's saved career.
+- **RETURNING PLAYER** restores that slot's own level, streak, wallet, cards,
+  predictions, picks, game history, unlocks, and identity exactly as it was
+  when the player switched away.
+
+The returning card stays visibly unavailable until that slot has completed
+onboarding. Choosing a slot snapshots the outgoing career, restores the chosen
+slot, and rebuilds the app state before gameplay resumes; no state leaks across
+the two careers. Tennis owns a separate, mode-specific accessibility/control/
+audio settings surface documented on its game/design pages.
 
 ## Rewards and Progression
 
@@ -100,9 +124,12 @@ history/collection, and settings/logout states are represented.
 
 ## Persistence
 
-Avatar ID, banner ID, primary sport, followed league IDs, favorite team map,
-onboarding-complete flag, and onboarding-reward status persist through
-`SecureGameStorage`. Identity is local and is not a remote account profile.
+Each profile slot snapshots the game-owned `SecureGameStorage` keys and
+game-owned SharedPreferences entries (including the wallet). Avatar ID, banner
+ID, primary sport, followed league IDs, favorite team map, onboarding state,
+progression, streak, economy, game modes, and histories therefore persist per
+slot. The selector is device-local, not authentication or cloud account
+switching.
 
 ## Planned Scope and Current Limitations
 
@@ -132,3 +159,5 @@ onboarding-complete flag, and onboarding-reward status persist through
 - [`test/league_follow_test.dart`](../../../test/league_follow_test.dart)
 - [`test/onboarding_reward_storage_test.dart`](../../../test/onboarding_reward_storage_test.dart)
 - [`test/onboarding_coin_reward_animation_test.dart`](../../../test/onboarding_coin_reward_animation_test.dart)
+- [`test/player_profile_selector_screen_test.dart`](../../../test/player_profile_selector_screen_test.dart)
+- [`test/local_profile_storage_test.dart`](../../../test/local_profile_storage_test.dart)

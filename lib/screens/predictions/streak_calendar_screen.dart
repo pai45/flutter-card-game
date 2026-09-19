@@ -11,6 +11,7 @@ import '../../blocs/game/game_event.dart';
 import '../../blocs/game/game_state.dart';
 import '../../blocs/picks/picks_cubit.dart';
 import '../../blocs/prediction/prediction_cubit.dart';
+import '../../config/game_ladder.dart';
 import '../../config/theme.dart';
 import '../../models/match.dart';
 import '../../models/picks.dart';
@@ -22,6 +23,7 @@ import '../../widgets/cyber/cyber_underline_tabs.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
 import '../../widgets/streak_widgets.dart';
+import 'widgets/beginner_quest_card.dart';
 import 'widgets/daily_quest_panel.dart';
 
 export 'widgets/daily_quest_panel.dart' show QuestDestination;
@@ -31,12 +33,16 @@ const _hubTransition = Duration(milliseconds: 280);
 void showStreakCalendar(
   BuildContext context, {
   ValueChanged<QuestDestination>? onQuestNavigate,
+  ValueChanged<ArcadeGame>? onBeginnerNavigate,
 }) {
   Navigator.of(context).push(
     PageRouteBuilder<void>(
       transitionDuration: _hubTransition,
       pageBuilder: (context, animation, secondaryAnimation) =>
-          StreakCalendarScreen(onQuestNavigate: onQuestNavigate),
+          StreakCalendarScreen(
+            onQuestNavigate: onQuestNavigate,
+            onBeginnerNavigate: onBeginnerNavigate,
+          ),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         final curved = CurvedAnimation(
           parent: animation,
@@ -61,8 +67,13 @@ void showStreakCalendar(
 /// (daily quests + the road-to-365 milestone track), STREAKS (per-mode runs and
 /// the shield briefing) and CALENDAR (month fuse + day dossier).
 class StreakCalendarScreen extends StatefulWidget {
-  const StreakCalendarScreen({this.onQuestNavigate, super.key});
+  const StreakCalendarScreen({
+    this.onQuestNavigate,
+    this.onBeginnerNavigate,
+    super.key,
+  });
   final ValueChanged<QuestDestination>? onQuestNavigate;
+  final ValueChanged<ArcadeGame>? onBeginnerNavigate;
 
   @override
   State<StreakCalendarScreen> createState() => _StreakCalendarScreenState();
@@ -111,18 +122,53 @@ class _StreakCalendarScreenState extends State<StreakCalendarScreen> {
     widget.onQuestNavigate?.call(destination);
   }
 
+  void _navigateBeginnerQuest(ArcadeGame game) {
+    final navigate = widget.onBeginnerNavigate;
+    if (navigate == null) return;
+    if (Navigator.of(context).canPop()) Navigator.of(context).pop();
+    navigate(game);
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<GameBloc, GameState>(
       buildWhen: (previous, current) =>
           previous.streak != current.streak ||
           previous.dailyQuests != current.dailyQuests ||
+          previous.unlocks != current.unlocks ||
           previous.questClaiming != current.questClaiming ||
           previous.questError != current.questError ||
           previous.loading != current.loading,
       builder: (context, state) {
         final now = DateTime.now();
         final reduced = MediaQuery.disableAnimationsOf(context);
+        final unlocks = state.unlocks;
+        final homeSport = unlocks.homeSport;
+        if (unlocks.initialQuestActive && homeSport != null) {
+          return GameScaffold(
+            title: 'ROOKIE PATH',
+            leading: _HubBackButton(
+              onTap: () => Navigator.of(context).maybePop(),
+            ),
+            child: CustomScrollView(
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+                  sliver: SliverToBoxAdapter(
+                    child: RookiePathPanel(
+                      sport: homeSport,
+                      unlocks: unlocks,
+                      onPlay: _navigateBeginnerQuest,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        final labels = unlocks.questListEnabled
+            ? _questHubTabLabels
+            : _hubTabLabels;
         // No header subtitle: GameScaffold's 64px bar overflows with a
         // subtitle at text scale >= 1.3; the hero carries the telemetry line.
         return GameScaffold(
@@ -144,7 +190,7 @@ class _StreakCalendarScreenState extends State<StreakCalendarScreen> {
               ),
               SliverToBoxAdapter(
                 child: CyberUnderlineTabs(
-                  labels: _hubTabLabels,
+                  labels: labels,
                   activeIndex: _tab,
                   accent: _hubTabAccents[_tab],
                   onTap: (index) {
@@ -217,9 +263,31 @@ class _StreakCalendarScreenState extends State<StreakCalendarScreen> {
         ],
       ),
       3 => _MilestoneRoad(streak: streak, now: now),
-      _ => DailyQuestPanel(
-        state: state,
-        onNavigate: widget.onQuestNavigate == null ? null : _navigateQuest,
+      _ => Column(
+        key: ValueKey(
+          state.unlocks.questListEnabled ? 'quest-list-page' : 'today-page',
+        ),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (state.unlocks.questListEnabled) ...[
+            Text('QUEST LIST', style: Cyber.display(16, color: Colors.white)),
+            const SizedBox(height: 4),
+            Text(
+              'DAILY OPS + ACTIVE SPORT PATHS',
+              style: Cyber.label(9, color: Cyber.gold, letterSpacing: 1.4),
+            ),
+            const SizedBox(height: 14),
+          ],
+          DailyQuestPanel(
+            state: state,
+            onNavigate: widget.onQuestNavigate == null ? null : _navigateQuest,
+          ),
+          if (state.unlocks.questListEnabled)
+            SportQuestList(
+              unlocks: state.unlocks,
+              onPlay: _navigateBeginnerQuest,
+            ),
+        ],
       ),
     };
   }
@@ -236,6 +304,7 @@ class _StreakCalendarScreenState extends State<StreakCalendarScreen> {
 // each tab's identity colour (gold quests, amber runs, cyan calendar, violet
 // elite road).
 const _hubTabLabels = ['TODAY', 'STREAKS', 'CALENDAR', 'MILESTONES'];
+const _questHubTabLabels = ['QUESTS', 'STREAKS', 'CALENDAR', 'MILESTONES'];
 const _hubTabAccents = [Cyber.gold, Cyber.amber, Cyber.cyan, Cyber.violet];
 
 class _HubBackButton extends StatelessWidget {
@@ -498,7 +567,11 @@ class _FlameCore extends StatelessWidget {
                 const Positioned(
                   top: 6,
                   right: 6,
-                  child: Icon(Icons.warning_amber, size: 14, color: Cyber.danger),
+                  child: Icon(
+                    Icons.warning_amber,
+                    size: 14,
+                    color: Cyber.danger,
+                  ),
                 ),
             ],
           ),
@@ -536,7 +609,10 @@ class _StatusTag extends StatelessWidget {
           children: [
             Container(width: 5, height: 5, color: color),
             const SizedBox(width: 5),
-            Text(label, style: Cyber.label(8.5, color: color, letterSpacing: 1)),
+            Text(
+              label,
+              style: Cyber.label(8.5, color: color, letterSpacing: 1),
+            ),
           ],
         ),
       ),
@@ -581,7 +657,9 @@ class _MilestoneRoad extends StatelessWidget {
                 milestone: milestone,
                 current: current,
                 topFill: i == 0 ? fill(0) : (fill(i) * 2 - 1).clamp(0.0, 1.0),
-                bottomFill: i == last ? null : (fill(i + 1) * 2).clamp(0.0, 1.0),
+                bottomFill: i == last
+                    ? null
+                    : (fill(i + 1) * 2).clamp(0.0, 1.0),
                 claimed: claimed,
                 claimable:
                     !claimed &&
@@ -642,9 +720,11 @@ class _MilestoneRow extends StatelessWidget {
         children: [
           Text(
             '${milestone.days - current}',
-            style: Cyber.display(18, color: tier, letterSpacing: 0).copyWith(
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
+            style: Cyber.display(
+              18,
+              color: tier,
+              letterSpacing: 0,
+            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
           const SizedBox(height: 2),
           Text('TO GO', style: Cyber.label(8, color: Cyber.muted)),
@@ -695,7 +775,10 @@ class _MilestoneRow extends StatelessWidget {
                     : Cyber.border,
                 child: ColoredBox(
                   color: claimable
-                      ? Color.alphaBlend(tier.withValues(alpha: 0.1), Cyber.panel)
+                      ? Color.alphaBlend(
+                          tier.withValues(alpha: 0.1),
+                          Cyber.panel,
+                        )
                       : Cyber.panel,
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(12, 10, 10, 10),
@@ -1539,8 +1622,15 @@ class _DayEventRow extends StatelessWidget {
         SizedBox.square(
           dimension: 30,
           child: ColoredBox(
-            color: Color.alphaBlend(color.withValues(alpha: 0.14), Cyber.panel2),
-            child: Icon(streakActivityIcon(event.activity), size: 16, color: color),
+            color: Color.alphaBlend(
+              color.withValues(alpha: 0.14),
+              Cyber.panel2,
+            ),
+            child: Icon(
+              streakActivityIcon(event.activity),
+              size: 16,
+              color: color,
+            ),
           ),
         ),
         const SizedBox(width: 10),

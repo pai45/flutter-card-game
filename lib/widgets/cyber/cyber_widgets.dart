@@ -69,7 +69,9 @@ class CyberObjectiveCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolved =
         state ??
-        (progress >= 1 ? CyberObjectiveState.ready : CyberObjectiveState.active);
+        (progress >= 1
+            ? CyberObjectiveState.ready
+            : CyberObjectiveState.active);
     final ready = resolved == CyberObjectiveState.ready;
     final claimed = resolved == CyberObjectiveState.claimed;
     final meterAccent = claimed
@@ -126,18 +128,23 @@ class CyberObjectiveCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       // Rewards sit top-right so the card reads title → payout.
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          _ObjectiveRewardPill(label: reward, color: Cyber.gold),
-                          if (rewardDetail != null) ...[
-                            const SizedBox(height: 6),
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
                             _ObjectiveRewardPill(
-                              label: rewardDetail!,
-                              color: Cyber.cyan,
+                              label: reward,
+                              color: Cyber.gold,
                             ),
+                            if (rewardDetail != null) ...[
+                              const SizedBox(height: 6),
+                              _ObjectiveRewardPill(
+                                label: rewardDetail!,
+                                color: Cyber.cyan,
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ],
                   ),
@@ -162,7 +169,10 @@ class CyberObjectiveCard extends StatelessWidget {
                       _ObjectiveStamp(status: status, state: resolved),
                     ],
                   ),
-                  if (actions != null) ...[const SizedBox(height: 10), actions!],
+                  if (actions != null) ...[
+                    const SizedBox(height: 10),
+                    actions!,
+                  ],
                 ],
               ),
             ),
@@ -1825,6 +1835,61 @@ class CyberCtaButton extends StatelessWidget {
               )
             : inner,
       ),
+    );
+  }
+}
+
+/// Shared calm selection card for setup grids and cosmetic pickers.
+///
+/// The surface keeps the standard top-left / bottom-right chamfer and only
+/// earns an accent tint, scale lift, and restrained glow while selected.
+class CyberSelectableCard extends StatelessWidget {
+  const CyberSelectableCard({
+    required this.selected,
+    required this.child,
+    this.accent = Cyber.lime,
+    this.fillColor = Cyber.panel,
+    this.borderColor = Cyber.line,
+    this.enabled = true,
+    this.cut = 10,
+    super.key,
+  });
+
+  final bool selected;
+  final Widget child;
+  final Color accent;
+  final Color fillColor;
+  final Color borderColor;
+  final bool enabled;
+  final double cut;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: selected ? 1 : 0),
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      builder: (context, selection, child) {
+        final surface = enabled ? fillColor : fillColor.withValues(alpha: 0.58);
+        return Transform.scale(
+          scale: 1 + (selection * 0.012),
+          child: ChamferedActionSurface(
+            clipper: HudChamferClipper(bigCut: cut, smallCut: 0),
+            borderColor: Color.lerp(borderColor, accent, selection)!,
+            borderWidth: 1 + selection,
+            glowColor: accent,
+            glow: selection * 0.72,
+            child: ColoredBox(
+              color: Color.alphaBlend(
+                accent.withValues(alpha: 0.045 * selection),
+                surface,
+              ),
+              child: child,
+            ),
+          ),
+        );
+      },
+      child: child,
     );
   }
 }
@@ -3917,7 +3982,11 @@ class _CyberDealtCardState extends State<CyberDealtCard>
 /// stripe along the top edge. Used by order-ticket and filter sheets. Pass
 /// [accent] to key the frame to a single signal colour (e.g. an alert sheet).
 class HudSheetFramePainter extends CustomPainter {
-  const HudSheetFramePainter({this.bigCut = 18, this.smallCut = 4, this.accent});
+  const HudSheetFramePainter({
+    this.bigCut = 18,
+    this.smallCut = 4,
+    this.accent,
+  });
 
   final double bigCut;
   final double smallCut;
@@ -4887,8 +4956,11 @@ class CyberTelemetryFooter extends StatelessWidget {
 }
 
 class CyberBentoTile {
-  const CyberBentoTile({required this.span, required this.child, this.rowHeight})
-    : assert(rowHeight == null || rowHeight > 0);
+  const CyberBentoTile({
+    required this.span,
+    required this.child,
+    this.rowHeight,
+  }) : assert(rowHeight == null || rowHeight > 0);
 
   final CyberBentoSpan span;
   final Widget child;

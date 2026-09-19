@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../blocs/game/game_bloc.dart';
+import '../config/game_ladder.dart';
 import '../models/streak.dart';
 import '../screens/predictions/streak_calendar_screen.dart';
 import '../utils/sound_effects.dart';
@@ -38,15 +39,30 @@ class StatOzTopBar extends StatelessWidget {
     final wallet = context
         .select<
           GameBloc,
-          ({int coins, int streak, StreakFlameState flame, bool questReady})
+          ({
+            int coins,
+            int streak,
+            StreakFlameState flame,
+            bool questReady,
+            bool rookieActive,
+            int rookieCleared,
+            int rookieTotal,
+          })
         >((bloc) {
           final now = DateTime.now();
           final streak = bloc.state.streak;
+          final unlocks = bloc.state.unlocks;
+          final home = unlocks.homeSport;
           return (
             coins: bloc.state.coins,
             streak: streak.current(StreakCategory.overall, now: now),
             flame: streakFlameState(streak, now),
-            questReady: bloc.state.dailyQuests.claimableCoins > 0,
+            questReady:
+                unlocks.dailyQuestsUnlocked &&
+                bloc.state.dailyQuests.claimableCoins > 0,
+            rookieActive: unlocks.initialQuestActive,
+            rookieCleared: home == null ? 0 : unlocks.stepsCleared(home),
+            rookieTotal: home == null ? 0 : sportGameLadder[home]!.length,
           );
         });
 
@@ -92,12 +108,19 @@ class StatOzTopBar extends StatelessWidget {
               ),
             ),
           ),
-          _TopBarStreak(
-            value: _formatInt(wallet.streak),
-            flame: wallet.flame,
-            questReady: wallet.questReady,
-            onTap: onStreakTap ?? () => showStreakCalendar(context),
-          ),
+          if (wallet.rookieActive)
+            _TopBarRookiePath(
+              cleared: wallet.rookieCleared,
+              total: wallet.rookieTotal,
+              onTap: onStreakTap ?? () => showStreakCalendar(context),
+            )
+          else
+            _TopBarStreak(
+              value: _formatInt(wallet.streak),
+              flame: wallet.flame,
+              questReady: wallet.questReady,
+              onTap: onStreakTap ?? () => showStreakCalendar(context),
+            ),
           const SizedBox(width: 12),
           _TopBarCoinPill(
             coins: wallet.coins == 0 ? 1000 : wallet.coins,
@@ -105,6 +128,54 @@ class StatOzTopBar extends StatelessWidget {
             onAdd: onAddCoins,
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// During the one-time rookie phase the persistent status control reports the
+/// home-sport ladder, not a Daily Quest reward the player cannot open yet.
+class _TopBarRookiePath extends StatelessWidget {
+  const _TopBarRookiePath({
+    required this.cleared,
+    required this.total,
+    required this.onTap,
+  });
+
+  final int cleared;
+  final int total;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label:
+          "Beginner's Quest, $cleared of $total games cleared. Open Rookie Path",
+      child: GestureDetector(
+        key: const ValueKey('top-bar-rookie-path'),
+        behavior: HitTestBehavior.opaque,
+        onTap: () {
+          playSound(SoundEffect.uiTap);
+          onTap();
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.flag_rounded, size: 21, color: Cyber.cyan),
+              const SizedBox(width: 6),
+              Text(
+                '$cleared/$total',
+                style: Cyber.display(
+                  13,
+                  color: Colors.white,
+                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -224,9 +295,10 @@ class _TopBarStreak extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 value,
-                style: Cyber.display(15, letterSpacing: 0).copyWith(
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
+                style: Cyber.display(
+                  15,
+                  letterSpacing: 0,
+                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
             ],
           ),

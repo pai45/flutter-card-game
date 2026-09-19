@@ -529,7 +529,16 @@ class GameBloc extends Bloc<GameEvent, GameState> {
         onTimeout: () => null,
       );
       if (streak == null) {
-        streak = StreakSnapshot.seeded(DateTime.now());
+        // An untouched first-time slot must start at level 1 with no streak.
+        // Completed legacy careers retain the seeded fallback used before
+        // local profile slots shipped.
+        final onboarded = await _storage.loadOnboardingComplete().timeout(
+          const Duration(seconds: 2),
+          onTimeout: () => false,
+        );
+        streak = onboarded
+            ? StreakSnapshot.seeded(DateTime.now())
+            : StreakSnapshot.fromJson(const <String, dynamic>{});
         await _storage.saveStreak(streak);
       }
       final shielded = streak.applyShields(DateTime.now());
