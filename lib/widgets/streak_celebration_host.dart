@@ -12,6 +12,7 @@ import '../blocs/game/game_bloc.dart';
 import '../blocs/game/game_event.dart';
 import '../blocs/game/game_state.dart';
 import '../config/theme.dart';
+import '../config/game_ladder.dart';
 import '../models/streak.dart';
 import '../models/unlock_progress.dart';
 import '../utils/sound_effects.dart';
@@ -38,8 +39,11 @@ class StreakCelebrationHost extends StatelessWidget {
         final reveals = state.unlocks.pendingReveals;
         final rookieGraduationPending =
             reveals.isNotEmpty &&
-            reveals.first.kind == UnlockRevealKind.questComplete &&
-            reveals.first.sport == state.unlocks.homeSport;
+            (reveals.first.kind == UnlockRevealKind.graduation ||
+                (reveals.first.kind == UnlockRevealKind.questComplete &&
+                    reveals.first.sport == state.unlocks.homeSport &&
+                    sportGameLadder[reveals.first.targetSport]!.length ==
+                        beginnerChapterLength));
         if (rookieGraduationPending) return const SizedBox.shrink();
         if (state.streak.celebrationQueue.isEmpty) {
           if (state.questRewardCoins > 0 &&

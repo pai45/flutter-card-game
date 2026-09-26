@@ -43,6 +43,7 @@ class _GrandPrixRaceScreenState extends State<GrandPrixRaceScreen> {
   late final GrandPrixCubit _cubit;
   late final GrandPrixGame _game;
   RaceSetup? _setup;
+  final String _questMatchId = 'quest-${DateTime.now().microsecondsSinceEpoch}';
   bool _rewardsDispatched = false;
   bool _lightsScheduled = false;
   bool _lightsOutSounded = false;
@@ -199,6 +200,7 @@ class _GrandPrixRaceScreenState extends State<GrandPrixRaceScreen> {
         : grandPrixCircuit(result.circuit).name;
     context.read<GameBloc>().add(
       GrandPrixFinished(
+        matchId: _questMatchId,
         position: result.position,
         fieldSize: result.fieldSize,
         circuitName: circuitLabel,
@@ -251,6 +253,7 @@ class _GrandPrixRaceScreenState extends State<GrandPrixRaceScreen> {
                 ),
               ),
               _ResultLayer(
+                questMatchId: _questMatchId,
                 onExit: widget.onExit,
                 onRaceAgain: widget.onRaceAgain,
               ),
@@ -726,8 +729,13 @@ class _OvertakeToast extends StatelessWidget {
 // ---------------------------------------------------------------------------
 
 class _ResultLayer extends StatelessWidget {
-  const _ResultLayer({required this.onExit, required this.onRaceAgain});
+  const _ResultLayer({
+    required this.questMatchId,
+    required this.onExit,
+    required this.onRaceAgain,
+  });
 
+  final String questMatchId;
   final VoidCallback onExit;
   final VoidCallback onRaceAgain;
 
@@ -743,6 +751,7 @@ class _ResultLayer extends StatelessWidget {
           return const SizedBox.shrink();
         }
         return GrandPrixResultOverlay(
+          questMatchId: questMatchId,
           result: result,
           circuitName: grandPrixCircuit(result.circuit).name,
           onExit: onExit,

@@ -30,6 +30,7 @@ import '../data/basketball_teams.dart';
 import '../data/final_over_kits.dart';
 import '../data/grand_prix_liveries.dart';
 import '../data/rival_roster.dart' show randomPlayerTag;
+import 'secure_storage_keys.dart';
 
 enum OnboardingRewardStatus { pending, seen }
 
@@ -215,11 +216,69 @@ class SecureGameStorage {
 
   final FlutterSecureStorage _storage;
 
+  /// Where the web backend keeps each value in `localStorage`
+  /// (`WebOptions.publicKey` default + '.').
+  static const _webEntryPrefix = 'FlutterSecureStorage.';
+  static const _keyWarmupKey = 'storage_key_ready';
+
+  /// Must finish before anything else writes. The web backend creates its
+  /// AES key lazily and without a lock, so the burst of first-boot writes
+  /// from every bloc each minted a key and the last one won — leaving earlier
+  /// values (the profile slots, first of all) permanently undecryptable and
+  /// breaking logout. One write up front creates the single shared key.
+  static Future<void> warmUp({FlutterSecureStorage? storage}) async {
+    try {
+      await (storage ?? const FlutterSecureStorage()).write(
+        key: _keyWarmupKey,
+        value: 'true',
+      );
+    } catch (_) {
+      // Storage unavailable; every reader already tolerates that.
+    }
+  }
+
+  /// Reads [key], discarding a value that can no longer be decrypted (see
+  /// [warmUp]) so it is treated as missing instead of failing every caller.
+  Future<String?> _readOrDiscard(String key) async {
+    try {
+      return await _storage.read(key: key);
+    } catch (_) {
+      try {
+        await _storage.delete(key: key);
+      } catch (_) {}
+      return null;
+    }
+  }
+
+  /// `readAll()` fails outright if a single entry is undecryptable; fall back
+  /// to reading the keys one by one and discarding the broken ones.
+  Future<Map<String, String>> _readAllSafely() async {
+    try {
+      return await _storage.readAll();
+    } catch (_) {
+      final values = <String, String>{};
+      for (final key in storedSecureKeys(_webEntryPrefix)) {
+        final value = await _readOrDiscard(key);
+        if (value != null) values[key] = value;
+      }
+      return values;
+    }
+  }
+
   /// Creates two isolated local save slots without disturbing an existing
   /// player's career. A populated legacy install migrates into RETURNING;
   /// a clean install begins in the blank FIRST-TIME slot.
-  Future<void> ensureLocalProfiles() async {
-    final existing = await _storage.read(key: _localProfilesKey);
+  Future<void> ensureLocalProfiles() =>
+      _ensuringLocalProfiles ??= _createLocalProfilesIfMissing().whenComplete(
+        () => _ensuringLocalProfiles = null,
+      );
+
+  /// Shared across instances: logout asks several times at once, and parallel
+  /// first runs would each snapshot and write the slots.
+  static Future<void>? _ensuringLocalProfiles;
+
+  Future<void> _createLocalProfilesIfMissing() async {
+    final existing = await _readOrDiscard(_localProfilesKey);
     if (existing != null && existing.isNotEmpty) return;
 
     final current = await _captureLocalProfile();
@@ -246,7 +305,7 @@ class SecureGameStorage {
 
   Future<LocalProfileSlot> loadActiveLocalProfile() async {
     await ensureLocalProfiles();
-    final raw = await _storage.read(key: _activeLocalProfileKey);
+    final raw = await _readOrDiscard(_activeLocalProfileKey);
     return switch (raw) {
       'returning' => LocalProfileSlot.returning,
       _ => LocalProfileSlot.firstTime,
@@ -287,7 +346,7 @@ class SecureGameStorage {
 
   Future<Map<String, dynamic>> _readLocalProfiles() async {
     await ensureLocalProfiles();
-    final raw = await _storage.read(key: _localProfilesKey);
+    final raw = await _readOrDiscard(_localProfilesKey);
     if (raw == null || raw.isEmpty) {
       return <String, dynamic>{
         LocalProfileSlot.firstTime.name: _emptyLocalProfile(),
@@ -321,7 +380,7 @@ class SecureGameStorage {
       key.startsWith('pd_') || key == _walletKey;
 
   Future<Map<String, dynamic>> _captureLocalProfile() async {
-    final secureValues = await _storage.readAll();
+    final secureValues = await _readAllSafely();
     final preferences = await SharedPreferences.getInstance();
     final secure = <String, String>{
       for (final entry in secureValues.entries)
@@ -335,7 +394,7 @@ class SecureGameStorage {
   }
 
   Future<void> _restoreLocalProfile(Map<String, dynamic> snapshot) async {
-    final currentSecure = await _storage.readAll();
+    final currentSecure = await _readAllSafely();
     await Future.wait([
       for (final key in currentSecure.keys.toList())
         if (_isManagedSecureKey(key)) _storage.delete(key: key),

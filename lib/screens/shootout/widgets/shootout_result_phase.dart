@@ -1,3 +1,4 @@
+import '../../../config/game_ladder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,12 +20,14 @@ import '../../../widgets/match_widgets.dart';
 /// XP/level data is read from [GameBloc] (updated by ShootoutFinished).
 class ShootoutResultPhase extends StatefulWidget {
   const ShootoutResultPhase({
+    this.questMatchId,
     required this.state,
     required this.onPlayAgain,
     required this.onHome,
     super.key,
   });
 
+  final String? questMatchId;
   final ShootoutState state;
   final VoidCallback onPlayAgain;
   final VoidCallback onHome;
@@ -163,6 +166,11 @@ class _ShootoutResultPhaseState extends State<ShootoutResultPhase>
                           ),
                         ),
                         const SizedBox(height: 14),
+                        if (_seq.value >= 0.62)
+                          QuestResultReceipt(
+                            game: ArcadeGame.penaltyShootout,
+                            sourceId: widget.questMatchId,
+                          ),
                         _KickLogSection(
                           kicks: s.kicks,
                           dirLabel: _dirLabel,

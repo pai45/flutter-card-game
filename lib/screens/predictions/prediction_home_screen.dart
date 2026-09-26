@@ -2329,7 +2329,9 @@ class _GamesTabState extends State<_GamesTab> {
     if (unlocks.isGameUnlocked(game)) return null;
     final next = game.ladderIndex == unlocks.reachedFor(game.sport);
     return _GameLock(
-      label: next ? 'NEXT UNLOCK' : 'QUEST STEP ${game.ladderIndex}',
+      label: next
+          ? 'NEXT UNLOCK'
+          : 'AFTER ${sportGameLadder[game.sport]![game.ladderIndex - 1].title}',
       next: next,
     );
   }
@@ -3757,10 +3759,10 @@ class _LockVeil extends StatelessWidget {
                 children: [
                   Icon(Icons.lock_rounded, size: 14, color: tint),
                   const SizedBox(width: 6),
-                  Text(
+                  Flexible(child: Text(
                     lock.label,
-                    style: Cyber.label(9, color: tint, letterSpacing: 1.3),
-                  ),
+                    style: Cyber.label(10, color: tint, letterSpacing: 1),
+                  )),
                 ],
               ),
             ),

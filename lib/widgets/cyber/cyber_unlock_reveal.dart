@@ -27,6 +27,8 @@ class CyberUnlockReveal extends StatefulWidget {
     this.rewardLabel,
     this.ctaLabel,
     this.onCta,
+    this.secondaryLabel = 'CONTINUE',
+    this.onSecondary,
     super.key,
   });
 
@@ -43,6 +45,8 @@ class CyberUnlockReveal extends StatefulWidget {
 
   /// Runs the CTA; the reveal dismisses itself first.
   final VoidCallback? onCta;
+  final String secondaryLabel;
+  final VoidCallback? onSecondary;
   final VoidCallback onDismissed;
 
   @override
@@ -78,10 +82,26 @@ class _CyberUnlockRevealState extends State<CyberUnlockReveal>
 
   final List<Timer> _timers = [];
   bool _dismissed = false;
+  bool _configured = false;
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_configured) return;
+    _configured = true;
+    if (MediaQuery.disableAnimationsOf(context)) {
+      for (final controller in [
+        _vignette,
+        _rattle,
+        _open,
+        _burst,
+        _plate,
+        _banner,
+      ]) {
+        controller.value = 1;
+      }
+      return;
+    }
     HapticFeedback.lightImpact();
     _after(200, () => _rattle.forward());
     _after(720, () {
@@ -95,9 +115,7 @@ class _CyberUnlockRevealState extends State<CyberUnlockReveal>
       _banner.forward();
       if (widget.rewardLabel != null) playSound(SoundEffect.achievement);
     });
-    // Without a CTA there is nothing to wait for; auto-advance like the other
-    // app-root moments so the queue never stalls.
-    if (widget.onCta == null) _after(4200, _dismiss);
+    // Explicit controls give players time to read the reward.
   }
 
   void _after(int ms, VoidCallback run) {
@@ -109,13 +127,13 @@ class _CyberUnlockRevealState extends State<CyberUnlockReveal>
   }
 
   void _dismiss() {
-    if (_dismissed) return;
+    if (_dismissed || _banner.value < 1) return;
     _dismissed = true;
     widget.onDismissed();
   }
 
   void _cta() {
-    if (_dismissed) return;
+    if (_dismissed || _banner.value < 1) return;
     _dismiss();
     widget.onCta?.call();
   }
@@ -139,7 +157,6 @@ class _CyberUnlockRevealState extends State<CyberUnlockReveal>
     final accent = widget.accent;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: _dismiss,
       child: Material(
         color: Colors.transparent,
         child: Stack(
@@ -170,14 +187,16 @@ class _CyberUnlockRevealState extends State<CyberUnlockReveal>
               child: Center(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: AnimatedBuilder(
-                    animation: Listenable.merge([
-                      _rattle,
-                      _open,
-                      _plate,
-                      _banner,
-                    ]),
-                    builder: (context, _) => _content(accent),
+                  child: SingleChildScrollView(
+                    child: AnimatedBuilder(
+                      animation: Listenable.merge([
+                        _rattle,
+                        _open,
+                        _plate,
+                        _banner,
+                      ]),
+                      builder: (context, _) => _content(accent),
+                    ),
                   ),
                 ),
               ),
@@ -306,6 +325,7 @@ class _CyberUnlockRevealState extends State<CyberUnlockReveal>
                     child: HudCtaButton(
                       key: const ValueKey('unlock-reveal-cta'),
                       label: widget.ctaLabel!,
+                      wrapLabel: true,
                       icon: Icons.play_arrow_rounded,
                       accent: accent,
                       height: 56,
@@ -314,9 +334,16 @@ class _CyberUnlockRevealState extends State<CyberUnlockReveal>
                   ),
                 ],
                 const SizedBox(height: 18),
-                Text(
-                  widget.onCta == null ? 'TAP TO CONTINUE' : 'TAP TO CLOSE',
-                  style: Cyber.label(11, color: Cyber.muted, letterSpacing: 2),
+                CyberObjectiveAction(
+                  key: const ValueKey('unlock-reveal-continue'),
+                  label: widget.secondaryLabel,
+                  icon: Icons.arrow_forward_rounded,
+                  accent: accent,
+                  onTap: () {
+                    if (_dismissed || _banner.value < 1) return;
+                    _dismiss();
+                    widget.onSecondary?.call();
+                  },
                 ),
               ],
             ),

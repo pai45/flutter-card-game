@@ -1,3 +1,4 @@
+import '../../../config/game_ladder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -235,6 +236,11 @@ class _FinalResultPhaseState extends State<FinalResultPhase>
                         ),
                       ),
                     ],
+                    if (_seq.value >= 0.62)
+                      QuestResultReceipt(
+                        game: ArcadeGame.pitchDuel,
+                        sourceId: state.pitchSessionId,
+                      ),
                     if (mvp != null) ...[
                       const SizedBox(height: 14),
                       Column(

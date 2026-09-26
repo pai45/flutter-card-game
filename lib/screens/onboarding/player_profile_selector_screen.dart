@@ -10,19 +10,88 @@ enum PlayerProfileChoice { firstTime, returning }
 
 /// Keeps logout player-friendly: a fresh identity and a saved career are
 /// explicit choices instead of immediately wiping the setup state.
-class PlayerProfileSelectorScreen extends StatelessWidget {
+///
+/// The switchboard always knows [activeProfile] — the career the player is
+/// logged into right now. That slot is badged ACTIVE and its CTA only backs
+/// out of the switchboard, while the *other* slot stays tappable even when it
+/// is blank (an empty slot is the "log out and start a new career" route).
+/// Without this the common solo-player case dead-ends: the slot you are
+/// already in is the only enabled button, and taking it drops you straight
+/// back into the same career, so logging out appears to do nothing.
+class PlayerProfileSelectorScreen extends StatefulWidget {
   const PlayerProfileSelectorScreen({
     required this.onSelect,
+    required this.activeProfile,
     required this.firstTimeProfileReady,
     required this.returningProfileReady,
     super.key,
   });
 
-  final ValueChanged<PlayerProfileChoice> onSelect;
+  final Future<void> Function(PlayerProfileChoice) onSelect;
+
+  /// The save slot currently loaded into the app.
+  final PlayerProfileChoice activeProfile;
   final bool firstTimeProfileReady;
   final bool returningProfileReady;
 
-  void _choose(PlayerProfileChoice choice) => onSelect(choice);
+  @override
+  State<PlayerProfileSelectorScreen> createState() =>
+      _PlayerProfileSelectorScreenState();
+}
+
+class _PlayerProfileSelectorScreenState
+    extends State<PlayerProfileSelectorScreen> {
+  bool _selecting = false;
+  bool _switchFailed = false;
+
+  Future<void> _choose(PlayerProfileChoice choice) async {
+    if (_selecting) return;
+    setState(() {
+      _selecting = true;
+      _switchFailed = false;
+    });
+    try {
+      await widget.onSelect(choice);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _switchFailed = true);
+    } finally {
+      if (mounted) setState(() => _selecting = false);
+    }
+  }
+
+  bool _isReady(PlayerProfileChoice choice) =>
+      choice == PlayerProfileChoice.firstTime
+      ? widget.firstTimeProfileReady
+      : widget.returningProfileReady;
+
+  String _description(PlayerProfileChoice choice) {
+    if (_switchFailed) {
+      return 'Profile switch interrupted. Your current career is safe — retry.';
+    }
+    if (choice == widget.activeProfile) {
+      return 'You are playing this career right now.';
+    }
+    if (_isReady(choice)) {
+      return choice == PlayerProfileChoice.firstTime
+          ? 'Continue your saved rookie career and streak.'
+          : 'Resume your saved career, collection, and progress.';
+    }
+    return 'Log out and build a new career on this device.';
+  }
+
+  String _ctaLabel(PlayerProfileChoice choice) {
+    if (_selecting) return 'SWITCHING...';
+    if (choice == widget.activeProfile) return 'STAY IN THIS PROFILE';
+    if (_isReady(choice)) {
+      return choice == PlayerProfileChoice.firstTime
+          ? 'CONTINUE ROOKIE PROFILE'
+          : 'CONTINUE CAREER';
+    }
+    return choice == PlayerProfileChoice.firstTime
+        ? 'START FRESH'
+        : 'START NEW CAREER';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,45 +134,22 @@ class PlayerProfileSelectorScreen extends StatelessWidget {
                       style: Cyber.body(14, color: Cyber.muted),
                     ),
                     const SizedBox(height: 28),
-                    _ProfileChoiceCard(
-                      key: const ValueKey('profile_selector_first_time'),
+                    _choiceCard(
+                      choice: PlayerProfileChoice.firstTime,
+                      cardKey: const ValueKey('profile_selector_first_time'),
                       icon: Icons.rocket_launch_outlined,
                       title: 'FIRST-TIME PLAYER',
-                      description: firstTimeProfileReady
-                          ? 'Continue your saved rookie career and streak.'
-                          : 'Build a fresh identity and choose your home sport.',
                       accent: Cyber.magenta,
-                      child: HudCtaButton(
-                        label: firstTimeProfileReady
-                            ? 'CONTINUE ROOKIE PROFILE'
-                            : 'START FRESH',
-                        icon: Icons.arrow_forward,
-                        accent: Cyber.magenta,
-                        glow: false,
-                        outlined: true,
-                        tapSound: SoundEffect.cardSelect,
-                        onTap: () => _choose(PlayerProfileChoice.firstTime),
-                      ),
+                      ctaIcon: Icons.arrow_forward,
                     ),
                     const SizedBox(height: 12),
-                    _ProfileChoiceCard(
-                      key: const ValueKey('profile_selector_returning'),
+                    _choiceCard(
+                      choice: PlayerProfileChoice.returning,
+                      cardKey: const ValueKey('profile_selector_returning'),
                       icon: Icons.workspace_premium_outlined,
                       title: 'RETURNING PLAYER',
-                      description: returningProfileReady
-                          ? 'Resume your saved career, collection, and progress.'
-                          : 'No saved career is available on this device yet.',
                       accent: Cyber.cyan,
-                      child: HudCtaButton(
-                        label: returningProfileReady
-                            ? 'CONTINUE CAREER'
-                            : 'NO SAVED CAREER',
-                        icon: Icons.play_arrow,
-                        accent: Cyber.cyan,
-                        tapSound: SoundEffect.cardSelect,
-                        enabled: returningProfileReady,
-                        onTap: () => _choose(PlayerProfileChoice.returning),
-                      ),
+                      ctaIcon: Icons.play_arrow,
                     ),
                     const SizedBox(height: 18),
                     Text(
@@ -124,6 +170,38 @@ class PlayerProfileSelectorScreen extends StatelessWidget {
       ),
     );
   }
+
+  Widget _choiceCard({
+    required PlayerProfileChoice choice,
+    required Key cardKey,
+    required IconData icon,
+    required String title,
+    required Color accent,
+    required IconData ctaIcon,
+  }) {
+    // THE GLOW RULE: the one focal element is the CTA that actually takes the
+    // player somewhere — the slot they are not in. The active slot's "stay"
+    // CTA stays a calm outlined plate.
+    final isActive = choice == widget.activeProfile;
+    return _ProfileChoiceCard(
+      key: cardKey,
+      icon: icon,
+      title: title,
+      description: _description(choice),
+      accent: accent,
+      badge: isActive ? CyberChip(label: 'Active', color: accent) : null,
+      child: HudCtaButton(
+        label: _ctaLabel(choice),
+        icon: isActive ? Icons.close : ctaIcon,
+        accent: accent,
+        glow: !isActive && !_selecting,
+        outlined: isActive,
+        tapSound: SoundEffect.cardSelect,
+        enabled: !_selecting,
+        onTap: () => _choose(choice),
+      ),
+    );
+  }
 }
 
 class _ProfileChoiceCard extends StatelessWidget {
@@ -133,6 +211,7 @@ class _ProfileChoiceCard extends StatelessWidget {
     required this.description,
     required this.accent,
     required this.child,
+    this.badge,
     super.key,
   });
 
@@ -141,6 +220,7 @@ class _ProfileChoiceCard extends StatelessWidget {
   final String description;
   final Color accent;
   final Widget child;
+  final Widget? badge;
 
   @override
   Widget build(BuildContext context) {
@@ -168,13 +248,23 @@ class _ProfileChoiceCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: Cyber.label(
-                        13,
-                        color: accent,
-                        letterSpacing: 1.45,
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            title,
+                            style: Cyber.label(
+                              13,
+                              color: accent,
+                              letterSpacing: 1.45,
+                            ),
+                          ),
+                        ),
+                        if (badge != null) ...[
+                          const SizedBox(width: 8),
+                          badge!,
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 6),
                     Text(

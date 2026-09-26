@@ -386,7 +386,7 @@ class _TrendingMatchCard extends StatelessWidget {
 
 typedef _PickCategory = ({PickMarketType type, String label, IconData icon});
 
-/// Market categories surfaced as square shortcuts above the Trending grid.
+/// Market categories surfaced as long tabs above the Trending grid.
 const _pickCategories = <_PickCategory>[
   (
     type: PickMarketType.match,
@@ -401,6 +401,11 @@ const _pickCategories = <_PickCategory>[
   (type: PickMarketType.event, label: 'EVENTS', icon: Icons.bolt_rounded),
 ];
 
+/// Height of one long category tab — a slim strip echoing the wide
+/// match-card scoreboard, so PICKS / FUTURES / EVENTS read as rows of the
+/// same feed rather than a separate button grid.
+const double _kCategoryTabHeight = 76;
+
 class _PickCategoryStrip extends StatelessWidget {
   const _PickCategoryStrip({required this.picksState, required this.animate});
 
@@ -409,30 +414,24 @@ class _PickCategoryStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 440),
-        child: Row(
-          children: [
-            for (var i = 0; i < _pickCategories.length; i++) ...[
-              if (i > 0) const SizedBox(width: 10),
-              Expanded(
-                child: AspectRatio(
-                  key: ValueKey(
-                    'trend-category-${_pickCategories[i].label.toLowerCase()}',
-                  ),
-                  aspectRatio: 1,
-                  child: StaggeredCardEntrance(
-                    index: i,
-                    animate: animate,
-                    child: _buildCard(context, _pickCategories[i]),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
+    return Column(
+      children: [
+        for (var i = 0; i < _pickCategories.length; i++) ...[
+          if (i > 0) const SizedBox(height: 12),
+          SizedBox(
+            key: ValueKey(
+              'trend-category-${_pickCategories[i].label.toLowerCase()}',
+            ),
+            height: _kCategoryTabHeight,
+            width: double.infinity,
+            child: StaggeredCardEntrance(
+              index: i,
+              animate: animate,
+              child: _buildCard(context, _pickCategories[i]),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -440,18 +439,26 @@ class _PickCategoryStrip extends StatelessWidget {
     final open = picksState.markets
         .where((market) => market.type == category.type && market.canBuy)
         .toList(growable: false);
-    final hot = open.any((market) {
-      final delta = market.latestDeltaFor(market.leadingOutcome.id);
-      return delta != null &&
-          delta.abs() >= _kHotDeltaThreshold &&
-          !market.isResultKnown;
-    });
+    int moveOf(PickMarket market) =>
+        (market.latestDeltaFor(market.leadingOutcome.id) ?? 0).abs();
+    bool isHot(PickMarket market) =>
+        moveOf(market) >= _kHotDeltaThreshold && !market.isResultKnown;
+    // The tab headlines its biggest mover (ties → deepest volume), so each
+    // row teases a live market instead of a bare count.
+    final spotlight = open.isEmpty
+        ? null
+        : open.reduce((a, b) {
+            final byMove = moveOf(b).compareTo(moveOf(a));
+            if (byMove != 0) return byMove < 0 ? a : b;
+            return b.volumeOz > a.volumeOz ? b : a;
+          });
     return _PickCategoryCard(
       type: category.type,
       label: category.label,
       icon: category.icon,
       openCount: picksState.loading ? null : open.length,
-      hot: !picksState.loading && hot,
+      spotlight: picksState.loading ? null : spotlight,
+      hot: !picksState.loading && open.any(isHot),
       onTap: () => AllPicksScreen.openFiltered(context, category.type),
     );
   }
@@ -463,6 +470,7 @@ class _PickCategoryCard extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.openCount,
+    required this.spotlight,
     required this.hot,
     required this.onTap,
   });
@@ -474,6 +482,9 @@ class _PickCategoryCard extends StatelessWidget {
   /// Null while markets are still loading.
   final int? openCount;
 
+  /// The category's headline market (its biggest mover), if any are open.
+  final PickMarket? spotlight;
+
   /// A genuinely hot mover in this category — the only state that animates.
   final bool hot;
   final VoidCallback onTap;
@@ -481,80 +492,192 @@ class _PickCategoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typeColor = pickMarketTypeColor(type);
+    final leader = spotlight?.leadingOutcome;
+    final teaser = openCount == null
+        ? 'SCANNING MARKETS…'
+        : spotlight == null
+        ? 'NO OPEN MARKETS'
+        : spotlight!.question;
     return _TrendSignalShell(
       semanticsLabel: openCount == null
           ? '$label markets'
           : '$label, $openCount open markets',
       accent: Cyber.cyan,
       tag: label,
+      showTag: false,
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(10, 28, 10, 10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.fromLTRB(12, 10, 10, 8),
+        child: Row(
           children: [
-            const Spacer(),
-            Row(
+            _CategoryGlyph(icon: icon, color: typeColor),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Cyber.display(
+                            _kTrendingTileHeadingSize,
+                            color: Colors.white,
+                            letterSpacing: 1.4,
+                          ),
+                        ),
+                      ),
+                      if (hot) ...[
+                        const SizedBox(width: 8),
+                        _HotMoverTag(color: typeColor),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      if (leader != null) ...[
+                        Text(
+                          '${leader.probabilityPercent}%',
+                          style: Cyber.label(10, color: typeColor).copyWith(
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      Expanded(
+                        child: Text(
+                          teaser,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Cyber.body(12, color: Cyber.muted),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Flexible(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      openCount?.toString() ?? '—',
-                      maxLines: 1,
-                      style: Cyber.display(
-                        20,
+                Text(
+                  openCount?.toString() ?? '—',
+                  maxLines: 1,
+                  style:
+                      Cyber.display(
+                        22,
                         color: Colors.white,
                         letterSpacing: 0.3,
                       ).copyWith(
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
-                    ),
+                ),
+                Text(
+                  'OPEN',
+                  style: Cyber.label(
+                    10,
+                    color: Cyber.muted,
+                    letterSpacing: 0.8,
                   ),
                 ),
-                if (hot) ...[
-                  const SizedBox(width: 6),
-                  CyberPulse(
-                    period: const Duration(milliseconds: 700),
-                    builder: (context, t) => Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        color: typeColor.withValues(alpha: 0.25 + 0.75 * t),
-                        shape: BoxShape.circle,
-                        boxShadow: Cyber.glow(
-                          typeColor,
-                          alpha: 0.5 * t,
-                          blur: 6,
-                          spread: 0,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
               ],
             ),
-            const SizedBox(height: 3),
-            Row(
-              children: [
-                Icon(icon, size: 13, color: typeColor),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    'OPEN',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Cyber.label(
-                      10,
-                      color: Cyber.muted,
-                      letterSpacing: 0.6,
-                    ),
-                  ),
-                ),
-              ],
+            const SizedBox(width: 4),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: Cyber.cyan,
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Chamfered type badge on the left of a long category tab — flat fill +
+/// border only (always-on chrome never glows).
+class _CategoryGlyph extends StatelessWidget {
+  const _CategoryGlyph({required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: 42,
+      child: CustomPaint(
+        painter: _CategoryGlyphPainter(color: color),
+        child: Center(child: Icon(icon, size: 20, color: color)),
+      ),
+    );
+  }
+}
+
+class _CategoryGlyphPainter extends CustomPainter {
+  const _CategoryGlyphPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const cut = 8.0;
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width - cut, 0)
+      ..lineTo(size.width, cut)
+      ..lineTo(size.width, size.height)
+      ..lineTo(cut, size.height)
+      ..lineTo(0, size.height - cut)
+      ..close();
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = Color.alphaBlend(color.withValues(alpha: 0.12), Cyber.bg),
+    );
+    canvas.drawPath(
+      path,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..color = color.withValues(alpha: 0.5),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _CategoryGlyphPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
+/// Pulsing HOT flag — only shown when a category holds a genuine mover, so
+/// the glow stays scarce.
+class _HotMoverTag extends StatelessWidget {
+  const _HotMoverTag({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return CyberPulse(
+      period: const Duration(milliseconds: 700),
+      builder: (context, t) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.10 + 0.08 * t),
+          border: Border.all(color: color.withValues(alpha: 0.4 + 0.4 * t)),
+          boxShadow: Cyber.glow(color, alpha: 0.35 * t, blur: 6, spread: -2),
+        ),
+        child: Text(
+          'HOT',
+          style: Cyber.label(9, color: color, letterSpacing: 1),
         ),
       ),
     );
@@ -948,6 +1071,7 @@ class _TrendSignalShell extends StatelessWidget {
     this.live = false,
     this.scoreboard = false,
     this.hardElevated = true,
+    this.showTag = true,
   });
 
   final String semanticsLabel;
@@ -958,6 +1082,9 @@ class _TrendSignalShell extends StatelessWidget {
   final bool live;
   final bool scoreboard;
   final bool hardElevated;
+
+  /// Long tabs carry their own headline, so the corner tag can be dropped.
+  final bool showTag;
 
   @override
   Widget build(BuildContext context) {
@@ -1000,7 +1127,7 @@ class _TrendSignalShell extends StatelessWidget {
                         color: chromeColor.withValues(alpha: 0.8),
                       ),
                     ),
-                    if (!scoreboard)
+                    if (!scoreboard && (showTag || live))
                       Positioned(
                         top: 10,
                         left: 12,

@@ -1,3 +1,4 @@
+import '../../../config/game_ladder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -16,6 +17,7 @@ import '../../../widgets/level_up_celebration.dart';
 /// the shared celebration after the sequence.
 class GrandPrixResultOverlay extends StatefulWidget {
   const GrandPrixResultOverlay({
+    this.questMatchId,
     required this.result,
     required this.circuitName,
     required this.onExit,
@@ -23,6 +25,7 @@ class GrandPrixResultOverlay extends StatefulWidget {
     super.key,
   });
 
+  final String? questMatchId;
   final GrandPrixResult result;
   final String circuitName;
   final VoidCallback onExit;
@@ -96,11 +99,17 @@ class _GrandPrixResultState extends State<GrandPrixResultOverlay>
         ? ('RETIRED', Cyber.danger, Icons.warning_amber_rounded)
         : switch (result.verdict) {
             GrandPrixVerdict.win => ('WIN', Cyber.gold, Icons.emoji_events),
-            GrandPrixVerdict.podium =>
-              ('PODIUM', Cyber.f1Red, Icons.military_tech),
+            GrandPrixVerdict.podium => (
+              'PODIUM',
+              Cyber.f1Red,
+              Icons.military_tech,
+            ),
             GrandPrixVerdict.points => ('POINTS', Cyber.cyan, Icons.flag),
-            GrandPrixVerdict.finished =>
-              ('FINISHED', Cyber.amber, Icons.sports_score),
+            GrandPrixVerdict.finished => (
+              'FINISHED',
+              Cyber.amber,
+              Icons.sports_score,
+            ),
           };
     final game = context.watch<GameBloc>().state;
     final prog = game.progression;
@@ -117,10 +126,13 @@ class _GrandPrixResultState extends State<GrandPrixResultOverlay>
                     child: AnimatedBuilder(
                       animation: _seq,
                       builder: (context, _) {
-                        final xpT =
-                            ((_seq.value - 0.48) / 0.42).clamp(0.0, 1.0);
+                        final xpT = ((_seq.value - 0.48) / 0.42).clamp(
+                          0.0,
+                          1.0,
+                        );
                         final shownXp = (result.xp * xpT).round();
-                        final barFill = (prog.xpToNextLevel == 0
+                        final barFill =
+                            (prog.xpToNextLevel == 0
                                 ? 0.0
                                 : prog.xpIntoLevel / prog.xpToNextLevel) *
                             xpT;
@@ -136,7 +148,7 @@ class _GrandPrixResultState extends State<GrandPrixResultOverlay>
                                   icon: icon,
                                   circuitName: result.laps > 1
                                       ? '${widget.circuitName} · '
-                                          '${result.laps} LAPS'
+                                            '${result.laps} LAPS'
                                       : widget.circuitName,
                                 ),
                               ),
@@ -148,9 +160,7 @@ class _GrandPrixResultState extends State<GrandPrixResultOverlay>
                               const SizedBox(height: 18),
                               FadeTransition(
                                 opacity: _statRows,
-                                child: _RaceStats(
-                                  result: result,
-                                ),
+                                child: _RaceStats(result: result),
                               ),
                               const SizedBox(height: 16),
                               FadeTransition(
@@ -169,16 +179,18 @@ class _GrandPrixResultState extends State<GrandPrixResultOverlay>
                                   ),
                                 ),
                               ),
+                              if (_seq.value >= 0.62)
+                                QuestResultReceipt(
+                                  game: ArcadeGame.grandPrixDash,
+                                  sourceId: widget.questMatchId,
+                                ),
                             ],
                           ),
                         );
                       },
                     ),
                   ),
-                  _Dock(
-                    onExit: widget.onExit,
-                    onRaceAgain: widget.onRaceAgain,
-                  ),
+                  _Dock(onExit: widget.onExit, onRaceAgain: widget.onRaceAgain),
                 ],
               ),
               if (_showLevelUp)
@@ -224,7 +236,10 @@ class _VerdictBanner extends StatelessWidget {
         children: [
           Icon(icon, color: accent, size: 34),
           const SizedBox(height: 6),
-          Text(verdict, style: Cyber.display(34, color: accent, letterSpacing: 3)),
+          Text(
+            verdict,
+            style: Cyber.display(34, color: accent, letterSpacing: 3),
+          ),
           const SizedBox(height: 4),
           Text(
             circuitName,
@@ -248,9 +263,10 @@ class _PositionReadout extends StatelessWidget {
         children: [
           Text(
             'DNF',
-            style: Cyber.display(64, color: Cyber.danger).copyWith(
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
+            style: Cyber.display(
+              64,
+              color: Cyber.danger,
+            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
           const SizedBox(height: 4),
           Text(
@@ -264,8 +280,8 @@ class _PositionReadout extends StatelessWidget {
     final (deltaText, deltaColor) = gained > 0
         ? ('▲ $gained PLACES GAINED', Cyber.success)
         : gained < 0
-            ? ('▼ ${-gained} PLACES LOST', Cyber.danger)
-            : ('HELD POSITION', Cyber.muted);
+        ? ('▼ ${-gained} PLACES LOST', Cyber.danger)
+        : ('HELD POSITION', Cyber.muted);
     return Column(
       children: [
         Row(
@@ -275,15 +291,17 @@ class _PositionReadout extends StatelessWidget {
           children: [
             Text(
               'P${result.position}',
-              style: Cyber.display(64, color: Cyber.cyan).copyWith(
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
+              style: Cyber.display(
+                64,
+                color: Cyber.cyan,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
             Text(
               '/${result.fieldSize}',
-              style: Cyber.display(28, color: Cyber.muted).copyWith(
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
+              style: Cyber.display(
+                28,
+                color: Cyber.muted,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
           ],
         ),

@@ -395,6 +395,7 @@ class ShootoutFinished extends GameEvent {
 /// XP only: racing never pays coins.
 class GrandPrixFinished extends GameEvent {
   GrandPrixFinished({
+    this.matchId,
     required this.position,
     required this.fieldSize,
     required this.circuitName,
@@ -403,6 +404,7 @@ class GrandPrixFinished extends GameEvent {
     required this.xp,
   });
 
+  final String? matchId;
   final int position;
   final int fieldSize;
   final String circuitName;
@@ -416,6 +418,7 @@ class GrandPrixFinished extends GameEvent {
 /// [GrandPrixFinished]. XP only: the court never pays coins.
 class BasketballFinished extends GameEvent {
   BasketballFinished({
+    this.matchId,
     required this.playerScore,
     required this.cpuScore,
     required this.resultLabel,
@@ -425,6 +428,7 @@ class BasketballFinished extends GameEvent {
     required this.xp,
   });
 
+  final String? matchId;
   final int playerScore;
   final int cpuScore;
   final String resultLabel; // 'Victory' | 'Defeat'

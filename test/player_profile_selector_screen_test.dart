@@ -19,17 +19,41 @@ void main() {
         );
   });
 
-  testWidgets('offers first-time and returning player routes', (tester) async {
-    PlayerProfileChoice? selection;
+  /// Pumps the selector and returns the single-element list the chosen route
+  /// is recorded into.
+  Future<List<PlayerProfileChoice?>> pumpSelector(
+    WidgetTester tester, {
+    required PlayerProfileChoice activeProfile,
+    required bool firstTimeProfileReady,
+    required bool returningProfileReady,
+    Future<void> Function(PlayerProfileChoice)? onSelect,
+  }) async {
+    final selection = <PlayerProfileChoice?>[null];
     await tester.pumpWidget(
       MaterialApp(
         home: PlayerProfileSelectorScreen(
-          onSelect: (choice) => selection = choice,
-          firstTimeProfileReady: false,
-          returningProfileReady: true,
+          onSelect:
+              onSelect ??
+              (choice) async {
+                selection[0] = choice;
+              },
+          activeProfile: activeProfile,
+          firstTimeProfileReady: firstTimeProfileReady,
+          returningProfileReady: returningProfileReady,
         ),
       ),
     );
+    return selection;
+  }
+
+  testWidgets('offers first-time and returning player routes', (tester) async {
+    final selection = await pumpSelector(
+      tester,
+      activeProfile: PlayerProfileChoice.returning,
+      firstTimeProfileReady: false,
+      returningProfileReady: true,
+    );
+    await tester.pump();
 
     expect(find.text('FIRST-TIME PLAYER'), findsOneWidget);
     expect(find.text('RETURNING PLAYER'), findsOneWidget);
@@ -44,45 +68,65 @@ void main() {
 
     await tester.tap(find.text('START FRESH'));
     await tester.pump();
-    expect(selection, PlayerProfileChoice.firstTime);
-
-    await tester.tap(find.text('CONTINUE CAREER'));
-    await tester.pump();
-    expect(selection, PlayerProfileChoice.returning);
+    expect(selection[0], PlayerProfileChoice.firstTime);
   });
 
-  testWidgets('holds the returning route until a saved career exists', (
+  // Regression: a solo player whose only career lives in the first-time slot
+  // used to be trapped — the returning card was disabled ("NO SAVED CAREER")
+  // and the only enabled CTA was the slot they were already in, so logging
+  // out put them straight back into the same career.
+  testWidgets('always offers a real way off the active profile', (
     tester,
   ) async {
-    PlayerProfileChoice? selection;
-    await tester.pumpWidget(
-      MaterialApp(
-        home: PlayerProfileSelectorScreen(
-          onSelect: (choice) => selection = choice,
-          firstTimeProfileReady: false,
-          returningProfileReady: false,
-        ),
-      ),
+    final selection = await pumpSelector(
+      tester,
+      activeProfile: PlayerProfileChoice.firstTime,
+      firstTimeProfileReady: true,
+      returningProfileReady: false,
     );
-
-    expect(find.text('NO SAVED CAREER'), findsOneWidget);
-    await tester.tap(find.text('NO SAVED CAREER'));
     await tester.pump();
-    expect(selection, isNull);
+
+    expect(find.text('ACTIVE'), findsOneWidget);
+    expect(find.text('STAY IN THIS PROFILE'), findsOneWidget);
+    expect(find.text('NO SAVED CAREER'), findsNothing);
+
+    final startNew = find.text('START NEW CAREER');
+    expect(startNew, findsOneWidget);
+    await tester.tap(startNew);
+    await tester.pump();
+    expect(selection[0], PlayerProfileChoice.returning);
+  });
+
+  testWidgets('the active slot CTA backs out instead of switching', (
+    tester,
+  ) async {
+    final selection = await pumpSelector(
+      tester,
+      activeProfile: PlayerProfileChoice.returning,
+      firstTimeProfileReady: false,
+      returningProfileReady: true,
+    );
+    await tester.pump();
+
+    expect(
+      find.text('You are playing this career right now.'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('STAY IN THIS PROFILE'));
+    await tester.pump();
+    expect(selection[0], PlayerProfileChoice.returning);
   });
 
   testWidgets('labels a previously played first-time slot as resumable', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: PlayerProfileSelectorScreen(
-          onSelect: _ignoreProfileChoice,
-          firstTimeProfileReady: true,
-          returningProfileReady: false,
-        ),
-      ),
+    await pumpSelector(
+      tester,
+      activeProfile: PlayerProfileChoice.returning,
+      firstTimeProfileReady: true,
+      returningProfileReady: true,
     );
+    await tester.pump();
 
     expect(find.text('CONTINUE ROOKIE PROFILE'), findsOneWidget);
     expect(
@@ -90,6 +134,28 @@ void main() {
       findsOneWidget,
     );
   });
-}
 
-void _ignoreProfileChoice(PlayerProfileChoice _) {}
+  testWidgets('keeps the player on the selector when a switch fails', (
+    tester,
+  ) async {
+    await pumpSelector(
+      tester,
+      activeProfile: PlayerProfileChoice.returning,
+      firstTimeProfileReady: false,
+      returningProfileReady: true,
+      onSelect: (_) async => throw StateError('storage interrupted'),
+    );
+    await tester.pump();
+
+    await tester.tap(find.text('START FRESH'));
+    await tester.pump();
+
+    expect(
+      find.text(
+        'Profile switch interrupted. Your current career is safe — retry.',
+      ),
+      findsNWidgets(2),
+    );
+    expect(find.text('START FRESH'), findsOneWidget);
+  });
+}

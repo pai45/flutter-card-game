@@ -1,7 +1,7 @@
 # Sport and Game Unlocks (Beginner's Quest)
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-19
+> **Last verified:** 2026-09-26
 > **Scope:** The home sport chosen at onboarding, locked sports and games, the per-sport Beginner's Quest ladder that opens games by playing, and the 50 Oz sport unlock.
 
 ## Product Purpose
@@ -24,10 +24,13 @@ teasers, so the player knows there is more to earn.
   show only tiles from unlocked sports. A stored tab that points at a locked sport, or
   at a hidden TRENDING, falls back to the home sport.
 - **GAMES tab, slot #1.** The **BEGINNER'S QUEST** card, shown while that
-  sport's quest is running. Its compact two-row layout shows only the current
-  game, `+40 XP`, the next unlock/completion bonus, and **PLAY NOW**; the header
-  already carries total ladder progress, so the card does not repeat a step
-  stamp, paragraph, or second progress meter.
+  sport's quest is running. Its mission plate leads with the current game's
+  icon, name, and finish condition. A quiet reward rail shows `+40 XP` and the
+  next game unlock (or the completion bonus), followed by a single prominent
+  **PLAY** button. On narrow or enlarged-text layouts, the rewards stack and
+  the button reads **PLAY NOW**. The header already carries total ladder progress,
+  so the card does not add a second meter. Finishing the run still triggers the
+  existing game-unlock or quest-completion reveal.
 - **MATCH / TRENDING quest slot.** The home-sport Beginner's Quest takes the
   daily-quest tile's place for the whole rookie phase, then the daily tile
   returns permanently. Buying another sport early does not change the focus.
@@ -138,9 +141,9 @@ teasers, so the player knows there is more to earn.
   streak and quest-reward moments, pack reveals and the welcome reward.
 - The streak reminder waits while unlock reveals are pending.
 - Locked tiles are desaturated and flat with no glow. The next unlock gets a
-  calm amber chip. The GAMES quest card is a compact mission plate with one
-  reward chip and a calm **PLAY NOW** action; the detailed objective card and
-  segmented ladder remain in the dedicated ROOKIE PATH command center.
+  calm amber chip. The GAMES quest card uses a flat mission plate and reward
+  rail, with the shared glowing play button as its focal action. The full
+  ladder remains in the dedicated ROOKIE PATH command center.
 
 ## Visible States
 

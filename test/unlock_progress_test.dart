@@ -130,7 +130,51 @@ void main() {
       progress = progress.recordPlay(ArcadeGame.finalOver, 'm1').progress;
       expect(progress.hasRookieTicket(Sport.cricket), isTrue);
       progress = progress.useRookieTicket(Sport.cricket);
+      expect(progress.hasRookieTicket(Sport.cricket), isTrue);
+      progress = UnlockProgress.fromJson(progress.toJson());
+      expect(progress.hasRookieTicket(Sport.cricket), isTrue);
+      progress = progress.recordPlay(ArcadeGame.cricketQuiz, 'q1').progress;
       expect(progress.hasRookieTicket(Sport.cricket), isFalse);
+    });
+
+    test('football graduates at three with Explorer still active', () {
+      var progress = UnlockProgress.fresh(Sport.football);
+      for (var i = 0; i < 3; i++) {
+        final result = progress.recordPlay(
+          sportGameLadder[Sport.football]![i],
+          'f$i',
+        );
+        expect(result.graduated, i == 2);
+        expect(result.questCompleted, isFalse);
+        progress = result.progress;
+      }
+      expect(progress.dailyQuestsUnlocked, isTrue);
+      expect(progress.questListEnabled, isTrue);
+      expect(
+        progress.currentStep(Sport.football),
+        ArcadeGame.footballGuessPlayer,
+      );
+      expect(progress.chapterLabel(Sport.football), 'EXPLORER');
+      expect(progress.pendingReveals.last.kind, UnlockRevealKind.graduation);
+      final restored = UnlockProgress.fromJson(progress.toJson());
+      expect(restored.dailyQuestsUnlocked, isTrue);
+      expect(restored.pendingReveals.last.kind, UnlockRevealKind.graduation);
+      expect(
+        restored.recordPlay(ArcadeGame.footballQuiz, 'f2').stepCleared,
+        isFalse,
+      );
+    });
+
+    test('legacy football progress graduates without a historical reveal', () {
+      final progress = UnlockProgress.fromJson({
+        'version': 1,
+        'homeSport': 'football',
+        'unlockedSports': ['football'],
+        'ladderReached': {'football': 4},
+      });
+      expect(progress.dailyQuestsUnlocked, isTrue);
+      expect(progress.pendingReveals, isEmpty);
+      expect(progress.completedQuests, isEmpty);
     });
 
     test('re-onboarding keeps what was earned', () {

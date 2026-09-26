@@ -144,6 +144,7 @@ class _ShootoutScreenState extends State<ShootoutScreen> {
               onQuit: () => _quit(context),
             ),
             ShootoutStage.summary => ShootoutResultPhase(
+              questMatchId: _sessionId,
               state: state,
               onPlayAgain: _restart,
               onHome: _goHome,

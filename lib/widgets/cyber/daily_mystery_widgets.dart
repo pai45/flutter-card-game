@@ -1093,13 +1093,10 @@ class _CaseHeaderStrip extends StatelessWidget {
                 caseCode!,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style:
-                    Cyber.label(
-                      compact ? 7 : 7.5,
-                      color: Cyber.muted,
-                    ).copyWith(
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
+                style: Cyber.label(
+                  compact ? 7 : 7.5,
+                  color: Cyber.muted,
+                ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
               ),
             ],
           ],
@@ -1294,14 +1291,11 @@ class _RedactedName extends StatelessWidget {
             alignment: Alignment.centerRight,
             child: Text(
               '$maskedTotal CHARS',
-              style:
-                  Cyber.label(
-                    compact ? 6.5 : 7,
-                    color: Cyber.muted,
-                    letterSpacing: 1,
-                  ).copyWith(
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
+              style: Cyber.label(
+                compact ? 6.5 : 7,
+                color: Cyber.muted,
+                letterSpacing: 1,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
             ),
           ),
         ],
@@ -2040,10 +2034,12 @@ class DailyMysteryDebrief extends StatefulWidget {
     required this.onHome,
     required this.onLogs,
     required this.onConsumeReveal,
+    this.questReceipt,
     this.audioProfile = const DailyMysteryAudioProfile(),
     super.key,
   });
 
+  final Widget? questReceipt;
   final String title;
   final String subtitle;
   final bool won;
@@ -2201,6 +2197,7 @@ class _DailyMysteryDebriefState extends State<DailyMysteryDebrief> {
               ),
             ],
           ),
+          if (_fresh && widget.questReceipt != null) widget.questReceipt!,
           const SizedBox(height: 20),
           HudCtaButton(
             label: 'RETURN HOME',

@@ -16,6 +16,8 @@ import '../racing/racing_driver_portrait.dart';
 import '../team_logo.dart' show OctagonBorderPainter, OctagonClipper;
 import 'sport_signal_painters.dart';
 
+export 'quest_result_receipt.dart';
+
 /// Lifecycle of a [CyberObjectiveCard]: in progress, completed and waiting to
 /// be claimed, or already paid out.
 enum CyberObjectiveState { active, ready, claimed }
@@ -417,7 +419,9 @@ class CyberObjectiveAction extends StatelessWidget {
                 children: [
                   Icon(icon, size: 14, color: color),
                   const SizedBox(width: 6),
-                  Text(label, style: Cyber.label(10.5, color: color)),
+                  Flexible(
+                    child: Text(label, style: Cyber.label(10.5, color: color)),
+                  ),
                 ],
               ),
             ),

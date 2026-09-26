@@ -11,6 +11,64 @@ import '../../../models/sport_match.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_cta_button.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
+import '../../../widgets/unlock_celebration_host.dart';
+
+/// Choosing a sport only previews its existing purchase sheet.
+Future<void> showNextSportPicker(BuildContext context) async {
+  final sports = context.read<GameBloc>().state.unlocks.lockedSports;
+  if (sports.isEmpty) return;
+  final sport = await showModalBottomSheet<Sport>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: Colors.transparent,
+    constraints: BoxConstraints(
+      maxWidth: 480,
+      maxHeight: MediaQuery.sizeOf(context).height * 0.85,
+    ),
+    builder: (context) => _UnlockSheetFrame(
+      accent: Cyber.cyan,
+      children: [
+        Text('CHOOSE YOUR NEXT SPORT', style: Cyber.display(20)),
+        const SizedBox(height: 8),
+        Text(
+          '50 Oz opens matches, picks and the first game.',
+          style: Cyber.body(14),
+        ),
+        const SizedBox(height: 16),
+        for (final sport in sports) ...[
+          CyberPanel(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  sportModuleFor(sport).label.toUpperCase(),
+                  style: Cyber.display(15),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${sportGameLadder[sport]!.length} games to discover',
+                  style: Cyber.body(13),
+                ),
+                const SizedBox(height: 8),
+                CyberObjectiveAction(
+                  label: 'VIEW SPORT · 50 OZ',
+                  icon: sportModuleFor(sport).icon,
+                  accent: sportModuleFor(sport).accent,
+                  onTap: () => Navigator.of(context).pop(sport),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+      ],
+    ),
+  );
+  if (sport != null && context.mounted) {
+    await showSportUnlockSheet(context, sport);
+  }
+}
 
 /// Offers a locked sport for [sportUnlockCostOz]. Resolves `true` once the
 /// purchase is dispatched; the SPORT UNLOCKED reveal then plays at the app
@@ -102,8 +160,8 @@ class SportUnlockSheet extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Matches, picks and ${ladder.length} games - with its own '
-                    "Beginner's Quest.",
+                    'Opens matches, picks and the first game. Complete its '
+                    'quest to unlock the remaining ${ladder.length - 1} games.',
                     style: Cyber.body(13, color: Cyber.muted),
                   ),
                 ],
@@ -119,7 +177,7 @@ class SportUnlockSheet extends StatelessWidget {
             index: i,
             game: ladder[i],
             accent: accent,
-            status: i == 0 ? 'OPENS NOW' : 'QUEST STEP $i',
+            status: i == 0 ? 'OPENS NOW' : 'AFTER ${ladder[i - 1].title}',
             open: i == 0,
           ),
         const SizedBox(height: 16),
@@ -145,10 +203,27 @@ class SportUnlockSheet extends StatelessWidget {
         if (!canAfford) ...[
           const SizedBox(height: 10),
           Text(
-            'NEED ${sportUnlockCostOz - coins} MORE OZ - CLEAR YOUR '
-            "BEGINNER'S QUEST FOR +$beginnerQuestCompleteOz OZ",
+            'NEED ${sportUnlockCostOz - coins} MORE OZ',
             textAlign: TextAlign.center,
             style: Cyber.label(10, color: Cyber.amber, letterSpacing: 1.2),
+          ),
+          const SizedBox(height: 12),
+          CyberObjectiveAction(
+            label:
+                context
+                    .read<GameBloc>()
+                    .state
+                    .unlocks
+                    .activeQuestSports
+                    .isNotEmpty
+                ? 'VIEW QUESTS · EARN 50 OZ PER SPORT'
+                : 'VIEW DAILY QUESTS',
+            icon: Icons.flag_outlined,
+            accent: Cyber.cyan,
+            onTap: () {
+              Navigator.of(context).pop(false);
+              UnlockRevealGate.instance.openQuestHub?.call();
+            },
           ),
         ],
       ],
@@ -175,10 +250,7 @@ class _LockedGameSheet extends StatelessWidget {
     return _UnlockSheetFrame(
       accent: accent,
       children: [
-        _SheetEyebrow(
-          text: "LOCKED // BEGINNER'S QUEST STEP ${game.ladderIndex}",
-          accent: accent,
-        ),
+        _SheetEyebrow(text: 'LOCKED GAME', accent: accent),
         const SizedBox(height: 14),
         Row(
           children: [
@@ -415,20 +487,20 @@ class _LadderRow extends StatelessWidget {
             Icon(open ? game.icon : Icons.lock_outline, size: 16, color: tint),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                game.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Cyber.label(
-                  11,
-                  color: open ? Colors.white : Cyber.muted,
-                  letterSpacing: 1.1,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    game.title,
+                    style: Cyber.display(
+                      12,
+                      color: open ? AppTheme.textPrimary : Cyber.muted,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(status, style: Cyber.body(13, color: tint)),
+                ],
               ),
-            ),
-            Text(
-              status,
-              style: Cyber.label(9, color: tint, letterSpacing: 1.2),
             ),
           ],
         ),

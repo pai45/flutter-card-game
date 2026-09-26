@@ -200,8 +200,13 @@ void main() {
     expect(find.text('DAILY QUESTS LOCKED'), findsOneWidget);
     expect(find.text('TODAY'), findsNothing);
     expect(find.text('KICK OFF'), findsNothing);
-    await tester.ensureVisible(find.text('PLAY NOW'));
-    await tester.tap(find.text('PLAY NOW'));
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('beginner-quest-play')),
+    );
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('beginner-quest-play')),
+    );
+    await tester.tap(find.byKey(const ValueKey('beginner-quest-play')));
     await tester.pump();
     expect(opened, ArcadeGame.finalOver);
     expect(tester.takeException(), isNull);
@@ -238,15 +243,19 @@ void main() {
     await tester.pump();
 
     expect(find.text("BEGINNER'S QUEST"), findsOneWidget);
-    expect(find.text('PLAY PITCH DUEL'), findsOneWidget);
+    expect(find.text('PLAY NOW'), findsOneWidget);
     expect(find.text('+40 XP'), findsOneWidget);
-    expect(find.text('1 RUN // UNLOCKS PENALTY SHOOTOUT'), findsOneWidget);
+    expect(find.text('Finish one match. A loss counts.'), findsOneWidget);
+    expect(find.text('Unlocks PENALTY SHOOTOUT'), findsOneWidget);
     expect(find.text('STEP 1 OF 6'), findsNothing);
     expect(
       find.text('Finish one run - win or lose - to unlock PENALTY SHOOTOUT.'),
       findsNothing,
     );
-    await tester.tap(find.text('PLAY NOW'));
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('beginner-quest-play')),
+    );
+    await tester.tap(find.byKey(const ValueKey('beginner-quest-play')));
     await tester.pump();
     expect(opened, ArcadeGame.pitchDuel);
     expect(tester.takeException(), isNull);
@@ -273,7 +282,7 @@ void main() {
     expect(find.text('0/3'), findsOneWidget);
   });
 
-  testWidgets('graduated careers choose TODAY or multi-sport QUESTS', (
+  testWidgets('graduated careers always keep a stable QUESTS destination', (
     tester,
   ) async {
     Future<void> pumpFor(UnlockProgress unlocks) async {
@@ -309,17 +318,17 @@ void main() {
       completedQuests: const {Sport.football},
     );
     await pumpFor(oneSport);
-    expect(find.text('TODAY'), findsWidgets);
-    expect(find.byKey(const ValueKey('quest-list-page')), findsNothing);
+    expect(find.text('QUESTS'), findsWidgets);
+    expect(find.byKey(const ValueKey('quest-list-page')), findsOneWidget);
 
     final twoSports = oneSport.unlockSport(Sport.cricket);
     await pumpFor(twoSports);
-    expect(find.text('QUESTS'), findsOneWidget);
+    expect(find.text('QUESTS'), findsWidgets);
     expect(find.text('TODAY'), findsNothing);
     expect(find.byKey(const ValueKey('quest-list-page')), findsOneWidget);
     expect(find.text('DAILY QUESTS'), findsOneWidget);
     expect(find.text('SPORT QUESTS'), findsOneWidget);
-    expect(find.text('NEXT: PLAY FINAL OVER'), findsOneWidget);
+    expect(find.text('PLAY FINAL OVER'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

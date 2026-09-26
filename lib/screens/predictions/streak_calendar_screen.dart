@@ -146,7 +146,7 @@ class _StreakCalendarScreenState extends State<StreakCalendarScreen> {
         final homeSport = unlocks.homeSport;
         if (unlocks.initialQuestActive && homeSport != null) {
           return GameScaffold(
-            title: 'ROOKIE PATH',
+            title: "BEGINNER'S QUEST",
             leading: _HubBackButton(
               onTap: () => Navigator.of(context).maybePop(),
             ),
@@ -172,7 +172,7 @@ class _StreakCalendarScreenState extends State<StreakCalendarScreen> {
         // No header subtitle: GameScaffold's 64px bar overflows with a
         // subtitle at text scale >= 1.3; the hero carries the telemetry line.
         return GameScaffold(
-          title: 'STREAKS',
+          title: state.unlocks.gated ? 'QUESTS' : 'STREAKS',
           leading: _HubBackButton(
             onTap: () => Navigator.of(context).maybePop(),
           ),

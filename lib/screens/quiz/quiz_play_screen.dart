@@ -37,12 +37,14 @@ class QuizPlayScreen extends StatefulWidget {
     required this.sport,
     required this.mode,
     this.setNumber = 1,
+    this.freeEntry = false,
     super.key,
   });
 
   final Sport sport;
   final QuizMode mode;
   final int setNumber;
+  final bool freeEntry;
 
   @override
   State<QuizPlayScreen> createState() => _QuizPlayScreenState();
@@ -65,6 +67,8 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
   int _bestStreak = 0;
   int _earnedXp = 0;
   bool _xpBanked = false;
+  String? _questResultId;
+  late bool _freeEntry = widget.freeEntry;
 
   int _verdictRun = 0;
   bool _submitting = false;
@@ -153,8 +157,8 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
     _verdict.forward(from: 0);
     await Future<void>.delayed(
       Duration(
-        milliseconds:
-            (kVerdictDuration.inMilliseconds * kVerdictScanEnd).round(),
+        milliseconds: (kVerdictDuration.inMilliseconds * kVerdictScanEnd)
+            .round(),
       ),
     );
     if (!mounted || run != _verdictRun) return;
@@ -228,7 +232,9 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
           style: Cyber.display(17, color: Colors.white),
         ),
         content: Text(
-          banked > 0
+          _freeEntry
+              ? 'SET $_setNumber will not clear. Your next beginner attempt is still free.${banked > 0 ? ' Your +$banked XP is banked.' : ''}'
+              : banked > 0
               ? 'Your +$banked XP is banked, but SET $_setNumber will not clear and the $kQuizEntryCost coin entry fee will not be refunded.'
               : 'SET $_setNumber will not clear and the $kQuizEntryCost coin entry fee will not be refunded.',
           style: Cyber.body(13, color: Cyber.muted),
@@ -304,12 +310,10 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
     final xpBefore = context.read<GameBloc>().state.progression.totalXP;
     final totalXp = _earnedXp;
     _bankEarnedXp(partial: false);
+    _questResultId =
+        '${_mode.name}-$_setNumber-${DateTime.now().microsecondsSinceEpoch}';
     context.read<GameBloc>().add(
-      ArcadeGamePlayed(
-        quizGameFor(_sport),
-        sourceId:
-            '${_mode.name}-$_setNumber-${DateTime.now().microsecondsSinceEpoch}',
-      ),
+      ArcadeGamePlayed(quizGameFor(_sport), sourceId: _questResultId!),
     );
 
     final outcome = await quiz.recordResult(
@@ -340,6 +344,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
       return;
     }
     setState(() => _retrying = true);
+    _freeEntry = false;
     game.add(
       CoinsSpent(
         kQuizEntryCost,
@@ -506,6 +511,10 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
             if (_revealResults != null)
               Positioned.fill(
                 child: QuizRevealOverlay(
+                  questReceipt: QuestResultReceipt(
+                    game: quizGameFor(_sport),
+                    sourceId: _questResultId,
+                  ),
                   mode: _mode,
                   setNumber: _setNumber,
                   results: _revealResults!,
@@ -680,7 +689,9 @@ class _QuizHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final streakAccent = streak >= 2 ? verdictStreakAccent(streak) : Cyber.muted;
+    final streakAccent = streak >= 2
+        ? verdictStreakAccent(streak)
+        : Cyber.muted;
     return Semantics(
       label:
           'Question ${index + 1} of $total, streak $streak, $earnedXp XP earned',
@@ -710,9 +721,7 @@ class _QuizHeader extends StatelessWidget {
                   ),
                 ),
                 const _MetricDivider(),
-                Expanded(
-                  child: _XpEarnedMetric(value: earnedXp),
-                ),
+                Expanded(child: _XpEarnedMetric(value: earnedXp)),
               ],
             ),
           ),
@@ -760,9 +769,10 @@ class _XpEarnedMetricState extends State<_XpEarnedMetric>
   @override
   Widget build(BuildContext context) {
     return ScaleTransition(
-      scale: Tween<double>(begin: 1, end: 1.16).animate(
-        CurvedAnimation(parent: _pop, curve: Curves.easeOutBack),
-      ),
+      scale: Tween<double>(
+        begin: 1,
+        end: 1.16,
+      ).animate(CurvedAnimation(parent: _pop, curve: Curves.easeOutBack)),
       child: TweenAnimationBuilder<int>(
         tween: IntTween(begin: widget.value, end: widget.value),
         duration: const Duration(milliseconds: 260),
@@ -814,9 +824,11 @@ class _HudMetric extends StatelessWidget {
         Text(
           value,
           maxLines: 1,
-          style: Cyber.display(11.5, color: color, letterSpacing: 0.5).copyWith(
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
+          style: Cyber.display(
+            11.5,
+            color: color,
+            letterSpacing: 0.5,
+          ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
         ),
       ],
     );
@@ -1043,16 +1055,19 @@ class _OptionTileState extends State<_OptionTile> {
         ? 0.55 +
               0.45 *
                   (1 -
-                      verdictBeat(
-                        widget.progress,
-                        kVerdictScanEnd,
-                        kVerdictImpactEnd,
-                      )).clamp(0.0, 1.0) *
+                          verdictBeat(
+                            widget.progress,
+                            kVerdictScanEnd,
+                            kVerdictImpactEnd,
+                          ))
+                      .clamp(0.0, 1.0) *
                   ((widget.progress * 34).floor().isEven ? 0.0 : 1.0)
         : 1.0;
 
     final tile = AnimatedContainer(
-      duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 160),
+      duration: reduceMotion
+          ? Duration.zero
+          : const Duration(milliseconds: 160),
       constraints: const BoxConstraints(minHeight: 58),
       padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
       decoration: BoxDecoration(

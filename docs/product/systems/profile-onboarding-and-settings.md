@@ -62,6 +62,11 @@ the favourite club unset. Profile's existing Following band represents that
 state with a league-only **NO CLUB** chip. Unfollowing from the hub removes an
 existing favourite only after the shared confirmation dialog.
 
+The compact Following band gives the selected club the hierarchy: its badge
+keeps the club and league codes, while the home sport is an icon-only marker
+rather than repeating a sport/module label. The edit control stays on the same
+row for a quick club swap.
+
 The favorite is not decoration. It orders and marks the Predictions match feed:
 on any day a followed club plays, that fixture is pinned above the rest of the
 day as **YOUR CLUB** and marked wherever its card appears. Editing clubs from
@@ -86,7 +91,8 @@ Existing dealt-card entrances are retained, and each identity or club choice now
 answers selection with haptic/audio feedback.
 
 The current Profile settings sheet contains the logout/profile-select action.
-It opens a two-route local switchboard:
+After confirming **CONTINUE >**, the settings sheet closes and opens a two-route
+local switchboard:
 
 - **FIRST-TIME PLAYER** is a separate blank save slot on first use. It begins
   at level 1, zero XP, no streak, no coins, no cards, no unlocks, and incomplete
@@ -96,11 +102,34 @@ It opens a two-route local switchboard:
   predictions, picks, game history, unlocks, and identity exactly as it was
   when the player switched away.
 
-The returning card stays visibly unavailable until that slot has completed
-onboarding. Choosing a slot snapshots the outgoing career, restores the chosen
+The switchboard always marks the slot the player is currently in with an
+**ACTIVE** badge, and that card's CTA reads **STAY IN THIS PROFILE** — it simply
+backs out of the switchboard and returns to the app, so confirming logout is
+never a one-way door. The *other* card is always tappable and is the one that
+carries the screen's single glow: **CONTINUE CAREER** / **CONTINUE ROOKIE
+PROFILE** when that slot is already onboarded, or **START NEW CAREER** /
+**START FRESH** when it is blank, which is how a player logs out into a brand
+new career. A blank slot is therefore never presented as an unavailable dead
+end; a solo player whose only career lives in the first-time slot can still log
+out into a second one.
+
+Choosing a slot snapshots the outgoing career, restores the chosen
 slot, and rebuilds the app state before gameplay resumes; no state leaks across
-the two careers. Tennis owns a separate, mode-specific accessibility/control/
-audio settings surface documented on its game/design pages.
+the two careers. A switch is single-flight: the selector locks its CTAs while
+storage changes, and an interrupted browser-storage operation leaves the active
+career intact with a retry message rather than surfacing a debugger exception.
+The incoming session's shell owns the unlock-reveal routes (PLAY / open sport /
+quest hub) from its first frame; the outgoing shell releases them only if no
+successor has claimed them, so reveal CTAs keep working after a switch. Unlock
+reveals are also held while the switchboard is open, so a queued moment never
+plays over PROFILE SELECT.
+On web, the secure-storage encryption key is created once before the app
+starts, so first-boot saves can no longer be written under competing keys. A
+browser that already holds an unreadable save entry has it discarded when the
+switchboard reads storage (the profile slots are rebuilt from the live career),
+instead of the logout failing.
+Tennis owns a separate, mode-specific accessibility/control/audio settings
+surface documented on its game/design pages.
 
 ## Rewards and Progression
 

@@ -184,11 +184,13 @@ void main() {
     final categoryRects = [
       for (final key in categoryKeys) tester.getRect(find.byKey(key)),
     ];
-    for (final rect in categoryRects) {
-      expect(rect.width, moreOrLessEquals(categoryRects.first.width));
-      expect(rect.top, moreOrLessEquals(categoryRects.first.top));
-      expect(rect.height, moreOrLessEquals(rect.width, epsilon: 0.5));
+    // Long horizontal tabs: full feed width, stacked one under another.
+    for (var i = 0; i < categoryRects.length; i++) {
+      final rect = categoryRects[i];
+      expect(rect.width, moreOrLessEquals(wide.width));
+      expect(rect.height, lessThan(rect.width / 3));
       expect(rect.bottom, lessThan(wide.top));
+      if (i > 0) expect(rect.top, greaterThan(categoryRects[i - 1].bottom));
     }
     await tester.tap(
       find.descendant(
@@ -225,8 +227,10 @@ void main() {
         .first;
     for (
       var i = 0;
-      i < 8 && tester.getRect(pick).bottom > tester.view.physicalSize.height /
-          tester.view.devicePixelRatio - 80;
+      i < 8 &&
+          tester.getRect(pick).bottom >
+              tester.view.physicalSize.height / tester.view.devicePixelRatio -
+                  80;
       i++
     ) {
       await tester.drag(feedScrollable, const Offset(0, -200));

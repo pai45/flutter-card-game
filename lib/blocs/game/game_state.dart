@@ -294,6 +294,8 @@ class GameState {
     this.questError,
     this.questRewardCoins = 0,
     this.unlocks = const UnlockProgress(),
+    this.questReceipts = const {},
+    this.pitchSessionId,
   });
 
   factory GameState.initial() => GameState(
@@ -472,6 +474,8 @@ class GameState {
 
   /// Sport + game unlocks and the per-sport Beginner's Quest position.
   final UnlockProgress unlocks;
+  final Map<String, QuestCompletionReceipt> questReceipts;
+  final String? pitchSessionId;
 
   bool get hasLevelUp => pendingLevelUps.isNotEmpty;
 
@@ -605,6 +609,8 @@ class GameState {
     bool clearQuestError = false,
     int? questRewardCoins,
     UnlockProgress? unlocks,
+    Map<String, QuestCompletionReceipt>? questReceipts,
+    String? pitchSessionId,
   }) => GameState(
     loading: loading ?? this.loading,
     deckSlots: deckSlots ?? this.deckSlots,
@@ -721,6 +727,8 @@ class GameState {
     questError: clearQuestError ? null : questError ?? this.questError,
     questRewardCoins: questRewardCoins ?? this.questRewardCoins,
     unlocks: unlocks ?? this.unlocks,
+    questReceipts: questReceipts ?? this.questReceipts,
+    pitchSessionId: pitchSessionId ?? this.pitchSessionId,
   );
 }
 

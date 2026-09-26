@@ -225,12 +225,17 @@ hard-elevation edge. LIVE, FUTURE, PREDICT, PICK, and sport identity colors stay
 inside the card as semantic labels and markers rather than changing its shell.
 
 The MATCH Trending feed opens with a PICKS / FUTURES / EVENTS category strip:
-three equal squares on the same cyan Trending card shell, directly above the
-bento grid. Each shows its live open-market count and a type-coloured glyph;
-tapping one opens ALL PICKS with the browse filters reset (all leagues, open
-status) and the matching MATCHES / FUTURES / EVENT chip active. A square pulses
-a small dot only while one of its open markets is genuinely hot (the same
-5-point rule as the market delta chip).
+three stacked full-width long tabs (76px strips, echoing the wide match
+scoreboard card) on the same cyan Trending card shell, directly above the
+bento grid. Each tab reads left to right: a chamfered type-coloured glyph
+plate, the category name with a one-line teaser of its headline market (the
+open market with the biggest latest move, ties broken by volume, prefixed by
+its leading outcome %), then the live open-market count, `OPEN`, and a cyan
+chevron. Tapping one opens ALL PICKS with the browse filters reset (all
+leagues, open status) and the matching MATCHES / FUTURES / EVENT chip active.
+A tab pulses a small **HOT** flag beside its name only while one of its open
+markets is genuinely hot (the same 5-point rule as the market delta chip);
+otherwise the tabs are calm chrome with no glow.
 
 Below it, the Trending layout uses a dense two-column broadcast grid.
 Full-width fixtures are scoreboard cards on a shorter strip row: the live minute

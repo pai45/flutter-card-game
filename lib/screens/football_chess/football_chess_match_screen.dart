@@ -43,6 +43,7 @@ class FootballChessMatchScreen extends StatefulWidget {
 class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
   late final FootballChessCubit _cubit;
   late final FootballChessGame _game;
+  final String _questMatchId = 'quest-${DateTime.now().microsecondsSinceEpoch}';
   bool _xpDispatched = false;
   int _awardedXp = 0;
   bool _walkthroughShown = false;
@@ -154,10 +155,7 @@ class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
       ),
     );
     context.read<GameBloc>().add(
-      ArcadeGamePlayed(
-        ArcadeGame.footballChess,
-        sourceId: 'chess-${DateTime.now().microsecondsSinceEpoch}',
-      ),
+      ArcadeGamePlayed(ArcadeGame.footballChess, sourceId: _questMatchId),
     );
   }
 
@@ -272,6 +270,7 @@ class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
                 ),
               ),
               _ResultLayer(
+                questMatchId: _questMatchId,
                 awardedXp: () => _awardedXp,
                 onExit: widget.onExit,
                 onPlayAgain: widget.onPlayAgain,
@@ -290,11 +289,13 @@ class _FootballChessMatchScreenState extends State<FootballChessMatchScreen> {
 
 class _ResultLayer extends StatelessWidget {
   const _ResultLayer({
+    required this.questMatchId,
     required this.awardedXp,
     required this.onExit,
     required this.onPlayAgain,
   });
 
+  final String questMatchId;
   final int Function() awardedXp;
   final VoidCallback onExit;
   final VoidCallback onPlayAgain;
@@ -311,6 +312,7 @@ class _ResultLayer extends StatelessWidget {
           return const SizedBox.shrink();
         }
         return FootballChessResult(
+          questMatchId: questMatchId,
           match: m,
           awardedXp: awardedXp(),
           onExit: onExit,

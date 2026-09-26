@@ -1,3 +1,4 @@
+import '../../../config/game_ladder.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -19,6 +20,7 @@ import '../../../widgets/level_up_celebration.dart';
 /// this overlay is shown, so skipping changes nothing.
 class BasketballResultOverlay extends StatefulWidget {
   const BasketballResultOverlay({
+    this.questMatchId,
     required this.summary,
     required this.xp,
     required this.stats,
@@ -27,6 +29,7 @@ class BasketballResultOverlay extends StatefulWidget {
     super.key,
   });
 
+  final String? questMatchId;
   final BasketballMatchSummary summary;
   final int xp;
   final BasketballStats stats;
@@ -93,140 +96,149 @@ class _BasketballResultOverlayState extends State<BasketballResultOverlay> {
         child: Stack(
           children: [
             SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 18),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _RevealIn(
-                      visible: _stage >= 0,
-                      child: Column(
-                        children: [
-                          Text(
-                            won ? 'VICTORY' : 'DEFEAT',
-                            textAlign: TextAlign.center,
-                            style: Cyber.display(
-                              32,
-                              color: accent,
-                              letterSpacing: 4,
-                            ).copyWith(
-                              shadows: [
-                                Shadow(
-                                  color: accent.withValues(alpha: 0.55),
-                                  blurRadius: 22,
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 26,
+                    vertical: 18,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _RevealIn(
+                          visible: _stage >= 0,
+                          child: Column(
+                            children: [
+                              Text(
+                                won ? 'VICTORY' : 'DEFEAT',
+                                textAlign: TextAlign.center,
+                                style:
+                                    Cyber.display(
+                                      32,
+                                      color: accent,
+                                      letterSpacing: 4,
+                                    ).copyWith(
+                                      shadows: [
+                                        Shadow(
+                                          color: accent.withValues(alpha: 0.55),
+                                          blurRadius: 22,
+                                        ),
+                                      ],
+                                    ),
+                              ),
+                              const SizedBox(height: 6),
+                              if (summary.buzzerBeater || summary.overtime)
+                                CyberChip(
+                                  label: summary.buzzerBeater
+                                      ? 'BUZZER BEATER'
+                                      : 'OVERTIME',
+                                  color: Cyber.gold,
                                 ),
-                              ],
-                            ),
+                            ],
                           ),
-                          const SizedBox(height: 6),
-                          if (summary.buzzerBeater || summary.overtime)
-                            CyberChip(
-                              label: summary.buzzerBeater
-                                  ? 'BUZZER BEATER'
-                                  : 'OVERTIME',
-                              color: Cyber.gold,
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _RevealIn(
-                      visible: _stage >= 1,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            '${summary.playerScore}',
-                            style: Cyber.display(40, color: Cyber.cyan)
-                                .copyWith(
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ),
-                          ),
-                          Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 12),
-                            child: Text(
-                              '—',
-                              style: Cyber.display(20, color: Cyber.muted),
-                            ),
-                          ),
-                          Text(
-                            '${summary.cpuScore}',
-                            style: Cyber.display(40, color: Cyber.magenta)
-                                .copyWith(
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 22),
-                          _GradePlate(grade: summary.grade),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    _RevealIn(
-                      visible: _stage >= 2,
-                      child: _BoxScoreGrid(box: summary.box),
-                    ),
-                    const SizedBox(height: 18),
-                    _RevealIn(
-                      visible: _stage >= 3,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _XpLine(xp: widget.xp),
-                          const SizedBox(height: 8),
-                          Center(
-                            child: Text(
-                              'RECORD ${widget.stats.wins}W — ${widget.stats.losses}L'
-                              '${widget.stats.currentStreak > 1 ? ' · ${widget.stats.currentStreak} STRAIGHT' : ''}',
-                              style: Cyber.label(
-                                9,
-                                color: Cyber.muted,
-                                letterSpacing: 1.6,
+                        ),
+                        const SizedBox(height: 16),
+                        _RevealIn(
+                          visible: _stage >= 1,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Text(
+                                '${summary.playerScore}',
+                                style: Cyber.display(40, color: Cyber.cyan)
+                                    .copyWith(
+                                      fontFeatures: const [
+                                        FontFeature.tabularFigures(),
+                                      ],
+                                    ),
                               ),
-                            ),
-                          ),
-                          const SizedBox(height: 18),
-                          HudCtaButton(
-                            label: 'REMATCH',
-                            icon: Icons.replay,
-                            accent: Cyber.gold,
-                            tapSound: SoundEffect.playMatch,
-                            onTap: widget.onRematch,
-                          ),
-                          const SizedBox(height: 10),
-                          TextButton(
-                            onPressed: () {
-                              HapticFeedback.selectionClick();
-                              widget.onExit();
-                            },
-                            child: Text(
-                              'BACK TO COURT LOBBY',
-                              style: Cyber.label(
-                                10,
-                                color: Cyber.muted,
-                                letterSpacing: 2,
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
+                                child: Text(
+                                  '—',
+                                  style: Cyber.display(20, color: Cyber.muted),
+                                ),
                               ),
-                            ),
+                              Text(
+                                '${summary.cpuScore}',
+                                style: Cyber.display(40, color: Cyber.magenta)
+                                    .copyWith(
+                                      fontFeatures: const [
+                                        FontFeature.tabularFigures(),
+                                      ],
+                                    ),
+                              ),
+                              const SizedBox(width: 22),
+                              _GradePlate(grade: summary.grade),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 18),
+                        _RevealIn(
+                          visible: _stage >= 2,
+                          child: _BoxScoreGrid(box: summary.box),
+                        ),
+                        const SizedBox(height: 18),
+                        _RevealIn(
+                          visible: _stage >= 3,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              QuestResultReceipt(
+                                game: ArcadeGame.hoopDuel,
+                                sourceId: widget.questMatchId,
+                              ),
+                              _XpLine(xp: widget.xp),
+                              const SizedBox(height: 8),
+                              Center(
+                                child: Text(
+                                  'RECORD ${widget.stats.wins}W — ${widget.stats.losses}L'
+                                  '${widget.stats.currentStreak > 1 ? ' · ${widget.stats.currentStreak} STRAIGHT' : ''}',
+                                  style: Cyber.label(
+                                    9,
+                                    color: Cyber.muted,
+                                    letterSpacing: 1.6,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+                              HudCtaButton(
+                                label: 'REMATCH',
+                                icon: Icons.replay,
+                                accent: Cyber.gold,
+                                tapSound: SoundEffect.playMatch,
+                                onTap: widget.onRematch,
+                              ),
+                              const SizedBox(height: 10),
+                              TextButton(
+                                onPressed: () {
+                                  HapticFeedback.selectionClick();
+                                  widget.onExit();
+                                },
+                                child: Text(
+                                  'BACK TO COURT LOBBY',
+                                  style: Cyber.label(
+                                    10,
+                                    color: Cyber.muted,
+                                    letterSpacing: 2,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
             if (_showLevelUp)
               LevelUpCelebration(
                 levels: context.read<GameBloc>().state.pendingLevelUps,
@@ -291,10 +303,7 @@ class _GradePlate extends StatelessWidget {
         border: Border.all(color: color, width: 1.6),
         boxShadow: elite ? Cyber.glow(color, alpha: 0.5) : null,
       ),
-      child: Text(
-        grade,
-        style: Cyber.display(26, color: color),
-      ),
+      child: Text(grade, style: Cyber.display(26, color: color)),
     );
   }
 }
@@ -335,9 +344,7 @@ class _BoxScoreGrid extends StatelessWidget {
                         Text(
                           entry.$2,
                           style: Cyber.display(15).copyWith(
-                            fontFeatures: const [
-                              FontFeature.tabularFigures(),
-                            ],
+                            fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
                         const SizedBox(height: 3),
@@ -381,10 +388,7 @@ class _XpLine extends StatelessWidget {
           style: Cyber.display(22, color: Cyber.gold).copyWith(
             fontFeatures: const [FontFeature.tabularFigures()],
             shadows: [
-              Shadow(
-                color: Cyber.gold.withValues(alpha: 0.5),
-                blurRadius: 14,
-              ),
+              Shadow(color: Cyber.gold.withValues(alpha: 0.5), blurRadius: 14),
             ],
           ),
         ),

@@ -151,7 +151,7 @@ class _TopBarRookiePath extends StatelessWidget {
     return Semantics(
       button: true,
       label:
-          "Beginner's Quest, $cleared of $total games cleared. Open Rookie Path",
+          "Beginner's Quest, $cleared of $total missions complete. View quest",
       child: GestureDetector(
         key: const ValueKey('top-bar-rookie-path'),
         behavior: HitTestBehavior.opaque,

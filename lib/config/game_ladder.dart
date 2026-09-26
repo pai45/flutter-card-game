@@ -39,7 +39,29 @@ enum ArcadeGame {
 
   /// 0-based position on its sport's Beginner's Quest ladder.
   int get ladderIndex => sportGameLadder[sport]!.indexOf(this);
+
+  String get questRequirement => switch (this) {
+    footballQuiz ||
+    cricketQuiz ||
+    basketballQuiz ||
+    motorsportQuiz ||
+    tennisQuiz => 'Answer all 10 questions. Any score counts.',
+    footballGuessPlayer ||
+    cricketGuessPlayer ||
+    basketballGuessPlayer ||
+    guessDriver ||
+    guessWinner => "Finish today's challenge. A loss counts.",
+    footballBingo => 'Complete one grid.',
+    _ => 'Finish one match. A loss counts.',
+  };
+
+  String get unlockRequirement => ladderIndex == 0
+      ? 'Opens with this sport'
+      : 'Finish ${sportGameLadder[sport]![ladderIndex - 1].title} to unlock';
 }
+
+/// Every home sport graduates to Daily Quests after three completed missions.
+const beginnerChapterLength = 3;
 
 /// Beginner's Quest order per sport: game N+1 unlocks once game N has been
 /// finished. Quick, low-friction modes come first; the deepest mode is last.

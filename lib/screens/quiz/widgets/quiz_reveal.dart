@@ -34,6 +34,7 @@ class QuizRevealOverlay extends StatefulWidget {
     required this.bestStreak,
     required this.onRetry,
     required this.onDone,
+    this.questReceipt,
     super.key,
   });
 
@@ -57,6 +58,7 @@ class QuizRevealOverlay extends StatefulWidget {
   final int bestStreak;
   final VoidCallback onRetry;
   final VoidCallback onDone;
+  final Widget? questReceipt;
 
   @override
   State<QuizRevealOverlay> createState() => _QuizRevealOverlayState();
@@ -92,9 +94,7 @@ class _QuizRevealOverlayState extends State<QuizRevealOverlay> {
     await Future<void>.delayed(const Duration(milliseconds: 420));
     for (var i = 0; i < widget.stars; i++) {
       if (!mounted || run != _run) return;
-      playSound(
-        i == 2 ? SoundEffect.quizPerfect : SoundEffect.quizCorrect,
-      );
+      playSound(i == 2 ? SoundEffect.quizPerfect : SoundEffect.quizCorrect);
       setState(() => _starsShown = i + 1);
       await Future<void>.delayed(const Duration(milliseconds: 260));
     }
@@ -173,6 +173,7 @@ class _QuizRevealOverlayState extends State<QuizRevealOverlay> {
                           shown: _starsShown,
                           gained: widget.starsGained,
                         ),
+                        if (widget.questReceipt != null) widget.questReceipt!,
                         const SizedBox(height: 24),
                         _RevealIn(
                           delayFactor: 0.35,
@@ -267,20 +268,20 @@ class _ScoreLine extends StatelessWidget {
       children: [
         Text(
           '$correct / $total CORRECT',
-          style: Cyber.label(12, color: Cyber.muted, letterSpacing: 1.6)
-              .copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+          style: Cyber.label(
+            12,
+            color: Cyber.muted,
+            letterSpacing: 1.6,
+          ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
         ),
         if (bestStreak >= 2)
           Text(
             'BEST STREAK ×$bestStreak',
-            style:
-                Cyber.label(
-                  12,
-                  color: bestStreak >= 5 ? Cyber.gold : Cyber.amber,
-                  letterSpacing: 1.6,
-                ).copyWith(
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
+            style: Cyber.label(
+              12,
+              color: bestStreak >= 5 ? Cyber.gold : Cyber.amber,
+              letterSpacing: 1.6,
+            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
         if (newBest)
           Container(

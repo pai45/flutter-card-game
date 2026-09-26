@@ -2,7 +2,7 @@ import '../config/game_ladder.dart';
 import '../config/sport_modules.dart';
 import 'sport_match.dart';
 
-enum UnlockRevealKind { game, sport, questComplete }
+enum UnlockRevealKind { game, sport, questComplete, graduation }
 
 /// A queued "moment" the app root plays once the player is free
 /// (NEW GAME UNLOCKED / SPORT UNLOCKED / BEGINNER'S QUEST COMPLETE).
@@ -16,6 +16,9 @@ class UnlockReveal {
   const UnlockReveal.questComplete(Sport this.sport)
     : kind = UnlockRevealKind.questComplete,
       game = null;
+  const UnlockReveal.graduation(ArcadeGame this.game)
+    : kind = UnlockRevealKind.graduation,
+      sport = null;
 
   final UnlockRevealKind kind;
   final ArcadeGame? game;
@@ -44,6 +47,9 @@ class UnlockReveal {
       UnlockRevealKind.sport when sport != null => UnlockReveal.sport(sport),
       UnlockRevealKind.questComplete when sport != null =>
         UnlockReveal.questComplete(sport),
+      UnlockRevealKind.graduation when game != null => UnlockReveal.graduation(
+        game,
+      ),
       _ => null,
     };
   }
@@ -55,7 +61,29 @@ typedef UnlockPlayResult = ({
   bool stepCleared,
   ArcadeGame? unlockedGame,
   bool questCompleted,
+  bool graduated,
 });
+
+/// A session-scoped receipt. Never restored as a fresh reward on relaunch.
+class QuestCompletionReceipt {
+  const QuestCompletionReceipt({
+    required this.game,
+    required this.sourceId,
+    required this.completed,
+    required this.total,
+    required this.graduated,
+    required this.questCompleted,
+    this.nextGame,
+  });
+  final ArcadeGame game;
+  final String sourceId;
+  final int completed;
+  final int total;
+  final bool graduated;
+  final bool questCompleted;
+  final ArcadeGame? nextGame;
+  String get id => '${game.name}:$sourceId';
+}
 
 /// Which sports and games a player can open, plus their Beginner's Quest
 /// position per sport.
@@ -104,14 +132,28 @@ class UnlockProgress {
   /// The one-time rookie phase is owned by the home sport. Unlocking another
   /// sport early never skips it, and later sport quests never re-enter it.
   bool get initialQuestActive =>
-      gated && homeSport != null && !completedQuests.contains(homeSport);
+      gated &&
+      homeSport != null &&
+      stepsCleared(homeSport!) < beginnerChapterLength;
 
   bool get dailyQuestsUnlocked => !initialQuestActive;
 
   /// Only progression-managed careers get the combined quest board. Legacy
   /// grandfathered profiles keep the familiar TODAY tab.
-  bool get questListEnabled =>
-      gated && dailyQuestsUnlocked && unlockedSports.length >= 2;
+  bool get questListEnabled => gated && dailyQuestsUnlocked;
+
+  String chapterLabel(Sport sport) =>
+      stepsCleared(sport) >= beginnerChapterLength ? 'EXPLORER' : 'BEGINNER';
+
+  String missionLabel(Sport sport) {
+    final cleared = stepsCleared(sport);
+    final explorer = cleared >= beginnerChapterLength;
+    final offset = explorer ? beginnerChapterLength : 0;
+    final total = explorer
+        ? sportGameLadder[sport]!.length - offset
+        : beginnerChapterLength;
+    return '${chapterLabel(sport)} · MISSION ${cleared - offset + 1} OF $total';
+  }
 
   /// Active Beginner's Quests in the same order as the sport hub.
   List<Sport> get activeQuestSports => [
@@ -161,8 +203,7 @@ class UnlockProgress {
   ];
 
   /// The first quiz entry of an active quest is free when the quiz is the step.
-  bool hasRookieTicket(Sport sport) =>
-      currentStep(sport)?.isQuiz == true && !rookieTicketsUsed.contains(sport);
+  bool hasRookieTicket(Sport sport) => currentStep(sport)?.isQuiz == true;
 
   UnlockProgress copyWith({
     bool? grandfathered,
@@ -220,6 +261,7 @@ class UnlockProgress {
       stepCleared: false,
       unlockedGame: null,
       questCompleted: false,
+      graduated: false,
     );
     final identity = '${game.name}:$sourceId';
     if (sourceId.isEmpty ||
@@ -230,17 +272,25 @@ class UnlockProgress {
     final ladder = sportGameLadder[game.sport]!;
     final index = game.ladderIndex;
     final processed = {...processedIds, identity};
+    final graduated =
+        initialQuestActive &&
+        game.sport == homeSport &&
+        index + 1 == beginnerChapterLength;
     if (index < ladder.length - 1) {
       final next = ladder[index + 1];
       return (
         progress: copyWith(
           processedIds: processed,
           ladderReached: {...ladderReached, game.sport: index + 2},
-          pendingReveals: [...pendingReveals, UnlockReveal.game(next)],
+          pendingReveals: [
+            ...pendingReveals,
+            graduated ? UnlockReveal.graduation(next) : UnlockReveal.game(next),
+          ],
         ),
         stepCleared: true,
         unlockedGame: next,
         questCompleted: false,
+        graduated: graduated,
       );
     }
     return (
@@ -255,6 +305,7 @@ class UnlockProgress {
       stepCleared: true,
       unlockedGame: null,
       questCompleted: true,
+      graduated: graduated,
     );
   }
 

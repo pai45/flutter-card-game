@@ -144,6 +144,35 @@ void main() {
     },
   );
 
+  test('football receipts graduate at three and pay once at six', () async {
+    final bloc = await loaded(SecureGameStorage());
+    bloc.add(HomeSportChosen(Sport.football));
+    for (var i = 0; i < 3; i++) {
+      bloc.add(
+        ArcadeGamePlayed(sportGameLadder[Sport.football]![i], sourceId: 'f$i'),
+      );
+    }
+    final graduated = await settle(bloc, (s) => s.questReceipts.length == 3);
+    expect(graduated.unlocks.dailyQuestsUnlocked, isTrue);
+    expect(graduated.coins, 0);
+    expect(graduated.questReceipts['footballQuiz:f2']!.graduated, isTrue);
+    for (var i = 3; i < 6; i++) {
+      bloc.add(
+        ArcadeGamePlayed(sportGameLadder[Sport.football]![i], sourceId: 'f$i'),
+      );
+    }
+    final completed = await settle(
+      bloc,
+      (s) => s.coins == beginnerQuestCompleteOz,
+    );
+    expect(completed.questReceipts.length, 6);
+    expect(completed.questReceipts['footballChess:f5']!.questCompleted, isTrue);
+    bloc.add(ArcadeGamePlayed(ArcadeGame.footballChess, sourceId: 'f5'));
+    await bloc.close();
+    expect(bloc.state.coins, beginnerQuestCompleteOz);
+    expect(bloc.state.questReceipts.length, 6);
+  });
+
   test('buying a sport spends 50 Oz; broke or owned buys are no-ops', () async {
     final bloc = await loaded(SecureGameStorage());
     bloc.add(HomeSportChosen(Sport.football));
@@ -172,17 +201,21 @@ void main() {
     await bloc.close();
   });
 
-  test('the rookie ticket is spent once', () async {
-    final bloc = await loaded(SecureGameStorage());
-    bloc.add(HomeSportChosen(Sport.cricket));
-    bloc.add(finalOver('fo-1'));
-    await settle(bloc, (s) => s.unlocks.hasRookieTicket(Sport.cricket));
-    bloc.add(RookieTicketUsed(Sport.cricket));
-    final state = await settle(
-      bloc,
-      (s) => !s.unlocks.hasRookieTicket(Sport.cricket),
-    );
-    expect(state.unlocks.rookieTicketsUsed, {Sport.cricket});
-    await bloc.close();
-  });
+  test(
+    'legacy ticket consumption does not charge an unfinished quest',
+    () async {
+      final bloc = await loaded(SecureGameStorage());
+      bloc.add(HomeSportChosen(Sport.cricket));
+      bloc.add(finalOver('fo-1'));
+      await settle(bloc, (s) => s.unlocks.hasRookieTicket(Sport.cricket));
+      bloc.add(RookieTicketUsed(Sport.cricket));
+      final state = await settle(
+        bloc,
+        (s) => s.unlocks.rookieTicketsUsed.contains(Sport.cricket),
+      );
+      expect(state.unlocks.rookieTicketsUsed, {Sport.cricket});
+      expect(state.unlocks.hasRookieTicket(Sport.cricket), isTrue);
+      await bloc.close();
+    },
+  );
 }

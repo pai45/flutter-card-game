@@ -323,22 +323,24 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _showSettings(BuildContext context) {
-    return showModalBottomSheet<void>(
+  Future<void> _showSettings(BuildContext context) async {
+    final shouldLogout = await showModalBottomSheet<bool>(
       context: context,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withValues(alpha: 0.74),
       builder: (sheetContext) {
         return _ProfileSettingsSheet(
           onLogout: () async {
-            final shouldLogout = await _confirmLogout(sheetContext);
-            if (!sheetContext.mounted || !shouldLogout) return;
-            Navigator.of(sheetContext).pop();
-            await onLogout();
+            final confirmed = await _confirmLogout(sheetContext);
+            if (!sheetContext.mounted || !confirmed) return;
+            Navigator.of(sheetContext).pop(true);
           },
         );
       },
     );
+    if (shouldLogout == true && context.mounted) {
+      await onLogout();
+    }
   }
 
   Future<bool> _confirmLogout(BuildContext context) async {
@@ -2339,34 +2341,17 @@ class _PrimarySportChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minWidth: 76),
-      padding: const EdgeInsets.fromLTRB(9, 8, 10, 8),
-      decoration: BoxDecoration(
-        color: module.accent.withValues(alpha: 0.12),
-        border: Border.all(color: module.accent.withValues(alpha: 0.58)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(module.icon, color: module.accent, size: 20),
-          const SizedBox(width: 7),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                module.shortLabel,
-                style: Cyber.display(12, color: Colors.white),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'MODULE',
-                style: Cyber.label(8, color: Cyber.muted, letterSpacing: 1.1),
-              ),
-            ],
-          ),
-        ],
+    return Semantics(
+      label: '${module.label} clubs',
+      child: Container(
+        width: 40,
+        height: 40,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: module.accent.withValues(alpha: 0.1),
+          border: Border.all(color: module.accent.withValues(alpha: 0.5)),
+        ),
+        child: Icon(module.icon, color: module.accent, size: 20),
       ),
     );
   }

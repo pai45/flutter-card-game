@@ -1,3 +1,4 @@
+import '../../config/game_ladder.dart';
 import 'dart:async';
 
 import 'package:flame/game.dart';
@@ -625,6 +626,10 @@ class _ResultOverlay extends StatelessWidget {
                       _PerformanceRow(
                         label: 'PERFECT CONTACTS',
                         value: '${summary.stats.perfectContacts}',
+                      ),
+                      QuestResultReceipt(
+                        game: ArcadeGame.tennisRally,
+                        sourceId: summary.matchId,
                       ),
                       if (reward.farmed)
                         Padding(

@@ -1,3 +1,4 @@
+import '../../../config/game_ladder.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
@@ -242,6 +243,13 @@ class _GuessPlayerResultViewState extends State<GuessPlayerResultView> {
                         ),
                       ),
                     ],
+                    if (widget.xpBefore != null && widget.state.puzzle != null)
+                      QuestResultReceipt(
+                        game: sportGameLadder[widget.state.puzzle!.sport]!
+                            .firstWhere((g) => g.title == 'GUESS THE PLAYER'),
+                        sourceId:
+                            'guess-player:${widget.state.puzzle!.sport.name}:${record.dayKey}',
+                      ),
                     const SizedBox(height: 22),
                     HudCtaButton(
                       label: 'RETURN TO INTEL HUB',

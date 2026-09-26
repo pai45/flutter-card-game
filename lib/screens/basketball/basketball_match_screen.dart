@@ -50,6 +50,7 @@ class _BasketballMatchScreenState extends State<BasketballMatchScreen> {
   late final BasketballCubit _cubit;
   late final BasketballGame _game;
   BasketballMatchConfig? _config;
+  final String _questMatchId = 'quest-${DateTime.now().microsecondsSinceEpoch}';
   bool _rewardsDispatched = false;
 
   @override
@@ -168,6 +169,7 @@ class _BasketballMatchScreenState extends State<BasketballMatchScreen> {
     final xp = _cubit.state.xp;
     context.read<GameBloc>().add(
       BasketballFinished(
+        matchId: _questMatchId,
         playerScore: summary.playerScore,
         cpuScore: summary.cpuScore,
         resultLabel: summary.won ? 'Victory' : 'Defeat',
@@ -262,6 +264,7 @@ class _BasketballMatchScreenState extends State<BasketballMatchScreen> {
               ),
             ),
             _PhaseOverlays(
+              questMatchId: _questMatchId,
               game: _game,
               onBeginPlay: _beginPlay,
               onResumeSecondHalf: _resumeSecondHalf,
@@ -281,6 +284,7 @@ class _BasketballMatchScreenState extends State<BasketballMatchScreen> {
 /// initial-listener kick is needed.
 class _PhaseOverlays extends StatelessWidget {
   const _PhaseOverlays({
+    required this.questMatchId,
     required this.game,
     required this.onBeginPlay,
     required this.onResumeSecondHalf,
@@ -289,6 +293,7 @@ class _PhaseOverlays extends StatelessWidget {
     required this.onExit,
   });
 
+  final String questMatchId;
   final BasketballGame game;
   final VoidCallback onBeginPlay;
   final ValueChanged<int> onResumeSecondHalf;
@@ -329,6 +334,7 @@ class _PhaseOverlays extends StatelessWidget {
             if (summary == null) return const SizedBox.shrink();
             return Positioned.fill(
               child: BasketballResultOverlay(
+                questMatchId: questMatchId,
                 summary: summary,
                 xp: state.xp,
                 stats: state.stats,

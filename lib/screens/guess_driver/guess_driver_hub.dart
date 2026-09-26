@@ -14,6 +14,7 @@ import '../../models/daily_mystery.dart';
 import '../../services/secure_storage_service.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/daily_mystery_widgets.dart';
+import '../../widgets/cyber/cyber_widgets.dart';
 import 'guess_driver_home_screen.dart';
 import 'guess_driver_logs_screen.dart';
 import 'guess_driver_screen.dart';
@@ -97,6 +98,10 @@ class _GuessDriverTabContentState extends State<GuessDriverTabContent>
               onOpenDay: _cubit.openDay,
             ),
             DailyMysteryViewMode.review => DailyMysteryDebrief(
+              questReceipt: QuestResultReceipt(
+                game: ArcadeGame.guessDriver,
+                sourceId: state.activeDayKey,
+              ),
               title: 'DRIVER DEBRIEF',
               subtitle: state.activeDayKey,
               won: state.gameState == GuessDriverGameState.won,

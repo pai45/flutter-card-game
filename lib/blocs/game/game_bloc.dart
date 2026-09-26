@@ -381,6 +381,15 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     final result = state.unlocks.recordPlay(game, sourceId);
     if (!result.stepCleared) return;
     final sportLabel = sportModuleFor(game.sport).label.toUpperCase();
+    final receipt = QuestCompletionReceipt(
+      game: game,
+      sourceId: sourceId,
+      completed: result.progress.stepsCleared(game.sport),
+      total: sportGameLadder[game.sport]!.length,
+      graduated: result.graduated,
+      questCompleted: result.questCompleted,
+      nextGame: result.unlockedGame,
+    );
     final xp = _nextXpSnapshot(
       delta: beginnerQuestStepXp,
       source: XpTransactionSource.beginnerQuest,
@@ -392,6 +401,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     emit(
       state.copyWith(
         unlocks: result.progress,
+        questReceipts: {...state.questReceipts, receipt.id: receipt},
         progression: xp.progression,
         xpLedger: xp.ledger,
       ),
@@ -1727,6 +1737,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     );
     emit(
       _resetMatch(state).copyWith(
+        pitchSessionId: _pitchSessionId,
         phase: MatchPhase.toss,
         currentRound: 1,
         opponentAttackers: opponent.attackers,
@@ -2145,6 +2156,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     GrandPrixFinished event,
     Emitter<GameState> emit,
   ) async {
+    if (event.matchId != null &&
+        state.matchHistory.any((entry) => entry.id == event.matchId)) {
+      return;
+    }
     final xp = _nextXpSnapshot(
       delta: event.xp,
       source: XpTransactionSource.grandPrix,
@@ -2152,7 +2167,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       details: 'P${event.position} · ${event.circuitName}',
     );
     final historyEntry = MatchHistoryEntry(
-      id: 'grandprix-${DateTime.now().microsecondsSinceEpoch}',
+      id: event.matchId ?? 'grandprix-${DateTime.now().microsecondsSinceEpoch}',
       mode: 'grandprix',
       deckName: '${event.circuitName} · ${formatLapTime(event.lapTimeMs)}',
       timestampIso: DateTime.now().toIso8601String(),
@@ -2189,6 +2204,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
     BasketballFinished event,
     Emitter<GameState> emit,
   ) async {
+    if (event.matchId != null &&
+        state.matchHistory.any((entry) => entry.id == event.matchId)) {
+      return;
+    }
     final xp = _nextXpSnapshot(
       delta: event.xp,
       source: XpTransactionSource.basketball,
@@ -2198,7 +2217,9 @@ class GameBloc extends Bloc<GameEvent, GameState> {
           '${event.overtime ? ' (OT)' : ''}',
     );
     final historyEntry = MatchHistoryEntry(
-      id: 'basketball-${DateTime.now().microsecondsSinceEpoch}',
+      id:
+          event.matchId ??
+          'basketball-${DateTime.now().microsecondsSinceEpoch}',
       mode: 'basketball',
       deckName: 'HOOP DUEL · ${event.difficultyLabel}',
       timestampIso: DateTime.now().toIso8601String(),

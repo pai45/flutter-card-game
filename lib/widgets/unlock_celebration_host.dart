@@ -27,6 +27,9 @@ class UnlockRevealGate {
   ValueChanged<ArcadeGame>? playGame;
   ValueChanged<Sport>? openSport;
   VoidCallback? openQuestHub;
+  VoidCallback? chooseSport;
+  VoidCallback? backToGames;
+  VoidCallback? continueQuest;
 }
 
 /// Plays queued unlock moments (NEW GAME UNLOCKED / SPORT UNLOCKED /
@@ -55,8 +58,11 @@ class UnlockCelebrationHost extends StatelessWidget {
           if (reveals.isEmpty) return const SizedBox.shrink();
           final reveal = reveals.first;
           final rookieGraduation =
-              reveal.kind == UnlockRevealKind.questComplete &&
-              reveal.sport == state.unlocks.homeSport;
+              reveal.kind == UnlockRevealKind.graduation ||
+              (reveal.kind == UnlockRevealKind.questComplete &&
+                  reveal.sport == state.unlocks.homeSport &&
+                  sportGameLadder[reveal.targetSport]!.length ==
+                      beginnerChapterLength);
           final deferredShield =
               state.unlocks.initialQuestActive &&
               state.streak.celebrationQueue.isNotEmpty &&
@@ -108,20 +114,25 @@ class _UnlockRevealFor extends StatelessWidget {
     final module = sportModuleFor(reveal.targetSport);
     final sportLabel = module.label.toUpperCase();
     switch (reveal.kind) {
+      case UnlockRevealKind.graduation:
       case UnlockRevealKind.game:
         final game = reveal.game!;
         final ladder = sportGameLadder[game.sport]!;
         return CyberUnlockReveal(
-          eyebrow: 'NEW GAME UNLOCKED',
+          eyebrow: rookieGraduation
+              ? 'BEGINNER CHAPTER COMPLETE'
+              : 'NEW GAME UNLOCKED',
           title: game.title,
           subtitle:
-              "Beginner's Quest step ${game.ladderIndex} of "
-              '${ladder.length - 1} cleared. Play it to open the next one.',
+              '${game.ladderIndex} of ${ladder.length} missions complete. '
+              '${rookieGraduation ? 'Daily Quests are now open. Continue the Explorer chapter for 50 Oz.' : game.questRequirement}',
           icon: game.icon,
           accent: module.accent,
           rewardLabel: '+$beginnerQuestStepXp XP',
-          ctaLabel: 'PLAY NOW',
+          ctaLabel: 'PLAY ${game.title}',
           onCta: gate.playGame == null ? null : () => gate.playGame!(game),
+          secondaryLabel: rookieGraduation ? 'VIEW DAILY QUESTS' : 'CONTINUE',
+          onSecondary: rookieGraduation ? gate.openQuestHub : null,
           onDismissed: onDismissed,
         );
       case UnlockRevealKind.sport:
@@ -141,30 +152,30 @@ class _UnlockRevealFor extends StatelessWidget {
           onDismissed: onDismissed,
         );
       case UnlockRevealKind.questComplete:
-        if (rookieGraduation) {
-          return CyberUnlockReveal(
-            eyebrow: 'ROOKIE PATH COMPLETE',
-            title: 'DAILY QUESTS UNLOCKED',
-            subtitle:
-                'All $sportLabel games are open. Today\'s activity is already '
-                'counted and your next missions are live.',
-            icon: Icons.emoji_events_rounded,
-            accent: module.accent,
-            rewardLabel: '+$beginnerQuestCompleteOz OZ',
-            ctaLabel: questListEnabled ? 'VIEW QUESTS' : 'VIEW TODAY',
-            onCta: gate.openQuestHub,
-            onDismissed: onDismissed,
-          );
-        }
+        final hasLockedSports = context
+            .read<GameBloc>()
+            .state
+            .unlocks
+            .lockedSports
+            .isNotEmpty;
         return CyberUnlockReveal(
-          eyebrow: "BEGINNER'S QUEST COMPLETE",
+          eyebrow: rookieGraduation
+              ? 'BEGINNER CHAPTER COMPLETE'
+              : 'SPORT QUEST COMPLETE',
           title: 'ALL $sportLabel GAMES OPEN',
           subtitle:
-              'Every $sportLabel game is yours. Spend the Oz on your next '
-              'sport.',
+              '${sportGameLadder[reveal.targetSport]!.length} of '
+              '${sportGameLadder[reveal.targetSport]!.length} missions complete. '
+              '${rookieGraduation ? 'Daily Quests unlocked. ' : ''}'
+              '${hasLockedSports ? '50 Oz earned - enough to unlock another sport.' : 'Every sport is open. Your next Daily Quests await.'}',
           icon: Icons.emoji_events_rounded,
           accent: module.accent,
-          rewardLabel: '+$beginnerQuestCompleteOz OZ',
+          rewardLabel:
+              '+$beginnerQuestStepXp XP / +$beginnerQuestCompleteOz OZ',
+          ctaLabel: hasLockedSports ? 'CHOOSE NEXT SPORT' : 'BACK TO GAMES',
+          onCta: hasLockedSports ? gate.chooseSport : gate.backToGames,
+          secondaryLabel: 'VIEW DAILY QUESTS',
+          onSecondary: gate.openQuestHub,
           onDismissed: onDismissed,
         );
     }

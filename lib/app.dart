@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'blocs/achievement/achievement_celebration_controller.dart';
@@ -216,6 +217,7 @@ class _AppShellState extends State<AppShell>
   bool _onboardingRewardDismissing = false;
   String? _selectedAvatarId;
   bool _profileSelectorOpen = false;
+  PlayerProfileChoice _activeProfileChoice = PlayerProfileChoice.firstTime;
   bool _firstTimeProfileReady = false;
   bool _returningProfileReady = false;
 
@@ -226,7 +228,12 @@ class _AppShellState extends State<AppShell>
     UnlockRevealGate.instance
       ..playGame = _openArcadeGame
       ..openSport = _enterSport
-      ..openQuestHub = _openStreakHub;
+      ..openQuestHub = _openStreakHub
+      ..chooseSport = _chooseNextSport
+      ..backToGames = _backToQuestGames
+      ..continueQuest = _continueQuest;
+    // Drop any hub-visible flag left over from the previous profile session.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncRevealGate());
     _loadOnboardingState();
     _runRollingWindowIfDue();
   }
@@ -257,6 +264,7 @@ class _AppShellState extends State<AppShell>
     UnlockRevealGate.instance.hubVisible.value =
         mounted &&
         _hubOnTop &&
+        !_profileSelectorOpen &&
         !_onboardingLoading &&
         _onboardingComplete &&
         _onboardingRewardStatus != OnboardingRewardStatus.pending;
@@ -279,11 +287,20 @@ class _AppShellState extends State<AppShell>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _appRouteObserver.unsubscribe(this);
+    // A profile switch mounts the next session's shell before this one is
+    // torn down, and that shell has already claimed the gate. Releasing it
+    // here would null the new session's callbacks and notify its live reveal
+    // host while the tree is locked — so only release a gate we still own.
     final gate = UnlockRevealGate.instance;
-    gate.hubVisible.value = false;
-    gate.playGame = null;
-    gate.openSport = null;
-    gate.openQuestHub = null;
+    if (gate.playGame == _openArcadeGame) {
+      gate.hubVisible.value = false;
+      gate.playGame = null;
+      gate.openSport = null;
+      gate.openQuestHub = null;
+      gate.chooseSport = null;
+      gate.backToGames = null;
+      gate.continueQuest = null;
+    }
     super.dispose();
   }
 
@@ -509,6 +526,7 @@ class _AppShellState extends State<AppShell>
   }
 
   Future<void> _logoutFromProfile() async {
+    final active = await _storage.loadActiveLocalProfile();
     final readiness = await Future.wait([
       _storage.isLocalProfileReady(LocalProfileSlot.firstTime),
       _storage.isLocalProfileReady(LocalProfileSlot.returning),
@@ -517,20 +535,41 @@ class _AppShellState extends State<AppShell>
     setState(() {
       _pendingGameLaunch = null;
       _pendingGameLaunchKind = null;
+      _activeProfileChoice = _choiceForSlot(active);
       _firstTimeProfileReady = readiness[0];
       _returningProfileReady = readiness[1];
       _profileSelectorOpen = true;
     });
+    _syncRevealGate();
   }
 
   Future<void> _selectPlayerProfile(PlayerProfileChoice choice) async {
-    final slot = choice == PlayerProfileChoice.firstTime
-        ? LocalProfileSlot.firstTime
-        : LocalProfileSlot.returning;
+    final slot = _slotForChoice(choice);
+    final active = await _storage.loadActiveLocalProfile();
+    if (!mounted) return;
+    // Picking the slot you are already in is "stay", not a switch: close the
+    // switchboard in place. Restarting the session here would look like a
+    // logout that silently logged you back into the same career.
+    if (slot == active) {
+      setState(() => _profileSelectorOpen = false);
+      _syncRevealGate();
+      return;
+    }
     await _storage.switchLocalProfile(slot);
     if (!mounted) return;
+    HapticFeedback.mediumImpact();
     widget.onProfileActivated(slot);
   }
+
+  static LocalProfileSlot _slotForChoice(PlayerProfileChoice choice) =>
+      choice == PlayerProfileChoice.firstTime
+      ? LocalProfileSlot.firstTime
+      : LocalProfileSlot.returning;
+
+  static PlayerProfileChoice _choiceForSlot(LocalProfileSlot slot) =>
+      slot == LocalProfileSlot.firstTime
+      ? PlayerProfileChoice.firstTime
+      : PlayerProfileChoice.returning;
 
   /// Daily-quest game CTAs name football modes; a player whose home sport is
   /// something else (or who has not reached that mode yet) is sent to their
@@ -594,6 +633,27 @@ class _AppShellState extends State<AppShell>
     Navigator.of(context).popUntil((route) => route.isFirst);
     _openSportGames(sport);
   }
+
+  bool _questNavigating = false;
+
+  void _continueQuest() {
+    if (_questNavigating || !mounted) return;
+    _questNavigating = true;
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _questNavigating = false;
+      if (!mounted) return;
+      if (context.read<GameBloc>().state.unlocks.pendingReveals.isEmpty) {
+        _openStreakHub();
+      }
+    });
+  }
+
+  void _chooseNextSport() => showNextSportPicker(context);
+
+  void _backToQuestGames() => _enterSport(
+    context.read<GameBloc>().state.unlocks.homeSport ?? Sport.football,
+  );
 
   /// Deck Locker → the sport's GAMES tab, where launching a game claims that
   /// sport's starter pack (see `_enterCricketGameFlow` and friends below) and
@@ -1006,6 +1066,7 @@ class _AppShellState extends State<AppShell>
           }
           if (_profileSelectorOpen) {
             return PlayerProfileSelectorScreen(
+              activeProfile: _activeProfileChoice,
               firstTimeProfileReady: _firstTimeProfileReady,
               returningProfileReady: _returningProfileReady,
               onSelect: _selectPlayerProfile,
