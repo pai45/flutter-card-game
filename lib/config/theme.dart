@@ -1,6 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+/// Opt-in technical UI family. Colors and typography remain owned by Cyber.
+abstract final class CyberKit {
+  static const gap = 8.0;
+  static const inset = 16.0;
+  static const cut = 16.0;
+  static const smallCut = 8.0;
+  static const stroke = 1.0;
+  static const focusStroke = 2.0;
+  static const touchTarget = 48.0;
+  static const actionHeight = 56.0;
+  static const dockMinHeight = 620.0;
+  static const borderAlpha = 0.45;
+  static const entrance = Duration(milliseconds: 220);
+  static const press = Duration(milliseconds: 90);
+}
+
 class AppTheme {
   static const Color whiteColor = Color(0xFFFFFFFF);
   static const Color blackColor = Color(0xFF000000);
@@ -566,6 +582,7 @@ class Cyber {
   static const cyan = AppTheme.textPrimary;
   static const accentGlow = Color(0x405cdfff);
   static const magenta = AppTheme.matchesLabel;
+
   /// Grand Prix Dash brand accent (racing red).
   static const f1Red = Color(0xFFF42D29);
   static const lime = AppTheme.pickLabel;

@@ -5,11 +5,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/guess_player/guess_player_cubit.dart';
 import '../../config/theme.dart';
 import '../../models/guess_player.dart';
+import '../../models/sport_match.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
 import '../../widgets/game_scaffold.dart';
 import '../leaderboard/widgets/game_leaderboard_button.dart';
+import 'cricket_guess_player_lobby.dart';
 
 class GuessPlayerHomeScreen extends StatefulWidget {
   const GuessPlayerHomeScreen({
@@ -60,8 +62,9 @@ class _GuessPlayerHomeScreenState extends State<GuessPlayerHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final cricket = context.read<GuessPlayerCubit>().sport == Sport.cricket;
     return GameScaffold(
-      title: 'DAILY CAREER INTEL',
+      title: cricket ? 'CRICKET' : 'DAILY CAREER INTEL',
       subtitle: 'GUESS THE PLAYER',
       leading: IconButton(
         tooltip: 'Back to games',
@@ -74,16 +77,18 @@ class _GuessPlayerHomeScreenState extends State<GuessPlayerHomeScreen> {
       rightSlot: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.person_search_rounded,
-            color: Cyber.magenta,
-            size: 22,
-          ),
-          const SizedBox(width: 10),
+          if (!cricket) ...[
+            const Icon(
+              Icons.person_search_rounded,
+              color: Cyber.magenta,
+              size: 22,
+            ),
+            const SizedBox(width: 10),
+          ],
           GameLeaderboardButton(
             sport: context.read<GuessPlayerCubit>().sport,
             mode: GameMode.mystery,
-            accent: Cyber.magenta,
+            accent: cricket ? Cyber.cyan : Cyber.magenta,
           ),
         ],
       ),
@@ -93,12 +98,13 @@ class _GuessPlayerHomeScreenState extends State<GuessPlayerHomeScreen> {
 
   Widget _body() {
     if (widget.state.loadStatus == GuessPlayerLoadStatus.loading) {
-      return const Center(
+      final cricket = context.read<GuessPlayerCubit>().sport == Sport.cricket;
+      return Center(
         child: SizedBox(
           width: 32,
           height: 32,
           child: CircularProgressIndicator(
-            color: Cyber.magenta,
+            color: cricket ? Cyber.cyan : Cyber.magenta,
             strokeWidth: 2,
           ),
         ),
@@ -129,8 +135,19 @@ class _GuessPlayerHomeScreenState extends State<GuessPlayerHomeScreen> {
           when (record?.startedAtEpochMs ?? 0) > 0 =>
         'RESUME',
       GuessPlayerResultStatus.inProgress => 'PLAY',
+      null => 'PLAY',
       _ => 'REVIEW',
     };
+
+    if (context.read<GuessPlayerCubit>().sport == Sport.cricket) {
+      return CricketGuessPlayerLobby(
+        state: widget.state,
+        resetLabel: _formatCountdown(_untilReset),
+        ctaLabel: ctaLabel,
+        onOpenToday: widget.onOpenToday,
+        onOpenLogs: widget.onOpenLogs,
+      );
+    }
 
     return CyberArenaBackground(
       assetPath: 'assets/backgrounds/home_stadium.png',

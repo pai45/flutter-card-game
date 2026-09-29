@@ -8,8 +8,6 @@ import '../../../models/sport_match.dart';
 import '../../../models/unlock_progress.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_widgets.dart';
-import '../../../widgets/cyber/cyber_cta_button.dart';
-import '../../../widgets/game_scaffold.dart';
 import 'unlock_sheets.dart';
 
 /// Slot #1 of a sport's GAMES tab while its Beginner's Quest is running: the
@@ -22,6 +20,7 @@ class BeginnerQuestCard extends StatelessWidget {
     required this.unlocks,
     required this.onPlay,
     this.showHeader = true,
+    this.showAction = false,
     super.key,
   });
 
@@ -29,6 +28,10 @@ class BeginnerQuestCard extends StatelessWidget {
   final UnlockProgress unlocks;
   final ValueChanged<ArcadeGame> onPlay;
   final bool showHeader;
+
+  /// The Games-tab card is informational. Quest hubs can opt into a direct
+  /// launch action alongside their fuller ladder controls.
+  final bool showAction;
 
   @override
   Widget build(BuildContext context) {
@@ -53,40 +56,8 @@ class BeginnerQuestCard extends StatelessWidget {
           accent: accent,
           chapter: unlocks.missionLabel(sport),
           onPlay: () => onPlay(step),
+          showAction: showAction,
         ),
-        if (showHeader) ...[
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: CyberObjectiveAction(
-              label: 'VIEW QUEST',
-              icon: Icons.flag_outlined,
-              accent: accent,
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (detailContext) => GameScaffold(
-                    title: '${sportModuleFor(sport).label.toUpperCase()} QUEST',
-                    leading: IconButton(
-                      icon: const Icon(Icons.arrow_back),
-                      onPressed: () => Navigator.of(detailContext).pop(),
-                    ),
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: RookiePathPanel(
-                        sport: sport,
-                        unlocks: unlocks,
-                        onPlay: (game) {
-                          Navigator.of(detailContext).pop();
-                          onPlay(game);
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
       ],
     );
   }
@@ -101,12 +72,14 @@ class _CompactBeginnerQuestCard extends StatelessWidget {
     required this.accent,
     required this.chapter,
     required this.onPlay,
+    required this.showAction,
   });
   final ArcadeGame step;
   final ArcadeGame? next;
   final Color accent;
   final String chapter;
   final VoidCallback onPlay;
+  final bool showAction;
 
   @override
   Widget build(BuildContext context) => CyberPanel(
@@ -207,16 +180,22 @@ class _CompactBeginnerQuestCard extends StatelessWidget {
                       Expanded(child: unlock),
                     ],
                   ),
-                const SizedBox(height: 16),
-                HudCtaButton(
-                  key: const ValueKey('beginner-quest-play'),
-                  label: compact ? 'PLAY NOW' : 'PLAY ${step.title}',
-                  wrapLabel: true,
-                  icon: Icons.play_arrow_rounded,
-                  height: 60,
-                  accent: accent,
-                  onTap: onPlay,
-                ),
+                if (showAction) ...[
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 44),
+                      child: CyberObjectiveAction(
+                        key: const ValueKey('beginner-quest-play'),
+                        label: compact ? 'PLAY NOW' : 'PLAY ${step.title}',
+                        icon: Icons.play_arrow_rounded,
+                        accent: accent,
+                        onTap: onPlay,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             );
           },
@@ -242,32 +221,11 @@ class RookiePathPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final module = sportModuleFor(sport);
     final ladder = sportGameLadder[sport]!;
-    final cleared = unlocks.stepsCleared(sport);
     return Column(
       key: const ValueKey('rookie-path-panel'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          '${module.label.toUpperCase()} // ${unlocks.chapterLabel(sport)}',
-          style: Cyber.label(12, color: module.accent),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          '$cleared of ${ladder.length} missions complete',
-          style: Cyber.body(14),
-        ),
-        const SizedBox(height: 8),
-        CyberProgressBar(value: cleared / ladder.length, accent: module.accent),
-        const SizedBox(height: 16),
-        BeginnerQuestCard(
-          sport: sport,
-          unlocks: unlocks,
-          onPlay: onPlay,
-          showHeader: false,
-        ),
-        const SizedBox(height: 16),
         _RookieLadder(sport: sport, unlocks: unlocks, onPlay: onPlay),
         const SizedBox(height: 16),
         Text(
@@ -355,6 +313,7 @@ class SportQuestList extends StatelessWidget {
               sport: sports[index],
               unlocks: unlocks,
               onPlay: onPlay,
+              showAction: true,
             ),
             if (index != sports.length - 1) const SizedBox(height: 8),
           ],
@@ -380,36 +339,137 @@ class _RookieLadder extends StatelessWidget {
     final module = sportModuleFor(sport);
     final ladder = sportGameLadder[sport]!;
     final cleared = unlocks.stepsCleared(sport);
-    return CyberPanel(
-      accent: module.accent,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text('MISSION LADDER', style: Cyber.label(10, color: module.accent)),
-          const SizedBox(height: 10),
-          for (var index = 0; index < ladder.length; index++) ...[
-            _RookieLadderRow(
-              index: index,
-              game: ladder[index],
-              cleared: index < cleared,
-              active: index == cleared,
-              accent: module.accent,
-              onTap: index <= cleared
-                  ? () => onPlay(ladder[index])
-                  : () => showLockedGameSheet(
-                      context,
-                      ladder[index],
-                      onPlay: onPlay,
-                    ),
-            ),
-            if (index != ladder.length - 1)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 7),
-                child: HudLine(),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Container(width: 18, height: 2, color: module.accent),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'MISSION LADDER',
+                style: Cyber.label(
+                  10,
+                  color: module.accent,
+                  letterSpacing: 1.4,
+                ),
               ),
+            ),
+            Text(
+              '$cleared / ${ladder.length}',
+              style: Cyber.display(
+                11,
+                color: Cyber.muted,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            ),
           ],
-        ],
+        ),
+        const SizedBox(height: 16),
+        Stack(
+          children: [
+            Positioned(
+              left: 17,
+              top: 18,
+              bottom: 18,
+              child: Container(width: 2, color: Cyber.line),
+            ),
+            Column(
+              children: [
+                for (var index = 0; index < ladder.length; index++) ...[
+                  if (index > 0) const SizedBox(height: 8),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _MissionRouteNode(
+                        index: index,
+                        cleared: index < cleared,
+                        active: index == cleared,
+                        accent: module.accent,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: AnimatedSwitcher(
+                          duration: MediaQuery.disableAnimationsOf(context)
+                              ? Duration.zero
+                              : const Duration(milliseconds: 260),
+                          switchInCurve: Curves.easeOutCubic,
+                          switchOutCurve: Curves.easeInCubic,
+                          child: _RookieLadderRow(
+                            key: ValueKey(
+                              '${ladder[index].name}-${index < cleared
+                                  ? 'cleared'
+                                  : index == cleared
+                                  ? 'active'
+                                  : 'locked'}',
+                            ),
+                            index: index,
+                            game: ladder[index],
+                            cleared: index < cleared,
+                            active: index == cleared,
+                            nextUnlock: index == cleared + 1,
+                            football: sport == Sport.football,
+                            accent: module.accent,
+                            onTap: index <= cleared
+                                ? () => onPlay(ladder[index])
+                                : () => showLockedGameSheet(
+                                    context,
+                                    ladder[index],
+                                    onPlay: onPlay,
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _MissionRouteNode extends StatelessWidget {
+  const _MissionRouteNode({
+    required this.index,
+    required this.cleared,
+    required this.active,
+    required this.accent,
+  });
+
+  final int index;
+  final bool cleared;
+  final bool active;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = cleared
+        ? Cyber.success
+        : active
+        ? accent
+        : Cyber.muted;
+    return Container(
+      width: 36,
+      height: 36,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Cyber.panel2,
+        shape: BoxShape.circle,
+        border: Border.all(color: color.withValues(alpha: active ? 0.9 : 0.45)),
       ),
+      child: cleared
+          ? const Icon(Icons.check_rounded, color: Cyber.success, size: 19)
+          : Text(
+              '${index + 1}'.padLeft(2, '0'),
+              style: Cyber.label(
+                9,
+                color: color,
+              ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+            ),
     );
   }
 }
@@ -420,64 +480,315 @@ class _RookieLadderRow extends StatelessWidget {
     required this.game,
     required this.cleared,
     required this.active,
+    required this.nextUnlock,
+    required this.football,
     required this.accent,
     required this.onTap,
+    super.key,
   });
 
   final int index;
   final ArcadeGame game;
   final bool cleared;
   final bool active;
+  final bool nextUnlock;
+  final bool football;
   final Color accent;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final color = cleared ? Cyber.success : (active ? accent : Cyber.muted);
+    final color = cleared
+        ? Cyber.success
+        : active
+        ? accent
+        : Cyber.muted;
+    final status = cleared
+        ? 'CLEARED · REPLAY'
+        : active
+        ? 'ACTIVE MISSION'
+        : nextUnlock
+        ? 'NEXT UNLOCK'
+        : 'LOCKED';
+    void activate() {
+      HapticFeedback.selectionClick();
+      playSound(SoundEffect.uiTap);
+      onTap();
+    }
+
     return Semantics(
       button: true,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            children: [
-              Icon(
-                cleared
-                    ? Icons.check_rounded
-                    : active
-                    ? Icons.play_arrow_rounded
-                    : Icons.lock_outline,
-                color: color,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${index + 1}. ${game.title}',
-                      style: Cyber.display(12),
+      onTap: activate,
+      excludeSemantics: true,
+      label:
+          'Mission ${index + 1}, ${game.title}. $status. '
+          '${active
+              ? game.questRequirement
+              : cleared
+              ? 'Replay available'
+              : game.unlockRequirement}',
+      child: GestureDetector(
+        key: ValueKey('mission-ticket-${game.name}'),
+        behavior: HitTestBehavior.opaque,
+        onTap: activate,
+        child: ChamferedActionSurface(
+          clipper: const HudChamferClipper(bigCut: 10, smallCut: 2),
+          borderColor: active
+              ? accent.withValues(alpha: 0.9)
+              : nextUnlock
+              ? Cyber.amber.withValues(alpha: 0.48)
+              : color.withValues(alpha: cleared ? 0.42 : 0.25),
+          glowColor: active ? accent : null,
+          glow: active ? 0.8 : 0,
+          child: ColoredBox(
+            color: active
+                ? Color.alphaBlend(accent.withValues(alpha: 0.09), Cyber.panel)
+                : Cyber.panel,
+            child: Stack(
+              children: [
+                if (active && football)
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        painter: _MissionPitchPainter(
+                          color: accent.withValues(alpha: 0.13),
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      cleared
-                          ? 'Completed - Replay'
-                          : active
-                          ? 'Current mission - Play'
-                          : game.unlockRequirement,
-                      style: Cyber.body(13, color: color),
-                    ),
-                  ],
+                  ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                  child: active
+                      ? _ActiveMissionContent(game: game, accent: accent)
+                      : _CompactMissionContent(
+                          game: game,
+                          cleared: cleared,
+                          nextUnlock: nextUnlock,
+                          color: color,
+                        ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+class _ActiveMissionContent extends StatelessWidget {
+  const _ActiveMissionContent({required this.game, required this.accent});
+
+  final ArcadeGame game;
+  final Color accent;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        'LIVE CONTRACT // ${game.ladderIndex + 1}',
+        style: Cyber.label(9, color: accent, letterSpacing: 1.2),
+      ),
+      const SizedBox(height: 10),
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _MissionIconPlate(icon: game.icon, color: accent),
+          const SizedBox(width: 8),
+          Expanded(child: Text(game.title, style: Cyber.display(13))),
+        ],
+      ),
+      const SizedBox(height: 10),
+      Text(game.questRequirement, style: Cyber.body(12, color: Cyber.muted)),
+      const SizedBox(height: 12),
+      const HudLine(),
+      const SizedBox(height: 10),
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          const _MissionRewardEmblem(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            color: accent,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('PLAY', style: Cyber.label(10, color: Cyber.bg)),
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 14,
+                  color: Cyber.bg,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
+class _CompactMissionContent extends StatelessWidget {
+  const _CompactMissionContent({
+    required this.game,
+    required this.cleared,
+    required this.nextUnlock,
+    required this.color,
+  });
+
+  final ArcadeGame game;
+  final bool cleared;
+  final bool nextUnlock;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _MissionIconPlate(icon: game.icon, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              game.title,
+              style: Cyber.display(
+                11.5,
+                color: cleared ? AppTheme.textContrast : Cyber.muted,
+              ),
+            ),
+          ),
+          if (nextUnlock) ...[
+            const SizedBox(width: 4),
+            const Icon(
+              Icons.lock_outline_rounded,
+              size: 16,
+              color: Cyber.amber,
+            ),
+          ],
+        ],
+      ),
+      const SizedBox(height: 8),
+      Text(
+        cleared
+            ? 'CLEARED · REPLAY'
+            : nextUnlock
+            ? 'NEXT UNLOCK'
+            : 'LOCKED',
+        style: Cyber.label(8.5, color: nextUnlock ? Cyber.amber : color),
+      ),
+      if (!cleared) ...[
+        const SizedBox(height: 4),
+        Text(
+          game.unlockRequirement,
+          style: Cyber.body(11.5, color: Cyber.muted),
+        ),
+      ],
+    ],
+  );
+}
+
+class _MissionIconPlate extends StatelessWidget {
+  const _MissionIconPlate({required this.icon, required this.color});
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 28,
+    height: 28,
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      color: Color.alphaBlend(color.withValues(alpha: 0.08), Cyber.panel2),
+      border: Border.all(color: color.withValues(alpha: 0.5)),
+    ),
+    child: Icon(icon, size: 17, color: color),
+  );
+}
+
+class _MissionRewardEmblem extends StatelessWidget {
+  const _MissionRewardEmblem();
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(
+        width: 26,
+        height: 26,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Cyber.gold.withValues(alpha: 0.13),
+          border: Border.all(color: Cyber.gold.withValues(alpha: 0.75)),
+        ),
+        child: const Icon(Icons.bolt_rounded, color: Cyber.gold, size: 17),
+      ),
+      const SizedBox(width: 5),
+      Text(
+        '+$beginnerQuestStepXp XP',
+        style: Cyber.display(
+          10,
+          color: Cyber.gold,
+        ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
+      ),
+    ],
+  );
+}
+
+class _MissionPitchPainter extends CustomPainter {
+  const _MissionPitchPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final field = Rect.fromLTWH(
+      size.width * 0.47,
+      12,
+      size.width * 0.57,
+      size.height - 24,
+    );
+    canvas.drawRect(field, paint);
+    canvas.drawLine(
+      Offset(field.center.dx, field.top),
+      Offset(field.center.dx, field.bottom),
+      paint,
+    );
+    canvas.drawCircle(field.center, field.height * 0.13, paint);
+    canvas.drawRect(
+      Rect.fromLTWH(
+        field.left,
+        field.center.dy - field.height * 0.18,
+        field.width * 0.17,
+        field.height * 0.36,
+      ),
+      paint,
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(
+        field.right - field.width * 0.17,
+        field.center.dy - field.height * 0.18,
+        field.width * 0.17,
+        field.height * 0.36,
+      ),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _MissionPitchPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 class _DailyQuestLockedPreview extends StatelessWidget {

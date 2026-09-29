@@ -17,6 +17,7 @@ import '../team_logo.dart' show OctagonBorderPainter, OctagonClipper;
 import 'sport_signal_painters.dart';
 
 export 'quest_result_receipt.dart';
+export 'cyber_kit.dart';
 
 /// Lifecycle of a [CyberObjectiveCard]: in progress, completed and waiting to
 /// be claimed, or already paid out.

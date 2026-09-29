@@ -896,16 +896,13 @@ class _MatchesTabState extends State<_MatchesTab> {
                           children: [
                             Text(
                               entry.key.shortCode,
-                              style:
-                                  Cyber.display(
-                                    18,
-                                    color: Cyber.cyan.withValues(alpha: 0.85),
-                                    letterSpacing: 2,
-                                  ).copyWith(
-                                    fontFeatures: const [
-                                      FontFeature.tabularFigures(),
-                                    ],
-                                  ),
+                              style: Cyber.body(
+                                13,
+                                color: Cyber.cyan.withValues(alpha: 0.85),
+                                weight: FontWeight.w700,
+                                letterSpacing: 0.4,
+                                height: 1,
+                              ),
                             ),
                             const SizedBox(width: 10),
                             Expanded(

@@ -1,7 +1,7 @@
 # Sport and Game Unlocks (Beginner's Quest)
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-26
+> **Last verified:** 2026-09-29
 > **Scope:** The home sport chosen at onboarding, locked sports and games, the per-sport Beginner's Quest ladder that opens games by playing, and the 50 Oz sport unlock.
 
 ## Product Purpose
@@ -26,19 +26,26 @@ teasers, so the player knows there is more to earn.
 - **GAMES tab, slot #1.** The **BEGINNER'S QUEST** card, shown while that
   sport's quest is running. Its mission plate leads with the current game's
   icon, name, and finish condition. A quiet reward rail shows `+40 XP` and the
-  next game unlock (or the completion bonus), followed by a single prominent
-  **PLAY** button. On narrow or enlarged-text layouts, the rewards stack and
-  the button reads **PLAY NOW**. The header already carries total ladder progress,
-  so the card does not add a second meter. Finishing the run still triggers the
-  existing game-unlock or quest-completion reveal.
+  next game unlock (or the completion bonus). It has no **PLAY** or **VIEW
+  QUEST** action: the Games page remains a clear catalogue, while launch and
+  full-ladder controls stay in the ROOKIE PATH command center. The header carries
+  ladder progress, so the card does not add a second meter. Finishing the run
+  still triggers the existing game-unlock or quest-completion reveal.
 - **MATCH / TRENDING quest slot.** The home-sport Beginner's Quest takes the
   daily-quest tile's place for the whole rookie phase, then the daily tile
   returns permanently. Buying another sport early does not change the focus.
 - **Streak / quest hub.** Before home-sport graduation it becomes a tabless
-  **ROOKIE PATH** command center: ladder progress, current game CTA, rewards,
-  game states, and a locked Daily Quest preview. After graduation, one-sport
+  **ROOKIE PATH** command center. It opens directly with the MISSION LADDER;
+  the live ticket carries the current game's PLAY action, finish condition,
+  and +40 XP reward, while the ladder header shows progress. A locked Daily
+  Quest preview remains below the route. After graduation, one-sport
   careers get TODAY; managed careers with 2+ sports get QUESTS (Daily Quests
-  followed by active sport quests).
+  followed by active sport quests). Its MISSION LADDER sits directly on the
+  quest-page background, with no enclosing panel. It is a vertical route of
+  numbered mission tickets. The selected mission expands into a live dossier
+  with its finish condition, +40 XP reward emblem and PLAY cue; football adds a
+  faint pitch diagram. Cleared tickets offer replay, locked tickets explain
+  their prerequisite, and the next unlock carries a quiet amber marker.
 - **ALL SPORTS.** Locked sports show a lock, `LOCKED // N GAMES + MATCHES` and
   `50 OZ`, and open the unlock sheet. Fixtures are never fetched for them.
 - **Match search.** Results cover unlocked sports only.
@@ -94,6 +101,15 @@ teasers, so the player knows there is more to earn.
 - **Guess the Player / Driver / Winner:** a fresh daily result, won or lost.
 
 **Unlocking a sport:**
+- All five sport purchase sheets use the shared Cyberpunk UI kit: sport identity
+  header, featured first game, numbered prerequisite route, and balance/cost footer.
+  The route has no additional outer enclosure. Cricket opens FINAL OVER first.
+- Only the enabled primary action glows. The footer stays docked at normal text
+  sizes when at least 620 px is available; short screens and text above 1.2x use
+  one scrollable sheet. Close, barrier dismissal and back never purchase.
+- The kit uses a 220 ms entrance, short press feedback, and one sound/haptic per
+  action. Reduced motion removes the entrance/press movement. Existing app-root
+  sport unlock celebrations remain the purchase payoff.
 - Another sport costs **50 Oz** (`sportUnlockCostOz`).
 - An unaffordable purchase shows the shortfall and a pointer to the quest
   reward, and never charges.
@@ -142,8 +158,11 @@ teasers, so the player knows there is more to earn.
 - The streak reminder waits while unlock reveals are pending.
 - Locked tiles are desaturated and flat with no glow. The next unlock gets a
   calm amber chip. The GAMES quest card uses a flat mission plate and reward
-  rail, with the shared glowing play button as its focal action. The full
-  ladder remains in the dedicated ROOKIE PATH command center.
+  rail without extra actions. The full ladder and its launch controls remain
+  in the dedicated ROOKIE PATH command center. In that ladder, only the active
+  ticket glows. Ticket taps have sound and haptic feedback, while advancement
+  briefly transitions the ticket state unless reduced motion is requested.
+  The existing unlock reveal remains the completion payoff.
 
 ## Visible States
 

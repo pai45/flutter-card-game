@@ -197,28 +197,25 @@ void main() {
     await tester.pump();
 
     expect(find.byKey(const ValueKey('rookie-path-panel')), findsOneWidget);
+    expect(find.text('MISSION LADDER'), findsOneWidget);
+    expect(find.byKey(const ValueKey('beginner-quest-play')), findsNothing);
+    expect(find.text('0 of 3 missions complete'), findsNothing);
     expect(find.text('DAILY QUESTS LOCKED'), findsOneWidget);
     expect(find.text('TODAY'), findsNothing);
     expect(find.text('KICK OFF'), findsNothing);
-    await tester.ensureVisible(
-      find.byKey(const ValueKey('beginner-quest-play')),
-    );
-    await tester.ensureVisible(
-      find.byKey(const ValueKey('beginner-quest-play')),
-    );
-    await tester.tap(find.byKey(const ValueKey('beginner-quest-play')));
+    final liveMission = find.byKey(const ValueKey('mission-ticket-finalOver'));
+    await tester.ensureVisible(liveMission);
+    await tester.tap(liveMission);
     await tester.pump();
     expect(opened, ArcadeGame.finalOver);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('games beginner quest card stays compact and actionable', (
+  testWidgets('games beginner quest card stays compact and informational', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(320, 480));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    ArcadeGame? opened;
-
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.darkTheme,
@@ -234,7 +231,7 @@ void main() {
             child: BeginnerQuestCard(
               sport: Sport.football,
               unlocks: UnlockProgress.fresh(Sport.football),
-              onPlay: (game) => opened = game,
+              onPlay: (_) {},
             ),
           ),
         ),
@@ -243,7 +240,9 @@ void main() {
     await tester.pump();
 
     expect(find.text("BEGINNER'S QUEST"), findsOneWidget);
-    expect(find.text('PLAY NOW'), findsOneWidget);
+    expect(find.text('PLAY NOW'), findsNothing);
+    expect(find.text('PLAY PITCH DUEL'), findsNothing);
+    expect(find.text('VIEW QUEST'), findsNothing);
     expect(find.text('+40 XP'), findsOneWidget);
     expect(find.text('Finish one match. A loss counts.'), findsOneWidget);
     expect(find.text('Unlocks PENALTY SHOOTOUT'), findsOneWidget);
@@ -252,12 +251,6 @@ void main() {
       find.text('Finish one run - win or lose - to unlock PENALTY SHOOTOUT.'),
       findsNothing,
     );
-    await tester.ensureVisible(
-      find.byKey(const ValueKey('beginner-quest-play')),
-    );
-    await tester.tap(find.byKey(const ValueKey('beginner-quest-play')));
-    await tester.pump();
-    expect(opened, ArcadeGame.pitchDuel);
     expect(tester.takeException(), isNull);
   });
 

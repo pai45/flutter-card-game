@@ -44,12 +44,91 @@ void main() {
         await tester.pumpWidget(wrap(RookiePathPanel(sport: sport,
           unlocks: progress, onPlay: (_) {})));
         await tester.pump();
-        expect(find.text(game.questRequirement), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byKey(ValueKey('mission-ticket-${game.name}')),
+            matching: find.text(game.questRequirement),
+          ),
+          findsOneWidget,
+        );
         expect(tester.takeException(), isNull, reason: game.name);
         progress = progress.recordPlay(game, game.name).progress;
       }
     }
     await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('mission tickets launch live and cleared games and mark the next unlock', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(320, 852));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final progress = UnlockProgress.fresh(Sport.football)
+        .recordPlay(ArcadeGame.pitchDuel, 'first-match').progress;
+    final bloc = ReceiptBloc(GameState.initial().copyWith(unlocks: progress));
+    addTearDown(bloc.close);
+    final opened = <ArcadeGame>[];
+
+    await tester.pumpWidget(wrap(RookiePathPanel(
+      sport: Sport.football,
+      unlocks: progress,
+      onPlay: opened.add,
+    ), bloc: bloc));
+    await tester.pump();
+
+    expect(find.text('CLEARED · REPLAY'), findsOneWidget);
+    expect(find.text('NEXT UNLOCK'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('mission-ticket-penaltyShootout')),
+        matching: find.text('Finish one match. A loss counts.'),
+      ),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+
+    final cleared = find.byKey(const ValueKey('mission-ticket-pitchDuel'));
+    await tester.ensureVisible(cleared);
+    await tester.tap(cleared);
+    expect(opened, [ArcadeGame.pitchDuel]);
+
+    final active = find.byKey(const ValueKey('mission-ticket-penaltyShootout'));
+    await tester.ensureVisible(active);
+    await tester.tap(active);
+    expect(opened, [ArcadeGame.pitchDuel, ArcadeGame.penaltyShootout]);
+  });
+
+  testWidgets('locked mission tickets open the existing prerequisite sheet', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(320, 852));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final progress = UnlockProgress.fresh(Sport.football);
+    final bloc = ReceiptBloc(GameState.initial().copyWith(unlocks: progress));
+    addTearDown(bloc.close);
+    final opened = <ArcadeGame>[];
+
+    await tester.pumpWidget(wrap(RookiePathPanel(
+      sport: Sport.football,
+      unlocks: progress,
+      onPlay: opened.add,
+    ), bloc: bloc));
+    expect(find.text('LOCKED'), findsNWidgets(4));
+
+    final later = find.byKey(const ValueKey('mission-ticket-footballBingo'));
+    await tester.ensureVisible(later);
+    await tester.tap(later);
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump();
+    expect(find.text('Unlocks after GUESS THE PLAYER. Next up: PITCH DUEL.'), findsOneWidget);
+    Navigator.of(tester.element(find.text('LOCKED GAME'))).pop();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    final next = find.byKey(const ValueKey('mission-ticket-penaltyShootout'));
+    await tester.ensureVisible(next);
+    await tester.tap(next);
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump();
+    expect(find.text('LOCKED GAME'), findsOneWidget);
+    expect(find.text('Finish one PITCH DUEL run to unlock it - win or lose.'), findsOneWidget);
+    expect(opened, isEmpty);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('receipt belongs only to the exact result, and continues once per tap', (tester) async {

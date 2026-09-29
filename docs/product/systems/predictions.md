@@ -641,6 +641,10 @@ two surfaces share one goal instead of each re-deriving it.
 Tapping a league's standing strip opens the per-league hub, which carries five
 tabs: **TABLE**, **LEADERS**, **STATS**, **GAMES**, and **PICKS**.
 
+On the MATCHES feed, each sport's league standing strip uses compact Onest type
+for the league name, preserving room for the standing action and long
+competition names without competing with the fixture cards below.
+
 The persistent league lockup keeps its subtitle to the compact season token
 only (for example, `2026-27`). The league name already owns the primary line,
 so duplicated competition text and team count do not compete for header space.

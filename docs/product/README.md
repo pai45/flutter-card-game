@@ -173,6 +173,7 @@ Guess the Player entries share one implementation and one product page.
 
 - [Gamer-First Experience Principles](design/experience-principles.md)
 - [Cyber UI Design System](design/cyber-ui-design-system.md)
+- [Cyberpunk UI Kit and Component Gallery](design/cyberpunk-ui-kit.md)
 - [Motion, Audio, Haptics, and Celebration](design/motion-audio-haptics.md)
 - [Screen and State Catalog](design/screen-state-catalog.md)
 

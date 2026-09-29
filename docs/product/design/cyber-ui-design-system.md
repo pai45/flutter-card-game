@@ -62,6 +62,16 @@ clear state/result feedback, and a reward/next-action handoff.
   `CyberCtaButton`, and `CyberSegmentedTabs`. If a visual pattern repeats, extend
   the shared cyber catalog rather than duplicate it.
 
+### Cyberpunk UI kit — sport access
+
+**BUILT:** Sport unlock sheets use the opt-in [Cyberpunk UI kit](cyberpunk-ui-kit.md).
+It combines opposing chamfers, segmented section rules, numbered progression
+entries, sport emblems and flat primary/secondary/icon actions. Its shared
+`CyberKit` dimensions and motion values accompany the existing theme tokens.
+Only an enabled primary action glows; unaffordable unlocks give that emphasis
+to VIEW QUESTS. Existing components retain their defaults. The kit implements
+the standard opposing cuts without migrating legacy `CyberPanel` callers.
+
 ### Charts — one system
 
 All charts use `lib/widgets/cyber/cyber_chart.dart`. There is no charting
