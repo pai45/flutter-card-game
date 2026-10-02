@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../blocs/achievement/achievement_celebration_controller.dart';
+import '../models/achievement.dart';
 import 'achievement_unlock_celebration.dart';
+import 'cyber/cyber_widgets.dart';
 
 /// Renders the queued "ACHIEVEMENT UNLOCKED" reveal above everything. Mounted
 /// once near the app root (above the Navigator) so it floats over any pushed
@@ -20,11 +22,14 @@ class AchievementCelebrationHost extends StatelessWidget {
       builder: (context, state) {
         if (!state.canReveal) return const SizedBox.shrink();
         final achievement = state.queue.first;
-        return AchievementUnlockCelebration(
-          key: ValueKey(achievement.id),
-          achievement: achievement,
-          onDismissed: () =>
-              context.read<AchievementCelebrationController>().consumeFront(),
+        return GameTypographyScope(
+          enabled: achievement.tab == AchievementTab.games,
+          child: AchievementUnlockCelebration(
+            key: ValueKey(achievement.id),
+            achievement: achievement,
+            onDismissed: () =>
+                context.read<AchievementCelebrationController>().consumeFront(),
+          ),
         );
       },
     );

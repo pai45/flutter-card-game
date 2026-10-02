@@ -18,6 +18,11 @@ void main() {
   testWidgets('confirmed logout reaches the shell callback', (tester) async {
     var logoutCalls = 0;
     final storage = SecureGameStorage();
+    final gameBloc = GameBloc(storage);
+    gameBloc.emit(
+      gameBloc.state.copyWith(loading: false, displayName: 'chiefpai45'),
+    );
+    addTearDown(gameBloc.close);
     tester.view.physicalSize = const Size(900, 1200);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -26,7 +31,7 @@ void main() {
     await tester.pumpWidget(
       MultiBlocProvider(
         providers: [
-          BlocProvider(create: (_) => GameBloc(storage)),
+          BlocProvider.value(value: gameBloc),
           BlocProvider(create: (_) => FriendsCubit(storage)),
           BlocProvider(
             create: (_) => PredictionCubit(MockPredictionRepository(), storage),
@@ -50,6 +55,8 @@ void main() {
       ),
     );
     await tester.pump();
+
+    expect(find.text('chiefpai45'), findsOneWidget);
 
     final settings = find.text('Settings');
     await tester.ensureVisible(settings);

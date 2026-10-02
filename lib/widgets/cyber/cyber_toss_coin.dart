@@ -258,7 +258,7 @@ class _CyberCoinTossPhaseState extends State<CyberCoinTossPhase>
             Text(
               widget.prompt,
               textAlign: TextAlign.center,
-              style: Cyber.body(11, color: Cyber.muted),
+              style: Cyber.bodyFor(context, 11, color: Cyber.muted),
             ),
             const SizedBox(height: 12),
             choices,

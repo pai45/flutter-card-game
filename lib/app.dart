@@ -62,6 +62,7 @@ import 'services/prediction_repository.dart';
 import 'services/rolling_window_service.dart';
 import 'services/secure_storage_service.dart';
 import 'widgets/achievement_celebration_host.dart';
+import 'widgets/cyber/cyber_widgets.dart' show GameTypographyScope;
 import 'widgets/streak_celebration_host.dart';
 import 'widgets/streak_reminder_popup.dart';
 import 'widgets/unlock_celebration_host.dart';
@@ -81,16 +82,7 @@ class PitchDuelApp extends StatefulWidget {
 }
 
 class _PitchDuelAppState extends State<PitchDuelApp> {
-  final SecureGameStorage _storage = SecureGameStorage();
   int _profileSession = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _initializeProfiles();
-  }
-
-  Future<void> _initializeProfiles() => _storage.ensureLocalProfiles();
 
   void _restartProfileSession(LocalProfileSlot _) {
     if (!mounted) return;
@@ -163,7 +155,9 @@ class _PitchDuelAppState extends State<PitchDuelApp> {
                 Positioned.fill(child: child ?? const SizedBox.shrink()),
                 const Positioned.fill(child: AchievementCelebrationHost()),
                 const Positioned.fill(child: StreakCelebrationHost()),
-                const Positioned.fill(child: UnlockCelebrationHost()),
+                const Positioned.fill(
+                  child: GameTypographyScope(child: UnlockCelebrationHost()),
+                ),
               ],
             ),
           );
@@ -220,6 +214,8 @@ class _AppShellState extends State<AppShell>
   PlayerProfileChoice _activeProfileChoice = PlayerProfileChoice.firstTime;
   bool _firstTimeProfileReady = false;
   bool _returningProfileReady = false;
+  LocalProfileSummary? _firstTimeProfileSummary;
+  LocalProfileSummary? _returningProfileSummary;
 
   @override
   void initState() {
@@ -527,17 +523,19 @@ class _AppShellState extends State<AppShell>
 
   Future<void> _logoutFromProfile() async {
     final active = await _storage.loadActiveLocalProfile();
-    final readiness = await Future.wait([
-      _storage.isLocalProfileReady(LocalProfileSlot.firstTime),
-      _storage.isLocalProfileReady(LocalProfileSlot.returning),
+    final summaries = await Future.wait([
+      _storage.loadLocalProfileSummary(LocalProfileSlot.firstTime),
+      _storage.loadLocalProfileSummary(LocalProfileSlot.returning),
     ]);
     if (!mounted) return;
     setState(() {
       _pendingGameLaunch = null;
       _pendingGameLaunchKind = null;
       _activeProfileChoice = _choiceForSlot(active);
-      _firstTimeProfileReady = readiness[0];
-      _returningProfileReady = readiness[1];
+      _firstTimeProfileSummary = summaries[0];
+      _returningProfileSummary = summaries[1];
+      _firstTimeProfileReady = summaries[0].ready;
+      _returningProfileReady = summaries[1].ready;
       _profileSelectorOpen = true;
     });
     _syncRevealGate();
@@ -682,12 +680,15 @@ class _AppShellState extends State<AppShell>
   /// `final_over` package; the lobby, pitch and HUD are ours.
   void _openFinalOver() => _enterCricketGameFlow(_pushFinalOver);
 
+  MaterialPageRoute<void> _gameRoute({required WidgetBuilder builder}) =>
+      MaterialPageRoute<void>(
+        builder: (context) => GameTypographyScope(child: builder(context)),
+      );
+
   void _pushFinalOver() {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
-        builder: (_) => FinalOverHub(onExit: navigator.pop),
-      ),
+      _gameRoute(builder: (_) => FinalOverHub(onExit: navigator.pop)),
     );
   }
 
@@ -754,7 +755,7 @@ class _AppShellState extends State<AppShell>
   void _pushGame() {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      _gameRoute(
         builder: (_) => GameTabContent(
           onNavigate: (next) {
             navigator.pop();
@@ -768,7 +769,7 @@ class _AppShellState extends State<AppShell>
   void _pushShootout() {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      _gameRoute(
         builder: (_) => ShootoutTabContent(
           onNavigate: (next) {
             navigator.pop();
@@ -782,7 +783,7 @@ class _AppShellState extends State<AppShell>
   void _pushFootballChess() {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      _gameRoute(
         builder: (_) => FootballChessTabContent(
           onNavigate: (next) {
             navigator.pop();
@@ -798,7 +799,7 @@ class _AppShellState extends State<AppShell>
   void _openQuiz(Sport sport) {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      _gameRoute(
         builder: (_) => QuizTabContent(
           sport: sport,
           onNavigate: (next) {
@@ -835,7 +836,7 @@ class _AppShellState extends State<AppShell>
   }) {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      _gameRoute(
         builder: (_) => GuessPlayerTabContent(
           sport: sport,
           timelines: timelines,
@@ -852,7 +853,7 @@ class _AppShellState extends State<AppShell>
   void _openF1GuessDriver() {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      _gameRoute(
         builder: (_) => GuessDriverTabContent(
           onNavigate: (next) {
             navigator.pop();
@@ -866,7 +867,7 @@ class _AppShellState extends State<AppShell>
   void _openTennisGuessWinner() {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      _gameRoute(
         builder: (_) => GuessWinnerTabContent(
           onNavigate: (next) {
             navigator.pop();
@@ -880,7 +881,7 @@ class _AppShellState extends State<AppShell>
   void _openFootballBingo() {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      _gameRoute(
         builder: (_) => FootballBingoTabContent(
           onNavigate: (next) {
             navigator.pop();
@@ -912,7 +913,7 @@ class _AppShellState extends State<AppShell>
   void _pushGrandPrix() {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      _gameRoute(
         builder: (_) => GrandPrixTabContent(
           onNavigate: (next) {
             navigator.pop();
@@ -931,9 +932,7 @@ class _AppShellState extends State<AppShell>
   void _pushTennisRally() {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
-        builder: (_) => TennisRallyHub(onExit: navigator.pop),
-      ),
+      _gameRoute(builder: (_) => TennisRallyHub(onExit: navigator.pop)),
     );
   }
 
@@ -941,7 +940,7 @@ class _AppShellState extends State<AppShell>
   void _pushBasketball() {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      _gameRoute(
         builder: (_) => BasketballTabContent(
           onNavigate: (next) {
             navigator.pop();
@@ -1069,6 +1068,8 @@ class _AppShellState extends State<AppShell>
               activeProfile: _activeProfileChoice,
               firstTimeProfileReady: _firstTimeProfileReady,
               returningProfileReady: _returningProfileReady,
+              firstTimeSummary: _firstTimeProfileSummary,
+              returningSummary: _returningProfileSummary,
               onSelect: _selectPlayerProfile,
             );
           }
@@ -1098,9 +1099,11 @@ class _AppShellState extends State<AppShell>
           }
           final packReveal = state.pendingPackReveal;
           if (packReveal != null && packReveal.items.isNotEmpty) {
-            return PackOnboardingScreen(
-              key: const ValueKey('onboarding'),
-              reveal: packReveal,
+            return GameTypographyScope(
+              child: PackOnboardingScreen(
+                key: const ValueKey('onboarding'),
+                reveal: packReveal,
+              ),
             );
           }
           final content = switch (section) {

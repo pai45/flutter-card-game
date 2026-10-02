@@ -90,7 +90,9 @@ class FinalOverHub extends StatelessWidget {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  const CyberSlideUpFadeIn(child: _PitchStatusBar()),
+                                  const CyberSlideUpFadeIn(
+                                    child: _PitchStatusBar(),
+                                  ),
                                   const SizedBox(height: 14),
                                   CyberSlideUpFadeIn(
                                     delay: const Duration(milliseconds: 80),
@@ -107,7 +109,9 @@ class FinalOverHub extends StatelessWidget {
                                   CyberSlideUpFadeIn(
                                     delay: const Duration(milliseconds: 320),
                                     child: HudCtaButton(
-                                      label: ready ? 'TAKE GUARD' : 'BUILD SQUAD',
+                                      label: ready
+                                          ? 'TAKE GUARD'
+                                          : 'BUILD SQUAD',
                                       icon: Icons.sports_cricket_rounded,
                                       accent: Cyber.cyan,
                                       helper: ready
@@ -141,15 +145,18 @@ class FinalOverHub extends StatelessWidget {
                                             clip: false,
                                             onPressed: () =>
                                                 showGameMatchHistory(
-                                              context,
-                                              gameLabel: 'Final Over',
-                                              history: gameState.matchHistory
-                                                  .where((e) => e.isFinalOver)
-                                                  .toList(growable: false),
-                                              career: _RecordPanel(
-                                                stats: state.stats,
-                                              ),
-                                            ),
+                                                  context,
+                                                  gameLabel: 'Final Over',
+                                                  history: gameState
+                                                      .matchHistory
+                                                      .where(
+                                                        (e) => e.isFinalOver,
+                                                      )
+                                                      .toList(growable: false),
+                                                  career: _RecordPanel(
+                                                    stats: state.stats,
+                                                  ),
+                                                ),
                                           ),
                                         ),
                                       ),
@@ -174,19 +181,22 @@ class FinalOverHub extends StatelessWidget {
 
   void _openDeckBuilder(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => FinalOverDeckBuilderScreen(onBack: () => Navigator.of(context).pop()),
+      gamePageRoute<void>(
+        builder: (_) => FinalOverDeckBuilderScreen(
+          onBack: () => Navigator.of(context).pop(),
+        ),
       ),
     );
   }
 
   void _startMatch(BuildContext context, GameState gameState) {
     final cubit = context.read<FinalOverCubit>();
-    final batsmanIds =
-        gameState.deckFinalOverBatsmen.map((card) => card.id).toList();
+    final batsmanIds = gameState.deckFinalOverBatsmen
+        .map((card) => card.id)
+        .toList();
     final config = cubit.buildMatch(batsmanIds: batsmanIds);
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
+      gamePageRoute<void>(
         builder: (_) => BlocProvider.value(
           value: cubit,
           child: FinalOverMatchScreen(

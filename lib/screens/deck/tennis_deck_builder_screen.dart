@@ -38,8 +38,8 @@ class _TennisDeckBuilderScreenState extends State<TennisDeckBuilderScreen> {
   void initState() {
     super.initState();
     final game = context.read<GameBloc>().state;
-    _selectedPlayerId = game.deckTennisStarter?.id ??
-        game.deckTennisPlayers.firstOrNull?.id;
+    _selectedPlayerId =
+        game.deckTennisStarter?.id ?? game.deckTennisPlayers.firstOrNull?.id;
   }
 
   @override
@@ -50,15 +50,16 @@ class _TennisDeckBuilderScreenState extends State<TennisDeckBuilderScreen> {
           (slot) => slot.id == game.activeDeckId,
           orElse: () => game.deckSlots.first,
         );
-        final owned = tennisPlayerCards
-            .where((card) => game.ownedCardIds.contains(card.id))
-            .toList()
-          ..sort((a, b) => b.rating.compareTo(a.rating));
+        final owned =
+            tennisPlayerCards
+                .where((card) => game.ownedCardIds.contains(card.id))
+                .toList()
+              ..sort((a, b) => b.rating.compareTo(a.rating));
         final selected = _selectedPlayerId == null
             ? null
             : tennisPlayerCards
-                .where((card) => card.id == _selectedPlayerId)
-                .firstOrNull;
+                  .where((card) => card.id == _selectedPlayerId)
+                  .firstOrNull;
 
         return GameScaffold(
           title: 'Tennis Deck',
@@ -73,10 +74,7 @@ class _TennisDeckBuilderScreenState extends State<TennisDeckBuilderScreen> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 104),
                   children: [
-                    _TennisCourtBoard(
-                      deckName: active.name,
-                      player: selected,
-                    ),
+                    _TennisCourtBoard(deckName: active.name, player: selected),
                     const SizedBox(height: 12),
                     if (selected != null)
                       _TennisTelemetryPanel(playerId: selected.id),
@@ -123,13 +121,13 @@ class _TennisDeckBuilderScreenState extends State<TennisDeckBuilderScreen> {
     );
     bloc.add(
       DeckSaved(
-        active.copyWith(
-          tennisPlayers: [playerId],
-          tennisStarter: playerId,
-        ),
+        active.copyWith(tennisPlayers: [playerId], tennisStarter: playerId),
       ),
     );
-    await saved.timeout(const Duration(seconds: 2), onTimeout: () => bloc.state);
+    await saved.timeout(
+      const Duration(seconds: 2),
+      onTimeout: () => bloc.state,
+    );
     if (!mounted) return;
     await context.read<TennisCubit>().syncFromDeck([playerId], playerId);
     if (!mounted) return;
@@ -137,7 +135,8 @@ class _TennisDeckBuilderScreenState extends State<TennisDeckBuilderScreen> {
   }
 
   Future<void> _attemptBack(StoredDeckSlot active) async {
-    final dirty = active.tennisStarter != _selectedPlayerId ||
+    final dirty =
+        active.tennisStarter != _selectedPlayerId ||
         (_selectedPlayerId != null &&
             (active.tennisPlayers.length != 1 ||
                 active.tennisPlayers.first != _selectedPlayerId));
@@ -309,13 +308,7 @@ class _TennisStat extends StatelessWidget {
     return Expanded(
       child: Column(
         children: [
-          Text(
-            '$value',
-            style: Cyber.display(
-              15,
-              color: Cyber.lime,
-            ),
-          ),
+          Text('$value', style: Cyber.display(15, color: Cyber.lime)),
           const SizedBox(height: 4),
           Text(
             label,
@@ -361,7 +354,12 @@ class _TennisAthletePicker extends StatelessWidget {
           if (cards.isEmpty)
             Text(
               'OPEN THE TENNIS STARTER PACK IN GAMES TO SIGN AN ATHLETE.',
-              style: Cyber.body(12, color: Cyber.muted, height: 1.4),
+              style: Cyber.bodyFor(
+                context,
+                12,
+                color: Cyber.muted,
+                height: 1.4,
+              ),
             )
           else
             Wrap(

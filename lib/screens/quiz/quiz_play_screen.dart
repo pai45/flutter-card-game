@@ -237,7 +237,7 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
               : banked > 0
               ? 'Your +$banked XP is banked, but SET $_setNumber will not clear and the $kQuizEntryCost coin entry fee will not be refunded.'
               : 'SET $_setNumber will not clear and the $kQuizEntryCost coin entry fee will not be refunded.',
-          style: Cyber.body(13, color: Cyber.muted),
+          style: Cyber.bodyFor(context, 13, color: Cyber.muted),
         ),
         actions: [
           TextButton(
@@ -587,7 +587,11 @@ class _QuizPlayScreenState extends State<QuizPlayScreen>
                                   'This ladder is still being built. '
                                   'Pick another set or sport.',
                                   textAlign: TextAlign.center,
-                                  style: Cyber.body(12, color: Cyber.muted),
+                                  style: Cyber.bodyFor(
+                                    context,
+                                    12,
+                                    color: Cyber.muted,
+                                  ),
                                 ),
                               ],
                             ),
@@ -1125,7 +1129,8 @@ class _OptionTileState extends State<_OptionTile> {
           Expanded(
             child: Text(
               widget.label,
-              style: Cyber.body(
+              style: Cyber.bodyFor(
+                context,
                 14.5,
                 color: locked || selected
                     ? Colors.white
@@ -1339,7 +1344,11 @@ class _BottomDock extends StatelessWidget {
                   textAlign: TextAlign.center,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.body(11, color: const Color(0xFF90A1B9)),
+                  style: Cyber.bodyFor(
+                    context,
+                    11,
+                    color: const Color(0xFF90A1B9),
+                  ),
                 ),
               ],
             ),

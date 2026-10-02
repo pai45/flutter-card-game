@@ -64,7 +64,7 @@ class _ShootoutOpponentRevealPhaseState
       queueLabel: 'SCANNING GLOBAL PENALTY QUEUE',
       backgroundAsset: ShootoutArenaBackground.assetPath,
       player: MatchmakingFighter(
-        name: 'PLAYER ONE',
+        name: game.displayName,
         avatarAsset: playerAvatar.assetPath,
         frame: equippedFrame,
         badge: 'LV ${game.progression.levelFor(ProgressTrack.shootout)}',

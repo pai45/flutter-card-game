@@ -950,7 +950,7 @@ class _MoveGuidanceDock extends StatelessWidget {
                     helper,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.body(11, color: Cyber.muted),
+                    style: Cyber.bodyFor(context, 11, color: Cyber.muted),
                   ),
                 ],
               ),

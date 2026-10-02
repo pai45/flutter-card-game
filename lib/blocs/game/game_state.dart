@@ -224,6 +224,7 @@ class PackRevealData {
 class GameState {
   const GameState({
     required this.loading,
+    required this.displayName,
     required this.deckSlots,
     required this.activeDeckId,
     required this.deckAttackers,
@@ -300,6 +301,7 @@ class GameState {
 
   factory GameState.initial() => GameState(
     loading: true,
+    displayName: 'PLAYER ONE',
     deckSlots: defaultDeckSlots,
     activeDeckId: defaultDeckSlots.first.id,
     deckAttackers: cardsByIds(attackers, defaultDeckSlots.first.attackers),
@@ -399,6 +401,7 @@ class GameState {
   final PlayerCard? deckKeeper;
   final List<PlayerCard> deckFinalOverBatsmen;
   final List<PlayerCard> deckBasketballPlayers;
+  final String displayName;
   final PlayerCard? deckBasketballStarter;
   final List<PlayerCard> deckTennisPlayers;
   final PlayerCard? deckTennisStarter;
@@ -538,6 +541,7 @@ class GameState {
 
   GameState copyWith({
     bool? loading,
+    String? displayName,
     List<StoredDeckSlot>? deckSlots,
     String? activeDeckId,
     List<PlayerCard>? deckAttackers,
@@ -613,6 +617,7 @@ class GameState {
     String? pitchSessionId,
   }) => GameState(
     loading: loading ?? this.loading,
+    displayName: displayName ?? this.displayName,
     deckSlots: deckSlots ?? this.deckSlots,
     activeDeckId: activeDeckId ?? this.activeDeckId,
     deckAttackers: deckAttackers ?? this.deckAttackers,

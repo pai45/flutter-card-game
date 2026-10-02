@@ -14,6 +14,7 @@ class PlayerLevelBadge extends StatefulWidget {
   });
 
   final PlayerProgression progression;
+
   /// When set, shows that track's level/XP instead of the profile total.
   final ProgressTrack? track;
   final VoidCallback? onTap;
@@ -81,10 +82,7 @@ class _PlayerLevelBadgeState extends State<PlayerLevelBadge> {
                         letterSpacing: 1.5,
                       ),
                     ),
-                    Text(
-                      '$level',
-                      style: Cyber.display(24, color: Cyber.gold),
-                    ),
+                    Text('$level', style: Cyber.display(24, color: Cyber.gold)),
                   ],
                 ),
               ),
@@ -139,7 +137,8 @@ class _PlayerLevelBadgeState extends State<PlayerLevelBadge> {
                                     ? 'TOTAL $xp'
                                     : '${track.shortLabel} $xp',
                                 overflow: TextOverflow.ellipsis,
-                                style: Cyber.body(
+                                style: Cyber.bodyFor(
+                                  context,
                                   8,
                                   color: Cyber.muted,
                                   weight: FontWeight.w800,
@@ -198,11 +197,7 @@ class _XpMeter extends StatelessWidget {
         Text(
           label,
           overflow: TextOverflow.ellipsis,
-          style: Cyber.label(
-            8,
-            color: Cyber.muted,
-            letterSpacing: 0.5,
-          ),
+          style: Cyber.label(8, color: Cyber.muted, letterSpacing: 0.5),
         ),
       ],
     );

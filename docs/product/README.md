@@ -1,7 +1,7 @@
 # StatOz / Pitch Duel Product Documentation
 
 > **Status:** BUILT
-> **Last verified:** 2026-08-09
+> **Last verified:** 2026-10-02
 > **Audience:** Product, design, engineering, QA, and coding agents
 
 This folder is the canonical product source of truth for StatOz, the sports
@@ -83,6 +83,9 @@ leaderboard CTA that opens that game's own board over the lobby, so standings ar
 reachable without leaving the tee-up. Shared systems connect them through XP
 tracks, total level, Oz Coins, cards and decks, achievements, streaks, starter
 packs, reward reveals, and local persistence.
+Game body text uses Exo 2 across the Games hub, arcade flows, and game-related
+parts of shared systems; real sports Matches and Pick content retains Onest.
+Orbitron remains the display/HUD face across both areas.
 
 ## Playable Game Coverage
 
@@ -126,7 +129,7 @@ Guess the Player entries share one implementation and one product page.
 | Cards, decks, packs, starter packs, and daily drops | BUILT | [Collections, Decks, and Packs](systems/collections-decks-and-packs.md) |
 | Oz Coins, shop, cosmetics, XP/coin ledgers, and settlement | BUILT / PROTOTYPE COMMERCE | [Economy, Shop, and Ledgers](systems/economy-shop-and-ledgers.md) |
 | Leaderboards, per-league player boards, rivals, challenges, and activity history | BUILT / PROTOTYPE DATA | [Leaderboards, Rivals, and History](systems/leaderboards-rivals-and-history.md) |
-| Identity, onboarding, followed leagues, favorite clubs, and settings | BUILT; account entry PROTOTYPE | [Profile, Onboarding, and Settings](systems/profile-onboarding-and-settings.md) |
+| Identity, onboarding, followed leagues, favorite clubs, settings, and the versioned `chiefpai45` returning-career preset | BUILT; account entry PROTOTYPE | [Profile, Onboarding, and Settings](systems/profile-onboarding-and-settings.md) |
 | Local friend bookmarks and CPU-themed challenges | BUILT / PROTOTYPE SOCIAL DATA | [Friends](systems/friends.md) |
 | Invite links and demo referral rewards | PROTOTYPE | [Referrals](systems/referrals.md) |
 | Tutorials, How to Play, and support | BUILT / PARTIAL COVERAGE | [Tutorials, How to Play, and Support](systems/tutorials-how-to-play-and-support.md) |
@@ -222,6 +225,10 @@ and status; it does not replace those state contracts.
 Current product state is primarily local through `SecureGameStorage` and
 feature repositories. Pages distinguish durable results/ownership/ledgers from
 session-only presentation and identify mock/seeded data that is not a remote service.
+On upgraded devices, a device-global v1 marker installs one catalog-validated
+`chiefpai45` career into the RETURNING PLAYER slot before app blocs load. The
+first-time slot stays blank, and later player edits are preserved because the
+one-time marker is not part of either profile snapshot.
 
 ## Planned Scope and Current Limitations
 
@@ -239,6 +246,7 @@ session-only presentation and identify mock/seeded data that is not a remote ser
 - [`lib/blocs/game/game_bloc.dart`](../../lib/blocs/game/game_bloc.dart)
 - [`lib/models/progression.dart`](../../lib/models/progression.dart)
 - [`lib/services/secure_storage_service.dart`](../../lib/services/secure_storage_service.dart)
+- [`lib/services/returning_profile_preset.dart`](../../lib/services/returning_profile_preset.dart)
 
 ## Tests
 

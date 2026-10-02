@@ -456,7 +456,12 @@ class _ChaserRow extends StatelessWidget {
                 entry.team.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.body(13, weight: FontWeight.w700, height: 1),
+                style: Cyber.bodyFor(
+                  context,
+                  13,
+                  weight: FontWeight.w700,
+                  height: 1,
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -707,7 +712,12 @@ const basketballStatGroups = <StatBoardGroup>[
       StatPulseSpec('flagrantFouls', 'FLAGRANTS'),
     ],
     boards: [
-      StatBoardSpec('avgFouls', 'FOULS', format: StatFormat.perGame, lowerIsBetter: true),
+      StatBoardSpec(
+        'avgFouls',
+        'FOULS',
+        format: StatFormat.perGame,
+        lowerIsBetter: true,
+      ),
       StatBoardSpec('technicalFouls', 'TECHNICALS', lowerIsBetter: true),
       StatBoardSpec('flagrantFouls', 'FLAGRANTS', lowerIsBetter: true),
       StatBoardSpec('ejections', 'EJECTIONS', lowerIsBetter: true),

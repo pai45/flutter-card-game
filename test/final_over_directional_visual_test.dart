@@ -20,6 +20,9 @@ void main() {
           'Onest',
         )..addFont(rootBundle.load('assets/fonts/Onest-VariableFont_wght.ttf')))
         .load();
+    await (FontLoader('Exo 2')
+          ..addFont(rootBundle.load('assets/fonts/Exo2-VariableFont_wght.ttf')))
+        .load();
   });
 
   testWidgets('behind shot holds the directional contact frame', (

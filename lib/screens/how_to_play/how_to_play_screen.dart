@@ -90,7 +90,8 @@ const _steps = [
     icon: Icons.style,
     color: Cyber.violet,
     title: 'Build Your Deck',
-    body: 'Choose 2 attackers, 2 defenders, and 6 action cards to form your squad.',
+    body:
+        'Choose 2 attackers, 2 defenders, and 6 action cards to form your squad.',
     hint: '2 ATK   ·   2 DEF   ·   6 ACT',
   ),
   _Step(
@@ -98,7 +99,8 @@ const _steps = [
     icon: Icons.toll,
     color: Cyber.amber,
     title: 'Toss for Role',
-    body: 'Coin flip decides who attacks first. Roles alternate every round after.',
+    body:
+        'Coin flip decides who attacks first. Roles alternate every round after.',
     hint: 'HEADS = ATTACK   ·   TAILS = DEFEND',
   ),
   _Step(
@@ -122,7 +124,8 @@ const _steps = [
     icon: Icons.sports_soccer,
     color: Cyber.success,
     title: 'Resolve the Round',
-    body: 'Rating, action boost, scenario bonus, and a luck roll decide the outcome.',
+    body:
+        'Rating, action boost, scenario bonus, and a luck roll decide the outcome.',
     hint: 'GOAL   ·   SAVED   ·   BLOCKED   ·   FOUL',
   ),
   _Step(
@@ -462,11 +465,7 @@ class _PowerFormula extends StatelessWidget {
                 icon: Icons.bolt,
               ),
               const _Op('+'),
-              _FormulaChip(
-                label: 'BONUS',
-                color: Cyber.lime,
-                icon: Icons.star,
-              ),
+              _FormulaChip(label: 'BONUS', color: Cyber.lime, icon: Icons.star),
               const _Op('+'),
               _FormulaChip(
                 label: 'LUCK',
@@ -570,10 +569,7 @@ class _QuickRules extends StatelessWidget {
           for (var i = 0; i < _faqs.length; i++) ...[
             _FaqTile(faq: _faqs[i]),
             if (i < _faqs.length - 1)
-              Divider(
-                color: Cyber.violet.withValues(alpha: 0.2),
-                height: 16,
-              ),
+              Divider(color: Cyber.violet.withValues(alpha: 0.2), height: 16),
           ],
         ],
       ),
@@ -610,16 +606,14 @@ class _FaqTileState extends State<_FaqTile> {
                   widget.faq.question,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontFamily: 'Onest',
+                    fontFamily: Cyber.gameBodyFont,
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
               Icon(
-                _expanded
-                    ? Icons.keyboard_arrow_up
-                    : Icons.keyboard_arrow_down,
+                _expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
                 color: Cyber.muted,
                 size: 18,
               ),

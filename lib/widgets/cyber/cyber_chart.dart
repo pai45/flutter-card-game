@@ -1027,7 +1027,8 @@ class CyberChartLegend extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 '${item.label} ${item.readoutAt(selectedIndex)}',
-                style: Cyber.body(
+                style: Cyber.bodyFor(
+                  context,
                   10,
                   color: item.color,
                   weight: FontWeight.w700,

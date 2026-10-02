@@ -74,6 +74,20 @@ flutter:
   uses-material-design: true
 
   fonts:
+    - family: Exo 2
+      fonts:
+        - asset: assets/fonts/Exo2-VariableFont_wght.ttf
+          weight: 400
+        - asset: assets/fonts/Exo2-VariableFont_wght.ttf
+          weight: 500
+        - asset: assets/fonts/Exo2-VariableFont_wght.ttf
+          weight: 600
+        - asset: assets/fonts/Exo2-VariableFont_wght.ttf
+          weight: 700
+        - asset: assets/fonts/Exo2-VariableFont_wght.ttf
+          weight: 800
+        - asset: assets/fonts/Exo2-VariableFont_wght.ttf
+          weight: 900
     - family: Onest
       fonts:
         - asset: assets/fonts/Onest-VariableFont_wght.ttf

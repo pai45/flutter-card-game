@@ -78,6 +78,9 @@ void main() {
           'Onest',
         )..addFont(rootBundle.load('assets/fonts/Onest-VariableFont_wght.ttf')))
         .load();
+    await (FontLoader('Exo 2')
+          ..addFont(rootBundle.load('assets/fonts/Exo2-VariableFont_wght.ttf')))
+        .load();
     await (FontLoader(
       'MaterialIcons',
     )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
@@ -86,6 +89,7 @@ void main() {
   setUp(() {
     FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({});
+    AudioController.debugUseBackend(_NoopAudioBackend());
     AudioController.instance.muted.value = true;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, (_) async => null);
@@ -472,4 +476,49 @@ void main() {
       matchesGoldenFile('goldens/daily_mystery_debrief.png'),
     );
   });
+}
+
+class _NoopAudioBackend implements AudioPlaybackBackend {
+  @override
+  Future<void> dispose() async {}
+
+  @override
+  Future<void> playEffect(
+    String assetPath, {
+    required AudioBus bus,
+    required double volume,
+  }) async {}
+
+  @override
+  Future<void> preload(List<String> assetPaths) async {}
+
+  @override
+  Future<void> setAmbienceVolume(double volume) async {}
+
+  @override
+  Future<void> setDynamicLoop({
+    required double volume,
+    required double rate,
+  }) async {}
+
+  @override
+  Future<void> startAmbience(
+    String assetPath, {
+    required double volume,
+  }) async {}
+
+  @override
+  Future<void> startDynamicLoop(
+    String assetPath, {
+    required double volume,
+  }) async {}
+
+  @override
+  Future<void> stopAll() async {}
+
+  @override
+  Future<void> stopAmbience() async {}
+
+  @override
+  Future<void> stopDynamicLoop() async {}
 }

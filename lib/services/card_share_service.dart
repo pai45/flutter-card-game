@@ -276,7 +276,7 @@ class _CardSharePoster extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontFamily: 'Onest',
+                    fontFamily: Cyber.gameBodyFont,
                     fontWeight: FontWeight.w800,
                     fontSize: 15,
                     height: 1.15,

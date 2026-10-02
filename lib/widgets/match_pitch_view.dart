@@ -320,7 +320,8 @@ class _PitchPlayer extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.body(
+              style: Cyber.bodyFor(
+                context,
                 8.5,
                 weight: FontWeight.w800,
                 color: dim ? Cyber.muted : Colors.white,
@@ -358,11 +359,7 @@ class _PlayerMarks extends StatelessWidget {
     final goals = stats.intStat('totalGoals');
     for (var i = 0; i < goals && i < 3; i++) {
       marks.add(
-        const _Mark(
-          icon: Icons.sports_soccer,
-          color: Cyber.gold,
-          glow: true,
-        ),
+        const _Mark(icon: Icons.sports_soccer, color: Cyber.gold, glow: true),
       );
     }
     if (stats.intStat('goalAssists') > 0) {
@@ -380,10 +377,8 @@ class _PlayerMarks extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (final mark in marks) Padding(
-          padding: const EdgeInsets.only(left: 1),
-          child: mark,
-        ),
+        for (final mark in marks)
+          Padding(padding: const EdgeInsets.only(left: 1), child: mark),
       ],
     );
   }
@@ -484,7 +479,7 @@ class _BenchPanel extends StatelessWidget {
           if (lineup.substitutes.isEmpty)
             Text(
               'No substitutes supplied.',
-              style: Cyber.body(12, color: Cyber.muted),
+              style: Cyber.bodyFor(context, 12, color: Cyber.muted),
             )
           else
             LayoutBuilder(
@@ -552,7 +547,7 @@ class _BenchPlayerTile extends StatelessWidget {
                   player.shortName ?? player.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.body(10, weight: FontWeight.w800),
+                  style: Cyber.bodyFor(context, 10, weight: FontWeight.w800),
                 ),
                 Text(
                   (player.role ?? 'Squad player').toUpperCase(),

@@ -1,7 +1,7 @@
 # Guess the Player
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-29
+> **Last verified:** 2026-10-01
 > **Scope:** Shared football, cricket, and basketball daily-player mystery variants
 
 ## Product Purpose
@@ -83,6 +83,13 @@ represented.
 Each sport persists its own daily archive, guessed player IDs, attempts,
 revealed clues, purchased hints, score, XP, timing, and completion status through
 `SecureGameStorage`. Settlement IDs separately protect shared XP/streak credit.
+The returning-career preset now saves catalog-backed daily puzzle IDs. Previously
+saved `preset-<sport>-<day>` records are repaired when the archive loads: a
+matching athlete's authored puzzle is used where available, otherwise that
+day's scheduled puzzle is used. The result, score, XP, and dates remain in the
+archive, and the repaired puzzle ID is persisted. Preset results are marked
+settled so opening them cannot pay their seeded XP a second time. Unrelated
+missing puzzle IDs still surface a data error.
 
 ## Planned Scope and Current Limitations
 
@@ -110,3 +117,4 @@ revealed clues, purchased hints, score, XP, timing, and completion status throug
 - [`test/guess_player_logs_test.dart`](../../../test/guess_player_logs_test.dart)
 - [`test/progression_tracks_test.dart`](../../../test/progression_tracks_test.dart)
 - [`test/cricket_guess_player_lobby_test.dart`](../../../test/cricket_guess_player_lobby_test.dart)
+- [`test/guess_player_preset_recovery_test.dart`](../../../test/guess_player_preset_recovery_test.dart)

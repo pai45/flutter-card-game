@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../config/theme.dart';
+import '../../services/secure_storage_service.dart';
 import '../../utils/sound_effects.dart';
 import '../../widgets/cyber/cyber_cta_button.dart';
 import '../../widgets/cyber/cyber_widgets.dart';
@@ -24,6 +25,8 @@ class PlayerProfileSelectorScreen extends StatefulWidget {
     required this.activeProfile,
     required this.firstTimeProfileReady,
     required this.returningProfileReady,
+    this.firstTimeSummary,
+    this.returningSummary,
     super.key,
   });
 
@@ -33,6 +36,8 @@ class PlayerProfileSelectorScreen extends StatefulWidget {
   final PlayerProfileChoice activeProfile;
   final bool firstTimeProfileReady;
   final bool returningProfileReady;
+  final LocalProfileSummary? firstTimeSummary;
+  final LocalProfileSummary? returningSummary;
 
   @override
   State<PlayerProfileSelectorScreen> createState() =>
@@ -73,6 +78,12 @@ class _PlayerProfileSelectorScreenState
       return 'You are playing this career right now.';
     }
     if (_isReady(choice)) {
+      final summary = choice == PlayerProfileChoice.firstTime
+          ? widget.firstTimeSummary
+          : widget.returningSummary;
+      if (summary != null) {
+        return '${summary.displayName} // LV ${summary.level} // ${summary.streak} DAY STREAK';
+      }
       return choice == PlayerProfileChoice.firstTime
           ? 'Continue your saved rookie career and streak.'
           : 'Resume your saved career, collection, and progress.';
@@ -131,7 +142,7 @@ class _PlayerProfileSelectorScreenState
                     Text(
                       'Choose how you want to play. Your saved career stays on this device.',
                       textAlign: TextAlign.center,
-                      style: Cyber.body(14, color: Cyber.muted),
+                      style: Cyber.bodyFor(context, 14, color: Cyber.muted),
                     ),
                     const SizedBox(height: 28),
                     _choiceCard(
@@ -269,7 +280,7 @@ class _ProfileChoiceCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       description,
-                      style: Cyber.body(13, color: Cyber.muted),
+                      style: Cyber.bodyFor(context, 13, color: Cyber.muted),
                     ),
                   ],
                 ),

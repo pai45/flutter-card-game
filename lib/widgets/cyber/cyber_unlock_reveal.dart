@@ -311,7 +311,7 @@ class _CyberUnlockRevealState extends State<CyberUnlockReveal>
                   child: Text(
                     widget.subtitle,
                     textAlign: TextAlign.center,
-                    style: Cyber.body(14, color: Cyber.muted),
+                    style: Cyber.bodyFor(context, 14, color: Cyber.muted),
                   ),
                 ),
                 if (widget.rewardLabel != null) ...[

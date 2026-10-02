@@ -82,7 +82,10 @@ String formatBoardCountdown(Duration remaining) {
   if (remaining <= Duration.zero) return '00m 00s';
   final hours = remaining.inHours;
   if (hours > 0) {
-    final minutes = remaining.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final minutes = remaining.inMinutes
+        .remainder(60)
+        .toString()
+        .padLeft(2, '0');
     return '${hours.toString().padLeft(2, '0')}h ${minutes}m';
   }
   final minutes = remaining.inMinutes.remainder(60).toString().padLeft(2, '0');
@@ -227,7 +230,9 @@ class RankWinnerTile extends StatelessWidget {
                   frameColors: userFrameColors,
                 ),
                 const SizedBox(width: 16),
-                Expanded(child: _WinnerCopy(entry: entry, color: color)),
+                Expanded(
+                  child: _WinnerCopy(entry: entry, color: color),
+                ),
                 const SizedBox(width: 12),
                 _WinnerScore(score: entry.score, unit: meta.unit, color: color),
               ],
@@ -248,10 +253,7 @@ class RankWinnerTile extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    MovementBadge(
-                      movement: entry.movement,
-                      isNew: entry.isNew,
-                    ),
+                    MovementBadge(movement: entry.movement, isNew: entry.isNew),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -273,9 +275,9 @@ class RankWinnerTile extends StatelessWidget {
                             entry.name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white,
-                              fontFamily: Cyber.bodyFont,
+                              fontFamily: Cyber.bodyFontFor(context),
                               fontSize: 15,
                               fontWeight: FontWeight.w800,
                             ),
@@ -350,9 +352,9 @@ class _WinnerCopy extends StatelessWidget {
           entry.name,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
+          style: TextStyle(
             color: Colors.white,
-            fontFamily: Cyber.bodyFont,
+            fontFamily: Cyber.bodyFontFor(context),
             fontSize: 20,
             fontWeight: FontWeight.w700,
             height: 1.05,
@@ -498,7 +500,7 @@ class RankRow extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.white,
-                          fontFamily: Cyber.bodyFont,
+                          fontFamily: Cyber.bodyFontFor(context),
                           fontSize: 15,
                           fontWeight: isUser
                               ? FontWeight.w800
@@ -674,9 +676,9 @@ class RankUserBar extends StatelessWidget {
                         user.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
-                          fontFamily: Cyber.bodyFont,
+                          fontFamily: Cyber.bodyFontFor(context),
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                         ),
@@ -835,11 +837,7 @@ class RankTag extends StatelessWidget {
 
 /// ▲/▼ rank delta, or NEW for a first-time entrant.
 class MovementBadge extends StatelessWidget {
-  const MovementBadge({
-    required this.movement,
-    required this.isNew,
-    super.key,
-  });
+  const MovementBadge({required this.movement, required this.isNew, super.key});
 
   final int movement;
   final bool isNew;

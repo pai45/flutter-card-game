@@ -42,7 +42,7 @@ class QuizLobbyScreen extends StatelessWidget {
   void _openSets(BuildContext context, QuizMode mode) {
     playSound(SoundEffect.uiTap);
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
+      gamePageRoute<void>(
         builder: (_) => QuizSetScreen(sport: sport, mode: mode),
       ),
     );
@@ -229,7 +229,7 @@ class _QuizSetScreenState extends State<QuizSetScreen> {
     await Future<void>.delayed(const Duration(milliseconds: 120));
     if (!mounted) return;
     await Navigator.of(context).push(
-      MaterialPageRoute<void>(
+      gamePageRoute<void>(
         builder: (_) => QuizPlayScreen(
           sport: widget.sport,
           mode: widget.mode,
@@ -664,7 +664,11 @@ class _KnowledgeArenaHero extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           'Clear sets to advance each category ladder.',
-                          style: Cyber.body(10.5, color: Cyber.muted),
+                          style: Cyber.bodyFor(
+                            context,
+                            10.5,
+                            color: Cyber.muted,
+                          ),
                         ),
                       ],
                     ),
@@ -1001,7 +1005,7 @@ class _NextChallengeCard extends StatelessWidget {
                 : replay
                 ? 'Best ${progress.bestCorrect}/$kQuizQuestionsPerSet · ${progress.stars}/3 stars · replay for a perfect run.'
                 : '10 questions · instant verdict after every answer.',
-            style: Cyber.body(12, color: Cyber.muted),
+            style: Cyber.bodyFor(context, 12, color: Cyber.muted),
           ),
         ],
       ),
@@ -1271,7 +1275,7 @@ class _LadderRule extends StatelessWidget {
             child: Text(
               'Finish all $kQuizQuestionsPerSet questions to unlock the next set — any score clears it. '
               'Score $kQuizQuestionsPerSet/$kQuizQuestionsPerSet for 3 stars.',
-              style: Cyber.body(11.5, color: Cyber.muted),
+              style: Cyber.bodyFor(context, 11.5, color: Cyber.muted),
             ),
           ),
         ],

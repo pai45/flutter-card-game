@@ -10,7 +10,9 @@ import 'cyber/cyber_widgets.dart';
 enum StreakFlameState { cold, pending, live, atRisk }
 
 StreakFlameState streakFlameState(StreakSnapshot streak, DateTime now) {
-  if (streak.activeOn(StreakCategory.overall, now)) return StreakFlameState.live;
+  if (streak.activeOn(StreakCategory.overall, now)) {
+    return StreakFlameState.live;
+  }
   if (streak.current(StreakCategory.overall, now: now) == 0) {
     return StreakFlameState.cold;
   }
@@ -71,7 +73,12 @@ class StreakFlame extends StatelessWidget {
           ? Color.lerp(color.withValues(alpha: 0.55), color, t)
           : color,
       shadows: state == StreakFlameState.live
-          ? [Shadow(color: color.withValues(alpha: 0.35 + 0.3 * t), blurRadius: 10)]
+          ? [
+              Shadow(
+                color: color.withValues(alpha: 0.35 + 0.3 * t),
+                blurRadius: 10,
+              ),
+            ]
           : null,
     );
     if (!animate) return glyph(1);
@@ -194,7 +201,12 @@ class StreakActivityMarker extends StatelessWidget {
         Flexible(
           child: Text(
             streakActivityLabel(activity),
-            style: Cyber.body(13, weight: FontWeight.w800, height: 1.3),
+            style: Cyber.bodyFor(
+              context,
+              13,
+              weight: FontWeight.w800,
+              height: 1.3,
+            ),
           ),
         ),
       ],
@@ -245,7 +257,9 @@ class StreakWeekChain extends StatelessWidget {
               children: [
                 if (!compact) ...[
                   Text(
-                    i == days.length - 1 ? 'NOW' : _weekdays[days[i].weekday - 1],
+                    i == days.length - 1
+                        ? 'NOW'
+                        : _weekdays[days[i].weekday - 1],
                     style: Cyber.label(
                       8,
                       color: i == days.length - 1 ? accent : Cyber.muted,
@@ -308,7 +322,9 @@ class _ChainLink extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     height: 2,
-    color: lit ? accent.withValues(alpha: 0.7) : Cyber.line.withValues(alpha: 0.35),
+    color: lit
+        ? accent.withValues(alpha: 0.7)
+        : Cyber.line.withValues(alpha: 0.35),
   );
 }
 

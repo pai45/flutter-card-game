@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../blocs/game/game_bloc.dart';
 import '../../blocs/prediction/prediction_cubit.dart';
 import '../../config/enums.dart';
 import '../../config/sport_modules.dart';
@@ -316,10 +317,11 @@ List<LeaderboardEntry> _entriesFor(
   TournamentScope scope,
   GameMode mode,
   LeaderboardLeague league,
+  List<RivalSeed> roster,
 ) {
   final seeded =
       [
-        for (final seed in kRivalRoster)
+        for (final seed in roster)
           (seed: seed, hash: _leagueHash('${league.id}:${seed.name}')),
       ]..sort((a, b) {
         final byBase = _leagueBase(
@@ -360,14 +362,14 @@ String? _clubFor(LeaderboardLeague league, int hash) =>
     league.clubs.isEmpty ? null : league.clubs[hash % league.clubs.length];
 
 /// Where the user lands in [league], without building the whole board.
-int _userRankIn(LeaderboardLeague league) {
-  final user = kRivalRoster.firstWhere(
+int _userRankIn(LeaderboardLeague league, List<RivalSeed> roster) {
+  final user = roster.firstWhere(
     (seed) => seed.isUser,
-    orElse: () => kRivalRoster.last,
+    orElse: () => roster.last,
   );
   final mine = _leagueBase(user.base, _leagueHash('${league.id}:${user.name}'));
   var rank = 1;
-  for (final seed in kRivalRoster) {
+  for (final seed in roster) {
     if (seed.name == user.name) continue;
     final theirs = _leagueBase(
       seed.base,
@@ -380,11 +382,14 @@ int _userRankIn(LeaderboardLeague league) {
 
 /// The league in [catalogue] the user ranks highest in — the "you're king here"
 /// hook on the pinned rank bar.
-LeaderboardLeague? _bestLeagueFor(List<LeaderboardLeague> catalogue) {
+LeaderboardLeague? _bestLeagueFor(
+  List<LeaderboardLeague> catalogue,
+  List<RivalSeed> roster,
+) {
   LeaderboardLeague? best;
   var bestRank = 1 << 30;
   for (final league in catalogue) {
-    final rank = _userRankIn(league);
+    final rank = _userRankIn(league, roster);
     if (rank < bestRank) {
       bestRank = rank;
       best = league;
@@ -429,13 +434,15 @@ void showRivalDossier(
     PageRouteBuilder<void>(
       transitionDuration: const Duration(milliseconds: 360),
       reverseTransitionDuration: const Duration(milliseconds: 240),
-      pageBuilder: (_, _, _) => RivalProfileScreen(
-        name: seed.name,
-        rank: index + 1,
-        xp: seed.base,
-        pro: seed.badge == 'PRO',
-        userRank: userIndex < 0 ? index + 1 : userIndex + 1,
-        onChallenge: onChallenge,
+      pageBuilder: (_, _, _) => GameTypographyScope(
+        child: RivalProfileScreen(
+          name: seed.name,
+          rank: index + 1,
+          xp: seed.base,
+          pro: seed.badge == 'PRO',
+          userRank: userIndex < 0 ? index + 1 : userIndex + 1,
+          onChallenge: onChallenge,
+        ),
       ),
       transitionsBuilder: (_, animation, _, child) {
         final curved = CurvedAnimation(
@@ -554,6 +561,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final game = context.watch<GameBloc>().state;
+    final roster = rivalRosterForPlayer(
+      displayName: game.displayName,
+      xp: game.progression.totalXP,
+    );
     final onClose = widget.onClose;
     final accent = sportModuleFor(_sport).accent;
     final isTeamTournament =
@@ -563,153 +575,158 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     final league = _leagueFor(_sport);
     final allEntries = isTeamTournament
         ? _teamEntriesFor()
-        : _entriesFor(_type, _scope, _mode, league);
+        : _entriesFor(_type, _scope, _mode, league, roster);
     var user = _userEntry(allEntries);
     // Reward finding the league you're strongest in.
     if (!isTeamTournament &&
         user.subtitle != null &&
-        _bestLeagueFor(catalogue)?.id == league.id) {
+        _bestLeagueFor(catalogue, roster)?.id == league.id) {
       user = user.copyWith(subtitle: '${user.subtitle} // BEST LEAGUE');
     }
     final entries = allEntries;
 
-    return Scaffold(
-      backgroundColor: Cyber.bg,
-      body: Stack(
-        children: [
-          const Positioned.fill(child: ColoredBox(color: Cyber.bg)),
-          const Positioned.fill(child: CyberTextureOverlay()),
-          SafeArea(
-            top: false,
-            bottom: false,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final compact = constraints.maxHeight < 640;
-                final activeSportIndex = _leaderboardSports.indexOf(_sport);
-                final filters = _FilterBar(
-                  type: _type,
-                  scope: _scope,
-                  onScope: (scope) => setState(() => _scope = scope),
-                  tournamentBoard: _tournamentBoard,
-                  onTournamentBoard: (board) =>
-                      setState(() => _tournamentBoard = board),
-                  mode: _mode,
-                  onMode: (mode) => setState(() => _mode = mode),
-                  sport: _sport,
-                  leagues: catalogue,
-                  selectedLeagueId: league.id,
-                  onLeague: (id) => setState(() => _leagueBySport[_sport] = id),
-                  accent: accent,
-                  compact: compact,
-                );
-
-                final board = StatOzCollapsingHeaderView(
-                  topBar: StatOzTopBar(
-                    title: 'Leaderboard',
+    return GameTypographyScope(
+      enabled: _type == LeaderboardType.games,
+      child: Scaffold(
+        backgroundColor: Cyber.bg,
+        body: Stack(
+          children: [
+            const Positioned.fill(child: ColoredBox(color: Cyber.bg)),
+            const Positioned.fill(child: CyberTextureOverlay()),
+            SafeArea(
+              top: false,
+              bottom: false,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final compact = constraints.maxHeight < 640;
+                  final activeSportIndex = _leaderboardSports.indexOf(_sport);
+                  final filters = _FilterBar(
+                    type: _type,
+                    scope: _scope,
+                    onScope: (scope) => setState(() => _scope = scope),
+                    tournamentBoard: _tournamentBoard,
+                    onTournamentBoard: (board) =>
+                        setState(() => _tournamentBoard = board),
+                    mode: _mode,
+                    onMode: (mode) => setState(() => _mode = mode),
+                    sport: _sport,
+                    leagues: catalogue,
+                    selectedLeagueId: league.id,
+                    onLeague: (id) =>
+                        setState(() => _leagueBySport[_sport] = id),
                     accent: accent,
-                    leading: onClose == null
-                        ? null
-                        : IconButton(
-                            tooltip: 'Back',
-                            padding: EdgeInsets.zero,
-                            visualDensity: VisualDensity.compact,
-                            constraints: const BoxConstraints.tightFor(
-                              width: 34,
-                              height: 40,
-                            ),
-                            onPressed: onClose,
-                            icon: const Icon(
-                              Icons.arrow_back_ios_new,
-                              size: 18,
-                            ),
-                            color: accent,
-                          ),
-                    onAddCoins:
-                        widget.onAddCoins ??
-                        () => widget.onNavigate(AppSection.shop),
-                    onStreakTap: widget.onOpenStreakHub,
-                  ),
-                  collapsible: _LeaderboardTabs(
-                    activeTab: _typeTabOrder.indexOf(_type),
-                    onTap: _setTypeTab,
-                  ),
-                  pinned: _LeaderboardSportsTabs(
-                    activeIndex: activeSportIndex < 0 ? 0 : activeSportIndex,
-                    selectedSport: _sport,
-                    onTap: (index) => setState(() {
-                      _sport = _leaderboardSports[index];
-                      _mode = GameMode.featured;
-                    }),
-                    onSearch: () {
-                      HapticFeedback.selectionClick();
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) =>
-                              UserSearchScreen(onChallenge: widget.onChallenge),
-                        ),
-                      );
-                    },
-                  ),
-                  body: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 280),
-                    switchInCurve: Curves.easeOutCubic,
-                    transitionBuilder: (child, animation) => FadeTransition(
-                      opacity: animation,
-                      child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: const Offset(0, 0.025),
-                          end: Offset.zero,
-                        ).animate(animation),
-                        child: child,
-                      ),
-                    ),
-                    child: entries.isEmpty
-                        ? _EmptyState(
-                            key: ValueKey('empty-${_type.name}'),
-                            filters: filters,
-                            type: _type,
-                            accent: accent,
-                            onAction: widget.onNavigate,
-                          )
-                        : _Body(
-                            key: ValueKey(
-                              '${_type.name}-${_tournamentBoard.name}-${_scope.name}-${_mode.name}',
-                            ),
-                            filters: filters,
-                            entries: entries,
-                            type: _type,
-                            accent: accent,
-                            compact: compact,
-                            onTapEntry: isTeamTournament ? null : _openRival,
-                          ),
-                  ),
-                );
+                    compact: compact,
+                  );
 
-                return Column(
-                  children: [
-                    Expanded(child: board),
-                    if (entries.isNotEmpty)
-                      RankUserBar(
-                        user: user,
-                        meta: user.team != null
-                            ? (unit: 'PTS')
-                            : _scoreMeta(_type),
-                        accent: accent,
+                  final board = StatOzCollapsingHeaderView(
+                    topBar: StatOzTopBar(
+                      title: 'Leaderboard',
+                      accent: accent,
+                      leading: onClose == null
+                          ? null
+                          : IconButton(
+                              tooltip: 'Back',
+                              padding: EdgeInsets.zero,
+                              visualDensity: VisualDensity.compact,
+                              constraints: const BoxConstraints.tightFor(
+                                width: 34,
+                                height: 40,
+                              ),
+                              onPressed: onClose,
+                              icon: const Icon(
+                                Icons.arrow_back_ios_new,
+                                size: 18,
+                              ),
+                              color: accent,
+                            ),
+                      onAddCoins:
+                          widget.onAddCoins ??
+                          () => widget.onNavigate(AppSection.shop),
+                      onStreakTap: widget.onOpenStreakHub,
+                    ),
+                    collapsible: _LeaderboardTabs(
+                      activeTab: _typeTabOrder.indexOf(_type),
+                      onTap: _setTypeTab,
+                    ),
+                    pinned: _LeaderboardSportsTabs(
+                      activeIndex: activeSportIndex < 0 ? 0 : activeSportIndex,
+                      selectedSport: _sport,
+                      onTap: (index) => setState(() {
+                        _sport = _leaderboardSports[index];
+                        _mode = GameMode.featured;
+                      }),
+                      onSearch: () {
+                        HapticFeedback.selectionClick();
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => UserSearchScreen(
+                              onChallenge: widget.onChallenge,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    body: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 280),
+                      switchInCurve: Curves.easeOutCubic,
+                      transitionBuilder: (child, animation) => FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0, 0.025),
+                            end: Offset.zero,
+                          ).animate(animation),
+                          child: child,
+                        ),
                       ),
-                  ],
-                );
-              },
+                      child: entries.isEmpty
+                          ? _EmptyState(
+                              key: ValueKey('empty-${_type.name}'),
+                              filters: filters,
+                              type: _type,
+                              accent: accent,
+                              onAction: widget.onNavigate,
+                            )
+                          : _Body(
+                              key: ValueKey(
+                                '${_type.name}-${_tournamentBoard.name}-${_scope.name}-${_mode.name}',
+                              ),
+                              filters: filters,
+                              entries: entries,
+                              type: _type,
+                              accent: accent,
+                              compact: compact,
+                              onTapEntry: isTeamTournament ? null : _openRival,
+                            ),
+                    ),
+                  );
+
+                  return Column(
+                    children: [
+                      Expanded(child: board),
+                      if (entries.isNotEmpty)
+                        RankUserBar(
+                          user: user,
+                          meta: user.team != null
+                              ? (unit: 'PTS')
+                              : _scoreMeta(_type),
+                          accent: accent,
+                        ),
+                    ],
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
+        bottomNavigationBar: onClose != null
+            ? null
+            : LandingBottomNavigation(
+                selectedIndex: 2,
+                onNavigate: widget.onNavigate,
+                includeShop: false,
+              ),
       ),
-      bottomNavigationBar: onClose != null
-          ? null
-          : LandingBottomNavigation(
-              selectedIndex: 2,
-              onNavigate: widget.onNavigate,
-              includeShop: false,
-            ),
     );
   }
 }
@@ -1199,9 +1216,9 @@ class _EmptyState extends StatelessWidget {
                   Text(
                     config.body,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Cyber.muted,
-                      fontFamily: Cyber.bodyFont,
+                      fontFamily: Cyber.bodyFontFor(context),
                       fontSize: 13,
                       height: 1.4,
                     ),

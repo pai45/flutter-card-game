@@ -3890,11 +3890,43 @@ class MockPredictionRepository
     final sets = _quizSets[matchId];
     if (sets != null) return List.unmodifiable(sets);
     final quiz = _quizzes[matchId];
-    if (quiz == null) return const [];
     final fixture = _fixtureFor(matchId);
+    if (quiz == null) {
+      if (fixture?.sport == Sport.basketball) {
+        return [_basketballQuiz(fixture!)];
+      }
+      return const [];
+    }
     if (fixture == null) return [quiz];
     return List.unmodifiable(_predictTabQuizSets(fixture, quiz));
   }
+
+  static PredictionQuiz _basketballQuiz(SportMatch match) => PredictionQuiz(
+    id: 'main',
+    matchId: match.id,
+    title: 'Match Basics Quiz',
+    subtitle: 'Winner, total points, and margins',
+    questions: [
+      QuizQuestion(
+        id: 'winner',
+        text: 'Who wins ${match.home.name} vs ${match.away.name}?',
+        options: [match.home.name, match.away.name],
+        reward: 90,
+      ),
+      const QuizQuestion(
+        id: 'total',
+        text: 'Will the teams combine for 170+ points?',
+        options: ['Yes', 'No'],
+        reward: 70,
+      ),
+      const QuizQuestion(
+        id: 'margin',
+        text: 'Will the winning margin reach double digits?',
+        options: ['Yes', 'No'],
+        reward: 60,
+      ),
+    ],
+  );
 
   SportMatch? _fixtureFor(String matchId) {
     for (final fixture in _fixtures) {
@@ -3907,8 +3939,8 @@ class MockPredictionRepository
   Future<SportMatch?> fixtureById(String matchId) async {
     if (matchId == FootballMatchPackageService.bundledMatchId) {
       try {
-        final bundled = await (_bundledFootballFixture ??= _footballPackageService
-            .loadBundled());
+        final bundled = await (_bundledFootballFixture ??=
+            _footballPackageService.loadBundled());
         return _keepBundledFixtureOnToday(bundled);
       } catch (_) {
         return null;

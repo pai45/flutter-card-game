@@ -59,10 +59,15 @@ class StreakCelebrationHost extends StatelessWidget {
                 celebration.type == StreakCelebrationType.shieldSaved)) {
           return const SizedBox.shrink();
         }
-        return _StreakCelebrationOverlay(
-          key: ValueKey(celebration.id),
-          celebration: celebration,
-          streak: state.streak,
+        return GameTypographyScope(
+          enabled:
+              celebration.activity != StreakActivity.predict &&
+              celebration.activity != StreakActivity.pick,
+          child: _StreakCelebrationOverlay(
+            key: ValueKey(celebration.id),
+            celebration: celebration,
+            streak: state.streak,
+          ),
         );
       },
     );
@@ -662,7 +667,12 @@ class _StreakCelebrationOverlayState extends State<_StreakCelebrationOverlay>
               child: Text(
                 subline,
                 textAlign: TextAlign.center,
-                style: Cyber.body(14, weight: FontWeight.w800, height: 1.3),
+                style: Cyber.bodyFor(
+                  context,
+                  14,
+                  weight: FontWeight.w800,
+                  height: 1.3,
+                ),
               ),
             ),
           ],
@@ -687,7 +697,7 @@ class _StreakCelebrationOverlayState extends State<_StreakCelebrationOverlay>
           Text(
             '${next.days - celebration.streak} days to ${next.rewardLabel}',
             textAlign: TextAlign.center,
-            style: Cyber.body(12.5, color: Cyber.muted),
+            style: Cyber.bodyFor(context, 12.5, color: Cyber.muted),
           ),
         ],
         if (_type == StreakCelebrationType.shieldSaved) ...[
@@ -714,7 +724,7 @@ class _StreakCelebrationOverlayState extends State<_StreakCelebrationOverlay>
           Text(
             'Miss a day and this shield keeps your run alive.',
             textAlign: TextAlign.center,
-            style: Cyber.body(12.5, color: Cyber.muted),
+            style: Cyber.bodyFor(context, 12.5, color: Cyber.muted),
           ),
         ],
         if (_type == StreakCelebrationType.milestone) ...[

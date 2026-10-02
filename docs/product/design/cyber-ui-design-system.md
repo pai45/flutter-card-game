@@ -1,7 +1,7 @@
 # Cyber UI Design System
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-07
+> **Last verified:** 2026-10-02
 > **Scope:** Theme tokens, typography, shape language, glow hierarchy, layout, and shared cyber components
 
 ## Product Purpose
@@ -25,8 +25,11 @@ clear state/result feedback, and a reward/next-action handoff.
 ## Mechanics and Rules
 
 - Dark theme only; use `AppTheme`/`Cyber` tokens rather than raw screen-local colors.
-- Orbitron is the display/HUD face; Onest is the body and utility face. Numeric
-  HUD values use tabular figures where comparison matters.
+- **BUILT:** Orbitron is the display/HUD face. Exo 2 is the body and utility
+  face throughout Games, arcade play, rewards, and game-related sections of
+  shared pages; Onest remains the body face for real sports Matches, Pick,
+  predictions, fixtures, and their details. Numeric HUD values use tabular
+  figures where comparison matters.
 - **PLANNED:** Standard boxes, panels, and cards use opposing diagonal cuts at the
   top-left and bottom-right; the top-right and bottom-left remain square. Two clipped
   bottom corners are not the reference silhouette. Specialized buttons, badges, tabs,
@@ -142,7 +145,7 @@ widget must not become the authoritative store for durable state.
 
 ## Planned Scope and Current Limitations
 
-- **BUILT:** Tokenized dark palette, Orbitron/Onest typography, chamfer language,
+- **BUILT:** Tokenized dark palette, scoped Orbitron/Exo 2/Onest typography, chamfer language,
   cyber scaffolds/panels/progress/CTA/tab components, and established HUD patterns.
 - **PLANNED:** Migrate the shared standard panel/card primitive from two bottom cuts to
   the top-left + bottom-right silhouette, including every painter that traces its border.

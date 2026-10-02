@@ -19,6 +19,36 @@ import 'sport_signal_painters.dart';
 export 'quest_result_receipt.dart';
 export 'cyber_kit.dart';
 
+/// Applies the arcade body face to a game surface without changing Orbitron
+/// display styles or the app-wide Matches/Pick typography.
+class GameTypographyScope extends StatelessWidget {
+  const GameTypographyScope({
+    required this.child,
+    this.enabled = true,
+    super.key,
+  });
+
+  final Widget child;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!enabled) return child;
+    return Theme(
+      data: Cyber.gameTypographyTheme(Theme.of(context)),
+      child: DefaultTextStyle.merge(
+        style: const TextStyle(fontFamily: Cyber.gameBodyFont),
+        child: child,
+      ),
+    );
+  }
+}
+
+MaterialPageRoute<T> gamePageRoute<T>({required WidgetBuilder builder}) =>
+    MaterialPageRoute<T>(
+      builder: (context) => GameTypographyScope(child: builder(context)),
+    );
+
 /// Lifecycle of a [CyberObjectiveCard]: in progress, completed and waiting to
 /// be claimed, or already paid out.
 enum CyberObjectiveState { active, ready, claimed }
@@ -124,7 +154,11 @@ class CyberObjectiveCard extends StatelessWidget {
                             const SizedBox(height: 4),
                             Text(
                               description,
-                              style: Cyber.body(12.5, color: Cyber.muted),
+                              style: Cyber.bodyFor(
+                                context,
+                                12.5,
+                                color: Cyber.muted,
+                              ),
                             ),
                           ],
                         ),
@@ -505,9 +539,9 @@ class CyberConfirmDialog extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       message,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Color(0xff9aa8bb),
-                        fontFamily: 'Onest',
+                        fontFamily: Cyber.bodyFontFor(context),
                         fontSize: 12,
                         height: 1.45,
                       ),
@@ -1151,7 +1185,8 @@ class CyberMiniMetric extends StatelessWidget {
               value,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.body(
+              style: Cyber.bodyFor(
+                context,
                 11,
                 color: accent ?? Colors.white,
                 weight: FontWeight.w700,
@@ -1299,7 +1334,7 @@ class CyberSearchField extends StatelessWidget {
               onSubmitted: onSubmitted,
               textInputAction: TextInputAction.search,
               cursorColor: accent,
-              style: Cyber.body(14),
+              style: Cyber.bodyFor(context, 14),
               decoration: InputDecoration(
                 isDense: true,
                 filled: false,
@@ -1311,7 +1346,7 @@ class CyberSearchField extends StatelessWidget {
                 errorBorder: InputBorder.none,
                 focusedErrorBorder: InputBorder.none,
                 hintText: hintText,
-                hintStyle: Cyber.body(14, color: Cyber.muted),
+                hintStyle: Cyber.bodyFor(context, 14, color: Cyber.muted),
                 contentPadding: const EdgeInsets.symmetric(vertical: 18),
               ),
             ),
@@ -1420,7 +1455,8 @@ class CyberNoDataState extends StatelessWidget {
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: Cyber.body(
+                style: Cyber.bodyFor(
+                  context,
                   13,
                   color: Cyber.muted,
                   weight: FontWeight.w600,
@@ -3671,7 +3707,7 @@ class CyberChip extends StatelessWidget {
         label.toUpperCase(),
         style: TextStyle(
           color: color,
-          fontFamily: 'Onest',
+          fontFamily: Cyber.bodyFontFor(context),
           fontSize: 10,
           fontWeight: FontWeight.w700,
           fontFeatures: const [FontFeature.tabularFigures()],
@@ -4097,7 +4133,8 @@ class HudPagerButton extends StatelessWidget {
                   ],
                   Text(
                     label,
-                    style: Cyber.body(
+                    style: Cyber.bodyFor(
+                      context,
                       16,
                       color: content,
                       weight: FontWeight.w800,
@@ -4312,7 +4349,8 @@ class CountdownBlock extends StatelessWidget {
         Text(
           caption,
           textAlign: TextAlign.center,
-          style: Cyber.body(
+          style: Cyber.bodyFor(
+            context,
             12,
             color: accent.withValues(alpha: 0.7),
             weight: FontWeight.w700,

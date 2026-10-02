@@ -135,9 +135,12 @@ class ProfileScreen extends StatelessWidget {
                     return ListView(
                       padding: EdgeInsets.zero,
                       children: [
-                        _ProfileHeroCard(
-                          progression: game.progression,
-                          onChallenge: onChallenge,
+                        GameTypographyScope(
+                          child: _ProfileHeroCard(
+                            progression: game.progression,
+                            displayName: game.displayName,
+                            onChallenge: onChallenge,
+                          ),
                         ),
                         Padding(
                           padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
@@ -145,10 +148,13 @@ class ProfileScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               const _FollowingBand(),
-                              OzCoinTrackerCard(
-                                balance: game.coins,
-                                ledger: game.coinLedger,
-                                onViewHistory: () => showOzCoinHistory(context),
+                              GameTypographyScope(
+                                child: OzCoinTrackerCard(
+                                  balance: game.coins,
+                                  ledger: game.coinLedger,
+                                  onViewHistory: () =>
+                                      showOzCoinHistory(context),
+                                ),
                               ),
                               const SizedBox(height: 14),
                               AchievementGrid(
@@ -227,67 +233,79 @@ class ProfileScreen extends StatelessWidget {
                                     showPredictionPicksHistory(context),
                               ),
                               const SizedBox(height: 12),
-                              ProfileStatBand(
-                                title: 'GAMES',
-                                onStreakTap: openStreaks,
-                                streak: game.streak.current(
-                                  StreakCategory.games,
-                                ),
-                                accent: Cyber.amber,
-                                icon: SvgPicture.asset(
-                                  'assets/icons/game.svg',
-                                  colorFilter: const ColorFilter.mode(
-                                    Cyber.amber,
-                                    BlendMode.srcIn,
+                              GameTypographyScope(
+                                child: ProfileStatBand(
+                                  title: 'GAMES',
+                                  onStreakTap: openStreaks,
+                                  streak: game.streak.current(
+                                    StreakCategory.games,
                                   ),
-                                  width: 20,
-                                  height: 20,
-                                ),
-                                stats: [
-                                  ProfileStat.number('MATCHES', record.played),
-                                  ProfileStat.number(
-                                    'WIN %',
-                                    record.winRate,
-                                    suffix: '%',
+                                  accent: Cyber.amber,
+                                  icon: SvgPicture.asset(
+                                    'assets/icons/game.svg',
+                                    colorFilter: const ColorFilter.mode(
+                                      Cyber.amber,
+                                      BlendMode.srcIn,
+                                    ),
+                                    width: 20,
+                                    height: 20,
                                   ),
-                                  ProfileStat.number('DRAWS', record.draws),
-                                ],
-                                onViewHistory: () => showMatchHistoryArchive(
-                                  context,
-                                  game.matchHistory,
+                                  stats: [
+                                    ProfileStat.number(
+                                      'MATCHES',
+                                      record.played,
+                                    ),
+                                    ProfileStat.number(
+                                      'WIN %',
+                                      record.winRate,
+                                      suffix: '%',
+                                    ),
+                                    ProfileStat.number('DRAWS', record.draws),
+                                  ],
+                                  onViewHistory: () => showMatchHistoryArchive(
+                                    context,
+                                    game.matchHistory,
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 14),
-                              AllDecksProfileCard(
-                                game: game,
-                                onTap: () => _push(
-                                  context,
-                                  (nav) => AllDecksScreen(
-                                    onBack: () => nav(AppSection.profile),
-                                    onPlaySport: (sport) {
-                                      nav(AppSection.profile);
-                                      onOpenSportGames(sport);
-                                    },
+                              GameTypographyScope(
+                                child: AllDecksProfileCard(
+                                  game: game,
+                                  onTap: () => _push(
+                                    context,
+                                    (nav) => AllDecksScreen(
+                                      onBack: () => nav(AppSection.profile),
+                                      onPlaySport: (sport) {
+                                        nav(AppSection.profile);
+                                        onOpenSportGames(sport);
+                                      },
+                                    ),
                                   ),
                                 ),
                               ),
                               const SizedBox(height: 18),
                               const _TimeZoneSetupCard(),
                               const SizedBox(height: 14),
-                              _NavRow(
-                                icon: Icons.style,
-                                label: 'All Cards',
-                                onTap: () => _push(
-                                  context,
-                                  (nav) => AllCardsScreen(onNavigate: nav),
+                              GameTypographyScope(
+                                child: _NavRow(
+                                  icon: Icons.style,
+                                  label: 'All Cards',
+                                  onTap: () => _push(
+                                    context,
+                                    (nav) => AllCardsScreen(onNavigate: nav),
+                                  ),
                                 ),
                               ),
-                              _NavRow(
-                                icon: Icons.menu_book,
-                                label: 'How To Play',
-                                onTap: () => _push(
-                                  context,
-                                  (nav) => HowToPlayHubScreen(onNavigate: nav),
+                              GameTypographyScope(
+                                child: _NavRow(
+                                  icon: Icons.menu_book,
+                                  label: 'How To Play',
+                                  onTap: () => _push(
+                                    context,
+                                    (nav) =>
+                                        HowToPlayHubScreen(onNavigate: nav),
+                                  ),
                                 ),
                               ),
                               _NavRow(
@@ -296,6 +314,7 @@ class ProfileScreen extends StatelessWidget {
                                 onTap: () => _push(
                                   context,
                                   (nav) => TalkToStatozScreen(onNavigate: nav),
+                                  gameTypography: false,
                                 ),
                               ),
                               _NavRow(
@@ -354,11 +373,17 @@ class ProfileScreen extends StatelessWidget {
 
   void _push(
     BuildContext context,
-    Widget Function(ValueChanged<AppSection>) builder,
-  ) {
+    Widget Function(ValueChanged<AppSection>) builder, {
+    bool gameTypography = true,
+  }) {
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(builder: (_) => builder((_) => navigator.pop())),
+      MaterialPageRoute<void>(
+        builder: (_) => GameTypographyScope(
+          enabled: gameTypography,
+          child: builder((_) => navigator.pop()),
+        ),
+      ),
     );
   }
 }
@@ -530,7 +555,8 @@ class _TimeZoneSetupCardState extends State<_TimeZoneSetupCard> {
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.body(
+                    style: Cyber.bodyFor(
+                      context,
                       12,
                       color: hasSelection ? Cyber.cyan : Cyber.muted,
                     ),
@@ -669,14 +695,18 @@ class _TimeZoneOptionTile extends StatelessWidget {
                   children: [
                     Text(
                       label,
-                      style: Cyber.body(
+                      style: Cyber.bodyFor(
+                        context,
                         14,
                         color: selected ? Cyber.cyan : Colors.white,
                         weight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 3),
-                    Text(subtitle, style: Cyber.body(11, color: Cyber.muted)),
+                    Text(
+                      subtitle,
+                      style: Cyber.bodyFor(context, 11, color: Cyber.muted),
+                    ),
                   ],
                 ),
               ),
@@ -711,10 +741,12 @@ String _deviceTimeZoneDescription() {
 class _ProfileHeroCard extends StatelessWidget {
   const _ProfileHeroCard({
     required this.progression,
+    required this.displayName,
     required this.onChallenge,
   });
 
   final PlayerProgression progression;
+  final String displayName;
   final void Function(String opponentName, int opponentLevel) onChallenge;
 
   @override
@@ -758,7 +790,7 @@ class _ProfileHeroCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'PLAYER ONE',
+                            displayName,
                             style: Cyber.display(24, letterSpacing: 1.2),
                           ),
                           const SizedBox(height: 4),
@@ -858,7 +890,8 @@ class _PlayerTagPillState extends State<_PlayerTagPill> {
               tag,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.body(
+              style: Cyber.bodyFor(
+                context,
                 16,
                 weight: FontWeight.w600,
                 height: 1,
@@ -1116,7 +1149,10 @@ class _SettingsActionRow extends StatelessWidget {
                       style: Cyber.label(12, color: color, letterSpacing: 1.6),
                     ),
                     const SizedBox(height: 4),
-                    Text(subtitle, style: Cyber.body(12, color: Cyber.muted)),
+                    Text(
+                      subtitle,
+                      style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+                    ),
                   ],
                 ),
               ),
@@ -1174,7 +1210,12 @@ class _LogoutConfirmDialog extends StatelessWidget {
                     const SizedBox(height: 10),
                     Text(
                       'Choose a first-time setup or resume your saved career. Your cards, coins, matches, predictions, and picks stay on this device.',
-                      style: Cyber.body(13, color: Cyber.muted, height: 1.35),
+                      style: Cyber.bodyFor(
+                        context,
+                        13,
+                        color: Cyber.muted,
+                        height: 1.35,
+                      ),
                     ),
                   ],
                 ),
@@ -2249,7 +2290,7 @@ class _FollowingBandState extends State<_FollowingBand> {
                   child: entries.isEmpty
                       ? Text(
                           'Pick the teams and clubs you follow.',
-                          style: Cyber.body(13, color: Cyber.muted),
+                          style: Cyber.bodyFor(context, 13, color: Cyber.muted),
                         )
                       : Wrap(
                           spacing: 10,
@@ -2881,7 +2922,10 @@ class _NavRow extends StatelessWidget {
                 children: [
                   Icon(icon, color: Cyber.cyan, size: 20),
                   const SizedBox(width: 12),
-                  Text(label, style: Cyber.body(15, weight: FontWeight.w600)),
+                  Text(
+                    label,
+                    style: Cyber.bodyFor(context, 15, weight: FontWeight.w600),
+                  ),
                 ],
               ),
               const Icon(Icons.chevron_right, color: Cyber.muted, size: 20),

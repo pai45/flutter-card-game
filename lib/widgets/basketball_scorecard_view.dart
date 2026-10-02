@@ -161,7 +161,7 @@ class _BasketballScorecardViewState extends State<BasketballScorecardView> {
               teamName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.body(13, weight: FontWeight.bold),
+              style: Cyber.bodyFor(context, 13, weight: FontWeight.bold),
             ),
           ),
           for (int i = 0; i < periodCount; i++)
@@ -427,7 +427,8 @@ class _BasketballScorecardViewState extends State<BasketballScorecardView> {
                           p.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Cyber.body(
+                          style: Cyber.bodyFor(
+                            context,
                             12,
                             weight: p.starter
                                 ? FontWeight.bold

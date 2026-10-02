@@ -280,8 +280,13 @@ class FixtureTagText extends StatelessWidget {
         child: Text(
           text,
           maxLines: 1,
-          style: Cyber.body(fontSize, color: color, weight: FontWeight.w700)
-              .copyWith(
+          style:
+              Cyber.bodyFor(
+                context,
+                fontSize,
+                color: color,
+                weight: FontWeight.w700,
+              ).copyWith(
                 letterSpacing: 1,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
@@ -340,8 +345,13 @@ class _FixtureLiveTagState extends State<FixtureLiveTag>
         const SizedBox(width: 7),
         Text(
           widget.label,
-          style: Cyber.body(13, color: Cyber.danger, weight: FontWeight.w800)
-              .copyWith(
+          style:
+              Cyber.bodyFor(
+                context,
+                13,
+                color: Cyber.danger,
+                weight: FontWeight.w800,
+              ).copyWith(
                 letterSpacing: 0.8,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),

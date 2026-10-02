@@ -511,7 +511,7 @@ class _BasketballFlowState extends State<_BasketballFlow> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(point.text, style: Cyber.body(12)),
+                      Text(point.text, style: Cyber.bodyFor(context, 12)),
                       const SizedBox(height: 3),
                       Text(
                         '${match.away.shortName} ${point.awayScore} // ${match.home.shortName} ${point.homeScore}',
@@ -530,8 +530,7 @@ class _BasketballFlowState extends State<_BasketballFlow> {
                     label: point.homeScore > point.awayScore
                         ? match.home.shortName
                         : match.away.shortName,
-                    value:
-                        '+${(point.homeScore - point.awayScore).abs()}',
+                    value: '+${(point.homeScore - point.awayScore).abs()}',
                     color: point.homeScore > point.awayScore
                         ? homeColor
                         : awayColor,
@@ -707,7 +706,7 @@ class _BasketballPlays extends StatelessWidget {
                             style: Cyber.label(8, color: accent),
                           ),
                           const SizedBox(height: 4),
-                          Text(play.text, style: Cyber.body(12)),
+                          Text(play.text, style: Cyber.bodyFor(context, 12)),
                           const SizedBox(height: 5),
                           Text(
                             '${match.away.shortName} ${play.awayScore} // ${match.home.shortName} ${play.homeScore}',
@@ -893,7 +892,7 @@ class _RosterRow extends StatelessWidget {
               children: [
                 Text(
                   player.name,
-                  style: Cyber.body(13, weight: FontWeight.w700),
+                  style: Cyber.bodyFor(context, 13, weight: FontWeight.w700),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -938,7 +937,7 @@ class _InfoLine extends StatelessWidget {
               style: Cyber.label(7.5, color: Cyber.muted),
             ),
           ),
-          Expanded(child: Text(value, style: Cyber.body(11.5))),
+          Expanded(child: Text(value, style: Cyber.bodyFor(context, 11.5))),
         ],
       ),
     );

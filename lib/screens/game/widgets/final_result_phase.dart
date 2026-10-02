@@ -471,7 +471,8 @@ class _ResultDockButton extends StatelessWidget {
               ],
               Text(
                 label,
-                style: Cyber.body(
+                style: Cyber.bodyFor(
+                  context,
                   15,
                   color: content,
                   weight: FontWeight.w800,

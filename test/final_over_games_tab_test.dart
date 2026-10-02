@@ -1,5 +1,6 @@
 import 'package:card_game/blocs/game/game_bloc.dart';
 import 'package:card_game/blocs/prediction/prediction_cubit.dart';
+import 'package:card_game/config/theme.dart';
 import 'package:card_game/screens/predictions/prediction_home_screen.dart';
 import 'package:card_game/services/prediction_repository.dart';
 import 'package:card_game/services/secure_storage_service.dart';
@@ -47,6 +48,7 @@ void main() {
             BlocProvider<PredictionCubit>.value(value: predictionCubit),
           ],
           child: MaterialApp(
+            theme: AppTheme.darkTheme,
             home: PredictionHomeScreen(
               activeTab: 1,
               onTabChanged: (_) {},
@@ -85,6 +87,9 @@ void main() {
       expect(finalOver, findsOneWidget);
       expect(guessPlayer, findsOneWidget);
       expect(cricketQuiz, findsOneWidget);
+      final gamesTheme = Theme.of(tester.element(finalOver));
+      expect(gamesTheme.textTheme.bodyMedium?.fontFamily, Cyber.gameBodyFont);
+      expect(gamesTheme.textTheme.titleLarge?.fontFamily, Cyber.displayFont);
       expect(
         tester.getTopLeft(finalOver).dy,
         lessThan(tester.getTopLeft(guessPlayer).dy),

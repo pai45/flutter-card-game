@@ -150,42 +150,45 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
       (bloc) => bloc?.state.unlocks ?? const UnlockProgress(),
     );
     final tab = widget.activeTab;
-    return Scaffold(
-      backgroundColor: Cyber.bg,
-      body: Stack(
-        children: [
-          const Positioned.fill(child: _PredictionBackground()),
-          SafeArea(
-            top: false,
-            child: StatOzCollapsingHeaderView(
-              topBar: StatOzTopBar(
-                title: 'StatOz',
-                onAddCoins:
-                    widget.onAddCoins ??
-                    () => widget.onNavigate(AppSection.shop),
-                onStreakTap: widget.onOpenStreakHub,
-              ),
-              collapsible: CyberGlidingTabs(
-                tabs: _predictionTopTabs,
-                activeIndex: tab,
-                onTap: widget.onTabChanged,
-              ),
-              pinned: _buildSportTabs(tab),
-              body: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 240),
-                child: KeyedSubtree(
-                  key: ValueKey<int>(tab),
-                  child: _buildTab(tab),
+    return GameTypographyScope(
+      enabled: tab != 0,
+      child: Scaffold(
+        backgroundColor: Cyber.bg,
+        body: Stack(
+          children: [
+            const Positioned.fill(child: _PredictionBackground()),
+            SafeArea(
+              top: false,
+              child: StatOzCollapsingHeaderView(
+                topBar: StatOzTopBar(
+                  title: 'StatOz',
+                  onAddCoins:
+                      widget.onAddCoins ??
+                      () => widget.onNavigate(AppSection.shop),
+                  onStreakTap: widget.onOpenStreakHub,
+                ),
+                collapsible: CyberGlidingTabs(
+                  tabs: _predictionTopTabs,
+                  activeIndex: tab,
+                  onTap: widget.onTabChanged,
+                ),
+                pinned: _buildSportTabs(tab),
+                body: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 240),
+                  child: KeyedSubtree(
+                    key: ValueKey<int>(tab),
+                    child: _buildTab(tab),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: LandingBottomNavigation(
-        selectedIndex: 0,
-        onNavigate: widget.onNavigate,
-        includeShop: false,
+          ],
+        ),
+        bottomNavigationBar: LandingBottomNavigation(
+          selectedIndex: 0,
+          onNavigate: widget.onNavigate,
+          includeShop: false,
+        ),
       ),
     );
   }
@@ -316,7 +319,13 @@ class _PredictionHomeScreenState extends State<PredictionHomeScreen> {
     final openHub = widget.onOpenStreakHub ?? () => showStreakCalendar(context);
     final home = _unlocks.homeSport;
     if (_unlocks.initialQuestActive && home != null) {
-      return BeginnerQuestStrip(sport: home, unlocks: _unlocks, onTap: openHub);
+      return GameTypographyScope(
+        child: BeginnerQuestStrip(
+          sport: home,
+          unlocks: _unlocks,
+          onTap: openHub,
+        ),
+      );
     }
     return DailyQuestHomeTile(onTap: openHub);
   }
@@ -896,7 +905,8 @@ class _MatchesTabState extends State<_MatchesTab> {
                           children: [
                             Text(
                               entry.key.shortCode,
-                              style: Cyber.body(
+                              style: Cyber.bodyFor(
+                                context,
                                 13,
                                 color: Cyber.cyan.withValues(alpha: 0.85),
                                 weight: FontWeight.w700,
@@ -1047,7 +1057,12 @@ class _NewGamesReleaseCard extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 'Two new ways to play are live: tactical card battles in Pitch Duel and high-pressure spot kicks in Penalty Shootout.',
-                style: Cyber.body(12, color: Cyber.muted, height: 1.35),
+                style: Cyber.bodyFor(
+                  context,
+                  12,
+                  color: Cyber.muted,
+                  height: 1.35,
+                ),
               ),
               const SizedBox(height: 22),
               Row(
@@ -1133,7 +1148,12 @@ class _NewGamesReleaseScreen extends StatelessWidget {
                     children: [
                       Text(
                         'Fresh game modes are now live. Use your squad in faster, more tactical football challenges built for quick sessions and big moments.',
-                        style: Cyber.body(13, color: Cyber.muted, height: 1.45),
+                        style: Cyber.bodyFor(
+                          context,
+                          13,
+                          color: Cyber.muted,
+                          height: 1.45,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       _ReleaseGameFeatureCard(
@@ -1219,7 +1239,7 @@ class _ReleaseGameFeatureCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             description,
-            style: Cyber.body(13, color: Cyber.muted, height: 1.4),
+            style: Cyber.bodyFor(context, 13, color: Cyber.muted, height: 1.4),
           ),
           const SizedBox(height: 16),
           _ReleaseGameButton(
@@ -3756,10 +3776,12 @@ class _LockVeil extends StatelessWidget {
                 children: [
                   Icon(Icons.lock_rounded, size: 14, color: tint),
                   const SizedBox(width: 6),
-                  Flexible(child: Text(
-                    lock.label,
-                    style: Cyber.label(10, color: tint, letterSpacing: 1),
-                  )),
+                  Flexible(
+                    child: Text(
+                      lock.label,
+                      style: Cyber.label(10, color: tint, letterSpacing: 1),
+                    ),
+                  ),
                 ],
               ),
             ),

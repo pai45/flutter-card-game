@@ -50,7 +50,7 @@ class GuessResultOverlay extends StatelessWidget {
                   won
                       ? 'You guessed the player.'
                       : 'Out of hearts. Better luck tomorrow.',
-                  style: Cyber.body(14, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, 14, color: Cyber.muted),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),

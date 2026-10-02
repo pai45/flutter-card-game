@@ -234,7 +234,11 @@ class _AchievementUnlockCelebrationState
                                   child: Text(
                                     achievement.description,
                                     textAlign: TextAlign.center,
-                                    style: Cyber.body(14, color: Cyber.muted),
+                                    style: Cyber.bodyFor(
+                                      context,
+                                      14,
+                                      color: Cyber.muted,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 16),

@@ -63,68 +63,71 @@ class _AllSportsScreenState extends State<AllSportsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Cyber.bg,
-      body: CyberPlainBackground(
-        child: SafeArea(
-          child: Column(
-            children: [
-              const DetailTopBar(title: 'SELECT SPORT'),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                child: _SignalHeader(mode: widget.mode),
-              ),
-              Expanded(
-                child: BlocBuilder<PredictionCubit, PredictionState>(
-                  builder: (context, state) {
-                    final unlocks = context.select<GameBloc?, UnlockProgress>(
-                      (bloc) => bloc?.state.unlocks ?? const UnlockProgress(),
-                    );
-                    final showTrending =
-                        !unlocks.gated ||
-                        unlocks.orderedUnlockedSports.length > 1;
-                    return ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                      children: [
-                        if (showTrending) ...[
-                          StaggeredCardEntrance(
-                            index: 0,
-                            animate: true,
-                            child: _SportSignalRow(
-                              icon: Icons.local_fire_department_rounded,
-                              label: 'Trending',
-                              detail: 'CURATED // LIVE SIGNALS',
-                              countLabel: 'HOT',
-                              accent: Cyber.cyan,
-                              selected:
-                                  widget.selectedIndex == hubTrendingTabIndex,
-                              onTap: () => _select(hubTrendingTabIndex),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const HudLine(),
-                          const SizedBox(height: 8),
-                        ],
-                        for (
-                          var index = 0;
-                          index < sportTabOrder.length;
-                          index++
-                        ) ...[
-                          _buildSportRow(
-                            state,
-                            unlocks,
-                            sportTabOrder[index],
-                            index + 1,
-                          ),
-                          if (index != sportTabOrder.length - 1)
-                            const SizedBox(height: 8),
-                        ],
-                      ],
-                    );
-                  },
+    return GameTypographyScope(
+      enabled: widget.mode == SportHubMode.games,
+      child: Scaffold(
+        backgroundColor: Cyber.bg,
+        body: CyberPlainBackground(
+          child: SafeArea(
+            child: Column(
+              children: [
+                const DetailTopBar(title: 'SELECT SPORT'),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  child: _SignalHeader(mode: widget.mode),
                 ),
-              ),
-            ],
+                Expanded(
+                  child: BlocBuilder<PredictionCubit, PredictionState>(
+                    builder: (context, state) {
+                      final unlocks = context.select<GameBloc?, UnlockProgress>(
+                        (bloc) => bloc?.state.unlocks ?? const UnlockProgress(),
+                      );
+                      final showTrending =
+                          !unlocks.gated ||
+                          unlocks.orderedUnlockedSports.length > 1;
+                      return ListView(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                        children: [
+                          if (showTrending) ...[
+                            StaggeredCardEntrance(
+                              index: 0,
+                              animate: true,
+                              child: _SportSignalRow(
+                                icon: Icons.local_fire_department_rounded,
+                                label: 'Trending',
+                                detail: 'CURATED // LIVE SIGNALS',
+                                countLabel: 'HOT',
+                                accent: Cyber.cyan,
+                                selected:
+                                    widget.selectedIndex == hubTrendingTabIndex,
+                                onTap: () => _select(hubTrendingTabIndex),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const HudLine(),
+                            const SizedBox(height: 8),
+                          ],
+                          for (
+                            var index = 0;
+                            index < sportTabOrder.length;
+                            index++
+                          ) ...[
+                            _buildSportRow(
+                              state,
+                              unlocks,
+                              sportTabOrder[index],
+                              index + 1,
+                            ),
+                            if (index != sportTabOrder.length - 1)
+                              const SizedBox(height: 8),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

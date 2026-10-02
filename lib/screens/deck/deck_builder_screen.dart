@@ -148,23 +148,23 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
             rightSlot: widget.management
                 ? null
                 : TextButton(
-              onPressed: editing
-                  ? null
-                  : () {
-                      context.read<GameBloc>().add(DeckCreated());
-                      setState(() {
-                        editing = true;
-                        selectedAttackers = List<String?>.filled(2, null);
-                        selectedDefenders = List<String?>.filled(2, null);
-                        selectedActions = List<String?>.filled(6, null);
-                        selectedKeeper = null;
-                        activeLane = DeckPickerLane.attacker;
-                        activeSlotIndex = 0;
-                        actionFilter = null;
-                      });
-                    },
-              child: const Text('NEW DECK'),
-            ),
+                    onPressed: editing
+                        ? null
+                        : () {
+                            context.read<GameBloc>().add(DeckCreated());
+                            setState(() {
+                              editing = true;
+                              selectedAttackers = List<String?>.filled(2, null);
+                              selectedDefenders = List<String?>.filled(2, null);
+                              selectedActions = List<String?>.filled(6, null);
+                              selectedKeeper = null;
+                              activeLane = DeckPickerLane.attacker;
+                              activeSlotIndex = 0;
+                              actionFilter = null;
+                            });
+                          },
+                    child: const Text('NEW DECK'),
+                  ),
           ),
           body: CyberBackground(
             child: Stack(
@@ -468,7 +468,10 @@ class _DeckBuilderScreenState extends State<DeckBuilderScreen> {
       ),
     );
     bloc.add(DeckSaved(next));
-    await saved.timeout(const Duration(seconds: 2), onTimeout: () => bloc.state);
+    await saved.timeout(
+      const Duration(seconds: 2),
+      onTimeout: () => bloc.state,
+    );
     if (!mounted) return;
     widget.onSaved?.call();
   }
@@ -669,7 +672,10 @@ class _FormationTile extends StatelessWidget {
               formation.blurb,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: Cyber.body(10).copyWith(color: Cyber.muted, height: 1.35),
+              style: Cyber.bodyFor(
+                context,
+                10,
+              ).copyWith(color: Cyber.muted, height: 1.35),
             ),
           ],
         ),

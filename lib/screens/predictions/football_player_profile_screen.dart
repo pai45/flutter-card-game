@@ -395,7 +395,7 @@ class _IntelCell extends StatelessWidget {
           data.value.toUpperCase(),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: Cyber.body(12, weight: FontWeight.w700),
+          style: Cyber.bodyFor(context, 12, weight: FontWeight.w700),
         ),
       ],
     ),
@@ -468,7 +468,7 @@ class _SeasonStatSheet extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           child: Text(
             'Season stat split is waiting on the ESPN feed.',
-            style: Cyber.body(13, color: Cyber.muted),
+            style: Cyber.bodyFor(context, 13, color: Cyber.muted),
           ),
         ),
       );
@@ -600,7 +600,8 @@ class _OfflineFeedNote extends StatelessWidget {
         Expanded(
           child: Text(
             'ESPN’s live dossier could not be reached. The verified leaderboard identity remains available; reopen when the feed is online for the full season split.',
-            style: Cyber.body(
+            style: Cyber.bodyFor(
+              context,
               12,
               color: Cyber.muted,
               weight: FontWeight.w600,

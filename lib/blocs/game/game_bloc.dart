@@ -533,6 +533,10 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       developer.log(
         'GameLoaded: Loaded progression (level ${progression.playerLevel})',
       );
+      final displayName = await _storage.loadDisplayName().timeout(
+        const Duration(seconds: 2),
+        onTimeout: () => 'PLAYER ONE',
+      );
 
       var streak = await _storage.loadStreak().timeout(
         const Duration(seconds: 2),
@@ -730,6 +734,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
       emit(
         state.copyWith(
           loading: false,
+          displayName: displayName,
           deckSlots: safeSlots,
           activeDeckId: activeAfterMigration.id,
           deckAttackers: cardsByIds(attackers, activeAfterMigration.attackers),
@@ -2555,6 +2560,7 @@ class GameBloc extends Bloc<GameEvent, GameState> {
 
   GameState _resetMatch(GameState old) => GameState.initial().copyWith(
     loading: false,
+    displayName: old.displayName,
     deckSlots: old.deckSlots,
     activeDeckId: old.activeDeckId,
     deckAttackers: old.deckAttackers,

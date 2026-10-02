@@ -397,7 +397,7 @@ class _HoopDuelMatchGateState extends State<_HoopDuelMatchGate> {
         title: 'HOOP DUEL',
         queueLabel: 'SCANNING GLOBAL HOOP QUEUE',
         player: MatchmakingFighter(
-          name: 'PLAYER ONE',
+          name: game.displayName,
           avatarAsset: playerAvatar.assetPath,
           frame: frame,
           badge: 'LV $level',

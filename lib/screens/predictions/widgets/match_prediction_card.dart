@@ -122,7 +122,8 @@ class MatchPredictionCard extends StatelessWidget {
               Text(
                 match.resultLine!,
                 textAlign: TextAlign.center,
-                style: Cyber.body(
+                style: Cyber.bodyFor(
+                  context,
                   11.5,
                   color: _resultCol,
                   weight: FontWeight.w600,
@@ -211,8 +212,13 @@ class _TagContent extends StatelessWidget {
     return switch (match.status) {
       MatchStatus.upcoming => Text(
         _formatTime(match.kickoff),
-        style: Cyber.body(13, color: _timeGold, weight: FontWeight.w700)
-            .copyWith(
+        style:
+            Cyber.bodyFor(
+              context,
+              13,
+              color: _timeGold,
+              weight: FontWeight.w700,
+            ).copyWith(
               letterSpacing: 1,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
@@ -232,7 +238,8 @@ class _TagContent extends StatelessWidget {
           const SizedBox(width: 7),
           Text(
             match.liveMinute != null ? "LIVE ${match.liveMinute}'" : 'LIVE',
-            style: Cyber.body(
+            style: Cyber.bodyFor(
+              context,
               12.5,
               color: Cyber.danger,
               weight: FontWeight.w800,
@@ -242,7 +249,8 @@ class _TagContent extends StatelessWidget {
       ),
       MatchStatus.finished => Text(
         'Finished',
-        style: Cyber.body(
+        style: Cyber.bodyFor(
+          context,
           11,
           color: Cyber.muted,
           weight: FontWeight.w600,
@@ -283,7 +291,8 @@ class _RaceIdentityRow extends StatelessWidget {
           // The Grand Prix title is the card's one identity line, not a team
           // name — it stays white after the flag instead of dimming like a
           // finished team, so the race keeps its full identity at rest.
-          style: Cyber.body(
+          style: Cyber.bodyFor(
+            context,
             14.5,
             color: Colors.white,
             weight: FontWeight.w700,
@@ -425,7 +434,8 @@ class _TeamColumn extends StatelessWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
           textAlign: alignEnd ? TextAlign.end : TextAlign.start,
-          style: Cyber.body(
+          style: Cyber.bodyFor(
+            context,
             14.5,
             color: clubAccent ?? nameColor,
             weight: clubAccent != null ? FontWeight.w800 : FontWeight.w700,
@@ -440,7 +450,8 @@ class _TeamColumn extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             textAlign: alignEnd ? TextAlign.end : TextAlign.start,
-            style: Cyber.body(
+            style: Cyber.bodyFor(
+              context,
               10.5,
               color: _scoreSub,
               weight: FontWeight.w600,
@@ -603,8 +614,13 @@ class _SetScoreChip extends StatelessWidget {
       ),
       child: Text(
         '$homeScore-$awayScore',
-        style: Cyber.body(10.5, color: Cyber.cyan, weight: FontWeight.w700)
-            .copyWith(
+        style:
+            Cyber.bodyFor(
+              context,
+              10.5,
+              color: Cyber.cyan,
+              weight: FontWeight.w700,
+            ).copyWith(
               fontFeatures: const [FontFeature.tabularFigures()],
               letterSpacing: 0.5,
             ),
@@ -803,7 +819,8 @@ class _XpWon extends StatelessWidget {
       const SizedBox(width: 6),
       Text(
         '+$xp XP',
-        style: Cyber.body(
+        style: Cyber.bodyFor(
+          context,
           12,
           color: Cyber.success,
           weight: FontWeight.w800,
@@ -835,7 +852,8 @@ class _CoinsPnl extends StatelessWidget {
         const SizedBox(width: 5),
         Text(
           '${up ? '+' : '−'}${formatOzCompact(pnl.abs())} OZ',
-          style: Cyber.body(
+          style: Cyber.bodyFor(
+            context,
             12,
             color: color,
             weight: FontWeight.w800,

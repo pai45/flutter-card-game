@@ -7,7 +7,6 @@ import '../../../models/sport_match.dart';
 import '../../../utils/sound_effects.dart';
 import '../../../widgets/cyber/cyber_tooltip.dart';
 import '../leaderboard_screen.dart';
-import 'rank_widgets.dart' show cutCornerDecoration;
 
 /// Re-exported so a lobby can name its board without importing the whole
 /// leaderboard screen.
@@ -17,7 +16,7 @@ export '../leaderboard_screen.dart' show GameMode;
 /// filtered to that game's board, pushed over the lobby so BACK returns you to
 /// the tee-up instead of dumping you out of the game.
 ///
-/// Persistent chrome, so it never glows — flat plate, accent border only.
+/// Persistent chrome, so it stays a quiet icon without a plate or glow.
 class GameLeaderboardButton extends StatelessWidget {
   const GameLeaderboardButton({
     required this.sport,
@@ -68,16 +67,12 @@ class GameLeaderboardButton extends StatelessWidget {
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => _open(context),
-          child: Container(
+          child: SizedBox(
             width: 40,
             height: 40,
-            alignment: Alignment.center,
-            decoration: cutCornerDecoration(
-              color: Cyber.panel.withValues(alpha: 0.55),
-              borderColor: accent.withValues(alpha: 0.5),
-              cut: 8,
+            child: Center(
+              child: Icon(Icons.leaderboard_rounded, color: accent, size: 19),
             ),
-            child: Icon(Icons.leaderboard_rounded, color: accent, size: 19),
           ),
         ),
       ),

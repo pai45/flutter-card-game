@@ -816,7 +816,7 @@ class _PlayerPanel extends StatelessWidget {
               Text(
                 'Return to logs for more grids.',
                 textAlign: TextAlign.center,
-                style: Cyber.body(12, color: Cyber.muted),
+                style: Cyber.bodyFor(context, 12, color: Cyber.muted),
               ),
             ],
           ),
@@ -889,7 +889,7 @@ class _CompletePanel extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             'Tomorrow unlocks the next run.',
-            style: Cyber.body(12, color: Cyber.muted),
+            style: Cyber.bodyFor(context, 12, color: Cyber.muted),
           ),
         ],
       ),

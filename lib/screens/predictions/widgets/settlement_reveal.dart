@@ -818,7 +818,7 @@ class _RealityQuestionBar extends StatelessWidget {
                 'REAL: ${question.actualAnswer.toUpperCase()}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.body(10.5, color: Cyber.muted),
+                style: Cyber.bodyFor(context, 10.5, color: Cyber.muted),
               ),
             ),
             Text(
@@ -914,7 +914,12 @@ class _FixtureRecap extends StatelessWidget {
       children: [
         Text(
           '${match.home.shortName}  vs  ${match.away.shortName}',
-          style: Cyber.body(14, color: Colors.white, weight: FontWeight.w700),
+          style: Cyber.bodyFor(
+            context,
+            14,
+            color: Colors.white,
+            weight: FontWeight.w700,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
@@ -1045,7 +1050,8 @@ class _VerdictRow extends StatelessWidget {
                                     .toUpperCase(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Cyber.body(
+                          style: Cyber.bodyFor(
+                            context,
                             11,
                             color: result.correct ? Cyber.success : Cyber.muted,
                             weight: FontWeight.w700,

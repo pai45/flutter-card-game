@@ -105,13 +105,13 @@ class _CompactBeginnerQuestCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     step.questRequirement,
-                    style: Cyber.body(13, color: Cyber.muted),
+                    style: Cyber.bodyFor(context, 13, color: Cyber.muted),
                   ),
                   if (step.isQuiz) ...[
                     const SizedBox(height: 6),
                     Text(
                       'Free beginner attempts until cleared',
-                      style: Cyber.body(12, color: Cyber.success),
+                      style: Cyber.bodyFor(context, 12, color: Cyber.success),
                     ),
                   ],
                 ],
@@ -156,7 +156,8 @@ class _CompactBeginnerQuestCard extends StatelessWidget {
                     next == null
                         ? '+$beginnerQuestCompleteOz Oz on completion'
                         : 'Unlocks ${next!.title}',
-                    style: Cyber.body(
+                    style: Cyber.bodyFor(
+                      context,
                       12,
                       color: AppTheme.textContrast,
                     ).copyWith(height: 1.2),
@@ -231,7 +232,7 @@ class RookiePathPanel extends StatelessWidget {
         Text(
           'Complete all ${ladder.length} missions to earn '
           '$beginnerQuestCompleteOz Oz - enough for another sport.',
-          style: Cyber.body(13, color: Cyber.gold),
+          style: Cyber.bodyFor(context, 13, color: Cyber.gold),
         ),
         if (unlocks.initialQuestActive) ...[
           const SizedBox(height: 16),
@@ -294,7 +295,7 @@ class SportQuestList extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         'Every unlocked sport is fully operational.',
-                        style: Cyber.body(13, color: Cyber.muted),
+                        style: Cyber.bodyFor(context, 13, color: Cyber.muted),
                       ),
                     ],
                   ),
@@ -600,7 +601,10 @@ class _ActiveMissionContent extends StatelessWidget {
         ],
       ),
       const SizedBox(height: 10),
-      Text(game.questRequirement, style: Cyber.body(12, color: Cyber.muted)),
+      Text(
+        game.questRequirement,
+        style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+      ),
       const SizedBox(height: 12),
       const HudLine(),
       const SizedBox(height: 10),
@@ -686,7 +690,7 @@ class _CompactMissionContent extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           game.unlockRequirement,
-          style: Cyber.body(11.5, color: Cyber.muted),
+          style: Cyber.bodyFor(context, 11.5, color: Cyber.muted),
         ),
       ],
     ],
@@ -815,7 +819,7 @@ class _DailyQuestLockedPreview extends StatelessWidget {
                 Text(
                   'Complete your first three home-sport missions to unlock '
                   'Daily Quests. Your activity already counts.',
-                  style: Cyber.body(13, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, 13, color: Cyber.muted),
                 ),
               ],
             ),
@@ -944,7 +948,8 @@ class _QuestHeader extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           '$cleared of $total missions complete',
-          style: Cyber.body(
+          style: Cyber.bodyFor(
+            context,
             13,
             color: accent,
           ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),

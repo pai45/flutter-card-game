@@ -132,7 +132,11 @@ class _FinalOverResultOverlayState extends State<FinalOverResultOverlay> {
                               Text(
                                 _reason(s),
                                 textAlign: TextAlign.center,
-                                style: Cyber.body(12, color: Cyber.muted),
+                                style: Cyber.bodyFor(
+                                  context,
+                                  12,
+                                  color: Cyber.muted,
+                                ),
                               ),
                             ],
                           ),

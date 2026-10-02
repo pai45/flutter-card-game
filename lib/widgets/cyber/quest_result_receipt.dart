@@ -29,7 +29,8 @@ class _QuestResultReceiptState extends State<QuestResultReceipt> {
   @override
   void didUpdateWidget(QuestResultReceipt oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.game != widget.game || oldWidget.sourceId != widget.sourceId) {
+    if (oldWidget.game != widget.game ||
+        oldWidget.sourceId != widget.sourceId) {
       _continuing = false;
     }
   }
@@ -63,13 +64,13 @@ class _QuestResultReceiptState extends State<QuestResultReceipt> {
                   const SizedBox(height: 8),
                   Text(
                     '${receipt.completed} of ${receipt.total} missions complete',
-                    style: Cyber.body(13),
+                    style: Cyber.bodyFor(context, 13),
                   ),
                   if (receipt.graduated) ...[
                     const SizedBox(height: 6),
                     Text(
                       'Daily Quests unlocked',
-                      style: Cyber.body(13, color: Cyber.success),
+                      style: Cyber.bodyFor(context, 13, color: Cyber.success),
                     ),
                   ],
                   const SizedBox(height: 6),
@@ -77,14 +78,17 @@ class _QuestResultReceiptState extends State<QuestResultReceipt> {
                     receipt.questCompleted
                         ? '+$beginnerQuestCompleteOz Oz · Sport quest complete'
                         : '${receipt.nextGame!.title} unlocked',
-                    style: Cyber.body(13),
+                    style: Cyber.bodyFor(context, 13),
                   ),
                   const SizedBox(height: 12),
                   CyberObjectiveAction(
                     label: 'CONTINUE QUEST',
                     icon: Icons.arrow_forward,
-                    onTap: _continuing || UnlockRevealGate.instance.continueQuest == null
-                          ? null : () {
+                    onTap:
+                        _continuing ||
+                            UnlockRevealGate.instance.continueQuest == null
+                        ? null
+                        : () {
                             setState(() => _continuing = true);
                             UnlockRevealGate.instance.continueQuest?.call();
                           },

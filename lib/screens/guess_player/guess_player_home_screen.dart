@@ -285,7 +285,12 @@ class _Hero extends StatelessWidget {
               const SizedBox(height: 5),
               Text(
                 'Decode six career signals. Earlier solves earn more XP.',
-                style: Cyber.body(12, color: Cyber.muted, height: 1.3),
+                style: Cyber.bodyFor(
+                  context,
+                  12,
+                  color: Cyber.muted,
+                  height: 1.3,
+                ),
               ),
               const SizedBox(height: 10),
               Wrap(

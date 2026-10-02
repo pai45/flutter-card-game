@@ -133,7 +133,12 @@ class _TeamHalf extends StatelessWidget {
         textAlign: nameAlign,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: Cyber.body(15, color: teamColor, weight: FontWeight.w700),
+        style: Cyber.bodyFor(
+          context,
+          15,
+          color: teamColor,
+          weight: FontWeight.w700,
+        ),
       ),
     );
 

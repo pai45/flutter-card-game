@@ -212,7 +212,7 @@ class _MatchScreenState extends State<MatchScreen> {
                   title: 'PITCH DUEL',
                   queueLabel: 'SCANNING GLOBAL PITCH QUEUE',
                   player: MatchmakingFighter(
-                    name: 'PLAYER ONE',
+                    name: state.displayName,
                     avatarAsset: playerAvatar.assetPath,
                     frame: equippedFrame,
                     badge: 'LV $level',

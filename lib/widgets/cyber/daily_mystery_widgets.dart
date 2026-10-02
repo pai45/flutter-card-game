@@ -515,7 +515,12 @@ class _LandingHero extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 description,
-                style: Cyber.body(11.5, color: Cyber.muted, height: 1.3),
+                style: Cyber.bodyFor(
+                  context,
+                  11.5,
+                  color: Cyber.muted,
+                  height: 1.3,
+                ),
               ),
               const SizedBox(height: 10),
               Wrap(
@@ -1437,7 +1442,8 @@ class DailyMysteryAutocomplete extends StatelessWidget {
               controller: textController,
               focusNode: fieldFocus,
               textInputAction: TextInputAction.search,
-              style: Cyber.body(
+              style: Cyber.bodyFor(
+                context,
                 12,
                 color: AppTheme.textPrimary,
                 weight: FontWeight.w700,
@@ -1542,7 +1548,8 @@ class DailyMysteryAutocomplete extends StatelessWidget {
                               Expanded(
                                 child: Text(
                                   option,
-                                  style: Cyber.body(
+                                  style: Cyber.bodyFor(
+                                    context,
                                     12,
                                     color: AppTheme.textPrimary,
                                     weight: FontWeight.w700,
@@ -1972,7 +1979,8 @@ class _ArchiveCard extends StatelessWidget {
                         entry.prompt,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: Cyber.body(
+                        style: Cyber.bodyFor(
+                          context,
                           10.5,
                           color: AppTheme.textPrimary,
                           weight: FontWeight.w700,
@@ -2178,7 +2186,7 @@ class _DailyMysteryDebriefState extends State<DailyMysteryDebrief> {
                 Text(
                   widget.promptDetail,
                   textAlign: TextAlign.center,
-                  style: Cyber.body(11, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, 11, color: Cyber.muted),
                 ),
               ],
             ),

@@ -49,7 +49,7 @@ class _GrandPrixLobbyScreenState extends State<GrandPrixLobbyScreen> {
     final navigator = Navigator.of(context);
     final cubit = context.read<GrandPrixCubit>();
     navigator.push(
-      MaterialPageRoute<void>(
+      gamePageRoute<void>(
         builder: (_) => BlocProvider.value(
           value: cubit,
           child: GrandPrixPitDeckScreen(
@@ -63,15 +63,13 @@ class _GrandPrixLobbyScreenState extends State<GrandPrixLobbyScreen> {
 
   void _startRace() {
     final cubit = context.read<GrandPrixCubit>();
-    final level = context
-        .read<GameBloc>()
-        .state
-        .progression
-        .levelFor(ProgressTrack.grandPrix);
+    final level = context.read<GameBloc>().state.progression.levelFor(
+      ProgressTrack.grandPrix,
+    );
     cubit.buildRace(level);
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      gamePageRoute<void>(
         builder: (_) => BlocProvider.value(
           value: cubit,
           child: GrandPrixRaceScreen(
@@ -136,7 +134,12 @@ class _GrandPrixLobbyScreenState extends State<GrandPrixLobbyScreen> {
                       : LayoutBuilder(
                           builder: (context, constraints) {
                             return SingleChildScrollView(
-                              padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                              padding: const EdgeInsets.fromLTRB(
+                                20,
+                                16,
+                                20,
+                                24,
+                              ),
                               child: ConstrainedBox(
                                 constraints: BoxConstraints(
                                   minHeight: constraints.maxHeight,
@@ -155,111 +158,131 @@ class _GrandPrixLobbyScreenState extends State<GrandPrixLobbyScreen> {
                                         const CyberSlideUpFadeIn(
                                           child: _PitLaneStatusBar(),
                                         ),
-                                  const SizedBox(height: 16),
-                                  CyberSlideUpFadeIn(
-                                    delay: const Duration(milliseconds: 80),
-                                    offset: 24,
-                                    child: _HeroRow(stats: state.stats),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  const SectionLabel(label: 'CIRCUIT'),
-                                  const SizedBox(height: 10),
-                                  CyberSlideUpFadeIn(
-                                    delay: const Duration(milliseconds: 240),
-                                    offset: 18,
-                                    child: _CircuitPicker(
-                                      selected: state.circuitId,
-                                      stats: state.stats,
-                                      laps: state.laps,
-                                      onSelect: (id) {
-                                        HapticFeedback.selectionClick();
-                                        playSound(SoundEffect.uiTap);
-                                        context
-                                            .read<GrandPrixCubit>()
-                                            .selectCircuit(id);
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  const SectionLabel(label: 'RACE DISTANCE'),
-                                  const SizedBox(height: 10),
-                                  CyberSlideUpFadeIn(
-                                    delay: const Duration(milliseconds: 300),
-                                    offset: 17,
-                                    child: _LapPicker(
-                                      selected: state.laps,
-                                      onSelect: (laps) {
-                                        HapticFeedback.selectionClick();
-                                        playSound(SoundEffect.uiTap);
-                                        context
-                                            .read<GrandPrixCubit>()
-                                            .selectLaps(laps);
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(height: 22),
-                                  CyberSlideUpFadeIn(
-                                    delay: const Duration(milliseconds: 360),
-                                    offset: 22,
-                                    child: HudCtaButton(
-                                      label: ready ? 'START RACE' : 'PIT DECK',
-                                      icon: Icons.sports_motorsports,
-                                      accent: Cyber.f1Red,
-                                      tapSound: SoundEffect.playMatch,
-                                      helper: ready
-                                          ? '${grandPrixCircuit(state.circuitId).name} · '
-                                              '${state.laps == 1 ? '1 LAP' : '${state.laps} LAPS'} · '
-                                              '${liverySpec.name}'
-                                          : 'EQUIP YOUR DRIVER AND LIVERY',
-                                      onTap: ready ? _startRace : _openPitDeck,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 14),
-                                  CyberSlideUpFadeIn(
-                                    delay: const Duration(milliseconds: 420),
-                                    offset: 18,
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: CyberDealtCard(
-                                            index: 0,
-                                            child: CyberCtaButton(
-                                              label: 'Pit Deck',
-                                              clip: false,
-                                              onPressed: _openPitDeck,
-                                            ),
+                                        const SizedBox(height: 16),
+                                        CyberSlideUpFadeIn(
+                                          delay: const Duration(
+                                            milliseconds: 80,
+                                          ),
+                                          offset: 24,
+                                          child: _HeroRow(stats: state.stats),
+                                        ),
+                                        const SizedBox(height: 20),
+                                        const SectionLabel(label: 'CIRCUIT'),
+                                        const SizedBox(height: 10),
+                                        CyberSlideUpFadeIn(
+                                          delay: const Duration(
+                                            milliseconds: 240,
+                                          ),
+                                          offset: 18,
+                                          child: _CircuitPicker(
+                                            selected: state.circuitId,
+                                            stats: state.stats,
+                                            laps: state.laps,
+                                            onSelect: (id) {
+                                              HapticFeedback.selectionClick();
+                                              playSound(SoundEffect.uiTap);
+                                              context
+                                                  .read<GrandPrixCubit>()
+                                                  .selectCircuit(id);
+                                            },
                                           ),
                                         ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: CyberDealtCard(
-                                            index: 1,
-                                            child: CyberCtaButton(
-                                              label: 'Match History',
-                                              clip: false,
-                                              onPressed: () =>
-                                                  showGameMatchHistory(
-                                                context,
-                                                gameLabel: 'Grand Prix',
-                                                history: context
-                                                    .read<GameBloc>()
-                                                    .state
-                                                    .matchHistory
-                                                    .where(
-                                                      (e) => e.isGrandPrix,
-                                                    )
-                                                    .toList(growable: false),
-                                                career: _RecordPanel(
-                                                  stats: state.stats,
+                                        const SizedBox(height: 20),
+                                        const SectionLabel(
+                                          label: 'RACE DISTANCE',
+                                        ),
+                                        const SizedBox(height: 10),
+                                        CyberSlideUpFadeIn(
+                                          delay: const Duration(
+                                            milliseconds: 300,
+                                          ),
+                                          offset: 17,
+                                          child: _LapPicker(
+                                            selected: state.laps,
+                                            onSelect: (laps) {
+                                              HapticFeedback.selectionClick();
+                                              playSound(SoundEffect.uiTap);
+                                              context
+                                                  .read<GrandPrixCubit>()
+                                                  .selectLaps(laps);
+                                            },
+                                          ),
+                                        ),
+                                        const SizedBox(height: 22),
+                                        CyberSlideUpFadeIn(
+                                          delay: const Duration(
+                                            milliseconds: 360,
+                                          ),
+                                          offset: 22,
+                                          child: HudCtaButton(
+                                            label: ready
+                                                ? 'START RACE'
+                                                : 'PIT DECK',
+                                            icon: Icons.sports_motorsports,
+                                            accent: Cyber.f1Red,
+                                            tapSound: SoundEffect.playMatch,
+                                            helper: ready
+                                                ? '${grandPrixCircuit(state.circuitId).name} · '
+                                                      '${state.laps == 1 ? '1 LAP' : '${state.laps} LAPS'} · '
+                                                      '${liverySpec.name}'
+                                                : 'EQUIP YOUR DRIVER AND LIVERY',
+                                            onTap: ready
+                                                ? _startRace
+                                                : _openPitDeck,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 14),
+                                        CyberSlideUpFadeIn(
+                                          delay: const Duration(
+                                            milliseconds: 420,
+                                          ),
+                                          offset: 18,
+                                          child: Row(
+                                            children: [
+                                              Expanded(
+                                                child: CyberDealtCard(
+                                                  index: 0,
+                                                  child: CyberCtaButton(
+                                                    label: 'Pit Deck',
+                                                    clip: false,
+                                                    onPressed: _openPitDeck,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: CyberDealtCard(
+                                                  index: 1,
+                                                  child: CyberCtaButton(
+                                                    label: 'Match History',
+                                                    clip: false,
+                                                    onPressed: () =>
+                                                        showGameMatchHistory(
+                                                          context,
+                                                          gameLabel:
+                                                              'Grand Prix',
+                                                          history: context
+                                                              .read<GameBloc>()
+                                                              .state
+                                                              .matchHistory
+                                                              .where(
+                                                                (e) => e
+                                                                    .isGrandPrix,
+                                                              )
+                                                              .toList(
+                                                                growable: false,
+                                                              ),
+                                                          career: _RecordPanel(
+                                                            stats: state.stats,
+                                                          ),
+                                                        ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ],
-                                    ),
-                                  ),
-                                ],
                                     ),
                                   ),
                                 ),
@@ -294,7 +317,12 @@ class _PitLaneStatusBar extends StatelessWidget {
           decoration: BoxDecoration(
             color: Cyber.success,
             shape: BoxShape.circle,
-            boxShadow: Cyber.glow(Cyber.success, alpha: 0.6, blur: 8, spread: 0),
+            boxShadow: Cyber.glow(
+              Cyber.success,
+              alpha: 0.6,
+              blur: 8,
+              spread: 0,
+            ),
           ),
         ),
         const SizedBox(width: 8),
@@ -310,7 +338,10 @@ class _PitLaneStatusBar extends StatelessWidget {
         ),
         const SizedBox(width: 10),
         Expanded(
-          child: Container(height: 1, color: Cyber.f1Red.withValues(alpha: 0.16)),
+          child: Container(
+            height: 1,
+            color: Cyber.f1Red.withValues(alpha: 0.16),
+          ),
         ),
         const SizedBox(width: 10),
         const Text(
@@ -372,8 +403,8 @@ class _HeroRow extends StatelessWidget {
                   label: stats.wins > 0
                       ? '${stats.wins} RACE WINS'
                       : stats.races > 0
-                          ? '${stats.races} RACES IN'
-                          : 'ROOKIE SEASON',
+                      ? '${stats.races} RACES IN'
+                      : 'ROOKIE SEASON',
                   color: stats.wins > 0 ? Cyber.gold : Cyber.f1Red,
                 ),
               ),
@@ -563,8 +594,8 @@ class _CircuitPickerState extends State<_CircuitPicker> {
   late final ScrollController _controller = ScrollController(
     initialScrollOffset:
         (grandPrixCircuits.indexWhere((c) => c.id == widget.selected) *
-                _cardExtent -
-            24)
+                    _cardExtent -
+                24)
             .clamp(0.0, _cardExtent * (grandPrixCircuits.length - 1)),
   );
 
@@ -747,12 +778,13 @@ class _LapOption extends StatelessWidget {
               children: [
                 Text(
                   '$laps',
-                  style: Cyber.display(
-                    22,
-                    color: isSelected ? Cyber.f1Red : Colors.white,
-                  ).copyWith(
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
+                  style:
+                      Cyber.display(
+                        22,
+                        color: isSelected ? Cyber.f1Red : Colors.white,
+                      ).copyWith(
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
                 ),
                 Text(
                   laps == 1 ? ' LAP' : ' LAPS',

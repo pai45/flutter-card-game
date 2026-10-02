@@ -1,7 +1,7 @@
 # Collections, Decks, Cards, Packs, Starter Packs, and Daily Drops
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-05
+> **Last verified:** 2026-10-01
 > **Scope:** Card ownership, sport decks, pack opening, starter entitlement, duplicate handling, and daily drops
 
 ## Product Purpose
@@ -123,6 +123,15 @@ confirmation seal).
 Owned cards, saved decks, pack/daily-drop claims, starter entitlements, XP, and
 ledger records persist through `SecureGameStorage` and shared game state.
 
+The `chiefpai45` returning preset claims every sport starter pack and equips the
+legal cross-sport **CHIEF XI** loadout. It owns each sport's six strongest
+catalog cards (plus any role cards required by the legal Pitch Duel lineup),
+the twelve strongest action cards, four card backs, four avatars, three
+banners, three frames, and four choices in each mode-specific kit/livery/jersey
+catalog. Equipped choices are Cyan Circuit, Liverpool frame, Bellingham avatar,
+South Africa banner, Meridian kit, Papaya livery, and Warriors jersey. All IDs
+are checked against the live catalogs during preset construction.
+
 ## Planned Scope and Current Limitations
 
 - **BUILT:** Shared football collections plus mode-specific deck/roster and
@@ -138,6 +147,7 @@ ledger records persist through `SecureGameStorage` and shared game state.
 - [`lib/screens/deck/all_cards_screen.dart`](../../../lib/screens/deck/all_cards_screen.dart)
 - [`lib/screens/deck/all_decks_screen.dart`](../../../lib/screens/deck/all_decks_screen.dart)
 - [`lib/widgets/card_unpack_animation.dart`](../../../lib/widgets/card_unpack_animation.dart)
+- [`lib/services/returning_profile_preset.dart`](../../../lib/services/returning_profile_preset.dart)
 - [`lib/screens/home/widgets/daily_drop.dart`](../../../lib/screens/home/widgets/daily_drop.dart)
 
 ## Tests
@@ -150,3 +160,4 @@ ledger records persist through `SecureGameStorage` and shared game state.
 - [`test/football_portraits_test.dart`](../../../test/football_portraits_test.dart)
 - [`test/cricket_portraits_test.dart`](../../../test/cricket_portraits_test.dart)
 - [`test/racing_portraits_test.dart`](../../../test/racing_portraits_test.dart)
+- [`test/returning_profile_preset_test.dart`](../../../test/returning_profile_preset_test.dart)

@@ -115,14 +115,14 @@ class _FootballChessLobbyScreenState extends State<FootballChessLobbyScreen> {
 
     final navigator = Navigator.of(context);
     navigator.push(
-      MaterialPageRoute<void>(
+      gamePageRoute<void>(
         builder: (_) => GameMatchGate(
           goLabel: 'KICK OFF!',
           config: GameMatchmakingConfig(
             title: '5V5 FOOTBALL CHESS',
             queueLabel: 'SCANNING GLOBAL CHESS QUEUE',
             player: MatchmakingFighter(
-              name: 'PLAYER ONE',
+              name: game.displayName,
               avatarAsset: playerAvatar.assetPath,
               frame: equippedFrame,
               badge: 'LV $level',
@@ -137,7 +137,7 @@ class _FootballChessLobbyScreenState extends State<FootballChessLobbyScreen> {
           onReady: () {
             cubit.startMatch(match);
             navigator.pushReplacement(
-              MaterialPageRoute<void>(
+              gamePageRoute<void>(
                 builder: (_) => BlocProvider.value(
                   value: cubit,
                   child: FootballChessMatchScreen(

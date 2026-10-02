@@ -145,7 +145,7 @@ class _CoinTossPhaseState extends State<CoinTossPhase>
         Text(
           'CHOOSE YOUR ROLE FOR ROUND $round',
           textAlign: TextAlign.center,
-          style: Cyber.body(12, color: Cyber.muted),
+          style: Cyber.bodyFor(context, 12, color: Cyber.muted),
         ),
         const SizedBox(height: 16),
         Row(
@@ -195,7 +195,7 @@ class _CoinTossPhaseState extends State<CoinTossPhase>
                   : '$opponent IS DECIDING TO ATTACK OR DEFEND',
               key: ValueKey(_cpuFinalized),
               textAlign: TextAlign.center,
-              style: Cyber.body(12, color: Cyber.muted),
+              style: Cyber.bodyFor(context, 12, color: Cyber.muted),
             ),
           ),
           const SizedBox(height: 16),
@@ -594,7 +594,8 @@ class ScenarioBriefingCard extends StatelessWidget {
                 child: Text(
                   scenario.description,
                   textAlign: TextAlign.center,
-                  style: Cyber.body(
+                  style: Cyber.bodyFor(
+                    context,
                     13,
                     color: Colors.white.withValues(alpha: 0.82),
                     weight: FontWeight.w700,

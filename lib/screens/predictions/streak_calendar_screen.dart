@@ -145,24 +145,26 @@ class _StreakCalendarScreenState extends State<StreakCalendarScreen> {
         final unlocks = state.unlocks;
         final homeSport = unlocks.homeSport;
         if (unlocks.initialQuestActive && homeSport != null) {
-          return GameScaffold(
-            title: "BEGINNER'S QUEST",
-            leading: _HubBackButton(
-              onTap: () => Navigator.of(context).maybePop(),
-            ),
-            child: CustomScrollView(
-              slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-                  sliver: SliverToBoxAdapter(
-                    child: RookiePathPanel(
-                      sport: homeSport,
-                      unlocks: unlocks,
-                      onPlay: _navigateBeginnerQuest,
+          return GameTypographyScope(
+            child: GameScaffold(
+              title: "BEGINNER'S QUEST",
+              leading: _HubBackButton(
+                onTap: () => Navigator.of(context).maybePop(),
+              ),
+              child: CustomScrollView(
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+                    sliver: SliverToBoxAdapter(
+                      child: RookiePathPanel(
+                        sport: homeSport,
+                        unlocks: unlocks,
+                        onPlay: _navigateBeginnerQuest,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         }
@@ -283,9 +285,11 @@ class _StreakCalendarScreenState extends State<StreakCalendarScreen> {
             onNavigate: widget.onQuestNavigate == null ? null : _navigateQuest,
           ),
           if (state.unlocks.questListEnabled)
-            SportQuestList(
-              unlocks: state.unlocks,
-              onPlay: _navigateBeginnerQuest,
+            GameTypographyScope(
+              child: SportQuestList(
+                unlocks: state.unlocks,
+                onPlay: _navigateBeginnerQuest,
+              ),
             ),
         ],
       ),
@@ -475,7 +479,10 @@ class _StreakHero extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(body, style: Cyber.body(12.5, color: Cyber.muted)),
+                    Text(
+                      body,
+                      style: Cyber.bodyFor(context, 12.5, color: Cyber.muted),
+                    ),
                   ],
                 ),
               ),
@@ -1146,7 +1153,8 @@ class _ShieldBriefing extends StatelessWidget {
           Expanded(
             child: Text(
               'Clear the Daily Sweep to forge one. Each covers a missed day.',
-              style: Cyber.body(
+              style: Cyber.bodyFor(
+                context,
                 12.5,
                 color: Colors.white.withValues(alpha: 0.85),
               ),
@@ -1592,7 +1600,7 @@ class _DayActivityPanel extends StatelessWidget {
                         : selected.isAfter(today)
                         ? 'This day hasn’t happened yet.'
                         : 'No streak activity recorded.',
-                    style: Cyber.body(13, color: Cyber.muted),
+                    style: Cyber.bodyFor(context, 13, color: Cyber.muted),
                   ),
                 ),
               ],
@@ -1642,10 +1650,18 @@ class _DayEventRow extends StatelessWidget {
                 event.title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: Cyber.body(13, weight: FontWeight.w800, height: 1.3),
+                style: Cyber.bodyFor(
+                  context,
+                  13,
+                  weight: FontWeight.w800,
+                  height: 1.3,
+                ),
               ),
               const SizedBox(height: 2),
-              Text(event.subtitle, style: Cyber.body(12, color: Cyber.muted)),
+              Text(
+                event.subtitle,
+                style: Cyber.bodyFor(context, 12, color: Cyber.muted),
+              ),
             ],
           ),
         ),

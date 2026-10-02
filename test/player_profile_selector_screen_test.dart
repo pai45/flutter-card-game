@@ -1,4 +1,5 @@
 import 'package:card_game/screens/onboarding/player_profile_selector_screen.dart';
+import 'package:card_game/services/secure_storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -27,6 +28,7 @@ void main() {
     required bool firstTimeProfileReady,
     required bool returningProfileReady,
     Future<void> Function(PlayerProfileChoice)? onSelect,
+    LocalProfileSummary? returningSummary,
   }) async {
     final selection = <PlayerProfileChoice?>[null];
     await tester.pumpWidget(
@@ -40,6 +42,7 @@ void main() {
           activeProfile: activeProfile,
           firstTimeProfileReady: firstTimeProfileReady,
           returningProfileReady: returningProfileReady,
+          returningSummary: returningSummary,
         ),
       ),
     );
@@ -69,6 +72,24 @@ void main() {
     await tester.tap(find.text('START FRESH'));
     await tester.pump();
     expect(selection[0], PlayerProfileChoice.firstTime);
+  });
+
+  testWidgets('shows the premade returning career summary', (tester) async {
+    await pumpSelector(
+      tester,
+      activeProfile: PlayerProfileChoice.firstTime,
+      firstTimeProfileReady: false,
+      returningProfileReady: true,
+      returningSummary: const LocalProfileSummary(
+        slot: LocalProfileSlot.returning,
+        ready: true,
+        displayName: 'chiefpai45',
+        level: 15,
+        streak: 7,
+      ),
+    );
+
+    expect(find.text('chiefpai45 // LV 15 // 7 DAY STREAK'), findsOneWidget);
   });
 
   // Regression: a solo player whose only career lives in the first-time slot
@@ -108,10 +129,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(
-      find.text('You are playing this career right now.'),
-      findsOneWidget,
-    );
+    expect(find.text('You are playing this career right now.'), findsOneWidget);
     await tester.tap(find.text('STAY IN THIS PROFILE'));
     await tester.pump();
     expect(selection[0], PlayerProfileChoice.returning);

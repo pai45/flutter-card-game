@@ -110,7 +110,11 @@ class CricketGuessPlayerLobby extends StatelessWidget {
                           Text(
                             'Follow $clueCount career signals to identify the player. '
                             'Fewer guesses earn more XP.',
-                            style: Cyber.body(14, color: Cyber.muted),
+                            style: Cyber.bodyFor(
+                              context,
+                              14,
+                              color: Cyber.muted,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           Wrap(
@@ -227,7 +231,7 @@ class CricketGuessPlayerLobby extends StatelessWidget {
                 Text(
                   '${archive.solvedCount} SOLVED / '
                   '${archive.completedCount} PLAYED',
-                  style: Cyber.body(12, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, 12, color: Cyber.muted),
                 ),
                 const SizedBox(height: 12),
                 CyberActionButton(

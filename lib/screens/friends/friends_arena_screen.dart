@@ -142,8 +142,13 @@ class _FriendsArenaScreenState extends State<FriendsArenaScreen> {
             child: BlocBuilder<FriendsCubit, FriendsState>(
               builder: (context, friendsState) {
                 final friends = friendsState.friends;
+                final game = context.watch<GameBloc>().state;
+                final roster = rivalRosterForPlayer(
+                  displayName: game.displayName,
+                  xp: game.progression.totalXP,
+                );
                 final entries =
-                    kRivalRoster
+                    roster
                         .where((s) => s.isUser || friends.contains(s.name))
                         .toList()
                       ..sort((a, b) => b.base.compareTo(a.base));
@@ -196,7 +201,7 @@ class _FriendsArenaScreenState extends State<FriendsArenaScreen> {
                         padding: const EdgeInsets.only(top: 6),
                         child: Text(
                           'Search a tag or username above to add your first rival.',
-                          style: Cyber.body(13, color: Cyber.muted),
+                          style: Cyber.bodyFor(context, 13, color: Cyber.muted),
                         ),
                       ),
                   ],
@@ -262,7 +267,10 @@ class _SearchNotice extends StatelessWidget {
           Icon(icon, color: accent, size: 20),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(message, style: Cyber.body(13, color: Cyber.muted)),
+            child: Text(
+              message,
+              style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+            ),
           ),
         ],
       ),
@@ -349,7 +357,11 @@ class _FriendLeaderRow extends StatelessWidget {
                           seed.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: Cyber.body(15, color: Colors.white),
+                          style: Cyber.bodyFor(
+                            context,
+                            15,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),

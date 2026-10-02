@@ -610,6 +610,53 @@ class Cyber {
 
   static const displayFont = 'Orbitron';
   static const bodyFont = 'Onest';
+  static const gameBodyFont = 'Exo 2';
+
+  static String bodyFontFor(BuildContext context) =>
+      Theme.of(context).textTheme.bodyMedium?.fontFamily ?? bodyFont;
+
+  static ThemeData gameTypographyTheme(ThemeData base) {
+    TextStyle? withGameBody(TextStyle? style) => style?.fontFamily == bodyFont
+        ? style!.copyWith(fontFamily: gameBodyFont)
+        : style;
+
+    TextTheme withGameText(TextTheme theme) => theme.copyWith(
+      displayLarge: withGameBody(theme.displayLarge),
+      displayMedium: withGameBody(theme.displayMedium),
+      displaySmall: withGameBody(theme.displaySmall),
+      headlineLarge: withGameBody(theme.headlineLarge),
+      headlineMedium: withGameBody(theme.headlineMedium),
+      headlineSmall: withGameBody(theme.headlineSmall),
+      titleLarge: withGameBody(theme.titleLarge),
+      titleMedium: withGameBody(theme.titleMedium),
+      titleSmall: withGameBody(theme.titleSmall),
+      bodyLarge: withGameBody(theme.bodyLarge),
+      bodyMedium: withGameBody(theme.bodyMedium),
+      bodySmall: withGameBody(theme.bodySmall),
+      labelLarge: withGameBody(theme.labelLarge),
+      labelMedium: withGameBody(theme.labelMedium),
+      labelSmall: withGameBody(theme.labelSmall),
+    );
+
+    final listTiles = base.listTileTheme;
+    return base.copyWith(
+      textTheme: withGameText(base.textTheme),
+      primaryTextTheme: withGameText(base.primaryTextTheme),
+      listTileTheme: listTiles.copyWith(
+        titleTextStyle: listTiles.titleTextStyle?.copyWith(
+          fontFamily: gameBodyFont,
+        ),
+        subtitleTextStyle: listTiles.subtitleTextStyle?.copyWith(
+          fontFamily: gameBodyFont,
+        ),
+      ),
+      snackBarTheme: base.snackBarTheme.copyWith(
+        contentTextStyle: base.snackBarTheme.contentTextStyle?.copyWith(
+          fontFamily: gameBodyFont,
+        ),
+      ),
+    );
+  }
 
   static List<BoxShadow> glow(
     Color color, {
@@ -656,6 +703,23 @@ class Cyber {
     fontFeatures: fontFeatures,
     decoration: TextDecoration.none,
   );
+
+  static TextStyle bodyFor(
+    BuildContext context,
+    double size, {
+    Color color = Colors.white,
+    FontWeight weight = FontWeight.w500,
+    double letterSpacing = 0,
+    double height = 1.35,
+    List<FontFeature>? fontFeatures,
+  }) => body(
+    size,
+    color: color,
+    weight: weight,
+    letterSpacing: letterSpacing,
+    height: height,
+    fontFeatures: fontFeatures,
+  ).copyWith(fontFamily: bodyFontFor(context));
 
   static TextStyle label(
     double size, {

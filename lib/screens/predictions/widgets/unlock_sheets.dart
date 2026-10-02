@@ -25,43 +25,45 @@ Future<void> showNextSportPicker(BuildContext context) async {
       maxWidth: 480,
       maxHeight: MediaQuery.sizeOf(context).height * 0.85,
     ),
-    builder: (context) => _UnlockSheetFrame(
-      accent: Cyber.cyan,
-      children: [
-        Text('CHOOSE YOUR NEXT SPORT', style: Cyber.display(20)),
-        const SizedBox(height: 8),
-        Text(
-          '50 Oz opens matches, picks and the first game.',
-          style: Cyber.body(14),
-        ),
-        const SizedBox(height: 16),
-        for (final sport in sports) ...[
-          CyberPanel(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  sportModuleFor(sport).label.toUpperCase(),
-                  style: Cyber.display(15),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${sportGameLadder[sport]!.length} games to discover',
-                  style: Cyber.body(13),
-                ),
-                const SizedBox(height: 8),
-                CyberObjectiveAction(
-                  label: 'VIEW SPORT · 50 OZ',
-                  icon: sportModuleFor(sport).icon,
-                  accent: sportModuleFor(sport).accent,
-                  onTap: () => Navigator.of(context).pop(sport),
-                ),
-              ],
-            ),
+    builder: (context) => GameTypographyScope(
+      child: _UnlockSheetFrame(
+        accent: Cyber.cyan,
+        children: [
+          Text('CHOOSE YOUR NEXT SPORT', style: Cyber.display(20)),
+          const SizedBox(height: 8),
+          Text(
+            '50 Oz opens matches, picks and the first game.',
+            style: Cyber.bodyFor(context, 14),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
+          for (final sport in sports) ...[
+            CyberPanel(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    sportModuleFor(sport).label.toUpperCase(),
+                    style: Cyber.display(15),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${sportGameLadder[sport]!.length} games to discover',
+                    style: Cyber.bodyFor(context, 13),
+                  ),
+                  const SizedBox(height: 8),
+                  CyberObjectiveAction(
+                    label: 'VIEW SPORT · 50 OZ',
+                    icon: sportModuleFor(sport).icon,
+                    accent: sportModuleFor(sport).accent,
+                    onTap: () => Navigator.of(context).pop(sport),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
         ],
-      ],
+      ),
     ),
   );
   if (sport != null && context.mounted) {
@@ -89,9 +91,11 @@ Future<bool> showSportUnlockSheet(BuildContext context, Sport sport) async {
       maxWidth: 480,
       maxHeight: MediaQuery.sizeOf(context).height * 0.9,
     ),
-    builder: (_) => BlocProvider.value(
-      value: context.read<GameBloc>(),
-      child: SportUnlockSheet(sport: sport),
+    builder: (_) => GameTypographyScope(
+      child: BlocProvider.value(
+        value: context.read<GameBloc>(),
+        child: SportUnlockSheet(sport: sport),
+      ),
     ),
   );
   return unlocked ?? false;
@@ -120,10 +124,12 @@ Future<void> showLockedGameSheet(
     barrierColor: Cyber.bg.withValues(alpha: 0.78),
     barrierLabel: 'Dismiss locked game',
     constraints: const BoxConstraints(maxWidth: 480),
-    builder: (_) => _LockedGameSheet(
-      game: game,
-      step: step,
-      cleared: unlocks.stepsCleared(game.sport),
+    builder: (_) => GameTypographyScope(
+      child: _LockedGameSheet(
+        game: game,
+        step: step,
+        cleared: unlocks.stepsCleared(game.sport),
+      ),
     ),
   );
   if (play == true && step != null) onPlay(step);
@@ -208,7 +214,7 @@ class _SportUnlockSheetState extends State<SportUnlockSheet> {
           const SizedBox(height: 16),
           Text(
             'Open $label matches, picks and ${ladder.first.title}. Play through its quest to unlock every game.',
-            style: Cyber.body(14, color: Cyber.muted),
+            style: Cyber.bodyFor(context, 14, color: Cyber.muted),
           ),
           const SizedBox(height: 24),
           CyberKitSection(
@@ -349,7 +355,7 @@ class _LockedGameSheet extends StatelessWidget {
                               'lose.'
                         : 'Unlocks after ${ladder[game.ladderIndex - 1].title}. '
                               'Next up: ${step.title}.',
-                    style: Cyber.body(13, color: Cyber.muted),
+                    style: Cyber.bodyFor(context, 13, color: Cyber.muted),
                   ),
                 ],
               ),

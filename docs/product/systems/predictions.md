@@ -1,7 +1,7 @@
 # Predictions
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-15
+> **Last verified:** 2026-10-02
 > **Scope:** Fixture quiz discovery, submission/editing, boosters, lock lifecycle, XP settlement, and paid Scoreline contest
 
 ## Product Purpose
@@ -225,16 +225,15 @@ hard-elevation edge. LIVE, FUTURE, PREDICT, PICK, and sport identity colors stay
 inside the card as semantic labels and markers rather than changing its shell.
 
 The MATCH Trending feed opens with a PICKS / FUTURES / EVENTS category strip:
-three stacked full-width long tabs (76px strips, echoing the wide match
-scoreboard card) on the same cyan Trending card shell, directly above the
-bento grid. Each tab reads left to right: a chamfered type-coloured glyph
-plate, the category name with a one-line teaser of its headline market (the
-open market with the biggest latest move, ties broken by volume, prefixed by
-its leading outcome %), then the live open-market count, `OPEN`, and a cyan
-chevron. Tapping one opens ALL PICKS with the browse filters reset (all
-leagues, open status) and the matching MATCHES / FUTURES / EVENT chip active.
-A tab pulses a small **HOT** flag beside its name only while one of its open
-markets is genuinely hot (the same 5-point rule as the market delta chip);
+three compact cards in one row on the same cyan Trending card shell, directly
+above the bento grid. Each card shows a chamfered type-coloured glyph, category
+name, live open-market count, `OPEN`, and a cyan chevron (replaced by `HOT`
+when a market is moving). The former headline market teaser and its leading
+outcome percentage are omitted. Tapping one opens ALL PICKS with the browse
+filters reset (all leagues, open status) and the matching MATCHES / FUTURES /
+EVENT chip active. A shortcut pulses a small **HOT** flag beside its glyph only
+while one of its open markets is genuinely hot (the same 5-point rule as the
+market delta chip);
 otherwise the tabs are calm chrome with no glow.
 
 Below it, the Trending layout uses a dense two-column broadcast grid.
@@ -934,6 +933,14 @@ Predictions, answers, multipliers, contest entry/rank/prize, status, and
 settlement result persist through the prediction repository/storage path.
 Progression, wallet, ledgers, streaks, and achievements persist in their shared systems.
 
+The versioned RETURNING PLAYER preset contains three fixture-bound match-quiz
+submissions per sport (15 total): a strong settled result, a weaker settled
+result, and an open entry. It also contains three catalog-backed pick positions
+per sport (15 total): won, lost, and pending. Fixture, quiz, question, market,
+outcome, and sport relationships are validated while the typed preset is built;
+the basketball repository supplies the same canonical three-question match
+basics quiz used by these seeded fixtures.
+
 ## Planned Scope and Current Limitations
 
 - **BUILT:** Multi-sport fixture board, all-sports team/league fixture search,
@@ -976,6 +983,7 @@ Progression, wallet, ledgers, streaks, and achievements persist in their shared 
 - [`lib/screens/predictions/widgets/team_stat_board.dart`](../../../lib/screens/predictions/widgets/team_stat_board.dart)
 - [`lib/services/league_stats_package_service.dart`](../../../lib/services/league_stats_package_service.dart)
 - [`lib/services/espn_football_player_profile_service.dart`](../../../lib/services/espn_football_player_profile_service.dart)
+- [`lib/services/returning_profile_preset.dart`](../../../lib/services/returning_profile_preset.dart)
 - [`lib/blocs/league_stats/league_stats_cubit.dart`](../../../lib/blocs/league_stats/league_stats_cubit.dart)
 
 ## Tests
@@ -988,5 +996,6 @@ Progression, wallet, ledgers, streaks, and achievements persist in their shared 
 - [`test/league_stats_package_service_test.dart`](../../../test/league_stats_package_service_test.dart)
 - [`test/espn_league_team_stats_live_test.dart`](../../../test/espn_league_team_stats_live_test.dart) (skipped by default; hits the live ESPN API)
 - [`test/football_match_stats_view_test.dart`](../../../test/football_match_stats_view_test.dart)
+- [`test/returning_profile_preset_test.dart`](../../../test/returning_profile_preset_test.dart)
 - [`test/basketball_cricket_match_package_service_test.dart`](../../../test/basketball_cricket_match_package_service_test.dart)
 - [`test/basketball_cricket_match_stats_view_test.dart`](../../../test/basketball_cricket_match_stats_view_test.dart)

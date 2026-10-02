@@ -1,7 +1,7 @@
 # Sport and Game Unlocks (Beginner's Quest)
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-29
+> **Last verified:** 2026-10-01
 > **Scope:** The home sport chosen at onboarding, locked sports and games, the per-sport Beginner's Quest ladder that opens games by playing, and the 50 Oz sport unlock.
 
 ## Product Purpose
@@ -178,6 +178,12 @@ teasers, so the player knows there is more to earn.
 
 ## Persistence
 
+The v1 RETURNING PLAYER preset is a fully graduated career: Football is its
+home sport, all five sports are unlocked, every one of the 18 ladder positions
+is reached and recorded as played, every sport quest is complete, and the
+pending reveal queue is empty. Opening that career therefore shows the complete
+game board immediately and never replays unlock or quest-completion reveals.
+
 `UnlockProgress` (versioned JSON, key `pd_unlock_progress_v1`) stores:
 - the home sport and unlocked sports
 - ladder position per sport
@@ -226,3 +232,5 @@ finished onboarding migrates to `grandfathered`.
   cricket game counting toward daily quests, the one-time +50 Oz, 50 Oz
   purchases (broke, owned) and rookie ticket spend.
 - `test/profile_setup_screen_test.dart`: single-select home sport.
+- `test/returning_profile_preset_test.dart`: all five sports, 18 games,
+  completed quests, played markers, and empty reveal queue.

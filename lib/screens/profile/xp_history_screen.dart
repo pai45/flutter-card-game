@@ -61,8 +61,7 @@ class _XpHistoryScreenState extends State<XpHistoryScreen> {
                     .where(
                       (entry) =>
                           _matches(entry, _filter) &&
-                          (_trackFilter == null ||
-                              entry.track == _trackFilter),
+                          (_trackFilter == null || entry.track == _trackFilter),
                     )
                     .toList();
                 final earned = ledger
@@ -155,8 +154,9 @@ class _XpHistoryScreenState extends State<XpHistoryScreen> {
                                       .length,
                               },
                               onSelect: (track) => setState(() {
-                                _trackFilter =
-                                    _trackFilter == track ? null : track;
+                                _trackFilter = _trackFilter == track
+                                    ? null
+                                    : track;
                               }),
                             ),
                           ],
@@ -165,7 +165,12 @@ class _XpHistoryScreenState extends State<XpHistoryScreen> {
                             _EmptyXpHistory(hasAny: ledger.isNotEmpty)
                           else
                             for (var i = 0; i < filtered.length; i++) ...[
-                              _XpHistoryTile(entry: filtered[i]),
+                              GameTypographyScope(
+                                enabled:
+                                    filtered[i].track !=
+                                    ProgressTrack.prediction,
+                                child: _XpHistoryTile(entry: filtered[i]),
+                              ),
                               if (i != filtered.length - 1)
                                 const SizedBox(height: 10),
                             ],
@@ -648,7 +653,7 @@ class _XpHistoryTile extends StatelessWidget {
                   ].join(' · '),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.body(11, color: Cyber.muted),
+                  style: Cyber.bodyFor(context, 11, color: Cyber.muted),
                 ),
               ],
             ),
@@ -691,7 +696,7 @@ class _EmptyXpHistory extends StatelessWidget {
             ? 'No XP changes match this filter.'
             : 'No XP activity yet. Play a match, make a prediction, or open a pack.',
         textAlign: TextAlign.center,
-        style: Cyber.body(13, color: Cyber.muted),
+        style: Cyber.bodyFor(context, 13, color: Cyber.muted),
       ),
     );
   }

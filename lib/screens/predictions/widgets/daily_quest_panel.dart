@@ -61,7 +61,8 @@ class DailyQuestPanel extends StatelessWidget {
       useSafeArea: true,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withValues(alpha: 0.72),
-      builder: (context) => const _GameChooserSheet(),
+      builder: (context) =>
+          const GameTypographyScope(child: _GameChooserSheet()),
     );
     if (destination != null) onNavigate?.call(destination);
   }
@@ -91,7 +92,7 @@ class DailyQuestPanel extends StatelessWidget {
                 Expanded(
                   child: Text(
                     state.questError!,
-                    style: Cyber.body(13, color: Cyber.danger),
+                    style: Cyber.bodyFor(context, 13, color: Cyber.danger),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -123,69 +124,72 @@ class DailyQuestPanel extends StatelessWidget {
     final completed = today.completed(id);
     final isSweep = id == DailyQuestId.dailySweep;
     final navigate = onNavigate;
-    return CyberObjectiveCard(
-      key: ValueKey('quest_${id.name}'),
-      index: id.index + 1,
-      icon: _questIcon(id),
-      accent: questAccent(id),
-      title: questTitle(id),
-      description: switch (id) {
-        DailyQuestId.kickOff => 'Finish any game.',
-        DailyQuestId.makeYourCall => '1 prediction or 2 games.',
-        DailyQuestId.backYourPlay => '1 pick or 3 games.',
-        DailyQuestId.dailySweep => 'Clear all 3 quests.',
-      },
-      reward: '+${DailyQuestConfig.rewards[id]} OZ',
-      rewardDetail: !isSweep
-          ? null
-          : completed || state.streak.shields < streakShieldCap
-          ? '+1 SHIELD'
-          : 'SHIELDS FULL',
-      progress: today.progress(id),
-      segments: isSweep ? 3 : null,
-      state: claimed
-          ? CyberObjectiveState.claimed
-          : completed
-          ? CyberObjectiveState.ready
-          : CyberObjectiveState.active,
-      status: claimed
-          ? 'CLAIMED'
-          : completed
-          ? 'READY'
-          : isSweep
-          ? '${today.completedCount}/3'
-          : '${today.games}/${id.index + 1}',
-      actions: completed || isSweep
-          ? null
-          : Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                CyberObjectiveAction(
-                  label: 'PLAY GAME',
-                  icon: Icons.sports_esports,
-                  accent: Cyber.amber,
-                  onTap: navigate == null ? null : () => _chooseGame(context),
-                ),
-                if (id != DailyQuestId.kickOff)
+    return GameTypographyScope(
+      enabled: id == DailyQuestId.kickOff,
+      child: CyberObjectiveCard(
+        key: ValueKey('quest_${id.name}'),
+        index: id.index + 1,
+        icon: _questIcon(id),
+        accent: questAccent(id),
+        title: questTitle(id),
+        description: switch (id) {
+          DailyQuestId.kickOff => 'Finish any game.',
+          DailyQuestId.makeYourCall => '1 prediction or 2 games.',
+          DailyQuestId.backYourPlay => '1 pick or 3 games.',
+          DailyQuestId.dailySweep => 'Clear all 3 quests.',
+        },
+        reward: '+${DailyQuestConfig.rewards[id]} OZ',
+        rewardDetail: !isSweep
+            ? null
+            : completed || state.streak.shields < streakShieldCap
+            ? '+1 SHIELD'
+            : 'SHIELDS FULL',
+        progress: today.progress(id),
+        segments: isSweep ? 3 : null,
+        state: claimed
+            ? CyberObjectiveState.claimed
+            : completed
+            ? CyberObjectiveState.ready
+            : CyberObjectiveState.active,
+        status: claimed
+            ? 'CLAIMED'
+            : completed
+            ? 'READY'
+            : isSweep
+            ? '${today.completedCount}/3'
+            : '${today.games}/${id.index + 1}',
+        actions: completed || isSweep
+            ? null
+            : Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
                   CyberObjectiveAction(
-                    label: id == DailyQuestId.makeYourCall
-                        ? 'PREDICT'
-                        : 'MAKE PICK',
-                    icon: id == DailyQuestId.makeYourCall
-                        ? Icons.insights
-                        : Icons.show_chart,
-                    accent: questAccent(id),
-                    onTap: navigate == null
-                        ? null
-                        : () => navigate(
-                            id == DailyQuestId.makeYourCall
-                                ? QuestDestination.prediction
-                                : QuestDestination.pick,
-                          ),
+                    label: 'PLAY GAME',
+                    icon: Icons.sports_esports,
+                    accent: Cyber.amber,
+                    onTap: navigate == null ? null : () => _chooseGame(context),
                   ),
-              ],
-            ),
+                  if (id != DailyQuestId.kickOff)
+                    CyberObjectiveAction(
+                      label: id == DailyQuestId.makeYourCall
+                          ? 'PREDICT'
+                          : 'MAKE PICK',
+                      icon: id == DailyQuestId.makeYourCall
+                          ? Icons.insights
+                          : Icons.show_chart,
+                      accent: questAccent(id),
+                      onTap: navigate == null
+                          ? null
+                          : () => navigate(
+                              id == DailyQuestId.makeYourCall
+                                  ? QuestDestination.prediction
+                                  : QuestDestination.pick,
+                            ),
+                    ),
+                ],
+              ),
+      ),
     );
   }
 }
@@ -338,8 +342,12 @@ class _RewardVault extends StatelessWidget {
                   curve: Curves.easeOutCubic,
                   builder: (context, value, _) => Text(
                     '+${value.round()} OZ',
-                    style: Cyber.display(18, color: Cyber.gold, letterSpacing: 0)
-                        .copyWith(
+                    style:
+                        Cyber.display(
+                          18,
+                          color: Cyber.gold,
+                          letterSpacing: 0,
+                        ).copyWith(
                           fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                   ),

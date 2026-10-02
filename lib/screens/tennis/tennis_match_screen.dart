@@ -364,7 +364,11 @@ class _PauseOverlay extends StatelessWidget {
                             Text(
                               'Your exact point has been saved.',
                               textAlign: TextAlign.center,
-                              style: Cyber.body(13, color: Cyber.muted),
+                              style: Cyber.bodyFor(
+                                context,
+                                13,
+                                color: Cyber.muted,
+                              ),
                             ),
                             const SizedBox(height: 22),
                             HudCtaButton(

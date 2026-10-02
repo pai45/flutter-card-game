@@ -377,7 +377,10 @@ class CyberProgressionEntry extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: CyberKit.gap),
-                      Text(detail, style: Cyber.body(13, color: Cyber.muted)),
+                      Text(
+                        detail,
+                        style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+                      ),
                     ],
                   ),
                 ),

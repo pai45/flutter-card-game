@@ -76,14 +76,10 @@ class _ScanlinePainter extends CustomPainter {
     canvas.drawRect(
       Rect.fromLTWH(0, y - tail, size.width, tail),
       Paint()
-        ..shader = ui.Gradient.linear(
-          Offset(0, y - tail),
-          Offset(0, y),
-          [
-            Cyber.cyan.withValues(alpha: 0),
-            Cyber.cyan.withValues(alpha: 0.16 * fade),
-          ],
-        ),
+        ..shader = ui.Gradient.linear(Offset(0, y - tail), Offset(0, y), [
+          Cyber.cyan.withValues(alpha: 0),
+          Cyber.cyan.withValues(alpha: 0.16 * fade),
+        ]),
     );
     canvas.drawRect(
       Rect.fromLTWH(0, y - 1, size.width, 2),
@@ -400,8 +396,7 @@ class _ChargeClipper extends CustomClipper<Rect> {
       Rect.fromLTWH(0, 0, size.width * fraction, size.height);
 
   @override
-  bool shouldReclip(covariant _ChargeClipper old) =>
-      old.fraction != fraction;
+  bool shouldReclip(covariant _ChargeClipper old) => old.fraction != fraction;
 }
 
 /// The bright leading edge riding the charge front.
@@ -485,7 +480,7 @@ class VerdictDebriefStrip extends StatelessWidget {
                         : 'ANSWER WAS · $correctLabel',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Cyber.body(11.5, color: Cyber.muted),
+                    style: Cyber.bodyFor(context, 11.5, color: Cyber.muted),
                   ),
                 ],
               ),
@@ -493,10 +488,7 @@ class VerdictDebriefStrip extends StatelessWidget {
             if (correct) ...[
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: Cyber.gold.withValues(alpha: 0.13),
                   border: Border.all(color: Cyber.gold.withValues(alpha: 0.5)),

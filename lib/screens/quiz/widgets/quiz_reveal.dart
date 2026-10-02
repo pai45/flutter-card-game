@@ -455,7 +455,7 @@ class _AnswerReview extends StatelessWidget {
           ),
           subtitle: Text(
             'Selected and correct answers',
-            style: Cyber.body(11, color: Cyber.muted),
+            style: Cyber.bodyFor(context, 11, color: Cyber.muted),
           ),
           children: [
             for (var i = 0; i < results.length; i++)
@@ -498,14 +498,14 @@ class _AnswerReviewRow extends StatelessWidget {
                   'Q$index · ${result.text}',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.body(11.5, weight: FontWeight.w700),
+                  style: Cyber.bodyFor(context, 11.5, weight: FontWeight.w700),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   result.correct
                       ? 'YOUR ANSWER · ${result.pickedLabel}'
                       : 'YOUR ANSWER · ${result.pickedLabel}  /  CORRECT · ${result.correctLabel}',
-                  style: Cyber.body(10.5, color: color),
+                  style: Cyber.bodyFor(context, 10.5, color: color),
                 ),
               ],
             ),

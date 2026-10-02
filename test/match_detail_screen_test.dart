@@ -64,6 +64,7 @@ void main() {
         ],
         child: MaterialApp(
           navigatorKey: navigatorKey,
+          theme: AppTheme.darkTheme,
           home: PredictionHomeScreen(
             activeTab: 0,
             onTabChanged: (_) {},
@@ -104,6 +105,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('match-detail-screen')), findsOneWidget);
+    expect(
+      Theme.of(
+        tester.element(find.byKey(const ValueKey('match-detail-screen'))),
+      ).textTheme.bodyMedium?.fontFamily,
+      Cyber.bodyFont,
+    );
     expect(find.text('PREDICT'), findsWidgets);
     expect(find.text('PICKS'), findsOneWidget);
     expect(find.text('TOPS'), findsOneWidget);

@@ -337,7 +337,11 @@ class _PlayView extends StatelessWidget {
                             Text(
                               state.errorMessage!,
                               textAlign: TextAlign.center,
-                              style: Cyber.body(11, color: Cyber.danger),
+                              style: Cyber.bodyFor(
+                                context,
+                                11,
+                                color: Cyber.danger,
+                              ),
                             ),
                           ],
                         ],
@@ -445,7 +449,8 @@ class _MysteryBay extends StatelessWidget {
                       : 'Submit a player to unlock the next career stop.',
                   maxLines: compact ? 1 : 2,
                   overflow: TextOverflow.ellipsis,
-                  style: Cyber.body(
+                  style: Cyber.bodyFor(
+                    context,
                     compact ? 9.5 : 11.5,
                     color: Cyber.muted,
                     height: 1.2,
@@ -855,7 +860,8 @@ class _PlayerSearch extends StatelessWidget {
                   controller: textController,
                   focusNode: fieldFocus,
                   textInputAction: TextInputAction.search,
-                  style: Cyber.body(
+                  style: Cyber.bodyFor(
+                    context,
                     12,
                     color: AppTheme.textPrimary,
                     weight: FontWeight.w700,
@@ -971,7 +977,8 @@ class _PlayerSearch extends StatelessWidget {
                                   Expanded(
                                     child: Text(
                                       player.name,
-                                      style: Cyber.body(
+                                      style: Cyber.bodyFor(
+                                        context,
                                         12,
                                         color: AppTheme.textPrimary,
                                         weight: FontWeight.w700,

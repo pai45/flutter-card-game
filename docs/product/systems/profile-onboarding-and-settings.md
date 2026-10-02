@@ -1,7 +1,7 @@
 # Profile, Onboarding, Identity, and Settings
 
 > **Status:** BUILT
-> **Last verified:** 2026-09-19
+> **Last verified:** 2026-10-01
 > **Scope:** First-run identity, welcome reward, Profile hub, followed competitions/teams, cosmetics, and settings
 
 ## Product Purpose
@@ -102,6 +102,18 @@ local switchboard:
   predictions, picks, game history, unlocks, and identity exactly as it was
   when the player switched away.
 
+On the first launch containing returning-preset v1, **RETURNING PLAYER** is
+replaced once with the playable `chiefpai45` career: level 15, a live seven-day
+streak, all sports/games open, and populated progression, activity, decks, and
+collections. Its selector card reads `chiefpai45 // LV 15 // 7 DAY STREAK`.
+The first-time slot remains untouched. The preset is ready immediately without
+replaying onboarding, pack, achievement, reward, or unlock moments.
+Its Guess the Player history uses playable catalog puzzles for football,
+cricket, and basketball. Older preset archives with placeholder puzzle IDs are
+repaired on game load without resetting completed results or rewards. Their
+settlement IDs are seeded or recovered with the archive so review cannot award
+the preset XP again.
+
 The switchboard always marks the slot the player is currently in with an
 **ACTIVE** badge, and that card's CTA reads **STAY IN THIS PROFILE** — it simply
 backs out of the switchboard and returns to the app, so confirming logout is
@@ -160,6 +172,15 @@ progression, streak, economy, game modes, and histories therefore persist per
 slot. The selector is device-local, not authentication or cloud account
 switching.
 
+Returning-preset installation is an awaited startup bootstrap. A version marker
+outside the profile-managed key namespace is written only after the returning
+snapshot—and the live state when RETURNING is active—have both succeeded. The
+v1 install deliberately replaces an older returning career once; after that,
+switches and relaunches preserve player changes. Future schema migrations must
+use their own non-destructive migration path rather than replaying preset v1.
+The stored display name is exposed through `GameState` and the read-only local
+profile summary, with `PLAYER ONE` retained for legacy saves that have no name.
+
 ## Planned Scope and Current Limitations
 
 - **BUILT:** Five-step-capable identity setup, optional following, profile hero/
@@ -179,6 +200,7 @@ switching.
 - [`lib/models/avatar_option.dart`](../../../lib/models/avatar_option.dart)
 - [`lib/models/profile_banner_option.dart`](../../../lib/models/profile_banner_option.dart)
 - [`lib/services/secure_storage_service.dart`](../../../lib/services/secure_storage_service.dart)
+- [`lib/services/returning_profile_preset.dart`](../../../lib/services/returning_profile_preset.dart)
 - [`lib/blocs/game/game_bloc.dart`](../../../lib/blocs/game/game_bloc.dart)
 
 ## Tests
@@ -190,3 +212,4 @@ switching.
 - [`test/onboarding_coin_reward_animation_test.dart`](../../../test/onboarding_coin_reward_animation_test.dart)
 - [`test/player_profile_selector_screen_test.dart`](../../../test/player_profile_selector_screen_test.dart)
 - [`test/local_profile_storage_test.dart`](../../../test/local_profile_storage_test.dart)
+- [`test/returning_profile_preset_test.dart`](../../../test/returning_profile_preset_test.dart)

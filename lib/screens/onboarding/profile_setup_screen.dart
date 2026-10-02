@@ -558,7 +558,7 @@ class _SetupDock extends StatelessWidget {
                 Text(
                   helper,
                   textAlign: TextAlign.center,
-                  style: Cyber.body(12, color: AppTheme.textMedium),
+                  style: Cyber.bodyFor(context, 12, color: AppTheme.textMedium),
                 ),
               ],
             ),
@@ -592,7 +592,10 @@ class _StepShell extends StatelessWidget {
           ),
           if (subtitle != null) ...[
             const SizedBox(height: 6),
-            Text(subtitle!, style: Cyber.body(13, color: Cyber.muted)),
+            Text(
+              subtitle!,
+              style: Cyber.bodyFor(context, 13, color: Cyber.muted),
+            ),
           ],
           const SizedBox(height: 16),
           Expanded(child: child),
@@ -1207,7 +1210,8 @@ class _LaunchSequenceState extends State<_LaunchSequence>
                     const SizedBox(height: 22),
                     Text(
                       'ENTERING STATOZ…',
-                      style: Cyber.body(
+                      style: Cyber.bodyFor(
+                        context,
                         12,
                         color: Cyber.cyan.withValues(alpha: 0.7),
                         weight: FontWeight.w700,

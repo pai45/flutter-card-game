@@ -199,9 +199,10 @@ class MatchCircleCubit extends Cubit<MatchCircleState> {
   Future<MatchCircleAuthor> _loadCurrentAuthor() async {
     final playerTag = await _storage.loadOrCreatePlayerTag();
     final selectedAvatarId = await _storage.loadSelectedAvatarId();
+    final displayName = await _storage.loadDisplayName();
     return MatchCircleAuthor(
       id: 'player:$playerTag',
-      displayName: 'PLAYER ONE',
+      displayName: displayName,
       avatarId: avatarOptionById(selectedAvatarId).id,
       playerTag: playerTag,
     );

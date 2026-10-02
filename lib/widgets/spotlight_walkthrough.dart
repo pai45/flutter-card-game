@@ -355,8 +355,7 @@ class _SpotlightWalkthroughPageState extends State<_SpotlightWalkthroughPage> {
               ? null
               : _cardTop(size, rect),
           bottom: widget.cardAnchor == SpotlightCardAnchor.bottom
-              ? widget.cardBottomInset +
-                    MediaQuery.paddingOf(context).bottom
+              ? widget.cardBottomInset + MediaQuery.paddingOf(context).bottom
               : null,
           child: Center(
             child: Material(
@@ -434,9 +433,9 @@ class _SpotlightWalkthroughPageState extends State<_SpotlightWalkthroughPage> {
                         step.body,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Color(0xffb8c4d4),
-                          fontFamily: 'Onest',
+                          fontFamily: Cyber.bodyFontFor(context),
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           height: 1.35,
@@ -546,11 +545,7 @@ class _SpotlightWalkthroughPageState extends State<_SpotlightWalkthroughPage> {
   List<Widget> _dimPanels(Size screen, Rect? hole) {
     const color = Color(0xD6000000);
     if (hole == null) {
-      return [
-        Positioned.fill(
-          child: ColoredBox(color: color),
-        ),
-      ];
+      return [Positioned.fill(child: ColoredBox(color: color))];
     }
 
     final left = hole.left.clamp(0.0, screen.width);
@@ -559,10 +554,34 @@ class _SpotlightWalkthroughPageState extends State<_SpotlightWalkthroughPage> {
     final bottom = hole.bottom.clamp(0.0, screen.height);
 
     return [
-      Positioned(left: 0, top: 0, right: 0, height: top, child: _DimPanel(color: color)),
-      Positioned(left: 0, top: bottom, right: 0, bottom: 0, child: _DimPanel(color: color)),
-      Positioned(left: 0, top: top, width: left, height: bottom - top, child: _DimPanel(color: color)),
-      Positioned(left: right, top: top, right: 0, height: bottom - top, child: _DimPanel(color: color)),
+      Positioned(
+        left: 0,
+        top: 0,
+        right: 0,
+        height: top,
+        child: _DimPanel(color: color),
+      ),
+      Positioned(
+        left: 0,
+        top: bottom,
+        right: 0,
+        bottom: 0,
+        child: _DimPanel(color: color),
+      ),
+      Positioned(
+        left: 0,
+        top: top,
+        width: left,
+        height: bottom - top,
+        child: _DimPanel(color: color),
+      ),
+      Positioned(
+        left: right,
+        top: top,
+        right: 0,
+        height: bottom - top,
+        child: _DimPanel(color: color),
+      ),
     ];
   }
 }
@@ -585,8 +604,7 @@ class _MultiHoleDimPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final path = Path()
-      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
+    final path = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
     for (final hole in holes) {
       path.addRRect(RRect.fromRectAndRadius(hole, const Radius.circular(3)));
     }

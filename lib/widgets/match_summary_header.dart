@@ -228,7 +228,12 @@ class _TeamIdentity extends StatelessWidget {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           softWrap: false,
-          style: Cyber.body(13, color: Colors.white, weight: FontWeight.w800),
+          style: Cyber.bodyFor(
+            context,
+            13,
+            color: Colors.white,
+            weight: FontWeight.w800,
+          ),
         ),
         if (innings.detail != null) ...[
           const SizedBox(height: 4),
@@ -237,14 +242,11 @@ class _TeamIdentity extends StatelessWidget {
             textAlign: align,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style:
-                Cyber.label(
-                  8.5,
-                  color: Cyber.muted,
-                  letterSpacing: 1,
-                ).copyWith(
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
+            style: Cyber.label(
+              8.5,
+              color: Cyber.muted,
+              letterSpacing: 1,
+            ).copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
           ),
         ],
       ],
@@ -261,8 +263,9 @@ class _TeamIdentity extends StatelessWidget {
   final open = raw.indexOf('(');
   if (open < 0) return (runs: raw, detail: null);
   final close = raw.lastIndexOf(')');
-  final detail = (close > open ? raw.substring(open + 1, close) : raw.substring(open + 1))
-      .trim();
+  final detail =
+      (close > open ? raw.substring(open + 1, close) : raw.substring(open + 1))
+          .trim();
   final runs = raw.substring(0, open).trim();
   if (runs.isEmpty) return (runs: raw, detail: null);
   return (runs: runs, detail: detail.isEmpty ? null : detail);

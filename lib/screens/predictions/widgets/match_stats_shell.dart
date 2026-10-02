@@ -98,7 +98,8 @@ class MatchPulseHeader extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 subtitle!,
-                style: Cyber.body(
+                style: Cyber.bodyFor(
+                  context,
                   12,
                   color: Cyber.muted,
                   weight: FontWeight.w700,

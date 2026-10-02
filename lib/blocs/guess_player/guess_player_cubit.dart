@@ -191,17 +191,28 @@ class GuessPlayerCubit extends Cubit<GuessPlayerState> {
         archive.resultsByDay,
       );
       var changed = false;
+      final recoveredSettlements = <String>{};
 
       for (final entry in records.entries.toList()) {
-        final record = entry.value;
+        var record = entry.value;
         if (entry.key.compareTo(currentDayKey) < 0 &&
             record.status == GuessPlayerResultStatus.inProgress) {
-          records[entry.key] = record.copyWith(
+          record = record.copyWith(
             status: GuessPlayerResultStatus.expired,
             completedAtEpochMs: now().millisecondsSinceEpoch,
           );
           changed = true;
         }
+        final recovered = _recoverPresetRecord(record);
+        if (!identical(recovered, record)) {
+          changed = true;
+          if (recovered.completed) {
+            recoveredSettlements.add(
+              'guess-player:${sport.name}:${recovered.dayKey}',
+            );
+          }
+        }
+        records[entry.key] = recovered;
       }
 
       var currentRecord = records[currentDayKey];
@@ -217,6 +228,11 @@ class GuessPlayerCubit extends Cubit<GuessPlayerState> {
       }
 
       archive = GuessPlayerArchive(resultsByDay: records);
+      if (recoveredSettlements.isNotEmpty) {
+        final settled = await storage.loadGuessPlayerSettlementIds();
+        settled.addAll(recoveredSettlements);
+        await storage.saveGuessPlayerSettlementIds(settled);
+      }
       // Always materialize v2 on load; the v1 key remains untouched.
       if (changed || archive.resultsByDay.isNotEmpty) {
         await storage.saveGuessPlayerArchive(sport, archive);
@@ -626,6 +642,42 @@ class GuessPlayerCubit extends Cubit<GuessPlayerState> {
     throw StateError(
       'Puzzle ${record.puzzleId.isEmpty ? '(legacy)' : record.puzzleId} '
       'is no longer available.',
+    );
+  }
+
+  GuessPlayerDayRecord _recoverPresetRecord(GuessPlayerDayRecord record) {
+    if (!record.puzzleId.startsWith('preset-${sport.name}-') ||
+        repository.puzzleById(record.puzzleId) != null) {
+      return record;
+    }
+    final day = DateTime.tryParse(record.dayKey);
+    if (day == null) return record;
+    final puzzle =
+        repository.puzzles
+            .where((candidate) => candidate.playerId == record.playerId)
+            .firstOrNull ??
+        repository.puzzleForDay(day);
+    final target = _playerById(puzzle.playerId);
+    final wrong = allPlayers
+        .where((player) => player.id != puzzle.playerId)
+        .firstOrNull;
+    final guesses = [
+      for (final id in record.guessedPlayerIds)
+        if (record.status == GuessPlayerResultStatus.won &&
+            id == record.playerId)
+          puzzle.playerId
+        else if (record.status != GuessPlayerResultStatus.won &&
+            id == puzzle.playerId &&
+            wrong != null)
+          wrong.id
+        else
+          id,
+    ];
+    return record.copyWith(
+      puzzleId: puzzle.id,
+      playerId: puzzle.playerId,
+      targetPlayerName: target.name,
+      guessedPlayerIds: guesses,
     );
   }
 

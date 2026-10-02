@@ -184,13 +184,24 @@ void main() {
     final categoryRects = [
       for (final key in categoryKeys) tester.getRect(find.byKey(key)),
     ];
-    // Long horizontal tabs: full feed width, stacked one under another.
+    // All three shortcuts share one row and keep their open counts visible.
     for (var i = 0; i < categoryRects.length; i++) {
       final rect = categoryRects[i];
-      expect(rect.width, moreOrLessEquals(wide.width));
-      expect(rect.height, lessThan(rect.width / 3));
+      expect(rect.width, lessThan(wide.width / 3));
+      expect(rect.height, greaterThan(rect.width));
       expect(rect.bottom, lessThan(wide.top));
-      if (i > 0) expect(rect.top, greaterThan(categoryRects[i - 1].bottom));
+      if (i > 0) {
+        expect(rect.left, greaterThan(categoryRects[i - 1].right));
+        expect(rect.top, moreOrLessEquals(categoryRects[0].top));
+      }
+      final texts = tester.widgetList<Text>(
+        find.descendant(
+          of: find.byKey(categoryKeys[i]),
+          matching: find.byType(Text),
+        ),
+      );
+      expect(texts.any((text) => (text.data ?? '').contains('%')), isFalse);
+      expect(texts.length, inInclusiveRange(3, 4));
     }
     await tester.tap(
       find.descendant(
@@ -216,7 +227,7 @@ void main() {
     expect(harnessKey.currentState!.openedMatchId, 'epl_cfc_new');
 
     final pick = find.byKey(const ValueKey('trend-liverpool-pick'));
-    // The category strip pushes the grid down, so "visible" can still leave
+    // The shortcut row pushes the grid down, so "visible" can still leave
     // the tile under the bottom edge; drag the feed itself until the tile is
     // fully inside the viewport.
     final feedScrollable = find
@@ -356,6 +367,14 @@ void main() {
       findsWidgets,
     );
     _expectMinimumStyledType(tester, matchFeed);
+    final categoryRects = [
+      for (final category in const ['picks', 'futures', 'events'])
+        tester.getRect(find.byKey(ValueKey('trend-category-$category'))),
+    ];
+    expect(categoryRects[0].top, moreOrLessEquals(categoryRects[2].top));
+    expect(categoryRects[0].right, lessThan(categoryRects[1].left));
+    expect(categoryRects[1].right, lessThan(categoryRects[2].left));
+    expect(categoryRects[2].right, lessThanOrEqualTo(304));
     final matchText = tester.widgetList<Text>(
       find.descendant(of: matchFeed, matching: find.byType(Text)),
     );

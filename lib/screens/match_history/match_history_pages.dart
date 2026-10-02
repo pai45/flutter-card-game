@@ -16,9 +16,11 @@ void showMatchHistoryArchive(
 }) {
   Navigator.of(context).push(
     PageRouteBuilder<void>(
-      pageBuilder: (ctx, a, b) => _MatchHistoryArchivePage(
-        history: history,
-        initialSport: initialSport,
+      pageBuilder: (ctx, a, b) => GameTypographyScope(
+        child: _MatchHistoryArchivePage(
+          history: history,
+          initialSport: initialSport,
+        ),
       ),
       transitionsBuilder: (ctx, animation, b, child) =>
           FadeTransition(opacity: animation, child: child),
@@ -37,10 +39,12 @@ void showGameMatchHistory(
 }) {
   Navigator.of(context).push(
     PageRouteBuilder<void>(
-      pageBuilder: (ctx, a, b) => _GameMatchHistoryPage(
-        gameLabel: gameLabel,
-        history: history,
-        career: career,
+      pageBuilder: (ctx, a, b) => GameTypographyScope(
+        child: _GameMatchHistoryPage(
+          gameLabel: gameLabel,
+          history: history,
+          career: career,
+        ),
       ),
       transitionsBuilder: (ctx, animation, b, child) =>
           FadeTransition(opacity: animation, child: child),
@@ -51,7 +55,8 @@ void showGameMatchHistory(
 void showMatchHistoryDetail(BuildContext context, MatchHistoryEntry entry) {
   Navigator.of(context).push(
     PageRouteBuilder<void>(
-      pageBuilder: (ctx, a, b) => _MatchHistoryDetailPage(entry: entry),
+      pageBuilder: (ctx, a, b) =>
+          GameTypographyScope(child: _MatchHistoryDetailPage(entry: entry)),
       transitionsBuilder: (ctx, animation, b, child) =>
           FadeTransition(opacity: animation, child: child),
     ),
@@ -144,7 +149,11 @@ class _GameMatchHistoryPage extends StatelessWidget {
                           padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
                           child: Text(
                             'No $label matches yet.',
-                            style: Cyber.body(12, color: Cyber.muted),
+                            style: Cyber.bodyFor(
+                              context,
+                              12,
+                              color: Cyber.muted,
+                            ),
                           ),
                         ),
                       ),
@@ -216,7 +225,11 @@ class _MatchHistoryRecordStrip extends StatelessWidget {
                   ),
                   Text(
                     'WIN RATE',
-                    style: Cyber.label(9, color: Cyber.muted, letterSpacing: 1.5),
+                    style: Cyber.label(
+                      9,
+                      color: Cyber.muted,
+                      letterSpacing: 1.5,
+                    ),
                   ),
                 ],
               ),
@@ -258,10 +271,7 @@ class _MatchHistoryRecordStrip extends StatelessWidget {
 // ─── Archive list ─────────────────────────────────────────────────────────────
 
 class _MatchHistoryArchivePage extends StatefulWidget {
-  const _MatchHistoryArchivePage({
-    required this.history,
-    this.initialSport,
-  });
+  const _MatchHistoryArchivePage({required this.history, this.initialSport});
 
   final List<MatchHistoryEntry> history;
   final Sport? initialSport;
@@ -365,7 +375,9 @@ class _MatchHistoryArchivePageState extends State<_MatchHistoryArchivePage> {
                             '$winPct%',
                             style: Cyber.display(
                               24,
-                              color: wins > losses ? Cyber.success : Cyber.muted,
+                              color: wins > losses
+                                  ? Cyber.success
+                                  : Cyber.muted,
                             ),
                           ),
                           const Text(
@@ -471,13 +483,13 @@ class _MatchHistoryDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final resultColor = switch (entry.resultLabel) {
       'Victory' => Cyber.success,
-      'Defeat'  => Cyber.danger,
-      _          => Cyber.amber,
+      'Defeat' => Cyber.danger,
+      _ => Cyber.amber,
     };
     final resultIcon = switch (entry.resultLabel) {
       'Victory' => Icons.emoji_events,
-      'Defeat'  => Icons.sentiment_dissatisfied,
-      _          => Icons.balance,
+      'Defeat' => Icons.sentiment_dissatisfied,
+      _ => Icons.balance,
     };
 
     // Pre-compute running score after each round.
@@ -485,7 +497,11 @@ class _MatchHistoryDetailPage extends StatelessWidget {
     var pGoals = 0, cGoals = 0;
     for (final r in entry.rounds) {
       if (r.outcomeLabel.toLowerCase() == 'goal') {
-        if (r.playerAttacking) { pGoals++; } else { cGoals++; }
+        if (r.playerAttacking) {
+          pGoals++;
+        } else {
+          cGoals++;
+        }
       }
       running.add((p: pGoals, c: cGoals));
     }
@@ -527,7 +543,11 @@ class _MatchHistoryDetailPage extends StatelessWidget {
               ),
 
               // ── hero scoreline ───────────────────────────────────────────
-              _HeroScoreline(entry: entry, resultColor: resultColor, resultIcon: resultIcon),
+              _HeroScoreline(
+                entry: entry,
+                resultColor: resultColor,
+                resultIcon: resultIcon,
+              ),
 
               // ── goal trail ───────────────────────────────────────────────
               if (entry.rounds.isNotEmpty)
@@ -625,10 +645,7 @@ class _HeroScoreline extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            resultColor.withValues(alpha: 0.12),
-            Cyber.panel2,
-          ],
+          colors: [resultColor.withValues(alpha: 0.12), Cyber.panel2],
         ),
         border: Border.all(color: resultColor.withValues(alpha: 0.4)),
         boxShadow: [
@@ -674,10 +691,15 @@ class _HeroScoreline extends StatelessWidget {
               if (entry.isShootout) ...[
                 const SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Cyber.violet.withValues(alpha: 0.15),
-                    border: Border.all(color: Cyber.violet.withValues(alpha: 0.6)),
+                    border: Border.all(
+                      color: Cyber.violet.withValues(alpha: 0.6),
+                    ),
                   ),
                   child: const Text(
                     'PENALTY SHOOTOUT',
@@ -693,10 +715,15 @@ class _HeroScoreline extends StatelessWidget {
               if (entry.penaltyPlayerScore != null) ...[
                 const SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Cyber.violet.withValues(alpha: 0.15),
-                    border: Border.all(color: Cyber.violet.withValues(alpha: 0.6)),
+                    border: Border.all(
+                      color: Cyber.violet.withValues(alpha: 0.6),
+                    ),
                   ),
                   child: Text(
                     'PEN  ${entry.penaltyPlayerScore} – ${entry.penaltyOpponentScore}',
@@ -735,10 +762,7 @@ class _HeroScoreline extends StatelessWidget {
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Text(
-                  '–',
-                  style: Cyber.display(28, color: Cyber.muted),
-                ),
+                child: Text('–', style: Cyber.display(28, color: Cyber.muted)),
               ),
               Column(
                 children: [
@@ -826,10 +850,8 @@ class _GoalDot extends StatelessWidget {
       tween: Tween(begin: 0.0, end: 1.0),
       duration: Duration(milliseconds: 200 + index * 50),
       curve: Curves.easeOutBack,
-      builder: (context, t, child) => Transform.scale(
-        scale: t.clamp(0.0, 1.3),
-        child: child,
-      ),
+      builder: (context, t, child) =>
+          Transform.scale(scale: t.clamp(0.0, 1.3), child: child),
       child: Tooltip(
         message: 'R${round.round}: ${round.outcomeLabel}',
         child: Container(
@@ -839,7 +861,12 @@ class _GoalDot extends StatelessWidget {
             shape: BoxShape.circle,
             color: color,
             boxShadow: isGoal
-                ? [BoxShadow(color: color.withValues(alpha: 0.6), blurRadius: 8)]
+                ? [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.6),
+                      blurRadius: 8,
+                    ),
+                  ]
                 : null,
           ),
         ),
@@ -868,7 +895,7 @@ class _RoundLogItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final oColor = _outcomeColor(round.outcomeLabel);
-    final oIcon  = _outcomeIcon(round.outcomeLabel);
+    final oIcon = _outcomeIcon(round.outcomeLabel);
     final roleColor = round.playerAttacking ? Cyber.lime : Cyber.cyan;
 
     return TweenAnimationBuilder<double>(
@@ -1076,23 +1103,23 @@ class _RoundLogItem extends StatelessWidget {
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
 Color _outcomeColor(String label) => switch (label.toLowerCase()) {
-  'goal'     => Cyber.success,
-  'saved'    => Cyber.cyan,
-  'blocked'  => Cyber.violet,
-  'missed'   => Cyber.muted,
-  'foul'     => Cyber.amber,
+  'goal' => Cyber.success,
+  'saved' => Cyber.cyan,
+  'blocked' => Cyber.violet,
+  'missed' => Cyber.muted,
+  'foul' => Cyber.amber,
   'red card' => Cyber.danger,
-  _          => Cyber.muted,
+  _ => Cyber.muted,
 };
 
 IconData _outcomeIcon(String label) => switch (label.toLowerCase()) {
-  'goal'     => Icons.sports_soccer,
-  'saved'    => Icons.back_hand,
-  'blocked'  => Icons.shield,
-  'missed'   => Icons.close,
-  'foul'     => Icons.warning_amber_rounded,
+  'goal' => Icons.sports_soccer,
+  'saved' => Icons.back_hand,
+  'blocked' => Icons.shield,
+  'missed' => Icons.close,
+  'foul' => Icons.warning_amber_rounded,
   'red card' => Icons.style,
-  _          => Icons.help_outline,
+  _ => Icons.help_outline,
 };
 
 // ── Archive stat box ──────────────────────────────────────────────────────────
@@ -1139,9 +1166,18 @@ String historyTimestampLabel(String timestampIso) {
   final stamp = DateTime.tryParse(timestampIso)?.toLocal();
   if (stamp == null) return 'Unknown time';
   final month = switch (stamp.month) {
-    1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr',
-    5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug',
-    9 => 'Sep', 10 => 'Oct', 11 => 'Nov', _ => 'Dec',
+    1 => 'Jan',
+    2 => 'Feb',
+    3 => 'Mar',
+    4 => 'Apr',
+    5 => 'May',
+    6 => 'Jun',
+    7 => 'Jul',
+    8 => 'Aug',
+    9 => 'Sep',
+    10 => 'Oct',
+    11 => 'Nov',
+    _ => 'Dec',
   };
   final hour = stamp.hour % 12 == 0 ? 12 : stamp.hour % 12;
   final minute = stamp.minute.toString().padLeft(2, '0');

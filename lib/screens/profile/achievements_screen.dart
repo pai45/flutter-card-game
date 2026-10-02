@@ -70,71 +70,76 @@ class _AchievementsScreenState extends State<AchievementsScreen>
     final badges = achievementsForTab(tab);
     final unlocked = unlockedAchievementCountForTab(stats, tab);
 
-    return Scaffold(
-      backgroundColor: Cyber.bg,
-      body: Stack(
-        children: [
-          const Positioned.fill(child: ColoredBox(color: Cyber.bg)),
-          const Positioned.fill(child: CyberTextureOverlay()),
-          SafeArea(
-            child: Column(
-              children: [
-                HistoryHeaderBar(
-                  title: 'ACHIEVEMENTS',
-                  accent: Cyber.gold,
-                  onBack: () => Navigator.of(context).pop(),
-                ),
-                CyberUnderlineTabs(
-                  labels: [for (final t in _tabs) t.label],
-                  activeIndex: _index,
-                  onTap: _select,
-                ),
-                const SizedBox(height: 18),
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 2, 16, 28),
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            'UNLOCKED',
-                            style: Cyber.label(
-                              10,
-                              color: Cyber.muted,
-                              letterSpacing: 1.6,
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            '$unlocked / ${badges.length}',
-                            style: Cyber.label(
-                              13,
-                              color: Cyber.gold,
-                              letterSpacing: 1,
-                              fontFeatures: const [FontFeature.tabularFigures()],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      CyberProgressBar(
-                        value: badges.isEmpty ? 0 : unlocked / badges.length,
-                        accent: Cyber.gold,
-                        trackColor: Cyber.bg,
-                      ),
-                      const SizedBox(height: 20),
-                      AchievementBadgeGrid(
-                        badges: badges,
-                        stats: stats,
-                        entrance: _entrance,
-                      ),
-                    ],
+    return GameTypographyScope(
+      enabled: tab == AchievementTab.games,
+      child: Scaffold(
+        backgroundColor: Cyber.bg,
+        body: Stack(
+          children: [
+            const Positioned.fill(child: ColoredBox(color: Cyber.bg)),
+            const Positioned.fill(child: CyberTextureOverlay()),
+            SafeArea(
+              child: Column(
+                children: [
+                  HistoryHeaderBar(
+                    title: 'ACHIEVEMENTS',
+                    accent: Cyber.gold,
+                    onBack: () => Navigator.of(context).pop(),
                   ),
-                ),
-              ],
+                  CyberUnderlineTabs(
+                    labels: [for (final t in _tabs) t.label],
+                    activeIndex: _index,
+                    onTap: _select,
+                  ),
+                  const SizedBox(height: 18),
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 2, 16, 28),
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'UNLOCKED',
+                              style: Cyber.label(
+                                10,
+                                color: Cyber.muted,
+                                letterSpacing: 1.6,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              '$unlocked / ${badges.length}',
+                              style: Cyber.label(
+                                13,
+                                color: Cyber.gold,
+                                letterSpacing: 1,
+                                fontFeatures: const [
+                                  FontFeature.tabularFigures(),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        CyberProgressBar(
+                          value: badges.isEmpty ? 0 : unlocked / badges.length,
+                          accent: Cyber.gold,
+                          trackColor: Cyber.bg,
+                        ),
+                        const SizedBox(height: 20),
+                        AchievementBadgeGrid(
+                          badges: badges,
+                          stats: stats,
+                          entrance: _entrance,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

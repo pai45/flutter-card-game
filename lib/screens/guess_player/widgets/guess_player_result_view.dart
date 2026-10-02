@@ -171,7 +171,11 @@ class _GuessPlayerResultViewState extends State<GuessPlayerResultView> {
                                   ? 'The remaining intel has been unlocked.'
                                   : 'No attempts remain. Study the debrief and return tomorrow.',
                               textAlign: TextAlign.center,
-                              style: Cyber.body(12.5, color: Cyber.muted),
+                              style: Cyber.bodyFor(
+                                context,
+                                12.5,
+                                color: Cyber.muted,
+                              ),
                             ),
                           ],
                         ),
@@ -610,7 +614,8 @@ class _GuessDebrief extends StatelessWidget {
                   Expanded(
                     child: Text(
                       state.guesses[index].name.toUpperCase(),
-                      style: Cyber.body(
+                      style: Cyber.bodyFor(
+                        context,
                         11.5,
                         color: AppTheme.textPrimary,
                         weight: FontWeight.w700,
