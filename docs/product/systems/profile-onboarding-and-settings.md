@@ -1,7 +1,7 @@
 # Profile, Onboarding, Identity, and Settings
 
 > **Status:** BUILT
-> **Last verified:** 2026-10-01
+> **Last verified:** 2026-10-03
 > **Scope:** First-run identity, welcome reward, Profile hub, followed competitions/teams, cosmetics, and settings
 
 ## Product Purpose
@@ -178,6 +178,11 @@ snapshot—and the live state when RETURNING is active—have both succeeded. Th
 v1 install deliberately replaces an older returning career once; after that,
 switches and relaunches preserve player changes. Future schema migrations must
 use their own non-destructive migration path rather than replaying preset v1.
+If profile bootstrapping fails (for example because browser storage is full),
+startup reports the error and still mounts the app using the existing live
+career. A failed optional reward-status marker write also leaves the completed
+profile's onboarding gate open. The preset can retry on a later launch when
+storage becomes available; no automatic profile deletion is performed.
 The stored display name is exposed through `GameState` and the read-only local
 profile summary, with `PLAYER ONE` retained for legacy saves that have no name.
 

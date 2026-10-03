@@ -323,7 +323,12 @@ class _AppShellState extends State<AppShell>
     // seen without granting coins so rollout only rewards new onboarding runs.
     if (complete && rewardStatus == null) {
       rewardStatus = OnboardingRewardStatus.seen;
-      await _storage.saveOnboardingRewardStatus(rewardStatus);
+      try {
+        await _storage.saveOnboardingRewardStatus(rewardStatus);
+      } catch (_) {
+        // The marker is cosmetic; a storage write failure must not hold the
+        // onboarding gate on its loading frame.
+      }
     }
     if (!mounted) return;
     setState(() {
